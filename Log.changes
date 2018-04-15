@@ -160,7 +160,7 @@ ChemFields_mod - needed hard-coded size 4 for rcbio. Needed to avoid circularity
   NetCDF - Biogenics.  Will re-code soon, likely with new module for non-CDF
   NatBioFunctions_mod.
 
-Config_module - removed BVOC stuf
+Config_module - removed BVOC stuff, except new NATBIO
 
 Emissions_mod - removed unused NBVOC
 

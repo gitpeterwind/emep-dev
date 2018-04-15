@@ -2,6 +2,8 @@ BUG in old????!!!
 
   if USES%GLOBAL_SOILNOX didn't set rcemis?!!
 
+NATBIO%NO - is it in GenIn_Reactions?
+
 HARD-CODED 4 in rcbio in ChemFields. Tried to use NATBIO from
 Biogenics, but get circurity problems. Solution is likely to
 make a new NatBioFunctions_mod, with just the basic non-CDF stuff.

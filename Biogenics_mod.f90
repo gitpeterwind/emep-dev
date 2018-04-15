@@ -19,6 +19,11 @@ module Biogenics_mod
   !    Em = Emissions, = EF * LAI * fraction of grid
   !         ug/m2(ground)/hr
   !
+  !    NATBIO%C5H8 and NATBIO%TERP are defined in Config_module.f90, and are
+  !    used when rcbio is defined.
+  !    We only use rcbio for isoprene and terpenes so far,  since
+  !    soil NO, NH3 emissions etc are dealt with through rcemis.
+
   !    The code will assign EFs from the local data if available, otherwise
   !    use defaults which have been readfrom Inputs_Landuse, Eiso, Emtp, Emtl. 
   !    Note that we use emissions per m2 of vegetation, not per 
@@ -43,7 +48,7 @@ module Biogenics_mod
                            MasterProc, &
                            USES, &
                            DEBUG_SOILNOX, &
-                           EmBio, EMEP_EuroBVOCFile
+                           NATBIO, EmBio, EMEP_EuroBVOCFile
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValueTypes,      only: KeyVal,KeyValue
@@ -86,17 +91,20 @@ module Biogenics_mod
 
   !A2018 - allows rcbio in CM_Reactions, but we access elements with
   ! the natbio indices here. These much match the indices used in rcbio
+  ! We only use rcbio for isoprene and terpenes so far,  since
+  ! soil NO, NH3 emissions etc are dealt with through rcemis.
 
-  type, private :: natbio_t
-    integer :: C5H8 = 1
-    integer :: TERP = 2
-    integer :: NO   = 3
-    integer :: NH3  = 4
-    integer :: Nrcbio = 4  ! Number of rcbio defined below
-  end type natbio_t
-  type(natbio_t), public, parameter :: NATBIO = natbio_t()
+!  type, private :: natbio_t
+!    integer :: C5H8 = 1
+!    integer :: TERP = 2
+!!    integer :: NO   = 3
+!!    integer :: NH3  = 4
+!    integer :: Nrcbio = 4  ! Number of rcbio defined below
+!  end type natbio_t
+!! type(natbio_t), public, parameter :: NATBIO = natbio_t()
 
   !We hard-code these indices, but only calculate emissions if needed
+  ! Must match order of NATBIO to start with 
   integer, parameter, public ::  NEMIS_BioNat  = 13
   character(len=11), save, dimension(NEMIS_BioNat), public:: &
       EMIS_BioNat =  (/ &
@@ -208,8 +216,8 @@ module Biogenics_mod
 !A2018 - we let rcbio in CM_Reactions take care of this
 !A2018      itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
 !A2018      itot_TERP = find_index( "TERP", species(:)%name )
-!A2018      itot_NO   = find_index( "NO", species(:)%name      )
-!A2018      itot_NH3  = find_index( "NH3", species(:)%name      )
+      itot_NO   = find_index( "NO", species(:)%name      )
+      itot_NH3  = find_index( "NH3", species(:)%name      )
 
    !====================================
  
@@ -633,13 +641,14 @@ module Biogenics_mod
   EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
 
   if ( USES%EURO_SOILNOX ) then
-   !A2018 rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
-    rcbio(NATBIO%NO,KG) =  SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
+    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
+    !FUTURE? rcbio(NATBIO%NO,KG) =
+         SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
   else if ( USES%GLOBAL_SOILNOX ) then !TEST
     ! BUG WAS MISSING FROM OLD::::::!
     call StopAll(dtxt//'OLD BUG? SOIL NO NOT CHECKED YET')
-    rcbio(NATBIO%NO,KG)    =  SoilNOx(i,j) !LIKELY WRONG. TO BE FIXED
+    !rcbio(NATBIO%NO,KG)    =  SoilNOx(i,j) !LIKELY WRONG. TO BE FIXED
     ! from OLD:
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
   end if
@@ -647,8 +656,8 @@ module Biogenics_mod
     !EXPERIMENTAL
     !if ( USES%SOILNH3 ) then
     if ( USES%BIDIR ) then
-       !A2018 rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
-       rcbio(NATBIO%NH3,KG)    = &
+       !FUTURE? rcbio(NATBIO%NH3,KG)    = &
+       rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
            SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
         if(NATBIO%NH3>0)EmisNat(NATBIO%NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
     else

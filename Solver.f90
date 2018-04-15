@@ -21,7 +21,6 @@
   !=======================================================================!
 
     use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
-    use Biogenics_mod,      only: NATBIO
     use CheckStop_mod,      only: CheckStop, StopAll
     use ChemFunctions_mod,  only: VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_mod !A2018,     only: RO2_POOL, RO2_GROUP
@@ -33,7 +32,7 @@
     !A2019 use ChemRates_rct_mod,   only: rct
     use Config_module,     only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
                                 ,DebugCell, MasterProc, DEBUG, USES &
-                                ,YieldModifications
+                                ,NATBIO, YieldModifications
     use DefPhotolysis_mod         ! => IDHNO3, etc.
     use EmisDef_mod,      only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom

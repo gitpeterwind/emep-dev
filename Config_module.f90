@@ -57,6 +57,20 @@ CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
+ !A2018 - allows rcbio in CM_Reactions, but we access elements with
+  ! the natbio indices here. These much match the indices used in rcbio
+  ! We only use rcbio for isoprene and terpenes so far,  since
+  ! soil NO, NH3 emissions etc are dealt with through rcemis.
+
+  type, private :: natbio_t
+    integer :: C5H8 = 1
+    integer :: TERP = 2
+    integer :: Nrcbio = 2  ! No. of rcbio defined in ChemFields/Biogenics_mod
+    integer :: NO   = 3    ! used for EmisNat etc
+    integer :: NH3  = 4
+  end type natbio_t
+  type(natbio_t), public, parameter :: NATBIO = natbio_t()
+
  ! We allow a flexible string which can switch between different
  ! experiments called by e.g. Solver. A but crude, but
  ! it makes sure the experiments are recorded in the config
