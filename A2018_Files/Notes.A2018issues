@@ -1,17 +1,30 @@
+BUG in old????!!!
+
+  if USES%GLOBAL_SOILNOX didn't set rcemis?!!
+
+HARD-CODED 4 in rcbio in ChemFields. Tried to use NATBIO from
+Biogenics, but get circurity problems. Solution is likely to
+make a new NatBioFunctions_mod, with just the basic non-CDF stuff.
+This can be identical to ESX.
+
 GenChem disabled just now. Copy CM and other  files from A2018_Files directory
+
+CM_BoundaryConditions - needed from CM_Apr9 jjst now
 
 DefPhotolysis - needs to use EMEP indices. Map from MCM??
 
+My_Derived_mod
+
 Had to hard-code some changes just now:
-  CM_EmisBIONAT needed :-(
-  Needs sorting out rcbio, BVOC_GROUP etc.
+
+  Disabled BVOC group. Need to re-instate with new NATBIO
+
+  CM_AerExt - NEEDS FIX!!!!
 
   cp ZCM_EmChem16a/EmChem16abase.BoundaryConditions CM_BoundaryConditions.inc
   CM_ChemRates - skip Photol for now
 
   BiomassBurning - mapping
-
-CM_AerExt - NEEDS FIX!!!!
 
 SOA_ need to re-instate CiStar etc..
 

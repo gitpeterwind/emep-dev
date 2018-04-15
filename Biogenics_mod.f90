@@ -39,29 +39,29 @@ module Biogenics_mod
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
-                           DEBUG, BVOC_USED, MasterProc, &
+                           DEBUG, & !A2018 BVOC_USED, 
+                           MasterProc, &
                            USES, &
                            DEBUG_SOILNOX, &
                            EmBio, EMEP_EuroBVOCFile
-  use GridValues_mod    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
-  use Io_mod            , only : IO_FORES, open_file, ios, PrintLog, datewrite
-  use KeyValueTypes,     only : KeyVal,KeyValue
+  use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
+  use Io_mod,             only: IO_FORES, open_file, ios, PrintLog, datewrite
+  use KeyValueTypes,      only: KeyVal,KeyValue
   use LandDefs_mod,       only: LandType, LandDefs
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai
-  use Landuse_mod,        only : LandCover
-  use LocalVariables_mod, only : Grid  ! -> izen, DeltaZ
-  use MetFields_mod,      only : t2_nwp
-  use MetFields_mod,     only: PARdbh, PARdif !WN17, in W/m2
-  use NetCDF_mod,        only : ReadField_CDF, printCDF
-  use OwnDataTypes_mod,  only : Deriv, TXTLEN_SHORT
+  use Landuse_mod,        only: LandCover
+  use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
+  use MetFields_mod,      only: t2_nwp
+  use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
+  use NetCDF_mod,         only: ReadField_CDF, printCDF
+  use OwnDataTypes_mod,   only: Deriv, TXTLEN_SHORT
 !  use Paleo_mod, only : PALEO_modai, PALEO_miso, PALEO_mmon
-  use Par_mod   , only :  LIMAX,LJMAX,MSG_READ1,me, limax, ljmax
-  use Par_mod,            only : limax, ljmax, LIMAX, LJMAX, me
-  use PhysicalConstants_mod,  only :  AVOG, GRAV
-  use Radiation_mod,          only : PARfrac, Wm2_uE
-  use ZchemData_mod,     only : rcemis  
-  use SmallUtils_mod, only : find_index
-  use TimeDate_mod,       only : current_date, daynumber
+  use Par_mod,            only: MSG_READ1,me, limax, ljmax
+  use PhysicalConstants_mod,  only:  AVOG, GRAV
+  use Radiation_mod,      only: PARfrac, Wm2_uE
+  use SmallUtils_mod,     only: find_index
+  use TimeDate_mod,       only: current_date, daynumber
+  use ZchemData_mod,      only: rcemis, rcbio
   implicit none
   private
 
@@ -77,24 +77,53 @@ module Biogenics_mod
   !/-- subroutines for soil NO
   public :: Set_SoilNOx
 
-  INCLUDE 'mpif.h'
-  include 'CM_EmisBioNat.inc'
-  !e.g.
-  !  integer, parameter, public ::  NEMIS_BioNat  = 3
-  !  character(len=7), save, dimension(NEMIS_BioNat), public:: &
-  !    EMIS_BioNat =  (/ "C5H8   " , "BIOTERP" , "NO     " /)
- 
-  integer, public, parameter :: N_ECF=2, ECF_ISOP=1, ECF_TERP=2
-  integer, public, parameter :: BIO_ISOP=1, BIO_MTP=2, &
-                                 BIO_MTL=3 ! , BIO_SOILNO=4, BIO_SOILNH3=5
-  integer, public, parameter :: BIO_TERP=2 ! Used for final emis, sum of MTP+MTL
+  !A2018 INCLUDE 'mpif.h'
+  !A2018 include 'CM_EmisBioNat.inc'
+  !A2018 moved from Config_module:
+  integer, public, parameter ::   NBVOC = 3
+  character(len=4),public, save, dimension(NBVOC) :: &
+     BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
+
+  !A2018 - allows rcbio in CM_Reactions, but we access elements with
+  ! the natbio indices here. These much match the indices used in rcbio
+
+  type, private :: natbio_t
+    integer :: C5H8 = 1
+    integer :: TERP = 2
+    integer :: NO   = 3
+    integer :: NH3  = 4
+    integer :: Nrcbio = 4  ! Number of rcbio defined below
+  end type natbio_t
+  type(natbio_t), public, parameter :: NATBIO = natbio_t()
+
+  !We hard-code these indices, but only calculate emissions if needed
+  integer, parameter, public ::  NEMIS_BioNat  = 13
+  character(len=11), save, dimension(NEMIS_BioNat), public:: &
+      EMIS_BioNat =  (/ &
+             "C5H8       " &
+           , "TERP       " &
+           , "NO         " &
+           , "NH3        " &
+           , "ASH_F      " &
+           , "ASH_C      " &
+           , "SEASALT_F  " &
+           , "SEASALT_C  " &
+           , "DUST_WB_F  " &
+           , "DUST_WB_C  " &
+           , "DUST_ROAD_F" &
+           , "DUST_ROAD_C" &
+           , "RN222      "  /)
+
+  integer, public, parameter :: &
+      N_ECF=2, ECF_ISOP=1, ECF_TERP=2   &! canopy factors, BVOC
+     ,BIO_ISOP=1, BIO_MTP=2, BIO_MTL=3  &! BIO_SOILNO=4, BIO_SOILNH3=5
+     ,BIO_TERP=2 ! Used for final emis, sum of MTP+MTL
   integer, public, save ::  last_bvoc_LC   !max index land-cover with BVOC (min 4)
                                                         
   ! Soil NOx
    real,public, save, allocatable, dimension(:,:) :: &
       AnnualNdep, &  ! N-dep in mgN/m2/
       SoilNOx, SoilNH3
-
 
  ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
@@ -127,7 +156,6 @@ module Biogenics_mod
   real, public, save, dimension(N_ECF,40) :: canopy_ecf  ! Canopy env. factors
 
  ! Indices for the species defined in this routine. Only set if found
-  integer, private, save :: ispec_C5H8, ispec_TERP, ispec_NO , ispec_NH3
   integer, private, save :: itot_C5H8,  itot_TERP,  itot_NO , itot_NH3
 
   contains
@@ -165,22 +193,23 @@ module Biogenics_mod
 
    !====================================
    ! get indices.  NH3 not yet used.
-      ispec_C5H8 = find_index( "C5H8", EMIS_BioNat(:) ) 
-      ispec_TERP = find_index( "BIOTERP", EMIS_BioNat(:) ) 
-      ispec_NO   = find_index( "NO", EMIS_BioNat(:) ) 
-      ispec_NH3  = find_index( "NH3", EMIS_BioNat(:) ) 
-      call CheckStop( ispec_C5H8 < 1 , "BiogencERROR C5H8")
-      !call CheckStop( ispec_TERP < 1 , "BiogencERROR TERP")
-      if( ispec_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
+      !ibn_C5H8 = find_index( "C5H8", EMIS_BioNat(:) ) 
+      !ibn_TERP = find_index( "TERP", EMIS_BioNat(:) ) 
+      !ibn_NO   = find_index( "NO", EMIS_BioNat(:) ) 
+      !ibn_NH3  = find_index( "NH3", EMIS_BioNat(:) ) 
+      !call CheckStop( ibn_C5H8 < 1 , "BiogencERROR C5H8")
+      !call CheckStop( ibn_TERP < 1 , "BiogencERROR TERP")
+      !if( ibn_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
      
-      call CheckStop( USES%EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
-      call CheckStop( USES%GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
-      if( MasterProc ) write(*,*) "SOILNOX ispec ", ispec_NO
+      !call CheckStop( USES%EURO_SOILNOX .and. ibn_NO < 1 , "BiogencERROR NO")
+      !call CheckStop( USES%GLOBAL_SOILNOX .and. ibn_NO < 1 , "BiogencERROR NO")
+      !if( MasterProc ) write(*,*) "SOILNOX ibn ", ibn_NO
 
-      itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
-      itot_TERP = find_index( "BIOTERP", species(:)%name )
-      itot_NO   = find_index( "NO", species(:)%name      )
-      itot_NH3  = find_index( "NH3", species(:)%name      )
+!A2018 - we let rcbio in CM_Reactions take care of this
+!A2018      itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
+!A2018      itot_TERP = find_index( "TERP", species(:)%name )
+!A2018      itot_NO   = find_index( "NO", species(:)%name      )
+!A2018      itot_NH3  = find_index( "NH3", species(:)%name      )
 
    !====================================
  
@@ -560,7 +589,7 @@ module Biogenics_mod
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-  !ASSUME C5H8 FOR NOW if ( ispec_C5H8 > 0 ) then
+  !ASSUME C5H8 FOR NOW if ( ibn_C5H8 > 0 ) then
     if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
      ! Light effects from Guenther G93
@@ -584,42 +613,46 @@ module Biogenics_mod
      ! Emissions_mod (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
 
 
-      rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
-      EmisNat(ispec_C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
+      !A2018 rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
+      rcbio(NATBIO%C5H8,KG)   = E_ISOP * biofac_ISOP/Grid%DeltaZ
+      EmisNat(NATBIO%C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
 
   else ! night
-     EmisNat(ispec_C5H8,i,j) = 0.0
+     rcbio(NATBIO%C5H8,KG)    = 0.0
+     EmisNat(NATBIO%C5H8,i,j) = 0.0
      E_MTL = 0.0
      E_ISOP = 0.0
      par = 0.0   ! just for printout
      cL  = 0.0   ! just for printout
   end if ! daytime
 
-    if ( ispec_TERP > 0 ) then
+ ! add pool-only terpenes rate;
+  E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m) * EmBio%TerpFac
+ !A2018 rcemis(itot_TERP,KG)    = rcemis(itot_TERP,KG) + &
+  rcbio(NATBIO%TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
+  EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
 
-     ! add pool-only terpenes rate;
-        E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m) * EmBio%TerpFac
-        rcemis(itot_TERP,KG)    = rcemis(itot_TERP,KG) + &
-               (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
-        EmisNat(ispec_TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
-    end if
-
-    if ( USES%EURO_SOILNOX ) then
-        rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
-             SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
-        EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-    else if ( USES%GLOBAL_SOILNOX ) then !TEST
-        EmisNat(ispec_NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
-    end if
+  if ( USES%EURO_SOILNOX ) then
+   !A2018 rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
+    rcbio(NATBIO%NO,KG) =  SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
+    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
+  else if ( USES%GLOBAL_SOILNOX ) then !TEST
+    ! BUG WAS MISSING FROM OLD::::::!
+    call StopAll(dtxt//'OLD BUG? SOIL NO NOT CHECKED YET')
+    rcbio(NATBIO%NO,KG)    =  SoilNOx(i,j) !LIKELY WRONG. TO BE FIXED
+    ! from OLD:
+    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
+  end if
 
     !EXPERIMENTAL
     !if ( USES%SOILNH3 ) then
     if ( USES%BIDIR ) then
-       rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
+       !A2018 rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
+       rcbio(NATBIO%NH3,KG)    = &
            SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
+        if(NATBIO%NH3>0)EmisNat(NATBIO%NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
     else
-        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) = 0.0
+        if(NATBIO%NH3>0)EmisNat(NATBIO%NH3,i,j) = 0.0
     end if
      
  
@@ -629,9 +662,11 @@ module Biogenics_mod
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
       call datewrite("DBIO EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j), SoilNH3(i,j) /) ) 
-      if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcemis(itot_NH3,KG) /) ) 
+      !A2018 if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcemis(itot_NH3,KG) /) ) 
+      if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
       call datewrite("DBIO rcemisL ", (/ &
-            rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
+            rcbio(NATBIO%C5H8,KG), rcbio(NATBIO%TERP,KG) /))
+            !A2018 rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
       call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
 
      end if

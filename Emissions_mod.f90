@@ -82,7 +82,6 @@ use Config_module,only: &
     DataDir,      &    ! template for path
     EMIS_OUT,      &    ! output emissions in ASCII or not
 !    MONTHLY_GRIDEMIS, &  !NML
-    NBVOC,         &    ! > 0 if forest voc wanted
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &

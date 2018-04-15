@@ -71,7 +71,10 @@ type :: ExtEffMap
 end type ExtEffMap
 
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-include 'CM_AerExt.inc'
+!A2018 include 'CM_AerExt.inc'
+!TMP!!!
+integer, public, parameter :: NUM_EXT =0 !DS  24 - 10 - 10   !DS
+type(ExtEffMap), public, dimension(NUM_EXT), save :: ExtMap
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 integer, parameter :: NumRH=7

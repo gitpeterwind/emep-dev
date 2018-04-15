@@ -317,11 +317,12 @@ subroutine Init_My_Deriv()
        end do
     endif
   end do ! ind  
-  do i = 1, size(BVOC_GROUP)
-    itot = BVOC_GROUP(i)
-    tag_name(1) = "Emis_mgm2_BioNat" // trim(species(itot)%name)
-    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-  end do
+!A2018 - need to re-code
+!A2018 TMP  do i = 1, size(BVOC_GROUP)
+!A2018 TMP    itot = BVOC_GROUP(i)
+!A2018 TMP    tag_name(1) = "Emis_mgm2_BioNat" // trim(species(itot)%name)
+!A2018 TMP    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+!A2018 TMP  end do
   if(USE_SOILNOX) then
     tag_name(1) = "Emis_mgm2_BioNatNO"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)

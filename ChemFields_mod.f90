@@ -1,6 +1,7 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 use AllocInits,     only: AllocInit
+!use Biogenics_mod,  only: NATBIO
 use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
                           NCHEMRATES, NPHOTOLRATES 
 use ChemSpecs_mod,  only: FIRST_SEMIVOL, LAST_SEMIVOL    ! -999 unless SOA used
@@ -95,7 +96,8 @@ contains
 !allocated in DefPhotol??
 !    allocate(rcphot(NPHOTOLRATES,KCHEMTOP:KMAX_MID))
 !    rcphot = 0.0
-    allocate(rcbio(2,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
+    !TMPA2018 allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
+    allocate(rcbio(4,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
     rcbio = 0.0
 
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))

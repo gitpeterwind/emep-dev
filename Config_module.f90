@@ -308,9 +308,9 @@ character(len=4), parameter, public :: &
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools,
 ! mtl = monoterpenes with light dependence
 !DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
-integer, public, parameter ::   NBVOC = 3
-character(len=4),public, save, dimension(NBVOC) :: &
-  BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
+!A2018 integer, public, parameter ::   NBVOC = 3
+!A2018 character(len=4),public, save, dimension(NBVOC) :: &
+!A2018   BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
