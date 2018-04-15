@@ -143,7 +143,7 @@ module OrganicAerosol_mod
    if( first_call ) then
 
      itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
-     itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
+     itot_om25 = find_index( 'OM25_p',  species(:)%name ) 
      igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
 
       nonvolpcm = find_index( 'NONVOLPCM', chemgroups(:)%name ) 
@@ -206,7 +206,7 @@ tabCiStar(is,it) = 1.0
 
          if ( MasterProc ) then 
             do is = S1, S2
-               write(6,"(a,i4,1x,a20,f7.1,i3,8es10.2)") &
+               write(6,"(a,i4,1x,a20,f7.1,f5.1,8es10.2)") &
                 " Tab SOA: MW, Carbons, C*:", is, adjustl(species(is)%name), &
                  species(is)%molwt, species(is)%carbons, & 
                  tabCiStar(is,273), tabCiStar(is,303)
