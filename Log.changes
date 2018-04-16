@@ -140,6 +140,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 April 2018, Dave
+
+SOA_ml - recoded for new system
+Runchem_ml - added first_tstep argmument to Init_OrganicAerosol call
+
+run.pl - new temporary SplitDefaultsFile location (hard-coded on stallo)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 April 2018, Dave
 
 A2018 INTERIM changes continue...
