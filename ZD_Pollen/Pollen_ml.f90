@@ -551,8 +551,8 @@ subroutine heatsum_calc(hsum,t2,T_cutoff)
   hsum = hsum + ff*dt/(3600*24)      ! seconds to days
 end subroutine heatsum_calc
 subroutine heatsum_rweed(hsum,t2,daylen)
-  real, intent(inout) :: hsum
-  real, intent(in) :: t2,daylen  ! degreedays,deg K,date%hours
+  real, intent(inout) :: hsum    ! degreedays
+  real, intent(in) :: t2,daylen  ! deg K,date%hours
   real             :: ff
 
   ! Too early to do anything
@@ -568,11 +568,13 @@ subroutine heatsum_rweed(hsum,t2,daylen)
   endif
   
   ! Photoperiod response for biotime accumulation
-  if(hsum>11.5 .and. hsum<16. .and. daylen>photoperiod_rweed)then
-    ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.5))
-  elseif(hsum>16. .and. hsum<20.5 .and. daylen>photoperiod_rweed)then
-    ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.6))
-  endif  
+  if(daylen>photoperiod_rweed)then
+    if(hsum>11.5 .and. hsum<16.)then
+      ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.5))
+    elseif(hsum>16. .and. hsum<20.5)then
+      ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.6))
+    endif
+  endif
 
   hsum = hsum + ff*dt/(3600*24)      ! seconds to days
 end subroutine heatsum_rweed
@@ -584,8 +586,8 @@ function regweed_normal_diurnal(dayJ,dayT,startDay,endDay) result(ff)
     startDay,endDay     ! season start/end (StartCDThr/EndCDThr), daynumber
   real, parameter :: &
     sqrt2 = sqrt(2.),&
-    dayMid1 = 135*60, daySgm1 =  15*60*sqrt2, & ! 1st peak, sec since sunrise*sqrt2
-    dayMid2 = 285*60, daySgm2 = 100*60*sqrt2, & ! 2nd peak, sec since sunrise*sqrt2
+    dayMid1 = 135*60, daySgm1 =  15*60*sqrt2, & ! 1st peak; sec since sunrise,sec*sqrt2
+    dayMid2 = 285*60, daySgm2 = 100*60*sqrt2, & ! 2nd peak; sec since sunrise,sec*sqrt2
     dayfrac1= 0.4,    dayfrac2= 1.0-dayFrac1 ! % in the 1st/2nd peak 
   real(kind=8) :: t1, t2, s, ff, seasSgm
 
