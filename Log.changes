@@ -140,6 +140,28 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 April 2018, Dave
+
+
+AeroFunctions_mod
+
+   *BUG* found in old code. SS2 and SS3 were mixed up for Gerber calculations
+   
+Config_module - changes in AERO
+
+Derived_mod - changed DpgV to umDpgV
+
+GasParticleCoeffs_mod
+    Re-coded AERO stuff - still confusing, but a bit less so I hope.
+    DpgV changed to umDpgV in DDdefs
+    Added Gb to DDspec
+    More changes to come.
+
+Setup_1d_mod.f90
+    Re-coded aerosol surface area - still confusing, but a bit less so I hope.
+    More changes to come
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 April 2018, Dave
 
 SOA_ml - recoded for new system

@@ -1,13 +1,17 @@
-BUG in old????!!!
+BUGS found in old ?? !!!
 
-  if USES%GLOBAL_SOILNOX didn't set rcemis?!!
+1)   if USES%GLOBAL_SOILNOX didn't set rcemis?!!
 
-NATBIO%NO - is it in GenIn_Reactions?
+2) Gerber tab was:
+  ! Gerber, TAble 2, simplified for ext,. coeffs.
+   real, parameter, dimension(4) :: &
+     !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
+      C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
+     ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
 
-HARD-CODED 4 in rcbio in ChemFields. Tried to use NATBIO from
-Biogenics, but get circurity problems. Solution is likely to
-make a new NatBioFunctions_mod, with just the basic non-CDF stuff.
-This can be identical to ESX.
+ with SS2 used for fine-aerosol. But SS2 should hace C7=1.83.
+
+
 
 GenChem disabled just now. Copy CM and other  files from A2018_Files directory
 
@@ -19,16 +23,12 @@ My_Derived_mod
 
 Had to hard-code some changes just now:
 
-  Disabled BVOC group. Need to re-instate with new NATBIO
-
   CM_AerExt - NEEDS FIX!!!!
 
   cp ZCM_EmChem16a/EmChem16abase.BoundaryConditions CM_BoundaryConditions.inc
   CM_ChemRates - skip Photol for now
 
   BiomassBurning - mapping
-
-SOA_ need to re-instate CiStar etc..
 
 
 CDDEP_PNfNH4 - was it done right before in EMEP?
@@ -47,3 +47,12 @@ Aerosols - lots of work/checks needed!!
 ALSO needs PMfSS to be sent back to ES...
 
 SettlingVelocity - do we use wet diamter at all? Guess we should!
+
+
+
+------------------------------------------------
+DONE:
+  Disabled BVOC group. Need to re-instate with new NATBIO
+
+  SOA_ re-instate CiStar etc..
+

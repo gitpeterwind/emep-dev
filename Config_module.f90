@@ -471,7 +471,8 @@ integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WR
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
 
-integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
+!A2018 integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
+integer, parameter, public :: NSAREA_DEF = 7 ! skip ORIG=Riemer
 type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
@@ -488,8 +489,8 @@ type, public :: aero_t
 ! For surface area we track the following (NSD=not seasalt or dust)
 ! Must make sizes match NSAREA_DEF above
 ! NB PM is sum of PMf and PMC
- integer :: &
-   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
+ integer :: & ! A2018 *** NUMBERS CHANGED *** PM=5 moved to end
+   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7,ORIG=8,NSAREA=NSAREA_DEF
 !A2018
 !A2018! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
 !A2018! For Gerber (Gb), -1 indicates to use dry radius
@@ -501,6 +502,24 @@ type, public :: aero_t
 !A2018  Gb     = [ 1,   1,   2, -1,   1,   2,  -1,  -1]
 end type aero_t
 type(aero_t), public, save :: AERO = aero_t()
+
+!Not needed:?
+!A2018 simplified version, matches Table 6 of ACP2012 (except FN)
+!type, public :: bulkaero_t
+!  real :: umDpgV  ! mass/volumne median diameter (um)
+!  real :: umDpgN  ! number median diameter (um)
+!  real :: sigma 
+!  real :: rho_p   ! kg/m3
+!  character(len=30) :: species
+!end type bulkaero_t
+!type(aerobulk_t), public, dimension(4), save ::
+!   aerobulk = [
+!     aerobulk_t(0.33, 1.8, UNDEF_R, 1600.0,  'Fine-model SIA,EC, OA') & !?SSF?
+!    ,aerobulk_t(3.0 , 2.0, UNDEF_R, 2200.0,  'coarse-nitrate') &
+!    ,aerobulk_t(4.0 , 2.0, UNDEF_R, 2200.0,  'coarse-sea-salt') &
+!    ,aerobulk_t(4.5 , 2.2, UNDEF_R, 2600.0,  'coarse dust,sand') &
+!  ]
+
 
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in

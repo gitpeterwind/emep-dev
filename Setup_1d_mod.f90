@@ -20,7 +20,7 @@ use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
 use CheckStop_mod,    only:  CheckStop, StopAll
 use ColumnSource_mod, only: ColumnRate
 use Config_module,    only:  &
-   DEBUG,DEBUG_MASS             &
+   DEBUG,DEBUG_MASS,DebugCell   &
   ,AERO                         & ! for wet radii and surf area.
   ,SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
@@ -42,6 +42,7 @@ use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,
 use EmisGet_mod,      only:  nrcemis, iqrc2itot  
 use ForestFire_mod,   only: Fire_rcemis, burning
 use Functions_mod,    only:  Tpot_2_T
+use GasParticleCoeffs_mod, only: DDspec
 use GridValues_mod,   only:  xmd, GridArea_m2, & 
                              debug_proc, debug_li, debug_lj,&
                              A_mid,B_mid,gridwidth_m,dA,dB,&
@@ -107,7 +108,10 @@ contains
     character(len=30)  :: fmt="(a,i3,99g13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
-   ! for surface area calcs: 
+   ! for surface area calcs (A2018): 
+   ! had: SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7 ORIG=8,NSAREA=NSAREA_DEF
+    integer, parameter :: NGERBER = NSAREA_DEF-1  ! Skip PM=7
+    integer, save, dimension(NGERBER) :: iGerber
     real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
@@ -141,6 +145,21 @@ contains
 
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
+      !A2018 - find surrogates for Gerber area calcs, to get Dp,rho,sigma)
+      !SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7,NSAREA=NSAREA_DEF
+      ! Note, if a species is not found (eg seasalt) then iGerber
+      ! is negative
+      !QUERY: Should we then set USES%SURF_AREA False?
+
+       iGerber(AERO%SIA_F)= find_index('PMfS',DDspec(:)%name)
+       iGerber(AERO%PM_F)= find_index('PMfS',DDspec(:)%name)
+       iGerber(AERO%SS_F)= find_index('SSf',DDspec(:)%name)
+       iGerber(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
+       iGerber(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
+       iGerber(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
+
+      ! Skip PM=5 as mixed 
+
       !A2018 see which groups we have:
        iSIAgroup = find_index('SIA',chemgroups(:)%name)
        iSSgroup  = find_index('SS',chemgroups(:)%name)
@@ -148,6 +167,7 @@ contains
        iPMfgroup = find_index('PMFINE',chemgroups(:)%name)
        iBCfgroup = find_index('ECFINE',chemgroups(:)%name)
        iBCcgroup = find_index('ECCOARSE',chemgroups(:)%name)
+
        if( MasterProc ) write(*,'(a,9(a,1x,i4))') dtxt//"Groups: ",&
           'SIA', iSIAgroup, 'SS', iSSgroup, 'DU', iDUgroup, &
           'BCf', iBCfgroup, 'BCc', iBCcgroup, 'PMf', iPMfgroup
@@ -243,6 +263,8 @@ contains
       ! Surf Area
         if ( USES%SURF_AREA ) then ! GERBER
 
+            S_m2m3(:,k) = 0.0  !! Allow max 6000 um2/cm3
+
            !ispec=NO3_c ! CRUDE HARD CODE for now, but NO3 is special
 
            ugSO4       = 0.0
@@ -291,12 +313,17 @@ contains
                ugNO3c= ugNO3c +  ugtmp
              end if
 
+            !A2018. Handle surface area here:
+
+ 
              if( debug_flag .and. k==20 ) write(*, fmt) &
                   dtxt//"UGSIA:"//trim(species(ispec)%name), &
                      k, ugtmp, ugpmF, ugpmC,&
                      !find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC,&
                      ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
            end do ! ipm
+
+
 
          ! FRACTIONS used for N2O5 hydrolysis
          ! We use mass fractions, since we anyway don't have MW for OM, dust,
@@ -311,6 +338,40 @@ contains
           aero_fbc(k)     = ugBCf/ugpmF
           aero_fom(k)     = max(0.0, ugRemF)/ugpmF
 
+          !A2018 GERBER equations for wet radius
+          !A2018 New approach to Gerber. We use masses above. 
+          ! STILL CRUDE :-( NOT SURE THIS IS BEST APPROACH but
+          ! hopefully works 'okay', maybe??!
+          !A2018 NOTE: There was a bug anyway in Gerber Table, but we recode
+          ! now to avoid need for Inddry index
+
+          do iw = 1, NGERBER ! Skips PM=7 which is sum
+            ipm= iGerber(iw)
+
+            if ( ipm < 1 ) CYCLE ! Component missing !
+
+            Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
+            if ( DDspec(ipm)%Gb < 1 ) then
+              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), DDspec(ipm)%Gb ) 
+            else
+              DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
+            end if
+            if ( ipm == AERO%SIA_F ) ugtmp = ugSIApm
+            if ( ipm == AERO%PM_F )  ugtmp = ugpmF
+            if ( ipm == AERO%SS_F )  ugtmp = ugSSaltF
+            if ( ipm == AERO%DU_F )  ugtmp = ugDustF
+            if ( ipm == AERO%SS_C )  ugtmp = ugSSaltC
+            if ( ipm == AERO%DU_C )  ugtmp = ugDustC
+
+            S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                  rho_kgm3=DDspec(ipm)%rho_p )
+            S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+          end do ! iw
+
+          iw=NSAREA_DEF ! Not total area (misses some BC_c etc.)
+          S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
+
+
           if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
              if( aero_fom(k) > 1.0 .or. ugRemF < -1.0e-9 ) then
                 print "(a,i4,99es12.3)", dtxt//"AERO-F ", k, &
@@ -319,77 +380,72 @@ contains
               end if
           end if
 
-         ! GERBER equations for wet radius
+!A2018 PREV!          AREALOOP: do iw = 1, AERO%NSAREA 
+!A2018 PREV!
+!A2018 PREV!            Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
+!A2018 PREV!
+!A2018 PREV!            if( AERO%Gb(iw) > 0 ) then
+!A2018 PREV!              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
+!A2018 PREV!
+!A2018 PREV!            else ! index -1 indicates use dry (for dust)
+!A2018 PREV!              DpgNw(iw,k)  = Ddry(iw)
+!A2018 PREV!            end if
+!
+!A2018 PREV!            if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
+!A2018 PREV!              1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
+!A2018 PREV!          end do AREALOOP
+!A2018 PREV!
+!A2018 PREV!           iw= AERO%SIA_F
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!           iw= AERO%PM_F ! now use for fine PM
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!           iw= AERO%SS_F
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!           iw= AERO%SS_C
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!          ! dust - just used dry radius
+!A2018 PREV!           iw= AERO%DU_F
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!           iw= AERO%DU_C
+!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 PREV!                                     rho_kgm3=rho )
+!A2018 PREV!
+!A2018 PREV!!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
+!A2018 PREV!
+!tmp          if( debug_flag .and. k==20 )  then
+  if ( DebugCell .and. k==KMAX_MID ) then
+            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
+            ugSIApm, ugpmf, ugSSaltC, ugDustC
+            do iw = 1, AERO%NSAREA
+             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
+            end do
+        end if
+!A2018 PREV!
+!A2018 PREV!           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+!A2018 PREV!
+!A2018 PREV!           ! For total area, we simply sum. We ignore some non-SS or dust _C.
+!A2018 PREV!           iw= AERO%PM
+!A2018 PREV!           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
+!A2018 PREV!                             + S_m2m3(AERO%DU_C,k) 
 
-!A2018 FIXNEEDED!          AREALOOP: do iw = 1, AERO%NSAREA 
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!            Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!            if( AERO%Gb(iw) > 0 ) then
-!A2018 FIXNEEDED!              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!            else ! index -1 indicates use dry (for dust)
-!A2018 FIXNEEDED!              DpgNw(iw,k)  = Ddry(iw)
-!A2018 FIXNEEDED!            end if
-!A2018 FIXNEEDED!            if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
-!A2018 FIXNEEDED!              1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
-!A2018 FIXNEEDED!          end do AREALOOP
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           iw= AERO%SIA_F
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           iw= AERO%PM_F ! now use for fine PM
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           iw= AERO%SS_F
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           iw= AERO%SS_C
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!          ! dust - just used dry radius
-!A2018 FIXNEEDED!           iw= AERO%DU_F
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           iw= AERO%DU_C
-!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 FIXNEEDED!                                     rho_kgm3=rho )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           if( debug_flag .and. k==20 )  then
-!A2018 FIXNEEDED!            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
-!A2018 FIXNEEDED!              ugSIApm, ugpmf, ugSSaltC, ugDustC
-!A2018 FIXNEEDED!            do iw = 1, AERO%NSAREA
-!A2018 FIXNEEDED!             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
-!A2018 FIXNEEDED!              DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
-!A2018 FIXNEEDED!            end do
-!A2018 FIXNEEDED!           end if
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
-!A2018 FIXNEEDED!
-!A2018 FIXNEEDED!           ! For total area, we simply sum. We ignore some non-SS or dust _C.
-!A2018 FIXNEEDED!           iw= AERO%PM
-!A2018 FIXNEEDED!           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
-!A2018 FIXNEEDED!                             + S_m2m3(AERO%DU_C,k) 
-
-           !A2018 TMP FIX:
-           S_m2m3(:,k) =  3.0e-4  !! 300 um2/cm3
-           !A2018 END TMP FIX:
-
-           iw= AERO%ORIG
-           S_m2m3(iw,k) = S_RiemerN2O5(k)
+!A2018SKIP           iw= AERO%ORIG
+!A2018SKIP           S_m2m3(iw,k) = S_RiemerN2O5(k)
 
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
