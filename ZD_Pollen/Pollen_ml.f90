@@ -467,7 +467,7 @@ function scale_factor(spc) result(scale)
   case(RWEED)
     g=iRWEED
     sec_since_sunrise=(current_date%hour-sunrise(glat(i,j),glon(i,j)))*3600 &
-                      -current_date%seconds
+                      +current_date%seconds
     scale = rweed_corr(i,j) &
       *regweed_normal_diurnal(daynumber,sec_since_sunrise,&
           rweed_start(i,j),EndCDThr_rweed)          ! StartCDThr,EndCDThr
