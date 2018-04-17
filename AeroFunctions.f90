@@ -106,8 +106,10 @@ module AeroFunctions
    ! Gerber, TAble 2, simplified for ext,. coeffs.
    real, parameter, dimension(4) :: &
      !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
-      C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
-     ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
+      C7 =  (/ 1.17, 1.28, 1.83, 1.97 /) &
+     ,C8 =  (/ 1.87, 2.41, 5.13, 5.83 /)
+     !A2018 BUG C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
+     !A2018 BUG ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
    real, parameter :: THIRD = 1.0/3.0
    real :: f
    integer :: ind  
