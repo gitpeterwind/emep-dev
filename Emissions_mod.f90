@@ -33,7 +33,7 @@ use EmisDef_mod,       only: &
      ,SumSecEmisOut,SecEmisOut,NSecEmisOut&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
-     ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
+     ,gridrcemis,gridrcroadd,gridrcroadd0&
      ,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
@@ -868,11 +868,6 @@ contains
        end if ! ROAD DUST
     end if
 
-
-    ! now all values are read, secemis is distributed, globnland and 
-    ! globland are ready for distribution
-    ! print *, "calling glob2local_int for iem", iem, " me ", me
-
     ! Create emislist-type files for both sec emissions and Cdf
     ! Useful for export to other codes, including production of
     ! new emislist for current NWP grid.
@@ -890,7 +885,7 @@ contains
 
     !**  Conversions:
     ! The emission-data file are so far in units of 
-    ! tonnes per grid-square. The conversion factor from tonnes per 50*50km2
+    ! tonnes per grid-square. The conversion factor from tonnes per gridcell
     ! annual emission values to surface flux (kg/m2/s) is found by division
     ! with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
     ! The conversion factor then equals 1.27e-14
@@ -959,9 +954,7 @@ contains
     ! now we have nrecmis and can allocate for gridrcemis:
     ! print *, "ALLOCATING GRIDRC", me, NRCEMIS
     allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX),stat=err1)
-    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX),stat=err2)
     call CheckStop(err1, "Allocation error 1 - gridrcemis") 
-    call CheckStop(err2, "Allocation error 2 - gridrcemis0")
     if(USES%ROADDUST)THEN
        allocate(gridrcroadd(NROADDUST,LIMAX,LJMAX),stat=err3)
        allocate(gridrcroadd0(NROADDUST,LIMAX,LJMAX),stat=err4)
@@ -1016,19 +1009,25 @@ end subroutine consistency_check
 subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !----------------------------------------------------------------------!
 ! DESCRIPTION:
-!   Calculates the emmision-tendencies and the local (instantaneous) dry 
-!   deposition in the emission squares.
-!   emis set once per hour to allow for day/night variation (and voc 
-!   speciation) (based on local time)  for each snap sector.
-!   gridrcemis0 calculated every time-step to allow for ps changes.
+!   Calculates the emission time variations.
+!   Time factor recalcualted once per hour to allow for day/night variation (and voc 
+!   speciation) based on local time for each sector and country.
+!   gridrcemis calculated every time-step to allow for ps changes.
 !   inputs from Emissions in EMISSIONS_ML:
-!   country and snap-specific array : 
-!          secemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES) 
+!   country and sector-specific array : 
+!          secemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES)
 !  
 !   Units:
-!   secemis has units of kg/m2/s, SO2 as S, NO2 as N, NH3 as N. 
-!   Map factor (xm2) already accounted for. 
-!  
+!   secemis has units of kg/m2/s. The values are read from the input file, and multiplied by
+!   tonne_to_kgm2s*xm2 (for yearly emissions).  
+!   When used, the emissions are converted into molecules/cm3/s every timestep in the routine EmisSet.
+!   This gives gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX) 
+!   which has no sector and country info, and the NEMIS_FILES are speciated into NRCEMIS species.
+!   For conversion from kg to molecules, the molecular masses are assumed to be:
+!   SOx as SO2, NOx as NO2 
+!   VOC and PM as speciated mw mass
+!   (CO and NH3 are not split and have their normal mw mass).
+!
 !   Data on how many countries contribute per grid square is stored in
 !   nlandcode(LIMAX,LJMAX) , with the country-codes given by
 !   landcode(LIMAX,LJMAX,NCMAX).
@@ -1148,7 +1147,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   if(hourchange) then 
     totemadd(:)  = 0.
-    gridrcemis0(:,:,:,:) = 0.0 
+    gridrcemis(:,:,:,:) = 0.0 
     SumSecEmis(:,:,:) = 0.0
     SumSecEmisOut(:,:,:,:) = 0.0
     if(USES%ROADDUST)gridrcroadd0(:,:,:) = 0.0
@@ -1265,7 +1264,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             !  Assign to height levels 1-KEMISTOP
             do k=KEMISTOP,KMAX_MID
               do iqrc =1, nrcemis
-                gridrcemis0(iqrc,k,i,j) = gridrcemis0(iqrc,k,i,j)   &
+                gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
                      + tmpemis(iqrc)*ehlpcom0    &
                      *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
                      *emis_masscorr(iqrc)
@@ -1319,7 +1318,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           end do ! iem
           ! Assign flat emissions to height levels 1-4. Note, no VERTFAC
           do iqrc =1, nrcemis
-            gridrcemis0(iqrc,KMAX_MID,i,j) = gridrcemis0(iqrc,KMAX_MID,i,j) &
+            gridrcemis(iqrc,KMAX_MID,i,j) = gridrcemis(iqrc,KMAX_MID,i,j) &
                  + tmpemis(iqrc)*ehlpcom0*emis_masscorr(iqrc)
           end do ! iem
           !      ==================================================
@@ -1407,7 +1406,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         ehlpcom= roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
         !RB: This should also be done for the road dust emissions
         do iqrc =1, NRCEMIS
-          gridrcemis(iqrc,k,i,j) =  gridrcemis0(iqrc,k,i,j)* ehlpcom
+          gridrcemis(iqrc,k,i,j) =  gridrcemis(iqrc,k,i,j)* ehlpcom
         end do ! iqrc
       end do   ! i
     end do     ! j

@@ -13,7 +13,7 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, &
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
                             NROADDUST, &
                             cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes,GridEmis&
-                            ,gridrcemis,gridrcemis0, Emis_mask, MASK_LIMIT&
+                            ,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat    
   
 use GridAllocate_mod,  only: GridAllocate
