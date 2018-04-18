@@ -7,7 +7,7 @@ module Config_module
 !----------------------------------------------------------------------------
 !A2018 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_mod,         only: CheckStop
-use ChemSpecs_mod,            only: species
+use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
 use Precision_mod,         only: dp
@@ -57,6 +57,20 @@ CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
+ !A2018 - allows rcbio in CM_Reactions, but we access elements with
+  ! the natbio indices here. These much match the indices used in rcbio
+  ! We only use rcbio for isoprene and terpenes so far,  since
+  ! soil NO, NH3 emissions etc are dealt with through rcemis.
+
+  type, private :: natbio_t
+    integer :: C5H8 = 1
+    integer :: TERP = 2
+    integer :: Nrcbio = 2  ! No. of rcbio defined in ChemFields/Biogenics_mod
+    integer :: NO   = 3    ! used for EmisNat etc
+    integer :: NH3  = 4
+  end type natbio_t
+  type(natbio_t), public, parameter :: NATBIO = natbio_t()
+
  ! We allow a flexible string which can switch between different
  ! experiments called by e.g. Solver. A but crude, but
  ! it makes sure the experiments are recorded in the config
@@ -84,6 +98,7 @@ type, public :: emep_useconfig
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &!
     ,SOILWATER        = .false. &!
+    ,BVOC             = .true.  &!triggers isoprene and terpene emissions
     ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual 
@@ -108,7 +123,7 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
 
- ! Mar 2017. Allow new MEGAN-like BVOC
+ ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
  ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
 
@@ -307,9 +322,9 @@ character(len=4), parameter, public :: &
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools,
 ! mtl = monoterpenes with light dependence
 !DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
-integer, public, parameter ::   NBVOC = 3
-character(len=4),public, save, dimension(NBVOC) :: &
-  BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
+!A2018 integer, public, parameter ::   NBVOC = 3
+!A2018 character(len=4),public, save, dimension(NBVOC) :: &
+!A2018   BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
@@ -456,7 +471,8 @@ integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WR
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
 
-integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
+!A2018 integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
+integer, parameter, public :: NSAREA_DEF = 7 ! skip ORIG=Riemer
 type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
@@ -473,8 +489,8 @@ type, public :: aero_t
 ! For surface area we track the following (NSD=not seasalt or dust)
 ! Must make sizes match NSAREA_DEF above
 ! NB PM is sum of PMf and PMC
- integer :: &
-   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
+ integer :: & ! A2018 *** NUMBERS CHANGED *** PM=5 moved to end
+   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7,ORIG=8,NSAREA=NSAREA_DEF
 !A2018
 !A2018! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
 !A2018! For Gerber (Gb), -1 indicates to use dry radius
@@ -486,6 +502,24 @@ type, public :: aero_t
 !A2018  Gb     = [ 1,   1,   2, -1,   1,   2,  -1,  -1]
 end type aero_t
 type(aero_t), public, save :: AERO = aero_t()
+
+!Not needed:?
+!A2018 simplified version, matches Table 6 of ACP2012 (except FN)
+!type, public :: bulkaero_t
+!  real :: umDpgV  ! mass/volumne median diameter (um)
+!  real :: umDpgN  ! number median diameter (um)
+!  real :: sigma 
+!  real :: rho_p   ! kg/m3
+!  character(len=30) :: species
+!end type bulkaero_t
+!type(aerobulk_t), public, dimension(4), save ::
+!   aerobulk = [
+!     aerobulk_t(0.33, 1.8, UNDEF_R, 1600.0,  'Fine-model SIA,EC, OA') & !?SSF?
+!    ,aerobulk_t(3.0 , 2.0, UNDEF_R, 2200.0,  'coarse-nitrate') &
+!    ,aerobulk_t(4.0 , 2.0, UNDEF_R, 2200.0,  'coarse-sea-salt') &
+!    ,aerobulk_t(4.5 , 2.2, UNDEF_R, 2600.0,  'coarse dust,sand') &
+!  ]
+
 
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in
@@ -716,6 +750,9 @@ subroutine Config_ModelConstants(iolog)
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
+
+    write(iolog,*) 'CHEM SCHEMES: ',trim(CM_schemes_ChemSpecs)
+
     ispec = find_index( DEBUG%SPEC, species(:)%name )
   ! print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
     call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))

@@ -119,7 +119,7 @@ subroutine runchem()
       call Add_2timing(24,tim_after,tim_before,"Runchem:Get_CellMet ")
 
       ! we need to get the gas fraction of semivols:
-      if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
+      if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,first_tstep,debug_flag)
       call Add_2timing(25,tim_after,tim_before,"Runchem:OrganicAerosol")
 
       call setup_1d(i,j)     ! Extracting i,j column data

@@ -138,6 +138,73 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 April 2018, Dave
+
+
+AeroFunctions_mod
+
+   *BUG* found in old code. SS2 and SS3 were mixed up for Gerber calculations
+   
+Config_module - changes in AERO
+
+Derived_mod - changed DpgV to umDpgV
+
+GasParticleCoeffs_mod
+    Re-coded AERO stuff - still confusing, but a bit less so I hope.
+    DpgV changed to umDpgV in DDdefs
+    Added Gb to DDspec
+    More changes to come.
+
+Setup_1d_mod.f90
+    Re-coded aerosol surface area - still confusing, but a bit less so I hope.
+    More changes to come
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 April 2018, Dave
+
+SOA_ml - recoded for new system
+Runchem_ml - added first_tstep argmument to Init_OrganicAerosol call
+
+run.pl - new temporary SplitDefaultsFile location (hard-coded on stallo)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 April 2018, Dave
+
+A2018 INTERIM changes continue...
+
+Biogenics_mod - now use 'NATBIO' type, so we have NATBIO%C5H8 etc. This can
+  be used from CM_Reactions1. The advantage is that one can write terms such
+  as:
+
+      rcbio(NATBIO%TERP) = 0.45 APINENE + 0.20 LIMONENE + 0.35 TESTBVOC ;
+
+  in GenIn_Reactions.txt. The disadvantage is that this term won't appear
+  as emissions in the mass budget of eg APINENE. Needs more thought....
+
+  BUG in OLD code? Didn't find rcemis for SOILNO in GLOBAL case. Maybe 
+   elsewhere? Added StopAll until this is resolved.
+
+ChemFields_mod - needed hard-coded size 4 for rcbio. Needed to avoid circularity with
+  NetCDF - Biogenics.  Will re-code soon, likely with new module for non-CDF
+  NatBioFunctions_mod.
+
+Config_module - removed BVOC stuff, except new NATBIO
+
+Emissions_mod - removed unused NBVOC
+
+LandPFT_mod - removed need of BVOC_USED
+
+SOA_mod    - just renamed OM25_P to _p. The new GenChem preserves case
+
+Solver_mod - added NATBIO access
+
+My_Derived - removed use of BVOC_GROUP. NEED to recode!
+
+ZD_ESX/My_ESX_ml.f90 removed. Obsolete
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 08-09 Apr 2018, Dave
 

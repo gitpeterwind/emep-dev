@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
 
   integer, public, parameter ::&
         NDRYDEP_GASES = 14     &! no. of gases in Wesely tables, DDdefs below
-       ,NDRYDEP_AERO  = 10     &! no. of particles in DDdefs below
+       ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
 
@@ -69,10 +69,9 @@ type, private :: DD_t
   real :: f0       ! Ozone reactivity indicator
   real :: Rm       ! mesophyll resistance (not yet used)
   ! Particle properties as in EMEP-ACP
-  real :: DpgV     ! Aerodynamic diameter for particles, volume
+  real :: umDpgV     ! Aerodynamic diameter for particles, volume, um
   real :: sigma    ! sigma of log-normal dist.  for particles
   real :: rho_p    ! particle density
-  integer :: Inddry
   integer :: Gb     ! GerberClass ! 
 end type DD_t
 
@@ -91,42 +90,44 @@ end type DD_t
 type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 ! Dx values not from Massman are set using Wesely ratios for now. Will
 ! calculate later.
+! DD_t( 'NO   ',18.02e-6 , 1.3, 2.0E-03, 9999, 1.0E-02,0,999.,-1,-1,-1,-1,& !No need for NO
 ! QUERY - what is K? not used so far, but check for H2O
 ! Rm from Zhang et al 2002. Note Zhang has 0 for MVK,100 for MACR
 ! DpgV, rhop are particle diameter and density, from EMEP
-!               Dx (m2/s)  DH2O   H*       pe         K   f0  Rm  DpgV sig rhop Gb Inddry
+!               Dx (m2/s)  DH2O   H*       pe         K   f0  Rm umDpgV sig rhop Gb
 !                          /Dx
 !--------------------------------------------------------------------
 ! Gases:
-  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1,-1)&
- !DS DD_t( 'NO   ',18.02e-6 , 1.3, 2.0E-03, 9999, 1.0E-02,   0,999.,  -1,-1,-1,-1,-1)& !No need for NO
- ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'H2O2 ',DH2O/1.4 , 1.4, 1.0E+05,   23, 7.0E+00,   1,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'ALD', DH2O/1.6 , 1.6, 1.5E+01,   -1, 1.0E+04,   0,100.,  -1,-1,-1,-1,-1)& !Acetaldehyde
- ,DD_t( 'HCHO ',DH2O/1.3 , 1.3, 6.0E+03,   -3, 1.0E+04,   0,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'ROOH',DH2O/1.6 , 1.6, 2.4E+02, 9999, 2.0E+00, 0.1,100.,  -1,-1,-1,-1,-1)& !Methyl hydroperoxide(was OP)
- ,DD_t( 'PAA  ',DH2O/2.0 ,   2, 5.4E+02, 9999, 6.0E+02, 0.1,  0.,  -1,-1,-1,-1,-1)& !Peroxyacetic acid
- ,DD_t( 'ORA',DH2O/1.6 , 1.6, 4.0E+06,   -8, 1.0E+04,   0,  0.,  -1,-1,-1,-1,-1)& !Formic acid'
- ,DD_t( 'NH3  ',19.78e-6 ,   1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1,-1)& 
- ,DD_t( 'PAN  ',DH2O/2.6 , 2.6, 3.6E+00, 9999, 3.0E+03, 0.1,  0.,  -1,-1,-1,-1,-1)&
- ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1,-1)&
+  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1)&
+ ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'H2O2 ',DH2O/1.4 , 1.4, 1.0E+05,   23, 7.0E+00,   1,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'ALD', DH2O/1.6 , 1.6, 1.5E+01,   -1, 1.0E+04,   0,100.,  -1,-1,-1,-1)& !Acetaldehyde
+ ,DD_t( 'HCHO ',DH2O/1.3 , 1.3, 6.0E+03,   -3, 1.0E+04,   0,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'ROOH',DH2O/1.6 , 1.6, 2.4E+02, 9999, 2.0E+00, 0.1,100.,  -1,-1,-1,-1)& !Methyl hydroperoxide(was OP)
+ ,DD_t( 'PAA  ',DH2O/2.0 ,   2, 5.4E+02, 9999, 6.0E+02, 0.1,  0.,  -1,-1,-1,-1)& !Peroxyacetic acid, 10
+ ,DD_t( 'ORA',DH2O/1.6 , 1.6, 4.0E+06,   -8, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Formic acid'
+ ,DD_t( 'NH3  ',19.78e-6 ,   1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& 
+ ,DD_t( 'PAN  ',DH2O/2.6 , 2.6, 3.6E+00, 9999, 3.0E+03, 0.1,  0.,  -1,-1,-1,-1)&
+ ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1)&
 ! Particles:
-!               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  DpgV    sig  rhop Gb Inddry
- ,DD_t( 'PMfS ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)& ! as SAI_F 
- ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)&! as SIA_F
- ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)&! as SIA_F
- ,DD_t( 'PMfSS',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,2,1)& ! as SSF
+!A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
+!               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV    sig  rhop Gb Inddry
+ ,DD_t( 'PMfS'  ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)& ! as SAI_F 
+ ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)&! as SIA_F
+ ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)&! as SIA_F
+ ,DD_t( 'SSf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,2)& ! as SSF
+ ,DD_t( 'DUf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,-1)& ! NEW?? CHECK
 !A2018 QUERY
- ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00e-6,2.0, 2200,1,2)& ! as PM QUERY
+ ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,2.0, 2200,1)& ! as PM QUERY 20
  ! SSc, DUc and POLLd have dummy values, CHECK!!
- ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00e-6,2.0, 2200,2,3)& ! as SSC
- ,DD_t( 'DUc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00e-6,2.0, 2200,-1,4)&! as DUC
- ,DD_t( 'POLLd',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00e-6,2.0, 2200,-1,-1)&
- ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 8.00e-9,2.0, 1400,-1,-1)&
- ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 6.00e-8,2.0, 1200,-1,-1)&
+ ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,2.0, 2200,2)& ! or rho 2000?
+ ,DD_t( 'DUc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,2.0, 2200,-1)&! or 2.2,2600?
+ ,DD_t( 'POLLd',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,2.0, 2200,-1)&
+ ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008,2.0, 1400,-1)&
+ ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06,2.0, 1200,-1)&
 ]
 
 ! from EMEP Aqueous
@@ -211,8 +212,9 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
        ,sigma    &! sigma of log-normal dist.  for particles
        ,lnsig2   &! log(sigma)**2  used for settling velocity
        ,rho_p    &! particle density
-       ,DpgV     &! volume-based geometric mean diameter
-       ,DpgN      ! number-based geometric mean diameter
+       ,DpgV     &! volume-based geometric mean diameter (m)
+       ,DpgN      ! number-based geometric mean diameter (m)
+    integer :: Gb     ! GerberClass ! 
     logical :: is_gas 
   end type ddep_t  
   type(ddep_t), public, allocatable, dimension(:), save :: DDspec
@@ -474,9 +476,10 @@ contains
 
       if ( idef <= NDRYDEP_GASES )  CYCLE ! Only particles here
 
-      DDspec(icmp)%sigma = DDdefs(idef)%sigma !just a copy
-      DDspec(icmp)%DpgV  = DDdefs(idef)%DpgV !just a copy
-      DDspec(icmp)%rho_p = DDdefs(idef)%rho_p !just a copy
+      DDspec(icmp)%sigma = DDdefs(idef)%sigma         !just a copy
+      DDspec(icmp)%rho_p = DDdefs(idef)%rho_p         !just a copy
+      DDspec(icmp)%Gb    = DDdefs(idef)%Gb            !just a copy
+      DDspec(icmp)%DpgV  = 1.0e-6 * DDdefs(idef)%umDpgV ! um -> m
 
      !... volume median diameter (Dp in EMEP notation. Will change!
      ! DpgN = Dpg in Seinfeld&Pandis
@@ -540,7 +543,7 @@ contains
 
       if(MasterProc .and. first_call ) then
         write(*,"(a,2f7.3,10es10.2)") "PM Coeffs,T,rho,nu,Dp,Dg", &
-           T,rho,  nu_air, DDdefs(idef)%DpgV, DDspec(icmp)%DpgN
+           T,rho,  nu_air, DDdefs(idef)%umDpgV, DDspec(icmp)%DpgN
         write(*,"(a,10es10.2)") "  Polydisperse Dx,Sc:", &
            DDspec(icmp)%Dx,DDspec(icmp)%Schmidt
         Dpg = Dpg*(1+2*1.246*FREEPATH/DDspec(icmp)%DpgN)  !just for check

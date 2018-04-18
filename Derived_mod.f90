@@ -226,12 +226,12 @@ subroutine Init_Derived()
 
 !A2018   select case(nint(AERO%DpgV(2)*1e7))
   iddefPMc = find_index('PMc',DDdefs(:)%name)
-  select case(nint(DDdefs(iddefPMc)%DpgV*1e7))
+  select case(nint(DDdefs(iddefPMc)%umDpgV*10))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
   end select
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
-    iddefPMc, fracPM25, nint(1.0e7* DDdefs(iddefPMc)%DpgV )
+    iddefPMc, fracPM25, nint(10* DDdefs(iddefPMc)%umDpgV )
 !S2018      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
   call CheckStop( fracPM25 < 0.01, dtxt//"NEED TO SET FRACPM25")
 

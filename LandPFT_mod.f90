@@ -8,7 +8,7 @@ module LandPFT_mod
 
 use CheckStop_mod,   only: CheckStop, StopAll
 use GridValues_mod,  only: debug_proc, debug_li, debug_lj, glon, glat
-use Config_module,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS&
+use Config_module,  only : DEBUG, MasterProc, PFT_MAPPINGS&
                                ,GLOBAL_LAInBVOCFile
 use NetCDF_mod, only: ReadField_CDF
 use Par_mod,         only: LIMAX, LJMAX, me
@@ -96,10 +96,10 @@ contains
 
  !==========================================================================
 
- subroutine MapPFT_BVOC(month)
+ subroutine MapPFT_BVOC(month,nbvoc)
 
 !.....................................................................
-!**    DESCRIPTION:
+!**    DESCRIPTION: (NOT USED!)
 
 !    Reads the processed LPJ-based LAIv and BVOC emission potentials.
 !    The LPJ data have been merged into 4 EMEP forest classes and two
@@ -108,6 +108,7 @@ contains
 
 
     integer, intent(in) :: month
+    integer, intent(in) :: nbvoc ! usually 3 for Eiso,Emt,Emtl
 
     real    :: lpj(LIMAX,LJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
@@ -118,7 +119,8 @@ contains
     
 return ! JAN31TEST
      if ( my_first_call ) then
-         allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,size(BVOC_USED)) )
+         !A2018 allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,size(BVOC_USED)) )
+         allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,nbvoc) )
          my_first_call = .false.
      end if
          
@@ -128,7 +130,7 @@ return ! JAN31TEST
 
 
      do pft =1, N_PFTS
-       do ivar =1, size( BVOC_USED ) 
+       do ivar =1, nbvoc ! size( BVOC_USED ) 
            varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft)) 
 
            call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&

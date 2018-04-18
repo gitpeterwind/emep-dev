@@ -32,7 +32,7 @@
     !A2019 use ChemRates_rct_mod,   only: rct
     use Config_module,     only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
                                 ,DebugCell, MasterProc, DEBUG, USES &
-                                ,YieldModifications
+                                ,NATBIO, YieldModifications
     use DefPhotolysis_mod         ! => IDHNO3, etc.
     use EmisDef_mod,      only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
