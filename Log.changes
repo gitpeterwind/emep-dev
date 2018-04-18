@@ -137,7 +137,13 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17-18 April 2018, Alvaro
 
+Radiation_mod:
+  Fix error on sunrise/sunset caused. The hourangle returned radians instad
+  of degrees. This functions are, so far, only used on the development
+  of Pollen emissions (FORECAST mode).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 April 2018, Dave

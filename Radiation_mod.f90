@@ -521,15 +521,15 @@ contains
       COS_ZENITH = cos(DEG2RAD*ANG_ZENITH)
     ha = acos(COS_ZENITH/(cos(DEG2RAD*lat)*cosrdecl)-tan(lat)*tan_decl)*RAD2DEG
   end function hourangle
-  elemental function sunrise(lat,lon) result (noon)
+  elemental function sunrise(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
-    real :: noon
-    noon = solarnoon(lon+hourangle(lat))
+    real :: hour
+    hour = solarnoon(lon+hourangle(lat))
   end function sunrise
-  elemental function sunset(lat,lon) result (noon)
+  elemental function sunset(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
     real :: noon
-    noon = solarnoon(lon-hourangle(lat))
+    hour = solarnoon(lon-hourangle(lat))
   end function sunset
 !===============================================================
 end module Radiation_mod
