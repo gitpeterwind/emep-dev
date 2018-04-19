@@ -138,6 +138,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 April 2018, Dave
+
+ZCM_OLD - new directory.
+          All pre-A2018 ZCM directories moved here.
+          Cannot be used with new system
+
+Radiation_mod: needed to declare real hour
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17-18 April 2018, Alvaro
 
 Radiation_mod:
