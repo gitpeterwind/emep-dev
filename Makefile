@@ -127,10 +127,9 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_mod.f90 \
-	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90 \
-	  ./ZD_EXTRA/My_ESX_mod.f90
+	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90
 
 SR-EMEP:    EMEP              # SR is only a different config_emep.nml
 MACC-NMC:   MACC-EVA          # EVA run, with different nest/dump output
@@ -141,24 +140,19 @@ Pollen:     MACC-Pollen
 MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
 MACC MACC-Pollen: ./ZD_Pollen/Pollen_mod.f90 ./ZD_Pollen/Pollen_const_mod.f90
 
-# ESX
-EmChem09-ESX: SRCS := $(filter-out My_ESX_mod.f90,$(SRCS)) $(ESX_SRCS)
-EmChem09-ESX: $(ESX_SRCS) | depend
-
 # Test
 TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 #DSA2018# GenChem config
 #DSA2018.SECONDEXPANSION:
 #DSA2018EMEP:               GenChem-EMEP-EmChem16a
 #DSA2018EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
-#DSA2018EmChem09-ESX:       GenChem-EMEP-EmChem09
 #DSA2018HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
 #DSA2018MACC-EVA:           GenChem-MACCEVA-EmChem16a
 #DSA2018MACC-Pollen:        GenChem-MACCEVA-Pollen
