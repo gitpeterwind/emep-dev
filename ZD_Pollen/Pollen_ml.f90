@@ -327,7 +327,7 @@ subroutine pollen_flux(i,j,debug_flag)
 
   ! Heatsum: sums up the temperatures that day for all time-steps
   do g=1,POLLEN_NUM
-    if(.not.pollen_out(g)) cycle
+    if(pollen_out(g)) cycle
     select case(g)
     case(iBIRCH,iOLIVE)
       call heatsum_calc(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
