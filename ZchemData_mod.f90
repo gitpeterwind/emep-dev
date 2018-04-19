@@ -9,10 +9,11 @@
   !
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
-  use AllocInits,    only: AllocInit
-  use ChemDims_mod,  only: NCHEMRATES, nspec => NSPEC_TOT, &
+  use AeroConstants_mod, only: AERO ! for %NSAREA = No types surface area
+  use AllocInits,        only: AllocInit
+  use ChemDims_mod,      only: NCHEMRATES, nspec => NSPEC_TOT, &
       NPHOTOLRATES !A2018 QUERY new usage
-  use Config_module, only: KCHEMTOP, KMAX_MID, AERO ! for %NSAREA = No types surface area
+  use Config_module,     only: KCHEMTOP, KMAX_MID
   implicit none
   private
 

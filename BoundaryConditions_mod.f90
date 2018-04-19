@@ -730,7 +730,7 @@ subroutine My_bcmap(iyr_trend)
   end do
 
   !/- mappings for species from Logan + obs model given with IBC index.
-  include 'CM_BoundaryConditions.inc'
+  include 'BoundaryConditions_CM.inc'
 end subroutine My_bcmap
 
 subroutine Set_bcmap()

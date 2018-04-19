@@ -99,7 +99,7 @@ end type bbtype
 !----------------------------------------------
 !=> NBB_DEFS, NEMEPSPECS, FF_defs(NBB_DEFS)
 
-  include 'BiomassBurningMapping.inc' 
+  include 'BiomassBurningMapping_CM.inc' 
 
 !----------------------------------------------
 ! matrix to get from forest-fire species to EMEP ones

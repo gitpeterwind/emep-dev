@@ -14,12 +14,13 @@ module ChemFunctions_mod
 !** includes
 !   troe - standard chemical function
 !____________________________________________________________________
- use AeroFunctions,         only : UptakeRate, GammaN2O5_EJSS, GammaN2O5
- use CheckStop_mod,          only : StopAll
+ use AeroConstants_mod,     only: AERO
+ use AeroFunctions_mod,         only: UptakeRate, GammaN2O5_EJSS, GammaN2O5
+ use CheckStop_mod,         only: StopAll
  use ChemSpecs_mod,             only : SO4, NO3_f, NH4_f, NO3_c
 ! use Config_module,         only : DebugCell, DEBUG  ! set with DEBUG%RUNCHEM
  use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
- use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
+ use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES
  use PhysicalConstants_mod,  only : AVOG, RGAS_J, DAY_ZEN
  use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, M, &
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &

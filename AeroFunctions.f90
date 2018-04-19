@@ -2,7 +2,7 @@
 ! A collection of functions as used in the EMEP model or in some cases
 ! just for testing.
 !*****************************************************************************! 
-module AeroFunctions
+module AeroFunctions_mod
 !____________________________________________________________________
 !
  use PhysicalConstants_mod, only : AVOG, RGAS_J, PI
@@ -49,7 +49,9 @@ module AeroFunctions
   !========================================
 
   !---------------------------------------------------------------------
-  !> FUNCTION DpgV2DpgN ! from mass/volume Dp to number Dp
+  !> FUNCTION DpgV2DpgN ! from mass/volume Dp median to number median Dp
+  ! NB:  Senfeld & Pandis use \overline{D_{pgV}} for volume median and
+  ! \overline{D_{pg}} for number median
 
   function DpgV2DpgN(DpgV,sigma_g) result (DpgN)
       real, intent(in) :: DpgV,sigma_g
@@ -58,7 +60,7 @@ module AeroFunctions
    end function DpgV2DpgN
 
   !---------------------------------------------------------------------
-  !> FUNCTION DpgN2DpgV  ! from number Dp to mass/volume Dp
+  !> FUNCTION DpgN2DpgV  ! from number Dp to mass/volume median Dp
 
    function DpgN2DpgV(DpgN,sigma_g) result (DpgV)
       real, intent(in) :: DpgN,sigma_g
@@ -360,7 +362,7 @@ module AeroFunctions
          ,rho_kgm3        !< density, kg/m3 
 
      real :: S            !< Surface area, m2 per m3 air
-     real :: rho, rdry, rwet, sigFac, dryvol, totvol
+     real :: dryvol, rho, rdry, rwet, sigFac, totvol
      real :: rhod, fwetvol
 
      rho = 1600.0                                  !< kg/m3 default
@@ -522,7 +524,6 @@ module AeroFunctions
   !---------------------------------------------------------------------
   ! Gamma functions as mixture of SIA, OM, and other 
 
-  !elemental function GammaN2O5(t,frh,fno3sia,fom,fss,fdust,fbc) result(gam) 
   elemental function GammaN2O5(t,frh,fso4sia,fom,fss,fdust,fbc) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
    ! fraction of organic matter, sea-salt, dust in aerosol
@@ -740,9 +741,9 @@ module AeroFunctions
    end do
 
   end subroutine self_test_fracs
-end module AeroFunctions
+end module AeroFunctions_mod
 !TSTEMX program tstr
-!TSTEMX use AeroFunctions, only : self_test, self_test_fracs
+!TSTEMX use AeroFunctions_mod, only : self_test, self_test_fracs
 !TSTEMX implicit none
 !TSTEMX call self_test()
 !TSTEMX !call self_test_fracs()

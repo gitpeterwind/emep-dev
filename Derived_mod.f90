@@ -16,13 +16,9 @@ module Derived_mod
 ! not needed. It then doesn't need to be commented out if not used.
 !---------------------------------------------------------------------------
 
-use My_Derived_mod, only : &
-    wanted_deriv2d, wanted_deriv3d, & ! names of wanted derived fields
-    Init_My_Deriv, My_DerivFunc,    &
-    OutputFields, nOutputFields,    &
-    nOutputMisc, OutputMisc,        &
-    nOutputWdep, WDEP_WANTED, D3_OTHER
-
+use AeroConstants_mod, only: AERO
+use AOD_PM_mod,        only: AOD_init,aod_grp,wavelength,& ! group and
+                                wanted_wlen,wanted_ext3d      ! wavelengths
 use AOTx_mod,          only: Calc_GridAOTx
 use Biogenics_mod,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_mod,     only: CheckStop
@@ -34,6 +30,23 @@ use Chemfields_mod ,   only: so2nh3_24hr,Grid_snow
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemGroups_mod          ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_mod           ! IXADV_ indices etc
+use Config_module,     only: &
+   KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
+  ,NPROC              & ! No. processors
+  ,dt_advec           &
+  ,PPBINV             & ! 1.0e9, for conversion of units
+  ,PPTINV             & ! 1.0e12, for conversion of units
+  ,DEBUG              & ! gives DEBUG%AOT
+  ,PT                 &
+  ,FORECAST           & ! only daily (and hourly) output on FORECAST mode
+  ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
+  ,num_lev3d,lev3d    & ! 3D levels on 3D output
+  ! output types corresponding to instantaneous,year,month,day
+  ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
+  ,MasterProc, SOURCE_RECEPTOR &
+  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
+  HourlyEmisOut
+
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
@@ -49,27 +62,14 @@ use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
                             met, derivmet,  & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
-use Config_module, only: &
-   KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
-  ,NPROC              & ! No. processors
-  ,dt_advec           &
-  ,PPBINV             & ! 1.0e9, for conversion of units
-  ,PPTINV             & ! 1.0e12, for conversion of units
-  ,DEBUG              & ! gives DEBUG%AOT
-  ,AERO               & ! for DpgV (was diam) -  aerosol MMD (um)
-  ,PT                 &
-  ,FORECAST           & ! only daily (and hourly) output on FORECAST mode
-  ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
-  ,num_lev3d,lev3d    & ! 3D levels on 3D output
-  ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
-  ,MasterProc, SOURCE_RECEPTOR &
-  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
-  HourlyEmisOut
-
-use AOD_PM_mod,            only: AOD_init,aod_grp,wavelength,& ! group and
-                                wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
+use My_Derived_mod, only : &
+    wanted_deriv2d, wanted_deriv3d, & ! names of wanted derived fields
+    Init_My_Deriv, My_DerivFunc,    &
+    OutputFields, nOutputFields,    &
+    nOutputMisc, OutputMisc,        &
+    nOutputWdep, WDEP_WANTED, D3_OTHER
+
 use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_mod,      only: Deriv, print_Deriv_type, &
                                 TXTLEN_DERIV,TXTLEN_SHORT,TXTLEN_IND ! type & length of names

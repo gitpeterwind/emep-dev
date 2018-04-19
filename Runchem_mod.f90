@@ -7,6 +7,7 @@
 
 module RunChem_mod
 
+  use AeroConstants_mod,only: AERO
   use AerosolCalls,     only: AerosolEquilib & !-> My_MARS, My_EQSAM, &
                              ,Aero_water, Aero_water_MARS 
   use My_Timing_mod,     only: Code_timer, Add_2timing,  &
@@ -21,10 +22,9 @@ module RunChem_mod
   use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
   use ChemSpecs_mod                     ! DEBUG ONLY
   use ColumnSource_mod,  only: Winds, getWinds
-  use Config_module,    only: USES, & 
-                              MasterProc, & 
+  use Config_module,    only: MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
-                              AERO, USES, & ! need USES%EMISSTACKS and more 
+                              USES, & ! need USES%EMISSTACKS and more 
                               USE_FASTJ, &
                               dt_advec, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS

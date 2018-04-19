@@ -144,6 +144,11 @@ ZCM_OLD - new directory.
           All pre-A2018 ZCM directories moved here.
           Cannot be used with new system
 
+Aero2017nx reactions added to ZCM_EmChem16x
+
+AeroConstants_mod: NEW - to store AERO and NSAREA_DEF and avoid 
+  circularity
+
 Radiation_mod: needed to declare real hour
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

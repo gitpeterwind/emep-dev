@@ -15,7 +15,7 @@
 !..............................................................................
 
 module GasParticleCoeffs_mod
-  use AeroFunctions,         only: DpgV2DpgN
+  use AeroFunctions_mod,     only: DpgV2DpgN
   use CheckStop_mod,         only: CheckStop, checkValid, StopAll
   use ChemDims_mod
   use ChemSpecs_mod           ! speces and define_chemicals for self_test

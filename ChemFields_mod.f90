@@ -1,13 +1,14 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+use AeroConstants_mod,  only: AERO       ! =>  z dimension
 use AllocInits,     only: AllocInit
 use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
                           NCHEMRATES, NPHOTOLRATES 
 use ChemSpecs_mod,  only: FIRST_SEMIVOL, LAST_SEMIVOL    ! -999 unless SOA used
-use Config_module,  only: KMAX_MID, KCHEMTOP, AERO       ! =>  z dimension
-use Config_module,  only: NATBIO ! for Nrcbio
-use NumberConstants,  only: UNDEF_R
-use Par_mod,        only: LIMAX,LJMAX   ! => x, y dimensions
+use Config_module,  only: KMAX_MID, KCHEMTOP &           ! =>  z dimension
+                         ,NATBIO                         ! for Nrcbio
+use NumberConstants,only: UNDEF_R
+use Par_mod,        only: LIMAX,LJMAX                    ! => x, y dimensions
 use ZchemData_mod    ! rct, h2o, ..
 implicit none
 private

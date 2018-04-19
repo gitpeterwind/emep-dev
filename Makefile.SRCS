@@ -1,7 +1,8 @@
 #=============================================================================
 # DLETE ChemSpecs_wrapper.f90
 SRCS ?=	\
-	AeroFunctions.f90 Aero_Vds_mod.f90 Ammonium_mod.f90 AOD_PM_mod.f90 \
+	AeroConstants_mod.f90 AeroFunctions.f90 Aero_Vds_mod.f90 \
+	Ammonium_mod.f90 AOD_PM_mod.f90 \
 	Advection_mod.f90 AirEmis_mod.f90 AllocInit.f90 \
 	AOTnPOD_mod.f90 Aqueous_n_WetDep_mod.f90 \
 	BiDir_emep.f90 BiDir_module.f90 \

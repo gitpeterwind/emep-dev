@@ -5,7 +5,8 @@ module Setup_1d_mod
 ! fields are stored in the ZchemData_mod module.
 !-----------------------------------------------------------------------!
 
-use AeroFunctions,    only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AeroConstants_mod,only: AERO,NSAREA_DEF   ! for aerosol surface area
+use AeroFunctions_mod,only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
 use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
 use Biogenics_mod,    only: SoilNOx
 use Biogenics_mod,    only: EMIS_BioNat, EmisNat  
@@ -21,12 +22,10 @@ use CheckStop_mod,    only:  CheckStop, StopAll
 use ColumnSource_mod, only: ColumnRate
 use Config_module,    only:  &
    DEBUG,DEBUG_MASS,DebugCell   &
-  ,AERO                         & ! for wet radii and surf area.
   ,SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
   ,MasterProc                   & 
-  ,NSAREA_DEF                   & ! for aerosol surface area
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
@@ -351,7 +350,7 @@ contains
             if ( ipm < 1 ) CYCLE ! Component missing !
 
             Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
-            if ( DDspec(ipm)%Gb < 1 ) then
+            if ( DDspec(ipm)%Gb > 1 ) then
               DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), DDspec(ipm)%Gb ) 
             else
               DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry

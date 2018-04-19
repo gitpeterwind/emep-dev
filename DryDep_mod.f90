@@ -34,6 +34,7 @@ module DryDep_mod
 ! Autumn/Winter 2017-2018
 ! FUTURE: BiDir functionality (Dave/Roy Wichink Kruit) using Roy's methods
   
+use AeroConstants_mod, only: AERO
 use Aero_Vds_mod,      only: SettlingVelocity, GPF_Vds300, Wesely300
 use BiDir_emep
 use BiDir_module
@@ -44,8 +45,7 @@ use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
 use ChemSpecs_mod            ! several species needed
 use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                             DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
-                            USES, AERO, &
-                            USE_SOILNOX, &
+                            USES, USE_SOILNOX, &
                             MasterProc, &
                             PPBINV,&
                             KUPPER, NLANDUSEMAX

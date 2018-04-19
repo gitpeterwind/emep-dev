@@ -9,18 +9,19 @@
 
 module AerosolCalls
 
- use Ammonium_mod,          only : Ammonium
- use CheckStop_mod,         only : StopAll, CheckStop
- use ChemDims_mod,          only : NSPEC_SHL
+ use AeroConstants_mod,     only: AERO
+ use Ammonium_mod,          only: Ammonium
+ use CheckStop_mod,         only: StopAll, CheckStop
+ use ChemDims_mod,          only: NSPEC_SHL
 !2018 not used use ChemGroups_mod,        only : SS_GROUP, RDN_GROUP
  use ChemSpecs_mod
- use Chemfields_mod,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
+ use Chemfields_mod,        only:  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
- use EQSAM_v03d_mod,        only :  eqsam_v03d
- use MARS_mod,              only :  rpmares, rpmares_2900, DO_RPMARES_new
- use Config_module,    only :  KMAX_MID, KCHEMTOP, DEBUG, MasterProc, AERO
- use PhysicalConstants_mod, only :  AVOG
- use ZchemData_mod,    only :  xn_2d, temp, rh, pp
+ use EQSAM_v03d_mod,        only:  eqsam_v03d
+ use MARS_mod,              only:  rpmares, rpmares_2900, DO_RPMARES_new
+ use Config_module,         only:  KMAX_MID, KCHEMTOP, DEBUG, MasterProc
+ use PhysicalConstants_mod, only:  AVOG
+ use ZchemData_mod,         only:  xn_2d, temp, rh, pp
  implicit none
  private
 
