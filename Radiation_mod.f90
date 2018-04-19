@@ -528,7 +528,7 @@ contains
   end function sunrise
   elemental function sunset(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
-    real :: noon
+    real :: hour
     hour = solarnoon(lon-hourangle(lat))
   end function sunset
 !===============================================================
