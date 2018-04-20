@@ -519,7 +519,7 @@ contains
     real, parameter ::      &
       ANG_ZENITH = 90.833,  &
       COS_ZENITH = cos(DEG2RAD*ANG_ZENITH)
-    ha = acos(COS_ZENITH/(cos(DEG2RAD*lat)*cosrdecl)-tan(lat)*tan_decl)*RAD2DEG
+    ha = acos(COS_ZENITH/(cos(DEG2RAD*lat)*cosrdecl)-tan(DEG2RAD*lat)*tan_decl)*RAD2DEG
   end function hourangle
   elemental function sunrise(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
