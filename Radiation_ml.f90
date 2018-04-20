@@ -447,23 +447,15 @@ contains
   end function solarnoon
   !-----------------------------------------------------------------
   ! sunrise/sunset
-  elemental function hourangle(lat) result (ha)
-    real, intent(in) :: lat    !  latitude, deg.
-    real :: noon, ha
-    real, parameter ::      &
-      ang_zenith = 90.833,  &
-      cos_zenith = cos(DEG2RAD*ang_zenith)
-    ha = acos(cos_zenith/(cos(DEG2RAD*lat)*cosrdecl)-tan(lat)*tan_decl)*RAD2DEG
-  end function hourangle
-  elemental function sunrise(lat,lon) result (noon)
+  elemental function sunrise(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
-    real :: noon
-    noon = solarnoon(lon+hourangle(lat))
+    real :: hour
+    hour = solarnoon(lon)-daylength(lat)*0.5  ! it can be < 00UTC
   end function sunrise
-  elemental function sunset(lat,lon) result (noon)
+  elemental function sunset(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
-    real :: noon
-    noon = solarnoon(lon-hourangle(lat))
+    real :: hour
+    hour = solarnoon(lon)+daylength(lat)*0.5  ! it can be > 24UTC
   end function sunset
 !===============================================================
 end module Radiation_ml

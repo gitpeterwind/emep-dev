@@ -459,7 +459,7 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT(g))               ! prob. flowering end
   case(OLIVE)
     g=iOLIVE
-    dH_olive = olive_dH(i,j)*24*3600   ! Flowering period [degree seconds] olive
+    dH_olive = olive_dH(i,j)*86400.0   ! Flowering period [degree seconds] olive
     scale = scale &
       *(t2_nwp(i,j,1)-T_cutoff(g))/dH_olive &
       *f_in(heatsum(i,j,g),pollen_h_c(i,j,g),PROB_IN(g)) &! prob. flowering start
@@ -468,6 +468,7 @@ function scale_factor(spc) result(scale)
     g=iRWEED
     sec_since_sunrise=(current_date%hour-sunrise(glat(i,j),glon(i,j)))*3600 &
                       +current_date%seconds
+    sec_since_sunrise=modulo(sec_since_sunrise,86400.0)
     scale = rweed_corr(i,j) &
       *regweed_normal_diurnal(daynumber,sec_since_sunrise,&
           rweed_start(i,j),EndCDThr_rweed)          ! StartCDThr,EndCDThr
