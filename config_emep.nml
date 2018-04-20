@@ -1,15 +1,16 @@
 &INPUT_PARA
-  GRID      = 'EECCA',
-  iyr_trend = 2010,
+  GRID      = 'EMEP0302',
+  iyr_trend = 2016,
   runlabel1 = 'Base',
-  runlabel2 = 'rv4_15a_EmChem16mt_svnexporte_Base_2010_Trend2010',
-  startdate = 2010,01,01,00,
-  enddate   = 2010,01,01,24,
+  runlabel2 = 'rv4_18',
+  startdate = 2016,01,01,00,
+  enddate   = 2016,01,01,24,
 &end
 &Machine_config
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
   DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+  DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -84,7 +85,7 @@
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
 !  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
-  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII_2011.nc',
 !  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 ! PANDA=HTAP+MEIC
