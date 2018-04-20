@@ -1,0 +1,29 @@
+#
+# Usage: 
+#  mk.Chem A2018
+#
+# Copies files from ZCM_XXXX to current directory. These files are 
+# mainly produce by the ecosx/GenChem through the following steps:
+# 1. cd ecosx/box/src
+# 2. ../scripts/emep_setup.sh EmChem16  (for example)
+# 3. Send ZCM_EmChem16 to stallo/vilje
+# 4. Sort out BiomassBurningMapping and BoundaryConditions
+
+chem=$1
+echo CHEM $chem
+
+if [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
+  echo "Processing $chem"
+  cp ZCM_$chem/CM* .
+  cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
+  cp ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc BiomassBurningMapping_CM.inc
+else
+  echo "Not found $chem"
+fi
+
+# ZCM_$chem has:
+# BoundaryConditions_$chem.inc BiomassBurningMapping_FINNv1.5_to_$chem.inc
+# CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 #
+# CM_ChemSpecs_mod.f90 CM_DryDep.inc CM_EmisFile.inc CM_emislist.csv
+# CM_EmisSpecs.inc CM_Reactions1.inc CM_Reactions2.inc CM_Reactions.log
+# CM_WetDep.inc emissplit_run
