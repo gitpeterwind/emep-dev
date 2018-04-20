@@ -149,6 +149,10 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 mk.ChemFiles: NEW - to collect CM files from ZCM_ directories
 
+New split files (EmChem16x) added into DataDir/inputs_emepdefaults_Apr2018
+and config files (config_A2018.nml for run.pl, config_emep.nml for
+stallo sbatch).
+
 Added "IMPORTANT NOTE" for A2018 stuff above
 
 MOVED:
