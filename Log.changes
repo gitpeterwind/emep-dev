@@ -1,126 +1,3 @@
-IMPORTANT NOTE:
-
-  * Instructions to run *
-    check out clean version of Unimod (safest as there are several new files)
-
-    Options:
-
-    1) Use the make system (stallo/vilje only!), e.g. type:
-        make EMEP
-        make SR-EMEP is an alias for make EMEP, as the only differ on config_emep.nml
-
-      or other targets. See Makefile for these
-
-       This is the easiest and safest method as of 2012!!
-
-****** PLEASE READ CAREFULLY  "*****Run/Make examples:" SECTION BELOW
-    BEFORE SUBMITTING ANY RUN  **********************************
-
-
-    2) By hand:
-
-    edit mk.GenChem, set "run" if not default (=EmChem09)
-     (type mk.GenChem -h for some examples)
-    mk.GenChem
-    cp ZD_OZONE/My* .
-  [option: if SOA wanted, do:
-    cp ZD_VBS/My* .          # gets MySOA_ml and My_Derived including SOA
-  ]
-    make clean
-    make
-    edit run.pl for year, Chem etc.
-
-   [option: if SR wanted, cp ZD_SR/My* .]
-
-*****    Run/Make examples:
-  2011 Base run:
-    * Set USE_ASH=T in config_EMEPSTD.nml to use Grimsvotn eruption data.
-    * Compile the model with `make EMEP`, ash tracers included by default.
-    * Run with $year=2011 and $MAKEMODE="EMEP" in run.pl.
-  2011 SR run:
-    * Set USE_ASH=T in config_EMEPSTD.nml to use Grimsvotn eruption data.
-    * Compile the model with `make SR-EMEP`, ash tracers included by default.
-    * Run with $year=2011, $SR=1 and $MAKEMODE="EMEP" in run.pl.
-  2010 Base run
-    * Set USE_ASH=T in config_EMEPSTD.nml to use Eyjafjöll eruption data.
-    * Compile the model with `make EMEP`, ash tracers included by default.
-    * Run $year=2010 and $MAKEMODE="EMEP" in run.pl.
-  2010 SR run
-    * Set USE_ASH=T in config_EMEPSTD.nml to use Eyjafjöll eruption data.
-    * Compile the model with `make SR-EMEP`, ash tracers included by default.
-    * Run with $year=2010, $SR=1 and $MAKEMODE="EMEP" in run.pl.
-  2009 Base run (or any other year<2010)
-    * Compile the model with `make EMEP`.
-    * Run $year=2009 and $MAKEMODE="EMEP" in run.pl.
-  2009 SR run (or any other year<2010)
-    * Compile the model with `make SR-EMEP`.
-    * Run with $year=2009, $SR=1 and $MAKEMODE="EMEP" in run.pl.
-
-  Modules & Make in stallo/vilje
-    Since rv4rc8, the modules required for compilation are set and tested on Makefile.
-    This is done to ensure that the model is compiled/linked with consistent compiler/libraries.
-    Please add the following lines to your ~/.bashrc file
-
-## Unimod: Modules & Make
-export MACHINE=vilje               # select stallo/vilje machine
-case $MACHINE in                   # modules needed to compile Unimod
- stallo)EMEPMODULES="netCDF-Fortran/4.4.4-intel-2016b";;
-  vilje)EMEPMODULES="intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0 fftw/3.3.3";;
-esac
-[[ -z "$MODULESHOME" && -s /etc/profile.d/modules.sh ]] &&
-  . /etc/profile.d/modules.sh      # load modulecmd wraper, fi needed
-if [[ -n "$EMEPMODULES" ]]; then
-  module purge                     # unload default modules
-  module load  $EMEPMODULES        # load versions needed by Unimod
-fi
-
-    Inputs
-
-     HDD (Degree Day files)
-     ----------------------
-     If you get an error message such as:
-
-
- ERROR: Missing!!! in check-file:DegreeDayFactors.nc    (rv4_1_7 onwards)
-
- Or in earlier versions:
-
- Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc
-
-     if you are using a regional European domain, you may need to generate this file. Use:
-
-      *  meteoPreProc from utils sub-directory, use e.g. mk.meteoPreProc script.
-
-       Otherwise you should set USES%DEGREEDAY_FACTORS = F in config file
-
-
-SOIL NOx ISSUES - Mainly think about (1) for policy
-
-This versions works for European soil-NO emissions, but work still
-needed on a few issues for e.g. global usage, or NH3
-
-    (1) Soil-NO needs maps of annual N-deposition.
-        Need to have climatalogical values, e.g.  5-year avg.
-        Also need to consider "trends" for future scenarios
-
-        Currently done with mkcdo.Ndep_5yrs in mifads/bin directory
-        on stallo.
-
-    (2) Can now have either the hourly calculations or the monthly
-        global fields. Ideal is probably hourly for Europe and
-        monthly outside.
-
-    (3) Not sure the global soil works, since now rcbio is used
-        check
-
-    (4) NH3 should be in reactions too?
-
-KNOWN PROBLEMS
-
-ForestFire bug cleaned out for FINN, EmChem09soa.
-Needs to be repeated for other combinations
-
-
 =============================================================================
 IMPORTANT NOTE:
 
@@ -143,6 +20,16 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 April 2018, Peter
+
+All "very important messages" at head of Log.changes removed, as most of them where 
+outdated, and just make people think that nothing is valid.
+
+Updated link to emissplit in Config_module.f90. Can be overridden by config
+
+Added a format in StopAll message, so that path do not get cut.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 April 2018, Dave
