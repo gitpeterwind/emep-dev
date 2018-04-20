@@ -16,7 +16,7 @@ module AOD_PM_mod
 !-----------------------------------------------------------------------!
 use ChemSpecs_mod
 use Chemfields_mod,        only: AOD, Extin_coeff
-use ChemGroups_mod,        only: chemgroups
+use ChemGroups_mod,        only: chemgroups_maps
 use CheckStop_mod,         only: CheckStop
 use GridValues_mod,        only: i_fdom, j_fdom
 use MetFields_mod,         only: z_bnd
@@ -47,8 +47,6 @@ logical, public, save :: &
   wanted_wlen(W340:W1020)=.false., & ! calculate AOD/EXT if output requires it
   wanted_ext3d=.false.               ! calculate  3D EXT if output requires it
 
-integer, public, save, pointer,dimension(:) :: aod_grp=>null()
-
 !  Note - These dry/wet extinction prototypes are for "master" or model species.
 !  They do not need to be present in the chemical scheme.
 !  However, the chemical scheme needs to define after one of these prototypes.
@@ -66,16 +64,12 @@ integer, public, parameter :: &
   CEXT_NO3f=CEXT_SO4,   & ! NO3_f as SO4
   CEXT_NO3c=9             ! NO3_c sitting on SSc:
                           ! assume rho_dry as SO4, Q and GF as SSc
+integer, private, save :: NUM_EXT=0
+integer, public, save, allocatable :: aod_grp(:)
 type :: ExtEffMap
   integer :: itot,cext
 end type ExtEffMap
-
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-!A2018 include 'CM_AerExt.inc'
-!TMP!!!
-integer, public, parameter :: NUM_EXT =0 !DS  24 - 10 - 10   !DS
-type(ExtEffMap), public, dimension(NUM_EXT), save :: ExtMap
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+type(ExtEffMap), private, save, allocatable :: ExtMap(:)
 
 integer, parameter :: NumRH=7
 real, parameter, dimension(NumRH) ::          &
@@ -341,16 +335,37 @@ subroutine AOD_init(msg,wlen,out3d)
     wanted_ext3d=wanted_ext3d.or.out3d
   end if
 !-----------------------------------------------------------------------!
-! Consistency checks for older model versions using AOD_GROUP
+! Unpack EXTINC mapping 
+!  ExtMap%itot: species 
+!  ExtMap%cext: extinction prototype
+!  aod_grp: ExtMap%itot for public usage
 !-----------------------------------------------------------------------!
-  if(.not.associated(aod_grp))then
-    igrp=find_index('AOD',chemgroups%name)
-    if(igrp<1) return   ! AOD group no longer used... nothing to check
-    aod_grp=>chemgroups(igrp)%specs
-    call CheckStop(size(aod_grp),NUM_EXT,&
-      trim(msg)//" Incompatibe AOD_GROUP size")
-    call CheckStop(any(aod_grp/=ExtMap%itot),&
-      trim(msg)//" Incompatibe AOD_GROUP def.")
+  if(.not.allocated(aod_grp))then
+    igrp=find_index('EXTINC',chemgroups_maps%name)
+    call CheckStop(igrp<1,trim(msg)//" EXTINC mapping not found")
+    NUM_EXT=size(chemgroups_maps(igrp)%species)
+    allocate(aod_grp(NUM_EXT),ExtMap(NUM_EXT))
+    do n=1,NUM_EXT
+      aod_grp(n)=chemgroups_maps(igrp)%species(n)
+      ExtMap(n)%itot=aod_grp(n)
+      select case(chemgroups_maps(igrp)%maps(n))
+        case('DDf' );ExtMap(n)%cext=CEXT_DDf
+        case('DDc' );ExtMap(n)%cext=CEXT_DDc
+        case('SSf' );ExtMap(n)%cext=CEXT_SSf
+        case('SSc' );ExtMap(n)%cext=CEXT_SSc
+        case('ECn' );ExtMap(n)%cext=CEXT_ECn
+        case('ECa' );ExtMap(n)%cext=CEXT_ECa
+        case('EC'  );ExtMap(n)%cext=CEXT_EC
+        case('OC'  );ExtMap(n)%cext=CEXT_OC
+        case('SO4' );ExtMap(n)%cext=CEXT_SO4
+        case('NH4f');ExtMap(n)%cext=CEXT_NH4f
+        case('NO3f');ExtMap(n)%cext=CEXT_NO3f
+        case('NO3c');ExtMap(n)%cext=CEXT_NO3c
+        case default
+          call CheckStop(trim(msg)//" Unknown EXTINC mapping "//&
+                         trim(chemgroups_maps(igrp)%maps(n)))
+      end select
+    end do
   end if   
 !-----------------------------------------------------------------------!
 ! Consistency checks for Qm_ref array
@@ -456,4 +471,3 @@ subroutine AOD_Ext(i,j,debug)
     '>>>  AOD / AODs  <<<', i_fdom(i), j_fdom(j), sum(AOD(:,i,j,W550)), AOD_cext(:)
 end subroutine AOD_Ext
 endmodule AOD_PM_mod
-
