@@ -512,13 +512,13 @@ contains
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
     real :: hour
     hour = solarnoon(lon)-daylength(lat)*0.5
-    hour = min(max(hour,0.0),24.0)
+   !hour = min(max(hour,0.0),24.0)
   end function sunrise
   elemental function sunset(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
     real :: hour
     hour = solarnoon(lon)+daylength(lat)*0.5
-    hour = min(max(hour,0.0),24.0)
+   !hour = min(max(hour,0.0),24.0)
   end function sunset
 !===============================================================
 end module Radiation_mod
