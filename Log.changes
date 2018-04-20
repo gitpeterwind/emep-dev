@@ -120,17 +120,23 @@ KNOWN PROBLEMS
 ForestFire bug cleaned out for FINN, EmChem09soa.
 Needs to be repeated for other combinations
 
-TERPPEROXY
 
+=============================================================================
 IMPORTANT NOTE:
 
-All CM_ files are removed from the cvs system. You have to
-run GenChem!!!
+April 2018 (A2018 changes)
 
-Run mk.GenChem  or e.g. make EMEP, see above!!!!
+CM files have to prepared first and placed in the ZCM_ directories. This preparation
+should be done from the new ecosx/box/src directory - see the README_emep_setup.md
+there.
 
-Also - GenChem makes femis.defaults in the ZCM_... directory
+Then, to get e.g. EmChem16x chemistry, run:
 
+    mk.ChemFiles EmChem16x
+
+ToDo?? - GenChem makes femis.defaults in the ZCM_... directory
+
+=============================================================================
 !----------------------------------------------------------
 CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
@@ -143,9 +149,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 mk.ChemFiles: NEW - to collect CM files from ZCM_ directories
 
+Added "IMPORTANT NOTE" for A2018 stuff above
+
 MOVED:
 GenChem.pl to ZCM_OLD  - not used now
 mk.GenCheml to ZCM_OLD - not used now
+
+ZCM_EmChem16x
+ - added CM files
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 April 2018, Dave
 
