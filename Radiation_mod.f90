@@ -28,7 +28,6 @@ module Radiation_mod
   public :: daytime       !> true if zen < 89.9 deg
   public :: daylength     !> Lenght of day, hours
   public :: solarnoon     !> time of solarnoon, hours
-  private :: hourangle    !> hour angle for sunrise/sunset special case
   public :: sunrise       !> time of sunrise, hours
   public :: sunset        !> time of sunset, hours
 
@@ -509,27 +508,17 @@ contains
   end function solarnoon
   !-----------------------------------------------------------------
   ! sunrise/sunset
-  elemental function hourangle(lat) result (ha)
-  !  Hour angle for the special case of sunrise or sunset.
-  !  The zenith is set to 90.833 (the approximate correction for atmospheric
-  !  refraction at sunrise and sunset, and the size of the solar disk)
-  !  https://www.esrl.noaa.gov/gmd/grad/solcalc/solareqns.PDF
-    real, intent(in) :: lat    !  latitude, deg.
-    real :: ha
-    real, parameter ::      &
-      ANG_ZENITH = 90.833,  &
-      COS_ZENITH = cos(DEG2RAD*ANG_ZENITH)
-    ha = acos(COS_ZENITH/(cos(DEG2RAD*lat)*cosrdecl)-tan(lat)*tan_decl)*RAD2DEG
-  end function hourangle
   elemental function sunrise(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
     real :: hour
-    hour = solarnoon(lon+hourangle(lat))
+    hour = solarnoon(lon)-daylength(lat)*0.5
+   !hour = min(max(hour,0.0),24.0)
   end function sunrise
   elemental function sunset(lat,lon) result (hour)
     real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
     real :: hour
-    hour = solarnoon(lon-hourangle(lat))
+    hour = solarnoon(lon)+daylength(lat)*0.5
+   !hour = min(max(hour,0.0),24.0)
   end function sunset
 !===============================================================
 end module Radiation_mod
