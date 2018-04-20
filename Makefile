@@ -60,7 +60,7 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LIBS += -lnetcdf -lnetcdff
   INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
   LLIB += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/lib/
-  MAKEDEPF90=/home/metno_op/bin/makedepf90
+  MAKEDEPF90=makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   LD := mpif90
   LDFLAGS += -Nmpi
