@@ -25,6 +25,9 @@ module SmallUtils_mod
   private :: skey2str    !
   private :: ikey2str
   private :: rkey2str
+  public :: num2str      !> converts  numbers to string
+  private :: num2str_i
+  private :: num2str_r
   public :: to_upper     !> Converts string to upper case
   public :: Self_Test    !< For testing
 
@@ -43,6 +46,12 @@ module SmallUtils_mod
     module procedure ikey2str   ! integer values
     module procedure rkey2str   ! real values
   end interface key2str
+
+  interface num2str
+    module procedure num2str_r   ! For real
+    module procedure num2str_i   ! For integer
+  end interface num2str
+
 
 contains
 
@@ -406,7 +415,43 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
   end if
   fname=trim(skey2str(iname,key,sval))
 end function rkey2str
+!=======================================================================
+ function num2str_r(x,xfmt)  result(str)
+  real, intent(in) :: x
+  character(len=*), intent(in), optional :: xfmt
+  character(len=19) :: str
+
+  if( present( xfmt ) ) then
+     write(str, xfmt ) x
+     if ( index(str,'*') > 0  ) then
+      print *, "Problem with format", trim(str)
+      write(str, "(es15.3)" ) x
+      print *, "Re-format to ", trim(str)
+     end if
+  else
+     write(str, "(es15.3)" ) x
+     !failed: write(str, * ) x
+  end if
+ end function num2str_r
 !============================================================================
+ function num2str_i(n,xfmt)  result(str)
+  integer, intent(in):: n
+  character(len=*), intent(in), optional :: xfmt
+  character(len=19) :: str
+
+  if( present( xfmt ) ) then
+     write(str, xfmt ) n
+     if ( index(str,'*') > 0  ) then
+      print *, "Problem with format", trim(str)
+      write(str, * ) n
+      print *, "Re-format to ", trim(str)
+     end if
+  else
+     write(str, * ) n
+  end if
+ end function num2str_i
+!============================================================================
+
 subroutine Self_test()
 
   character(len=100) :: text = "Here is a line,split by spaces: note, commas don't work"
@@ -464,6 +509,8 @@ subroutine Self_test()
 ! note that the sting needs to be long enough to hold the formated value
   print *, key2str('1.23 w/es10.3 fmt: "FFF".        ','FFF',1.23,'(es10.3)')
   print *, key2str('1.23 w/f10.2  fmt: "FFF".        ','FFF',1.23,'(f10.2)')
+
+  print *, 'TESTING num2str', trim(num2str(23)), ' ',trim(num2str(34.0))
 end subroutine Self_test
 
 end module SmallUtils_mod
