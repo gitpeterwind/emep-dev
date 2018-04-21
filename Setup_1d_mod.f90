@@ -18,7 +18,7 @@ use ChemFunctions_mod,only: S_RiemerN2O5
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
 use ChemRates_mod,    only:  setChemrates ! A2018, rct, NRCT
 use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
-use CheckStop_mod,    only:  CheckStop, StopAll
+use CheckStop_mod,    only:  CheckStop, StopAll,checkValidArray
 use ColumnSource_mod, only: ColumnRate
 use Config_module,    only:  &
    DEBUG,DEBUG_MASS,DebugCell   &
@@ -58,10 +58,15 @@ use Par_mod,          only: me, &
                            gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_mod,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_mod,    only: PARfrac, Wm2_uE
+use SmallUtils_mod,   only: find_index
+use Tabulations_mod,  only: tab_esat_Pa
+use TimeDate_mod,     only: current_date, date
+use Units_mod,        only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
+!!  to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
 use ZchemData_mod,    only: &
    xn_2d                &  ! concentration terms (molec/cm3)
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
-  ,rct                  &  ! chemical reaction rates
+  ,rct, rcphot          &  ! chemical reaction rates
   ,rh, temp, tinv, itemp,pp      &  !
   ,M, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
@@ -69,11 +74,6 @@ use ZchemData_mod,    only: &
   ,gamN2O5                 &  ! kHetero test - for printout
   ,DpgNw, S_m2m3           &  ! for wet diameter and surf area
   ,aero_fom, aero_fbc, aero_fss, aero_fdust
-use SmallUtils_mod,   only: find_index
-use Tabulations_mod,  only: tab_esat_Pa
-use TimeDate_mod,     only: current_date, date
-use Units_mod,        only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
-!!  to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
  
 
 implicit none
@@ -104,7 +104,7 @@ contains
 
     integer, intent(in) :: i,j    ! coordinates of column
     character(len=9)  :: dtxt='setup_1d:'
-    character(len=30)  :: fmt="(a,i3,99g13.4)"  ! default format
+    character(len=30)  :: fmt="(a,i3,99g10.3)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
    ! for surface area calcs (A2018): 
@@ -114,7 +114,7 @@ contains
     real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
-    logical :: is_finepm, is_ssalt, is_dust
+    logical :: is_finepm, is_ssalt, is_dust, is_sia
     logical, dimension(size(PM10_GROUP)), save  :: is_BC 
     !A2018 real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     !A2018 Array below might need reconsideration. Link between
@@ -136,6 +136,7 @@ contains
     logical, save :: is_finepm_a(size( PM10_GROUP ))
     logical, save :: is_ssalt_a(size( PM10_GROUP ))
     logical, save :: is_dust_a(size( PM10_GROUP ))
+    logical, save :: is_sia_a(size( PM10_GROUP ))
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
@@ -197,10 +198,12 @@ contains
                     ( find_index( ispec, chemgroups(iSSgroup)%specs ) >0)
           if ( iDUgroup>0 ) is_dust_a(ipm)  = & !A2018 methid
                     ( find_index( ispec, chemgroups(iDUgroup)%specs ) >0)
+          if ( iSIAgroup>0 ) is_sia_a(ipm)  = & !A2018 methid
+                    ( find_index( ispec, chemgroups(iSIAgroup)%specs ) >0)
           if( MasterProc) then
-            write(*,'(2a,5i5,3L2)') dtxt//"is_ PMf, SS, DU? ",&
+            write(*,'(2a,5i5,5L2)') dtxt//"is_ PMf, SS, DU? ",&
             species(ispec)%name, ipm, iPMfgroup,iSSgroup,iDUgroup,iBCfgroup,&
-               is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm)
+               is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm), is_sia_a(iPM)
           end if
           !A2018 is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
           !A2018 is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
@@ -289,12 +292,13 @@ contains
              is_finepm = is_finepm_a(ipm)
              is_ssalt  = is_ssalt_a(ipm)
              is_dust   = is_dust_a(ipm)
+             is_sia    = is_sia_a(ipm)
              if( is_finepm ) then
                ugpmF  = ugpmF   + ugtmp
                if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
                if(is_dust ) ugDustF  = ugDustF   +  ugtmp
                !A2018 if( find_index( ispec, SIA_GROUP )>0 ) &
-               if( iSIAgroup >0 ) &
+               if( is_sia ) & !BUG iSIAgroup >0 ) &
                     ugSIApm  = ugSIApm + ugtmp
                if(is_BC(ipm)) ugBCf = ugBCf  +  ugtmp
              else
@@ -303,23 +307,26 @@ contains
                if(is_dust ) ugDustC  = ugDustC   +  ugtmp
                if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
+!          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
 
              if (  species(ispec)%name == 'SO4' ) then
                ugSO4 = ugSO4  +  ugtmp
-             else if ( index( species(ispec)%name, 'NO3_F' )>0) then
+             else if ( index( species(ispec)%name, 'NO3_f' )>0) then
                ugNO3f= ugNO3f +  ugtmp
-             else if ( index( species(ispec)%name, 'NO3_C' )>0) then
+             else if ( index( species(ispec)%name, 'NO3_c' )>0) then
                ugNO3c= ugNO3c +  ugtmp
              end if
 
             !A2018. Handle surface area here:
 
  
-             if( debug_flag .and. k==20 ) write(*, fmt) &
-                  dtxt//"UGSIA:"//trim(species(ispec)%name), &
+             if( debug_flag .and. k==KMAX_MID ) then
+               write(*, fmt) dtxt//"UGSIA:"//trim(species(ispec)%name), &
                      k, ugtmp, ugpmF, ugpmC,&
-                     !find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC,&
                      ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
+               write(*,'(a,4L2,es12.3)') dtxt//trim(species(ispec)%name), &
+                     is_finepm, is_ssalt,is_dust,is_BC(ipm), ugtmp
+             end if
            end do ! ipm
 
 
@@ -362,12 +369,14 @@ contains
             if ( ipm == AERO%SS_C )  ugtmp = ugSSaltC
             if ( ipm == AERO%DU_C )  ugtmp = ugDustC
 
-            S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+            !BUG S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+            S_m2m3(iw,k) = pmSurfArea(ugtmp,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                   rho_kgm3=DDspec(ipm)%rho_p )
             S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
           end do ! iw
 
-          iw=NSAREA_DEF ! Not total area (misses some BC_c etc.)
+          ! Add all areas (misses some BC_c etc)
+          iw=NSAREA_DEF
           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
 
 
@@ -483,7 +492,22 @@ contains
 
 
    !A2018 call set_rct_rates()
+   !====================
    call setChemRates()
+   !====================
+
+   if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
+     call checkValidArray(rcphot(:,KMAX_MID),dtxt//'arrayCheck RCPHOT ')
+     call checkValidArray(rct(:,KMAX_MID),dtxt//'arrayCheck RCT ')
+   !if ( debug_flag .and. current_date%hour == 12 ) then
+     if ( DebugCell .and. current_date%hour == 12 ) then
+       do n = 1, size(rcphot)
+         if( rcphot(n,KMAX_MID)<0.0) then
+             print '(a,i3,es12.3)', 'RCPHOT:', n, rcphot(n,KMAX_MID)
+         end if
+       end do
+     end if 
+   end if
 
   ! For sensitivity tests
    do  n = 1, nSKIP_RCT ! can be zero
@@ -501,7 +525,7 @@ contains
 
    if ( first_call ) then
      call CheckStop( any(isnan(rct(:,:))), dtxt//"RCT NAN'd")
-     call CheckStop( any(rct(:,:) < 0.0 ), dtxt//"RCT NEG'd") !dsJUL2015
+     call CheckStop( any(rct(:,:) < 0.0 ), dtxt//"RCT NEG'd")
      nd2d = 0
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then

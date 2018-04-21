@@ -21,6 +21,38 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 April 2018, Dave
+
+BUG FIXES, MAJOR
+  1. Photolysis - was zero
+  2. Aerosols - calculation of ugSIA was wrong
+
+rcphot - was zero!
+  now defined in ZchemData_mod, and allocated in ChemFields
+  Need to allocate with NRCPHOTextended!
+  Affects DefPhotolysis, FastJ_mod, Solver
+
+DefPhotolysis
+  HONO rate added at 0.22* NO2 rate (uses NRCTPHOTextended dimension)
+
+Setup_1d_mod
+  Added is_sia and is_sia_a and made it work ;-)
+  Fixed wrong use of ugPMF
+  Added checkValidArray checks on rct and rcphot (when DEBUG%SETUP_1d on)
+
+ChemFields
+  Allocate rcphot with NRCPHOTextended!
+  
+
+NEW ROUTINES
+
+  CheckStop_mod: checkValidArray to check eg all rct
+  SmallUtils_mod: num2str for simple conversions
+  
+FUTURE -need to check/implement HONO and NRCTPHOTextented in FastJ
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 April 2018, Peter
 

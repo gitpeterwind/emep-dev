@@ -16,31 +16,33 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_mod,      only: CheckStop
+   use Config_module,     only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC, IOU_INST,&
+                                   MasterProc, &
+                                   jcl1kmFile,jcl3kmFile,jclearFile,num_lev3d,lev3d
    use DerivedFields_mod,  only: d_3d, f_3d
+   use Functions_mod,      only: StandardAtmos_km_2_kPa
    use GridValues_mod   , only : glat, A_bnd, B_bnd
    use Io_mod,            only : IO_DJ, open_file, ios
    use LocalVariables_mod,only : Grid  ! => izen
    use MetFields_mod    , only : cc3d,cc3dmax,z_bnd,ps
-   use Config_module,     only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC, IOU_INST,&
-                                   jcl1kmFile,jcl3kmFile,jclearFile,num_lev3d,lev3d
    use MPI_Groups_mod   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
    use Par_mod      ,     only : me,LIMAX,LJMAX
    use SmallUtils_mod,     only: key2str, find_index
-   use Functions_mod,      only: StandardAtmos_km_2_kPa
+   use ZchemData_mod,     only: rcphot
    implicit none
    private
 
    integer, public, parameter :: &
              NRCPHOT          = 17  &! Number of photolytic reactions
-            ,NRCPHOTextended  = 18   !A2018 added one for HONO
+            ,NRCPHOTextended  = 18   !A2018 added HONO, will scale with NO2
    
    integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
    real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
    real, save, public :: P_PHODIS(NzPHODIS) !heights of the input files, in Pa
 
-   real, allocatable,save,public, dimension(:,:) &
-         :: rcphot       ! photolysis rates    -   main output
+!A2018   real, allocatable,save,public, dimension(:,:) &
+!A2018         :: rcphot       ! photolysis rates    -   main output
 
    real, public, save :: sum_rcphot     !  for debug only
    logical, public, parameter :: DEBUG_DJ = .false.
@@ -144,7 +146,12 @@
 
         if(first_call)then
           ! if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
-           if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
+!A2018 Now done in ChemFields
+!A2018           if(.not.(allocated(rcphot))) then
+if(MasterProc)  write(*,*) 'EX XALLOC RCPHOT'
+!A2018               allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
+!A2018               rcphot(:,:) = 0.0
+!A2018           end if
            allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
            allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
            allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
@@ -379,6 +386,9 @@
                 sum_rcphot = sum_rcphot + &
                       sum ( rcphot(1:NRCPHOT, KCHEMTOP:KMAX_MID) )
             end if
+
+           !A2018 adding HONO
+            rcphot(IDHONO,:)  =  0.22* rcphot(IDNO2,:)
 
 
           end if   !  end izen <  90 (daytime)  test

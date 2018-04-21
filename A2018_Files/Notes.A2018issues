@@ -12,6 +12,10 @@ BUGS found in old ?? !!!
  with SS2 used for fine-aerosol. But SS2 should hace C7=1.83.
 
 
+RCPHOTextended - use in FastJ
+  - also had to use NRCPHOTextended in ChemFields. Relation to NPHOTOL awaits
+    new photolysis system
+
 
 GenChem disabled just now. Copy CM and other  files from A2018_Files directory
 
