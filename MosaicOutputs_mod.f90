@@ -350,12 +350,16 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
 
   !  Query - crops, outisde g.s. ????
   if(first_call) then  ! need to find indices
+
+    idepO3 = find_index('O3',DDspec(:)%name)
+    if(MasterProc) write(*,*) dtxt//'idepO3 = ', idepO3 ! was CDDEP_O3
+
     do imc = 1, nMosaic
       MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name,f_2d(:)%name)
-      if(DEBUG%MOSAICS .and. MasterProc) write(*,*) dtxt//" f2D", imc, &
-        trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
-      idepO3 = find_index('O3',DDspec(:)%name)
-      if(MasterProc) write(*,*) dtxt,'idepO3 = ', idepO3 ! was CDDEP_O3
+      if(DEBUG%MOSAICS .and. MasterProc) then
+         write(*,*) dtxt//" f2D", imc, &
+           trim(MosaicOutput(imc)%name), MosaicOutput(imc)%f2d
+      end if
     end do
 
     if(dbg)then
