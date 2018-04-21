@@ -16,10 +16,11 @@ use netcdf, only: NF90_NOERR,NF90_STRERROR
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
 use NumberConstants, only : UNDEF_R
+use SmallUtils_mod, only: num2str
 
 implicit none
 
-public  :: StopAll, CheckStop, CheckNC, checkValid
+public  :: StopAll, CheckStop, CheckNC, checkValid,checkValidArray
 private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
            CheckStop_str2, CheckStop_TF, CheckStop_rangeI, CheckStop_rangeR
 
@@ -163,6 +164,31 @@ subroutine checkValid( x, txt )
     call CheckStop( x /= x+0, "checkValid NaN: "//txt )
 
 end subroutine checkValid
+
+!----------------------------------------------------------------------------!
+ !> SUBROUTINE checkValid compares for UNDEF and also for 
+ !! NaN (using +0 trick). Stops code if there is a problem.
+
+subroutine checkValidArray( x, txt )
+    real, intent(in), dimension(:) :: x
+    character(len=*), intent(in) :: txt
+    integer :: i
+    character(len=3) :: itxt
+    character(len=100) :: msg
+
+    do i = 1, size(x)
+      msg= ' n='// trim(num2str(i,"(i3)"))//' :'//txt
+      if ( x(i) == UNDEF_R) then
+         print *, "checkValidArray UNDEF: "// msg , x(i)
+         call StopAll("checkValid UNDEF: "// msg )
+      end if
+      if (  x(i) /= x(i)+0) then
+         print *, "checkValidArray NaN: "// msg , x(i)
+         call StopAll( "checkValid NaN: "//msg )
+      end if
+    end do
+
+end subroutine checkValidArray
 
 endmodule CheckStop_mod
 
