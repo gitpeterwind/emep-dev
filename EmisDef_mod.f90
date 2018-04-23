@@ -192,7 +192,8 @@ integer, public, save, allocatable, dimension(:,:,:) :: road_landcode
 ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
 !integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
 real, public, allocatable, save, dimension(:,:,:,:) :: &
-  gridrcemis      ! varies every time-step (as ps and time factors changes)
+  gridrcemis,     & ! varies every time-step (as ps changes)
+  gridrcemis0       ! varies every hour
 real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd,    & ! Road dust emissions
   gridrcroadd0      ! varies every hour
