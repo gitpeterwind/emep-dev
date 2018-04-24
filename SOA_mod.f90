@@ -463,7 +463,7 @@ module OrganicAerosol_mod
    real :: J16tmp
    logical :: dbg
 
-   dbg = ( debug_flag) 
+   dbg = ( DEBUG%SOA .and. debug_flag) 
 
    if ( debug_flag ) write(*,*) "Skip Reset Organic Aerosol?", itot_bgnd 
    if( itot_bgnd < 1 ) then
