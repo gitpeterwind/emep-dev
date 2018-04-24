@@ -593,7 +593,8 @@ subroutine setup_rcemis(i,j)
 ! initilize ! initilize ! initilize ! initilize
 
   forall(k=KEMISTOP:KMAX_MID,iqrc=1:NRCEMIS) &
-    rcemis(iqrc2itot(iqrc),k) = gridrcemis(iqrc,k,i,j)
+    rcemis(iqrc2itot(iqrc),k) = gridrcemis(iqrc,k,i,j)&
+                                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
 
   ! Volcanic emissions (SO2 and ASH),
   ! and Contribution from Emergeny scenarios

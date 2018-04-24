@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 April 2018, Peter
+
+Removed gridrcemis0 (again!). Tested. multiplication by roa/(dA(k)+dB(k)*ps(i,j,1))
+is done in setup_rcemis.
+gridrcemis0 is a very large array, so it saves memory (and probably make the code 
+more efficient)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 April 2018, Peter
 
 Big bug in emissions introduced 18 April, corrected.
