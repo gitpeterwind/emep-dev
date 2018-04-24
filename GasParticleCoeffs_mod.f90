@@ -114,7 +114,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1)&
 ! Particles:
 !A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
-!               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV    sig  rhop Gb Inddry
+!               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV    sig  rhop Gb
  ,DD_t( 'PMfS'  ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)& ! as SAI_F 
  ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)&! as SIA_F
  ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33,1.8, 1600,1)&! as SIA_F
