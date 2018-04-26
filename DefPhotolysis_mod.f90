@@ -88,7 +88,8 @@
 
 !NEEDS FIXING. Changed from ESX to try to match above, but eg NO3 is difficult
   integer, public, parameter :: & 
-    IDO3_O1D   = 1,IDO3_O3P  = 2,IDNO3_NO  = IDNO3  &
+    IDO3_O1D   = 2,IDO3_O3P  = 1, & !:BUG FIX RB Apr25
+    IDNO3_NO  = IDNO3  &
    ,IDNO3_NO2  = IDNO3 & !HONO NEEDS FIXING!
    ,IDHCHO_H  = 6 & ! HCHO -> CO + 2 HO2
    ,IDHCHO_H2 = 7 !&  ! HCHO -> CO + H2
