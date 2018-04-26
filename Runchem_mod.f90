@@ -48,7 +48,7 @@ module RunChem_mod
   use SeaSalt_mod,       only: SeaSalt_flux
   use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d
   use ZchemData_mod,only: first_call, &
-                              M, rcemis, xn_2d  ! DEBUG for testing
+                              M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
   use TimeDate_mod,      only: current_date,daynumber,print_date
 !--------------------------------
@@ -160,7 +160,9 @@ subroutine runchem()
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
              !rcemis(SHIPNOX,KMAX_MID), !hardcoded chemical indice are not
              ! defined for all chem schemes, and should usually be avoided
-          rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
+          rcbio(1,KMAX_MID), &
+          rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID), rcphot(3,20), xn_2d(NO,20),xn_2d(C5H8,20),&
+          rct(67,KMAX_MID), rct(68,KMAX_MID) /) ) ! PAN P, L
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 
       if(ORGANIC_AEROSOLS) &

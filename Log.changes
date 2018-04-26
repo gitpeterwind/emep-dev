@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 April 2018, Robert, Dave
+
+BUG fix - the two O3 photolysis rates were switched around. Makes a huge difference!
+
+DefPhotolysis_mod   - fixed bug
+Runchem_mod         - just some debug info
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 April 2018, Peter
 
 Removed gridrcemis0 (again!). Tested. multiplication by roa/(dA(k)+dB(k)*ps(i,j,1))

@@ -44,6 +44,7 @@ module Biogenics_mod
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
+                           DebugCell, & !A2018comp
                            DEBUG, & !A2018 BVOC_USED, 
                            MasterProc, &
                            USES, &
@@ -665,7 +666,7 @@ module Biogenics_mod
     end if
      
  
-    if ( dbg ) then 
+    if ( dbg .and. current_date%seconds==0 ) then 
 
       call datewrite("DBIO env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
