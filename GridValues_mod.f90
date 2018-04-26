@@ -1150,7 +1150,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     if(MasterProc.and.A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID))<550.0)then
       write(*,*)'WARNING: lowest level very shallow; ',A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1) -&
       (A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID)),'Pa'
-      call StopAll('Lowest level too thin! Change vertical levels definition in '//trim(Vertical_levelsFile))
+!      call StopAll('Lowest level too thin! Change vertical levels definition in '//trim(Vertical_levelsFile))
     end if
     
     found_hybrid=.true.

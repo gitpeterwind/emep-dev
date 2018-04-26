@@ -48,7 +48,7 @@ use Config_module,     only: &
   HourlyEmisOut
 
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
-                            def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
+                            def_2d, def_3d, f_2d, f_3d, d_2d, d_3d, VGtest_out_ix
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
@@ -780,6 +780,16 @@ Is3D = .true.
       iou_list(iou)=(index(f_3d(i)%iotype,IOU_KEY(iou))>0)
     end do
   end do
+
+  VGtest_out_ix = 0
+  if(allocated(f_2d)) &
+       VGtest_out_ix = find_index("VgRatio", f_2d(:)%subclass)
+  if(VGtest_out_ix>0 .and. me==0)then
+     write(*,*)'will output Vg Ratio'
+  else
+     if(me==0)  write(*,*)'will NOT output Vg Ratio',find_index("VgRatio", f_2d(:)%subclass),find_index("logz0", f_2d(:)%subclass)
+  endif
+
 
   if(SOURCE_RECEPTOR)&            ! We include daily and monthly also
     iou_list(IOU_DAY+1:)=.false.  ! for SOURCE_RECEPTOR mode which makes

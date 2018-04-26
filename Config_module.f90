@@ -121,7 +121,8 @@ type, public :: emep_useconfig
     ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .false.    &!
     ,EMISSTACKS       = F       &!
-    ,PFT_MAPS         = .false.  ! Future option
+    ,PFT_MAPS         = .false.  &! Future option
+    ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
 
  ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
@@ -466,6 +467,7 @@ integer, public, parameter ::  &
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
 integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WRF may set to other values.
+real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal 
 
 !Namelist controlled: aerosols
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )

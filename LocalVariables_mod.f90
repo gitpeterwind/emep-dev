@@ -110,7 +110,8 @@ type, public :: SubDat
     ,Hd        = NOT_SET  & !  Sensible Heat flux, *away from* surface
     ,LE        = NOT_SET    !  Latent Heat flux, *away from* surface
   real ::                 &
-     Ra_ref    = NOT_SET  &
+     Ra_ref    = NOT_SET  & !pw: name not appropriate for current use! is used as "Ra_mid"
+    ,Ra_X      = NOT_SET  & !pw: temporary name
     ,Ra_2m     = NOT_SET  &
     ,Ra_3m     = NOT_SET  &
     ,RgsO      = NOT_SET  & ! ground-surface resistances - set in DO3SE
@@ -144,6 +145,7 @@ type, public :: SubDat
     ,FstO3      = 0.0       ! leaf O3 flux, nmole/m2/s
   real, dimension(NLOCDRYDEP_MAX) :: & ! for species subject to dry depostion
      Vg_ref   &  ! Grid average of Vg at ref ht. (effective Vg for cell)
+    ,Vg_eff   &  ! Grid average of Vg effective at ref ht. (effective Vg for cell)
     ,Vg_3m    &  ! and at 3m
     ,StoFrac = 0.0  & ! Fraction of flux (Vg) going through stomata.
     ,Gsur, Gsto, Gns

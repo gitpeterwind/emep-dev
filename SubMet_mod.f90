@@ -24,7 +24,8 @@ use Config_module, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_fl
                               , USE_ZREF & ! TEST
                               , FluxPROFILE &
                               , LANDIFY_MET   &
-                              , USES 
+                              , USES &
+                              , Zmix_ref !height at which concentration above different landuse are considered equal 
 use Config_module, only: NLANDUSEMAX
 use PhysicalConstants_mod, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
@@ -78,7 +79,7 @@ contains
     real :: z_1m                   !  1m above vegetation
     real :: z_3m                   !  3m above ground, or top of trees
     real :: z_3md                  !  minus displacemt ht.
-    
+    real :: Zmix_refd              !  Zmix_ref minus displacemt
     
     logical, save ::  my_first_call = .true.
     integer, parameter ::  NITER = 1           ! no. iterations to be performed
@@ -97,7 +98,7 @@ contains
     real :: e       ! vapour pressure at surface
     real :: Ra_2m   ! to get 2m qw
 
-real :: theta2
+    real :: theta2
 
 
     ! initial guesses for u*, t*, 1/L
@@ -330,6 +331,9 @@ real :: theta2
 !      Only Ra_ref and Ra_3m are used in main code.
       
         Sub(iL)%Ra_ref = AerRes(Sub(iL)%z0,Sub(iL)%z_refd,Sub(iL)%ustar,&
+            Sub(iL)%invL,KARMAN)
+        Zmix_refd = max(Zmix_ref-Sub(iL)%d,Sub(iL)%z_refd)
+        Sub(iL)%Ra_X = AerRes(Sub(iL)%z0,Zmix_refd,Sub(iL)%ustar,&
             Sub(iL)%invL,KARMAN)
         Sub(iL)%Ra_3m  = AerRes(Sub(iL)%z0,z_3md,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
         Ra_2m  = AerRes(Sub(iL)%z0,1.0+z_1m,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)

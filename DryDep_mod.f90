@@ -47,8 +47,9 @@ use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                             DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                             USES, USE_SOILNOX, &
                             MasterProc, &
-                            PPBINV,&
+                            PPBINV, IOU_INST,&
                             KUPPER, NLANDUSEMAX
+use DerivedFields_mod,  only: d_2d, f_2d, VGtest_out_ix
 use DO3SE_mod,         only: do3se
 use EcoSystem_mod,     only: EcoSystemFrac, Is_EcoSystem,  &
                             NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
@@ -74,6 +75,7 @@ use Rb_mod,                only: Rb_gas
 use Rsurface_mod,          only: Rsurface, Rinc
 use ZchemData_mod,    only: xn_2d,M, Fpart, Fgas
 use Sites_mod, only : nlocal_sites, site_x, site_y, site_name, site_gn
+use SmallUtils_mod,     only:  find_index
 use SoilWater_mod,         only: fSW !  =1.0 unless set by Met_mod
 use StoFlux_mod,  only:   unit_flux, &! = sto. flux per m2
                         lai_flux,  &! = lai * unit_flux
@@ -150,10 +152,12 @@ real, allocatable, dimension(:), private :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
          ,Vg_ref       & ! Vg at ref ht.
+         ,Vg_eff       & ! effective Vg at ref ht.
          ,Vg_3m        & ! Vg at  3m
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
          ,sea_ratio    & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
-         ,Gsto           ! Stomatal conductance (big-leaf), only for gases
+         ,Gsto         & ! Stomatal conductance (big-leaf), only for gases
+         ,eff_fac        ! Factor for computing effective resistance
 
 contains
 
@@ -174,8 +178,8 @@ contains
      if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
 
      allocate(BL(nddep))
-     allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &
-         Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) )
+     allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), Vg_eff(nddep), &
+         Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) ,eff_fac(nddep))
      !A2018 call Init_DepMap()               ! Maps CDDEP to IXADV
      !A2018 call Init_GasCoeff()             ! Sets DDdefs coeffs.
 
@@ -294,6 +298,7 @@ contains
 !    logical, save      :: first_spod = .true.
     character(len=20), save :: fname
     integer :: nglob
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
 !! line is kept at the end of the variable definitions and the start of real
@@ -437,6 +442,60 @@ contains
     end do
 
 
+!PW_____________________________________________________________________
+!Make effective resistance using formula:
+! R_effective_i = (Ra_X_i+Rb_i+Rsur_i) * sum_j( coverage_j*(Ra_ref_j+Rb_j+Rsur_j)/(Ra_X_j+Rb_j+Rsur_j) )
+!need to make sum_j() in advance
+
+    nlu = LandCover(i,j)%ncodes
+    nFlux = 0           ! Numberof LC needing flux calcs
+    eff_fac = 0.0
+    LULOOP_PRE: do iiL= 1, nlu
+        iL      = LandCover(i,j)%codes(iiL)
+
+        iL_used (iiL) = iL    ! for eco dep
+
+        if ( LandType(iL)%flux_wanted ) then
+          nFlux = nFlux + 1
+          iL_fluxes (nFlux) = iL    ! for eco dep
+        end if
+
+        Sub(iL)%f_phen = LandCover(i,j)%fphen(iiL) ! for SPOD_OUT
+        Sub(iL)%f_sun  = 0.0 ! for SPOD_OUT
+        Sub(iL)%g_sun  = 0.0 ! for SPOD_OUT
+        Sub(iL)%g_sto  = 0.0 ! for SPOD_OUT
+        Sub(iL)%f_temp = 0.0 ! for SPOD_OUT. Can 
+        Sub(iL)%f_vpd  = 0.0 ! for SPOD_OUT
+
+        Sub(iL)%SGS = LandCover(i,j)%SGS(iiL)   !used for AOT CHECK?
+        Sub(iL)%EGS = LandCover(i,j)%EGS(iiL)
+
+        L = Sub(iL)    ! ! Assign e.g. Sub(iL)ustar to ustar
+
+
+         !A2018 call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
+         call Rb_gas(L%is_water, L%ustar, L%z0, BL(:)%Rb)
+
+         !A2018 call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
+         call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
+
+         !A2018 do n = 1, NDRYDEP_CALC
+         do icmp = 1, nddep
+
+           !(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur) is resistance from mid layer and down
+           !L%Ra_X  + BL(icmp)%Rb + BL(icmp)%Rsur)is resistance from 50 meter and down
+           eff_fac(icmp) = eff_fac(icmp) + L%coverage*(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur)/(L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur)
+
+         end do ! chemical species loop
+
+       !=======================
+        end do LULOOP_PRE
+
+!              Vg_eff(icmp) = 1. / ( (L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur) * eff_fac(icmp)) 
+       
+!PW_____________________________________________________________________
+        
+
     !/ And start the sub-grid stuff over different landuse (iL)
 
     nlu = LandCover(i,j)%ncodes
@@ -504,6 +563,7 @@ contains
            if ( DDspec(icmp)%is_gas  ) then
 
               Vg_ref(icmp) = 1. / ( L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur ) 
+              Vg_eff(icmp) = 1. / ( (L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur) * eff_fac(icmp)) 
               Vg_3m(icmp)  = 1. / ( L%Ra_3m  + BL(icmp)%Rb + BL(icmp)%Rsur ) 
 
              ! specials, NH3 and NO2:
@@ -519,6 +579,7 @@ contains
 
               else if ( .not. USE_SOILNOX .and.  icmp == idcmpNO2 ) then
   
+                 Vg_eff(icmp) = Vg_eff(icmp) * no2fac
                  Vg_ref(icmp) = Vg_ref(icmp) * no2fac
                  Vg_3m(icmp)  = Vg_3m(icmp)  * no2fac
 
@@ -580,6 +641,7 @@ contains
               Vg_3m (icmp) = BL(icmp)%Vs/ &
                           ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* BL(icmp)%Vs))
 
+              Vg_eff(icmp) = Vg_ref(icmp) !PW
 
               if ( DEBUG_VDS ) then
                 if ( debug_flag .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
@@ -595,9 +657,9 @@ contains
                    call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ), "AEROSTOP")
                 end if
               end if
-
            end if ! Gases?
 
+           Sub(0)%Vg_eff(icmp) = Sub(0)%Vg_eff(icmp) + L%coverage * Vg_eff(icmp)
            Sub(0)%Vg_ref(icmp) = Sub(0)%Vg_ref(icmp) + L%coverage * Vg_ref(icmp)
            Sub(0)%Vg_3m(icmp)  = Sub(0)%Vg_3m(icmp)  + L%coverage * Vg_3m(icmp)
            Sub(iL)%Vg_ref(icmp) = Vg_ref(icmp)
@@ -611,12 +673,20 @@ contains
 
          if ( L%is_water ) then
             do icmp = 1, nddep !A2018 NDRYDEP_CALC
-               sea_ratio(icmp) =  Vg_ref(icmp)/Vg_3m(icmp)
+               if(USES%EFFECTIVE_RESISTANCE)then
+                  sea_ratio(icmp) =  Vg_eff(icmp)/Vg_3m(icmp)
+               else
+                  sea_ratio(icmp) =  Vg_ref(icmp)/Vg_3m(icmp)
+               endif
             end do
          else
             Sumland = Sumland + L%coverage
             do icmp = 1, nddep !A2018 NDRYDEP_CALC
-                Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
+               if(USES%EFFECTIVE_RESISTANCE)then
+                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
+               else
+                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
+               endif
             end do
          end if
 
@@ -639,6 +709,8 @@ contains
          c_hveg3m = -999.
 
          if (  LandType(iL)%flux_wanted ) then
+
+            !PW NOT SURE HOW TO TREAT THIS using effective resistance (which is species dependent)
 
            !n = CDDEP_O3
            icmp = idcmpO3
@@ -680,6 +752,7 @@ contains
        !=======================
        !=======================
 
+
         ! Convert from Vg*f to f for grid-average:
         !where ( Vg_ref > 1.0e-6 )
         where ( Sub(0)%Vg_ref > 1.0e-6 )
@@ -707,9 +780,15 @@ contains
 
     do icmp = 1, nddep ! NDRYDEP_CALC
 
-        vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_Ref(icmp) * dtz ) 
+       if(USES%EFFECTIVE_RESISTANCE)then
+          vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_Ref(icmp) * dtz ) 
+       else
+          vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_eff(icmp) * dtz ) 
+       endif
 
     end do ! icmp
+
+    if(VGtest_out_ix>0) d_2d(VGtest_out_ix,i,j,IOU_INST) = Sub(0)%Vg_eff(1)/(1.E-20+Sub(0)%Vg_Ref(1))
 
 
   ! ===================================================================

@@ -28,7 +28,7 @@ module DerivedFields_mod
   ! &    d_3d( num_deriv3d,LIMAX, LJMAX, KMAX_MID, LENOUT3D )
    real, save, public, allocatable, dimension(:,:,:,:) :: d_2d
    real, save, public, allocatable, dimension(:,:,:,:,:) :: d_3d
-
+   integer, save, public :: VGtest_out_ix = -1
 
 
 end module DerivedFields_mod
