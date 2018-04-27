@@ -52,7 +52,7 @@ use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut
+                            ,SecEmisOut, EmisOut, SplitEmisOut, SecEmisOutWanted
 use EmisGet_mod,       only: nrcemis,iqrc2itot
 use GasParticleCoeffs_mod, only: DDdefs !A2018
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -638,7 +638,7 @@ subroutine Define_Derived()
 
   isec_poll = 0
   do  i = 1, NEMIS_File
-     if(SecEmisOut(i))then
+     if(SecEmisOutWanted(i))then
         do isec=1,NSECTORS
            write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
            if(HourlyEmisOut)then
@@ -1623,19 +1623,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "TotSecEmis" ) !emissions in kg/m2/s converted??
 
       forall ( i=1:limax, j=1:ljmax )
-          d_2d(n,i,j,IOU_INST) =  SumSecEmis( i,j, f_2d(n)%Index)
+          d_2d(n,i,j,IOU_INST) =  EmisOut( i,j, f_2d(n)%Index)
       end forall
       !not done, to keep mg/m2 * GridArea_m2(i,j)
       if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
         call datewrite("SecEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
-              (/   SumSecEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
+              (/   EmisOut( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
     case ( "SecEmis" ) !emissions in mg/m2 per sector
 
       isec=mod(f_2d(n)%Index,NSECTORS)+1
       isec_poll=f_2d(n)%Index/NSECTORS + 1
       forall ( i=1:limax, j=1:ljmax )
-         d_2d(n,i,j,IOU_INST) =  SumSecEmisOut( i,j, isec,isec_poll)
+         d_2d(n,i,j,IOU_INST) =  SecEmisOut( i,j, isec,isec_poll)
       end forall
 
     case ( "Emis_mgm2_DMS" )      ! DMS
@@ -1650,7 +1650,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = SumSplitEmis(i,j,f_2d(n)%Index)
+        d_2d( n, i,j,IOU_INST) = SplitEmisOut(i,j,f_2d(n)%Index)
       end forall
 
     case ( "EXT" )

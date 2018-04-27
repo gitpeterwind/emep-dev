@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 April 2018, Peter
+
+Now all emissions are included in the "Emis_mgm2_POLL" output.
+Except the one which do not correspond to a split of standard emissions.
+Up to now lightning, forestfire, aircraft, specialship were not included.
+
+Renamed some of the arrays, for more clarity:
+EmisOut,SecEmisOut,SplitEmisOut
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 April 2018, Robert, Dave
 
 BUG fix - the two O3 photolysis rates were switched around. Makes a huge difference!

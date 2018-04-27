@@ -33,7 +33,7 @@ use ChemDims_mod          ! Use IXADV_ indices...
 use ChemGroups_mod        ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemSpecs_mod         ! Use IXADV_ indices...
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, SecEmisOut, Nneighbors
+use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, SecEmisOutWanted, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML
@@ -310,7 +310,7 @@ subroutine Init_My_Deriv()
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end do
   do  i = 1, NEMIS_FILE
-    if(SecEmisOut(i))then
+    if(SecEmisOutWanted(i))then
        do isec=1,NSECTORS
           write(tag_name(1),"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)

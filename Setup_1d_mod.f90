@@ -10,7 +10,7 @@ use AeroFunctions_mod,only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
 use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
 use Biogenics_mod,    only: SoilNOx
 use Biogenics_mod,    only: EMIS_BioNat, EmisNat  
-use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV,NCHEMRATES
+use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV, NCHEMRATES, NEMIS_File
 use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemFunctions_mod,only: S_RiemerN2O5
@@ -34,11 +34,11 @@ use Config_module,    only:  &
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Upper layer (k), upper level, and k for 1d fields
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS, SumSplitEmis&
+                                , O_NH3, O_DMS, SplitEmisOut, EmisOut&
                                 ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
                                 ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
                                 ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
-use EmisGet_mod,      only:  nrcemis, iqrc2itot  
+use EmisGet_mod,      only:  nrcemis, iqrc2itot, emis_nsplit
 use ForestFire_mod,   only: Fire_rcemis, burning
 use Functions_mod,    only:  Tpot_2_T
 use GasParticleCoeffs_mod, only: DDspec
@@ -569,7 +569,7 @@ subroutine setup_rcemis(i,j)
   integer, intent(in) ::  i,j     ! coordinates of column
 
   !  local
-  integer :: iqrc,k, itot
+  integer :: iqrc, k, itot, iem ,f
   real    :: Kw,fac, eland   ! for Pb210  - emissions from land
 
   integer :: i_Emis_4D,n
@@ -774,17 +774,30 @@ subroutine setup_rcemis(i,j)
 
   if(EmisSplit_OUT)then
     !put all added emissions in EmisSplit_OUT, also natural emissions
-    SumSplitEmis(i,j,:)=0.0
+    SplitEmisOut(i,j,:)=0.0
     do k=KCHEMTOP, KMAX_MID
       do iqrc=1,nrcemis
         !give unit mg/m2/s dt_advec multiplied in Derived_mod 
         itot=iqrc2itot(iqrc)
-        SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)&
+        SplitEmisOut(i,j,iqrc) = SplitEmisOut(i,j,iqrc)&
           +rcemis(itot,k)*species(itot)%molwt &
           *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
       end do
     end do
   end if
+
+  iqrc = 0 
+  do iem = 1, NEMIS_FILE   
+     EmisOut(i,j,iem) = 0.0
+     do f = 1,emis_nsplit(iem)
+        iqrc = iqrc + 1
+        itot = iqrc2itot(iqrc)
+        do k=KCHEMTOP, KMAX_MID
+           EmisOut(i,j,iem) = EmisOut(i,j,iem) + rcemis(itot,k)*species(itot)%molwt &
+          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
+        enddo
+     enddo
+  enddo
 
 
   ! Soil Rn222 emissions from non-ice covered land, + water

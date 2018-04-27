@@ -29,8 +29,8 @@ use EmisDef_mod,       only: &
      ,ROADDUST_FINE_FRAC  & ! fine (PM2.5) fraction of road dust emis
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
-     ,secemis,secemis_flat,roaddust_emis_pot,SumSplitEmis,SumSecEmis&
-     ,SumSecEmisOut,SecEmisOut,NSecEmisOut&
+     ,secemis,secemis_flat,roaddust_emis_pot,SplitEmisOut,EmisOut&
+     ,SecEmisOut,SecEmisOutWanted,NSecEmisOutWanted&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcroadd,gridrcroadd0&
@@ -124,7 +124,7 @@ private
 public :: Emissions         ! Main emissions module 
 public :: newmonth
 public :: EmisSet           ! Sets emission rates every hour/time-step
-public :: EmisOut           ! Outputs emissions in ascii
+public :: EmisWriteOut           ! Outputs emissions in ascii
 
 ! The main code does not need to know about the following 
 private :: expandcclist            !  expands e.g. EU28, EUMACC2
@@ -344,24 +344,24 @@ contains
     secemis_flat=0.0
     allocate(roaddust_emis_pot(LIMAX,LJMAX,NCMAX,NROAD_FILES))
     roaddust_emis_pot=0.0
-    allocate(SumSecEmis(LIMAX,LJMAX,NEMIS_FILE))
-    SumSecEmis=0.0
+    allocate(EmisOut(LIMAX,LJMAX,NEMIS_FILE))
+    EmisOut=0.0
 
     iemsec = 0
     !    SecEmisOutPoll(1:2) = ['pm25','nox'] 
     do iem = 1, NEMIS_FILE 
        if(SecEmisOutPoll(1)/='NOTSET')then
           if(all(SecEmisOutPoll(:)/=trim(EMIS_FILE(iem))))cycle      
-          SecEmisOut(iem) = .true.
+          SecEmisOutWanted(iem) = .true.
           iemsec = iemsec + 1
        endif
     enddo
-    NSecEmisOut = iemsec
-    if(NSecEmisOut>0)then
-       allocate(SumSecEmisOut(LIMAX,LJMAX,NSECTORS,NSecEmisOut))
-       SumSecEmisOut=0.0
+    NSecEmisOutWanted = iemsec
+    if(NSecEmisOutWanted>0)then
+       allocate(SecEmisOut(LIMAX,LJMAX,NSECTORS,NSecEmisOutWanted))
+       SecEmisOut=0.0
     else
-       allocate(SumSecEmisOut(1,1,1,1))!to avoid debug error messages      
+       allocate(SecEmisOut(1,1,1,1))!to avoid debug error messages      
     endif
 
     !=========================
@@ -431,8 +431,8 @@ contains
     !=========================
     !Must first call EmisSplit, to get nrcemis defined
     if(EmisSplit_OUT)then
-       allocate(SumSplitEmis(LIMAX,LJMAX,nrcemis))
-       SumSplitEmis=0.0
+       allocate(SplitEmisOut(LIMAX,LJMAX,nrcemis))
+       SplitEmisOut=0.0
     end if
     !=========================
     call CheckStop(ios, "ioserror: EmisSplit")
@@ -872,14 +872,7 @@ contains
     ! new emislist for current NWP grid.
     do iem = 1, NEMIS_FILE
        if(EMIS_OUT) &
-            call EmisOut("Snap",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
-
-       !if(EMIS_TEST=="CdfSnap")&
-       !  write(*,"(a,i3,2i4,2es12.3)") "CALLED CDF PRE "//&
-       !    trim(EMIS_FILE(iem)),me,maxval(nlandcode),maxval(nGridEmisCodes), &
-       !    maxval(secemis(:,:,:,:,iem)),maxval(GridEmis(:,:,:,:,iem))
-
-       if(EMIS_OUT) call EmisOut("Cdf",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
+            call EmisWriteOut("Sector",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
     end do
 
     !**  Conversions:
@@ -1147,8 +1140,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   if(hourchange) then 
     totemadd(:)  = 0.
     gridrcemis(:,:,:,:) = 0.0 
-    SumSecEmis(:,:,:) = 0.0
-    SumSecEmisOut(:,:,:,:) = 0.0
+    SecEmisOut(:,:,:,:) = 0.0
     if(USES%ROADDUST)gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
@@ -1216,7 +1208,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             iqrc = 0   ! index over emisfrac
             iemsec = 0
             do iem = 1, NEMIS_FILE 
-              if(SecEmisOut(iem))iemsec = iemsec + 1
+              if(SecEmisOutWanted(iem))iemsec = iemsec + 1
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
@@ -1247,8 +1239,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               s = tfac * secemis(isec,i,j,icc,iem)
 
               ! prelim emis sum kg/m2/s
-              SumSecEmis(i,j,iem) = SumSecEmis(i,j,iem) + s
-              if(SecEmisOut(iem))SumSecEmisOut(i,j,isec,iemsec) = SumSecEmisOut(i,j,isec,iemsec) + s
+              if(SecEmisOutWanted(iem))SecEmisOut(i,j,isec,iemsec) = SecEmisOut(i,j,isec,iemsec) + s
 
               do f = 1,emis_nsplit(iem)
                 iqrc = iqrc + 1
@@ -1301,11 +1292,10 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           iqrc  = 0   ! index over emis
           iemsec = 0
           do iem = 1, NEMIS_FILE 
-            if(SecEmisOut(iem))iemsec = iemsec + 1
+            if(SecEmisOutWanted(iem))iemsec = iemsec + 1
             sf =  secemis_flat(i,j,ficc,iem)    
             ! prelim emis sum kg/m2/s
-            SumSecEmis(i,j,iem) = SumSecEmis(i,j,iem) + sf
-            if(SecEmisOut(iem))SumSecEmisOut(i,j,isec,iemsec) = SumSecEmisOut(i,j,isec,iemsec) + sf
+            if(SecEmisOutWanted(iem))SecEmisOut(i,j,isec,iemsec) = SecEmisOut(i,j,isec,iemsec) + sf
             do f = 1,emis_nsplit(iem)
               iqrc = iqrc + 1
               itot = iqrc2itot(iqrc)
@@ -1392,9 +1382,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         end if ! ROADDUST
       end do   ! i
     end do     ! j
-    if(MYDEBUG.and.debug_proc) &    ! emis sum kg/m2/s
-      call datewrite("SnapSum, kg/m2/s:"//trim(EMIS_FILE(iemCO)), &
-         (/ SumSecEmis(debug_li,debug_lj,iemCO)  /) )
 
   end if ! hourchange 
 
@@ -1939,7 +1926,7 @@ subroutine newmonth
   first_call=.false.
 end subroutine newmonth
 !***********************************************************************
-subroutine EmisOut(label, iem,nsources,sources,emis)
+subroutine EmisWriteOut(label, iem,nsources,sources,emis)
 !----------------------------------------------------------------------!
 ! Ascii output of emissions fields (after interpolation and femis.
 ! To print out emissions, we need to get fields for each country
@@ -2023,7 +2010,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
   
 !  deallocate(locemis,lemis)
 
-end subroutine EmisOut
+end subroutine EmisWriteOut
 
 !***********************************************************************
 

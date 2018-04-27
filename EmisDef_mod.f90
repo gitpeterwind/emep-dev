@@ -211,8 +211,9 @@ real, public, allocatable, dimension(:,:,:,:), save :: &
   roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
-real, public, allocatable, dimension(:,:,:), save :: SumSecEmis,SumSplitEmis!per species
-real, public, allocatable, dimension(:,:,:,:), save :: SumSecEmisOut !per sector and species
+real, public, allocatable, dimension(:,:,:), save :: EmisOut!per emitted species
+real, public, allocatable, dimension(:,:,:), save :: SplitEmisOut!per splitted species
+real, public, allocatable, dimension(:,:,:,:), save :: SecEmisOut !per sector and species
 
 !should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
@@ -285,8 +286,8 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
   integer,   public          :: N_femis_lonlat    !number of femis lonlat lines defined
 
 
-  integer, public, save :: NSecEmisOut = 0
-  logical, public, save :: SecEmisOut(NEMIS_FILE) = .false.
+  integer, public, save :: NSecEmisOutWanted = 0
+  logical, public, save :: SecEmisOutWanted(NEMIS_FILE) = .false.
 
   logical, public, save :: foundYearlySectorEmissions = .false.
   logical, public, save :: foundMonthlySectorEmissions = .false.
