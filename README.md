@@ -30,7 +30,7 @@ Try to:
 - Use pull requests
 - Read about git [best practices][]
 
-[cheat sheet]:    https://services.github.com/kit/downloads/github-git-cheat-sheet.pdf
+[cheat sheet]:    https://education.github.com/git-cheat-sheet-education.pdf
 [best practices]: https://sethrobertson.github.io/GitBestPractices/
 
 #### More git info
