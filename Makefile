@@ -163,7 +163,7 @@ MACC SR-MACC:       GenChem-$$@-EmChem09soa
 MACC-EVA _3DVar:    GenChem-MACCEVA-EmChem09soa
 MACC-Pollen:        GenChem-MACCEVA-Pollen
 eEMEP:              GenChem-$$@-Emergency
-eEMEP ?= Emergency  # Emergency | AshInversion
+# Emergency/AshInversion will make eEMEP
 
 GenChem%:
 	./mk.GenChem $(GenChemOptions) -q
@@ -182,11 +182,13 @@ Emergency: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarsham
 Emergency: NUCXS ?= NorthKorea,Tehran
 Emergency:
 	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
+	$(MAKE) PROG=$(PROG) eEMEP
 
 # eEMP Default AshInversion: Vents
 AshInversion: VENTS ?= Eyjafjoll
 AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
+	$(MAKE) PROG=$(PROG) eEMEP
 
 # Data assimilation: Bnmc / 3DVar
 #%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))

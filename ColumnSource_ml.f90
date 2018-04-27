@@ -524,10 +524,34 @@ function getErup(line) result(def)
   ispc=find_index(words(2),species(:)%name)     ! Specie (total)
   igrp=find_index(words(2),chemgroups(:)%name)  ! Group  (total)
   select case (words(3))        ! base
-  case("MLEV","model")          ! Explicit model level
+  case("MLEV","model")          ! Explicit model level, from model top
+    select case(INDEX(words(4),'-'))
+    case(0)                     ! single model level
+      read(words(4),*)top                 
+      base=top
+    case(3)                     ! model level range
+      read(words(4),"(I2,'-',I2)")base,top 
+    case(6)                     ! model level range
+      read(words(4),"(I3,'-',I3)")base,top 
+    case default
+      call CheckStop("EMERGENCY: Unknown "//trim(words(3))//" format "//trim(words(4)))
+    end select
     words(3)="MLEV"
-    read(words(4),*)top         ! [model level]
-    base=top
+  case("SLEV","surface")        ! Explicit model level from surface
+    select case(INDEX(words(4),'-'))
+    case(0)                     ! single model level
+      read(words(4),*)top                 
+      base=top
+    case(3)                     ! model level range
+      read(words(4),"(I2,'-',I2)")base,top 
+    case(6)                     ! model level range
+      read(words(4),"(I3,'-',I3)")base,top 
+    case default
+      call CheckStop("EMERGENCY: Unknown "//trim(words(3))//" format "//trim(words(4)))
+    end select
+    words(3)="MLEV"
+    top=KMAX_MID-top+1          ! model level from model top 
+    base=KMAX_MID-base+1        ! model level from model top 
   case("VENT"," ")              ! From the vent
     words(3)="VENT"
 ! vent specific: base/top from vent%elev
@@ -590,13 +614,13 @@ function getDate(code,se,ee,dh,debug) result(str)
   case("SR+D")  ! Start of the simulation + dh
     str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2+dt_advec,debug=dbg)
   case("SR+H")  ! Start of the simulation + Hhh hours
-    read(code(5:6),*)hh
+    read(code(5:LEN_TRIM(code)),*)hh
     str=date2string(SDATE_FMT,startdate,addsecs=hh*36e2+dt_advec,debug=dbg)
   case("SE+D")  ! Start eruption + dh; no wildcards allowed in SE
     str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=dbg),&
                     addsecs=dh*36e2,debug=dbg)
 ! case("SE+H")  ! Start eruption + Hhh; no wildcards allowed in SE
-!   read(code(5:6),*)hh
+!   read(code(5:LEN_TRIM(code)),*)hh
 !   str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=dbg),&
 !                   addsecs=hh*36e2,debug=dbg)
   case("EE-D")  ! End eruption   - dh; no wildcards allowed in EE
