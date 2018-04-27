@@ -195,9 +195,9 @@ AshInversion:
 #%-Bnmc %-3DVar: _3DVar
 #	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
 %-3DVar16: _3DVar
-	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar $(PROG)_3DVar
+	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar16 $(PROG)_3DVar
 %-3DVar17: _3DVar
-	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar $(PROG)_3DVar
+	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar17 $(PROG)_3DVar
 
 
 # Archive: create $(PROG).tar.bz2
