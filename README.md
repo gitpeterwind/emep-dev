@@ -31,7 +31,7 @@ Try to:
 - Read about git [best practices][]
 
 [cheat sheet]:    https://services.github.com/kit/downloads/github-git-cheat-sheet.pdf
-[best practices]: http://moveelo.com/blog/git-best-practices-for-teams
+[best practices]: https://sethrobertson.github.io/GitBestPractices/
 
 #### More git info
 Print the github [cheat sheet][]
