@@ -33,7 +33,7 @@ use ChemDims_mod          ! Use IXADV_ indices...
 use ChemGroups_mod        ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemSpecs_mod         ! Use IXADV_ indices...
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, SecEmisOutWanted, Nneighbors
+use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML
@@ -44,7 +44,8 @@ use Config_module,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DER
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
-                            num_lev3d,lev3d ! 3D levels on 3D output
+                            num_lev3d,lev3d &! 3D levels on 3D output
+                            , SecEmisOutWanted
 use MosaicOutputs_mod, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
                             Init_MosaicMMC,  Add_MosaicMetConcs, &
                             Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP
@@ -310,13 +311,15 @@ subroutine Init_My_Deriv()
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end do
   do  i = 1, NEMIS_FILE
-    if(SecEmisOutWanted(i))then
-       do isec=1,NSECTORS
-          write(tag_name(1),"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
-          call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-       end do
-    endif
-  end do ! ind  
+     tag_name(1)="Sec_Emis_mgm2_"//trim(EMIS_FILE(i))
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     do isec=1,NSECTORS
+        if(SecEmisOutWanted(isec))then
+           write(tag_name(1),"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+        endif
+     end do
+  end do ! 
 !A2018 - need to re-code
 !A2018 TMP  do i = 1, size(BVOC_GROUP)
 !A2018 TMP    itot = BVOC_GROUP(i)

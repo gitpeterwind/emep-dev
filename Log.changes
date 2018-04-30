@@ -21,11 +21,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 April 2018, Peter
+
+Now sector emissions are included in output by default, as part of 
+the ... sector emissisons.
+Individual sector emissions can be added by setting for example:
+  SecEmisOutWanted(2) = T,	
+  SecEmisOutWanted(7) = T,
+
+for separate output of sector 2 and 7 (in addition to the default "all").
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 April 2018, Peter
 
 Now all emissions are included in the "Emis_mgm2_POLL" output.
 Except the one which do not correspond to a split of standard emissions.
-Up to now lightning, forestfire, aircraft, specialship were not included.
+Up to now DMS, Ocean NH3, volcanoes, lightning, forestfire, aircraft, specialship were not included.
 
 Renamed some of the arrays, for more clarity:
 EmisOut,SecEmisOut,SplitEmisOut

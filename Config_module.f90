@@ -222,8 +222,11 @@ type, public :: emis_in
 end type emis_in
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 
-character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
-logical, public, save  :: HourlyEmisOut = .false. !to output snap and sector emissions hourly
+!MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
+integer, public, parameter :: MaxNSECTORS = 100 
+logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
+
+logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
@@ -697,9 +700,9 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir &
-   ,USE_SECTORS_NAME      & !to force a specific sector (SNAP or GNFR)
-   ,SecEmisOutPoll        & ! to output sectorwise emissions
-   ,HourlyEmisOut         & ! to output snap and sector emissions hourly
+   ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
+   ,SecEmisOutWanted      & ! sector emissions to include in output
+   ,HourlyEmisOut         & ! to output emissions hourly
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons

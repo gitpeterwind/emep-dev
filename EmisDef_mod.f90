@@ -286,8 +286,8 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
   integer,   public          :: N_femis_lonlat    !number of femis lonlat lines defined
 
 
-  integer, public, save :: NSecEmisOutWanted = 0
-  logical, public, save :: SecEmisOutWanted(NEMIS_FILE) = .false.
+  integer, public, save :: NSecEmisOutWanted = 0 !sum of all sectors not included in this N
+  integer, public, allocatable, save :: isec2SecOutWanted(:)
 
   logical, public, save :: foundYearlySectorEmissions = .false.
   logical, public, save :: foundMonthlySectorEmissions = .false.

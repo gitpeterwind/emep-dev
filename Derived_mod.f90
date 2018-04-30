@@ -45,14 +45,15 @@ use Config_module,     only: &
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR &
   ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
-  HourlyEmisOut
+  HourlyEmisOut, SecEmisOutWanted
 
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d, VGtest_out_ix
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SecEmisOut, EmisOut, SplitEmisOut, SecEmisOutWanted
+                            ,SecEmisOut, EmisOut, SplitEmisOut, &
+                            isec2SecOutWanted
 use EmisGet_mod,       only: nrcemis,iqrc2itot
 use GasParticleCoeffs_mod, only: DDdefs !A2018
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -628,19 +629,32 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     if(HourlyEmisOut)then
-       call AddNewDeriv( dname, "TotSecEmis", "-", "-", "mg/m2", &
+       call AddNewDeriv( dname, "TotEmis", "-", "-", "mg/m2", &
             ind , -99, T,  1.0e6,  F,  'YMH' )
     else
-       call AddNewDeriv( dname, "TotSecEmis", "-", "-", "mg/m2", &
+       call AddNewDeriv( dname, "TotEmis", "-", "-", "mg/m2", &
             ind , -99, T,  1.0e6,  F,  'YM' )
     endif
   end do ! ind
 
   isec_poll = 0
   do  i = 1, NEMIS_File
-     if(SecEmisOutWanted(i))then
-        do isec=1,NSECTORS
-           write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
+     dname = "Sec_Emis_mgm2_"//trim(EMIS_FILE(i))
+     isec_poll = i
+     write(*,*)'WANTED ',i,'0',isec_poll
+     if(HourlyEmisOut)then
+        call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+             isec_poll , -99, T,  1.0e6,  F,  'YMH' )
+     else
+        call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+             isec_poll , -99, T,  1.0e6,  F,  'YM' )
+     endif
+  enddo
+  do isec=1,NSECTORS
+     if(SecEmisOutWanted(isec))then
+        do  i = 1, NEMIS_File
+           write(dname,"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           isec_poll = isec*NEMIS_File + i
            if(HourlyEmisOut)then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
                    isec_poll , -99, T,  1.0e6,  F,  'YMH' )
@@ -648,10 +662,10 @@ subroutine Define_Derived()
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
                    isec_poll , -99, T,  1.0e6,  F,  'YM' )
            endif
-           isec_poll = isec_poll + 1           
         end do
      endif
   end do
+
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
@@ -900,7 +914,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
-  integer :: wlen,ispc,kmax
+  integer :: wlen,ispc,kmax,iem
   integer :: isec_poll,isec,iisec,ipoll
   real :: default_frac,tot_frac,loc_frac_corr
 
@@ -1620,22 +1634,22 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call datewrite("NatEmis-in-Derived, still kg/m2/s", &
           f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj) /) )
 
-    case ( "TotSecEmis" ) !emissions in kg/m2/s converted??
+    case ( "TotEmis" ) !emissions in kg/m2/s converted??
 
       forall ( i=1:limax, j=1:ljmax )
           d_2d(n,i,j,IOU_INST) =  EmisOut( i,j, f_2d(n)%Index)
       end forall
       !not done, to keep mg/m2 * GridArea_m2(i,j)
       if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
-        call datewrite("SecEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
+        call datewrite("totEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   EmisOut( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
     case ( "SecEmis" ) !emissions in mg/m2 per sector
 
-      isec=mod(f_2d(n)%Index,NSECTORS)+1
-      isec_poll=f_2d(n)%Index/NSECTORS + 1
+      iem=mod(f_2d(n)%Index,NEMIS_File)+1
+      isec=f_2d(n)%Index/NEMIS_File
       forall ( i=1:limax, j=1:ljmax )
-         d_2d(n,i,j,IOU_INST) =  SecEmisOut( i,j, isec,isec_poll)
+         d_2d(n,i,j,IOU_INST) =  SecEmisOut( i,j, iem, isec2SecOutWanted(isec))
       end forall
 
     case ( "Emis_mgm2_DMS" )      ! DMS

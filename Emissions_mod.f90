@@ -11,6 +11,24 @@ use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
                              NEMIS_File  ! No. emission files
 use ChemSpecs_mod,     only: NO2, SO2,species,species_adv
 use Chemfields_mod,    only: xn_adv
+use Config_module,only: &
+    KMAX_MID, KMAX_BND, PT ,dt_advec, &
+    emis_inputlist, &   !TESTC
+    EmisDir,      &    ! template for emission path
+    DataDir,      &    ! template for path
+    EMIS_OUT,      &    ! output emissions in ASCII or not
+!    MONTHLY_GRIDEMIS, &  !NML
+    INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
+    DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
+    DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
+    USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
+    SEAFIX_GEA_NEEDED, & ! see below
+    EURO_SOILNOX_DEPSCALE,&! one or the other
+    USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,USE_SECTORS_NAME,&
+    SecEmisOutWanted,MaxNSECTORS,&
+    AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
+    AVG_SMI_2005_2010File,NdepFile
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use EmisDef_mod,       only: &
@@ -30,7 +48,7 @@ use EmisDef_mod,       only: &
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
      ,secemis,secemis_flat,roaddust_emis_pot,SplitEmisOut,EmisOut&
-     ,SecEmisOut,SecEmisOutWanted,NSecEmisOutWanted&
+     ,SecEmisOut,NSecEmisOutWanted,isec2SecOutWanted&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcroadd,gridrcroadd0&
@@ -75,23 +93,6 @@ use Io_Nums_mod,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_mod,      only: ios, open_file, datewrite, PrintLog
 use MetFields_mod,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_mod,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
-use Config_module,only: &
-    KMAX_MID, KMAX_BND, PT ,dt_advec, &
-    emis_inputlist, &   !TESTC
-    EmisDir,      &    ! template for emission path
-    DataDir,      &    ! template for path
-    EMIS_OUT,      &    ! output emissions in ASCII or not
-!    MONTHLY_GRIDEMIS, &  !NML
-    INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
-    DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-    DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
-    USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
-    SEAFIX_GEA_NEEDED, & ! see below
-    EURO_SOILNOX_DEPSCALE,&! one or the other
-    USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,USE_SECTORS_NAME,SecEmisOutPoll,&
-    AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
-    AVG_SMI_2005_2010File,NdepFile
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
@@ -204,7 +205,7 @@ contains
     logical,save :: my_first_call=.true.  ! Used for femis call
     logical :: mappingGNFR2SNAP = .false.
     character(len=40) :: varname, fmt,cdf_sector_name
-    integer ::allocerr, i_Emis_4D, iemsec, sec_ix,ih,id,k,ncFileID,varID
+    integer ::allocerr, i_Emis_4D, sec_ix,ih,id,k,ncFileID,varID
     character(len=200) ::fileName
 
 
@@ -318,6 +319,7 @@ contains
     else
        call StopAll("Sectors not defined")
     end if
+    call CheckStop(NSECTORS>MaxNSECTORS, "redefine larger MaxNSECTORS")
 
     allocate(cdfemis(LIMAX,LJMAX))
     allocate(nGridEmisCodes(LIMAX,LJMAX))
@@ -347,22 +349,20 @@ contains
     allocate(EmisOut(LIMAX,LJMAX,NEMIS_FILE))
     EmisOut=0.0
 
-    iemsec = 0
     !    SecEmisOutPoll(1:2) = ['pm25','nox'] 
-    do iem = 1, NEMIS_FILE 
-       if(SecEmisOutPoll(1)/='NOTSET')then
-          if(all(SecEmisOutPoll(:)/=trim(EMIS_FILE(iem))))cycle      
-          SecEmisOutWanted(iem) = .true.
-          iemsec = iemsec + 1
+
+    allocate(isec2SecOutWanted(0:NSECTORS))
+    isec2SecOutWanted = 0 !should never be used
+    isec2SecOutWanted(0) = 0
+    NSecEmisOutWanted = 0
+    do isec = 1, NSECTORS 
+       if(SecEmisOutWanted(isec))then
+          NSecEmisOutWanted = NSecEmisOutWanted + 1
+          isec2SecOutWanted(isec) = NSecEmisOutWanted
        endif
     enddo
-    NSecEmisOutWanted = iemsec
-    if(NSecEmisOutWanted>0)then
-       allocate(SecEmisOut(LIMAX,LJMAX,NSECTORS,NSecEmisOutWanted))
-       SecEmisOut=0.0
-    else
-       allocate(SecEmisOut(1,1,1,1))!to avoid debug error messages      
-    endif
+    allocate(SecEmisOut(LIMAX,LJMAX,NEMIS_FILE,0:NSecEmisOutWanted))
+    SecEmisOut=0.0
 
     !=========================
     !  call Country_Init() ! In Country_mod, => NLAND, country codes and names, timezone
@@ -1059,7 +1059,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer :: i_Emis_4D, iemsec
+  integer :: i_Emis_4D
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
 
@@ -1206,9 +1206,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! Calculate emission rates from secemis, time-factors, 
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             iqrc = 0   ! index over emisfrac
-            iemsec = 0
             do iem = 1, NEMIS_FILE 
-              if(SecEmisOutWanted(iem))iemsec = iemsec + 1
+
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
@@ -1239,7 +1238,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               s = tfac * secemis(isec,i,j,icc,iem)
 
               ! prelim emis sum kg/m2/s
-              if(SecEmisOutWanted(iem))SecEmisOut(i,j,isec,iemsec) = SecEmisOut(i,j,isec,iemsec) + s
+              SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
+              if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
+                   SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
 
               do f = 1,emis_nsplit(iem)
                 iqrc = iqrc + 1
@@ -1264,7 +1265,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 !    VERTFAC(KMAX_BND-k,sec2hfac_map(isec)),  &
                 !    emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
                 !end if
-              end do ! iem
+              end do ! iqrc
             end do   ! k
           end do  ! isec
           !      ==================================================
@@ -1290,12 +1291,15 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !  Calculate emission rates from secemis, time-factors, 
           !  and if appropriate any speciation  fraction (NEMIS_FRAC)
           iqrc  = 0   ! index over emis
-          iemsec = 0
           do iem = 1, NEMIS_FILE 
-            if(SecEmisOutWanted(iem))iemsec = iemsec + 1
+
             sf =  secemis_flat(i,j,ficc,iem)    
-            ! prelim emis sum kg/m2/s
-            if(SecEmisOutWanted(iem))SecEmisOut(i,j,isec,iemsec) = SecEmisOut(i,j,isec,iemsec) + sf
+
+            ! emis sum kg/m2/s
+            SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + sf
+            if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
+                   SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + sf
+
             do f = 1,emis_nsplit(iem)
               iqrc = iqrc + 1
               itot = iqrc2itot(iqrc)
