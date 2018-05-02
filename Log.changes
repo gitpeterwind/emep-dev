@@ -21,6 +21,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd May 2018, Peter
+
+To output local fraction corrected groups or primary components, set the subclass 
+as 'Local_Correct', in config, for instance:
+      'NO'       ,'ppb' ,'Local_Correct','AIR_CONCS','SPEC' ,'YMH',
+      'PPM25'    ,'ug'  ,'Local_Correct','AIR_CONCS','GROUP','YMH',
+
+(note that not all 'Local_Correct' will make sense, since they will take local 
+correction for all parts. PMFINE, for instance will also correct the SIA, using 
+PPM local fractions.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 April 2018, Peter
 
 Now sector emissions are included in output by default, as part of 
