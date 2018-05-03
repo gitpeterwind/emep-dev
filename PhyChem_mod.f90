@@ -39,21 +39,15 @@ use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17
                             zen,coszen,Idirect,Idiffuse
-use NetCDF_mod,        only: ReadField_CDF,Real4
-use OutputChem_mod,    only: WrtChem
 use My_Outputs_mod ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
-use My_Timing_mod,     only: Code_timer, Add_2timing, tim_before, tim_before0, tim_after
+use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
+                             tim_before, tim_before0, tim_after
+use NetCDF_mod,        only: ReadField_CDF,Real4
 use Nest_mod,          only: readxn, wrtxn
+use OutputChem_mod,    only: WrtChem
 use Par_mod,           only: me, LIMAX, LJMAX
 use PhysicalConstants_mod, only : ATWAIR 
 use Pollen_mod,        only: pollen_dump,pollen_read
-use SoilWater_mod,     only: Set_SoilWater
-use TimeDate_mod,      only: date,daynumber,day_of_year, add_secs, &
-                            current_date, timestamp,  &
-                            make_timestamp, make_current_date
-use TimeDate_ExtraUtil_mod,only : date2string
-use Trajectory_mod,    only: trajectory_out     ! 'Aircraft'-type  outputs
-use uEMEP_mod,         only: uEMEP_emis
 use Radiation_mod,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
                             ClearSkyRadn,     &! Idirect, Idiffuse
@@ -62,7 +56,15 @@ use Radiation_mod,     only: SolarSetup,       &! sets up radn params
                             CloudAtten         !
 use Runchem_mod,       only: runchem   ! Calls setup subs and runs chemistry
 use Sites_mod,         only: siteswrt_surf, siteswrt_sondes    ! outputs
+use SoilWater_mod,     only: Set_SoilWater
+use TimeDate_mod,      only: date,daynumber,day_of_year, add_secs, &
+                            current_date, timestamp,  &
+                            make_timestamp, make_current_date
+use TimeDate_ExtraUtil_mod,only : date2string
 use Timefactors_mod,   only: NewDayFactors
+use Trajectory_mod,    only: trajectory_out     ! 'Aircraft'-type  outputs
+use uEMEP_mod,         only: uEMEP_emis
+
 !-----------------------------------------------------------------------------
 implicit none
 private
@@ -205,6 +207,7 @@ subroutine phyche()
   call init_drydep()
   !===================================
 
+  call Code_timer(tim_before0)
   !must be placed just before emissions are used
   if(USE_uEMEP)call uemep_emis(current_date)
 

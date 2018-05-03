@@ -52,8 +52,8 @@ program emep_Main
        USES, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use Config_module,     only: Config_ModelConstants,DEBUG, startdate,enddate
-  use MPI_Groups_mod,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
-                              MasterPE,IERROR, MPI_world_init
+  use MPI_Groups_mod!,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
+                    !          MasterPE,IERROR, MPI_world_init
   use Nest_mod,          only: wrtxn     ! write nested output (IC/BC)
   use NetCDF_mod,        only: Init_new_netCDF
   use OutputChem_mod,    only: WrtChem, wanted_iou
@@ -66,16 +66,16 @@ program emep_Main
        tdif_secs,date,timestamp,make_timestamp,Init_nmdays
   use TimeDate_ExtraUtil_mod,only : date2string, assign_startandenddate
   use Trajectory_mod,    only: trajectory_init,trajectory_in
-  use uEMEP_mod,         only: init_uEMEP
+  use uEMEP_mod,         only: init_uEMEP, NTIMING_uEMEP
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
   !  few key variables that  might help:
-  !     dt_advec       - length of advection (phyche) time-step
-  !     GRIDWIDTH_M    - grid-distance
+  !     dt_advec       - length of advection and time splitting time-step
+  !     GRIDWIDTH_M    - approximate grid-size (multiply by mapfactor for exact)
   !     gb             - latitude (sorry, still Norwegian influenced..)
   !     NPROC          - number of processors used
-  !     me             - number of local processor, me=0 is host (=MasterProc)
+  !     me             - rank of local processor, me=0 is host (=MasterProc)
   !                      processor where many read/writes are done
   !     ndays          - number of days since 1 january (max 365 or 366)
   !     thour          - utc-time in hours every time-step
@@ -138,7 +138,7 @@ program emep_Main
   end if
 
   !*** Timing ********
-  call Init_timing(NTIMING_UNIMOD+NTIMING_3DVAR)
+  call Init_timing(NTIMING_UNIMOD+NTIMING_3DVAR+NTIMING_uEMEP)
   call Code_Timer(tim_before0)
   tim_before = tim_before0
 
@@ -271,7 +271,6 @@ program emep_Main
 
     call Code_timer(tim_before)
     if(mm_old/=mm) then   ! START OF NEW MONTH !!!!!
-      call Code_timer(tim_before)
 
       !subroutines/data that must be updated every month
       call readdiss(newseason)
@@ -304,7 +303,7 @@ program emep_Main
 
       call Add_2timing(7,tim_after,tim_before,"Total newmonth setup")
 
-   end if
+    end if
 
     oldseason = newseason
     mm_old = mm
@@ -335,13 +334,13 @@ program emep_Main
 
     call WrtChem()
 
-    call Add_2timing(36,tim_after,tim_before,"WrtChem")
+    call Add_2timing(37,tim_after,tim_before,"WrtChem")
 
     call trajectory_in
 
     call metfieldint
 
-    call Add_2timing(37,tim_after,tim_before,"metfieldint")
+    call Add_2timing(36,tim_after,tim_before,"metfieldint")
 
     !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
     ts1=make_timestamp(current_date)
@@ -354,8 +353,8 @@ program emep_Main
   end do ! time-loop
 
   call Code_timer(tim_after0)
-  call Add_2timing(38,tim_after0,tim_before1,"total within loops")
-  call Add_2timing(39,tim_after0,tim_before0,"total")
+  call Add_2timing(NTIMING-1,tim_after0,tim_before1,"total within loops")
+  call Add_2timing(NTIMING,tim_after0,tim_before0,"total")
   !
   !
   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -363,18 +362,7 @@ program emep_Main
   if(.not.FORECAST) call wrtxn(current_date,.true.)
   call massbudget()
 
-  if(MasterProc)then
-    print *,'programme is finished'
-    ! Gather timing info:
-    if(NPROC-1> 0)then
-      CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_CALC,MPISTATUS,IERROR)
-    else
-      lastptim(:) = mytimm(:)
-    end if
-    call Output_timing(IO_MYTIM,me,NPROC,GIMAX,GJMAX)
-  elseif(me==NPROC-1) then
-    CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
-  end if
+  call Output_timing(IO_MYTIM,me,NPROC,GIMAX,GJMAX)
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST
   if(MasterProc.and.FORECAST)then
@@ -388,6 +376,7 @@ program emep_Main
   end if
 
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+  if(MasterProc)print *,'programme is finished'
   CALL MPI_FINALIZE(IERROR)
 
 end associate   ! yyyy, mm, dd

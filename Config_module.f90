@@ -265,7 +265,7 @@ logical, public, save ::             &
 
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
 type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
-
+integer, public, save :: NTIMING_uEMEP = 5 !reset to zero if USE_uEMEP = F 
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -882,6 +882,7 @@ subroutine Config_ModelConstants(iolog)
      endif
   enddo
 
+  if(.not. USE_uEMEP)NTIMING_uEMEP = 0
 
 end subroutine Config_ModelConstants
 

@@ -13,6 +13,7 @@ module My_Timing_mod
 ! Code commented out or marked with !SYS is intended for system_clock
 ! Code commented out or marked with !CPU is intended for cpu_time
 !----------------------------------------------------------------------------
+use mpi,only: MPI_DOUBLE_PRECISION,MPI_MAX,MPI_MIN, MPI_COMM_WORLD,MPI_IN_PLACE
 implicit none
 
 public :: Init_timing
@@ -78,18 +79,29 @@ subroutine Output_timing(io, me,np,nx,ny)
   integer, intent(in) :: me         ! number of this processor
   integer, intent(in) :: np     ! number of processors
   integer, intent(in) :: nx, ny     !  dimensions of grid
-  integer :: n
+  integer :: n, IERROR
 
-  open(io,file='Timing.out')
-  write(io,"(a40,I7,2i5)") "Timing for No. grids, procs",nx*ny,np
-  write( 6,"(a40,I7,2i5)") "Timing for No. grids, procs",nx*ny,np
-
-  do n=1,NTIMING
-    if((timing(n)=="").and.(mytimm(n)==0.0)) cycle
-    write(6, fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
-    write(io,fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
-  end do
-  close(io)
+  lastptim(:) = mytimm(:)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,lastptim,NTIMING,MPI_DOUBLE_PRECISION, &
+       MPI_MAX,MPI_COMM_WORLD,IERROR)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,mytimm,NTIMING,MPI_DOUBLE_PRECISION, &
+       MPI_MIN,MPI_COMM_WORLD,IERROR)
+  if(me==0)then
+     open(io,file='Timing.out')
+     write(io,"(a18,I8)") "Number of grids = ",nx*ny
+     write( 6,"(a18,I8)") "Number of grids = ",nx*ny
+     write(io,"(a18,2i5)")"Number of CPUs =  ", np
+     write( 6,"(a18,2i5)")"Number of CPUs =  ", np
+     
+     write(6, fmt="(39x,a)")' min time(s)  max time(s)'
+     write(io,fmt="(39x,a)")' min time(s)  max time(s)'
+     do n=1,NTIMING
+        if((timing(n)=="").and.(mytimm(n)==0.0)) cycle
+        write(6, fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
+        write(io,fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
+     end do
+     close(io)
+  endif
 end subroutine Output_timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Code_timer(call_time)

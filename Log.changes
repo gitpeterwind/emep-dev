@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd May 2018, Peter
+
+Ouput timings for uEMEP, when active.
+Redefine timings as max and min time (was first and last proc up to now)
+And small moving around for timings.
+
+More efficient diffusion for uEMEP. Was very slow.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd May 2018, Peter
 
 To output local fraction corrected groups or primary components, set the subclass 

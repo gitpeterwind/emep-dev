@@ -85,7 +85,7 @@
   use MetFields_mod,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
   use MassBudget_mod,     only : fluxin_top,fluxout_top,fluxin,fluxout
-  use My_Timing_mod,      only : Code_timer, Add_2timing, tim_before,tim_after
+  use My_Timing_mod,      only : Code_timer, Add_2timing, tim_before,tim_after,NTIMING
   !do not use "only", because MPI_IN_PLACE does not behave well on certain versions of gfortran(?)
   use MPI_Groups_mod !,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
                     !       MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
@@ -282,7 +282,7 @@
     integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),x
+    real :: xn_k(uEMEP%Nsec_poll*(uEMEP%dist*2+1)*(uEMEP%dist*2+1),kmax_mid),x
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -295,6 +295,7 @@
     !This case can arises where there is a singularity close to the
     !poles in long-lat coordinates.
     integer,parameter :: NITERXMAX=40
+    real :: tim_uemep_before,tim_uemep_after
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 
@@ -799,37 +800,40 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-             n=0
-             do dy=-uEMEP%dist,uEMEP%dist
-                do dx=-uEMEP%dist,uEMEP%dist
-                   n=n+1
-                   isec_poll1=1
-                   do ipoll=1,uEMEP%Npoll
-                      do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                         xn_k(1:KMAX_MID,isec_poll,n)=0.0
-                         do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+             call Code_timer(tim_uemep_before)
+             xn_k = 0.0
+             do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+                n=0
+                do dy=-uEMEP%dist,uEMEP%dist
+                   do dx=-uEMEP%dist,uEMEP%dist
+                      n=n+1
+                      isec_poll1=1
+                      do ipoll=1,uEMEP%Npoll
+                         do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
                             do iix=1,uEMEP%poll(ipoll)%Nix
                                ix=uEMEP%poll(ipoll)%ix(iix)
                                !assumes mixing ratios units, but weight by mass
-                               xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+                               xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)=xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
                             end do
-
-                            xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)*loc_frac(isec_poll,dx,dy,i,j,k)
-
-                          end do
-                         call vertdiff_1d(xn_k(1,isec_poll,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                            
+                            xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)=xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)*loc_frac(isec_poll,dx,dy,i,j,k)
+                         end do
+                         isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
                       end do
-                      isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
                    end do
                 enddo
              enddo
+             call vertdiffn(xn_k,uEMEP%Nsec_poll*(uEMEP%dist*2+1)*(uEMEP%dist*2+1),1,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+             
+             call Add_2timing(NTIMING-4,tim_uemep_after,tim_uemep_before,"uEMEP: diffusion")
           end if
-
+          
           !________ vertical diffusion ______
-          call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
+          call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,EtaKz(i,j,1,1),ds3,ds4,ndiff)
           !________
 
           if(USE_uEMEP)then
+             call Code_timer(tim_uemep_before)
              do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
                 isec_poll1=1
                 do ipoll=1,uEMEP%Npoll
@@ -844,14 +848,15 @@
                       do dx=-uEMEP%dist,uEMEP%dist
                          n=n+1
                          do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                            loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec_poll,n)/(x+1.E-30)
+                            loc_frac(isec_poll,dx,dy,i,j,k) = xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)/(x+1.E-30)
                          end do
                       end do
                    end do
                    isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
                 end do
              end do
-          end if
+              call Add_2timing(NTIMING-4,tim_uemep_after,tim_uemep_before,"uEMEP: diffusion")
+         end if
 
        end do
     end do
@@ -1463,9 +1468,7 @@
 
   end subroutine vertdiff_1d
 
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine vertdiffn(xn_adv,SigmaKz,ds3,ds4,ndiff)
+  subroutine vertdiffn(xn_adv,NSPEC,Nij,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion ndiff times
 
@@ -1482,10 +1485,10 @@
 !    input
     real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
-    integer,intent(in)::  ndiff
+    integer,intent(in)::  NSPEC,ndiff,Nij
 
 !    output
-    real ,intent(inout):: xn_adv(NSPEC_ADV,0:LIMAX*LJMAX*(KMAX_MID-1))
+    real ,intent(inout):: xn_adv(NSPEC,0:Nij*(KMAX_MID-1))
 
 !    local
 
@@ -1513,18 +1516,18 @@
     cdif(0) = 1./(1. + adif(0) - adif(0)*e1(1))
 
     do n=1,ndiff
-      xn_adv(:,(KMAX_MID-1)*LIMAX*LJMAX) = &
-         xn_adv(:,(KMAX_MID-1)*LIMAX*LJMAX)*cdif(KMAX_MID-1)
+      xn_adv(:,Nij*(KMAX_MID-1)) = &
+         xn_adv(:,Nij*(KMAX_MID-1))*cdif(KMAX_MID-1)
       do k = KMAX_MID-2,0,-1
-         xn_adv(:,k*LIMAX*LJMAX) =         &
-           (xn_adv(:,k*LIMAX*LJMAX)        &
-           +adif(k)*xn_adv(:,(k+1)*LIMAX*LJMAX))*cdif(k)
+         xn_adv(:,Nij*k) =         &
+           (xn_adv(:,Nij*k)        &
+           +adif(k)*xn_adv(:,Nij*(k+1)))*cdif(k)
       end do
 
       do k = 1,KMAX_MID-1
-         xn_adv(:,k*LIMAX*LJMAX) =            &
-            e1(k)*xn_adv(:,(k-1)*LIMAX*LJMAX) &
-           +xn_adv(:,k*LIMAX*LJMAX)
+         xn_adv(:,Nij*k) =            &
+            e1(k)*xn_adv(:,Nij*(k-1)) &
+           +xn_adv(:,Nij*k)
       end do
 
     end do ! ndiff

@@ -35,6 +35,7 @@ use Timefactors_mod,   only: &
     ,Gridded_SNAP2_Factors, gridfac_HDD & 
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_edd, timefac  ! time-factors
+use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
 
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
 
@@ -59,11 +60,14 @@ real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , private, save :: uEMEPNvertout = 1!number of vertical levels to save in output
+integer, public, save :: NTIMING_uEMEP=7
+real, private :: tim_after,tim_before
 
 contains
 subroutine init_uEMEP
   integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4
 
+  call Code_timer(tim_before)
   uEMEP%Nsec_poll = 0
   uEMEP%Npoll = 0
   do iemis=1,Npoll_uemep_max
@@ -218,6 +222,7 @@ subroutine init_uEMEP
      allocate(loc_tot_full(1,1,1,1))
   endif
   
+  call Add_2timing(NTIMING-9,tim_after,tim_before,"uEMEP: init")
 end subroutine init_uEMEP
 
 
@@ -237,6 +242,8 @@ subroutine out_uEMEP(iotyp)
   type(date) :: onesecond = date(0,0,0,0,1)
   character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
+
+  call Code_timer(tim_before)
 
   if(COMPUTE_LOCAL_TRANSPORT)allocate(tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
   if(iotyp==IOU_HOUR_INST .and. uEMEP%HOUR_INST)then
@@ -693,6 +700,9 @@ subroutine out_uEMEP(iotyp)
 
   first_call(iotyp)=.false.
   if(COMPUTE_LOCAL_TRANSPORT)deallocate(tmp_ext)
+
+  call Add_2timing(NTIMING-2,tim_after,tim_before,"uEMEP: output")
+
 ! CALL MPI_BARRIER(MPI_COMM_CALC, I)
  
 !stop
@@ -705,6 +715,7 @@ subroutine av_uEMEP(dt,End_of_Day)
   integer ::i,j,k,dx,dy,ix,iix,ipoll,isec_poll1
   integer ::isec_poll
   
+  call Code_timer(tim_before)
   if(.not. uEMEP%HOUR.and.&
      .not. uEMEP%DAY .and.&
      .not. uEMEP%MONTH .and.&
@@ -773,6 +784,8 @@ subroutine av_uEMEP(dt,End_of_Day)
   av_fac_month=av_fac_month+1.0
   av_fac_full=av_fac_full+1.0
 
+  call Add_2timing(NTIMING-8,tim_after,tim_before,"uEMEP: averaging")
+
 end subroutine av_uEMEP
 
   subroutine uemep_adv_y(fluxy,i,j,k)
@@ -781,6 +794,7 @@ end subroutine av_uEMEP
     real ::x,xn,xx,f_in,inv_tot
     integer ::iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
 
+    call Code_timer(tim_before)
     isec_poll1=1
     do ipoll=1,uEMEP%Npoll
        xn=0.0
@@ -822,6 +836,7 @@ end subroutine av_uEMEP
        enddo
        isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
     enddo
+    call Add_2timing(NTIMING-6,tim_after,tim_before,"uEMEP: adv_y")
   end subroutine uemep_adv_y
 
   subroutine uemep_adv_x(fluxx,i,j,k)
@@ -830,6 +845,7 @@ end subroutine av_uEMEP
     real ::x,xn,xx,f_in,inv_tot
     integer ::iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
 
+    call Code_timer(tim_before)
     isec_poll1=1
     do ipoll=1,uEMEP%Npoll
        xn=0.0
@@ -871,6 +887,7 @@ end subroutine av_uEMEP
        enddo
        isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
     enddo
+    call Add_2timing(NTIMING-7,tim_after,tim_before,"uEMEP: adv_x")
  
   end subroutine uemep_adv_x
 
@@ -881,6 +898,7 @@ end subroutine av_uEMEP
     integer ::k,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
     real loc_frac_km1(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,KMAX_MID-uEMEP%Nvert:KMAX_MID-1)
 
+    call Code_timer(tim_before)
     !need to be careful to always use non-updated values on the RHS
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID-1
        loc_frac_km1(:,:,:,k)=loc_frac(:,:,:,i,j,k)
@@ -947,6 +965,7 @@ end subroutine av_uEMEP
        enddo
        
     end do
+    call Add_2timing(NTIMING-5,tim_after,tim_before,"uEMEP: adv_k")
   end subroutine uemep_adv_k
 
 
@@ -979,6 +998,7 @@ subroutine uEMEP_emis(indate)
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NEMIS_FILE,NSECTORS),emis_tot(KMAX_MID,NEMIS_FILE)
   real :: lon
 
+  call Code_timer(tim_before)
   dt_uemep=dt_advec
 
   wday=day_of_week(indate%year,indate%month,indate%day)
@@ -1126,6 +1146,7 @@ subroutine uEMEP_emis(indate)
     end do ! i
   end do ! j
 
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"uEMEP: emissions")
 
 end subroutine uEMEP_emis
 end module uEMEP_mod
