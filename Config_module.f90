@@ -630,7 +630,7 @@ type(names), public, save :: InputFiles(Size_InputFiles)
 !2) add the XXFile in NAMELIST /ModelConstants_config/
 !3) add a call associate_File(XXFile) near the end of Config_ModelConstants
 !4) In the routine using the file, add the XXFile under  "use Config_module"
-!5) replace the name you used in the routine with XX_File
+!5) replace the name you used in the routine with XXFile
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
 character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20.txt'
 character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/inputs_emepdefaults_Jun2017/EmisHeights.txt'
@@ -643,6 +643,7 @@ character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/in
 !POLL replaced by name of pollutant in EmisSplit
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
+character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
 !POLL replaced by name of pollutant in EmisSplit
 character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
 !POLL replaced by name of pollutant in EmisSplit
@@ -723,6 +724,7 @@ subroutine Config_ModelConstants(iolog)
    ,MonthlyFacFile&
    ,DailyFacFile&
    ,HourlyFacFile&
+   ,HourlyFacSpecialsFile&
    ,SplitDefaultFile&
    ,SplitSpecialsFile&
    ,RoadMapFile&
@@ -855,6 +857,7 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
   call associate_File(HourlyFacFile)
+  call associate_File(HourlyFacSpecialsFile)
   call associate_File(SplitDefaultFile)
   call associate_File(SplitSpecialsFile)
   call associate_File(RoadMapFile)

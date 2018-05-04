@@ -64,8 +64,9 @@
   use Config_module, only: MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use Config_module, only: IIFULLDOM, JJFULLDOM
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,Monthly_patternsFile&
-                                ,DailyFacFile,MonthlyFacFile,HourlyFacFile,TXTLEN_FILE
+  use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
+                            Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
+                            HourlyFacFile,HourlyFacSpecialsFile,TXTLEN_FILE
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
@@ -369,7 +370,7 @@ contains
        close(IO_TIMEFACS)
 
 !3.1)Additional country specific hourly time factors
-       fname2 = "HOURLY-FACS-SPECIALS"  !
+       fname2 = trim(HourlyFacSpecialsFile)!"HOURLY-FACS-SPECIALS"  !
        write(unit=6,fmt=*) "Starting HOURLY-FACS-SPECIALS"
        call open_file(IO_TIMEFACS,"r",fname2,needed=.false.,iostat=ios)
        if(ios==0)then
