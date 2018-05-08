@@ -436,10 +436,13 @@ subroutine Define_Derived()
         if(.not.USES%AOD)cycle
         select case(class)
         case('AOD:GROUP','EXT:GROUP')
-          iout=find_index(outname,chemgroups(:)%name)
-          if(outname=="EXT")&
-            iout=find_index("AOD",chemgroups(:)%name)
-        case('AOD:SPEC' ,'EXT:SPEC' )
+          select case(outname)
+          case('AOD','EXT')  ! take the full aod_group
+            iout=find_index('EXTINC',chemgroups_maps(:)%name)
+          case default       ! cherry pick from aod_group
+            iout=find_index(outname,chemgroups(:)%name)
+          end select
+        case('AOD:SPEC','EXT:SPEC' )
           iout=find_index(outname,species_adv(:)%name)
         case default
           call CheckStop(sub//"OutputFields%class  Unsupported "//&
@@ -1395,10 +1398,14 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       allocate(ingrp(ngrp))
       select case(class)
       case("AOD:GROUP")
-        igrp = f_2d(n)%index
-        do i=1,ngrp
-          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
-        end do
+        if(name(1:3)=='AOD')then ! take the full aod_grp
+          ingrp(:)=.true.
+        else                     ! cherry pick from aod_grp
+          igrp = f_2d(n)%index
+          do i=1,ngrp
+            ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
+          end do
+        end if
       case("AOD:SPEC")
         ispc = f_2d(n)%index
         ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))
@@ -2057,10 +2064,14 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       allocate(ingrp(ngrp))
       select case(class)
       case("EXT:GROUP")
-        igrp = f_3d(n)%index
-        do i=1,ngrp
-          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
-        end do
+        if(name(1:3)=='EXT')then  ! take the full aod_grp
+          ingrp(:) = .true.
+        else                      ! cherry pick from aod_grp
+          igrp = f_3d(n)%index
+          do i=1,ngrp
+            ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
+          end do
+        end if
       case("EXT:SPEC")
         ispc = f_3d(n)%index
         ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))

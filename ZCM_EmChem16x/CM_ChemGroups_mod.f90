@@ -583,8 +583,8 @@ module ChemGroups_mod
   
   character(len=TXTLEN_SHORT), public, target, save, dimension (14) :: &
     EXTINC_GROUP_MAPBACK = [ character(len=TXTLEN_SHORT) :: &
-    "SO4", "NO3_f", "NO3_c", "NH4_f", "ECn", "ECa", "PMCO",  &
-      "ECn", "ECa", "PMCO", "DDf", "DDc", "EC", "DDf"  &
+    "SO4", "NO3f", "NO3c", "NH4f", "ECn", "ECa", "EC",  &
+      "ECn", "ECa", "EC", "DDf", "DDc", "EC", "DDf"  &
     ]
 
 contains
