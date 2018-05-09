@@ -21,6 +21,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8tn May 2018, Alvaro
+
+Fix USES%AOD=T.
+
+Deriver_mod:
+  EXTINC mapping logic (chemgroups_maps) was missing
+
+ZCM_EmChem16x/CM_ChemGroups_mod:
+  Some of the elements in EXTINC_GROUP_MAPBACK were misnamed
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May 2018, Peter
 
 Ouput timings for uEMEP, when active.
