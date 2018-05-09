@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th May 2018, Peter
+
+Moved uEMEP diffusion into uEMEP_mod.f90 and more optimization.
+Now vertical advection is done only up to 2 layers above uEMEP%Nvert
+Since all local fraction are zero above uEMEP%Nvert, this gives almost the same 
+result. Less than 0.001 differences in locfrac, except sometimes over sea, because
+ship emission are higher up and need to come down to diminish locfrac
+Also bug fix, that could make localfractions nan at the northern boundary.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8tn May 2018, Alvaro
 
 Fix USES%AOD=T.

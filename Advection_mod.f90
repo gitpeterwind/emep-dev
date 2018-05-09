@@ -96,7 +96,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only : GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only : uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k
+  use uEMEP_mod, only : uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff
 
   implicit none
   private
@@ -132,6 +132,8 @@
   private :: advy
   private :: preadvx3
   private :: preadvy3
+
+!NB: vertdiffn is outside the module, because of circular dependencies with uEMEP_mod
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
@@ -282,7 +284,7 @@
     integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xn_k(uEMEP%Nsec_poll*(uEMEP%dist*2+1)*(uEMEP%dist*2+1),kmax_mid),x
+    real :: xn_k(uEMEP%Nsec_poll*(1+(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),kmax_mid),x
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -782,7 +784,7 @@
 
     call Add_2timing(22,tim_after,tim_before,"advecdiff:ps")
 
-    ! vertical diffusion
+    !________ vertical diffusion ______
     ndiff = 1 !number of vertical diffusion iterations (the larger the better)
     do k = 2,KMAX_MID
        ds3(k) = dt_advec*dhs1i(k)*dhs2i(k)
@@ -798,65 +800,9 @@
 
     do j = lj0,lj1
        do i = li0,li1
-
-          if(USE_uEMEP)then
-             call Code_timer(tim_uemep_before)
-             xn_k = 0.0
-             do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-                n=0
-                do dy=-uEMEP%dist,uEMEP%dist
-                   do dx=-uEMEP%dist,uEMEP%dist
-                      n=n+1
-                      isec_poll1=1
-                      do ipoll=1,uEMEP%Npoll
-                         do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                            do iix=1,uEMEP%poll(ipoll)%Nix
-                               ix=uEMEP%poll(ipoll)%ix(iix)
-                               !assumes mixing ratios units, but weight by mass
-                               xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)=xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
-                            end do
-                            
-                            xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)=xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)*loc_frac(isec_poll,dx,dy,i,j,k)
-                         end do
-                         isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
-                      end do
-                   end do
-                enddo
-             enddo
-             call vertdiffn(xn_k,uEMEP%Nsec_poll*(uEMEP%dist*2+1)*(uEMEP%dist*2+1),1,EtaKz(i,j,1,1),ds3,ds4,ndiff)
-             
-             call Add_2timing(NTIMING-4,tim_uemep_after,tim_uemep_before,"uEMEP: diffusion")
-          end if
+          if(USE_uEMEP)call uemep_diff(i,j,ds3,ds4,ndiff)
           
-          !________ vertical diffusion ______
-          call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,EtaKz(i,j,1,1),ds3,ds4,ndiff)
-          !________
-
-          if(USE_uEMEP)then
-             call Code_timer(tim_uemep_before)
-             do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-                isec_poll1=1
-                do ipoll=1,uEMEP%Npoll
-                   x=0.0
-                   do iix=1,uEMEP%poll(ipoll)%Nix
-                      ix=uEMEP%poll(ipoll)%ix(iix)
-                      !conversion from mixing ratio to mg/m2
-                      x=x+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
-                   end do
-                   n=0
-                   do dy=-uEMEP%dist,uEMEP%dist
-                      do dx=-uEMEP%dist,uEMEP%dist
-                         n=n+1
-                         do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                            loc_frac(isec_poll,dx,dy,i,j,k) = xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)/(x+1.E-30)
-                         end do
-                      end do
-                   end do
-                   isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
-                end do
-             end do
-              call Add_2timing(NTIMING-4,tim_uemep_after,tim_uemep_before,"uEMEP: diffusion")
-         end if
+          call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,1,EtaKz(i,j,1,1),ds3,ds4,ndiff)
 
        end do
     end do
@@ -1467,73 +1413,6 @@
     end do
 
   end subroutine vertdiff_1d
-
-  subroutine vertdiffn(xn_adv,NSPEC,Nij,SigmaKz,ds3,ds4,ndiff)
-
-!     executes vertical diffusion ndiff times
-
-! SigmaKz(k) mixes xn_adv(k) and xn_adv(k-1)
-!
-! adif(k) -> mixing of layers k and k+1:
-!            SigmaKz(k+1)*ds3(k+1)= SigmaKz(k+1)*dt_advec*dhs1i(k+1)*dhs2i(k+1)
-!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k+1)-sigma_mid(k))
-!
-! bdif(k) -> mixing of layers k and k-1:
-!            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
-!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
-
-!    input
-    real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
-    real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
-    integer,intent(in)::  NSPEC,ndiff,Nij
-
-!    output
-    real ,intent(inout):: xn_adv(NSPEC,0:Nij*(KMAX_MID-1))
-
-!    local
-
-    integer  k,n
-
-    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1
-
-    real ndiffi
-
-    ndiffi=1./ndiff
-
-    do k = 1,KMAX_MID-1
-      adif(k-1) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)*ndiffi
-      bdif(k) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)*ndiffi
-    end do
-
-    cdif(KMAX_MID-1) = 1./(1. + bdif(KMAX_MID-1))
-    e1(KMAX_MID-1) = bdif(KMAX_MID-1)*cdif(KMAX_MID-1)
-
-    do k = KMAX_MID-2,1,-1
-      cdif(k) = 1./(1. + bdif(k) + adif(k) - adif(k)*e1(k+1))
-      e1(k) = bdif(k)*cdif(k)
-    end do
-
-    cdif(0) = 1./(1. + adif(0) - adif(0)*e1(1))
-
-    do n=1,ndiff
-      xn_adv(:,Nij*(KMAX_MID-1)) = &
-         xn_adv(:,Nij*(KMAX_MID-1))*cdif(KMAX_MID-1)
-      do k = KMAX_MID-2,0,-1
-         xn_adv(:,Nij*k) =         &
-           (xn_adv(:,Nij*k)        &
-           +adif(k)*xn_adv(:,Nij*(k+1)))*cdif(k)
-      end do
-
-      do k = 1,KMAX_MID-1
-         xn_adv(:,Nij*k) =            &
-            e1(k)*xn_adv(:,Nij*(k-1)) &
-           +xn_adv(:,Nij*k)
-      end do
-
-    end do ! ndiff
-
-  end subroutine vertdiffn
-
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine vertdiffn2(xn_adv,SigmaKz,ds3,ds4,ndiff)
@@ -3739,6 +3618,10 @@ end if
           psend(2) = psend(1)
           psend(3) = psend(1)
         end if
+        do ii=1,uEMEP_Size1_local
+           n=n+1
+           loc_frac_1d(ii,lj1+1) = 0.0
+        enddo
     else
 
       CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
@@ -4270,3 +4153,84 @@ end if
 
   end subroutine adv_vert_fourth
 end module Advection_mod
+
+!=================================================================================
+! NOT IN MODULE
+!=================================================================================
+  subroutine vertdiffn(xn_adv,NSPEC,Nij,KMIN_in,SigmaKz,ds3,ds4,ndiff)
+
+!     executes vertical diffusion ndiff times
+
+! SigmaKz(k) mixes xn_adv(k) and xn_adv(k-1)
+!
+! adif(k) -> mixing of layers k and k+1:
+!            SigmaKz(k+1)*ds3(k+1)= SigmaKz(k+1)*dt_advec*dhs1i(k+1)*dhs2i(k+1)
+!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k+1)-sigma_mid(k))
+!
+! bdif(k) -> mixing of layers k and k-1:
+!            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
+!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
+!
+! KMIN is the minimum value of k to include for diffusion (1 is top)
+
+use Config_module,only: KMAX_MID, KMAX_BND
+use Par_mod,           only: me,LIMAX,LJMAX
+!    input
+    real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
+    real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
+    integer,intent(in)::  NSPEC,ndiff,Nij
+    integer,intent(in):: KMIN_in
+
+!    output
+    real ,intent(inout):: xn_adv(NSPEC,0:Nij*(KMAX_MID-1))
+
+!    local
+
+    integer  k,n,KMIN
+
+    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1
+
+    real ndiffi
+
+    if(KMIN_in==KMAX_MID)return!no diffusion from one cell to itself
+    KMIN = KMIN_in-1
+    KMIN = max(1,KMIN)
+
+    ndiffi=1./ndiff
+
+    do k = KMIN,KMAX_MID-1
+      adif(k-1) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)*ndiffi
+      bdif(k) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)*ndiffi
+    end do
+
+    cdif(KMAX_MID-1) = 1./(1. + bdif(KMAX_MID-1))
+    e1(KMAX_MID-1) = bdif(KMAX_MID-1)*cdif(KMAX_MID-1)
+
+    do k = KMAX_MID-2,KMIN,-1
+      cdif(k) = 1./(1. + bdif(k) + adif(k) - adif(k)*e1(k+1))
+      e1(k) = bdif(k)*cdif(k)
+    end do
+
+    cdif(KMIN-1) = 1./(1. + adif(KMIN-1) - adif(KMIN-1)*e1(KMIN))
+
+    do n=1,ndiff
+
+      xn_adv(:,Nij*(KMAX_MID-1)) = &
+         xn_adv(:,Nij*(KMAX_MID-1))*cdif(KMAX_MID-1)
+
+      do k = KMAX_MID-2,KMIN-1,-1
+         xn_adv(:,Nij*k) =         &
+           (xn_adv(:,Nij*k)        &
+           +adif(k)*xn_adv(:,Nij*(k+1)))*cdif(k)
+      end do
+
+      do k = KMIN,KMAX_MID-1
+         xn_adv(:,Nij*k) =            &
+            e1(k)*xn_adv(:,Nij*(k-1)) &
+           +xn_adv(:,Nij*k)
+      end do
+
+    end do ! ndiff
+
+  end subroutine vertdiffn
+

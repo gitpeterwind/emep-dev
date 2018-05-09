@@ -17,7 +17,7 @@ use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour,
 
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
-use MetFields_mod,     only: ps,roa
+use MetFields_mod,     only: ps,roa,EtaKz
 use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
                             KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1, HOURLYFILE_ending,&
@@ -40,6 +40,8 @@ use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
 
 implicit none
+!external advection_mod_mp_vertdiffn_k
+
 private
 
 public  :: init_uEMEP
@@ -48,6 +50,7 @@ public  :: av_uEMEP
 public  :: uemep_adv_x
 public  :: uemep_adv_y
 public  :: uemep_adv_k
+public  :: uemep_diff
 public  :: uemep_emis
 
 integer, public, save :: uEMEP_Size1=0 !total size of the first 3 dimensions of loc_frac
@@ -967,7 +970,87 @@ end subroutine av_uEMEP
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"uEMEP: adv_k")
   end subroutine uemep_adv_k
+ 
+  subroutine uemep_diff(i,j,ds3,ds4,ndiff)
+    
+    implicit none
+    interface 
+       subroutine vertdiffn(xn_k,NSPEC,Nij,KMIN_in,SigmaKz,ds3,ds4,ndiff)
+         real,intent(inout) :: xn_k(NSPEC,0:*)!dummy
+         real,intent(in)::  SigmaKz(*)!dummy
+         real,intent(in)::  ds3(*),ds4(*)!dummy
+         integer,intent(in)::  NSPEC,ndiff,Nij,KMIN_in
+       end subroutine vertdiffn
+    end interface
 
+    real, intent(in) :: ds3(2:KMAX_MID),ds4(2:KMAX_MID)
+    integer, intent(in) :: i,j,ndiff
+!    real :: xn_k(uEMEP_Size1+uEMEP%Nsec_poll,KMAX_MID),x
+    real :: xn_k(uEMEP_Size1+uEMEP%Npoll,KMAX_MID),x
+    integer ::isec_poll1,ipoll,isec_poll
+    integer ::k,n,ix,iix,dx,dy
+    !how far diffusion should take place above uEMEP%Nvert. 
+    ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
+    !ship emission are higher up and need to come down to diminish locfrac
+    integer, parameter :: KUP = 2
+
+    call Code_timer(tim_before)
+    xn_k = 0.0
+    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+       isec_poll1=1
+       do ipoll=1,uEMEP%Npoll
+          x=0.0
+          do iix=1,uEMEP%poll(ipoll)%Nix
+             ix=uEMEP%poll(ipoll)%ix(iix)
+             !assumes mixing ratios units, but weight by mass
+             x=x+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+          end do
+          n=0
+          do dy=-uEMEP%dist,uEMEP%dist
+             do dx=-uEMEP%dist,uEMEP%dist
+                n=n+1
+                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                   xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)=x*loc_frac(isec_poll,dx,dy,i,j,k)
+                end do
+             end do
+          end do
+          isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+       enddo
+    enddo
+    do k = 1,KMAX_MID
+       isec_poll1=1
+       do ipoll=1,uEMEP%Npoll
+          x=0.0
+          do iix=1,uEMEP%poll(ipoll)%Nix
+             ix=uEMEP%poll(ipoll)%ix(iix)
+             !assumes mixing ratios units, but weight by mass
+             x=x+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+          end do
+          xn_k(uEMEP_Size1+ipoll,k)=x
+          isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+       enddo
+    enddo
+    
+    call vertdiffn(xn_k,uEMEP_Size1+uEMEP%Npoll,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+    
+    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+       isec_poll1=1
+       do ipoll=1,uEMEP%Npoll
+          n=0
+          do dy=-uEMEP%dist,uEMEP%dist
+             do dx=-uEMEP%dist,uEMEP%dist
+                n=n+1
+                x = 1.0/(xn_k(uEMEP_Size1+ipoll,k)+1.E-30)
+                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                   loc_frac(isec_poll,dx,dy,i,j,k) = xn_k((n-1)*(uEMEP%Nsec_poll)+isec_poll,k)*x
+                end do
+             end do
+          end do
+          isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+       end do
+    end do
+    call Add_2timing(NTIMING-4,tim_after,tim_before,"uEMEP: diffusion")
+  end subroutine uemep_diff
 
 subroutine uEMEP_emis(indate)
 !include emission contributions to local fractions
@@ -1149,4 +1232,6 @@ subroutine uEMEP_emis(indate)
   call Add_2timing(NTIMING-3,tim_after,tim_before,"uEMEP: emissions")
 
 end subroutine uEMEP_emis
+
+
 end module uEMEP_mod
