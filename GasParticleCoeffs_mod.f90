@@ -115,7 +115,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 ! Particles:
 !A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
 !               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV sig  rhop  Gb(1-rural, 2-seasalt) 
- ,DD_t( 'PMfS'  ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)& ! as SAI_F 
+ ,DD_t( 'PMf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)& ! as SAI_F 
  ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)&! as SIA_F
  ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)&! as SIA_F
  ,DD_t( 'SSf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2200, 2)& ! as SSF
@@ -193,7 +193,7 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
   integer, public, save :: nddep, nwdep ! will be number of DDspec, WDspec
   integer, public, save, dimension(NSPEC_TOT) :: itot2DDspec = 0
   integer, public, save :: idcmpHNO3, idcmpO3, idcmpNH3, idcmpSO2, idcmpNO2
-  integer, public, save :: idcmpPMfS, idcmpPMfNO3, idcmpPMfNH4
+  integer, public, save :: idcmpPMf, idcmpPMfNO3, idcmpPMfNH4
 
   !/ Some terms needed for gases+aerosols. we just use one container for all
   type, private :: ddep_t
@@ -290,7 +290,7 @@ contains
        ! Surrogate needs to exist in Defs list and species in species list
         if ( iadv <1 .or. idef <1 ) then
           print '(2(a,2i5))', dtxt//'NEG DepMap index'//dcase//&
-            trim(advname), iadv, idef, trim(defname)
+            trim(advname), iadv, idef, ' :'//trim(defname)
 !print *, 'DEFNAMES ', defnames
           call StopAll(dtxt//'NEG DepMap index'//dcase//CM_DepMap(i)%name )
         end if
@@ -370,7 +370,7 @@ contains
  idcmpSO2  = find_index('SO2',DDspec(:)%name)
  idcmpNO2  = find_index('NO2',DDspec(:)%name)
  idcmpNH3  = find_index('NH3',DDspec(:)%name)
- idcmpPMfS   = find_index('PMfS',DDspec(:)%name)
+ idcmpPMf   = find_index('PMf',DDspec(:)%name)
  idcmpPMfNO3 = find_index('PMfNO3',DDspec(:)%name)
  idcmpPMfNH4 = find_index('PMfNH4',DDspec(:)%name)
 

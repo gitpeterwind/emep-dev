@@ -6,6 +6,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("MPAN      ", "PAN       ", -999.0 ) &
 , dep_t("HNO3      ", "HNO3      ", -999.0 ) &
 , dep_t("HONO      ", "HNO2      ", -999.0 ) &
+, dep_t("HO2NO2    ", "HNO3      ", -999.0 ) &
 , dep_t("MAL       ", "ALD       ", -999.0 ) &
 , dep_t("HCHO      ", "HCHO      ", -999.0 ) &
 , dep_t("CH3CHO    ", "ALD       ", -999.0 ) &
@@ -14,12 +15,15 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("H2O2      ", "SO2       ", -999.0 ) &
 , dep_t("ACETOL    ", "ALD       ", -999.0 ) &
 , dep_t("SO2       ", "SO2       ", -999.0 ) &
+, dep_t("HNO2      ", "HNO2      ", -999.0 ) &
 , dep_t("SO4       ", "PMfS      ", -999.0 ) &
 , dep_t("NH3       ", "NH3       ", -999.0 ) &
-, dep_t("NO3_f     ", "PMfNO3    ", -999.0 ) &
+, dep_t("NO3_f     ", "PMfN      ", -999.0 ) &
 , dep_t("NO3_c     ", "PMc       ", -999.0 ) &
-, dep_t("NH4_f     ", "PMfNH4    ", -999.0 ) &
+, dep_t("NH4_f     ", "PMfN      ", -999.0 ) &
+, dep_t("PMfS      ", "PMfS      ", -999.0 ) &
 , dep_t("SHIPNOX   ", "NO2       ", -999.0 ) &
+, dep_t("TERPOOH   ", "ALD       ", -999.0 ) &
 , dep_t("POM_f_WOOD", "PMfS      ", -999.0 ) &
 , dep_t("POM_f_FFUEL", "PMfS      ", -999.0 ) &
 , dep_t("POM_c_FFUEL", "PMc       ", -999.0 ) &

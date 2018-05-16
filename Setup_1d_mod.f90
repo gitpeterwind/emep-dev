@@ -151,8 +151,8 @@ contains
       ! is negative
       !QUERY: Should we then set USES%SURF_AREA False?
 
-       iGerber(AERO%SIA_F)= find_index('PMfS',DDspec(:)%name)
-       iGerber(AERO%PM_F)= find_index('PMfS',DDspec(:)%name)
+       iGerber(AERO%SIA_F)= find_index('PMf',DDspec(:)%name)
+       iGerber(AERO%PM_F)= find_index('PMf',DDspec(:)%name)
        iGerber(AERO%SS_F)= find_index('SSf',DDspec(:)%name)
        iGerber(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
        iGerber(AERO%SS_C)= find_index('SSc',DDspec(:)%name)

@@ -30,6 +30,7 @@ module RunChem_mod
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
   use DefPhotolysis_mod, only: setup_phot
+  use DefPhotolysis_mod  ! RDBG
   use DerivedFields_mod, only: f_2d
   use DryDep_mod,        only: drydep
   use DustProd_mod,      only: WindDust  !DUST -> USES%DUST
@@ -156,13 +157,18 @@ subroutine runchem()
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
 
-      if(DEBUG%RUNCHEM.and.debug_flag) &
+      if(DEBUG%RUNCHEM.and.debug_flag) then
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
              !rcemis(SHIPNOX,KMAX_MID), !hardcoded chemical indice are not
              ! defined for all chem schemes, and should usually be avoided
           rcbio(1,KMAX_MID), &
           rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID), rcphot(3,20), xn_2d(NO,20),xn_2d(C5H8,20),&
           rct(67,KMAX_MID), rct(68,KMAX_MID) /) ) ! PAN P, L
+       write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpre', me, &
+           'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), 'eC5H8', rcemis(C5H8,KMAX_MID) &
+          ,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20), 'xC5H8', xn_2d(C5H8,KMAX_MID)
+
+      end if
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 
       if(ORGANIC_AEROSOLS) &
@@ -187,8 +193,17 @@ subroutine runchem()
 !     !-------------------------------------------------
 !     !-------------------------------------------------
 !     !-------------------------------------------------
-      if(DEBUG%RUNCHEM.and.debug_flag)&
+      if(DEBUG%RUNCHEM.and.debug_flag)then
         call datewrite("Runchem Post-Chem",(/xn_2d(NO,20),xn_2d(C5H8,20)/))
+        write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpos', me, &
+           !'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), &
+           ! 'eC5H8', rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID) &
+           'jNO3',  rcphot(IDNO3_NO2,20), 'jHNO3',rcphot(IDHNO3,20), &
+           'jNO2',  rcphot(IDNO2,20), 'jO3a',  rcphot(IDO3_O1D,20), 'jO3b',  rcphot(IDO3_O3P,20) &
+           ! 'eC5H8', rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID) &
+          ,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20), 'xC5H8', xn_2d(C5H8,KMAX_MID)
+      end if
+
       !_________________________________________________
 
       call Add_2timing(29,tim_after,tim_before,"Runchem:chemistry")
