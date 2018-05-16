@@ -53,6 +53,7 @@ module GasParticleCoeffs_mod
      DH2O    = 21.78e-6 &! m2/s at STP, Massman
     ,NU_AIR0 =  1.35e-5  ! Kin. viscosity of air, m2/s, 273K
   real, public, save       :: nu_air = UNDEF_R  ! Kin. viscosity of air, m2/s
+ !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
         NDRYDEP_GASES = 14     &! no. of gases in Wesely tables, DDdefs below
@@ -63,7 +64,7 @@ module GasParticleCoeffs_mod
 type, private :: DD_t
   character(len=16) :: name
   real :: Dx       ! diffusivity at STP, m2/s
-  real :: DH2ODx   ! DH2O/Dx from Wesely Tables ! NOT USED YET
+  real :: DH2ODx   ! DH2O/Dx from Wesely Tables ! NOT USED now!
   real :: Hstar    ! M/atm    effective Henry coeff.
   real :: pe, K    ! from Wesely Tables, K in 1/(M s)
   real :: f0       ! Ozone reactivity indicator
@@ -88,8 +89,8 @@ end type DD_t
 
 
 type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
-! Dx values not from Massman are set using Wesely ratios for now. Will
-! calculate later.
+! Dx values not from Massman 1998 (=M) are set directly where possible,
+! other using Wesely ratios for now. 
 ! DD_t( 'NO   ',18.02e-6 , 1.3, 2.0E-03, 9999, 1.0E-02,0,999.,-1,-1,-1,-1,& !No need for NO
 ! QUERY - what is K? not used so far, but check for H2O
 ! Rm from Zhang et al 2002. Note Zhang has 0 for MVK,100 for MACR
@@ -98,18 +99,19 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 !                          /Dx
 !--------------------------------------------------------------------
 ! Gases:
-  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1)&
- ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1)&
+  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !M
+!A2018COMP ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R should=1.51
+ ,DD_t( 'O3   ',DH2O/1.51, 1.51, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R was 1.6
+ ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1)& !M
+ ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1)& !M
+ ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1)& 
  ,DD_t( 'H2O2 ',DH2O/1.4 , 1.4, 1.0E+05,   23, 7.0E+00,   1,  0.,  -1,-1,-1,-1)&
  ,DD_t( 'ALD', DH2O/1.6 , 1.6, 1.5E+01,   -1, 1.0E+04,   0,100.,  -1,-1,-1,-1)& !Acetaldehyde
  ,DD_t( 'HCHO ',DH2O/1.3 , 1.3, 6.0E+03,   -3, 1.0E+04,   0,  0.,  -1,-1,-1,-1)&
  ,DD_t( 'ROOH',DH2O/1.6 , 1.6, 2.4E+02, 9999, 2.0E+00, 0.1,100.,  -1,-1,-1,-1)& !Methyl hydroperoxide(was OP)
  ,DD_t( 'PAA  ',DH2O/2.0 ,   2, 5.4E+02, 9999, 6.0E+02, 0.1,  0.,  -1,-1,-1,-1)& !Peroxyacetic acid, 10
  ,DD_t( 'ORA',DH2O/1.6 , 1.6, 4.0E+06,   -8, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Formic acid'
- ,DD_t( 'NH3  ',19.78e-6 ,   1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& 
+ ,DD_t( 'NH3  ',19.78e-6 ,   1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Dx=M
  ,DD_t( 'PAN  ',DH2O/2.6 , 2.6, 3.6E+00, 9999, 3.0E+03, 0.1,  0.,  -1,-1,-1,-1)&
  ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1)&
 ! Particles:
@@ -249,6 +251,8 @@ contains
     integer, dimension(900,NSPEC_ADV) :: iDepUsed  ! tmp array
     character(len=*), parameter :: dtxt='GetDepMap:'
 
+
+if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
 
    ! we fill the CM_DepMap with the surrogate and then the
    ! list of  advected species associated with that.
@@ -411,6 +415,7 @@ contains
        DDspec(icmp)%Schmidt = NU_AIR0 / DDdefs(icmp)%Dx
        DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
 
+       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
        if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
        !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
           "Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3, &

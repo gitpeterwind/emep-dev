@@ -609,8 +609,9 @@ module AeroFunctions_mod
    real, parameter :: nm=1.0e9,  um=1.0e6, um2 = m2m3toum2cm3 ! shorthands
    real :: cn2o5, Smono, Spm, Sdry, Swet, rdry, rwet, kd, kw1,kw2,kw3
    real :: DpgN, DpgV, frh, t
-   integer :: ind, iRH, iTK, io1,io2,i
+   integer :: ind, iRH, iTK, i
    real, dimension(10) :: ugPM, S_m2m3, Kn2o5
+   integer, parameter :: io1=20,io2=22 ! TMP A2018 stallo gfortran doesn't handle newunit :-(
 
    cn2o5 = cMolSpeed( 298.0, 108.0)
    print *, "Speed N2O5 ", cn2o5
@@ -684,8 +685,10 @@ module AeroFunctions_mod
    end do ! iRH
    end do ! ind
 
-   open(newunit=io1,file="AeroSurf.txt")
-   open(newunit=io2,file="AeroRate.txt")
+   !TMP open(newunit=io1,file="AeroSurf.txt")
+   !TMP open(newunit=io2,file="AeroRate.txt")
+   open(io1,file="AeroSurf.txt")
+   open(io2,file="AeroRate.txt")
    ugPM = (/(1.0*i*i, i=1,size(ugPM)) /)
    do iRH = 100, 0, -10
      frh = min(99.9, 0.01*iRH)

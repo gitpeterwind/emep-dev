@@ -17,11 +17,10 @@ module ChemGroups_mod
   type(typ_factors), dimension(2), public, save :: chemgroups_factors
   type(typ_maps), dimension(1), public, save :: chemgroups_maps
   
-  integer, public, target, save, dimension (16) :: &
+  integer, public, target, save, dimension (14) :: &
     RO2_GROUP = (/  &
       CH3O2, C2H5O2, SECC4H9O2, ISRO2, ETRO2, PRRO2, OXYO2, MEKO2,  &
-      MALO2, MACRO2, CH3CO3, HYPROPO2, IPROPOLO2, TERPO2,  &
-      XMTO3_RO2, TERPPeroxy  &
+      MALO2, MACRO2, CH3CO3, TERPO2, XMTO3_RO2, TERPPeroxy  &
     /)
   
   integer, public, target, save, dimension (2) :: &

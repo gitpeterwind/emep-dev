@@ -404,24 +404,6 @@
   xnew(CH3CO3) = (xold(CH3CO3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> HYPROPO2
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for HYPROPO2! xnew(HYPROPO2) = max(0.0, xold(HYPROPO2))
-
-
-!-> IPROPOLO2
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for IPROPOLO2! xnew(IPROPOLO2) = max(0.0, xold(IPROPOLO2))
-
-
 !-> TERPO2
 
   P = rct(84,k) * xnew(APINENE) * xnew(OH)  &
@@ -447,15 +429,6 @@
   L = 1.0e6
   
   xnew(XMTO3_RO2) = (xold(XMTO3_RO2) + dt2 * P) / (1.0 + dt2 * L)
-
-
-!-> RO2POOL
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  xnew(RO2POOL) = sum(xnew(RO2_GROUP))
 
 
 !-> NMVOC
@@ -1196,15 +1169,6 @@
   ! L = 0.0
   
   xnew(SO2) = xold(SO2) + dt2 * P
-
-
-!-> HNO2
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for HNO2! xnew(HNO2) = max(0.0, xold(HNO2))
 
 
 !-> SHIPNOX

@@ -394,7 +394,8 @@ contains
                        DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
       if ( dbghh ) then
         call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
-           [ Grid%t2, Grid%rho_ref, DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
+           [ DDspec(icmp)%DpgV, DDspec(icmp)%sigma,  DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
+           !May16 [ Grid%t2, Grid%rho_ref, DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
       end if
     end do
 
@@ -437,7 +438,7 @@ contains
          call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
 
          !A2018 do n = 1, NDRYDEP_CALC
-         do icmp = 1, nddep
+         do icmp = 1, nddep    !DSQUERY - Check aerosol usage!
 
            !(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur) is resistance from mid layer and down
            !L%Ra_X  + BL(icmp)%Rb + BL(icmp)%Rsur)is resistance from 50 meter and down
@@ -601,16 +602,19 @@ contains
               Vg_eff(icmp) = Vg_ref(icmp) !PW
 
               if ( DEBUG_VDS ) then
-                if ( debug_flag .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
+                if ( debug_flag &
+                  .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
                   write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", &
                     imm, idd, ihh, icmp, iL, i_fdom(i), j_fdom(j),&
                     L%ustar,  L%invL, pzpbl(i,j), &
-                    Grid%ustar, Grid%Hd,  100.0*Vds, &
-                    100.0*BL(icmp)%Vs, 100.0*Vg_ref(icmp),  100.0*Vg_3m (icmp) &
+                    Grid%ustar, Grid%Hd,  100*Vds, &
+                    100*BL(icmp)%Vs, 100*Vg_ref(icmp), 100*Vg_3m (icmp) &
                      , Grid%t2, Grid%rho_ref 
-                   write(*,"(a,2i4,3es10.3)") "VDS CHECK ",icmp, nae, Vds, Vg_ref(icmp)
+                  write(*,"(a,2i4,3es10.3)") "VDS CHECK ",&
+                      icmp, nae, Vds, Vg_ref(icmp)
                   
-                   call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ), "AEROSTOP")
+                  call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ),&
+                                  "AEROSTOP")
                 end if
               end if
            end if ! Gases?
@@ -639,9 +643,11 @@ contains
             Sumland = Sumland + L%coverage
             do icmp = 1, nddep !A2018 NDRYDEP_CALC
                if(USES%EFFECTIVE_RESISTANCE)then
-                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
+                  Vg_ratio(icmp) =  Vg_ratio(icmp) &
+                                   + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
                else
-                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
+                  Vg_ratio(icmp) =  Vg_ratio(icmp)&
+                                    + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
                endif
             end do
          end if
@@ -651,9 +657,11 @@ contains
             do icmp = idcmpO3 , idcmpO3 !!! 1,NDRYDEP_GASES 
                call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
-                   !(/ Mosaic_VgRef(n,iL) , Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
-               call datewrite("DEPDVGA", iL, (/ L%coverage, 1.0*icmp,& 
-                 L%LAI,100*L%g_sto, L%Ra_ref, BL(icmp)%Rb, min( 999.0,BL(icmp)%Rsur ) /) )
+
+               call datewrite("DEPDVGA"//DDspec(icmp)%name, iL, (/ L%coverage, 1.0*icmp,& 
+                 L%LAI,100*L%g_sto, L%Ra_ref, &
+                 DDspec(icmp)%Dx, BL(icmp)%Rb, min( 999.0,BL(icmp)%Rsur ) /) )
+
                call datewrite("DEPDVGB", iL, (/ L%coverage, 1.0*icmp,& 
                 100*Vg_3m(icmp), 100*Vg_ref(icmp), Vg_ratio(icmp) /) )
             end do
@@ -689,7 +697,8 @@ contains
               call datewrite(dtxt//"CHVEG ", iL, &
                 (/  xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
                     c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp), &
-                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, BL(icmp)%Rb,BL(icmp)%Rsur /) )
+                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, &
+                    BL(icmp)%Rb,BL(icmp)%Rsur /) )
            end if
            
 
@@ -745,7 +754,8 @@ contains
 
     end do ! icmp
 
-    if(VGtest_out_ix>0) d_2d(VGtest_out_ix,i,j,IOU_INST) = Sub(0)%Vg_eff(1)/(1.E-20+Sub(0)%Vg_Ref(1))
+    if(VGtest_out_ix>0) d_2d(VGtest_out_ix,i,j,IOU_INST) = &
+          Sub(0)%Vg_eff(1)/(1.E-20+Sub(0)%Vg_Ref(1))
 
 
   ! ===================================================================
@@ -917,72 +927,9 @@ contains
 
    call Add_MosaicOutput(debug_flag,i,j,convfac2,&
             itot2DDspec, fluxfrac_adv, Deploss ) 
-!A2018            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
+   ! SPOD puts were here
 
-
-  !    !----------------------------------------------------------------
-  !    ! HUGE OUTPUTS. Not for routine use ! 
-  !     if (SPOD_OUT ) then   ! Extra outputs for ICP folkks
-  !        if ( first_spod .and. nlocal_sites > 0  ) then
-  !    P = IO_SPOD + me
-  !    write(fname,"(a,i2.2)") "OutputSPOD", me
-  !    open(P, file=fname)
-  !          write(P,"(a25,a5)",advance="no") adjustl("name"), "code"
-  !          write(P,"(3a4)",advance="no")   "SGS", "EGS", "jd"
-  !          write(P,"(3a3)",advance="no")   "mm", "dd", "hh"
-  !          write(P,"(a7)",advance="no")  "cover"
-  !          write(P,"(2a7)",advance="no")  "t2C", "ustar"
-  !          write(P,"(3a7)",advance="no") "G-rh2m","L-rh","L-vpd"
-  !          write(P,"(2a8)",advance="no")  "PARsun", "PARshd"
-  !          write(P,"(2a7)",advance="no") "G45-O3","G3-O3"
-  !         !if ( LandType(iL)%flux_wanted ) then
-  !          write(P,"(a7)",advance="no") "CO3ppb"
-  !          write(P,"(2a10)",advance="no") "CO3nmole","FstO3"
-  !          ! Some params have value -999 unless sun shining...
-  !          write(P,"(5a7)",advance="no") &
-  !                "fphen", "f_L","f_T","f_D", "fenv" 
-  !          write(P,"(a7,2a10)",advance="no")  "fsun", "gsto", "gsun"
-  !          write(P,*)
-  !         !end if
-  !          first_spod = .false.
-  !        end if ! first spod
-
-  !      if( iss==0 .and. nlocal_sites > 0  )then
-  !       do  n = 1, nlocal_sites
-  !          if( i == site_x(icmp) .and. j == site_y(icmp) ) then 
-  !             nglob = site_gn(icmp)  ! number in global list
-!        if( iss==0 .and. debug_proc.and.  i==debug_li .and. j==debug_lj)then
-  !     
-  !       do iiL = 1, nlu
-  !          iL  = iL_used(iiL)
-  !          L   = Sub(iL)
-  !        !print *, "SPOD_OUT:"//trim(fname), me,nlocal_sites, iL, imm, idd, ihh
-  !          write(P,"(a25,a8)",advance="no") adjustl(site_name(nglob)), &
-  !             adjustl(LandDefs(iL)%code)
-  !          write(P,"(3i4)",advance="no")   L%SGS, L%EGS, daynumber
-  !          write(P,"(3i3)",advance="no")   imm, idd, ihh
-  !          write(P,"(f7.3)",advance="no")  L%coverage
-  !          write(P,"(2f7.2)",advance="no") L%t2C,L%ustar
-  !          write(P,"(3f7.3)",advance="no") Grid%rh2m,L%rh,L%vpd
-  !          write(P,"(2f8.1)",advance="no") L%PARsun,L%PARshade
-  !          write(P,"(2f7.2)",advance="no") o3_45m,Grid%surf_o3_ppb
-  !         if ( LandType(iL)%flux_wanted ) then
-  !          write(P,"(f7.2)",advance="no") L%cano3_ppb
-  !          write(P,"(2es10.3)",advance="no") L%cano3_nmole,L%FstO3
-  !          ! Some params have value -999 unless sun shining...
-  !          write(P,"(5f7.2)",advance="no") &
-  !               L%f_phen,max(-1.,L%f_light),max(-1.,L%f_temp),max(-1.,L%f_vpd), L%f_env 
-  !          write(P,"(f7.3,2es10.3)",advance="no") L%f_sun, L%g_sto, L%g_sun
-  !         end if
-  !          !write(P,"(a)",advance="yes") ";"
-  !          write(P,*) 
-  !       end do !iL
-  !      end if
-  !       end do !sites
-  !      end if !iss
-  !    end if !SPOD_OUT
-  !   !SPOD----------------------------------------------------
  end subroutine drydep
 
 end module DryDep_mod

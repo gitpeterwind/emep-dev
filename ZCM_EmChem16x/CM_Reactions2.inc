@@ -44,12 +44,3 @@
   ! Nothing to do for NH4_f! xnew(NH4_f) = max(0.0, xold(NH4_f))
 
 
-!-> PMfS
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for PMfS! xnew(PMfS) = max(0.0, xold(PMfS))
-
-
