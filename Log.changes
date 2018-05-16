@@ -21,6 +21,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2018, Dave
+
+corrected some chemnistry/dep settings. Changes in ZCM_EmChem16x files.
+Some debug changes in DryDep, GasParticleCoeffs and AeroFunctions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May 2018, Peter
 
 Moved uEMEP diffusion into uEMEP_mod.f90 and more optimization.
