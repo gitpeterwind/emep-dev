@@ -70,6 +70,11 @@ correction for all parts. PMFINE, for instance will also correct the SIA, using
 PPM local fractions.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Forgotten note from ca.last week in April 2018,Svetlana
+
+Corrected aerosol dencities for coarse sea salt (2200 kg/m3) and dust (2600 kg/m3) in GasParticleCoeffs_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 April 2018, Peter
 
 Now sector emissions are included in output by default, as part of 
