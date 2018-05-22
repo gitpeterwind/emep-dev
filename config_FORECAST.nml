@@ -182,10 +182,9 @@
     'C2H6'      ,'c2h6'        ,1.0,T,F,-1, ! Ethane
 !   'C3H8'      ,'c3h8'        ,1.0,T,F,-1, ! Propane, not in EmChem09soa: do not use
 !   'OH'        ,'oh'          ,1.0,F,F,-1, ! short lived: do not use
-    'SEASALT_F' ,'aermr01'     ,1.0,T,F,-1, ! ss_f: 0.03 - 0.5  um
-    'SEASALT_F' ,'aermr02'     ,1.0,F,F,-1, ! ss_c: 0.5  - 5.0  um
-    'SEASALT_C' ,'aermr02'     ,1.0,T,F,-1, ! ss_c: 0.5  - 5.0  um
-    'SEASALT_C' ,'aermr03'     ,1.0,F,F,-1, ! ss_g: 5.0  - 20   um 
+    'SEASALT_F' ,'aermr01'     ,0.23255814,T,F,-1, ! ss_f: 0.03 - 0.5  um @80%rh
+    'SEASALT_F' ,'aermr02'     ,0.23255814,T,F,-1, ! ss_c: 0.5  - 5.0  um @80%rh
+    'SEASALT_C' ,'aermr03'     ,0.23255814,T,F,-1, ! ss_g: 5.0  - 20   um @80%rh
     'DUST_SAH_F','aermr04'     ,1.0,T,F,-1, ! dd_f: 0.03 - 0.55 um
     'DUST_SAH_F','aermr05'     ,1.0,T,F,-1, ! dd_c: 0.55 - 0.9  um
     'DUST_SAH_F','aermr06'     ,.15,T,F,-1, ! dd_g: 0.9  - 20   um
@@ -220,9 +219,9 @@
     'C3H6'      ,'BIGENE'      ,1.0,T,F,-1, 
     'NC4H10'    ,'BIGALK'      ,1.0,T,F,-1, 
     'OXYL'      ,'TOLUENE'     ,1.0,T,F,-1, 
-    'SEASALT_F' ,'SeaSalt_f'   ,1.0,T,F,-1, 
-    'SEASALT_C' ,'SeaSalt_c'   ,1.0,T,F,-1, 
-    'SEASALT_G' ,'SeaSalt_g'   ,1.0,F,F,-1, ! do not use, not EmChem09++
+    'SEASALT_F' ,'SeaSalt_f'   ,0.23255814,T,F,-1, ! SS wet/dry factors
+    'SEASALT_F' ,'SeaSalt_c'   ,0.23255814,T,F,-1, !   4.3 mass
+    'SEASALT_C' ,'SeaSalt_g'   ,0.23255814,T,F,-1, !   1.99 bin boundaries
     'DUST_SAH_F','DesertDust_f',1.0,T,F,-1, 
     'DUST_SAH_C','DesertDust_c',1.0,T,F,-1, 
     'DUST_SAH_G','DesertDust_g',1.0,F,F,-1, ! do not use, not EmChem09++
@@ -245,10 +244,9 @@
     'SO2'       ,'SO2'         ,1.0,T,F,-1, 
     'C5H8'      ,'ISOP'        ,1.0,T,F,-1,
     'OH'        ,'OH'          ,1.0,F,F,-1, ! do not use
-    'SEASALT_F' ,'aermr01'     ,1.0,T,F,-1,
-    'SEASALT_F' ,'aermr02'     ,1.0,F,F,-1, ! do not use
-    'SEASALT_C' ,'aermr02'     ,1.0,T,F,-1,
-    'SEASALT_C' ,'aermr03'     ,1.0,F,F,-1, ! do not use
+    'SEASALT_F' ,'aermr01'     ,0.23255814,T,F,-1, ! SS wet/dry factors
+    'SEASALT_F' ,'aermr02'     ,0.23255814,T,F,-1, !   4.3 mass
+    'SEASALT_C' ,'aermr03'     ,0.23255814,T,F,-1, !   1.99 bin boundaries
     'DUST_SAH_F','aermr04'     ,1.0,T,F,-1,
     'DUST_SAH_F','aermr05'     ,1.0,T,F,-1,
     'DUST_SAH_F','aermr06'     ,.15,T,F,-1,
