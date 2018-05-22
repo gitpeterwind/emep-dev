@@ -21,6 +21,51 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd May 2018, Peter
+
+Big refactoring of emission inputting.
+EmisGetCDF is now more general, and is used both for "fraction" or "country" style
+sector emissions. Works also with monthly emissions.
+A new format is allowed, which is an extension of the "country" style format.
+The emisisons can have names with format
+Emis:FR:snap:7:spec:sox:fac:1.0
+where the name after "spec:" specifies the species, and the number after 
+"fac:" gives a scaling factor
+
+With this new format, the "SpecialShips" from FMI can be read directly, with
+if the name are redefined. There was a problem, since the FMIship emisions do 
+not use our standard splits. Therfore new countries have been defined for
+each ship emissions, with special splits. Counld probably be done 
+better... in a later upgrade (define splits in the names too?)
+
+There was also a bug in the SecEmisOut maps (output): the map namess did not match the 
+species (introduced 30 April 2018)
+
+NB: the ship used special molecular weights, therefore, the factors are not integers
+      !mw from Jukka-Pekka  Jalkanen  (e-post 16 June 2016)
+      mw=46.0 for NOx
+      mw=28.0 for CO
+      mw=64.0655 for SOx which is only SO2
+      mw=96.0655 for SO4
+      mw=42.4 for Ash
+      mw=12.01 for EC
+      mw=17.32 for OC
+! Comments from Jukka-Pekka Jalkanen at FMI 
+
+!   The composition of Ash can be taken from Jana’s paper 
+!   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to 
+!   that, the composition by weight is: C (11.1%), O (5.7%), S (4.9%), 
+!   V (30.7%), Ni (20.9%), Ca (26.7%). This composition was determined for 
+!   fuel with 1.9% sulphur and it will not be directly applicable to fuels 
+!   used in the Baltic Sea during 2015. However, that is the only reference 
+!   I could find which reports the elemental composition of Ash.
+
+! All primary PM emitted should be assigned to PM2.5 fraction since the PM 
+! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
+! to >2.5 microns in the timescale used by the regional models is not known 
+! to me at this point.        
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May 2018, Peter
 
 Moved uEMEP diffusion into uEMEP_mod.f90 and more optimization.

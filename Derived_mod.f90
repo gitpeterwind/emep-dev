@@ -656,7 +656,7 @@ subroutine Define_Derived()
      if(SecEmisOutWanted(isec))then
         do  i = 1, NEMIS_File
            write(dname,"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
-           isec_poll = isec*NEMIS_File + i
+           isec_poll = (isec-1)*NEMIS_File + i
            if(HourlyEmisOut)then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
                    isec_poll , -99, T,  1.0e6,  F,  'YMH' )
@@ -1652,8 +1652,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "SecEmis" ) !emissions in mg/m2 per sector
 
-      iem=mod(f_2d(n)%Index,NEMIS_File)+1
-      isec=f_2d(n)%Index/NEMIS_File
+      iem=mod((f_2d(n)%Index-1),NEMIS_File)+1
+      isec=(f_2d(n)%Index-1)/NEMIS_File+1
       forall ( i=1:limax, j=1:ljmax )
          d_2d(n,i,j,IOU_INST) =  SecEmisOut( i,j, iem, isec2SecOutWanted(isec))
       end forall

@@ -52,11 +52,11 @@ module Country_mod
   !/ to be set in init_Country:
 
   type, public :: cc
-     character(len=10) :: code          ! up to 3 letter land code
+     character(len=10) :: code          ! up to 10 letter land code
      character(len=4)  :: gains         ! 4 letter GAINS code
      integer           :: icode         ! integer number for land code (corresponds to 
                                         ! country code number in emission files)
-     logical           :: is_sea        ! 1 for sea area, 0 otherwise
+     logical           :: is_sea        ! T for sea area, F otherwise
      integer           :: timefac_index ! Country code to use for timefactors
      integer           :: timefac_index_hourly !  Country code to use for hourly timefactors
      integer           :: timezone      ! timezone, deviation from UTC time
@@ -760,148 +760,16 @@ ix=ix+1
 IC_TMT=ix
 Country( IC_TMT ) = cc(  "TMT" ,'-', 95 ,F, 95, 95, -100  , "Turkmenistan  (all)" )
 
+! NH3Emis new land code for NMR-NH3 project
+ix=ix+1 
+IC_NMR=ix
+Country( IC_NMR ) = cc(  "NMR" ,'-', 98 ,F, 98, 98, 1  , "Area with temporal NMR-NH3 emissions              " )
+
 ! Biomass burning
 ix=ix+1 
 IC_BB=ix
 Country( IC_BB)  = cc(  "BB ",'-', 101,F,  101, 101, -100  , "Biomass burning (wild)        " )
 
-!
-ix=ix+1
-IC_LANDX=ix
-Country( IC_LANDX)  = cc(  "LANDX ",'-', 199,F,  199, 199, -100  , "not country-specific land based emissions" )
-
-! Sea areas split according to innside/outside 12 nautical mile zone,'-', 
-! ferries/cargo ships,'-', registred inside/outside EU
-ix=ix+1 
-IC_BA2=ix
-Country( IC_BA2 ) = cc(  "BA2" ,'-',302 ,T,  30, 30, 1  , "Baltic EU cargo outs.12      " )
-ix=ix+1 
-IC_BA3=ix
-Country( IC_BA3 ) = cc(  "BA3" ,'-',303 ,T,  30, 30, 1  , "Baltic ROW cargo outs. 12    " )
-ix=ix+1 
-IC_BA4=ix
-Country( IC_BA4 ) = cc(  "BA4" ,'-',304 ,T,  30, 30, 1  , "Baltic EU cargo ins. 12      " )
-ix=ix+1 
-IC_BA5=ix
-Country( IC_BA5 ) = cc(  "BA5" ,'-',305 ,T,  30, 30, 1  , "Baltic ROW cargo ins. 12     " )
-ix=ix+1 
-IC_BA6=ix
-Country( IC_BA6 ) = cc(  "BA6" ,'-',306 ,T,  30, 30, 1  , "Baltic EU ferries outs.12    " )
-ix=ix+1 
-IC_BA7=ix
-Country( IC_BA7 ) = cc(  "BA7" ,'-',307 ,T,  30, 30, 1  , "Baltic ROW ferries outs. 12  " )
-ix=ix+1 
-IC_BA8=ix
-Country( IC_BA8 ) = cc(  "BA8" ,'-',308 ,T,  30, 30, 1  , "Baltic EU ferries ins. 12    " )
-ix=ix+1 
-IC_BA9=ix
-Country( IC_BA9 ) = cc(  "BA9" ,'-',309 ,T,  30, 30, 1  , "Baltic ROW ferries ins. 12   " )
-
-ix=ix+1 
-IC_NS2=ix
-Country( IC_NS2 ) = cc(  "NS2" ,'-',312 ,T,  31, 31, 1  , "N. Sea EU cargo outs.12      " )
-ix=ix+1 
-IC_NS3=ix
-Country( IC_NS3 ) = cc(  "NS3" ,'-',313 ,T,  31, 31, 1  , "N. Sea ROW cargo outs. 12    " )
-ix=ix+1 
-IC_NS4=ix
-Country( IC_NS4 ) = cc(  "NS4" ,'-',314 ,T,  31, 31, 1  , "N. Sea EU cargo ins. 12      " )
-ix=ix+1 
-IC_NS5=ix
-Country( IC_NS5 ) = cc(  "NS5" ,'-',315 ,T,  31, 31, 1  , "N. Sea ROW cargo ins. 12     " )
-ix=ix+1 
-IC_NS6=ix
-Country( IC_NS6 ) = cc(  "NS6" ,'-',316 ,T,  31, 31, 1  , "N. Sea EU ferries outs.12    " )
-ix=ix+1 
-IC_NS7=ix
-Country( IC_NS7 ) = cc(  "NS7" ,'-',317 ,T,  31, 31, 1  , "N. Sea ROW ferries outs. 12  " )
-ix=ix+1 
-IC_NS8=ix
-Country( IC_NS8 ) = cc(  "NS8" ,'-',318 ,T,  31, 31, 1  , "N. Sea EU ferries ins. 12    " )
-ix=ix+1 
-IC_NS9=ix
-Country( IC_NS9 ) = cc(  "NS9" ,'-',319 ,T,  31, 31, 1  , "N. Sea ROW ferries ins. 12   " )
-
-ix=ix+1 
-IC_AT2=ix
-Country( IC_AT2 ) = cc(  "AT2" ,'-',322 ,T,  32, 32, 1  , "Atlant EU cargo outs.12      " )
-ix=ix+1 
-IC_AT3=ix
-Country( IC_AT3 ) = cc(  "AT3" ,'-',323 ,T,  32, 32, 1  , "Atlant ROW cargo outs. 12    " )
-ix=ix+1 
-IC_AT4=ix
-Country( IC_AT4 ) = cc(  "AT4" ,'-',324 ,T,  32, 32, 1  , "Atlant EU cargo ins. 12      " )
-ix=ix+1 
-IC_AT5=ix
-Country( IC_AT5 ) = cc(  "AT5" ,'-',325 ,T,  32, 32, 1  , "Atlant ROW cargo ins. 12     " )
-ix=ix+1 
-IC_AT6=ix
-Country( IC_AT6 ) = cc(  "AT6" ,'-',326 ,T,  32, 32, 1  , "Atlant EU ferries outs.12    " )
-ix=ix+1 
-IC_AT7=ix
-Country( IC_AT7 ) = cc(  "AT7" ,'-',327 ,T,  32, 32, 1  , "Atlant ROW ferries outs. 12  " )
-ix=ix+1 
-IC_AT8=ix
-Country( IC_AT8 ) = cc(  "AT8" ,'-',328 ,T,  32, 32, 1  , "Atlant EU ferries ins. 12    " )
-ix=ix+1 
-IC_AT9=ix
-Country( IC_AT9 ) = cc(  "AT9" ,'-',329 ,T,  32, 32, 1  , "Atlant ROW ferries ins. 12   " )
-
-ix=ix+1 
-IC_ME2=ix
-Country( IC_ME2 ) = cc(  "ME2" ,'-',332 ,T,  33, 33, 1  , "Medite EU cargo outs.12      " )
-ix=ix+1 
-IC_ME3=ix
-Country( IC_ME3 ) = cc(  "ME3" ,'-',333 ,T,  33, 33, 1  , "Medite ROW cargo outs. 12    " )
-ix=ix+1 
-IC_ME4=ix
-Country( IC_ME4 ) = cc(  "ME4" ,'-',334 ,T,  33, 33, 1  , "Medite EU cargo ins. 12      " )
-ix=ix+1 
-IC_ME5=ix
-Country( IC_ME5 ) = cc(  "ME5" ,'-',335 ,T,  33, 33, 1  , "Medite ROW cargo ins. 12     " )
-ix=ix+1 
-IC_ME6=ix
-Country( IC_ME6 ) = cc(  "ME6" ,'-',336 ,T,  33, 33, 1  , "Medite EU ferries outs.12    " )
-ix=ix+1 
-IC_ME7=ix
-Country( IC_ME7 ) = cc(  "ME7" ,'-',337 ,T,  33, 33, 1  , "Medite ROW ferries outs. 12  " )
-ix=ix+1 
-IC_ME8=ix
-Country( IC_ME8 ) = cc(  "ME8" ,'-',338 ,T,  33, 33, 1  , "Medite EU ferries ins. 12    " )
-ix=ix+1 
-IC_ME9=ix
-Country( IC_ME9 ) = cc(  "ME9" ,'-',339 ,T,  33, 33, 1  , "Medite ROW ferries ins. 12   " )
-
-ix=ix+1 
-IC_BL2=ix
-Country( IC_BL2 ) = cc(  "BL2" ,'-',342 ,T,  34, 34, 2  , "B. Sea EU cargo outs.12      " )
-ix=ix+1 
-IC_BL3=ix
-Country( IC_BL3 ) = cc(  "BL3" ,'-',343 ,T,  34, 34, 2  , "B. Sea ROW cargo outs. 12    " )
-ix=ix+1 
-IC_BL4=ix
-Country( IC_BL4 ) = cc(  "BL4" ,'-',344 ,T,  34, 34, 2  , "B. Sea EU cargo ins. 12      " )
-ix=ix+1 
-IC_BL5=ix
-Country( IC_BL5 ) = cc(  "BL5" ,'-',345 ,T,  34, 34, 2  , "B. Sea ROW cargo ins. 12     " )
-ix=ix+1 
-IC_BL6=ix
-Country( IC_BL6 ) = cc(  "BL6" ,'-',346 ,T,  34, 34, 2  , "B. Sea EU ferries outs.12    " )
-ix=ix+1 
-IC_BL7=ix
-Country( IC_BL7 ) = cc(  "BL7" ,'-',347 ,T,  34, 34, 2  , "B. Sea ROW ferries outs. 12  " )
-ix=ix+1 
-IC_BL8=ix
-Country( IC_BL8 ) = cc(  "BL8" ,'-',348 ,T,  34, 34, 2  , "B. Sea EU ferries ins. 12    " )
-ix=ix+1 
-IC_BL9=ix
-Country( IC_BL9 ) = cc(  "BL9" ,'-',349 ,T,  34, 34, 2  , "B. Sea ROW ferries ins. 12   " )
-
-
-! NH3Emis new land code for NMR-NH3 project
-ix=ix+1 
-IC_NMR=ix
-Country( IC_NMR ) = cc(  "NMR" ,'-', 98 ,F, 98, 98, 1  , "Area with temporal NMR-NH3 emissions              " )
 
 
 !Extra cc for rest CityZen
@@ -912,7 +780,29 @@ ix=ix+1
 IC_SEA=ix
 Country( IC_SEA ) = cc(  "SEA" ,'-', 171 ,F,  171, 171,-100, "Ships" )
 
+!FMI ship emissions have special splits and must be defined individually
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_CO" ,'-', 172 ,T,  172, 172,-100, "Ships CO" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_NOx" ,'-', 173 ,T,  173, 173,-100, "Ships NOx" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_SO2" ,'-', 174 ,T,  174, 174,-100, "Ships SO2" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_SO4" ,'-', 175 ,T,  175, 175,-100, "Ships SO4" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_CO" ,'-', 176 ,T,  176, 176,-100, "Ships CO" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_ASH" ,'-', 177 ,T,  177, 177,-100, "Ships ASH" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_EC" ,'-', 178 ,T,  178, 178,-100, "Ships EC" )
+ix=ix+1 
+Country( ix ) = cc(  "SHIP_OC" ,'-', 179 ,T,  179, 179,-100, "Ships OC" )
+
 ! Extra from IIASA/ECLIPSE/ECLAIRE global
+!
+ix=ix+1
+IC_LANDX=ix
+Country( IC_LANDX)  = cc(  "LANDX ",'-', 199,F,  199, 199, -100  , "not country-specific land based emissions" )
 
 ix=ix+1 
 IC_AFGH=ix
@@ -1076,6 +966,136 @@ Country(IC_KOSO) = cc( "KOSO",'KOSO', 373, F, 373, 373, -100, "Kosovo")
 ix=ix+1
 IC_OCEC=ix
 Country(IC_OCEC) = cc( "OCEC",'-', 393, F, 393,393, -100, "Oceania")
+
+
+! Sea areas split according to innside/outside 12 nautical mile zone,'-', 
+! ferries/cargo ships,'-', registred inside/outside EU
+ix=ix+1 
+IC_BA2=ix
+Country( IC_BA2 ) = cc(  "BA2" ,'-',302 ,T,  30, 30, 1  , "Baltic EU cargo outs.12      " )
+ix=ix+1 
+IC_BA3=ix
+Country( IC_BA3 ) = cc(  "BA3" ,'-',303 ,T,  30, 30, 1  , "Baltic ROW cargo outs. 12    " )
+ix=ix+1 
+IC_BA4=ix
+Country( IC_BA4 ) = cc(  "BA4" ,'-',304 ,T,  30, 30, 1  , "Baltic EU cargo ins. 12      " )
+ix=ix+1 
+IC_BA5=ix
+Country( IC_BA5 ) = cc(  "BA5" ,'-',305 ,T,  30, 30, 1  , "Baltic ROW cargo ins. 12     " )
+ix=ix+1 
+IC_BA6=ix
+Country( IC_BA6 ) = cc(  "BA6" ,'-',306 ,T,  30, 30, 1  , "Baltic EU ferries outs.12    " )
+ix=ix+1 
+IC_BA7=ix
+Country( IC_BA7 ) = cc(  "BA7" ,'-',307 ,T,  30, 30, 1  , "Baltic ROW ferries outs. 12  " )
+ix=ix+1 
+IC_BA8=ix
+Country( IC_BA8 ) = cc(  "BA8" ,'-',308 ,T,  30, 30, 1  , "Baltic EU ferries ins. 12    " )
+ix=ix+1 
+IC_BA9=ix
+Country( IC_BA9 ) = cc(  "BA9" ,'-',309 ,T,  30, 30, 1  , "Baltic ROW ferries ins. 12   " )
+
+ix=ix+1 
+IC_NS2=ix
+Country( IC_NS2 ) = cc(  "NS2" ,'-',312 ,T,  31, 31, 1  , "N. Sea EU cargo outs.12      " )
+ix=ix+1 
+IC_NS3=ix
+Country( IC_NS3 ) = cc(  "NS3" ,'-',313 ,T,  31, 31, 1  , "N. Sea ROW cargo outs. 12    " )
+ix=ix+1 
+IC_NS4=ix
+Country( IC_NS4 ) = cc(  "NS4" ,'-',314 ,T,  31, 31, 1  , "N. Sea EU cargo ins. 12      " )
+ix=ix+1 
+IC_NS5=ix
+Country( IC_NS5 ) = cc(  "NS5" ,'-',315 ,T,  31, 31, 1  , "N. Sea ROW cargo ins. 12     " )
+ix=ix+1 
+IC_NS6=ix
+Country( IC_NS6 ) = cc(  "NS6" ,'-',316 ,T,  31, 31, 1  , "N. Sea EU ferries outs.12    " )
+ix=ix+1 
+IC_NS7=ix
+Country( IC_NS7 ) = cc(  "NS7" ,'-',317 ,T,  31, 31, 1  , "N. Sea ROW ferries outs. 12  " )
+ix=ix+1 
+IC_NS8=ix
+Country( IC_NS8 ) = cc(  "NS8" ,'-',318 ,T,  31, 31, 1  , "N. Sea EU ferries ins. 12    " )
+ix=ix+1 
+IC_NS9=ix
+Country( IC_NS9 ) = cc(  "NS9" ,'-',319 ,T,  31, 31, 1  , "N. Sea ROW ferries ins. 12   " )
+
+ix=ix+1 
+IC_AT2=ix
+Country( IC_AT2 ) = cc(  "AT2" ,'-',322 ,T,  32, 32, 1  , "Atlant EU cargo outs.12      " )
+ix=ix+1 
+IC_AT3=ix
+Country( IC_AT3 ) = cc(  "AT3" ,'-',323 ,T,  32, 32, 1  , "Atlant ROW cargo outs. 12    " )
+ix=ix+1 
+IC_AT4=ix
+Country( IC_AT4 ) = cc(  "AT4" ,'-',324 ,T,  32, 32, 1  , "Atlant EU cargo ins. 12      " )
+ix=ix+1 
+IC_AT5=ix
+Country( IC_AT5 ) = cc(  "AT5" ,'-',325 ,T,  32, 32, 1  , "Atlant ROW cargo ins. 12     " )
+ix=ix+1 
+IC_AT6=ix
+Country( IC_AT6 ) = cc(  "AT6" ,'-',326 ,T,  32, 32, 1  , "Atlant EU ferries outs.12    " )
+ix=ix+1 
+IC_AT7=ix
+Country( IC_AT7 ) = cc(  "AT7" ,'-',327 ,T,  32, 32, 1  , "Atlant ROW ferries outs. 12  " )
+ix=ix+1 
+IC_AT8=ix
+Country( IC_AT8 ) = cc(  "AT8" ,'-',328 ,T,  32, 32, 1  , "Atlant EU ferries ins. 12    " )
+ix=ix+1 
+IC_AT9=ix
+Country( IC_AT9 ) = cc(  "AT9" ,'-',329 ,T,  32, 32, 1  , "Atlant ROW ferries ins. 12   " )
+
+ix=ix+1 
+IC_ME2=ix
+Country( IC_ME2 ) = cc(  "ME2" ,'-',332 ,T,  33, 33, 1  , "Medite EU cargo outs.12      " )
+ix=ix+1 
+IC_ME3=ix
+Country( IC_ME3 ) = cc(  "ME3" ,'-',333 ,T,  33, 33, 1  , "Medite ROW cargo outs. 12    " )
+ix=ix+1 
+IC_ME4=ix
+Country( IC_ME4 ) = cc(  "ME4" ,'-',334 ,T,  33, 33, 1  , "Medite EU cargo ins. 12      " )
+ix=ix+1 
+IC_ME5=ix
+Country( IC_ME5 ) = cc(  "ME5" ,'-',335 ,T,  33, 33, 1  , "Medite ROW cargo ins. 12     " )
+ix=ix+1 
+IC_ME6=ix
+Country( IC_ME6 ) = cc(  "ME6" ,'-',336 ,T,  33, 33, 1  , "Medite EU ferries outs.12    " )
+ix=ix+1 
+IC_ME7=ix
+Country( IC_ME7 ) = cc(  "ME7" ,'-',337 ,T,  33, 33, 1  , "Medite ROW ferries outs. 12  " )
+ix=ix+1 
+IC_ME8=ix
+Country( IC_ME8 ) = cc(  "ME8" ,'-',338 ,T,  33, 33, 1  , "Medite EU ferries ins. 12    " )
+ix=ix+1 
+IC_ME9=ix
+Country( IC_ME9 ) = cc(  "ME9" ,'-',339 ,T,  33, 33, 1  , "Medite ROW ferries ins. 12   " )
+
+ix=ix+1 
+IC_BL2=ix
+Country( IC_BL2 ) = cc(  "BL2" ,'-',342 ,T,  34, 34, 2  , "B. Sea EU cargo outs.12      " )
+ix=ix+1 
+IC_BL3=ix
+Country( IC_BL3 ) = cc(  "BL3" ,'-',343 ,T,  34, 34, 2  , "B. Sea ROW cargo outs. 12    " )
+ix=ix+1 
+IC_BL4=ix
+Country( IC_BL4 ) = cc(  "BL4" ,'-',344 ,T,  34, 34, 2  , "B. Sea EU cargo ins. 12      " )
+ix=ix+1 
+IC_BL5=ix
+Country( IC_BL5 ) = cc(  "BL5" ,'-',345 ,T,  34, 34, 2  , "B. Sea ROW cargo ins. 12     " )
+ix=ix+1 
+IC_BL6=ix
+Country( IC_BL6 ) = cc(  "BL6" ,'-',346 ,T,  34, 34, 2  , "B. Sea EU ferries outs.12    " )
+ix=ix+1 
+IC_BL7=ix
+Country( IC_BL7 ) = cc(  "BL7" ,'-',347 ,T,  34, 34, 2  , "B. Sea ROW ferries outs. 12  " )
+ix=ix+1 
+IC_BL8=ix
+Country( IC_BL8 ) = cc(  "BL8" ,'-',348 ,T,  34, 34, 2  , "B. Sea EU ferries ins. 12    " )
+ix=ix+1 
+IC_BL9=ix
+Country( IC_BL9 ) = cc(  "BL9" ,'-',349 ,T,  34, 34, 2  , "B. Sea ROW ferries ins. 12   " )
+
+
 
 !!  HTAP2 regions
 ix=ix+1 
