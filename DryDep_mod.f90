@@ -68,7 +68,6 @@ use MetFields_mod,     only: u_ref, rh2m, sst
 use MetFields_mod,     only: tau, sdepth, SoilWater_deep, th,pzpbl
 use MicroMet_mod,      only: AerRes, Wind_at_h
 use MosaicOutputs_mod,     only: Add_MosaicOutput, MMC_RH
-!A2018 use OwnDataTypes_mod,      only: depmap
 use Par_mod,               only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
 use Rb_mod,                only: Rb_gas
@@ -87,11 +86,9 @@ implicit none
 private
 
 public  :: DryDep, init_drydep
-!A2018 private :: Init_DepMap
 
 !integer, private, save :: P != IO_SPOD + me
 ! Maps from adv index to one of calc indices
-!A2018 integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
 
 logical, private, save :: my_first_call = .true.
 character(len=30),private, save :: errmsg = "ok"
@@ -101,7 +98,6 @@ character(len=30),private, save :: errmsg = "ok"
 
 integer, public, parameter :: FLUX_ADV   = IXADV_O3
 integer, public, parameter :: FLUX_TOT   = O3
-!A2018 integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3 now have icmpO3
 
 ! WE ALSO NEED NO3_f and NH4_f for deposition.
 ! (set to one for non-no3/nh4 models)
@@ -111,25 +107,11 @@ integer, public, parameter :: pNH4  = NH4_f
 
 !logical, public, parameter :: COMPENSATION_PT = .false. 
 
-!***************************************************************************
-!  Specifies which of the possible species (from DDdefs list)
-!  are required in the current air pollution model   
-!***************************************************************************
-! .... Define the mapping between the advected species and
-!      the specied for which the calculation needs to be done.
-!  We also define the number of species which will be deposited in
-! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
-! The actual species used and their relation to the CDDEP_ indices
-! above will be defined in Init_DepMap
-
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-!A2018 include 'CM_DryDep.inc'
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
 !  A type container for big-leaf (bulk) resistances, used by esx
 !  A little confusing still, bt Vg_ref etc are part of Sub(iL)
-!SKIP       ,rb_leaf      & ! Quasi-boundary layer rsis.
+!   SKIP  ,rb_leaf      & ! Quasi-boundary layer rsis.
 type, public :: BL_t
      real :: &
           Rsur    & ! Surface Resistance (s/m) 
@@ -180,8 +162,6 @@ contains
      allocate(BL(nddep))
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), Vg_eff(nddep), &
          Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) ,eff_fac(nddep))
-     !A2018 call Init_DepMap()               ! Maps CDDEP to IXADV
-     !A2018 call Init_GasCoeff()             ! Sets DDdefs coeffs.
 
      call CheckStop( NLOCDRYDEP_MAX < nddep, & !A2018 NDRYDEP_CALC, &
         "Need to increase size of NLOCDRYDEP_MAX" )
@@ -234,34 +214,11 @@ contains
   end if !  my_first_call
 
   end subroutine init_DryDep
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-!A2018  subroutine Init_DepMap
-!A2018   integer :: iadv, i
-!A2018
-!A2018     do i = 1, NDRYDEP_ADV  ! 22
-!A2018      iadv = DDepMap(i)%ind
-!A2018      if(DEBUG%DRYDEP .and. MasterProc) &
-!A2018         write(6,*) "DEPMAP   ", DDepMap(i)%ind, DDepMap(i)%calc
-!A2018      call CheckStop( iadv < 1, "ERROR: Negative iadv" )
-!A2018      DepAdv2Calc(iadv) = DDepMap(i)%calc
-!A2018    end do
-!A2018  
-!A2018   ! We process the various combinations of gas-species and ecosystem:
-!A2018   ! starting with DryDep, e.g. DDEP_SO2_m2CF
-!A2018 
-!A2018     if(MasterProc.and.DEBUG%DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
-!A2018
-!A2018  end subroutine Init_DepMap
+
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine DryDep(i,j)
     integer, intent(in):: i,j
     real, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
-
-!A2018    real, dimension(NDRYDEP_GASES ) :: &
-!A2018          Rb           & ! Quasi-boundary layer rsis.
-!A2018         ,Rsur         & ! Surface Resistance (s/m) 
-         
-
     character(len=*), parameter :: dtxt='DryDep:' ! debug label
     logical, save      :: dbg, dbghh, dbgBD
     integer icmp, ispec, iiL, nlu, nadv, nFlux  ! help indexes
@@ -294,7 +251,7 @@ contains
     real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
     real :: c_hveg3m, o3_45m  ! TESTS ONLY
 ! temporary for POD/SPOD
-!    logical, parameter :: SPOD_OUT = .false.  ! MAKES HUGE FILES. Not for routine use!
+!    logical, parameter :: SPOD_OUT = .false. !MAKES HUGE FILES!
 !    logical, save      :: first_spod = .true.
     character(len=20), save :: fname
     integer :: nglob
@@ -437,7 +394,8 @@ contains
                        DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
       if ( dbghh ) then
         call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
-           [ Grid%t2, Grid%rho_ref, DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
+           [ DDspec(icmp)%DpgV, DDspec(icmp)%sigma,  DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
+           !May16 [ Grid%t2, Grid%rho_ref, DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
       end if
     end do
 
@@ -460,7 +418,7 @@ contains
           iL_fluxes (nFlux) = iL    ! for eco dep
         end if
 
-        Sub(iL)%f_phen = LandCover(i,j)%fphen(iiL) ! for SPOD_OUT
+        Sub(iL)%f_phen = LandCover(i,j)%fphen(iiL) ! for POD_OUT
         Sub(iL)%f_sun  = 0.0 ! for SPOD_OUT
         Sub(iL)%g_sun  = 0.0 ! for SPOD_OUT
         Sub(iL)%g_sto  = 0.0 ! for SPOD_OUT
@@ -480,18 +438,20 @@ contains
          call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
 
          !A2018 do n = 1, NDRYDEP_CALC
-         do icmp = 1, nddep
+         do icmp = 1, nddep    !DSQUERY - Check aerosol usage!
 
            !(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur) is resistance from mid layer and down
            !L%Ra_X  + BL(icmp)%Rb + BL(icmp)%Rsur)is resistance from 50 meter and down
-           eff_fac(icmp) = eff_fac(icmp) + L%coverage*(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur)/(L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur)
+           eff_fac(icmp) = eff_fac(icmp) &
+               + L%coverage*(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur)&
+                            /(L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur)
 
          end do ! chemical species loop
 
        !=======================
         end do LULOOP_PRE
 
-!              Vg_eff(icmp) = 1. / ( (L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur) * eff_fac(icmp)) 
+! Vg_eff(icmp) = 1. / ( (L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur) * eff_fac(icmp)) 
        
 !PW_____________________________________________________________________
         
@@ -634,8 +594,6 @@ contains
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
 
-              !A2018 Vg_ref(icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
-              !A2018 Vg_3m (icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
               Vg_ref(icmp) = BL(icmp)%Vs/ &
                           ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* BL(icmp)%Vs))
               Vg_3m (icmp) = BL(icmp)%Vs/ &
@@ -644,17 +602,19 @@ contains
               Vg_eff(icmp) = Vg_ref(icmp) !PW
 
               if ( DEBUG_VDS ) then
-                if ( debug_flag .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
+                if ( debug_flag &
+                  .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
                   write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", &
                     imm, idd, ihh, icmp, iL, i_fdom(i), j_fdom(j),&
                     L%ustar,  L%invL, pzpbl(i,j), &
-                    Grid%ustar, Grid%Hd,  100.0*Vds, &
-                    !A2018 100.0*AERO%Vs(nae), 100.0*Vg_ref(icmp),  100.0*Vg_3m (icmp) &
-                    100.0*BL(icmp)%Vs, 100.0*Vg_ref(icmp),  100.0*Vg_3m (icmp) &
+                    Grid%ustar, Grid%Hd,  100*Vds, &
+                    100*BL(icmp)%Vs, 100*Vg_ref(icmp), 100*Vg_3m (icmp) &
                      , Grid%t2, Grid%rho_ref 
-                   write(*,"(a,2i4,3es10.3)") "VDS CHECK ",icmp, nae, Vds, Vg_ref(icmp)
+                  write(*,"(a,2i4,3es10.3)") "VDS CHECK ",&
+                      icmp, nae, Vds, Vg_ref(icmp)
                   
-                   call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ), "AEROSTOP")
+                  call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ),&
+                                  "AEROSTOP")
                 end if
               end if
            end if ! Gases?
@@ -683,9 +643,11 @@ contains
             Sumland = Sumland + L%coverage
             do icmp = 1, nddep !A2018 NDRYDEP_CALC
                if(USES%EFFECTIVE_RESISTANCE)then
-                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
+                  Vg_ratio(icmp) =  Vg_ratio(icmp) &
+                                   + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
                else
-                  Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
+                  Vg_ratio(icmp) =  Vg_ratio(icmp)&
+                                    + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
                endif
             end do
          end if
@@ -695,9 +657,11 @@ contains
             do icmp = idcmpO3 , idcmpO3 !!! 1,NDRYDEP_GASES 
                call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
-                   !(/ Mosaic_VgRef(n,iL) , Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
-               call datewrite("DEPDVGA", iL, (/ L%coverage, 1.0*icmp,& 
-                 L%LAI,100*L%g_sto, L%Ra_ref, BL(icmp)%Rb, min( 999.0,BL(icmp)%Rsur ) /) )
+
+               call datewrite("DEPDVGA"//DDspec(icmp)%name, iL, (/ L%coverage, 1.0*icmp,& 
+                 L%LAI,100*L%g_sto, L%Ra_ref, &
+                 DDspec(icmp)%Dx, BL(icmp)%Rb, min( 999.0,BL(icmp)%Rsur ) /) )
+
                call datewrite("DEPDVGB", iL, (/ L%coverage, 1.0*icmp,& 
                 100*Vg_3m(icmp), 100*Vg_ref(icmp), Vg_ratio(icmp) /) )
             end do
@@ -710,7 +674,8 @@ contains
 
          if (  LandType(iL)%flux_wanted ) then
 
-            !PW NOT SURE HOW TO TREAT THIS using effective resistance (which is species dependent)
+          !PW NOT SURE HOW TO TREAT THIS using effective resistance (which is
+          !    species dependent)
 
            !n = CDDEP_O3
            icmp = idcmpO3
@@ -732,7 +697,8 @@ contains
               call datewrite(dtxt//"CHVEG ", iL, &
                 (/  xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
                     c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp), &
-                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, BL(icmp)%Rb,BL(icmp)%Rsur /) )
+                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, &
+                    BL(icmp)%Rb,BL(icmp)%Rsur /) )
            end if
            
 
@@ -788,7 +754,8 @@ contains
 
     end do ! icmp
 
-    if(VGtest_out_ix>0) d_2d(VGtest_out_ix,i,j,IOU_INST) = Sub(0)%Vg_eff(1)/(1.E-20+Sub(0)%Vg_Ref(1))
+    if(VGtest_out_ix>0) d_2d(VGtest_out_ix,i,j,IOU_INST) = &
+          Sub(0)%Vg_eff(1)/(1.E-20+Sub(0)%Vg_Ref(1))
 
 
   ! ===================================================================
@@ -808,15 +775,15 @@ contains
           
         if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
            ! Assuming dry deposition of particulate part of
-           ! semi-volatile components as PMfS and the gaseous part as
+           ! semi-volatile components as PMf and the gaseous part as
            ! specified in GenIn.species.
 
           DepLoss(nadv) =  &
            Fgas(ntot,K2)*vg_fac( icmp ) * xn_2d(ntot,K2) + &
-           Fpart(ntot,K2)*vg_fac( idcmpPMfS ) * xn_2d(ntot,K2)
+           Fpart(ntot,K2)*vg_fac( idcmpPMf ) * xn_2d(ntot,K2)
 
            cfac(nadv, i,j) = Fgas(ntot,K2)*gradient_fac(icmp) + &
-                Fpart(ntot,K2)*gradient_fac( idcmpPMfS )
+                Fpart(ntot,K2)*gradient_fac( idcmpPMf )
         else
             DepLoss(nadv) =   vg_fac( icmp )  * xn_2d( ntot,K2)
             cfac(nadv, i,j) = gradient_fac( icmp )
@@ -960,72 +927,9 @@ contains
 
    call Add_MosaicOutput(debug_flag,i,j,convfac2,&
             itot2DDspec, fluxfrac_adv, Deploss ) 
-!A2018            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
+   ! SPOD puts were here
 
-
-  !    !----------------------------------------------------------------
-  !    ! HUGE OUTPUTS. Not for routine use ! 
-  !     if (SPOD_OUT ) then   ! Extra outputs for ICP folkks
-  !        if ( first_spod .and. nlocal_sites > 0  ) then
-  !    P = IO_SPOD + me
-  !    write(fname,"(a,i2.2)") "OutputSPOD", me
-  !    open(P, file=fname)
-  !          write(P,"(a25,a5)",advance="no") adjustl("name"), "code"
-  !          write(P,"(3a4)",advance="no")   "SGS", "EGS", "jd"
-  !          write(P,"(3a3)",advance="no")   "mm", "dd", "hh"
-  !          write(P,"(a7)",advance="no")  "cover"
-  !          write(P,"(2a7)",advance="no")  "t2C", "ustar"
-  !          write(P,"(3a7)",advance="no") "G-rh2m","L-rh","L-vpd"
-  !          write(P,"(2a8)",advance="no")  "PARsun", "PARshd"
-  !          write(P,"(2a7)",advance="no") "G45-O3","G3-O3"
-  !         !if ( LandType(iL)%flux_wanted ) then
-  !          write(P,"(a7)",advance="no") "CO3ppb"
-  !          write(P,"(2a10)",advance="no") "CO3nmole","FstO3"
-  !          ! Some params have value -999 unless sun shining...
-  !          write(P,"(5a7)",advance="no") &
-  !                "fphen", "f_L","f_T","f_D", "fenv" 
-  !          write(P,"(a7,2a10)",advance="no")  "fsun", "gsto", "gsun"
-  !          write(P,*)
-  !         !end if
-  !          first_spod = .false.
-  !        end if ! first spod
-
-  !      if( iss==0 .and. nlocal_sites > 0  )then
-  !       do  n = 1, nlocal_sites
-  !          if( i == site_x(icmp) .and. j == site_y(icmp) ) then 
-  !             nglob = site_gn(icmp)  ! number in global list
-!        if( iss==0 .and. debug_proc.and.  i==debug_li .and. j==debug_lj)then
-  !     
-  !       do iiL = 1, nlu
-  !          iL  = iL_used(iiL)
-  !          L   = Sub(iL)
-  !        !print *, "SPOD_OUT:"//trim(fname), me,nlocal_sites, iL, imm, idd, ihh
-  !          write(P,"(a25,a8)",advance="no") adjustl(site_name(nglob)), &
-  !             adjustl(LandDefs(iL)%code)
-  !          write(P,"(3i4)",advance="no")   L%SGS, L%EGS, daynumber
-  !          write(P,"(3i3)",advance="no")   imm, idd, ihh
-  !          write(P,"(f7.3)",advance="no")  L%coverage
-  !          write(P,"(2f7.2)",advance="no") L%t2C,L%ustar
-  !          write(P,"(3f7.3)",advance="no") Grid%rh2m,L%rh,L%vpd
-  !          write(P,"(2f8.1)",advance="no") L%PARsun,L%PARshade
-  !          write(P,"(2f7.2)",advance="no") o3_45m,Grid%surf_o3_ppb
-  !         if ( LandType(iL)%flux_wanted ) then
-  !          write(P,"(f7.2)",advance="no") L%cano3_ppb
-  !          write(P,"(2es10.3)",advance="no") L%cano3_nmole,L%FstO3
-  !          ! Some params have value -999 unless sun shining...
-  !          write(P,"(5f7.2)",advance="no") &
-  !               L%f_phen,max(-1.,L%f_light),max(-1.,L%f_temp),max(-1.,L%f_vpd), L%f_env 
-  !          write(P,"(f7.3,2es10.3)",advance="no") L%f_sun, L%g_sto, L%g_sun
-  !         end if
-  !          !write(P,"(a)",advance="yes") ";"
-  !          write(P,*) 
-  !       end do !iL
-  !      end if
-  !       end do !sites
-  !      end if !iss
-  !    end if !SPOD_OUT
-  !   !SPOD----------------------------------------------------
  end subroutine drydep
 
 end module DryDep_mod

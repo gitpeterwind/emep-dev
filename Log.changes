@@ -64,6 +64,11 @@ NB: the ship used special molecular weights, therefore, the factors are not inte
 ! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
 ! to >2.5 microns in the timescale used by the regional models is not known 
 ! to me at this point.        
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2018, Dave
+
+corrected some chemnistry/dep settings. Changes in ZCM_EmChem16x files.
+Some debug changes in DryDep, GasParticleCoeffs and AeroFunctions
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May 2018, Peter
@@ -107,6 +112,11 @@ as 'Local_Correct', in config, for instance:
 (note that not all 'Local_Correct' will make sense, since they will take local 
 correction for all parts. PMFINE, for instance will also correct the SIA, using 
 PPM local fractions.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Forgotten note from ca.last week in April 2018,Svetlana
+
+Corrected aerosol dencities for coarse sea salt (2200 kg/m3) and dust (2600 kg/m3) in GasParticleCoeffs_mod.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 April 2018, Peter

@@ -547,7 +547,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end do COLS   ! ic
 
 if ( n < NEMIS_FILE ) then
-  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE
+  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE, trim(femisFile)
   call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items" )
 end if
 
