@@ -21,10 +21,26 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2018, Dave
+
+Aqueous_mod: BUG fix  - nwdep was being overwritten.
+
+DryDep_mod - debug info changed
+
+GasParticleCoeffs_mod - NO2 f0 corrected to 0.5.
+
+ZCM_EmChem16x/CM_WetDep.inc - changed PMf to ECfn for new EC components
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 May 2018, Dave
 
-corrected some chemnistry/dep settings. Changes in ZCM_EmChem16x files.
+corrected some chemistry/dep settings. Changes in ZCM_EmChem16x files.
 Some debug changes in DryDep, GasParticleCoeffs and AeroFunctions
+
+Small changes in Rb due to new diff coeffs, hence small changes in Vg
+
+So far, large changes in Setting velocoty fir large particles found. Being
+investigated.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May 2018, Peter
