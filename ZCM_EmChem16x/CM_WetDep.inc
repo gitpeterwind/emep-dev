@@ -14,10 +14,10 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("POM_f_WOOD", "PMf       ", -999.0 ) &
 , dep_t("POM_f_FFUEL", "PMf       ", -999.0 ) &
 , dep_t("POM_c_FFUEL", "PMc       ", -999.0 ) &
-, dep_t("EC_f_WOOD_new", "PMf       ", -999.0 ) &
+, dep_t("EC_f_WOOD_new", "ECfn      ", -999.0 ) &
 , dep_t("EC_f_WOOD_age", "PMf       ", -999.0 ) &
 , dep_t("EC_c_WOOD ", "PMc       ", -999.0 ) &
-, dep_t("EC_f_FFUEL_new", "PMf       ", -999.0 ) &
+, dep_t("EC_f_FFUEL_new", "ECfn      ", -999.0 ) &
 , dep_t("EC_f_FFUEL_age", "PMf       ", -999.0 ) &
 , dep_t("EC_c_FFUEL", "PMc       ", -999.0 ) &
 , dep_t("REMPPM25  ", "PMf       ", -999.0 ) &
