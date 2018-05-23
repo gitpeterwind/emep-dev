@@ -43,12 +43,6 @@ private
     !  between different  model versions - e.g. the size and characteristics!
     !  of emission files and sector splits.                                 !
     !-----------------------------------------------------------------------!
-    !  What is "Flat emissions":                                            !
-    !  Most emission sources will have a seasonal, weekly, daily cycle. For !
-    !  some sources there is no cycle, or the emission cycle is not known.  !
-    !  For these source emissions will be constant (or flat) throughout the !
-    !  year.                                                                !
-    !-----------------------------------------------------------------------!
     ! Note that the names of the emission files are given in My_Emis_mod
     ! and often change from run to run.
 
@@ -76,8 +70,6 @@ private
 
 
    integer, public, parameter :: NCMAX  =  14  ! Max. No. countries per grid point
-   integer, public, parameter :: FNCMAX =  20  ! Max. No. countries (with
-                                               ! flat emissions) per grid
 
   ! Sector specific information
    integer, save, public :: NSECTORS   ! Number of sectors used in emissions
@@ -139,13 +131,6 @@ private
           ISNAP_AGR  = 10,   &   ! Note that flat emissions do NOT necessarily
           ISNAP_TRAF = 7         ! belong to the same SNAP sector
 
-!The sectors defined here are should be changed if other
-!categories (for instance GNFR) are used!
-   integer, public, parameter :: &
-          ISEC_NAT  = 11, &   ! index for natural (and flat?) emissions
-          ISEC_SHIP = 8       ! index for flat emissions, e.g ship
-
-
    !Dust
 !   integer, public, parameter ::  NDU   = 2 &   ! number of dust size modes
 !                                 ,QDUFI = 1 &   ! production of fine dust
@@ -182,9 +167,6 @@ real,  public, parameter :: MASK_LIMIT = 1.0E-20
 ! landcode  = Country codes for that grid square
 integer, public, save, allocatable, dimension(:,:)   :: nlandcode
 integer, public, save, allocatable, dimension(:,:,:) :: landcode
-! for flat emissions, i.e. no vertical extent:
-integer, public, save, allocatable, dimension(:,:)   :: flat_nlandcode
-integer, public, save, allocatable, dimension(:,:,:) :: flat_landcode
 ! for road dust emission potentials:
 integer, public, save, allocatable, dimension(:,:)   :: road_nlandcode
 integer, public, save, allocatable, dimension(:,:,:) :: road_landcode
@@ -202,9 +184,6 @@ real, public, allocatable, save, dimension(:,:,:) :: &
 !
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
   secemis      ! main emission arrays, in kg/m2/s
-
-real, public, allocatable, dimension(:,:,:,:), save :: &
-  secemis_flat ! main emission arrays, in kg/m2/s  
 
 real, public, allocatable, dimension(:,:,:,:), save :: &
 ! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 

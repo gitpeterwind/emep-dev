@@ -6,7 +6,7 @@ use ChemSpecs_mod,     only: species
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
-use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
+use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
                             N_HFAC,N_SPLIT, EMIS_FILE, & 
                             VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )

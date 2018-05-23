@@ -34,11 +34,8 @@ use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
-     ,FNCMAX        & ! Max. No. countries (with flat emissions) per grid
      ,ISNAP_DOM     & ! snap index for domestic/resid emis
      ,ISNAP_TRAF    & ! snap index for road-traffic (SNAP7)
-     ,ISEC_NAT      & ! index for natural (and flat?) emissions
-     ,ISEC_SHIP     & ! index for flat emissions, e.g ship
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
      ,NROADDUST     & ! No. road dust components 
@@ -47,9 +44,9 @@ use EmisDef_mod,       only: &
      ,ROADDUST_FINE_FRAC  & ! fine (PM2.5) fraction of road dust emis
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
-     ,secemis,secemis_flat,roaddust_emis_pot,SplitEmisOut,EmisOut&
+     ,secemis,roaddust_emis_pot,SplitEmisOut,EmisOut&
      ,SecEmisOut,NSecEmisOutWanted,isec2SecOutWanted&
-     ,nlandcode,landcode,flat_nlandcode,flat_landcode&
+     ,nlandcode,landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcroadd,gridrcroadd0&
      ,O_NH3, O_DMS&
@@ -337,16 +334,11 @@ contains
     allocate(nlandcode(LIMAX,LJMAX),landcode(LIMAX,LJMAX,NCMAX))
     nlandcode=0
     landcode=0
-    allocate(flat_nlandcode(LIMAX,LJMAX),flat_landcode(LIMAX,LJMAX,FNCMAX))
-    flat_nlandcode=0
-    flat_landcode=0
     allocate(road_nlandcode(LIMAX,LJMAX),road_landcode(LIMAX,LJMAX,NCMAX))
     road_nlandcode=0
     road_landcode=0
     allocate(secemis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE))
     secemis=0.0
-    allocate(secemis_flat(LIMAX,LJMAX,FNCMAX,NEMIS_FILE))
-    secemis_flat=0.0
     allocate(roaddust_emis_pot(LIMAX,LJMAX,NCMAX,NROAD_FILES))
     roaddust_emis_pot=0.0
     allocate(EmisOut(LIMAX,LJMAX,NEMIS_FILE))
@@ -698,8 +690,7 @@ contains
 
     if(MYDEBUG.and.debug_proc.and.iemCO>0) &
          write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
-         sum(secemis   (:,debug_li,debug_lj,:,iemCO)), &
-         sum(secemis_flat(debug_li,debug_lj,:,iemCO))
+         sum(secemis(:,debug_li,debug_lj,:,iemCO))
 
     forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS,iem=1:NEMIS_FILE)
        GridEmis(isec,i,j,ic,iem) = GridEmis(isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
@@ -711,14 +702,9 @@ contains
     landcode=GridEmisCodes
     secemis=GridEmis
 
-    forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax,iem=1:NEMIS_FILE)
-       secemis_flat(i,j,fic,iem) = secemis_flat(i,j,fic,iem) * tonne_to_kgm2s * xm2(i,j)
-    endforall
-
     if(MYDEBUG.and.debug_proc.and.iemCO>0) &
          write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
-         sum(secemis   (:,debug_li,debug_lj,:,iemCO)), &
-         sum(secemis_flat(debug_li,debug_lj,:,iemCO))
+         sum(secemis   (:,debug_li,debug_lj,:,iemCO))
 
     if(USES%ROADDUST)THEN
        forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, iem=1:NROAD_FILES)
@@ -851,8 +837,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting
   integer :: iland, iland_timefac, iland_timefac_hour  ! country codes, and codes for timefac 
-  real ::  sf              ! source term (emis) before splitting  (flat emissions)
-  integer :: flat_iland    ! country codes (countries with flat emissions)
 
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
@@ -958,7 +942,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         daytime_longitude=0
         if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
         !*************************************************
-        ! First loop over non-flat (one sector) emissions
+        ! First loop over sector emissions
         !*************************************************
         tmpemis(:)=0.
         do icc = 1, ncc
@@ -1071,52 +1055,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           end do  ! isec
           !      ==================================================
         end do ! icc  
-        !************************************
-        ! Then loop over flat emissions
-        !************************************
-        tmpemis(:)=0.
-        fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
-        do ficc = 1, fncc
-          !flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
-          flat_iland = find_index(flat_landcode(i,j,ficc),Country(:)%icode) !array index
-          if(Country(flat_iland)%is_sea) then  ! saves if statements below
-            isec = ISEC_SHIP 
-          else
-            isec = ISEC_NAT
-          end if
-
-          !  As each emission sector has a different diurnal profile
-          !  and possibly speciation, we loop over each sector, adding
-          !  the found emission rates to gridrcemis as we go.
-          !  ==================================================
-          !  Calculate emission rates from secemis, time-factors, 
-          !  and if appropriate any speciation  fraction (NEMIS_FRAC)
-          iqrc  = 0   ! index over emis
-          do iem = 1, NEMIS_FILE 
-
-            sf =  secemis_flat(i,j,ficc,iem)    
-
-            ! emis sum kg/m2/s
-            SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + sf
-            if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
-                   SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + sf
-
-            do f = 1,emis_nsplit(iem)
-              iqrc = iqrc + 1
-              itot = iqrc2itot(iqrc)
-              tmpemis(iqrc) = sf * emisfrac(iqrc,sec2split_map(isec),flat_iland)
-              ! Add flat emissions in ktonne 
-              totemadd(itot) = totemadd(itot) &
-                   + tmpemis(iqrc) * dtgrid * xmd(i,j)
-            end do ! f
-          end do ! iem
-          ! Assign flat emissions to height levels 1-4. Note, no VERTFAC
-          do iqrc =1, nrcemis
-            gridrcemis(iqrc,KMAX_MID,i,j) = gridrcemis(iqrc,KMAX_MID,i,j) &
-                 + tmpemis(iqrc)*ehlpcom0*emis_masscorr(iqrc)
-          end do ! iem
-          !      ==================================================
-        end do !ficc 
 
         if(USES%ROADDUST)then
           ! Limit as in TNO-model (but Lotos/Euros has precip in mm/3h)
@@ -1434,7 +1372,7 @@ subroutine newmonth
              if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
              if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(emis_inputlist(iemislist)%name)
           end if
-          !reset emissions only once each month (note that "flat emissions" are not overwritten)
+          !reset emissions only once each month
           if(.not.monthlysectoremisreset)then
              secemis = 0.0
              nlandcode=0
