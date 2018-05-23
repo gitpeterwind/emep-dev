@@ -102,7 +102,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
   DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !M
 !A2018COMP ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R should=1.51
  ,DD_t( 'O3   ',DH2O/1.51, 1.51, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R was 1.6
- ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1)& !M
+ ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.5,  0.,  -1,-1,-1,-1)& !M
  ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1)& !M
  ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1)& 
  ,DD_t( 'H2O2 ',DH2O/1.4 , 1.4, 1.0E+05,   23, 7.0E+00,   1,  0.,  -1,-1,-1,-1)&
@@ -337,7 +337,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
 
           do n = 1,  ni(idef)
             itot = DepMapping(irow)%advspecs(n) + NSPEC_SHL
-            if(MasterProc) write(*,'(a8)',advance='no') species(itot)%name
+            if(MasterProc) write(*,'(a)',advance='no') ' '//species(itot)%name
             !Chem2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
 
             if( idep==1 ) then ! for dry dep we need reverse mapping
@@ -415,11 +415,12 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
        DDspec(icmp)%Schmidt = NU_AIR0 / DDdefs(icmp)%Dx
        DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
 
-       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
-       if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
+!       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
+       if(MasterProc) write(*,fmt) "DD_Ini: "//trim(DDspec(icmp)%name) &
+!NOT RELEVANT: always same here      //' as:'//trim(DDdefs(idef)%name), &
        !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
-          "Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3, &
-          "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
+         ,"Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3 &
+         ,"Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
 
      end do
 
