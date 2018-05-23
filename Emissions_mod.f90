@@ -250,10 +250,12 @@ contains
        if(emis_inputlist(iemislist)%set_mask.or.emis_inputlist(iemislist)%use_mask)Emis_mask_allocate = .true.
        if(emis_inputlist(iemislist)%periodicity == 'NOTSET')then
           emis_inputlist(iemislist)%periodicity = 'once' !default
-          NTime_Read=-1
-          call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)             
-          if(NTime_Read == 12)then
-             emis_inputlist(iemislist)%periodicity = "monthly"
+          if(index(emis_inputlist(iemislist)%name,".nc")>1)then
+             NTime_Read=-1
+             call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)             
+             if(NTime_Read == 12)then
+                emis_inputlist(iemislist)%periodicity = "monthly"
+             endif
           endif
        endif
        if(emis_inputlist(iemislist)%type == "OceanNH3")then
