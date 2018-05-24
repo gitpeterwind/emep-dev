@@ -99,21 +99,44 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 !                          /Dx
 !--------------------------------------------------------------------
 ! Gases:
-  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !M
-!A2018COMP ,DD_t( 'O3   ',14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R should=1.51
+  DD_t( 'SO2  ',10.89e-6 , 1.9, 1.0E+05,   -5, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !M, M->2.0!
+! O3 was D 14.44e-6 , 1.6, 1.0E-02,   28, 6.0E+08, 1 ..
+! 
  ,DD_t( 'O3   ',DH2O/1.51, 1.51, 1.0E-02,   28, 6.0E+08,   1,  0.,  -1,-1,-1,-1)& !M R was 1.6
- ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.1,  0.,  -1,-1,-1,-1)& !M
+! 
+! Nitrogen dioxide - reactivity increased - diffusion coeff. uncertain!
+!  D could be higher - based on Tang et al. 2014 D is estimated to be
+!  ca 1.76 (range 1.3 - 2.7!)
+! 
+ ,DD_t( 'NO2  ',13.61e-6 , 1.6, 1.0E-02, 9999, 2.0E+06, 0.5,  0.,  -1,-1,-1,-1)& !M,M>1.6
  ,DD_t( 'H2O  ',DH2O     , 1.0, 1.0e+14, 9999,      -1,   0,999.,  -1,-1,-1,-1)& !M
  ,DD_t( 'HNO3 ',DH2O/1.9 , 1.9, 1.0E+14,    7, 1.0E-02,   0,  0.,  -1,-1,-1,-1)& 
  ,DD_t( 'H2O2 ',DH2O/1.4 , 1.4, 1.0E+05,   23, 7.0E+00,   1,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'ALD', DH2O/1.6 , 1.6, 1.5E+01,   -1, 1.0E+04,   0,100.,  -1,-1,-1,-1)& !Acetaldehyde
- ,DD_t( 'HCHO ',DH2O/1.3 , 1.3, 6.0E+03,   -3, 1.0E+04,   0,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'ROOH',DH2O/1.6 , 1.6, 2.4E+02, 9999, 2.0E+00, 0.1,100.,  -1,-1,-1,-1)& !Methyl hydroperoxide(was OP)
- ,DD_t( 'PAA  ',DH2O/2.0 ,   2, 5.4E+02, 9999, 6.0E+02, 0.1,  0.,  -1,-1,-1,-1)& !Peroxyacetic acid, 10
- ,DD_t( 'ORA',DH2O/1.6 , 1.6, 4.0E+06,   -8, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Formic acid'
- ,DD_t( 'NH3  ',19.78e-6 ,   1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Dx=M
- ,DD_t( 'PAN  ',DH2O/2.6 , 2.6, 3.6E+00, 9999, 3.0E+03, 0.1,  0.,  -1,-1,-1,-1)&
- ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1)&
+! 
+ !Acetaldehyde should had 1.6,H* 15, f0=0 R2017/RB suggest 2.1.0.05
+ ,DD_t( 'ALD', DH2O/2.1 , 2.1, 1.3E+01,   -1, 1.0E+04,   0.05,100.,  -1,-1,-1,-1)&
+! 
+! ,DD_t( 'HCHO ',DH2O/1.4 , 1.3, 6.0E+03,   -3, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& R2017
+ ! HCHO had Dr 1.3, 6.0e3, f0 0
+ ,DD_t( 'HCHO ',DH2O/1.4 , 1.4, 3.2E+03,   -3, 1.0E+04,   0.2,  0.,  -1,-1,-1,-1)& !R2017,RB
+ ! 
+ ! ROOH had Dr 1.9, H* 240 f0 0.1
+ ! MEOOH  Methyl hydroperoxide (was OP) - maybe reactivity should be higher!
+ ! R2017/RB was 1.6
+ ,DD_t( 'ROOH',DH2O/1.9 , 1.9, 3.0E+02, 9999, 2.0E+00, 0.2,100.,  -1,-1,-1,-1)& 
+ ! 
+ !Peroxyacetic acid, 10, was 2.0, H* 5.4e2, f0 0.1
+ ,DD_t( 'PAA  ',DH2O/2.4 , 2.4, 8.3E+02, 9999, 6.0E+02, 0.2,  0.,  -1,-1,-1,-1)&
+ ! 
+! HCOOH - NOTE - may need updating - solubility is even higher at pH=7 but
+!  surface resistance should perhaps not be 1/100 of that for SO2...
+!  Was H* 4e6
+ ,DD_t( 'ORA',DH2O/1.6 , 1.6, 1.6E+07,   -8, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Formic acid'
+ ,DD_t( 'NH3  ',19.78e-6 ,  1.1, 1.0E+05, 9999, 1.0E+04,   0,  0.,  -1,-1,-1,-1)& !Dx=M
+ ! had f0 0.1
+ ,DD_t( 'PAN  ',DH2O/2.8 , 2.8, 3.0E+00, 9999, 3.0E+03, 0.5,  0.,  -1,-1,-1,-1)&
+ ! had f0 0.1, H* 1e5
+ ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 2.6E+05,    6, 4.0E-04, 0.5,  0.,  -1,-1,-1,-1)&
 ! Particles:
 !A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
 !               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV sig  rhop  Gb(1-rural, 2-seasalt) 
@@ -337,7 +360,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
 
           do n = 1,  ni(idef)
             itot = DepMapping(irow)%advspecs(n) + NSPEC_SHL
-            if(MasterProc) write(*,'(a8)',advance='no') species(itot)%name
+            if(MasterProc) write(*,'(a)',advance='no') ' '//species(itot)%name
             !Chem2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
 
             if( idep==1 ) then ! for dry dep we need reverse mapping
@@ -374,9 +397,9 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
  idcmpSO2  = find_index('SO2',DDspec(:)%name)
  idcmpNO2  = find_index('NO2',DDspec(:)%name)
  idcmpNH3  = find_index('NH3',DDspec(:)%name)
- idcmpPMf   = find_index('PMf',DDspec(:)%name)
  idcmpPMfNO3 = find_index('PMfNO3',DDspec(:)%name)
  idcmpPMfNH4 = find_index('PMfNH4',DDspec(:)%name)
+ idcmpPMf   = find_index('PMf',DDspec(:)%name)
 
   end subroutine GetDepMapping
 
@@ -415,11 +438,12 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
        DDspec(icmp)%Schmidt = NU_AIR0 / DDdefs(icmp)%Dx
        DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
 
-       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
-       if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
+!       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
+       if(MasterProc) write(*,fmt) "DD_Ini: "//trim(DDspec(icmp)%name) &
+!NOT RELEVANT: always same here      //' as:'//trim(DDdefs(idef)%name), &
        !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
-          "Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3, &
-          "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
+         ,"Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3 &
+         ,"Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
 
      end do
 

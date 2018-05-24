@@ -106,8 +106,10 @@ contains
     logical, save :: first_call = .true.
    ! for surface area calcs (A2018): 
    ! had: SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7 ORIG=8,NSAREA=NSAREA_DEF
-    integer, parameter :: NGERBER = NSAREA_DEF-1  ! Skip PM=7
-    integer, save, dimension(NGERBER) :: iGerber
+!M24    integer, parameter :: NGERBER = NSAREA_DEF-1  ! Skip PM=7
+!M24    integer, save, dimension(NGERBER) :: iGerber
+    integer, parameter :: NSAREA_CALC = NSAREA_DEF-1  ! Skip PM=7
+    integer, save, dimension(NSAREA_CALC) :: aeroDDspec !M24
     real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
@@ -130,10 +132,12 @@ contains
     integer, save :: nSKIP_RCT = 0
     integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup !A2018
     integer, save :: iBCfgroup,iBCcgroup                     !A2018
-    logical, save :: is_finepm_a(size( PM10_GROUP ))
-    logical, save :: is_ssalt_a(size( PM10_GROUP ))
-    logical, save :: is_dust_a(size( PM10_GROUP ))
-    logical, save :: is_sia_a(size( PM10_GROUP ))
+    logical, save, dimension(size(PM10_GROUP)) :: & ! arrays
+       is_finepm_a,   &  ! 
+       is_ssalt_a,    &  ! 
+       is_dust_a,     &  ! 
+       is_sia_a,      &  ! M24 not needed?
+       is_bc_a           ! M24 will add soon
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
@@ -143,19 +147,25 @@ contains
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
       !A2018 - find surrogates for Gerber area calcs, to get Dp,rho,sigma)
-      !SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7,NSAREA=NSAREA_DEF
       ! Note, if a species is not found (eg seasalt) then iGerber
       ! is negative
       !QUERY: Should we then set USES%SURF_AREA False?
 
-       iGerber(AERO%SIA_F)= find_index('PMf',DDspec(:)%name)
-       iGerber(AERO%PM_F)= find_index('PMf',DDspec(:)%name)
-       iGerber(AERO%SS_F)= find_index('SSf',DDspec(:)%name)
-       iGerber(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
-       iGerber(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
-       iGerber(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
+!M24       iGerber(AERO%SIA_F)= find_index('PMf',DDspec(:)%name)
+!M24       iGerber(AERO%PM_F)= find_index('PMf',DDspec(:)%name)
+!M24       iGerber(AERO%SS_F)= find_index('SSf',DDspec(:)%name)
+!M24       iGerber(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
+!M24       iGerber(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
+!M24       iGerber(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
 
-      ! Skip PM=5 as mixed 
+!M24 for surface area calculations: Skips SIA. Find indices:
+!    Skip PM=5 as mixed 
+
+       aeroDDspec(AERO%PM_F)= find_index('PMf',DDspec(:)%name)
+       aeroDDspec(AERO%SS_F)= find_index('SSf',DDspec(:)%name)
+       aeroDDspec(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
+       aeroDDspec(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
+       aeroDDspec(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
 
       !A2018 see which groups we have:
        iSIAgroup = find_index('SIA',chemgroups(:)%name)
@@ -198,7 +208,7 @@ contains
           if ( iSIAgroup>0 ) is_sia_a(ipm)  = & !A2018 methid
                     ( find_index( ispec, chemgroups(iSIAgroup)%specs ) >0)
           if( MasterProc) then
-            write(*,'(2a,5i5,5L2)') dtxt//"is_ PMf, SS, DU? ",&
+            write(*,'(2a,5i5,5L2)') dtxt//"is_ PMf, SS, DU BC SIA? ",&
             species(ispec)%name, ipm, iPMfgroup,iSSgroup,iDUgroup,iBCfgroup,&
                is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm), is_sia_a(iPM)
           end if
@@ -305,6 +315,10 @@ contains
                if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
 !          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
+            if ( MasterProc .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
+               'AREACHECK0: '//trim(species(ispec)%name), ispec, &
+                  is_finepm, is_ssalt, is_dust, ugtmp, ugpmF,ugSIApm, ugSSaltF, ugDustF
+ 
 
              if (  species(ispec)%name == 'SO4' ) then
                ugSO4 = ugSO4  +  ugtmp
@@ -315,7 +329,6 @@ contains
              end if
 
             !A2018. Handle surface area here:
-
  
              if( debug_flag .and. k==KMAX_MID ) then
                write(*, fmt) dtxt//"UGSIA:"//trim(species(ispec)%name), &
@@ -348,8 +361,9 @@ contains
           !A2018 NOTE: There was a bug anyway in Gerber Table, but we recode
           ! now to avoid need for Inddry index
 
-          do iw = 1, NGERBER ! Skips PM=7 which is sum
-            ipm= iGerber(iw)
+          do iw = 1, NSAREA_CALC ! Skips PM=7 which is sum
+
+            ipm= aeroDDspec(iw) !M24 iGerber(iw)
 
             if ( ipm < 1 ) CYCLE ! Component missing !
 
@@ -359,12 +373,15 @@ contains
             else
               DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
             end if
-            if ( ipm == AERO%SIA_F ) ugtmp = ugSIApm
-            if ( ipm == AERO%PM_F )  ugtmp = ugpmF
-            if ( ipm == AERO%SS_F )  ugtmp = ugSSaltF
-            if ( ipm == AERO%DU_F )  ugtmp = ugDustF
-            if ( ipm == AERO%SS_C )  ugtmp = ugSSaltC
-            if ( ipm == AERO%DU_C )  ugtmp = ugDustC
+
+            if ( iw == AERO%PM_F )  ugtmp = ugpmF
+            if ( iw == AERO%SS_F )  ugtmp = ugSSaltF
+            if ( iw == AERO%DU_F )  ugtmp = ugDustF
+            if ( iw == AERO%SS_C )  ugtmp = ugSSaltC
+            if ( iw == AERO%DU_C )  ugtmp = ugDustC
+
+            if ( MasterProc .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
+                "AREACHECK: "//trim(DDspec(ipm)%name), iw, ipm, Ddry(iw),DpgNw(iw,k),ugtmp 
 
             !BUG S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
             S_m2m3(iw,k) = pmSurfArea(ugtmp,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
@@ -380,7 +397,7 @@ contains
           if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
              if( aero_fom(k) > 1.0 .or. ugRemF < -1.0e-9 ) then
                 print "(a,i4,99es12.3)", dtxt//"AERO-F ", k, &
-                  aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF, ugBCf
+                  aero_fom(k), ugRemF,ugpmF, ugSSaltF, ugDustF, ugBCf !M24 skip sia
                 call CheckStop(dtxt//"AERO-F problem " )
               end if
           end if
@@ -436,8 +453,8 @@ contains
 !tmp          if( debug_flag .and. k==20 )  then
   if ( DebugCell .and. k==KMAX_MID ) then
             write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
-            ugSIApm, ugpmf, ugSSaltC, ugDustC
-            do iw = 1, AERO%NSAREA
+            ugpmf, ugSSaltC, ugDustC
+            do iw = 1, NSAREA_CALC
              write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
         end if
@@ -454,7 +471,7 @@ contains
 
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
-              do iw = 1, AERO%NSAREA
+              do iw = 1, NSAREA_CALC
                 SurfArea_um2cm3(iw,i,j) = 1.0e6* S_m2m3(iw,k)
               end do
            end if

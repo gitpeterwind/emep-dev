@@ -44,7 +44,7 @@ use Chemfields_mod ,   only: cfac, so2nh3_24hr,Grid_snow
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
 use ChemSpecs_mod            ! several species needed
 use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
-                            DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
+                            DEBUG, DEBUG_ECOSYSTEMS, &
                             USES, USE_SOILNOX, &
                             MasterProc, &
                             PPBINV, IOU_INST,&
@@ -255,6 +255,7 @@ contains
 !    logical, save      :: first_spod = .true.
     character(len=20), save :: fname
     integer :: nglob
+    logical :: first_ddep = .true.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
@@ -525,7 +526,11 @@ contains
               Vg_ref(icmp) = 1. / ( L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur ) 
               Vg_eff(icmp) = 1. / ( (L%Ra_X + BL(icmp)%Rb + BL(icmp)%Rsur) * eff_fac(icmp)) 
               Vg_3m(icmp)  = 1. / ( L%Ra_3m  + BL(icmp)%Rb + BL(icmp)%Rsur ) 
-
+if( dbg .and. first_ddep .and. icmp==idcmpNO2 ) then
+  associate ( b=>BL(icmp) )
+  write(*,'(a,2i4,9es10.3)')'DBGXNO2 :',icmp, iL,L%Ra_ref, b%Rb, b%Rsur, b%Gsto, Vg_ref(icmp), no2fac
+  end associate
+end if
              ! specials, NH3 and NO2:
 
               if ( USES%BIDIR .and. icmp == idcmpNH3 ) then
@@ -538,6 +543,7 @@ contains
            ! Note, xn_2d has no2 in #/cm-3
 
               else if ( .not. USE_SOILNOX .and.  icmp == idcmpNO2 ) then
+if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
   
                  Vg_eff(icmp) = Vg_eff(icmp) * no2fac
                  Vg_ref(icmp) = Vg_ref(icmp) * no2fac
@@ -601,17 +607,17 @@ contains
 
               Vg_eff(icmp) = Vg_ref(icmp) !PW
 
-              if ( DEBUG_VDS ) then
+              if ( DEBUG%VDS ) then
                 if ( debug_flag &
                   .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
-                  write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", &
+                  write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK:"//trim(DDspec(icmp)%name), &
                     imm, idd, ihh, icmp, iL, i_fdom(i), j_fdom(j),&
                     L%ustar,  L%invL, pzpbl(i,j), &
                     Grid%ustar, Grid%Hd,  100*Vds, &
                     100*BL(icmp)%Vs, 100*Vg_ref(icmp), 100*Vg_3m (icmp) &
                      , Grid%t2, Grid%rho_ref 
-                  write(*,"(a,2i4,3es10.3)") "VDS CHECK ",&
-                      icmp, nae, Vds, Vg_ref(icmp)
+                  write(*,"(a,i4,3es10.3)") "VDS CHECK ",&
+                      icmp, Vds, Vg_ref(icmp)
                   
                   call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ),&
                                   "AEROSTOP")
@@ -788,6 +794,12 @@ contains
             DepLoss(nadv) =   vg_fac( icmp )  * xn_2d( ntot,K2)
             cfac(nadv, i,j) = gradient_fac( icmp )
         end if !SEMIVOL
+        if( dbg .and. first_ddep ) then
+           lossfrac = ( 1 - DepLoss(nadv)/(1+xn_2d( ntot,K2))) ! 1 avoids NaN
+           write(*,'(a20,i4,4es10.3)') "DBGX "//trim(species(ntot)%name)&
+             //' as:'// trim(DDspec(icmp)%name), icmp,  xn_2d(ntot,K2), &
+             vg_fac(icmp), lossfrac, gradient_fac(icmp)
+        end if
 
         if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
           print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, icmp, &
@@ -865,7 +877,8 @@ contains
               !  write(6,"(a,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
               !      100*DDepMap(icmp)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
               !else
-              write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
+              write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC "//species(ntot)%name,&
+                 iiL, iL, ntot, &
                  Sub(iL)%coverage, 100*Sub(0)%Vg_Ref(icmp), &  ! GRID
                     100*Sub(iL)%Vg_Ref(icmp), & ! Mosaic VgRef &
                     100*Sub(iL)%coverage*Sub(iL)%Vg_Ref(icmp), & 
@@ -929,6 +942,9 @@ contains
             itot2DDspec, fluxfrac_adv, Deploss ) 
 
    ! SPOD puts were here
+
+   ! 
+   if( dbg ) first_ddep = .false.
 
  end subroutine drydep
 

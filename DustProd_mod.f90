@@ -110,9 +110,9 @@
 
     if ( my_first_call ) then 
 
-        ipoll = find_index("DUST_WB_F", species(:)%name )
+        ipoll = find_index("DUST_WB_F", species(:)%name,any_case=.true. )
         dust_found = .true.
-        inat_DUf  = find_index( "DUST_WB_F", EMIS_BioNat(:) )
+        inat_DUf  = find_index( "DUST_WB_F", EMIS_BioNat(:),any_case=.true. )
         if( ipoll < 1 .or. inat_DUf < 1 ) then
             call PrintLog( "WARNING: Dust asked for, but not found"&
                   ,MasterProc)
@@ -587,10 +587,10 @@
 !  real, dimension (3) :: sig_soil= (/  1.7 ,  1.6 ,  1.5   /)  ! [frc] GSD
 !---------------------------------------------
 
-  inat_DUf = find_index( "DUST_WB_F", EMIS_BioNat(:) )
-  inat_DUc = find_index( "DUST_WB_C", EMIS_BioNat(:) )
-  itot_DUf = find_index( "DUST_WB_F", species(:)%name    )
-  itot_DUc = find_index( "DUST_WB_C", species(:)%name    )
+  inat_DUf = find_index( "DUST_WB_F", EMIS_BioNat(:),any_case=.true. )
+  inat_DUc = find_index( "DUST_WB_C", EMIS_BioNat(:),any_case=.true. )
+  itot_DUf = find_index( "DUST_WB_F", species(:)%name,any_case=.true.    )
+  itot_DUc = find_index( "DUST_WB_C", species(:)%name,any_case=.true.    )
 
   if ( itot_DUf < 1 ) then
       write(*,*) "DUST species not found!"

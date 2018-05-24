@@ -15,7 +15,10 @@
 
  use AeroFunctions_mod,     only : WetRad, cmWetRad, GbSeaSalt
  use Biogenics_mod,         only : EMIS_BioNat, EmisNat  
+ use CheckStop_mod,         only : StopAll
  use ChemSpecs_mod,         only : species
+ use Config_module,    only : KMAX_MID, KMAX_BND, USES, &
+                                  MasterProc, DEBUG   ! -> SEASALT
  use GridValues_mod,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_mod,          only : PrintLog
  use Landuse_mod,           only : LandCover, water_fraction
@@ -24,9 +27,6 @@
                                   u_ref, foundSST, &
                                    foundws10_met,ws_10m
  use MicroMet_mod,          only : Wind_at_h
- use Config_module,    only : KMAX_MID, KMAX_BND, USES, &
-                                  MasterProc, & 
-                                  DEBUG   ! -> SEASALT
  use PhysicalConstants_mod, only : CHARNOCK, AVOG ,PI
  use ZchemData_mod,    only : rcemis 
  use SmallUtils_mod,        only : find_index
@@ -91,10 +91,10 @@
     ! We might have USES%SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
-    inat_SSFI = find_index( "SEASALT_F", EMIS_BioNat(:) )
-    inat_SSCO = find_index( "SEASALT_C", EMIS_BioNat(:) )
-    itot_SSFI = find_index( "SEASALT_F", species(:)%name    )
-    itot_SSCO = find_index( "SEASALT_C", species(:)%name    )
+    inat_SSFI = find_index( "SEASALT_F", EMIS_BioNat(:) , any_case=.true.)
+    inat_SSCO = find_index( "SEASALT_C", EMIS_BioNat(:), any_case=.true. )
+    itot_SSFI = find_index( "SEASALT_F", species(:)%name  , any_case=.true.  )
+    itot_SSCO = find_index( "SEASALT_C", species(:)%name  , any_case=.true.  )
 
     if(DEBUG%SEASALT .and. MasterProc ) &
         write(*,*) "SSALT INIT", inat_SSFI, itot_SSFI
@@ -102,9 +102,11 @@
     if ( inat_SSFI < 1 ) then
        seasalt_found = .false.
        call PrintLog("WARNING: SeaSalt not found in Emis",MasterProc)
+       if ( USES%SEASALT ) call StopAll('SeaSalt not found in Emis')
     else if ( itot_SSFI < 1 ) then
        seasalt_found = .false.
        call PrintLog("WARNING: SeaSalt not found in Specs",MasterProc)
+       if ( USES%SEASALT ) call StopAll('SeaSalt not found in Emis')
     else
         seasalt_found = .true.
         call init_seasalt()
