@@ -185,7 +185,8 @@ type, public :: emep_debug
     ,SITES           = .false. &
     ,SOLVER          = .false. &
     ,SOA             = .false. &
-    ,STOFLUX         = .false.
+    ,STOFLUX         = .false. &
+    ,VDS             = .false.
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option
@@ -405,7 +406,6 @@ logical, public, parameter ::    &
   ,DEBUG_EMISSTACKS     = .false. &
   ,DEBUG_Kz             = .false. &
   !!,DEBUG_DRYDEP         = .false. &
-    ,DEBUG_VDS          = .false. &
     ,DEBUG_MY_DRYDEP    = .false. &
     ,DEBUG_CLOVER       = .false. &
   ,DEBUG_EMISSIONS      = .false. &
