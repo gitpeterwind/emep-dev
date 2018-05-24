@@ -21,9 +21,6 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-<<<<<<< HEAD
-24th, May 2018, Dave, Svetlana
-=======
 22-24 May 2018, Peter
 
 Big refactoring of emission inputting.
@@ -92,8 +89,7 @@ ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_age:fac:0.0001998334721065778
 mv FMIGlobShip2015mon.nc FMIGlobShip2015monEmis.nc
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-24th, May 2018, Dave, with help from Svetlana
->>>>>>> 8eedebecc3590d9790e2bc3f599e07099c7909ac
+24th, May 2018, Dave, Svetlana
 
 Many bug fixes!
  Interim still - DUST isn't working, but SurfArea and SeaSalt are back, and
