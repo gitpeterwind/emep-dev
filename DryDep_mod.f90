@@ -44,7 +44,7 @@ use Chemfields_mod ,   only: cfac, so2nh3_24hr,Grid_snow
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
 use ChemSpecs_mod            ! several species needed
 use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
-                            DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
+                            DEBUG, DEBUG_ECOSYSTEMS, &
                             USES, USE_SOILNOX, &
                             MasterProc, &
                             PPBINV, IOU_INST,&
@@ -607,7 +607,7 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
 
               Vg_eff(icmp) = Vg_ref(icmp) !PW
 
-              if ( DEBUG_VDS ) then
+              if ( DEBUG%VDS ) then
                 if ( debug_flag &
                   .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
                   write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK:"//trim(DDspec(icmp)%name), &
