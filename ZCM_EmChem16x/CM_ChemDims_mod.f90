@@ -19,10 +19,10 @@ module ChemDims_mod
     integer, public, parameter :: NSPEC_SEMIVOL=22
         
     ! No. DRY deposition species
-    integer, public, parameter :: NDRYDEP_ADV = 60
+    integer, public, parameter :: NDRYDEP_ADV = 61
     
     ! No. WET deposition species
-    integer, public, parameter :: NWETDEP_ADV = 51
+    integer, public, parameter :: NWETDEP_ADV = 52
     
     ! No. rate coefficients
     integer, parameter, public :: NCHEMRATES = 118

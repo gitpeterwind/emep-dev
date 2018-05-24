@@ -4,6 +4,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("NO2       ", "NO2       ", -999.0 ) &
 , dep_t("PAN       ", "PAN       ", -999.0 ) &
 , dep_t("MPAN      ", "PAN       ", -999.0 ) &
+, dep_t("N2O5      ", "HNO3      ", -999.0 ) &
 , dep_t("HNO3      ", "HNO3      ", -999.0 ) &
 , dep_t("HONO      ", "HNO2      ", -999.0 ) &
 , dep_t("HO2NO2    ", "HNO3      ", -999.0 ) &

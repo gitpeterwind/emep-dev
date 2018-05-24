@@ -15,9 +15,9 @@ module ChemFunctions_mod
 !   troe - standard chemical function
 !____________________________________________________________________
  use AeroConstants_mod,     only: AERO
- use AeroFunctions_mod,         only: UptakeRate, GammaN2O5_EJSS, GammaN2O5
+ use AeroFunctions_mod,     only: UptakeRate, GammaN2O5_EJSS, GammaN2O5
  use CheckStop_mod,         only: StopAll
- use ChemSpecs_mod,             only : SO4, NO3_f, NH4_f, NO3_c
+ use ChemSpecs_mod,         only : SO4, NO3_f, NH4_f, NO3_c
 ! use Config_module,         only : DebugCell, DEBUG  ! set with DEBUG%RUNCHEM
  use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES
@@ -437,11 +437,13 @@ module ChemFunctions_mod
 
          !Unfortunate hard-coding. Will fix in later stages
          if( method == "RiemerSIA" ) then
-            S = S_m2m3(AERO%SIA_F,k)
-            Rwet = 0.5*DpgNw(AERO%SIA_F,k)
+            !M24  S = S_m2m3(AERO%SIA_F,k)
+            !M24 Rwet = 0.5*DpgNw(AERO%SIA_F,k)
+            call StopAll(dtxt//'Deprecated:'//method)
          else if( method == "RiemerSIAc3" ) then
-            S = S_m2m3(AERO%SIA_F,k)
-            Rwet = 0.5*DpgNw(AERO%SIA_F,k)
+            !M24 S = S_m2m3(AERO%SIA_F,k)
+            !M24 Rwet = 0.5*DpgNw(AERO%SIA_F,k)
+            call StopAll(dtxt//'Deprecated:'//method)
             if( first_call ) g2=g1/3.0   ! Chang notes that the factor  of ten
                                          ! reduction was too high
 

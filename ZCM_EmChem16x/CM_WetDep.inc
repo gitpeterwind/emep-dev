@@ -1,6 +1,7 @@
 type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 !        species     surrogate      setrate
-  dep_t("HNO3      ", "HNO3      ", -999.0 ) &
+  dep_t("N2O5      ", "HNO3      ", -999.0 ) &
+, dep_t("HNO3      ", "HNO3      ", -999.0 ) &
 , dep_t("HONO      ", "HNO3      ", -999.0 ) &
 , dep_t("HO2NO2    ", "HNO3      ", -999.0 ) &
 , dep_t("HCHO      ", "HCHO      ", -999.0 ) &

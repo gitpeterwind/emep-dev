@@ -1,6 +1,6 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-use AeroConstants_mod,  only: AERO       ! =>  z dimension
+use AeroConstants_mod,  only: NSAREA_DEF       ! =>  z dimension
 use AllocInits,     only: AllocInit
 use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
                           NCHEMRATES, NPHOTOLRATES 
@@ -130,15 +130,15 @@ if(MasterProc) write(*,*) 'XALLOC RCPHOT'
 
    ! Surface area and water
 
-    allocate(surfarea_um2cm3(AERO%NSAREA,LIMAX,LJMAX))
+    allocate(surfarea_um2cm3(NSAREA_DEF,LIMAX,LJMAX))
     SurfArea_um2cm3=0.0
     allocate(Gerber_water(LIMAX,LJMAX,KMAX_MID))
     Gerber_water=0.0
 
    ! wet DpgN and defaults from dry values
-    allocate(DpgNw(AERO%NSAREA, KCHEMTOP:KMAX_MID))
+    allocate(DpgNw(NSAREA_DEF, KCHEMTOP:KMAX_MID))
 
-    allocate(S_m2m3(AERO%NSAREA, KCHEMTOP:KMAX_MID)) ! GERBER
+    allocate(S_m2m3(NSAREA_DEF, KCHEMTOP:KMAX_MID)) ! GERBER
     S_m2m3=0.0
 
     ! Mol speeds
