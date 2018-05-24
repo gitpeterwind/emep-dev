@@ -209,11 +209,11 @@ subroutine Init_Derived()
   end if
 
   ! Avoid hard codded IXADV_SPCS
-  iadv_O3         =find_index('O3'         ,species_adv(:)%name )
-  iadv_NO3_C      =find_index('NO3_c'      ,species_adv(:)%name )
-  iadv_EC_C_WOOD  =find_index('EC_C_WOOD'  ,species_adv(:)%name )
-  iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name )
-  iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name )
+  iadv_O3         =find_index('O3'         ,species_adv(:)%name, any_case=.true. )
+  iadv_NO3_C      =find_index('NO3_c'      ,species_adv(:)%name, any_case=.true. )
+  iadv_EC_C_WOOD  =find_index('EC_C_WOOD'  ,species_adv(:)%name, any_case=.true. )
+  iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name, any_case=.true. )
+  iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name, any_case=.true. )
 
   ! units scaling
   ! e.g. ug_NO3_C = 1.0+e9 * MW(NO3)/MW(air)
@@ -226,7 +226,7 @@ subroutine Init_Derived()
   call Setups()  ! just for VOC now
 
 !A2018   select case(nint(AERO%DpgV(2)*1e7))
-  iddefPMc = find_index('PMc',DDdefs(:)%name)
+  iddefPMc = find_index('PMc',DDdefs(:)%name, any_case=.true.)
   select case(nint(DDdefs(iddefPMc)%umDpgV*10))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
@@ -387,7 +387,7 @@ subroutine Define_Derived()
         Is3D=(outdim=='3d')
       ! if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
       case('FLYmax6h','FLYmax6h:SPEC')   ! Fly Level, 6 hourly maximum
-        iout=find_index(outname, species_adv(:)%name )
+        iout=find_index(outname, species_adv(:)%name, any_case=.true. )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG%COLSRC)&
@@ -401,7 +401,7 @@ subroutine Define_Derived()
         subclass = outdim   ! flxxx-yyy: xxx to yyy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('FLYmax6h:GROUP')          ! Fly Level, 6 hourly maximum
-        iout=find_index(outname,chemgroups(:)%name)
+        iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG%COLSRC)&
@@ -416,7 +416,7 @@ subroutine Define_Derived()
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
-        iout=find_index(outname, species_adv(:)%name )
+        iout=find_index(outname, species_adv(:)%name, any_case=.true. )
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,iout,unitscale,unittxt)
@@ -424,7 +424,7 @@ subroutine Define_Derived()
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('COLUMN:GROUP')
-        iout=find_index(outname,chemgroups(:)%name)
+        iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,-1,unitscale,unittxt)
@@ -438,12 +438,12 @@ subroutine Define_Derived()
         case('AOD:GROUP','EXT:GROUP')
           select case(outname)
           case('AOD','EXT')  ! take the full aod_group
-            iout=find_index('EXTINC',chemgroups_maps(:)%name)
+            iout=find_index('EXTINC',chemgroups_maps(:)%name, any_case=.true.)
           case default       ! cherry pick from aod_group
-            iout=find_index(outname,chemgroups(:)%name)
+            iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
           end select
         case('AOD:SPEC','EXT:SPEC' )
-          iout=find_index(outname,species_adv(:)%name)
+          iout=find_index(outname,species_adv(:)%name, any_case=.true.)
         case default
           call CheckStop(sub//"OutputFields%class  Unsupported "//&
             trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
@@ -475,7 +475,7 @@ subroutine Define_Derived()
 
       select case(outtyp)
       case("SPEC")  ! Simple species
-        iadv = find_index(outname, species_adv(:)%name )
+        iadv = find_index(outname, species_adv(:)%name, any_case=.true. )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG%COLSRC)&
@@ -486,7 +486,7 @@ subroutine Define_Derived()
         iout = iadv
         call Units_Scale(outunit,iadv,unitscale,unittxt,volunit)
       case("SHL")
-        ishl = find_index(outname,species_shl(:)%name)
+        ishl = find_index(outname,species_shl(:)%name, any_case=.true.)
         call CheckStop(ishl<0,sub//"OutputFields Short lived Species not found "//trim(outname))
         if(MasterProc) &
           write(*,*)"OutputFields Short lived Species found: "//trim(outname)
@@ -495,7 +495,7 @@ subroutine Define_Derived()
         unittxt = "molec/cm3" ! No PPB possibility here !!!
         volunit = .true.
       case("GROUP") ! groups of species
-        igrp = find_index(outname, chemgroups(:)%name )
+        igrp = find_index(outname, chemgroups(:)%name, any_case=.true. )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG%COLSRC)&
@@ -521,14 +521,14 @@ subroutine Define_Derived()
         Is3D = .false.
         class = "SURF_"//trim(class)  //"_"//trim(outtyp)
         dname = "SURF_"//trim(outunit)//"_"//trim(outname)
-        call CheckStop(find_index(dname,def_2d(:)%name)>0,&
+        call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           sub//"OutputFields already defined output "//trim(dname))
       case("Local_Correct")
         Is3D = .false.
         class = "SURF_"//trim(class)  //"_"//trim(outtyp)
         dname = "SURF_LF_"//trim(outunit)//"_"//trim(outname)
         subclass = 'LocFrac_corrected'
-        call CheckStop(find_index(dname,def_2d(:)%name)>0,&
+        call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           sub//"OutputFields already defined output "//trim(dname))
 
         if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
@@ -538,7 +538,7 @@ subroutine Define_Derived()
         Is3D = .true.
         class = "3D_"//trim(class)  //"_"//trim(outtyp)
         dname = "D3_"//trim(outunit)//"_"//trim(outname)
-        call CheckStop(find_index(dname,def_3d(:)%name)>0,&
+        call CheckStop(find_index(dname,def_3d(:)%name, any_case=.true.)>0,&
           sub//"OutputFields already defined output "//trim(dname))
 
         ! Always print out 3D info. Good to help avoid using 3d unless really needed!
@@ -585,14 +585,14 @@ subroutine Define_Derived()
       call AddNewDeriv("WDEP_PREC","PREC ","-","-", "mm",  &
                         -1, -99,   F,    1.0,   F,    outind)
     case("SPEC")
-      iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name)
+      iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name, any_case=.true.)
       call CheckStop(iadv<1, "WDEP_WANTED Species not found " // trim(dname) )
 
       call Units_Scale(WDEP_WANTED(ind)%txt3,iadv,unitscale,unittxt)
       call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
               iadv, -99,   F, unitscale,     F,  outind)
     case("GROUP")
-      igrp = find_index(dname, chemgroups(:)%name)
+      igrp = find_index(dname, chemgroups(:)%name, any_case=.true.)
       call CheckStop(igrp<1, "WDEP_WANTED Group not found " // trim(dname) )
 
       ! Just get units text here.
@@ -686,7 +686,7 @@ subroutine Define_Derived()
                         ind , -99, T, 1.0e6,   F,  'YM' )
   end do
 
-  if(find_index("SURF_PM25water",def_2d(:)%name)<1)&
+  if(find_index("SURF_PM25water",def_2d(:)%name,any_case=.true.)<1)&
   call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-","ug/m3", &
                        -99 , -99, F, 1.0,   T,  'YMD' )
 ! call AddNewDeriv("SURF_PM25", "PM25", "-", "-", "-", &
@@ -708,7 +708,7 @@ Is3D = .true.
   do ind = 1, size(D3_OTHER)
     select case ( trim(D3_OTHER(ind)) )
     case ("D3_PM25water")
-      if(find_index("D3_PM25water",def_3d(:)%name)<1)&
+      if(find_index("D3_PM25water",def_3d(:)%name,any_case=.true.)<1)&
       call AddNewDeriv("D3_PM25water", "PM25water", "-", "-","ug/m3", &
          -99, -99, F, 1.0,   T,  'YM',    Is3D ) !
 
@@ -725,12 +725,12 @@ Is3D = .true.
          -99, -99, F,  1.0,  T,  'YM',     Is3D )
 
     case ("D3_Zmid")
-      if(find_index("D3_Zmid",def_3d(:)%name)<1)&
+      if(find_index("D3_Zmid",def_3d(:)%name,any_case=.true.)<1)&
       call AddNewDeriv("D3_Zmid", "Z_MID", "-", "-", "m", &
                       -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
 
      case ("D3_Zlev")
-      if(find_index("D3_Zlev",def_3d(:)%name)<1)&
+      if(find_index("D3_Zlev",def_3d(:)%name,any_case=.true.)<1)&
       call AddNewDeriv("D3_Zlev", "Z_BND", "-", "-", "m", &
            -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
 
@@ -745,7 +745,7 @@ Is3D = .true.
     if(dbg0) print *,"CHECK 2d", num_deriv2d, i, trim(wanted_deriv2d(i))
     if(MasterProc) call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
         sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
-    ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
+    ind = find_index( wanted_deriv2d(i), def_2d(:)%name,any_case=.true. )
     if(ind>0)then
       f_2d(i) = def_2d(ind)
       if(dbg0) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
@@ -764,7 +764,7 @@ Is3D = .true.
     if(MasterProc)&
       call CheckStop(count(f_3d(:i)%name==wanted_deriv3d(i))>0,&
         sub//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
-    ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
+    ind = find_index( wanted_deriv3d(i), def_3d(:)%name,any_case=.true. )
     if(ind>0)then
       f_3d(i) = def_3d(ind)
       if(dbg0) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &

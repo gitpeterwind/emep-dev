@@ -1433,22 +1433,58 @@
   xnew(SeaSalt_c) = xold(SeaSalt_c) + dt2 * P
 
 
-!-> Dust_f
+!-> Dust_ROAD_f
 
-  P = rcemis(DUST_F,K)
+  P = rcemis(DUST_ROAD_F,K)
   
   ! L = 0.0
   
-  xnew(Dust_f) = xold(Dust_f) + dt2 * P
+  xnew(Dust_ROAD_f) = xold(Dust_ROAD_f) + dt2 * P
 
 
-!-> Dust_c
+!-> Dust_ROAD_c
 
-  P = rcemis(DUST_C,K)
+  P = rcemis(DUST_ROAD_C,K)
   
   ! L = 0.0
   
-  xnew(Dust_c) = xold(Dust_c) + dt2 * P
+  xnew(Dust_ROAD_c) = xold(Dust_ROAD_c) + dt2 * P
+
+
+!-> Dust_WB_f
+
+  P = rcemis(DUST_WB_F,K)
+  
+  ! L = 0.0
+  
+  xnew(Dust_WB_f) = xold(Dust_WB_f) + dt2 * P
+
+
+!-> Dust_WB_c
+
+  P = rcemis(DUST_WB_C,K)
+  
+  ! L = 0.0
+  
+  xnew(Dust_WB_c) = xold(Dust_WB_c) + dt2 * P
+
+
+!-> Dust_SAH_f
+
+  P = rcemis(DUST_SAH_F,K)
+  
+  ! L = 0.0
+  
+  xnew(Dust_SAH_f) = xold(Dust_SAH_f) + dt2 * P
+
+
+!-> Dust_SAH_c
+
+  P = rcemis(DUST_SAH_C,K)
+  
+  ! L = 0.0
+  
+  xnew(Dust_SAH_c) = xold(Dust_SAH_c) + dt2 * P
 
 
 !-> ASOC_ng100

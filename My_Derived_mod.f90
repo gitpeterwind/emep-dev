@@ -447,10 +447,10 @@ subroutine Init_My_Deriv()
       ! OutputConcs can redefine output param of an output that is wanted by
       ! default
       if(Is3D)then
-        if(find_index(tag_name(1),wanted_deriv3d)<1)& 
+        if(find_index(tag_name(1),wanted_deriv3d,any_case=.true.)<1)& 
         call AddArray(tag_name(1:1),wanted_deriv3d,NOT_SET_STRING,errmsg)
       else
-        if(find_index(tag_name(1),wanted_deriv2d)<1)&
+        if(find_index(tag_name(1),wanted_deriv2d,any_case=.true.)<1)&
         call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
       end if
       call CheckStop(errmsg,errmsg//trim(outname)//" too long")
@@ -459,9 +459,9 @@ subroutine Init_My_Deriv()
 
     elseif(outtyp=="AIR_CONCS") then
       select case(outclass)
-        case(SPEC ) ;n1=find_index(outname,species(:)%name)
-        case(SHL  ) ;n1=find_index(outname,species(:)%name)
-        case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
+        case(SPEC ) ;n1=find_index(outname,species(:)%name,any_case=.true.)
+        case(SHL  ) ;n1=find_index(outname,species(:)%name,any_case=.true.)
+        case(GROUP) ;n1=find_index(outname,chemgroups(:)%name,any_case=.true.)
         case default;n1=-1
       end select
 

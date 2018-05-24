@@ -59,6 +59,10 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("FFIRE_REMPPM25", "PMf       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
-, dep_t("Dust_f    ", "DUf       ", -999.0 ) &
-, dep_t("Dust_c    ", "DUc       ", -999.0 ) &
+, dep_t("Dust_ROAD_f", "DUf       ", -999.0 ) &
+, dep_t("Dust_ROAD_c", "DUc       ", -999.0 ) &
+, dep_t("Dust_WB_f ", "DUf       ", -999.0 ) &
+, dep_t("Dust_WB_c ", "DUc       ", -999.0 ) &
+, dep_t("Dust_SAH_f", "DUf       ", -999.0 ) &
+, dep_t("Dust_SAH_c", "DUc       ", -999.0 ) &
 /)

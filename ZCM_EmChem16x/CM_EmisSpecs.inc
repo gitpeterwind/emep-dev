@@ -34,6 +34,10 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "FFIRE_REMPPM25" &
 , "SEASALT_F     " &
 , "SEASALT_C     " &
-, "DUST_F        " &
-, "DUST_C        " &
+, "DUST_WB_F     " &
+, "DUST_WB_C     " &
+, "DUST_ROAD_F   " &
+, "DUST_ROAD_C   " &
+, "DUST_SAH_F    " &
+, "DUST_SAH_C    " &
 /)

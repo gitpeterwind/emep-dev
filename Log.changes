@@ -21,17 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-24th, May 2018, Dave, with help from Svetlana
+24th, May 2018, Dave, Svetlana
 
 Many bug fixes!
  Interim still - DUST isn't working, but SurfArea and SeaSalt are back, and
-chem params closer to R2017.
+ chem params closer to R2017.
 
 Deposition changes:
   GasParticleCoeffs_mod - revised to R2017 values!
                           BIG effects on NO2!
-
-
 Surface area changes:
 
   AeroConstants_mod  - revised AERO constants
@@ -44,8 +42,16 @@ SeaSalt/Dust emissions fixed:
   SeaSalt_mod        - added any_case usage to find_index_c and StopAll
   DustProd_mod       - added any_case usage to find_index_c
 
+Also needing any_case, since GenChem doesn't upper-case species names now:
+
+  Derived_mod       - added any_case usage
+  My_Derived_mod    - added any_case usage
+
+
 ZCM_EmChem16x files
   - fixes for N2O5 dep, Extinc seetings, FINEEC for FFIRE_BC, etc.
+  - DustExtended from chem used
+  - MW corrected for dust
 
 SMALLER CHANGES:
   Aero_Vds_mod    - use DEBUG%VDS not DEBUG_VDS
@@ -53,7 +59,9 @@ SMALLER CHANGES:
 
   ChemFunctions_mod -  StopAll for Riemer SIA usage
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  run.pl - removed need for CM_emislist.csv
+
+uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2018, Dave
 
 Aqueous_mod: BUG fix  - nwdep was being overwritten.

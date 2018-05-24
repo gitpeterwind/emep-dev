@@ -38,7 +38,7 @@
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
-##PBS -W umask=0022
+#PBS -W umask=0022
 # Account for billing
 ##PBS -A nn2890k
 #PBS -A mifa01kl
@@ -127,7 +127,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_17mod","EmChem16a","A2018","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_17box","EmChem16x","A2018","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_17box","EmChem16x","A2018e","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -253,10 +254,10 @@ die "No ChemDir! $ChemDir\n" unless -d $ChemDir;
 
 
 #---- emislist --------------------------------------------------------
-open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
-  my @emislist = split(/,/,<EMIS>);
-  print "EMISLIST ", join(" ", @emislist ), "\n";
-close(EMIS);
+#A2018 skip: open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
+#  my @emislist = split(/,/,<EMIS>);
+#  print "EMISLIST ", join(" ", @emislist ), "\n";
+#close(EMIS);
 #A2018 skip
 #----  chem packages  (e.g. EmChembase PMmass ) -----------------------
 #open(CHEM,"<$ProgDir/CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";

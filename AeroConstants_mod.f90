@@ -19,7 +19,7 @@ module AeroConstants_mod
      character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
      logical          :: DYNAMICS = .false.
      integer          :: NSIZE    = 7
-     integer :: PM_F=1,SS_F=2,DU_F=3,SS_C=4,DU_C=4,PM=6  ! Will be set in GasParticleCoeffs_mod
+     integer :: PM_F=1,SS_F=2,DU_F=3,SS_C=4,DU_C=5,PM=6  ! Will be set in GasParticleCoeffs_mod
    end type aero_t
    type(aero_t), public, save :: AERO = aero_t()
 

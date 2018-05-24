@@ -50,6 +50,10 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("FFIRE_REMPPM25", "PMf       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
-, dep_t("Dust_f    ", "PMf       ", -999.0 ) &
-, dep_t("Dust_c    ", "PMc       ", -999.0 ) &
+, dep_t("Dust_ROAD_f", "PMf       ", -999.0 ) &
+, dep_t("Dust_ROAD_c", "PMc       ", -999.0 ) &
+, dep_t("Dust_WB_f ", "PMf       ", -999.0 ) &
+, dep_t("Dust_WB_c ", "PMc       ", -999.0 ) &
+, dep_t("Dust_SAH_f", "PMf       ", -999.0 ) &
+, dep_t("Dust_SAH_c", "PMc       ", -999.0 ) &
 /)
