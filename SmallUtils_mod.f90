@@ -185,11 +185,15 @@ end subroutine WriteArray
 !>===========================================================================
 !! A series of find_index routines, for character (c) and integer (i) arrays:
 !!===========================================================================
-function find_index_c(wanted, list, first_only, debug)  result(Index)
+function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
   character(len=*), intent(in) :: wanted
   character(len=*), dimension(:), intent(in) :: list
   logical, intent(in), optional :: first_only
+  logical, intent(in), optional :: any_case  ! matches e.g. ABC == abC
   logical, intent(in), optional :: debug
+! Interim
+  character(len=len(list(1))), dimension(size(list)) :: list_copy
+  character(len=len(wanted)) :: wanted_copy
 !  Output:
   integer ::   Index
 
@@ -203,9 +207,15 @@ function find_index_c(wanted, list, first_only, debug)  result(Index)
   Index =  NOT_FOUND
   debug_print=.false.;if(present(debug))debug_print=debug
   OnlyFirst=.false.;if(present(first_only))OnlyFirst=first_only
+  wanted_copy = wanted
+  list_copy   = list
+  if ( present(any_case) ) then
+    wanted_copy = to_upper(wanted)
+    list_copy   = to_upper(list)
+  end if
 
   do n = 1, size(list)
-    if ( wanted == list(n) ) then
+    if ( wanted_copy == list_copy(n) ) then
       Index = n
       n_match = n_match + 1
       if( OnlyFirst ) return
@@ -305,7 +315,8 @@ end function find_indices
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
 !> Simpler to understand than use of iachar etc. (see same web side).
 
-Pure Function to_upper (str) Result (string)
+!A2018 Pure Function to_upper (str) Result (string)
+elemental Function to_upper (str) Result (string)
 
 !   ==============================
 !   Changes a string to upper case
@@ -497,7 +508,7 @@ subroutine Self_test()
   call WriteArray(wantedx,size(wantedx),"Testing AddArray")
 
   print "(/,a)", "4) Self-test - to_upper  ================================="
-  print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
+  print *, "  Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
 
   print "(/,a)", "5) Self-test - key2str ==============================="
   print *, key2str('replace string:  "EmisYYYY.txt".','YYYY','2005')
