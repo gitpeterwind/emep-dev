@@ -11,9 +11,9 @@ use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour,
                             loc_frac_hour_inst, loc_tot_hour_inst, &
                             loc_frac_day, loc_tot_day, loc_frac_month,&
                             loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS, &
-                            EMIS_FILE,nlandcode,landcode,flat_nlandcode,flat_landcode,&
+                            EMIS_FILE,nlandcode,landcode,&
                             sec2tfac_map, sec2hfac_map ,ISNAP_DOM,secemis,&
-                            secemis_flat,roaddust_emis_pot,KEMISTOP
+                            roaddust_emis_pot,KEMISTOP
 
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
@@ -1061,7 +1061,6 @@ subroutine uEMEP_emis(indate)
   type(date), intent(in) :: indate  ! Gives year..seconds
   integer :: i, j, k          ! coordinates, loop variables
   integer :: icc, ncc         ! No. of countries in grid.
-  integer :: ficc,fncc        ! No. of countries with
   integer :: iqrc             ! emis indices 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over 1..NEMIS_FILE
@@ -1096,7 +1095,6 @@ subroutine uEMEP_emis(indate)
   do j = lj0,lj1
     do i = li0,li1
       ncc = nlandcode(i,j)            ! No. of countries in grid
-      fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
      ! find the approximate local time:
       lon = modulo(360+nint(glon(i,j)),360)
       if(lon>180.0)lon=lon-360.0
@@ -1105,20 +1103,16 @@ subroutine uEMEP_emis(indate)
       daytime_longitude=0
       if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
       !*************************************************
-      ! First loop over non-flat (one sector) emissions
+      ! loop over sector emissions
       !*************************************************
       tmpemis(:)=0.
       icc_uemep=0
       emis_uemep=0.0
       emis_tot=0.0
-      do icc = 1, ncc+fncc
-        ficc=icc-ncc
+      do icc = 1, ncc
         !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
-        if(icc<=ncc)then
-          iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-        else
-          iland=find_index(flat_landcode(i,j,ficc),Country(:)%icode) 
-        end if
+        iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
+
         !array index of country that should be used as reference for timefactor
         iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
         iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
@@ -1138,7 +1132,7 @@ subroutine uEMEP_emis(indate)
           if(wday_loc==0)wday_loc=7 ! Sunday -> 7
           if(wday_loc>7 )wday_loc=1 
         end if
-                if(hour_iland<1) then
+        if(hour_iland<1) then
            hour_iland = hour_iland + 24
            wday_loc=wday - 1
            if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
@@ -1152,8 +1146,7 @@ subroutine uEMEP_emis(indate)
             iqrc = 0   ! index over emisfrac
             ! kg/m2/s
             
-            if(icc<=ncc)then
-              tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
+            tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
               !Degree days - only SNAP-2 
@@ -1167,9 +1160,6 @@ subroutine uEMEP_emis(indate)
               end if ! =============== HDD 
 
               s = tfac * secemis(isec,i,j,icc,iem)
-            else
-              s = secemis_flat(i,j,ficc,iem)                        
-            end if
 
             do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
               emis_tot(k,iem)=emis_tot(k,iem)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep

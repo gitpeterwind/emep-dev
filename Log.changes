@@ -21,7 +21,79 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<<<<<<< HEAD
 24th, May 2018, Dave, Svetlana
+=======
+22-24 May 2018, Peter
+
+Big refactoring of emission inputting.
+EmisGetCDF is now more general, and is used both for "fraction" or "country" style
+sector emissions. Works also with monthly emissions.
+A new format is allowed, which is an extension of the "country" style format.
+The emissions can have names with format
+Emis:FR:snap:7:spec:sox:fac:1.0
+where the name after "spec:" specifies the species, and the number after 
+"fac:" gives a scaling factor
+
+A completely new (internal) format for emissions is introduced.
+Will be generalized in the future.
+In the new format, a new emission is read into Emis_field(i,j,n) where n defines the identity of the field. 
+the structure "Emis_id" will then identify for each id the actions to be taken (splits, time factors, emission heights etc.)
+It is a kind of generalized sector, and sectors emissions will be attempted put there in the future.
+For now it can already handle the "SpecialShips" from FMI if the names are redefined (updated file defined in config_emep.nml). 
+There was a difficulty with old setup, since the FMIship emissions do not use our standard emitted species and splits. 
+The new format can use emissions for any species in CM_ChemSpec.
+
+"flat" emissions removed. (were not even used anymore!)
+
+There was also a bug in the SecEmisOut maps (output): the map namess did not match the 
+species (introduced 30 April 2018)
+
+And a bug for ship emissions: NTime_Read was not reinitialized. As a consequence "special
+ ship emissions" may not be used in some cases. If DMS is just before in the emis_inputlist,
+ as is default, it will work fine.
+
+NB: the ship used special molecular weights, therefore, the factors are not integers
+      !mw from Jukka-Pekka  Jalkanen  (e-post 16 June 2016)
+      mw=46.0 for NOx
+      mw=28.0 for CO
+      mw=64.0655 for SOx which is only SO2
+      mw=96.0655 for SO4
+      mw=42.4 for Ash
+      mw=12.01 for EC
+      mw=17.32 for OC
+! Comments from Jukka-Pekka Jalkanen at FMI 
+
+!   The composition of Ash can be taken from Jana’s paper 
+!   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to 
+!   that, the composition by weight is: C (11.1%), O (5.7%), S (4.9%), 
+!   V (30.7%), Ni (20.9%), Ca (26.7%). This composition was determined for 
+!   fuel with 1.9% sulphur and it will not be directly applicable to fuels 
+!   used in the Baltic Sea during 2015. However, that is the only reference 
+!   I could find which reports the elemental composition of Ash.
+
+! All primary PM emitted should be assigned to PM2.5 fraction since the PM 
+! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
+! to >2.5 microns in the timescale used by the regional models is not known 
+! to me at this point.        
+
+!nco commando for making the new names:
+ncrename -v CO,Emis:SHIP_CO:snap:8:spec:CO:fac:0.001 FMIGlobShip2015mon.nc
+ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO:fac:0.00095 FMIGlobShip2015mon.nc
+ncks -A -v NOx FMIGlobShip2015mon_orig.nc FMIGlobShip2015mon.nc
+ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO2:fac:0.00005 FMIGlobShip2015mon.nc
+ncrename -v SOx,Emis:SHIP_SO2:snap:8:spec:SO2:fac:0.000998977608853439 FMIGlobShip2015mon.nc
+ncrename -v SO4,Emis:SHIP_SO4:snap:8:spec:SO4:fac:0.0006662121156918978 FMIGlobShip2015mon.nc
+ncrename -v Ash,Emis:SHIP_ASH:snap:8:spec:REMPPM25:fac:0.0002830188679245283 FMIGlobShip2015mon.nc
+ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_new:fac:0.0007993338884263115 FMIGlobShip2015mon.nc
+ncrename -v OC,Emis:SHIP_OC:snap:8:spec:POM_f_FFUEL:fac:0.0008660508083140878 FMIGlobShip2015mon.nc
+ncks -A -v EC FMIGlobShip2015mon_orig.nc FMIGlobShip2015mon.nc
+ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_age:fac:0.00019983347210657787 FMIGlobShip2015mon.nc
+mv FMIGlobShip2015mon.nc FMIGlobShip2015monEmis.nc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th, May 2018, Dave, with help from Svetlana
+>>>>>>> 8eedebecc3590d9790e2bc3f599e07099c7909ac
 
 Many bug fixes!
  Interim still - DUST isn't working, but SurfArea and SeaSalt are back, and

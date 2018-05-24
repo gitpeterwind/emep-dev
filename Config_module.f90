@@ -210,7 +210,8 @@ type, public :: emis_in
   character(len=10), dimension(90) ::  excl = "-"
   character(len=40), dimension(20) ::  pollName = "NOTSET"
   character(len=40), dimension(20) ::  pollemepName = "NOTSET"
-  character(len=40) ::  periodicity = "once" !How often new data should be read in
+  character(len=40) ::  periodicity = "NOTSET" !How often new data should be read in
+  character(len=40) ::  format = "NOTSET" !set to fraction, if fractions
   character(len=40) ::  type = "sectors" !steers special treatments
   logical ::  use_lonlat_femis = .true. !allows to switch off lonlat femis reductions 
                                         !for specific emission files

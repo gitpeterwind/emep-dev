@@ -2657,7 +2657,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         end if
         call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon, ndims=ndimslon ))
         if(ndimslon==1)then
-           write(*,*) 'Assuming lon lat projection, because lon is one-dimensional'
+           if(MasterProc)write(*,*)'Assuming lon lat projection, because lon is one-dimensional'
            data_projection = "lon lat"
         else
            call CheckStop('did not find projection for file '//trim(fileName))           
