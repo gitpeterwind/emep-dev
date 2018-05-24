@@ -37,8 +37,9 @@ Will be generalized in the future.
 In the new format, a new emission is read into Emis_field(i,j,n) where n defines the identity of the field. 
 the structure "Emis_id" will then identify for each id the actions to be taken (splits, time factors, emission heights etc.)
 It is a kind of generalized sector, and sectors emissions will be attempted put there in the future.
-For now it can already handle the "SpecialShips" from FMI if the name are redefined (updated file defined no in config_emep.nml). 
-There was a problem, since the FMIship emissions do not use our standard emitted species and splits. The new format can use emissions for any species in CM_ChemSpec.
+For now it can already handle the "SpecialShips" from FMI if the names are redefined (updated file defined in config_emep.nml). 
+There was a difficulty with old setup, since the FMIship emissions do not use our standard emitted species and splits. 
+The new format can use emissions for any species in CM_ChemSpec.
 
 "flat" emissions removed. (were not even used anymore!)
 
@@ -79,7 +80,7 @@ ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO:fac:0.00095 FMIGlobShip2015mon.nc
 ncks -A -v NOx FMIGlobShip2015mon_orig.nc FMIGlobShip2015mon.nc
 ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO2:fac:0.00005 FMIGlobShip2015mon.nc
 ncrename -v SOx,Emis:SHIP_SO2:snap:8:spec:SO2:fac:0.000998977608853439 FMIGlobShip2015mon.nc
-ncrename -v SO4,Emis:SHIP_SO4:snap:8:spec:SO4:fac:0.0009993181735378466 FMIGlobShip2015mon.nc
+ncrename -v SO4,Emis:SHIP_SO4:snap:8:spec:SO4:fac:0.0006662121156918978 FMIGlobShip2015mon.nc
 ncrename -v Ash,Emis:SHIP_ASH:snap:8:spec:REMPPM25:fac:0.0002830188679245283 FMIGlobShip2015mon.nc
 ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_new:fac:0.0007993338884263115 FMIGlobShip2015mon.nc
 ncrename -v OC,Emis:SHIP_OC:snap:8:spec:POM_f_FFUEL:fac:0.0008660508083140878 FMIGlobShip2015mon.nc
