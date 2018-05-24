@@ -155,6 +155,15 @@ private
 !
 real, public, save,  allocatable,dimension(:,:) ::  sumcdfemis ! Only used by MasterProc
 real, allocatable, public, save,  dimension(:,:) :: cdfemis
+real, allocatable, public, save,  dimension(:,:,:) :: Emis_field
+integer,  public, save :: NEmis_id
+!array of struct or struct of arrays? For searches it is best with struct of arrays
+!should describe only methods (timefactor, sector, emisheight etc.), not position dependent (like country)
+!position dependent properties (country), should be applied just after reading the data
+type, public :: Emis_id_type
+   character(len=20) :: spec(10) = ''
+end type Emis_id_type
+type(Emis_id_type), public, save:: Emis_id
 integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
 integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
 real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis !yearly sector emissions

@@ -15,8 +15,8 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             gnfr2snap,snap2gnfr&
                             ,cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes,GridEmis&
                             ,gridrcemis, Emis_mask, MASK_LIMIT&
-                            ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat    
-  
+                            ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
+                            ,Emis_field, Emis_id, NEmis_id
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local,j_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd
@@ -97,20 +97,20 @@ integer, private ::i_femis_lonlat
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
-       GridEmis, GridEmisCodes, nGridEmisCodes, nstart,&
+       Emis, EmisCodes, nEmisCodes, nstart,&
        incl, nin, excl, nex, use_lonlat_femis, &
        set_mask,use_mask, fractionformat, type)
 
     !read in emissions in fraction format and add results into
-    !GridEmis, nGridEmisCodes and nGridEmisCodes
+    !Emis, nEmisCodes and nEmisCodes
     !NB: landcode and nlandcode arrays are local
 
     implicit none
     integer, intent(in) ::iem, nin, nex,nstart
     character(len=*),intent(in) :: fname, incl(*),excl(*),type
-    real,intent(inout) ::GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
-    integer,intent(inout) ::nGridEmisCodes(LIMAX,LJMAX)
-    integer,intent(inout) ::GridEmisCodes(LIMAX,LJMAX,NCMAX)
+    real,intent(inout) ::Emis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
+    integer,intent(inout) ::nEmisCodes(LIMAX,LJMAX)
+    integer,intent(inout) ::EmisCodes(LIMAX,LJMAX,NCMAX)
     ! Sum of emissions per country
     real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local 
     logical, intent(in) :: use_lonlat_femis,set_mask,use_mask
@@ -120,13 +120,13 @@ contains
     integer :: landcode(LIMAX,LJMAX,NCMAX),nlandcode(LIMAX,LJMAX)
     real :: lonlat_fac, fac
 
-    integer ::i,j,n,ic,i_gridemis,found, isec, sec_ix
+    integer ::i,j,n,ic,i_cc,found, isec, sec_ix
     logical :: Cexist
     integer :: nwords, err, status
     integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,xtype,ndims
     character(len=100) :: code, ewords(10), varname, cdfvarname, specname
-    logical :: mappingGNFR2SNAP = .false.
-    integer :: iem_used
+    logical :: mappingGNFR2SNAP = .false., foundEmis_id
+    integer :: iem_used, ix_Emis
 
     if(.not. fractionformat)then
        !not fraction format
@@ -158,6 +158,7 @@ contains
 762    continue !if several GNFR counterparts to one SNAP
        iem_used = iem !default
        fac = 1.0 !default
+       foundEmis_id = .false.
        if(.not. fractionformat)then
           call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
           ewords=''
@@ -167,21 +168,39 @@ contains
              call wordsplit(cdfvarname,8,ewords,nwords,err,separator=":")       
              if( ewords(3) /= "snap" ) cycle ! ONLY SNAP coded for now     
              read(ewords(4),"(I6)") isec       
-             code =ewords(2)    ! Country ISO
-             
+             code = ewords(2)    ! Country ISO
+
              if( ewords(5) == "spec" )then !optional
                 iem_used = find_index(ewords(6),EMIS_FILE(:))
-                if(iem_used<0 .and. MasterProc)then
-                   write(*,*)trim(ewords(6))//' NOT FOUND'
-                   cycle
+                if(iem_used<0)then
+                   iem_used = find_index(ewords(6),species(:)%name)
+                   if(iem_used<0)then
+                      if(MasterProc)write(*,*)trim(ewords(6))//' NOT FOUND'
+                      cycle
+                   else
+                      if(MasterProc)write(*,*)'found '//species(iem_used)%name//' for '//trim(ewords(6))
+                      !see if case has been found before
+                      !shoudl search only among NEmis_id first!
+                      ix_Emis = find_index(ewords(6),Emis_id%spec(:))
+                      if(ix_Emis>0)then
+                         if(MasterProc)write(*,*)trim(ewords(6))//' already defined'
+                      else
+                          if(MasterProc)write(*,*)NEmis_id,' defining new id '//trim(ewords(6))
+                          NEmis_id = NEmis_id + 1
+                          ix_Emis = NEmis_id
+                          Emis_id%spec(ix_Emis) = trim(ewords(6))
+                      endif
+                      iem_used = 1
+                      foundEmis_id = .true.
+                   endif
                 endif
                 !could add case for any species
              endif
-             if( ewords(7) == "fac" )then !optional, but "spec" must be used if "fac" is sed
+             if( ewords(7) == "fac" )then !optional, but "spec" must be used if "fac" is set
                 fac=-999.9
                 read(ewords(8),*)fac 
-                 if(abs(fac+999.9)<0.1 .and. MasterProc)then
-                   write(*,*)trim(ewords(8))//' NOT UNDERSTOOD AS REAL'
+                 if(abs(fac+999.9)<0.1)then !not good test
+                   if(MasterProc)write(*,*)trim(ewords(8))//' NOT UNDERSTOOD AS REAL'
                    cycle
                 endif               
              endif
@@ -224,88 +243,94 @@ contains
        !apply mask and femis_lonlat (femis "not lonlat" is already applied)
        do j=1,ljmax
           do i=1,limax                   
-             if(use_mask)then
-                if(Emis_mask(i,j))cdfemis(i,j)=0.0
-             endif
-             if(set_mask)then
-                if(cdfemis(i,j)>MASK_LIMIT)Emis_mask(i,j)=.true.
-             endif
-             if(cdfemis(i,j)<1.0E-20)cycle !important, because otehrwise get many countries per gridcell!
-             if(nlandcode(i,j)>NCMAX)then
-                write(*,*)"GetCdfFrac: Too many emitter countries in one gridcell: ",&
-                     me,i,j,nlandcode(i,j),trim(fname),trim(varname)
-                call StopAll("To many countries in one gridcell ")
-             end if
-             do n=1,nlandcode(i,j)
-                if(fractionformat)then
-                   ic=find_index(landcode(i,j,n),Country(:)%icode)
-                else
-                   ic=find_index(code,Country(:)%code)
-                   landcode(i,j,n) = Country(ic)%icode
+             if(foundEmis_id)then
+                !for now no reductions applied
+                Emis_field(i,j,ix_Emis) = Emis_field(i,j,ix_Emis) +&
+                     cdfemis(i,j) * fac
+             else
+                if(use_mask)then
+                   if(Emis_mask(i,j))cdfemis(i,j)=0.0
                 endif
-
-                if(ic>NLAND .or. ic<1)then
-                   write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",ic,landcode(i,j,n)
-                   call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                if(set_mask)then
+                   if(cdfemis(i,j)>MASK_LIMIT)Emis_mask(i,j)=.true.
+                endif
+                if(cdfemis(i,j)<100.0*MASK_LIMIT)cycle !important, because otherwise get too many countries per gridcell!
+                if(nlandcode(i,j)>NCMAX)then
+                   write(*,*)"GetCdfFrac: Too many emitter countries in one gridcell: ",&
+                     me,i,j,nlandcode(i,j),trim(fname),trim(varname)
+                   call StopAll("To many countries in one gridcell ")
                 end if
+                do n=1,nlandcode(i,j)
+                   if(fractionformat)then
+                      ic=find_index(landcode(i,j,n),Country(:)%icode)
+                   else
+                      ic=find_index(code,Country(:)%code)
+                      landcode(i,j,n) = Country(ic)%icode
+                   endif
+                   
+                   if(ic>NLAND .or. ic<1)then
+                      write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",ic,landcode(i,j,n)
+                      call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                   end if
 
-                !exclude or include countries
-                !could easily be optimized, by defining a country mask
-                if(nin>0)then
-                   !1) check that country is in include list
-                   found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
-                   if(found<=0)cycle!do not include
-                end if
-                if(nex>0)then
-                   !1) check that country is not in exclude list
-                   found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
-                   if(found>0)cycle!exclude
-                end if
-
-
-                lonlat_fac=1.0
-                if(N_femis_lonlat>0 .and. use_lonlat_femis)then
-                   do i_femis_lonlat=1,N_femis_lonlat
-                      if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
-                           glat(i,j)<femis_latmax(i_femis_lonlat).and.&
-                           glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
-                           glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
-                           (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
-                           femis_lonlat_ic(i_femis_lonlat)==landcode(i,j,n)) )then
-                         lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem_used) 
-                      end if
-                   end do
-                end if
-                fac = fac*lonlat_fac
-                if(.not. fractionformat) fac = fac*e_fact(isec,ic,iem_used)
-
-                !merge into existing emissions           
-                Cexist=.false.
-                do i_gridemis=1,nGridEmisCodes(i,j)
-                   if(GridEmisCodes(i,j,i_gridemis)==landcode(i,j,n))then
-
-                      GridEmis(isec,i,j,i_gridemis,iem_used)=GridEmis(isec,i,j,i_gridemis,iem_used)&
+                   !exclude or include countries
+                   !could easily be optimized, by defining a country mask
+                   if(nin>0)then
+                      !1) check that country is in include list
+                      found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
+                      if(found<=0)cycle!do not include
+                   end if
+                   if(nex>0)then
+                      !1) check that country is not in exclude list
+                      found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
+                      if(found>0)cycle!exclude
+                   end if
+                   
+                   
+                   lonlat_fac=1.0
+                   if(N_femis_lonlat>0 .and. use_lonlat_femis)then
+                      do i_femis_lonlat=1,N_femis_lonlat
+                         if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
+                              glat(i,j)<femis_latmax(i_femis_lonlat).and.&
+                              glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
+                              glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
+                              (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
+                              femis_lonlat_ic(i_femis_lonlat)==landcode(i,j,n)) )then
+                            lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem_used) 
+                         end if
+                      end do
+                   end if
+                   fac = fac*lonlat_fac
+                   if(.not. fractionformat) fac = fac*e_fact(isec,ic,iem_used)
+                   
+                   !merge into existing emissions
+                   Cexist=.false.
+                   do i_cc=1,nEmisCodes(i,j)
+                      if(EmisCodes(i,j,i_cc)==landcode(i,j,n))then
+                         
+                         Emis(isec,i,j,i_cc,iem_used)=Emis(isec,i,j,i_cc,iem_used)&
                            +fractions(i,j,n)*cdfemis(i,j) * fac                     
 
-                      Cexist=.true.
-                      exit
+                         Cexist=.true.
+                         exit
+                      end if
+                   end do
+                   if(.not.Cexist)then
+                      !country not included yet. define it now:
+                      nEmisCodes(i,j)=nEmisCodes(i,j)+1
+                      if(nEmisCodes(i,j)>NCMAX)then
+                         write(*,*)"Too many emitter Countries in one emiscell: ",&
+                              me,i,j,nEmisCodes(i,j),trim(fname),trim(varname),(EmisCodes(i,j,i_cc),i_cc=1,nEmisCodes(i,j)-1)
+                         call StopAll("To many countries in one emiscell ")
+                      end if
+                      i_cc=nEmisCodes(i,j)
+                      EmisCodes(i,j,i_cc)=landcode(i,j,n)
+                      Emis(isec,i,j,i_cc,iem_used)=fractions(i,j,n)*cdfemis(i,j)*fac  
                    end if
+                   sumemis_local(ic,iem_used)=sumemis_local(ic,iem_used)&
+                        +0.001*fractions(i,j,n)*cdfemis(i,j)*fac  !for diagnostics, mass balance
                 end do
-                if(.not.Cexist)then
-                   !country not included yet. define it now:
-                   nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
-                   if(nGridEmisCodes(i,j)>NCMAX)then
-                      write(*,*)"Too many emitter Countries in one gridemiscell: ",&
-                           me,i,j,nGridEmisCodes(i,j),trim(fname),trim(varname),(GridEmisCodes(i,j,i_gridemis),i_gridemis=1,nGridEmisCodes(i,j)-1)
-                      call StopAll("To many countries in one gridemiscell ")
-                   end if
-                   i_gridemis=nGridEmisCodes(i,j)
-                   GridEmisCodes(i,j,i_gridemis)=landcode(i,j,n)
-                   GridEmis(isec,i,j,i_gridemis,iem_used)=fractions(i,j,n)*cdfemis(i,j)*fac  
-                end if
-                sumemis_local(ic,iem_used)=sumemis_local(ic,iem_used)&
-                     +0.001*fractions(i,j,n)*cdfemis(i,j)*fac  !for diagnostics, mass balance
-             end do
+             endif
           end do
        end do
                 

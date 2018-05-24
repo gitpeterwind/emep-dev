@@ -21,22 +21,24 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23rd May 2018, Peter
+22-24 May 2018, Peter
 
 Big refactoring of emission inputting.
 EmisGetCDF is now more general, and is used both for "fraction" or "country" style
 sector emissions. Works also with monthly emissions.
 A new format is allowed, which is an extension of the "country" style format.
-The emisisons can have names with format
+The emissions can have names with format
 Emis:FR:snap:7:spec:sox:fac:1.0
 where the name after "spec:" specifies the species, and the number after 
 "fac:" gives a scaling factor
 
-With this new format, the "SpecialShips" from FMI can be read directly, with
-if the name are redefined. There was a problem, since the FMIship emisions do 
-not use our standard splits. Therfore new countries have been defined for
-each ship emissions, with special splits. Counld probably be done 
-better... in a later upgrade (define splits in the names too?)
+A completely new (internal) format for emissions is introduced.
+Will be generalized in the future.
+In the new format, a new emission is read into Emis_field(i,j,n) where n defines the identity of the field. 
+the structure "Emis_id" will then identify for each id the actions to be taken (splits, time factors, emission heights etc.)
+It is a kind of generalized sector, and sectors emissions will be attempted put there in the future.
+For now it can already handle the "SpecialShips" from FMI if the name are redefined (updated file defined no in config_emep.nml). 
+There was a problem, since the FMIship emissions do not use our standard emitted species and splits. The new format can use emissions for any species in CM_ChemSpec.
 
 "flat" emissions removed. (were not even used anymore!)
 
@@ -70,6 +72,21 @@ NB: the ship used special molecular weights, therefore, the factors are not inte
 ! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
 ! to >2.5 microns in the timescale used by the regional models is not known 
 ! to me at this point.        
+
+!nco commando for making the new names:
+ncrename -v CO,Emis:SHIP_CO:snap:8:spec:CO:fac:0.001 FMIGlobShip2015mon.nc
+ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO:fac:0.00095 FMIGlobShip2015mon.nc
+ncks -A -v NOx FMIGlobShip2015mon_orig.nc FMIGlobShip2015mon.nc
+ncrename -v NOx,Emis:SHIP_NOx:snap:8:spec:NO2:fac:0.00005 FMIGlobShip2015mon.nc
+ncrename -v SOx,Emis:SHIP_SO2:snap:8:spec:SO2:fac:0.000998977608853439 FMIGlobShip2015mon.nc
+ncrename -v SO4,Emis:SHIP_SO4:snap:8:spec:SO4:fac:0.0009993181735378466 FMIGlobShip2015mon.nc
+ncrename -v Ash,Emis:SHIP_ASH:snap:8:spec:REMPPM25:fac:0.0002830188679245283 FMIGlobShip2015mon.nc
+ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_new:fac:0.0007993338884263115 FMIGlobShip2015mon.nc
+ncrename -v OC,Emis:SHIP_OC:snap:8:spec:POM_f_FFUEL:fac:0.0008660508083140878 FMIGlobShip2015mon.nc
+ncks -A -v EC FMIGlobShip2015mon_orig.nc FMIGlobShip2015mon.nc
+ncrename -v EC,Emis:SHIP_EC:snap:8:spec:EC_f_FFUEL_age:fac:0.00019983347210657787 FMIGlobShip2015mon.nc
+mv FMIGlobShip2015mon.nc FMIGlobShip2015monEmis.nc
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 May 2018, Dave
 

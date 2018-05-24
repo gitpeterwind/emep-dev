@@ -61,7 +61,8 @@ use EmisDef_mod,       only: &
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,gnfr2snap,snap2gnfr&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
-     ,Emis_mask, Emis_mask_allocate, MASK_LIMIT
+     ,Emis_mask, Emis_mask_allocate, MASK_LIMIT &   
+     ,Emis_field, Emis_id, NEmis_id
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -279,7 +280,10 @@ contains
           O_DMS%sum_month=0.0
           O_DMS%sum_year=0.0
        endif
-
+       if(emis_inputlist(iemislist)%type == "Special_ShipEmis")then
+          write(*,*)"ERROR: Special_ShipEmis no more supported. Use new format"
+          write(*,*)"emissions from "//trim(fname)//" will not be included"
+       endif
     end do ! iemislist
 
     if(Emis_mask_allocate)then
@@ -320,6 +324,9 @@ contains
        call StopAll("Sectors not defined")
     end if
     call CheckStop(NSECTORS>MaxNSECTORS, "redefine larger MaxNSECTORS")
+
+    allocate(Emis_field(LIMAX,LJMAX,10))
+    NEmis_id = 0
 
     allocate(cdfemis(LIMAX,LJMAX))
     allocate(nGridEmisCodes(LIMAX,LJMAX))
@@ -818,7 +825,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !----------------------------------------------------------------------!
   implicit none
   type(date), intent(in) :: indate  ! Gives year..seconds
-  integer :: i, j, k, f       ! cooridnates, loop variables
+  integer :: i, j, k, n, f    ! cooridnates, loop variables
   integer :: icc, ncc         ! No. of countries in grid.
   integer :: ficc,fncc        ! No. of countries with
   integer :: iqrc             ! emis indices 
@@ -1126,7 +1133,21 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
       end do   ! i
     end do     ! j
 
+    do n = 1,NEmis_id
+       itot = find_index(Emis_id%spec(n),species(:)%name)
+       iqrc = itot2iqrc(itot)
+       k=KMAX_MID
+       do j = 1,ljmax
+          do i = 1,limax
+             gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
+                  + Emis_field(i,j,n)*ehlpcom0    &
+                  *emis_masscorr(iqrc)
+          end do   ! i
+       end do     ! j
+    enddo
   end if ! hourchange 
+ 
+
 
   ! We now scale gridrcemis to get emissions in molecules/cm3/s
 !MOVED to setup_1d
@@ -1377,6 +1398,9 @@ subroutine newmonth
              secemis = 0.0
              nlandcode=0
              monthlysectoremisreset = .true.
+             Emis_field = 0.0
+             Emis_id%spec = '' !to be removed, when searching only among NEmis_id 
+             NEmis_id = 0
           endif
           fractionformat = ( emis_inputlist(iemislist)%format=='fractions' )
           fname = key2str(trim(emis_inputlist(iemislist)%name),'POLL',EMIS_FILE(iem))
@@ -1476,6 +1500,15 @@ subroutine newmonth
            end do
         end do
      end do
+     do iem = 1,NEmis_id
+        do j=1,ljmax
+           do i=1,limax
+              Emis_field(i,j,iem) = Emis_field(i,j,iem)*tonnemonth_to_kgm2s*xm2(i,j)
+           end do
+        end do
+     end do
+     
+
   endif
 
   if(foundYearlySectorEmissions .and. monthlysectoremisreset)then

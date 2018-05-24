@@ -780,24 +780,6 @@ ix=ix+1
 IC_SEA=ix
 Country( IC_SEA ) = cc(  "SEA" ,'-', 171 ,F,  171, 171,-100, "Ships" )
 
-!FMI ship emissions have special splits and must be defined individually
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_CO" ,'-', 172 ,T,  172, 172,-100, "Ships CO" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_NOx" ,'-', 173 ,T,  173, 173,-100, "Ships NOx" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_SO2" ,'-', 174 ,T,  174, 174,-100, "Ships SO2" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_SO4" ,'-', 175 ,T,  175, 175,-100, "Ships SO4" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_CO" ,'-', 176 ,T,  176, 176,-100, "Ships CO" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_ASH" ,'-', 177 ,T,  177, 177,-100, "Ships ASH" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_EC" ,'-', 178 ,T,  178, 178,-100, "Ships EC" )
-ix=ix+1 
-Country( ix ) = cc(  "SHIP_OC" ,'-', 179 ,T,  179, 179,-100, "Ships OC" )
-
 ! Extra from IIASA/ECLIPSE/ECLAIRE global
 !
 ix=ix+1
