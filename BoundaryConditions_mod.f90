@@ -83,12 +83,12 @@ integer, public, parameter :: &
   ,IBC_NH4_f    = 14   &
   ,IBC_NO3_f    = 15   &
   ,IBC_NO3_c    = 16   &
-  ,IBC_SEASALT_f= 17   &
-  ,IBC_SEASALT_c= 18   &
-  ,IBC_SEASALT_g= 19   &
-  ,IBC_DUST_f   = 20   &      ! Dust
-  ,IBC_DUST_c   = 21   &      ! Dust
-  ,NGLOB_BC     = IBC_DUST_c  ! Totan no. species setup in this module
+  ,IBC_SeaSalt_f= 17   &
+  ,IBC_SeaSalt_c= 18   &
+  ,IBC_SeaSalt_g= 19   &
+  ,IBC_Dust_f   = 20   &      ! Dust
+  ,IBC_Dust_c   = 21   &      ! Dust
+  ,NGLOB_BC     = IBC_Dust_c  ! Totan no. species setup in this module
 
 ! -- subroutines in this module:
 public  :: BoundaryConditions         ! call every month
@@ -295,13 +295,13 @@ contains
              !  SS_GROUP, so we search for the simple SEASALT name.
              bc_seaspec = .false.
              if ( USES%SEASALT .and. &
-                  ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
+                  ( index( species(ntot)%name, "SeaSalt_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
 
              if ( debug_proc ) write (*,*) "SEAINDEX", &
                   trim(species(ntot)%name), n, ntot, bc_seaspec,&
-                  index( species(ntot)%name, "SEASALT_")
+                  index( species(ntot)%name, "SeaSalt_")
 
              do k = 1, KMAX_MID
                 do j = 1, ljmax
@@ -346,7 +346,7 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             if ( USES%SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
+             if ( USES%SEASALT .and. ( index( species(ntot)%name, "SeaSalt_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
 
@@ -1110,11 +1110,11 @@ real :: trend_o3=1.0, trend_co, trend_voc
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
     SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
     SpecBC(IBC_CO   )  = sineconc( 125.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
-!st 14.05.2014    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
-!st 14.05.2014    SpecBC(IBC_SEASALT_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
-    SpecBC(IBC_SEASALT_F)=sineconc( 0.2  , 15.0,  0.05,  1.6 , 0.01, 0.01,PPB)
-    SpecBC(IBC_SEASALT_C)=sineconc( 1.5  , 15.0,  0.25,  1.6 , 0.01, 0.01,PPB)
-    SpecBC(IBC_SEASALT_G)=sineconc( 1.0  , 15.0,  0.5,  1.0 , 0.01, 0.01,PPB)
+!st 14.05.2014    SpecBC(IBC_SeaSalt_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
+!st 14.05.2014    SpecBC(IBC_SeaSalt_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SeaSalt_f)=sineconc( 0.2  , 15.0,  0.05,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SeaSalt_c)=sineconc( 1.5  , 15.0,  0.25,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SeaSalt_g)=sineconc( 1.0  , 15.0,  0.5,  1.0 , 0.01, 0.01,PPB)
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
     SpecBC(IBC_C4H10)  = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05,PPB)
     SpecBC(IBC_HCHO )  = sineconc( 0.7  ,180.0, 0.3 , 6.0  , 0.05, 0.05,PPB)
@@ -1128,8 +1128,8 @@ real :: trend_o3=1.0, trend_co, trend_voc
     SpecBC(IBC_O3   )  = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB  ,1.)!N1
     SpecBC(IBC_H2O2 )  = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,0.01*PPB  ,1.)
   ! Dust: the factor PPB converts from PPB to mixing ratio.
-    SpecBC(IBC_DUST_c)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
-    SpecBC(IBC_DUST_f)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
+    SpecBC(IBC_Dust_c)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
+    SpecBC(IBC_Dust_f)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
     !refs:
     ! N1 - for ozone we read Logan's data, so the only paramater specified
     !      is a min value of 10 ppb. I hope this doesn't come into effect in
@@ -1242,7 +1242,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
   case (IBC_NO  ,IBC_NO2  ,IBC_HNO3,IBC_CO, &
         IBC_C2H6,IBC_C4H10,IBC_PAN ,IBC_NO3_c,&
         IBC_SO2   , IBC_SO4  , IBC_HCHO , &
-        IBC_SEASALT_f,IBC_SEASALT_C, IBC_SEASALT_G, &
+        IBC_SeaSalt_f,IBC_SeaSalt_c, IBC_SeaSalt_g, &
         IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f)
     ! NB since we only call once per month we add 15 days to
     ! day-number to get a mid-month value
@@ -1289,7 +1289,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
  
          filename='Dust.nc'
          if(ibc==IBC_DUST_C)then
-            varname='D3_ug_DUST_WB_C'
+            varname='D3_ug_DUST_WB_C'  ! A2018QUERY : ARGH!  
           if(me==0)write(*,*)'coarse DUST BIC read from climatological file'
          else if(ibc==IBC_DUST_F)then
             varname='D3_ug_DUST_WB_F'

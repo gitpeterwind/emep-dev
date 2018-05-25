@@ -565,7 +565,7 @@ subroutine set_output_defs
      ,Asc2D("so4_f"  ,"ADVugXX",IXADV_SO4   ,&
             1,"ug/m3",to_ug_ADV(IXADV_SO4)  ,-999.9) &
    ! Organics
-     ,Asc2D("OM25_3m" ,"D2D_inst",find_index("SURF_ug_OM25_P",f_2d(:)%name), &
+     ,Asc2D("OM25_3m" ,"D2D_inst",find_index("SURF_ug_OM25_p",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
      ,Asc2D("EC25_3m" ,"D2D_inst",find_index("SURF_ug_ECFINE",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
@@ -573,17 +573,17 @@ subroutine set_output_defs
             1, "ug/m3",1.0,-999.9) &
      ,Asc2D("EC_c_3m" ,"D2D_inst",find_index("SURF_ug_ECCOARSE",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("NatDust_f","D2D_inst",find_index("SURF_ug_DUST_NAT_F",f_2d(:)%name), &
+     ,Asc2D("NatDust_f","D2D_inst",find_index("SURF_ug_Dust_NAT_f",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("NatDust_c","D2D_inst",find_index("SURF_ug_DUST_NAT_C",f_2d(:)%name), &
+     ,Asc2D("NatDust_c","D2D_inst",find_index("SURF_ug_Dust_NAT_c",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("RoadDust_f","D2D_inst",find_index("SURF_ug_DUST_ROAD_F",f_2d(:)%name), &
+     ,Asc2D("RoadDust_f","D2D_inst",find_index("SURF_ug_Dust_ROAD_f",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("RoadDust_c","D2D_inst",find_index("SURF_ug_DUST_ROAD_C",f_2d(:)%name), &
+     ,Asc2D("RoadDust_c","D2D_inst",find_index("SURF_ug_Dust_ROAD_c",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("SeaSalt_f","D2D_inst",find_index("SURF_ug_SEASALT_F",f_2d(:)%name), &
+     ,Asc2D("SeaSalt_f","D2D_inst",find_index("SURF_ug_SeaSalt_f",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
-     ,Asc2D("SeaSalt_c","D2D_inst",find_index("SURF_ug_SEASALT_C",f_2d(:)%name), &
+     ,Asc2D("SeaSalt_c","D2D_inst",find_index("SURF_ug_SeaSalt_c",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
     ! Sums
      ,Asc2D("PM25_3m" ,"D2D_inst",find_index("SURF_ug_PM25_rh50",f_2d(:)%name), &

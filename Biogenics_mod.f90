@@ -113,14 +113,14 @@ module Biogenics_mod
            , "TERP       " &
            , "NO         " &
            , "NH3        " &
-           , "ASH_F      " &
-           , "ASH_C      " &
-           , "SEASALT_F  " &
-           , "SEASALT_C  " &
-           , "DUST_WB_F  " &
-           , "DUST_WB_C  " &
-           , "DUST_ROAD_F" &
-           , "DUST_ROAD_C" &
+           , "Ash_f      " &
+           , "AsH_c      " &
+           , "SeaSalt_f  " &
+           , "SeaSalt_c  " &
+           , "Dust_WB_f  " &
+           , "Dust_WB_c  " &
+           , "Dust_ROAD_f" &
+           , "Dust_ROAD_c" &
            , "RN222      "  /)
 
   integer, public, parameter :: &

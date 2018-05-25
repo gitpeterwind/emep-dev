@@ -36,7 +36,7 @@
 #PBS -l select=4:ncpus=16:mpiprocs=16 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 #
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=07:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -329,9 +329,9 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="01";      # last month, use 2-digits!
+my $mm2 ="12";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);

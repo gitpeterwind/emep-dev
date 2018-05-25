@@ -170,7 +170,7 @@ contains
       !A2018 see which groups we have:
        iSIAgroup = find_index('SIA',chemgroups(:)%name)
        iSSgroup  = find_index('SS',chemgroups(:)%name)
-       iDUgroup  = find_index('DUST',chemgroups(:)%name)
+       iDUgroup  = find_index('Dust',chemgroups(:)%name,any_case=.true.)
        iPMfgroup = find_index('PMFINE',chemgroups(:)%name)
        iBCfgroup = find_index('ECFINE',chemgroups(:)%name)
        iBCcgroup = find_index('ECCOARSE',chemgroups(:)%name)
@@ -593,10 +593,10 @@ subroutine setup_rcemis(i,j)
   integer,save ::IC_NH3
 
   if(first_call)then
-    inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
-    inat_RDC = find_index( "DUST_ROAD_C", EMIS_BioNat(:) )
-    itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
-    itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
+    inat_RDF = find_index( "Dust_ROAD_f", EMIS_BioNat(:) )
+    inat_RDC = find_index( "Dust_ROAD_c", EMIS_BioNat(:) )
+    itot_RDF = find_index( "Dust_ROAD_f", species(:)%name    )
+    itot_RDC = find_index( "Dust_ROAD_c", species(:)%name    )
     itot_Rn222=find_index( "RN222", species(:)%name    )
     IC_NH3=find_index( "NH3", species(:)%name    )
     first_call = .false.
