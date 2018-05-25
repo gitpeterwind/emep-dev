@@ -21,10 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25th May 2018, Dave
+25th May 2018, Dave, Svetlana, Peter
 
 Changed many names from upper to mixed case to match new EmChem16x,
 eg DUST to Dust, SEASALT to SeaSalt, -F to _f.
+
+ZCM_EmChem16x/BoundaryConditions_EmChem16x - added back DUST_SAH
+
+Config_module.f90 - changed default DustFile to Dust2014_month.nc
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22-24 May 2018, Peter
