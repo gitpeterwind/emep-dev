@@ -165,12 +165,15 @@ subroutine runchem()
           rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID), rcphot(3,20), xn_2d(NO,20),xn_2d(C5H8,20),&
           rct(67,KMAX_MID), rct(68,KMAX_MID) /) ) ! PAN P, L
        write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpre', me &
-          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
-          ,'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20) &
-          ,'eC5H8', rcemis(C5H8,KMAX_MID) &
-          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
-          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
-          ,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20), 'xC5H8', xn_2d(C5H8,KMAX_MID) 
+!          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
+!          ,'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20) &
+!          ,'eC5H8', rcemis(C5H8,KMAX_MID) &
+!          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
+!          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
+          !,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20)& 
+          ,'xOH',  xn_2d(OH,20),'xNH3',  xn_2d(NH3,20) &
+          ,'eSO2', rcemis(SO2,KMAX_MID), 'eSO4', rcemis(SO4,KMAX_MID) &
+          ,'xSO2', xn_2d(SO2,KMAX_MID), 'xSO4', xn_2d(SO4,KMAX_MID) 
 
 !           'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), 'eC5H8', rcemis(C5H8,KMAX_MID) &
 
@@ -204,12 +207,15 @@ subroutine runchem()
       if(DEBUG%RUNCHEM.and.debug_flag)then
         call datewrite("Runchem Post-Chem",(/xn_2d(NO,20),xn_2d(C5H8,20)/))
         write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpos', me &
-          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
-          ,'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20) &
-          ,'eC5H8', rcemis(C5H8,KMAX_MID) &
-          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
-          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
-          ,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20), 'xC5H8', xn_2d(C5H8,KMAX_MID) 
+!          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
+!          ,'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20) &
+!          ,'eC5H8', rcemis(C5H8,KMAX_MID) &
+!          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
+!          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
+          !,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20) &
+          ,'xOH',  xn_2d(OH,20),'xNH3',  xn_2d(NH3,20) &
+          ,'eSO2', rcemis(SO2,KMAX_MID), 'eSO4', rcemis(SO4,KMAX_MID) &
+          ,'xSO2', xn_2d(SO2,KMAX_MID), 'xSO4', xn_2d(SO4,KMAX_MID) 
 !           !'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), &
 !           ! 'eC5H8', rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID) &
 !          'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20), 'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20), 'eC5H8', rcemis(C5H8,KMAX_MID) &
@@ -265,7 +271,7 @@ subroutine runchem()
         call AOD_Ext(i,j,debug_flag)
 
       !  Calculates PM water: 1. for ambient Rh and T (3D)
-      !  and for filter equlibration conditions (2D at surface) 
+      !!  and for filter equlibration conditions (2D at surface) 
       !  T=20C and Rh=50% for comparability with gravimetric PM
       call Aero_water_MARS(i,j, debug_flag)
 

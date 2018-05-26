@@ -124,7 +124,8 @@
     + rct(84,k) * xnew(APINENE)  &
     + rct(85,k) * xnew(BPINENE)  &
     + rct(86,k) * xnew(XTERP)  &
-    + rct(88,k) * xnew(TERPOOH)
+    + rct(88,k) * xnew(TERPOOH)  &
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(SO2)
   
   xnew(OH) = (xold(OH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -193,7 +194,8 @@
     + rcphot(IDCH3O2H,k) * xnew(OXYO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(MALO2H)  &
     + rct(45,k) * xnew(TERPO2) * xnew(NO)  &
-    + 0.25* 1.0e6 * xnew(XMTO3_RO2)
+    + 0.25* 1.0e6 * xnew(XMTO3_RO2)  &
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH) * xnew(SO2)
   
   L = rct(8,k) * xnew(O3)  &
     + rct(11,k) * xnew(NO)  &
@@ -465,6 +467,9 @@
     + rct(89,k) * xnew(APINENE)  &
     + rct(90,k) * xnew(BPINENE)  &
     + rct(91,k) * xnew(XTERP)
+  
+  !-> O3 cont.
+    L = L +   AQRCK(ICLRC2,K) * xnew(SO2)
   
   xnew(O3) = (xold(O3) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1011,7 +1016,8 @@
     + 0.5* rct(97,k) * xnew(HO2)
   
   L = rct(14,k) * xnew(OH)  &
-    + rcphot(IDH2O2,k)
+    + rcphot(IDH2O2,k)  &
+    + AQRCK(ICLRC1,K) * xnew(SO2)
   
   xnew(H2O2) = (xold(H2O2) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1166,9 +1172,12 @@
 
   P = rcemis(SO2,k)
   
-  ! L = 0.0
+  L = AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH)  &
+    + AQRCK(ICLRC1,K) * xnew(H2O2)  &
+    + AQRCK(ICLRC2,K) * xnew(O3)  &
+    + AQRCK(ICLRC3,K)
   
-  xnew(SO2) = xold(SO2) + dt2 * P
+  xnew(SO2) = (xold(SO2) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> SHIPNOX
@@ -1239,125 +1248,6 @@
   xnew(TERPOOH) = (xold(TERPOOH) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> POM_f_WOOD
-
-  P = rcemis(POM_F_WOOD,k)
-  
-  ! L = 0.0
-  
-  xnew(POM_f_WOOD) = xold(POM_f_WOOD) + dt2 * P
-
-
-!-> POM_f_FFUEL
-
-  P = rcemis(POM_F_FFUEL,k)
-  
-  ! L = 0.0
-  
-  xnew(POM_f_FFUEL) = xold(POM_f_FFUEL) + dt2 * P
-
-
-!-> POM_c_FFUEL
-
-  P = rcemis(POM_C_FFUEL,k)
-  
-  ! L = 0.0
-  
-  xnew(POM_c_FFUEL) = xold(POM_c_FFUEL) + dt2 * P
-
-
-!-> EC_f_WOOD_new
-
-  P = rcemis(EC_F_WOOD_NEW,k)
-  
-  L = rct(118,k)
-  
-  xnew(EC_f_WOOD_new) = (xold(EC_f_WOOD_new) + dt2 * P) / (1.0 + dt2 * L)
-
-
-!-> EC_f_WOOD_age
-
-  P = rcemis(EC_F_WOOD_AGE,k)  &
-    + rct(118,k) * xnew(EC_f_WOOD_new)
-  
-  ! L = 0.0
-  
-  xnew(EC_f_WOOD_age) = xold(EC_f_WOOD_age) + dt2 * P
-
-
-!-> EC_c_WOOD
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for EC_c_WOOD! xnew(EC_c_WOOD) = max(0.0, xold(EC_c_WOOD))
-
-
-!-> EC_f_FFUEL_new
-
-  P = rcemis(EC_F_FFUEL_NEW,k)
-  
-  L = rct(118,k)
-  
-  xnew(EC_f_FFUEL_new) = (xold(EC_f_FFUEL_new) + dt2 * P) / (1.0 + dt2 * L)
-
-
-!-> EC_f_FFUEL_age
-
-  P = rcemis(EC_F_FFUEL_AGE,k)  &
-    + rct(118,k) * xnew(EC_f_FFUEL_new)
-  
-  ! L = 0.0
-  
-  xnew(EC_f_FFUEL_age) = xold(EC_f_FFUEL_age) + dt2 * P
-
-
-!-> EC_c_FFUEL
-
-  P = rcemis(EC_C_FFUEL,k)
-  
-  ! L = 0.0
-  
-  xnew(EC_c_FFUEL) = xold(EC_c_FFUEL) + dt2 * P
-
-
-!-> REMPPM25
-
-  P = rcemis(REMPPM25,k)
-  
-  ! L = 0.0
-  
-  xnew(REMPPM25) = xold(REMPPM25) + dt2 * P
-
-
-!-> REMPPM_c
-
-  P = rcemis(REMPPM_C,k)
-  
-  ! L = 0.0
-  
-  xnew(REMPPM_c) = xold(REMPPM_c) + dt2 * P
-
-
-!-> OM25_BGND
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for OM25_BGND! xnew(OM25_BGND) = max(0.0, xold(OM25_BGND))
-
-
-!-> OM25_p
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for OM25_p! xnew(OM25_p) = max(0.0, xold(OM25_p))
-
-
 !-> TERPPeroxy
 
   P = rct(98,k) * xnew(O3) * xnew(APINENE)  &
@@ -1377,60 +1267,6 @@
   ! L = 0.0
   
   ! Nothing to do for VBS_TEST! xnew(VBS_TEST) = max(0.0, xold(VBS_TEST))
-
-
-!-> FFIRE_CO
-
-  P = rcemis(FFIRE_CO,k)
-  
-  ! L = 0.0
-  
-  xnew(FFIRE_CO) = xold(FFIRE_CO) + dt2 * P
-
-
-!-> FFIRE_OM
-
-  P = rcemis(FFIRE_OM,k)
-  
-  ! L = 0.0
-  
-  xnew(FFIRE_OM) = xold(FFIRE_OM) + dt2 * P
-
-
-!-> FFIRE_BC
-
-  P = rcemis(FFIRE_BC,k)
-  
-  ! L = 0.0
-  
-  xnew(FFIRE_BC) = xold(FFIRE_BC) + dt2 * P
-
-
-!-> FFIRE_REMPPM25
-
-  P = rcemis(FFIRE_REMPPM25,k)
-  
-  ! L = 0.0
-  
-  xnew(FFIRE_REMPPM25) = xold(FFIRE_REMPPM25) + dt2 * P
-
-
-!-> SeaSalt_f
-
-  P = rcemis(SEASALT_F,K)
-  
-  ! L = 0.0
-  
-  xnew(SeaSalt_f) = xold(SeaSalt_f) + dt2 * P
-
-
-!-> SeaSalt_c
-
-  P = rcemis(SEASALT_C,K)
-  
-  ! L = 0.0
-  
-  xnew(SeaSalt_c) = xold(SeaSalt_c) + dt2 * P
 
 
 !-> Dust_ROAD_f

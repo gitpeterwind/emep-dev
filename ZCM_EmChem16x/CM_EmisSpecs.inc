@@ -18,6 +18,8 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "GLYOX         " &
 , "MGLYOX        " &
 , "C5H8          " &
+, "ASH_F         " &
+, "ASH_C         " &
 , "POM_F_FFUEL   " &
 , "POM_C_FFUEL   " &
 , "EC_F_FFUEL_NEW" &

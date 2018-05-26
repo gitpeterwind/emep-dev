@@ -21,6 +21,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th May 2018, Dave
+
+More bug fixes, and chemistry made more consistent with rv4.17:
+
+ZCM_EmChem16x§ changes
+
+   Aqueous reactions added back!
+   Ash added
+   Many species set to "slow" CM_Reactions2 mode
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th May 2018, Dave, Svetlana, Peter
 
 Changed many names from upper to mixed case to match new EmChem16x,
