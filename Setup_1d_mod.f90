@@ -315,7 +315,8 @@ contains
                if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
 !          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
-            if ( MasterProc .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
+            !if ( MasterProc .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
+            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
                'AREACHECK0: '//trim(species(ispec)%name), ispec, &
                   is_finepm, is_ssalt, is_dust, ugtmp, ugpmF,ugSIApm, ugSSaltF, ugDustF
  
@@ -380,7 +381,8 @@ contains
             if ( iw == AERO%SS_C )  ugtmp = ugSSaltC
             if ( iw == AERO%DU_C )  ugtmp = ugDustC
 
-            if ( MasterProc .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
+            !if ( MasterProc .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
+            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
                 "AREACHECK: "//trim(DDspec(ipm)%name), iw, ipm, Ddry(iw),DpgNw(iw,k),ugtmp 
 
             !BUG S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
