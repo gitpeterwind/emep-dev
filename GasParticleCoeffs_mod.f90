@@ -140,19 +140,19 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 ! Particles:
 !A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
 !               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV sig  rhop  Gb(1-rural, 2-seasalt) 
- ,DD_t( 'PMf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)& ! as SAI_F 
- ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)&! as SIA_F
- ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600, 1)&! as SIA_F
- ,DD_t( 'SSf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2200, 2)& ! as SSF
- ,DD_t( 'DUf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2600,-1)& ! NEW?? CHECK
+ ,DD_t( 'PMf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)& ! as SAI_F 
+ ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)&! as SIA_F
+ ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)&! as SIA_F
+ ,DD_t( 'SSf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2200,  2)& ! as SSF
+ ,DD_t( 'DUf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2600, -1)& ! NEW?? CHECK
 !A2018 QUERY
- ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00, 2.0, 2200, 1)& ! as PM QUERY 20
+ ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 2200,  1)& ! as PM QUERY 20
  ! SSc, DUc and POLLd have dummy values, CHECK!!
- ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00, 2.0, 2200, 2)& ! 
- ,DD_t( 'DUc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00, 2.0, 2600,-1)& 
- ,DD_t( 'POLLd',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00, 2.0, 1400,-1)& 
- ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008,2.0, 1400,-1)&
- ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06, 2.0, 1200,-1)&
+ ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 4.80,  2.0, 2200,  2)& ! 
+ ,DD_t( 'DUc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 5.00,  2.2, 2600, -1)& 
+ ,DD_t( 'POLLd',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 1400, -1)& 
+ ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008, 2.0, 1400, -1)&
+ ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06,  2.0, 1200, -1)&
 ]
 
 ! from EMEP Aqueous
