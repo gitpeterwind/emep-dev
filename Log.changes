@@ -22,6 +22,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th May 2018, Dave
+
+BUG - reaction of NO3 -> HNO3 was doubled up in Aero2017nx_Reactions.txt
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th May 2018, Dave
 
 Setup_1d_mod: AREACHECK printouts now only activated with debug_flag

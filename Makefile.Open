@@ -22,7 +22,7 @@ F90 = mpif90
 F90FLAGS = -ffree-line-length-none -fdefault-real-8 -O3
 
 # Intel ifort compiler
-F90FLAGS = -shared-intel -r8 -recursive -O3
+#F90FLAGS = -shared-intel -r8 -recursive -O3
 
 ###################################################
 

@@ -600,7 +600,6 @@
     + rct(92,k) * xnew(APINENE)  &
     + 2.51e-12 * xnew(BPINENE)  &
     + rct(93,k) * xnew(XTERP)  &
-    + rct(94,k)  &
     + rct(94,k)
   
   xnew(NO3) = (xold(NO3) + dt2 * P) / (1.0 + dt2 * L)
@@ -621,7 +620,6 @@
     + rct(79,k) * xnew(NO2) * xnew(OH)  &
     + rct(79,k) * xnew(SHIPNOX) * xnew(OH)  &
     + 3.2e-5 * xnew(SHIPNOX)  &
-    + rct(94,k) * xnew(NO3)  &
     + rct(94,k) * xnew(NO3)
   
   L = rct(16,k) * xnew(OH)  &
