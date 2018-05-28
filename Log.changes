@@ -40,6 +40,11 @@ ZCM_EmChem16x§ changes
    Aqueous reactions added back!
    Ash added
    Many species set to "slow" CM_Reactions2 mode
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th May 2018, Svetlana
+
+More corrections in DD_t in GasParticleCoeffs_mod (dry radii and dencities of
+coarse SS and DU are made consistent with OpenSource)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th May 2018, Dave, Svetlana, Peter
