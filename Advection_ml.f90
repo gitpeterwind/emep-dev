@@ -3784,7 +3784,11 @@ end if
           psend(2) = psend(1)
           psend(3) = psend(1)
         end if
-    else
+        do ii=1,uEMEP_Size1_local
+           n=n+1
+           loc_frac_1d(ii,lj1+1) = 0.0
+        enddo
+     else
 
       CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
