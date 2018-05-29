@@ -35,7 +35,7 @@ use Config_module,    only:  &
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
                                 , O_NH3, O_DMS, SplitEmisOut, EmisOut
-use EmisGet_mod,      only:  nrcemis, iqrc2itot, emis_nsplit
+use EmisGet_mod,      only:  nrcemis, iqrc2itot, emis_nsplit, emis_masscorr
 use ForestFire_mod,   only: Fire_rcemis, burning
 use Functions_mod,    only:  Tpot_2_T
 use GasParticleCoeffs_mod, only: DDspec
@@ -764,7 +764,7 @@ subroutine setup_rcemis(i,j)
         iqrc = iqrc + 1
         itot = iqrc2itot(iqrc)
         do k=KCHEMTOP, KMAX_MID
-           EmisOut(i,j,iem) = EmisOut(i,j,iem) + rcemis(itot,k)*species(itot)%molwt &
+           EmisOut(i,j,iem) = EmisOut(i,j,iem) + rcemis(itot,k)/emis_masscorr(iqrc) &
           *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
         enddo
      enddo

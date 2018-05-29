@@ -22,6 +22,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th May 2018, Peter
+
+Emis_mgm_... are now in same units as Sec_Emis_... i.e. NOx as NO2 etc.
+(were in own mass units)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th May 2018, Dave
 
 BUG - reaction of NO3 -> HNO3 was doubled up in Aero2017nx_Reactions.txt
