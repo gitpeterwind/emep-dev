@@ -869,7 +869,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax
-  integer :: isec_poll,isec,iisec,ipoll
+  integer :: isec_poll,isec,iisec,ii,ipoll
   real :: default_frac,tot_frac,loc_frac_corr
 
   timefrac = dt/3600.0
@@ -1653,6 +1653,63 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp,&
                       semivol=(f_2d(n)%subclass=='FSOA'))
 
+
+      if(subclass=='LocFrac_corrected')then
+         !TO BE DEVELOPED
+         do ii= 1,ngrp
+            do ipoll=1,uEMEP%Npoll        
+               do i=1,uEMEP%poll(ipoll)%Nix
+                  if(chemgroups(igrp)%specs(ii)==uEMEP%poll(ipoll)%ix(i))goto 54
+               enddo
+            enddo
+         enddo
+         if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
+         54 continue
+         if(me==0.and. first_call)then
+            write(*,*)'local fractions found for ',trim(class),&
+              'group index ',igrp,' name ',trim(chemgroups(igrp)%name),&
+              ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
+            do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+             write(*,*)'local correction for sector',isec,' pollutant ',trim(species_adv(index)%name)
+         enddo
+
+         endif
+         do j=1,ljmax
+         do i=1,limax
+         default_frac=0.0!local, but any sector that is not explicit
+         tot_frac=0.0!all local (any sector)
+         loc_frac_corr=0.0
+         !isec is sector (number between 1 and 11)
+         !iisec is index over available sectors
+         !isec_poll is an internal uEMEP index that is a combination of sector and pollutant indices 
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               default_frac = default_frac - loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+               tot_frac =  tot_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+            endif
+            if(isec==0)default_frac = default_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+         enddo
+         default_frac=max(0.0,default_frac)!in case "sec=0" not available
+         tot_frac = tot_frac + default_frac
+
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               loc_frac_corr=loc_frac_corr+loc_frac(isec_poll,0,0,i,j,KMAX_MID)*2!*LocEmisFac(isec)
+            endif
+         enddo
+         loc_frac_corr=loc_frac_corr+default_frac*2!*LocEmisFac_default
+         loc_frac_corr=loc_frac_corr+(1-tot_frac)!weight one for pollutants from other sources
+               d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) &
+                     * loc_frac_corr
+         enddo
+         enddo
+      endif
       if(DEBUG%DERIVED.and.debug_proc)then
         i= debug_li; j=debug_lj
         if(n==ind2d_pmfine ) &
