@@ -1,7 +1,7 @@
 MODULE TimeDate_ExtraUtil_ml
 
 use Par_ml,           only: me
-use ModelConstants_ml,only: METSTEP, MasterProc, startdate,enddate , &
+use Config_module,only: METSTEP, MasterProc, startdate,enddate , &
                             IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_EXTRA_MEAN,FREQ_HOURLY
 use SmallUtils_ml,    only: key2str,to_upper
 use CheckStop_ml,     only: CheckStop

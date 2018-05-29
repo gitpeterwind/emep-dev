@@ -6,7 +6,7 @@ module ExternalBICs_ml
 use CheckStop_ml,           only: CheckStop
 use ChemSpecs,              only: NSPEC_ADV, species_adv
 use Io_ml,                  only: PrintLog,IO_NML
-use ModelConstants_ml,      only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
+use Config_module,      only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
 use SmallUtils_ml,          only: find_index
 use TimeDate_ml,            only: date
 use TimeDate_ExtraUtil_ml,  only: date2string

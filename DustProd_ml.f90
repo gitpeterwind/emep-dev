@@ -39,8 +39,8 @@
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac,                   & 
                                   pwp, fc, SoilWaterSource
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-                                  NPROC, MasterProc, USE_DUST, DEBUG_DUST
+ use Config_module,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
+                                  NPROC, MasterProc, USES, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,LIMAX,LJMAX
  use Par_ml,               only : limax, ljmax ! Debugging 
@@ -86,7 +86,7 @@
    integer, intent(in) :: i,j                 ! coordinates of column
    logical, intent(in) :: debug_flag
 
-   integer, parameter  :: LU_DESERT = 13    ! REMOVE HARD-CODE
+!st080218      integer, parameter  :: LU_DESERT = 13    ! REMOVE HARD-CODE
    real   , parameter  :: Ro_water = 1000.0 
 
    real, parameter:: Dm_soil = 210.0e-6,  & ! [m] MMD of the coarsest soil  (100)
@@ -103,7 +103,7 @@
    integer :: nlu, ilu, lu
 
 !_______________________________________________________
-    if ( USE_DUST .eqv. .false. ) then
+    if ( USES%DUST .eqv. .false. ) then
         call PrintLog("Skipping soil dust")
         return
     end if
@@ -203,8 +203,8 @@
 !/.. Dust erosion from Crops (Arable) and Desert (Mediterr.Scrubs lu==11 ???)
 !/.. Creates problems on e.g. Greenland, as Bare land is included in Desert
 
-   DUST: if (arable .or. lu == LU_DESERT) then
-
+!st080218   DUST: if (arable .or. lu == LU_DESERT) then
+   DUST: if (arable .or. LandType(lu)%is_desert) then
      if( debug ) write(6,'(a,i5,f10.3)')   &
                          'DUST: -----> Landuse', lu, cover
 
@@ -327,7 +327,8 @@
 ! ===================================
   
 !// Limitation of available erodible elements and aerodynamic roughness length
-  if (lu == LU_DESERT)       then      ! ---------  desert -----
+!st080218  if (lu == LU_DESERT)       then      ! ---------  desert -----
+  if (LandType(lu)%is_desert) then
         soil_type = 'Saharan desert'
         z0 = 0.5e-4        !TEST
         dust_lim = 0.3 ! rep15   ! 0.5 !- with my versions
@@ -482,7 +483,9 @@
 !//  Vertical dust flux [kg/m2/s], scaled with area fraction and
 !//  added for erodible landuses. 
 !//  (dust production is limited to reasonable (estimated) values
-   if (lu == LU_DESERT)  then 
+!st080218   if (lu == LU_DESERT)  then
+   if (LandType(lu)%is_desert) then
+ 
       flx_vrt_dst  =  flx_vrt_dst + min(1.e-7, flx_hrz_slt * alfa * dust_lim)
    else
       flx_vrt_dst  =  flx_vrt_dst + min(1.e-8, flx_hrz_slt * alfa * dust_lim)

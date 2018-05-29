@@ -2,7 +2,7 @@
   module Aero_Vds_ml
 !==============================================================================
   use PhysicalConstants_ml, only : FREEPATH, VISCO, BOLTZMANN, PI, GRAV, ROWATER
-  use ModelConstants_ml,    only : DEBUG_VDS, MasterProc
+  use Config_module,    only : DEBUG_VDS, MasterProc
 
   ! DESCRIPTION
   ! Calculates laminar sub-layer resistance (rb) and gravitational settling

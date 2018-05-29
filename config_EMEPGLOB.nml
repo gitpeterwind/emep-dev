@@ -25,8 +25,8 @@
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
  LandCoverInputs%MapFile =
-    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
-    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available
+    'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
 ! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
@@ -43,21 +43,21 @@
   USES%n2o5HydrolysisMethod = 'Smix',    !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
 !------------------------------
-  USE_SOILWATER         = T,             ! Uses SMI from meteo data
-  USE_CONVECTION        = T,
+  USES%SOILWATER         = T,             ! Uses SMI from meteo data
+  USES%CONVECTION        = T,
   CONVECTION_FACTOR     = 0.33           ! Test reduced convection
-!  fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
-  USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,             ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,             ! 
+  !fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
+  USES%SEASALT           = T,
+  USES%AIRCRAFT_EMIS     = T,             ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,             ! 
 !------------------------------
-  USE_EURO_SOILNOX      = F,             ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = F,             ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,           ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,             ! Only EECCA?
-  USE_DUST              = T,             ! Only EECCA?
+  USES%POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,             ! Only EECCA?
+  USES%DUST              = T,             ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,             ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,             ! Used for TFMM runs
@@ -71,8 +71,9 @@
 !*** The default emission set up for Global runs ******
 !----------------------------------------------------------------------
   EmisDir                 = 'DataDir',
-  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',    ! example of Fractions type annual emission
+!  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',    ! example of Fractions type annual emission
 !  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_01deg_2008_month.nc', ! example of Fractions type monthly emission
+emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.nc',
 
 !**#######################################################
 !*** Special Cases ***
@@ -115,9 +116,9 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
-  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
+  USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for FORECASTs usually
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
@@ -151,17 +152,17 @@
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%DERIVED         = F,   ! 
-  DEBUG%MY_DERIVED      = T,   ! 
+  DEBUG%MY_DERIVED      = F,   ! 
   DEBUG%DO3SE           = 0,   !  gstomatal etc.
   DEBUG%DRYDEP          = F,   !
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
-  DEBUG%LANDDEFS        = T,
-  DEBUG%LANDUSE         = 1,
-  DEBUG%MOSAICS         = T,
-  DEBUG%PFT_MAPS        = 1,           ! in testing
+  DEBUG%LANDDEFS        = F,
+  DEBUG%LANDUSE         = 0,
+  DEBUG%MOSAICS         = F,
+  DEBUG%PFT_MAPS        = 0,           ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
@@ -186,11 +187,27 @@
 !   DEBUG%IJ = 49, 133 ! N. Pacific
   DEBUG%SPEC            = 'OH',
 &end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/volcano_location.csv_20160610",
+  femsdef="DataDir/volcano_emission.csv_20160610",
+  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=F, ! continue simulation if topo_nc not found
+! NMAX_LOC=-1, ! estimate from lines in flocdef
+! NMAX_EMS=-1, ! estiamte from lines in femsdef
+&end
 &Fire_config
-  need_poll = F,               ! Avoids problems with missing ISOP in later FINN data
-  GFED_PATTERN="$GFED",#GFED   ! Forestfire data is selected in mk.GenChem.  
-  FINN_PATTERN="$FINN",#FINN   ! Check in mk.GenChem to find out which data is linked.
-  GFAS_PATTERN="$GFAS",#GFAS   ! Default EMEP setup is using 'FINN'
+!------------------------------
+! ForestFire data is selected in mk.GenChem.  
+! Check in mk.GenChem to find out which data is linked.
+! Default EMEP setup is using 'FINN'
+!------------------------------
+  need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &Nest_config
 !-------- Read/Write MODEs
@@ -198,7 +215,7 @@
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
 ! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
-  MODE_SAVE = 'NONE',         ! do nothing
+!  MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
 ! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)

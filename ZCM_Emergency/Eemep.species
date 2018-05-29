@@ -37,6 +37,7 @@ NC4H10,1,nC4H10,xx,xx,xx,0,0,0,xx,xx,,!
 OXYL,1,C8H10,106.17,xx,xx,0,0,0,xx,aromatic,,!
 C5H8,1,CH2=HCC=CH2CH3,xx,xx,xx,0,0,0,xx,BVOC,,!
 APINENE,1,C10H16,xx,xx,xx,0,0,0,xx,BVOC,,!
+BIOTERP,1,C10H16,xx,xx,xx,0,0,0,xx,BVOC,,! Helper species for emissions,
 C3H6,1,C3H6,42.08,xx,xx,0,0,0,xx,alkene,,!C3
 C2H4,1,C2H4,xx,xx,xx,0,0,0,xx,xx,,!
 C2H5OH,1,C2H5OH,xx,xx,xx,0,0,0,xx,xx,,!

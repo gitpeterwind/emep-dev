@@ -6,7 +6,7 @@ has been extensively replaced by pure FORTRAN'90. The biggest change
 is in the use of modules instead of include-files and common blocks
 to share data and subroutines between different parts of the model.
 One advantage of mouldes is that it allows the explicit statement
-of thre variables which are being used. Thus, 
+of thre variables which are being used. Thus,
 
 \begin{verbatim}
 use PhysicalConstants_ml, only : KARMAN
@@ -17,7 +17,7 @@ lets the reader know where the variables KARMAN is coming from, without
 having to trudge through many thousand lines of `include' files.
 
 
-Modules also give the compiler much more information on the 
+Modules also give the compiler much more information on the
 arguments to subroutines and dimensions of arrays. All of this
 helps to minimise errors in the code.
 
@@ -26,13 +26,13 @@ helps to minimise errors in the code.
 
 {\bf module My\_Timing\_ml}\\
 
-  
+
 \noindent
 This module may be used to collect information on either system time or
  CPU time. Calling Code\_timer from the external routines is the standard
  interface. If system time is required then modify Code\_timer to
  use system\_clock, and declare the time variables (tim\_before, tim\_after, etc.)
- as integers. If CPU time is required modify Code\_timer to call 
+ as integers. If CPU time is required modify Code\_timer to call
  CPU\_TIME and declare the time variables as real.
 \bigskip
 
@@ -70,7 +70,7 @@ this:
 
 
 See the module for more details. The times and text descriptions are stored
-in arrays and printed out with Output\_timing. 
+in arrays and printed out with Output\_timing.
 
 
 
@@ -80,12 +80,12 @@ in arrays and printed out with Output\_timing.
 
 The good-old Fortran `stop' should not be used on
 parellel computers, as it stops only the processor which called  it,
-rather than the whole run. 
+rather than the whole run.
 
 
 The subroutine {\bf gc\_abort} is used to allow for
 different methods of stopping the code on different
-computers.  
+computers.
 
 
 
@@ -119,7 +119,8 @@ the code clean and easy I hope:
     For subroutine arguments, use the {\tt intent} attribute always.
     This is a great aid for the compiler and the reader!
 \item
-    Use UPPER CASE for PARAMETERS, lower case for other variables.
+    Use UPPER CASE for PARAMETERS or variables that do not change after
+    initialization, lower case for other variables.
     Should keep C-programmers happy also.
 \item
     Use variable-names which are descriptive! Do not try to save
@@ -128,7 +129,7 @@ the code clean and easy I hope:
 \item
     Remember, longer-names are also easier to search for. Thus,
     ``grep GRAV *.f*'' will now give a useful listing of the places where
-    gravity occurs, whereas ``grep g *.f*'' will produce a rather longer 
+    gravity occurs, whereas ``grep g *.f*'' will produce a rather longer
     and less useful output. Easier to find in vi or emacs too.
 \item Modules 1.
     Much of the code is in modules. Access variables and routines with
@@ -158,7 +159,7 @@ However this rule is much more difficult to apply than the other rules :-(
 
 \item
     Do not use ``l'' or ``ll'' as variable names - they are too easily
-    confused with 1 and 11 in print-outs. 
+    confused with 1 and 11 in print-outs.
 \item
     Do you still remember rule 1?
 \end{enumerate}

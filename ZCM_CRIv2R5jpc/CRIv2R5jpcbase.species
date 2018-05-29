@@ -84,7 +84,7 @@ RU13O2,0,ru13o2,xx,xx,xx,0,0,0,xx,RO2,,!C5
 "******* Added by Dave (as advected species!) *********",,,,,,,,,,,,
 RO2POOL,1,ro2pool,1,xx,xx,0,0,0,xx,other,,!C0
 *,,,,,,,,,,,,
-NO,1,NO,46.01,xx,xx,0,0,0,xx,NOx;OXN,,!C0
+NO,1,NO,xx,xx,xx,0,0,0,xx,NOx;OXN,,!C0
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOx;OXN,,!C0
 SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
 CO,1,CO,28.01,xx,xx,0,0,0,xx,CO,,!C1

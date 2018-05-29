@@ -35,12 +35,12 @@ XMTO3_RO2,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 O3,1,O3,xx,O3,xx,0,0,0,xx,TMPOX;daObs;OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;TMPOX;OXN;daObs;OX,,!
-HO2NO2,1,HO2NO2,xx,HNO3,HNO3,0,0,0,xx,TMPOX;OXN;daObs,,!
+HO2NO2,1,HO2NO2,xx,HNO3,HNO3,0,0,0,xx,TMPOX;OXN,,!
 SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;TMPOX;OXN,,!
 PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
 *CHET2:MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
-NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,!
-N2O5,1,N2O5,xx,xx,xx,0,0,0,xx,OXN,,!
+NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,! Could also treat as HNO3 but has little impact
+N2O5,1,N2O5,xx,HNO3,HNO3,0,0,0,xx,OXN,,!  rv4_16 added
 *CHET2:ISONO3,1,isono3,xx,xx,xx,0,0,0,xx,OXN,,"!isoprene-NO3 adduct"
 HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
 HONO,1,HONO,xx,HNO2,HNO3,0,0,0,xx,OXN,,"!Wet-dep rate might be too high"

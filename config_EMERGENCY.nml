@@ -1,8 +1,15 @@
+&INPUT_PARA
+  GRID      = 'EMERGENCY',
+  iyr_trend = 2010,
+  runlabel1 = 'eemep',
+  runlabel2 = 'rv4_14',
+  startdate = 2010,04,13,000000,
+  enddate   = 2010,04,14,000000,
+&end
 !!put here only machine specific data.
 &Machine_config
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
-  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+  DataPath(1) = '/home/metno_op/emep/eemep2/input/eEMEP_OpenSource',
 &end
 !------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -11,34 +18,43 @@
 !------------------------------
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
+  dt_advec              = 450, ! only point-sources, need shorter timesteps
   EXP_NAME              = 'EMERGENCY',
   MY_OUTPUTS            = '', ! outputs now defined in config_Outputs
 ! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
+ EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+ EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse_PS_5km_LC.nc',    ! 1km also available
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
   USES%testname         = 'EMERGENCY',
   USES%FOREST_FIRES     = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = F,
-  USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
+  USES%GRIDDED_EMIS_MONTHLY_FACTOR = F, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = F,         ! PFT LAI tests
   USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
   USES%WHITECAPS =       "Callaghan",    ! Norris , Monahan
   USES%SURF_AREA        = F,
 !------------------------------
-  USE_SOILWATER         = F,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
-  USE_SEASALT           = F,
-  USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = F,          !
+  USES%SOILWATER         = F,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
+  USES%SEASALT           = F,
+  USES%AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = F,          !
 !------------------------------
-  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,          ! Only EECCA?
-  USE_DUST              = F,          ! Only EECCA?
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 1,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
@@ -50,28 +66,42 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
-  USE_NOCHEM            = T,          ! Turns off chemistry
+  USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
+  USES%PreADV            = T,          ! Distribute point-source before advection
+  USES%NOCHEM            = T,          ! Turns off chemistry
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for FORECASTs usually
 !------------------------------
   DEBUG%GLOBBC          = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%DERIVED         = F,
   DEBUG%COLSRC          = F,
 &end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+! flocdef="DataDir/volcano_location.csv",
+! femsdef="DataDir/volcano_emission.csv",
+  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=T, ! stop simulation if topo_nc not found
+  NMAX_LOC=1, ! number of locations (-1 for autodetect)
+  NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)
+&end
 &Nest_config
 !-------- Read/Write MODEs
   MODE_READ = 'FORECAST',     ! at the start of run, if files are found
   MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  native_grid_3D   = T,       ! initial conditions always in same grid
+  native_grid_BC   = T,       ! BC not used
 !-------- File name templates for Nest I/O
   template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
+  template_read_BC = 'EMEP_IN_YYYYMMDD_bc.nc',   ! will be replaced with numbers
   template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
-  FORECAST_NDUMP   = 0,                       ! Nr. CWF dump dates
+  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &ExternalBICs_config

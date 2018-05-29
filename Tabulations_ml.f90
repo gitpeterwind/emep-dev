@@ -38,7 +38,7 @@ module Tabulations_ml
  !
  !----------------------------------------------------------------------------
   use PhysicalConstants_ml, only : RGAS_J, CP, T0, KAPPA
-  use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX  ! temperature range
+  use Config_module,    only : CHEMTMIN, CHEMTMAX  ! temperature range
   implicit none
   private
 

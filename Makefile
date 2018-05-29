@@ -55,7 +55,7 @@ else ifeq ($(MACHINE),byvind)
   LLIB += /software/apps/netcdf/4.1.2/i1210/lib
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-else ifeq ($(MACHINE),frost)
+else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14
   LIBS += -lnetcdf -lnetcdff
   INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
@@ -127,7 +127,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
@@ -151,19 +151,19 @@ TEST:
 	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP:               GenChem-EMEP-EmChem16mt
+EMEP:               GenChem-EMEP-EmChem16a
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
-HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
-MACC-EVA:           GenChem-MACCEVA-EmChem16mt
+HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
+MACC-EVA:           GenChem-MACCEVA-EmChem16a
 MACC-Pollen:        GenChem-MACCEVA-Pollen
-eEMEP:              GenChem-$$@-Emergency
-eEMEP ?= Emergency  # Emergency | AshInversion
+eEMEP ?= Emergency # Emergency | AshInversion
+eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
 
 GenChem%:
 	./mk.GenChem $(GenChemOptions) -q
@@ -174,14 +174,17 @@ GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
-GenChem-eEMEP-%:    $$(eEMEP)
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs
-Emergency: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
-Emergency: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-Emergency: NUCXS ?= NorthKorea,Tehran
+Emergency: VENTS ?= DefaultVolcano
+#Eyjafjoll,Vesuvius,Etna,Kr.suv.k,Katla,Askja
+Emergency: NPPAS ?= 
+#Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
+Emergency: NUCXS ?= 
+#NorthKorea,Tehran
 Emergency:
-	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
+	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS)
+#-N $(NPPAS) -X $(NUCXS)
 
 # eEMP Default AshInversion: Vents
 AshInversion: VENTS ?= Eyjafjoll
@@ -194,6 +197,9 @@ AshInversion:
 	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
 %-3DVar16: GenChem-MACCEVA-EmChem09soa
 	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar $(PROG)_3DVar
+%-3DVar17: GenChem-MACCEVA-EmChem09soa
+	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar $(PROG)_3DVar
+
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2

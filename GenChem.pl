@@ -124,7 +124,7 @@ my %UsedVariables = (
   use Setup_1dfields_ml ! => tinv, h2o, m, Fgas
   use Setup_1dfields_ml, m=> amk
   use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08
-  use ModelConstants_ml, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG,AERO");
+  use Config_module, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG,AERO");
 
 #======================================================================
 

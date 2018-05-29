@@ -17,7 +17,7 @@ module AerosolCalls
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
  use MARS_ml,              only :  rpmares, rpmares_2900, DO_RPMARES_new
- use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG, MasterProc, AERO
+ use Config_module,    only :  KMAX_MID, KCHEMTOP, DEBUG, MasterProc, AERO
  use PhysicalConstants_ml, only :  AVOG
  use Setup_1dfields_ml,    only :  xn_2d, temp, rh, pp
  implicit none

@@ -21,9 +21,9 @@ use LocalVariables_ml,    only: Grid
 use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_ml,          only: Wind_at_h
-use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, FORECAST, &
+use Config_module,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                dt=>dt_advec, DEBUG=>DEBUG_POLLEN
+                                TXTLEN_FILE, dt=>dt_advec, DEBUG
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
 use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
@@ -36,7 +36,7 @@ use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: PI
 use OwnDataTypes_ml,      only: Deriv
 use Setup_1dfields_ml,    only: rcemis
-use SmallUtils_ml,        only: find_index
+use SmallUtils_ml,        only: find_index,key2str
 use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
 use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
@@ -60,8 +60,6 @@ real, public,save , allocatable, dimension(:,:,:)::&
 integer, save, dimension(POLLEN_NUM) :: &
   inat=-1,iadv=-1,itot=-1
 
-integer, parameter :: &
-  max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
 !-------------------------------------
 ! Variables read from NetCDF Files
 ! pollen_flux   NetCDF file    NetCDF var
@@ -80,7 +78,7 @@ integer, parameter :: &
 !   xn_adv(i,:,:,:)         BIRCH,OLIVE,GRASS   SPC
 !   N_TOT(i)-R(:,:,i)       BIRCH,OLIVE,GRASS   SPC//'_rest'
 !   heatsum(:,:,i)          BIRCH,OLIVE         SPC//'_heatsum'
-character(len=max_string_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   birch_frac_nc ='birch_frac.nc',         &
   birch_data_nc ='pollen_data.nc',        &
   birch_corr_nc ='birch_factor_YYYY.nc',  &
@@ -126,10 +124,14 @@ subroutine Config_Pollen()
   rewind(IO_NML)
   read(IO_NML,NML=Pollen_config,iostat=ios)
   call CheckStop(ios,"NML=Pollen_config")
-  if(debug.and.MasterProc)then
+  if(DEBUG%POLLEN.and.MasterProc)then
     write(*,*) "NAMELIST IS "
     write(*,NML=Pollen_config)
   end if
+
+  ! expand DataDir keysword
+  template_read =key2str(template_read ,'DataDir',DataDir)
+  template_write=key2str(template_write,'DataDir',DataDir)
 
   do g=1,POLLEN_NUM
     inat(g) = find_index(POLLEN_GROUP(g),EMIS_BioNat(:))
@@ -297,7 +299,7 @@ subroutine pollen_flux(i,j,debug_flag)
       write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
     first_call = .false.
   end if !first_call
-  debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
+  debug_ij=all([DEBUG%POLLEN.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
 
   pollen_out(1)=.not.checkdates(daynumber,BIRCH)&
     .or.any([pollen_frac(i,j,1),birch_h_c(i,j)]==UnDef)
@@ -463,11 +465,8 @@ function scale_factor(spc) result(scale)
       *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
                        /(grass_end(i,j)-grass_start(i,j)), & ! season length
                         dt/86400.0                         & ! timestep in days
-                       /(grass_end(i,j)-grass_start(i,j))) & ! season length
-      *f_fade_out(R(i,j,g)/N_TOT(g),&
-                  1.0-uncert_tot_grass_poll)          ! total-pollen fade-out
-     ! Full-emission rate is total pollen divided by the total duration of the season
-     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)
+                       /(grass_end(i,j)-grass_start(i,j)))   ! season length
+    scale = scale/dt ! emited fration over dt to emission rate
   case default
     call CheckStop("Unknown pollen type: "//trim(spc))
   end select
@@ -634,7 +633,7 @@ integer function getRecord(fileName,findDate,fatal)
   if(MasterProc) getRecord=startRecord()
   call MPI_BCAST(getRecord,1,MPI_INTEGER,MasterPE,MPI_COMM_CALC,IERROR)
   if(getRecord<1)&  ! switch off Pollen_ml when restart file is corrupted
-    call MPI_BCAST(USE_POLLEN,1,MPI_LOGICAL,MasterPE,MPI_COMM_CALC,IERROR)
+    call MPI_BCAST(USES%POLLEN,1,MPI_LOGICAL,MasterPE,MPI_COMM_CALC,IERROR)
 contains
 function startRecord() result(nstart)
   integer :: nstart
@@ -665,7 +664,7 @@ function startRecord() result(nstart)
     if(MasterProc) write(*,*)&
       "Warning Pollen dump file corrupted: "//trim(filename)
     call PrintLog("WARNING: Pollen_ml forced OFF",MasterProc)
-    USE_POLLEN=.false.
+    USES%POLLEN=.false.
     nstart=-1
     return
   end if
@@ -722,7 +721,7 @@ subroutine pollen_read()
 !------------------------
     call GetCDF_modelgrid(trim(spc),filename,data,&
           1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)xn_adv(iadv(g),:,:,:)=data(:,:,:)
 !------------------------
 ! pollen_rest
@@ -730,7 +729,7 @@ subroutine pollen_read()
     spc=trim(POLLEN_GROUP(g))//'_rest'
     call GetCDF_modelgrid(trim(spc),filename,data(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)R(:,:,g)=N_TOT(g)-data(:,:,1)
 !------------------------
 ! heatsum
@@ -739,7 +738,7 @@ subroutine pollen_read()
     spc=trim(POLLEN_GROUP(g))//'_heatsum'
     call GetCDF_modelgrid(trim(spc),filename,heatsum(:,:,g),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
   end do
   deallocate(data)
 end subroutine pollen_read
@@ -787,7 +786,7 @@ subroutine pollen_dump()
       def1%class='Advected'           ! written
       def1%unit='mix_ratio'           ! written
       def1%name=trim(spc)             ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       if(.not.create_var)data=xn_adv(iadv(g),:,:,:)
       call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,overwrite=overwrite,&
@@ -799,7 +798,7 @@ subroutine pollen_dump()
       def1%class='pollen_out'         ! written
       def1%unit='pollengrains'        ! written
       def1%name=trim(spc)//'_rest'    ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       data(:,:,1)=N_TOT(g)-R(:,:,g)
       call Out_netCDF(IOU_INST,def1,2,1,data(:,:,1),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
@@ -811,7 +810,7 @@ subroutine pollen_dump()
       def1%class='pollen_out'         ! written
       def1%unit='degreedays'          ! written
       def1%name=trim(spc)//'_heatsum' ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,g),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
@@ -821,7 +820,7 @@ subroutine pollen_dump()
     call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
   ! ensure time record can be found, fatal error if not
   i=getRecord(filename,current_date,.true.) ! MPI_BCAST inside
-  if(MasterProc.and.DEBUG) &
+  if(DEBUG%POLLEN.and.MasterProc) &
     write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
   deallocate(data)
 end subroutine pollen_dump

@@ -10,8 +10,8 @@ module DO3SE_ml
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use ModelConstants_ml, only : NLANDUSEMAX, DEBUG, MasterProc, &
-      USE_SOILWATER
+  use Config_module, only : NLANDUSEMAX, DEBUG, MasterProc, &
+      USES
   use SmallUtils_ml,     only : find_index
   use TimeDate_ml,       only : current_date, daynumber, print_date
 
@@ -261,7 +261,7 @@ contains
       !txtdate =  print_date()
       !print *, "TXT PD CD2", trim(txtdate)
       if(iLC>=20)  write(*,"(2a,i5,L2,99g10.3)") "IN RSUR gstomatal ", &
-              print_date(), iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
+              print_date(), iLC, USES%SOILWATER, L%PARsun, L%PARshade,&
               do3se(iLC)%g_max, L%g_sto, L%f_env,  L%f_phen, L%f_vpd,&
               L%fSW, L%g_sto * L%f_sun/L%f_light, L%g_sun 
    end if

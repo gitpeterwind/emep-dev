@@ -2,7 +2,7 @@ module CoDep_ml
   use CheckStop_ml,  only : CheckStop
   use Chemfields_ml, only : so2nh3_24hr
   use GridValues_ml, only : debug_proc, debug_li, debug_lj
-  use ModelConstants_ml, only : MasterProc  ! for DEBUG
+  use Config_module, only : MasterProc  ! for DEBUG
   use Par_ml,        only : LIMAX, LJMAX
 
 
