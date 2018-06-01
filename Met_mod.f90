@@ -159,7 +159,7 @@ subroutine MeteoRead_io()
     nrec=nrec+1
 
     if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
-      meteoname = date2string(meteo,next_inptime)
+      meteoname = date2string(meteo,next_inptime,mode='YMDH')
       nrec = 1
       if(nday==1.and.nmonth==1)then
         !hour 00:00 from 1st January may be missing;checking first:
@@ -167,7 +167,7 @@ subroutine MeteoRead_io()
         if(.not.fexist)then
           if(MasterProc)write(*,*)trim(meteoname),&
                ' does not exist; using data from previous day'
-          meteoname=date2string(meteo,next_inptime,-24*3600.0)
+          meteoname=date2string(meteo,next_inptime,-24*3600.0,mode='YMDH')
           nrec=Nhh
         end if
       end if
@@ -360,7 +360,7 @@ subroutine MeteoRead()
   nrec=nrec+1
 
   if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
-    meteoname = date2string(meteo,next_inptime)
+    meteoname = date2string(meteo,next_inptime,mode='YMDH')
 
     nrec = 1
     if(nday==1.and.nmonth==1)then
@@ -369,7 +369,7 @@ subroutine MeteoRead()
       if(.not.fexist)then
         if(MasterProc)write(*,*)trim(meteoname),&
             ' does not exist; using data from previous day'
-        meteoname=date2string(meteo,next_inptime,-24*3600.0)
+        meteoname=date2string(meteo,next_inptime,-24*3600.0,mode='YMDH')
         nrec=Nhh
       end if
     end if
@@ -2966,7 +2966,7 @@ subroutine Check_Meteo_Date_Short
   nmonth=startdate(2)
   nday=startdate(3)
 
-  meteoname=date2string(meteo,startdate)
+  meteoname=date2string(meteo,startdate,mode='YMDH')
   MasterProc_local = MasterProc.or.(ME_IO==0)
   if(MasterProc_local)then
     status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)

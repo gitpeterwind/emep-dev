@@ -218,7 +218,7 @@ subroutine GridRead(meteo,cyclicgrid)
     else
       if(MasterProc.and.Use_Grid_Def)&
         write(*,*)'Did not found Grid_Def ',trim(filename)
-      filename=date2string(meteo,startdate)
+      filename=date2string(meteo,startdate,mode='YMDH')
     end if
     if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
