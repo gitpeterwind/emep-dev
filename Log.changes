@@ -151,6 +151,19 @@ This doubled the CO emisions for those using FINNv1.5, since this has:
 
 ie FINN CO was assigned to both CO and FFIRE_CO, and the latter then made even
 more CO.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd June 2018, Anna, Peter
+
+included MaceHEad 2016
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th May 2018,  Peter
+
+ local fraction output corrections for groups
+ local fraction bug at northern boundary (can cause nan)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Feb 2018, Alvaro
 
