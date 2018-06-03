@@ -1,5 +1,5 @@
 *
 * <----------- Biogenic/natural emissions ----------------------------->
 *
-rcemis:FFIRE_CO                              = FFIRE_CO  + CO  ;
+rcemis:FFIRE_CO                              = FFIRE_CO  ;
 1.44e-13+M*3.43e-33      [OH]   + FFIRE_CO   =           ;  tracer

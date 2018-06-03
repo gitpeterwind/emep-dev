@@ -137,6 +137,20 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd June 2018, Dave
+
+BUG fix
+
+ZCM_EmChem09/Forest.reactions had  rcemis:FFIRE_CO giving both FFIRE_CO and CO.
+
+This doubled the CO emisions for those using FINNv1.5, since this has:
+    bbtype("CO  ",0.028 , 1.000, CO    ) & ! Tracer, will add to CO too
+   ,bbtype("CO  ",0.028 , 1.000, FFIRE_CO    ) & ! Tracer, will add to CO too
+
+ie FINN CO was assigned to both CO and FFIRE_CO, and the latter then made even
+more CO.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Feb 2018, Alvaro
 
