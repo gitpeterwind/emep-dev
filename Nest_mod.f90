@@ -92,7 +92,7 @@ logical, private, save :: mydebug =  .false.
 integer,private,parameter ::  len_mode=20
 character(len=len_mode),private, parameter :: &
   READ_MODES(5)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','START','MONTH'],&
-  SAVE_MODES(4)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','END']
+  SAVE_MODES(5)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','END','MONTH']
 character(len=len_mode),private, save ::  &
   MODE_READ='',&  ! read  mode
   MODE_SAVE=''    ! write mode
@@ -396,6 +396,8 @@ subroutine wrtxn(indate,WriteNow)
                          wildcard=-1))return
     if(MasterProc) write(*,*)&
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
+  case('MONTH')
+    if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
   case default
     if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
   end select

@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th June 2018,  Peter
+
+Monthly save for nest allowed. 
+set MODE_SAVE = 'MONTH'. Will not output for 1st of January.
+
+Bug in ChecStop that made the error message not come out.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018, Svetlana, Peter
 
 In Aqueous_n_WetDep_mod there was a return which was never reached. 
