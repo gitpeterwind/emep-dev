@@ -458,22 +458,24 @@ subroutine Setup_Clouds(i,j,debug_flag)
 !need to be called also if no clouds for non-cloud rates
   call setup_aqurates(b ,cloudwater,incloud,pres)
 
-  if(DEBUG%pH .and. debug_flag .and. incloud(kcloudtop)) then
-!   write(*,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
-!            kcloudtop, ksubcloud, pr_acc(KMAX_MID)
+  if(kcloudtop>KUPPER .and.kcloudtop<KMAX_MID)then
+     if(DEBUG%pH .and. debug_flag .and. incloud(kcloudtop)) then
+        !   write(*,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
+        !            kcloudtop, ksubcloud, pr_acc(KMAX_MID)
 
-    write(*,*) "DEBUG%pH ",prclouds_present, &
-              kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
-    write(*,*) "CONC (mol/l)",&
-      so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),&
-      nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
-    write(*,*)"H+(ph_factor) ",&
-      hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)&
-     +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
-    write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
-    write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
+        write(*,*) "DEBUG%pH ",prclouds_present, &
+             kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
+        write(*,*) "CONC (mol/l)",&
+             so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),&
+             nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
+        write(*,*)"H+(ph_factor) ",&
+             hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)&
+             +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
+        write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
+        write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
+     end if
   end if
-
+     
 end subroutine Setup_Clouds
 !-----------------------------------------------------------------------
 subroutine init_aqueous()

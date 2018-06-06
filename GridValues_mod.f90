@@ -22,7 +22,7 @@ use Config_module,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
-     PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
+     PT,Pref,NMET,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &
                  !         MPI_MIN, MPI_MAX, &
@@ -197,7 +197,7 @@ subroutine GridRead(meteo,cyclicgrid)
   nyear=startdate(1)
   nmonth=startdate(2)
   nday=startdate(3)
-  nhour=0
+  nhour=startdate(4)
   current_date = date(nyear, nmonth, nday, nhour, 0 )
   call Init_nmdays( current_date, JUMPOVER29FEB)
 
@@ -222,7 +222,7 @@ subroutine GridRead(meteo,cyclicgrid)
     end if
     if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
-     call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,METSTEP,projection)
+    call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,projection)
 
     KMAX_MID=0!initialize
     open(IO_TMP,file=Vertical_levelsFile,action="read",iostat=ios)
@@ -317,145 +317,133 @@ subroutine GridRead(meteo,cyclicgrid)
   end if
 end subroutine GridRead
 
-subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,projection)
+subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,projection)
   ! Get input grid sizes
 
   implicit none
-  
+
   character (len = *), intent(in) ::filename
-  integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,METSTEP
+  integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX
   character (len = *), intent(out) ::projection
-  
+
   integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID
   integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
   real :: wrf_POLE_LAT=0.0
   character (len = 30) ::MAP_PROJ_CHAR
-  
-  
+  integer :: NTime_Read
+  real :: TimesInDays(1000)
+
+
   if(ME_MPI==0)then
-    print *,'Defining grid properties from ',trim(filename)
-    ! open an existing netcdf dataset
-    status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
-    if(status/=nf90_noerr) then
-      print *,'not found',trim(filename)
-      call StopAll("GridValues: File not found")
-    end if
-    
-    projection=''
-    status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
-    if(status/=nf90_noerr) then
-      ! WRF projection format
-      call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ",wrf_proj_code))
-      if(.not.USE_WRF_MET_NAMES .and. MasterProc)write(*,*)'Assuming WRF metdata'
-      USE_WRF_MET_NAMES = .true.
-      select case(wrf_proj_code)
-      case(6)
-        status = nf90_get_att(ncFileID,nf90_global,"POLE_LAT",wrf_POLE_LAT)
-        if(status==nf90_noerr) then
-          write(*,*)"POLE_LAT", wrf_POLE_LAT
-          if(abs(wrf_POLE_LAT-90.0)<0.001)then
-            projection='lon lat'
-          else
-            projection='Rotated_Spherical'
-          end if
-        else
-          write(*,*)"POLE_LAT not found"
-          projection='lon lat'
+     print *,'Defining grid properties from ',trim(filename)
+     ! open an existing netcdf dataset
+     status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
+     if(status/=nf90_noerr) then
+        print *,'not found',trim(filename)
+        call StopAll("GridValues: File not found")
+     end if
+
+     projection=''
+     status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+     if(status/=nf90_noerr) then
+        ! WRF projection format
+        call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ",wrf_proj_code))
+        if(.not.USE_WRF_MET_NAMES .and. MasterProc)write(*,*)'Assuming WRF metdata'
+        USE_WRF_MET_NAMES = .true.
+        select case(wrf_proj_code)
+        case(6)
+           status = nf90_get_att(ncFileID,nf90_global,"POLE_LAT",wrf_POLE_LAT)
+           if(status==nf90_noerr) then
+              write(*,*)"POLE_LAT", wrf_POLE_LAT
+              if(abs(wrf_POLE_LAT-90.0)<0.001)then
+                 projection='lon lat'
+              else
+                 projection='Rotated_Spherical'
+              end if
+           else
+              write(*,*)"POLE_LAT not found"
+              projection='lon lat'
+           end if
+        case(2)
+           projection='Stereographic'
+        case(1)
+           projection='lambert'
+           call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ_CHAR",MAP_PROJ_CHAR))
+           write(*,*)"wrf projection: "//trim(MAP_PROJ_CHAR)
+        case default
+           call CheckStop("Projection not recognized")
+        end select
+     end if
+
+     ! put into emep standard
+     if(trim(projection)=='Polar Stereographic')projection='Stereographic'
+
+     if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
+          .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
+        projection='Rotated_Spherical'
+     end if
+
+     if(trim(projection)=='lambert_conformal_conic'.or.trim(projection)=='Lambert Conformal')projection='lambert'
+
+     write(*,*)'projection: ',trim(projection)
+
+     ! get dimensions id
+     if(trim(projection)=='Stereographic') then
+        status = nf90_inq_dimid(ncid=ncFileID, name="i", dimID=idimID)
+        if(status/=nf90_noerr)& ! WRF  format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
+        status = nf90_inq_dimid(ncid=ncFileID, name="j", dimID=jdimID)
+        if(status/=nf90_noerr)& ! WRF  format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
+     elseif(trim(projection)=='lambert') then
+        status = nf90_inq_dimid(ncid=ncFileID, name="x", dimID=idimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
+        status = nf90_inq_dimid(ncid=ncFileID, name="y", dimID=jdimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
+        write(*,*)'x y dimensions'
+     elseif(trim(projection)==trim('lon lat')) then
+        status=nf90_inq_dimid(ncid=ncFileID, name="lon", dimID=idimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
+        status=nf90_inq_dimid(ncid=ncFileID, name="lat", dimID=jdimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
+     else
+        ! write(*,*)'GENERAL PROJECTION ',trim(projection)
+        status=nf90_inq_dimid(ncid=ncFileID, name="i", dimID = idimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
+        status=nf90_inq_dimid(ncid=ncFileID, name="j", dimID = jdimID)
+        if(status/=nf90_noerr)& ! WRF format
+             call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
+     end if
+
+     status=nf90_inq_dimid(ncid=ncFileID, name="k", dimID=kdimID)
+     if(status/=nf90_noerr)then
+        status=nf90_inq_dimid(ncid=ncFileID, name="lev", dimID=kdimID)!hybrid coordinates
+        if(status/=nf90_noerr) then
+           status=nf90_inq_dimid(ncid=ncFileID, name="hybrid", dimID=kdimID)!hybrid coordinates
+           if(status/=nf90_noerr) then ! WRF format
+              call check(nf90_inq_dimid(ncid=ncFileID, name="bottom_top", dimID=kdimID))
+           end if
         end if
-      case(2)
-        projection='Stereographic'
-      case(1)
-        projection='lambert'
-        call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ_CHAR",MAP_PROJ_CHAR))
-        write(*,*)"wrf projection: "//trim(MAP_PROJ_CHAR)
-      case default
-        call CheckStop("Projection not recognized")
-      end select
-    end if
-    
-    ! put into emep standard
-    if(trim(projection)=='Polar Stereographic')projection='Stereographic'
-    
-    if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
-    .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
-    projection='Rotated_Spherical'
-  end if
-    
-  if(trim(projection)=='lambert_conformal_conic'.or.trim(projection)=='Lambert Conformal')projection='lambert'
-  
-  write(*,*)'projection: ',trim(projection)
-  
-  ! get dimensions id
-  if(trim(projection)=='Stereographic') then
-    status = nf90_inq_dimid(ncid=ncFileID, name="i", dimID=idimID)
-    if(status/=nf90_noerr)& ! WRF  format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
-    status = nf90_inq_dimid(ncid=ncFileID, name="j", dimID=jdimID)
-    if(status/=nf90_noerr)& ! WRF  format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
-  elseif(trim(projection)=='lambert') then
-    status = nf90_inq_dimid(ncid=ncFileID, name="x", dimID=idimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
-    status = nf90_inq_dimid(ncid=ncFileID, name="y", dimID=jdimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
-    write(*,*)'x y dimensions'
-  elseif(trim(projection)==trim('lon lat')) then
-    status=nf90_inq_dimid(ncid=ncFileID, name="lon", dimID=idimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
-    status=nf90_inq_dimid(ncid=ncFileID, name="lat", dimID=jdimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
-  else
-    ! write(*,*)'GENERAL PROJECTION ',trim(projection)
-    status=nf90_inq_dimid(ncid=ncFileID, name="i", dimID = idimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
-    status=nf90_inq_dimid(ncid=ncFileID, name="j", dimID = jdimID)
-    if(status/=nf90_noerr)& ! WRF format
-    call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
-  end if
-    
-  status=nf90_inq_dimid(ncid=ncFileID, name="k", dimID=kdimID)
-  if(status/=nf90_noerr)then
-    status=nf90_inq_dimid(ncid=ncFileID, name="lev", dimID=kdimID)!hybrid coordinates
-    if(status/=nf90_noerr) then
-      status=nf90_inq_dimid(ncid=ncFileID, name="hybrid", dimID=kdimID)!hybrid coordinates
-      if(status/=nf90_noerr) then ! WRF format
-        call check(nf90_inq_dimid(ncid=ncFileID, name="bottom_top", dimID=kdimID))
-      end if
-    end if
-  end if
-    
-  !get dimensions length
-  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_file))
-  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_file))
-  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_file))
-  write(*,*)'dimensions input grid:',GIMAX_file,GJMAX_file,KMAX_file!,Nhh
-  
-  IIFULLDOM=GIMAX_file
-  JJFULLDOM=GJMAX_file
-  KMAX     =KMAX_file
-    
-  ! find METSTEP (checked also in first meteo read)
-  status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
-  if(status/=nf90_noerr)&
-    status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
-  if(status/=nf90_noerr)then
-    write(*,*)'time variable not found assuming 8 records'
-    Nhh=8
-  else
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-  end if
-    
-    METSTEP=max(1,24/Nhh)
-    write(*,*)'METSTEP set to ',METSTEP,' hours'
-    call check(nf90_close(ncFileID))
+     end if
+
+     !get dimensions length
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_file))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_file))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_file))
+     write(*,*)'dimensions input grid:',GIMAX_file,GJMAX_file,KMAX_file!,Nhh
+
+     IIFULLDOM=GIMAX_file
+     JJFULLDOM=GJMAX_file
+     KMAX     =KMAX_file
+
+     call check(nf90_close(ncFileID))
   end if
 
-  CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
   CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERROR)
   CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
   CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)

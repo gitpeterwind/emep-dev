@@ -21,6 +21,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th June 2018,  Peter
+
+Can now start and end run at any hour (must be one that is available in the metdata)
+
+The method to setup the meteo reading is much modified, so it might be that
+some new meteo format will not fit (will stop the code).
+METSTEP is now set in Check_Meteo_Date_Type (was set in GetFullDomainSize)
+The method relies on the ReadTimeCDF routine to be able to interpret times in 
+the meteo file.
+All meteo files are assumed to have the same number of records (this could
+probably be upgraded if needed)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018,  Peter
 
 Monthly save for nest allowed. 

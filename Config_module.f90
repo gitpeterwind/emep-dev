@@ -470,7 +470,7 @@ integer, public, parameter ::  &
 , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
-integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WRF may set to other values.
+integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but can be reset by metdata
 real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal 
 
 !Namelist controlled: aerosols

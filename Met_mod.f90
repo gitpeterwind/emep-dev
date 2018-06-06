@@ -91,9 +91,10 @@ private
 
 ! logical, private, save      :: debug_procloc = .false.
 integer, private, save      :: debug_iloc, debug_jloc  ! local coords
-integer, save   :: nrec          ! nrec=record in meteofile, for example
-! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
-! if nhour_first=3 then 1=03:00 2=06:00...8=24:00
+integer, save   :: nrec          ! nrec=record to read in meteofile
+! Nhh is the number of record in each meteo file (assume constant)
+! (Nhh=8): nrec=1->00:00 nrec=2->03:00 ... nrec=8->21:00
+! if nhour_first=3 then nrec=1->03:00 nrec=2->06:00...nrec=8->24:00
 
 logical, save, private      :: xwf_done = .false. ! extended water-fraction array
 
@@ -141,7 +142,7 @@ subroutine MeteoRead_io()
 
       !On first call, check that date from meteo file correspond to dates requested.
       !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata).
-      call Check_Meteo_Date_Short !note that all procs read this
+      call Check_Meteo_Date_Type !note that all procs read this
     else
       nsec=METSTEP*3600.0 !from hr to sec
       ts_now = make_timestamp(current_date)
@@ -291,7 +292,6 @@ subroutine MeteoRead()
 
   real :: p1, p2, x, y
   real :: divk(KMAX_MID),sumdiv,dB_sum
-  real :: divt, inv_METSTEP
 
   real :: Ps_extended(0:LIMAX+1,0:LJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
@@ -302,14 +302,14 @@ subroutine MeteoRead()
   integer :: INFO,i_large,j_large
   logical, save:: ps_in_hPa = .true.
   logical, save:: precip_accumulated = .false.
-
-  if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
+  
+  if(.not. first_call)then
+     if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
+  endif
 
   nr=2 !set to one only when the first time meteo is read
   call_msg = "Meteoread"
 
-  inv_METSTEP = 1.0/METSTEP
-  divt = 1./(3600.0*METSTEP)
 
   if(first_call)then !first time meteo is read
      nr = 1
@@ -327,7 +327,7 @@ subroutine MeteoRead()
      !On first call, check that date from meteo file correspond to dates requested.
      !Also defines nhour_first and Nhh (and METSTEP and bucket in case of WRF metdata).
      !Also check if data is in format short
-     call Check_Meteo_Date_Short !note that all procs read this
+     call Check_Meteo_Date_Type !note that all procs read this
 
      call Exner_tab()!init table
 
@@ -359,7 +359,7 @@ subroutine MeteoRead()
 
   nrec=nrec+1
 
-  if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
+  if(nrec>Nhh.or.nrec==1.or.first_call) then              ! start reading a new meteo input file
     meteoname = date2string(meteo,next_inptime,mode='YMDH')
 
     nrec = 1
@@ -828,13 +828,13 @@ subroutine MeteoRead()
       end do
     end if
   end if ! .not.foundprecip
-  pr=max(0.0,pr)*divt ! positive precipitation in mm/s
+  pr=max(0.0,pr)/(3600.0*METSTEP) ! positive precipitation in mm/s
 
   ! surface precipitation, mm/hr
   ! NB: surface_precip is different than the one read directly from the
   ! metfile  (which has different units, and is the sum of the 2D
   ! large_scale_precipitations+convective_precipitations)
-  surface_precip(:,:) = pr(:,:,KMAX_MID) * inv_METSTEP
+  surface_precip(:,:) = pr(:,:,KMAX_MID) /METSTEP
 
   if(USES%CONVECTION)then
     cnvuf=max(0.0,cnvuf)      !no negative upward fluxes
@@ -2942,11 +2942,11 @@ subroutine check(status)
      trim(call_msg)//" "//trim(nf90_strerror(status)))
 end subroutine check
 
-subroutine Check_Meteo_Date_Short
+subroutine Check_Meteo_Date_Type
   !----------------------------------------------------------------------
   ! On first call, check that dates from meteo file correspond to dates requested.
-  ! Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata)
-  ! Also check if data is in format short
+  ! Also defines nhour_first, nrec, Nhh and METSTEP
+  ! Also check if data is in format/tyep short
   !----------------------------------------------------------------------
   character(len=len(meteo)) :: meteoname
   integer :: nyear,nmonth,nday
@@ -2968,101 +2968,52 @@ subroutine Check_Meteo_Date_Short
 
   meteoname=date2string(meteo,startdate,mode='YMDH')
   MasterProc_local = MasterProc.or.(ME_IO==0)
+
   if(MasterProc_local)then
-    status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
-    call CheckStop(status,nf90_noerr,'meteo file not found: '//trim(meteoname))
+     status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
+     call CheckStop(status,nf90_noerr,'meteo file not found: '//trim(meteoname))
+     
+     NTime_Read=-1
+     call ReadTimeCDF(meteoname,TimesInDays,NTime_Read)
+     if(NTime_Read>0)then
+        call date2nctime(startdate,ndays_indate)
+        do n=1,NTime_Read
+           if(ndays_indate-TimesInDays(n)<halfsecond) goto 886               
+        enddo
+        n=1
+        call CheckStop('did not find correct meteo date in '//trim(meteoname))
+886     continue
+        nrec = n-1 !will take +1 later
+        Nhh=NTime_Read
+        nhour_first=0 !hour of the first record
+        if(n==1)nhour_first=mod(nint(TimesInDays(1)*24),24)
+        write(*,*)'nhour_first =',nhour_first
+        if(NTime_Read>1)METSTEP = nint((TimesInDays(2)-TimesInDays(1))*24.)
 
-    status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
-    if(status/=nf90_noerr)then
-       status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
-       if(status/=nf90_noerr)then
-          if(MasterProc)write(*,*)'time variable not found'
-          nhour_first=0 !hour of the first record
-          Nhh=8
-          if(MasterProc_local)then
-             write(*,*)'Did not check times, and assume nhour_first =',nhour_first
-             write(*,*)'Assume  Nhh =',Nhh
-          end if
-          goto 777
-       else
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-          nhour_first=0 !hour of the first record        
-          if(MasterProc_local)then
-          write(*,*)' assume nhour_first =',nhour_first
-          write(*,*)' Nhh =',Nhh
-       end if
-       status=nf90_inq_varid(ncid=ncFileID,name="Times",varID=timeVarID)
-       if(status==nf90_noerr)then
-          if(MasterProc_local)then
-             NTime_Read=-1
-             call ReadTimeCDF(meteoname,TimesInDays,NTime_Read)
-             call date2nctime(startdate,ndays_indate)
-             do n=1,NTime_Read
-                if(ndays_indate-TimesInDays(n)<halfsecond) goto 876               
-             enddo
-             n=1
-             write(*,*)'WARNING: did not find correct meteo date, starting at first record '
-876          continue
-             nrec = n-1 !will take +1 later
-!             call check(nf90_get_var(ncFileID, timeVarID, Times_string,start=(/1,nrec+1/),count=(/19,1/)))
-             call check(nf90_get_var(ncFileID, timeVarID, Times_string,start=(/1,nrec+1/)))
-             43 format(A,I5,A,A)
-             write(*,43)'starting at record ',nrec+1,' date: ',trim(Times_string)
-          endif
-       else
-          if(MasterProc_local)then
-             write(*,*)' Did not check start date'
-          endif
-       endif
-       status=nf90_inq_varid(ncid=ncFileID,name="XTIME",varID=timeVarID)
-       if(status==nf90_noerr)then
-          call check(nf90_get_var(ncFileID,timeVarID,Xminutes,count=(/2/)))
-          call CheckStop(60*(nint(Xminutes(2)-Xminutes(1))/60)&
-               /=nint(Xminutes(2)-Xminutes(1)),&
-               "Met_mod: METSTEP in hours must be an integer")
-          METSTEP=nint(Xminutes(2)-Xminutes(1))/60
-          if(MasterProc_local)write(*,*)'METSTEP reset to', METSTEP,' hours'
-       end if
-       goto 777
-      end if
-    end if
-    call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-    if(Nhh<25)call CheckStop(24/Nhh,METSTEP,"Met_mod: METSTEP inconsistent with number of records")
-    call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
-    date_in_days=(trim(timeunit(1:19))==trim("days since 1900-1-1"))
-
-    ihh=1
-    n1=1
-    if(date_in_days)then
-      if(MasterProc_local)write(*,*)'Date in days since 1900-1-1 0:0:0'
-      call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
-      call nctime2date(ndate,ndays(1))    ! for printout: msg="meteo hour YYYY-MM-DD hh"
-    else
-      call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
-      call nctime2date(ndate,nseconds(1)) ! default
-    end if
-    nhour_first=ndate(4)
-    call CheckStop(ndate(1),nyear ,"Met_mod: wrong year" )
-    call CheckStop(ndate(2),nmonth,"Met_mod: wrong month")
-    call CheckStop(ndate(3),nday  ,"Met_mod: wrong day"  )
-
-    if(MasterProc_local)write(*,*)'first meteo dates read:'
-    do ihh=1,Nhh
-      if(date_in_days)then
-        call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
-        call nctime2date(ndate,ndays(1))
-        if(MasterProc_local)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
-      else
-        call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
-        call nctime2date(ndate,nseconds(1))
-      end if
-      if(DEBUG_MET)write(*,*)'ihh,METSTEP,nhour_first,ndate(4) ',ihh,METSTEP,nhour_first,ndate(4)
-      call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&
-                     date2string("Met_mod: wrong hour YYYY-MM-DD hh",ndate))
-    end do
-777 continue
-    if(WRF_MET_CORRECTIONS)then
+        call nctime2date(ndate,TimesInDays(n)) 
+        if(abs(ndays_indate-TimesInDays(n))<halfsecond)then
+           write(*,*)'first meteo date read ',date2string('YYYY-MM-DD hh:mm:ss',ndate)
+        else
+           if(abs(ndays_indate+METSTEP/24.0-TimesInDays(n))>halfsecond)then
+              write(*,*)'WARNING: correct hours not found ',ndays_indate+METSTEP/24.0,TimesInDays(n)
+              call CheckStop('could not find correct meteo dates in '//trim(meteoname))
+           endif
+           write(*,*)'WARNING: correct hour not found, using twice ',date2string('YYYY-MM-DD hh:mm:ss',ndate)
+        endif
+     else
+        if(MasterProc)write(*,*)'time variable not found'
+        nhour_first=0 !hour of the first record
+        Nhh=8
+        nrec=0
+        if(MasterProc_local)then
+           write(*,*)'Did not check times, and assume nhour_first =',nhour_first
+           write(*,*)'Assume  Nhh =',Nhh
+           write(*,*)'Assume  nrec =',nrec
+        end if
+     endif
+     call CheckStop(mod(24,METSTEP),"Met_mod: METSTEP must be a fraction of 24")
+  
+     if(WRF_MET_CORRECTIONS)then
       !check if the "bucket" method is used
       status = nf90_get_att(ncFileID,nf90_global,"BUCKET_MM",wrf_bucket)
       if(status == nf90_noerr)then
@@ -3111,7 +3062,7 @@ subroutine Check_Meteo_Date_Short
     met(ix_irainnc)%read_meteo = found_wrf_bucket
     met(ix_irainnc)%needed     = found_wrf_bucket
   end if
-end subroutine Check_Meteo_Date_Short
+end subroutine Check_Meteo_Date_Type
 
 subroutine read_surf_elevation(ix)
 
