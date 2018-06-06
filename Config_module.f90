@@ -245,6 +245,8 @@ character(len=TXTLEN_FILE), public, save :: &
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
+integer, public, save :: out_startdate(4)=(/0,0,0,0/) ! start of the output of data
+integer, public, save :: spinup_enddate(4)=(/0,0,0,0/) ! end of spinup. Does not average concentration etc before that date
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be

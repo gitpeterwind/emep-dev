@@ -33,6 +33,14 @@ the meteo file.
 All meteo files are assumed to have the same number of records (this could
 probably be upgraded if needed)
 
+Spinup period:
+in OutputSize_config you can set spinup_enddate. If this is after startdate
+The averaging and outputting of data is not started before spinup_enddate is
+reached. Not thoroughly tested.
+Note: it should be allowed to start a run in Decembre for spinup, but that
+will not work for now, because Emission time factors, leapyear and perhaps
+other things are set only once at the start of the run, and not updated when a
+new year is reached.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018,  Peter

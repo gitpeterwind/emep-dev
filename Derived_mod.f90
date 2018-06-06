@@ -45,7 +45,7 @@ use Config_module,     only: &
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR &
   ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
-  HourlyEmisOut, SecEmisOutWanted
+  HourlyEmisOut, SecEmisOutWanted, spinup_enddate
 
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d, VGtest_out_ix
@@ -81,7 +81,7 @@ use ZchemData_mod,    only: Fpart ! for FSOA work
 use SmallUtils_mod,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_mod,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
-use TimeDate_ExtraUtil_mod,only: to_stamp
+use TimeDate_ExtraUtil_mod,only: to_stamp, date_is_reached
 use uEMEP_mod,             only: av_uEMEP
 use Units_mod,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
@@ -919,6 +919,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: wlen,ispc,kmax,iem
   integer :: isec_poll,isec,iisec,ii,ipoll
   real :: default_frac,tot_frac,loc_frac_corr
+
+  if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0

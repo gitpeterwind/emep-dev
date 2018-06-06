@@ -6,7 +6,7 @@ use Config_module,     only: num_lev3d, MasterProc, TXTLEN_FILE, runlabel1,&
                              DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
                              IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX,&
-                             HOURLYFILE_ending, startdate, enddate, USE_uEMEP
+                             HOURLYFILE_ending, startdate, enddate, out_startdate, USE_uEMEP
 use Derived_mod,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
                             ,wanted_iou, ResetDerived
@@ -17,10 +17,10 @@ use My_Outputs_mod,     only: NBDATES, wanted_dates_inst,            &
 use Io_mod,             only: IO_WRTCHEM, IO_TMP, datewrite
 use NetCDF_mod,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
 use OwnDataTypes_mod,   only: Deriv, print_deriv_type
-use Par_mod,            only: LIMAX,LJMAX
+use Par_mod,            only: LIMAX, LJMAX, me
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
                              ,daynumber,add2current_date
-use TimeDate_ExtraUtil_mod,only: date2string
+use TimeDate_ExtraUtil_mod,only: date2string, date_is_reached
 use uEMEP_mod,          only: out_uEMEP
 
 implicit none
@@ -61,6 +61,11 @@ subroutine Wrtchem(ONLY_HOUR)
   TYPE(timestamp)   :: ts1,ts2
 
 !---------------------------------------------------------------------
+
+  if(.not. date_is_reached(out_startdate))then
+     if(me==0)write(*,*)'not yet outputting'
+     return ! we do not output yet
+  endif
   nyear  = current_date%year
   nmonth = current_date%month
   nday   = current_date%day
@@ -68,12 +73,13 @@ subroutine Wrtchem(ONLY_HOUR)
 
   dd_out = nday
   mm_out = nmonth
-  Jan_1st    = all((/nyear,nmonth,nday/)==startdate(1:3))
+  Jan_1st = all((/nyear,nmonth,nday/)==startdate(1:3))
 
 !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
   ts1=make_timestamp(current_date)
   ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
   End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
+  End_of_Run =  date_is_reached(enddate)
 
   if((current_date%seconds /= 0 ).and. .not. End_of_Run)return
   if(MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",   &
