@@ -1671,26 +1671,25 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
 
       if(subclass=='LocFrac_corrected')then
-         !TO BE DEVELOPED
+        !TO BE DEVELOPED
          do ii= 1,ngrp
             do ipoll=1,uEMEP%Npoll        
                do i=1,uEMEP%poll(ipoll)%Nix
-                  if(chemgroups(igrp)%specs(ii)==uEMEP%poll(ipoll)%ix(i))goto 54
+                  if(chemgroups(igrp)%specs(ii)==uEMEP%poll(ipoll)%ix(i)+NSPEC_SHL)goto 54
                enddo
             enddo
          enddo
-         if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
+         if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' group ',chemgroups(igrp)%name
          54 continue
          if(me==0.and. first_call)then
             write(*,*)'local fractions found for ',trim(class),&
-              'group index ',igrp,' name ',trim(chemgroups(igrp)%name),&
+              ' group index ',igrp,' name ',trim(chemgroups(igrp)%name),&
               ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
             do iisec=1,uEMEP%poll(ipoll)%Nsectors
-            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
-            isec=uEMEP%poll(ipoll)%sector(iisec)
-             write(*,*)'local correction for sector',isec,' pollutant ',trim(species_adv(index)%name)
-         enddo
-
+               isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+               isec=uEMEP%poll(ipoll)%sector(iisec)
+               write(*,*)'local correction for sector',isec,', pollutant ',trim(uEMEP%poll(ipoll)%emis)
+            enddo
          endif
          do j=1,ljmax
          do i=1,limax
