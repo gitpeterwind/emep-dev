@@ -246,7 +246,7 @@ integer, dimension(CDDEP_PMfS:CDDEP_LASTPM), public, parameter :: &
 ! 1=fine,2=coarse,3=coarse sea salt, 4=dust, 5/6/7/8 = birch/olive/ragweed/grass pollen
   AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 6, 7, 8, 1 /)
 
-integer, public, parameter :: NDRYDEP_AER = 9    ! aerosols with CDDEP_PMfNH4 
+integer, public, parameter :: NDRYDEP_AER = 10   ! aerosols with CDDEP_PMfNH4 
 integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 integer, public, parameter :: &
