@@ -65,7 +65,7 @@ ZCM_Emergency/emergency_location.csv
 /Pollen*_ml.f90
 .depend
 Unimod
-Unimod_3DVar
+Unimod_3DVar*
 #ZD_3DVar/fftpack5
 #ZD_3DVar/m1qn3-3.3-distrib
 ZD_3DVar16/tools/PortGO.md
