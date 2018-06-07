@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7tn May 2018, Alvaro
+
+Fix USES%AOD=T.
+
+ZCM_EmChem16x/CM_ChemGroups_mod:
+  Some of the elements in EXTINC_GROUP_MAPBACK were misnamed
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th June 2018,  Peter
 
 Can now start and end run at any hour (must be one that is available in the metdata)
