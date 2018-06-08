@@ -32,8 +32,13 @@ public :: Config_ModelConstants
 ! The longer term solution puts the outputs into namelists
 ! but for now we use the MY_OUTPUTS flag. EXP_NAME can
 ! now be anything descriptive.
-CHARACTER(LEN=30), public, save :: EXP_NAME="EMEPSTD"
-CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
+
+integer, public, parameter :: &
+  TXTLEN_NAME =  50, &
+  TXTLEN_FILE = 200    ! large enough for paths from namelists
+
+CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
+CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
 
 ! EMEP daily measurements end at 6am, hence we typically adjust
 ! for that. For global though, zero would be more normal
@@ -119,9 +124,9 @@ type, public :: emep_useconfig
     ,ESX              = .false. &! Uses ESX
     ,EMIS             = .false. &! Uses ESX
     ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
-    ,DEGREEDAY_FACTORS = .false.    &!
-    ,EMISSTACKS       = F       &!
-    ,PFT_MAPS         = .false.  &! Future option
+    ,DEGREEDAY_FACTORS = .true.    &! will not be used if not found or global grid
+    ,EMISSTACKS       = .false.     &!
+    ,PFT_MAPS         = .false.  &! 
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
 
  ! Mar 2017. Allow new MEGAN-like VOC
@@ -140,7 +145,6 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'
-
 ! In development
    logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
    character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
@@ -149,6 +153,9 @@ type, public :: emep_useconfig
 end type emep_useconfig
 type(emep_useconfig), public, save :: USES
 
+logical,  public, save :: &
+      FORCE_PFT_MAPS_FALSE = .false. &!forces PFT_MAPS  = F, even if global grid
+     ,FORCE_DEGREEDAY_FACTORS_TRUE
 type, public :: emep_debug
   logical :: &
      AOT             = .false. &
@@ -233,9 +240,9 @@ logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions ho
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 
-integer, public, parameter :: &
-  TXTLEN_NAME =  50, &
-  TXTLEN_FILE = 200    ! large enough for paths from namelists
+  !Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
+  character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
+  character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domain cover other regions
 
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
@@ -346,13 +353,6 @@ logical, public, save :: &
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
-character(len=*), parameter, public :: &
-! DomainName = "EMEP-50kmEurope"
-  DomainName = "EMEP-50kmEECCA"
-! DomainName = "EMEP-1degGLOBAL"
-! DomainName = "EMEPCWF-0.25degEurope"
-! DomainName = "EMEPCWF-0.20degEurope"
-! DomainName = "HIRHAM"
 
 !IN-TESTING (reset in NML if wanted)
 !) Emissions. Standard =ascii emislist. CdfFractions possible for INERIS
@@ -714,6 +714,8 @@ subroutine Config_ModelConstants(iolog)
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
    ,dt_advec & ! can be set to override dt_advec
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
+   ,EUROPEAN_settings & ! The domain covers Europe -> 
+   ,GLOBAL_settings & ! The domain cover other regions too -> Convection
    ,fileName_O3_Top&
    ,femisFile&
    ,Vertical_levelsFile&

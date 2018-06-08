@@ -49,7 +49,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
      ,KMAX_BND, KMAX_MID, MasterProc, DEBUG_MET, nmax  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
-     ,DomainName & !HIRHAM,EMEP,EECCA etc.
+     ,GRID & !HIRHAM,EMEP,EECCA etc.
      ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
      ,TEGEN_DATA, USES &
      ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
@@ -954,7 +954,7 @@ subroutine MeteoRead()
       foundSMI3=.false.
       do isw = 1, size(possible_soilwater_deep)
         namefield=possible_soilwater_deep(isw)
-        if(DomainName=="HIRHAM") then
+        if(GRID=="HIRHAM") then
           if(MasterProc.and.first_call)write(*,*) " Rename soil water in HIRHAM"
           namefield='soil_water_second_layer'
         end if

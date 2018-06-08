@@ -23,7 +23,8 @@ use Config_module,      only: &
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
-     startdate,NPROCX,NPROCY,Vertical_levelsFile
+     startdate,NPROCX,NPROCY,Vertical_levelsFile,&
+     TXTLEN_NAME, EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &
                  !         MPI_MIN, MPI_MAX, &
                  !         MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, &
@@ -79,6 +80,7 @@ public :: RestrictDomain ! mask from full domain to rundomain
 
 public :: GridRead
 public :: extendarea_N ! returns array which includes neighbours from other subdomains
+public :: set_EuropeanAndGlobal_Config
 
 private :: Alloc_GridFields
 private :: GetFullDomainSize
@@ -306,14 +308,6 @@ subroutine GridRead(meteo,cyclicgrid)
 
     if(ios==0)close(IO_TMP)
 
-    if(MasterProc .and. DEBUG%GRIDVALUES)then
-      write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
-      write(*,*)'grid resolution:',GRIDWIDTH_M
-      write(*,*)'xcoordinate of North Pole, xp:',xp
-      write(*,*)'ycoordinate of North Pole, yp:',yp
-      write(*,*)'longitude rotation of grid, fi:',fi
-      write(*,*)'true distances latitude, ref_latitude:',ref_latitude
-    end if
   end if
 end subroutine GridRead
 
@@ -2796,5 +2790,112 @@ subroutine readneighbors_N(data,data_south,data_north,data_west,data_east,thick,
   end if
 
 end subroutine readneighbors_N
+
+subroutine set_EuropeanAndGlobal_Config()
+  !test if the grid covers Europe and the rest of the world
+  !note that the two are not exclusive!
+  !if the file covers more than just Europe, it is defined as GLOBAL
+  !
+  !If the file is GLOBAL:
+  !1) USES%PFT_MAPS = .true. (can be overridden by FORCE_PFT_MAPS_FALSE)
+  !2) USES%DEGREEDAY_FACTORS = .false.
+  !3) USES%EURO_SOILNOX = .false.
+  !
+  !If the file is EUROPEAN:
+  !nothing happens for now
+
+
+  !could not be in Config_module because "me" is not accessible there
+  
+  implicit none
+  real:: x1,x2,x3,x4,y1,y2,y3,y4,lon,lat,ir,jr
+
+  if(EUROPEAN_settings == 'NOTSET')then
+     !No value set in config input, use grid to see if it covers Europe
+     !Test approximatively if any European country is included in rundomain
+     !in lon lat coordinates test if the middle of the rundomain is within
+     ! 40>lon>-32    70>lat>35 
+
+     if(gbacmax>35 .and. glacmin<40 .and. glacmax>-32)then
+        
+        if(me==0)write(*,*)'assuming EUROPEAN_settings'
+
+     else
+        
+        ! define middle point of middle subdomain
+        if(me==NPROC/2)then 
+           lon = glon(limax/2,ljmax/2)
+           lat = glat(limax/2,ljmax/2)
+        endif
+        CALL MPI_BCAST(lon,8,MPI_BYTE,NPROC/2,MPI_COMM_CALC,IERROR)
+        CALL MPI_BCAST(lat,8,MPI_BYTE,NPROC/2,MPI_COMM_CALC,IERROR)
+        
+        x1=-32;x2=40;x3=x2;x4=x1;y1=35;y2=y1;y3=70;y4=y3
+18      format(A,2F6.1,A)
+        if(inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat))then
+           EUROPEAN_settings = 'YES' 
+           if(me==0)write(*,18)'assuming EUROPEAN_settings: lon,lat ',lon,lat,' within Europe'
+        else
+           EUROPEAN_settings = 'NO' !default
+           if(me==0)write(*,18)'Not assuming EUROPEAN_settings: lon,lat ',lon,lat,' outside Europe'
+        endif
+
+     endif 
+ endif
+
+  if(GLOBAL_settings == 'NOTSET')then
+     !No value set in config input, use grid to see if it covers regions outside Extended Europe
+     !We evaluate if the region extend outside the EMEP01 grid East, West or South
+     !Note that it should also allow for PS projection which can cover the North Pole, i.e. any longitude
+     GLOBAL_settings = 'NO' !default
+     !find if lat < 28 are included within the domain
+     if(gbacmin<28.0)then
+        GLOBAL_settings = 'YES' !default
+        if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain extends below 28 degrees latitudes'
+     else
+        !find if the point with lon = -32 and lat = 45 is within the domain
+        call lb2ij(-32.0,45.0,ir,jr)
+        if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
+           GLOBAL_settings = 'YES' !default
+           if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=-32 at lat=45'
+        else 
+           !find if the point with lon = 92 and lat = 45 is within the domain
+           call lb2ij(92.0,45.0,ir,jr)
+           if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
+              GLOBAL_settings = 'YES' !default
+              if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
+           else
+              if(me==0)write(*,*)'Not assuming GLOBAL_settings'
+           endif           
+        endif
+     endif
+  endif
+
+
+  if(GLOBAL_settings == 'YES') then
+     if(FORCE_PFT_MAPS_FALSE)then
+        if(me==0)write(*,*)'WARNING: NOT USING PFT_MAPS in a GLOBAL grid'
+        USES%PFT_MAPS = .false. 
+     else
+        if(USES%PFT_MAPS)then        
+           !nothing to change
+        else
+           if(me==0)write(*,*)'Using PFT_MAPS because GLOBAL grid'
+           USES%PFT_MAPS = .true. 
+        endif
+     endif
+     if(USES%DEGREEDAY_FACTORS)then        
+        if(me==0)write(*,*)'WARNING: not using DEGREEDAY_FACTORS because GLOBAL grid'
+        USES%DEGREEDAY_FACTORS = .false.
+     endif
+
+     if(USES%EURO_SOILNOX)then        
+        USES%EURO_SOILNOX = .false. 
+        if(me==0)write(*,*)'Not using EURO_SOILNOX because GLOBAL grid'
+     endif
+     
+  endif
+
+end subroutine set_EuropeanAndGlobal_Config
 
 end module GridValues_mod
