@@ -9,7 +9,7 @@ use Config_module,only: DEBUG, NLANDUSEMAX, SEA_LIMIT, &
                             FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
                             VEG_2dGS, VEG_2dGS_Params, & 
                             NPROC, IIFULLDOM, JJFULLDOM, &
-                            DomainName, MasterProc, LandCoverInputs 
+                            MasterProc, LandCoverInputs 
 use DO3SE_mod,       only: fPhenology, Init_DO3SE
 use GridAllocate_mod,only: GridAllocate
 use GridValues_mod,  only:  glat , glon   & ! latitude,

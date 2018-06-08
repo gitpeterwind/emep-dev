@@ -548,7 +548,7 @@ IC_REM=ix
 Country( IC_REM) = cc(  "REM" ,'-', 29 ,F, 29,  29,  1  , "Remaining land areas          " )
 !NB:
 !Fix needed for following sea-areas (BAS,'-',NOS,ATL,MED,BLS)in GEA runs done in Emissions_mod
-!if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix for HIRHAM/GEA
+!if ( GRID == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix for HIRHAM/GEA
 !if ( SEAFIX_GEA_NEEDED ) then ! Special fix for HIRHAM/GEA
 ix=ix+1 
 IC_BAS=ix

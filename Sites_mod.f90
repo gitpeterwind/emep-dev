@@ -32,7 +32,7 @@ use MetFields_mod,      only : t2_nwp, th, pzpbl  &  ! output with concentration
 use MetFields_mod,      only : u_xmj, v_xmi, ps
 use Config_module, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
                               ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
-                              ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
+                              , RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
                               ,SitesFile,SondesFile
 use MPI_Groups_mod   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                              MPI_MIN, MPI_MAX, MPI_SUM, &

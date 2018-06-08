@@ -14,7 +14,7 @@
 use CheckStop_mod,           only: CheckStop
 use GridValues_mod,          only: i_local, j_local
 use Io_Nums_mod,             only: IO_TMP, IO_LOG
-use Config_module,      only: DEBUG, DEBUG, DomainName, &
+use Config_module,      only: DEBUG, DEBUG, GRID, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
 use MPI_Groups_mod        , only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
 use KeyValueTypes,          only: KeyVal, KeyValue, LENKEYVAL
@@ -131,8 +131,8 @@ subroutine check_file(fname,fexist,needed,errmsg)
 ! printed and the run is stopped.
 !-------------------------------------------------------------------------
   character (len=*), intent(in)   :: fname    ! file name
-  logical,           intent(in)   :: needed   ! see below
   logical,           intent(out)  :: fexist   ! file exists
+  logical,           intent(in)   :: needed   ! see below
   character (len=*), intent(inout):: errmsg
 
   errmsg = "ok"
@@ -342,8 +342,8 @@ subroutine Read2D(fname,data2d,idata2d)
   call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
   call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
   call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
-  call CheckStop( KeyValue(KeyValues,"Domain"),DomainName ,&
-          "Domain Name - matched to ModelConstants")
+  call CheckStop( KeyValue(KeyValues,"GRID"),GRID ,&
+          "GRID - matched to ModelConstants")
 
   ! The first two columns are assumed for now to be ix,iy, hence:
 

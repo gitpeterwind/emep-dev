@@ -941,7 +941,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
   real :: scale_old, scale_new
   real, parameter :: macehead_lat = 53.3 !latitude of Macehead station
   real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
-  character(len = 100) ::fileName,varname
+  character(len = 100) ::varname
   real :: count_loc,O3fix_loc, mpi_rcv(2),mpi_snd(2)
   real :: conv_fac
 
@@ -1288,7 +1288,6 @@ real :: trend_o3=1.0, trend_co, trend_voc
          Dust_3D=0.0
          Dust_3D_emep=0.0
  
-         filename='Dust.nc'
          if(ibc==IBC_DUST_C)then
             varname='D3_ug_DUST_WB_C'  ! A2018QUERY : ARGH!  
           if(me==0)write(*,*)'coarse DUST BIC read from climatological file'

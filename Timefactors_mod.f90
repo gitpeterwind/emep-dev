@@ -66,7 +66,8 @@
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
-                            HourlyFacFile,HourlyFacSpecialsFile,TXTLEN_FILE
+                            HourlyFacFile,HourlyFacSpecialsFile,TXTLEN_FILE,&
+                            USE_WRF_MET_NAMES
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
@@ -547,14 +548,23 @@ contains
 
    !/ See if we have a file to work with....
     if ( daynumber == 0 ) then
-      call check_file(trim(DegreeDayFactorsFile), Gridded_SNAP2_Factors,&
-        needed=.true., errmsg=errmsg )
-      if ( Gridded_SNAP2_Factors ) then
-         call PrintLog("Found "//trim(DegreeDayFactorsFile), MasterProc)
-      else
-         call PrintLog("Not-found: "//trim(DegreeDayFactorsFile)//' '//trim(errmsg), MasterProc)
-      end if
-      return
+       if(USE_WRF_MET_NAMES)then
+          !we do not require that HDD file has been calculated
+          call check_file(trim(DegreeDayFactorsFile), Gridded_SNAP2_Factors,&
+               needed=.false., errmsg=errmsg ) ! do not use if file not found
+       else
+          !the file should be calculated if it does not yet exist
+          call check_file(trim(DegreeDayFactorsFile), Gridded_SNAP2_Factors,&
+               needed=.true., errmsg=errmsg )
+       endif
+       if ( Gridded_SNAP2_Factors ) then
+          call PrintLog("Found "//trim(DegreeDayFactorsFile), MasterProc)
+       else
+          call PrintLog("Not-found: "//trim(DegreeDayFactorsFile)//' '//trim(errmsg), MasterProc)
+          USES%DEGREEDAY_FACTORS = .false.
+          if(me==0)write(*,*)'WARNING: cannot use DEGREEDAY_FACTORS because file not found' 
+       end if
+       return
     end if
 
     !===============================================

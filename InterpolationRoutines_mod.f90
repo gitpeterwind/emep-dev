@@ -161,7 +161,7 @@ module InterpolationRoutines_mod
 
   function  inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,x,y) result(inside)
     !test wether the point (x,y) is inside the quadrilateral 1234 
-    !Note: 1234 = 1432, but not= 1324
+    !Note: 1234 = 1432, but not= 1324 .1234 is taken anticlockwise.
 
     logical ::inside
     real, intent(in) :: x1,x2,x3,x4,y1,y2,y3,y4,x,y
