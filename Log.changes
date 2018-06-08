@@ -21,6 +21,70 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th May 2018, Peter
+
+Automatic global settings in subroutine set_EuropeanAndGlobal_Config 
+(GridValues_mod.f90)
+The code will find out by itself if the rundomain is global (meaning not only 
+Europe is covered) or not
+
+  !If the file is GLOBAL:
+  !1) USES%PFT_MAPS = .true. (can be overridden by FORCE_PFT_MAPS_FALSE)
+  !2) USES%DEGREEDAY_FACTORS = .false.
+  !3) USES%EURO_SOILNOX = .false.
+  !
+  !If the file is EUROPEAN:
+  !nothing happens for now
+
+Degreeday file is not required to exist for wrf users, for others, by default 
+it is required for non-global runs (code will stop if not found).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7tn May 2018, Alvaro
+
+Fix USES%AOD=T.
+
+ZCM_EmChem16x/CM_ChemGroups_mod:
+  Some of the elements in EXTINC_GROUP_MAPBACK were misnamed
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th June 2018,  Peter
+
+Can now start and end run at any hour (must be one that is available in the metdata)
+
+The method to setup the meteo reading is much modified, so it might be that
+some new meteo format will not fit (will stop the code).
+METSTEP is now set in Check_Meteo_Date_Type (was set in GetFullDomainSize)
+The method relies on the ReadTimeCDF routine to be able to interpret times in 
+the meteo file.
+All meteo files are assumed to have the same number of records (this could
+probably be upgraded if needed)
+
+Spinup period:
+in OutputSize_config you can set spinup_enddate. If this is after startdate
+The averaging and outputting of data is not started before spinup_enddate is
+reached. Not thoroughly tested.
+Note: it should be allowed to start a run in Decembre for spinup, but that
+will not work for now, because Emission time factors, leapyear and perhaps
+other things are set only once at the start of the run, and not updated when a
+new year is reached.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th June 2018,  Peter
+
+Monthly save for nest allowed. 
+set MODE_SAVE = 'MONTH'. Will not output for 1st of January.
+
+Bug in ChecStop that made the error message not come out.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th June 2018, Svetlana, Peter
+
+In Aqueous_n_WetDep_mod there was a return which was never reached. 
+Some unnnecessary calculations, but no effect on results
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 June 2018, Anna
 BoundaryConditions_ml.f90 - 2016 Mace Head corrections update
 

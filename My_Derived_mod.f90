@@ -44,6 +44,7 @@ use Config_module,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DER
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
+                            startdate, out_startdate, spinup_enddate,&
                             num_lev3d,lev3d &! 3D levels on 3D output
                             , SecEmisOutWanted
 use MosaicOutputs_mod, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
@@ -195,13 +196,18 @@ subroutine Init_My_Deriv()
   NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED,SDEP_WANTED,&
              NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt
   NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,&
-              hour_DOMAIN, num_lev3d,lev3d,lev3d_from_surface
+              hour_DOMAIN, out_startdate, spinup_enddate,&
+              num_lev3d,lev3d,lev3d_from_surface
 
 ! default output sizes
   fullrun_DOMAIN = RUNDOMAIN
   month_DOMAIN =   RUNDOMAIN
   day_DOMAIN =     RUNDOMAIN
   hour_DOMAIN =    RUNDOMAIN
+
+! default outputting dates
+  spinup_enddate = startdate! end of spinup. Does not average concentration etc before that date
+  out_startdate = (/-1,-1,-1,-1/) ! notset values
 
 ! default levels on 3d output: all model levels (top to bottom)
   num_lev3d=KMAX_MID
@@ -229,7 +235,11 @@ subroutine Init_My_Deriv()
       read(IO_NML,fmt='(A)') line
       call CheckStop(errmsg , errmsg // ": " // trim(line))
   end if
- 
+  if(out_startdate(1)<0)then
+     ! notset values are not set in config
+     out_startdate = spinup_enddate !start to output when spinup period ends.
+  endif
+
   !shift output domain according to rundomain
   call RestrictDomain(fullrun_DOMAIN)
   call RestrictDomain(month_DOMAIN)

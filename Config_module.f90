@@ -252,6 +252,8 @@ character(len=TXTLEN_FILE), public, save :: &
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
+integer, public, save :: out_startdate(4)=(/0,0,0,0/) ! start of the output of data
+integer, public, save :: spinup_enddate(4)=(/0,0,0,0/) ! end of spinup. Does not average concentration etc before that date
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -470,7 +472,7 @@ integer, public, parameter ::  &
 , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
-integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WRF may set to other values.
+integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but can be reset by metdata
 real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal 
 
 !Namelist controlled: aerosols

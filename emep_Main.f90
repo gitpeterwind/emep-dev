@@ -64,7 +64,8 @@ program emep_Main
   use Tabulations_mod,   only: tabulate
   use TimeDate_mod,      only: date, current_date, day_of_year, daynumber,&
        tdif_secs,date,timestamp,make_timestamp,Init_nmdays
-  use TimeDate_ExtraUtil_mod,only : date2string, assign_startandenddate
+  use TimeDate_ExtraUtil_mod,only : date2string, assign_startandenddate,&
+                                    date_is_reached
   use Trajectory_mod,    only: trajectory_init,trajectory_in
   use uEMEP_mod,         only: init_uEMEP, NTIMING_uEMEP
   !--------------------------------------------------------------------
@@ -187,7 +188,7 @@ program emep_Main
 
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
-  call Emissions(yyyy)
+  call Emissions(yyyy)! should be set for the enddate year, not start?
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
 
@@ -344,10 +345,7 @@ program emep_Main
 
     call Add_2timing(36,tim_after,tim_before,"metfieldint")
 
-    !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
-    ts1=make_timestamp(current_date)
-    ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
-    End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
+    End_of_Run = date_is_reached(enddate)
 
     if(DEBUG%STOP_HH>=0 .and. DEBUG%STOP_HH==current_date%hour) &
       End_of_Run=.true.

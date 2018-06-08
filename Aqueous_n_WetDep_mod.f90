@@ -400,6 +400,9 @@ subroutine Setup_Clouds(i,j,debug_flag)
   incloud(:)  = .false.
   cloudwater(:) = 0.
   pres(:)=0.0
+!  aqrck(:,:)=0.0 !set in setup_aqurates
+!  aqrck(ICLOHSO2,:) = 1.0 !set in setup_aqurates
+
 
 ! Loop starting at surface finding the cloud base:
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
@@ -407,66 +410,72 @@ subroutine Setup_Clouds(i,j,debug_flag)
     if(lwc(i,j,k)>CW_LIMIT) exit
     ksubcloud = k
   end do
-  if(ksubcloud == 0) return ! No cloud water found below level 6
-                            ! Cloud above level 6 are likely thin
-                            ! cirrus clouds, and if included may
-                            ! need special treatment...
-                            ! ==> assume no cloud
-
-! Define incloud part of the column requiring that both cloud water
-! and cloud fractions are above limit values
-  kcloudtop = -1               ! k-level of cloud top
-  do k = KUPPER, ksubcloud-1
-    b(k) = cc3d(i,j,k)
-! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
-! ==> cloudwater (volume mixing ratio of water to air in cloud
-! (when devided by cloud fraction b )
-! cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
-    if(lwc(i,j,k)>CW_LIMIT) then
-      cloudwater(k) = lwc(i,j,k) / b(k) ! value of cloudwater in the
-                                        ! cloud fraction of the grid
-
-!hf : alternative if cloudwater exists (and can be used) from met model
-!        cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
-!        cloudwater min 0.03 g/m3 (0.03e-6 mix ratio)
-!        cloudwater(k) = max(0.3e-7, (1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) ))
-!        cloudwater(k) =         cloudwater(k)/ b(k)
-      incloud(k) = .true.
-!hf
-      pres(k)=ps(i,j,1)
-      if(kcloudtop<0) kcloudtop = k
-    end if
-  end do
-
-  if(kcloudtop == -1) then
-    if(prclouds_present.and.DEBUG%AQUEOUS) &
-      write(*,"(a20,2i5,3es12.4)") "ERROR prclouds sum_cw", &
-        i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1), maxval(pr(i,j,:)), pr_acc(KMAX_MID)
-    kcloudtop = KUPPER ! for safety
-  end if
-
+  if(ksubcloud /= KUPPER)then 
+     !clouds were found under KUPPER
+     
+     ! Define incloud part of the column requiring that both cloud water
+     ! and cloud fractions are above limit values
+     kcloudtop = -1               ! k-level of cloud top
+     do k = KUPPER, ksubcloud-1
+        b(k) = cc3d(i,j,k)
+        ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
+        ! ==> cloudwater (volume mixing ratio of water to air in cloud
+        ! (when devided by cloud fraction b )
+        ! cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
+        if(lwc(i,j,k)>CW_LIMIT) then
+           cloudwater(k) = lwc(i,j,k) / b(k) ! value of cloudwater in the
+           ! cloud fraction of the grid
+           
+           !hf : alternative if cloudwater exists (and can be used) from met model
+           !        cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
+           !        cloudwater min 0.03 g/m3 (0.03e-6 mix ratio)
+           !        cloudwater(k) = max(0.3e-7, (1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) ))
+           !        cloudwater(k) =         cloudwater(k)/ b(k)
+           incloud(k) = .true.
+           !hf
+           pres(k)=ps(i,j,1)
+           if(kcloudtop<0) kcloudtop = k
+        end if
+     end do
+     if(kcloudtop == -1) then
+        if(prclouds_present.and.DEBUG%AQUEOUS) &
+             write(*,"(a20,2i5,3es12.4)") "ERROR prclouds sum_cw", &
+             i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1), maxval(pr(i,j,:)), pr_acc(KMAX_MID)
+        kcloudtop = KUPPER ! for safety
+     end if
+  else
+     ! No cloud water found below KUPPER
+     ! Cloud above KUPPER are likely thin
+     ! cirrus clouds, and if included may
+     ! need special treatment...
+     ! ==> assume no cloud
+  endif
+  
 ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
 ! fractional solubility
 
 !hf add pres
+!need to be called also if no clouds for non-cloud rates
   call setup_aqurates(b ,cloudwater,incloud,pres)
 
-  if(DEBUG%pH .and. debug_flag .and. incloud(kcloudtop)) then
-!   write(*,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
-!            kcloudtop, ksubcloud, pr_acc(KMAX_MID)
+  if(kcloudtop>KUPPER .and.kcloudtop<KMAX_MID)then
+     if(DEBUG%pH .and. debug_flag .and. incloud(kcloudtop)) then
+        !   write(*,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
+        !            kcloudtop, ksubcloud, pr_acc(KMAX_MID)
 
-    write(*,*) "DEBUG%pH ",prclouds_present, &
-              kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
-    write(*,*) "CONC (mol/l)",&
-      so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),&
-      nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
-    write(*,*)"H+(ph_factor) ",&
-      hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)&
-     +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
-    write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
-    write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
+        write(*,*) "DEBUG%pH ",prclouds_present, &
+             kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
+        write(*,*) "CONC (mol/l)",&
+             so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),&
+             nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
+        write(*,*)"H+(ph_factor) ",&
+             hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)&
+             +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
+        write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
+        write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
+     end if
   end if
-
+     
 end subroutine Setup_Clouds
 !-----------------------------------------------------------------------
 subroutine init_aqueous()
@@ -550,7 +559,7 @@ end subroutine tabulate_aqueous
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
-! sets the rate-coefficients for thr aqueous-phase reactions
+! sets the rate-coefficients for the aqueous-phase reactions
 !-----------------------------------------------------------------------
   real, dimension(KUPPER:KMAX_MID) :: &
     b,          &  ! cloud-aread (fraction)

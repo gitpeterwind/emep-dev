@@ -45,7 +45,7 @@ subroutine StopAll(errmsg)
 
   if(errmsg/="ok") then
 44   format(A)
-     write(44,*) "STOP-ALL ERROR: "//trim(errmsg)
+     write(*,44) "STOP-ALL ERROR: "//trim(errmsg)
      call MPI_ABORT(MPI_COMM_CALC,9,IERROR)
   end if
 end subroutine StopAll

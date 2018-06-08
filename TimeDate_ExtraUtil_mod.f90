@@ -8,7 +8,7 @@ use CheckStop_mod,     only: CheckStop
 use TimeDate_mod,      only: max_day,tdif_secs,tdif_days,&
                             date_addSecs=>add2current_date,ts_addSecs=>add_secs,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
-                            timestamp,day_of_year,date
+                            timestamp,day_of_year,date,make_timestamp,current_date
 
 IMPLICIT NONE
 PRIVATE
@@ -25,7 +25,8 @@ public :: &
   to_date,          & ! extended interface for make_current_date (TimeDate_mod)
   to_idate,         & ! create int array from timestap or date
   self_test,        & ! test/example ussages for different interface/module procedures
-  assign_startandenddate !if needed, correct days and hours of startdate and enddate
+  assign_startandenddate,& !if needed, correct days and hours of startdate and enddate
+  date_is_reached!test if the first date is before or equal to the second
 interface date2string!(iname,...,mode,debug) result(fname)
 !   character(len=*),intent(in) :: iname
 !   character(len=len(iname))   :: fname
@@ -682,7 +683,31 @@ subroutine assign_startandenddate()
   ! e.g. Feb 31=>Feb 28/29 depending the year
   startdate(3)=min(startdate(3),max_day(startdate(2),startdate(1)))
   enddate  (3)=min(enddate  (3),max_day(enddate  (2),enddate  (1)))
+
+  if(startdate(1)/=enddate  (1))then
+     write(*,*)'WARNING: start and end dates in different years. Model not testet for that!'
+  endif
+
 end subroutine assign_startandenddate
+
+function date_is_reached(date_limit) result(is_reached)
+  integer, intent(in), dimension(:)      ::date_limit
+  logical is_reached
+  TYPE(timestamp)   :: ts1,ts2
+
+  ts1=make_timestamp(current_date)
+
+  if(size(date_limit)==4)then
+     ts2=make_timestamp(date(date_limit(1),date_limit(2),date_limit(3),date_limit(4),0))
+  elseif(size(date_limit)==5)then
+     ts2=make_timestamp(date(date_limit(1),date_limit(2),date_limit(3),date_limit(4),date_limit(5)))
+  else
+     call CheckStop('date format not supported ')
+  endif
+
+  is_reached =  (nint(tdif_secs(ts1,ts2))<=0)  
+
+end function date_is_reached
 
 ENDMODULE TimeDate_ExtraUtil_mod
 
