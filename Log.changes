@@ -139,6 +139,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th June 2018, Peter
+
+Bug when topography.nc not found and need_topo=F: then teh columnsources will not be taken. (bug was already corrected in dev version)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018, Peter
 
 Nesting monthly save. Useful for restarts (checkpoints).
