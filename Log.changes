@@ -21,7 +21,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-8th May 2018, Peter
+18th June 2018, Peter
+
+Nest  out_DOMAIN=RUNDOMAIN default
+Was 
+  if(.not.FORECAST)then
+    out_DOMAIN=RUNDOMAIN+[1,-1,1,-1]
+  else
+    out_DOMAIN=RUNDOMAIN
+  end if
+But we do not remember the reason for avoiding the boundaries
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th June 2018, Peter
 
 Automatic global settings in subroutine set_EuropeanAndGlobal_Config 
 (GridValues_mod.f90)
@@ -40,7 +52,7 @@ Degreeday file is not required to exist for wrf users, for others, by default
 it is required for non-global runs (code will stop if not found).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7tn May 2018, Alvaro
+7tn June 2018, Alvaro
 
 Fix USES%AOD=T.
 

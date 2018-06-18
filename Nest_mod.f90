@@ -173,11 +173,7 @@ subroutine Config_Nest()
   NHOURSAVE=3   ! Between wrtxn calls.  Should be fraction of 24
   NHOURREAD=1   ! Between readxn calls. Should be fraction of 24
 ! Default domain for write modes
-  if(.not.FORECAST)then
-    out_DOMAIN=RUNDOMAIN+[1,-1,1,-1]
-  else
-    out_DOMAIN=RUNDOMAIN
-  end if
+  out_DOMAIN=RUNDOMAIN
   rewind(IO_NML)
   read(IO_NML,NML=Nest_config,iostat=ios)
   call CheckStop(ios,"NML=Nest_config")
@@ -221,7 +217,7 @@ subroutine Config_Nest()
   template_write  =key2str(template_write  ,'GRID',GRID)
 ! Update filenames according to date following templates defined on Nest_config
   call init_icbc(cdate=current_date)
-! Ensure sub-domain is not larger than run-domain
+! Ensure out-domain is not larger than run-domain
   if(MODE_SAVE/='NONE')call RestrictDomain(out_DOMAIN)
 ! Ensure that only FORECAST_NDUMP are taking into account
   if(MODE_SAVE=='FORECAST')then
