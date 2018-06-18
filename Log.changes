@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2018, Peter, Svetlana
+
+Made the file   DataDir/CLIM/EMEP_BC.nc 
+Which is produced from 2012-2016 GLOBAL05 runs averaged monthly and to 1x1 degrees.
+Covers slighlty more than the EMEP01 grid
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2018, Peter
 
 Nest  out_DOMAIN=RUNDOMAIN default
