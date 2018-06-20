@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th June 2018, Peter
+
+Small bugs in landuse (affect performance only)
+old_month was not reset -> recalculate pftmaps each iteration
+my_first_call was not saved -> may allocate an allocatable array.
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2018, Peter, Svetlana
 
 Made the file   DataDir/CLIM/EMEP_BC.nc 

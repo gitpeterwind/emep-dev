@@ -765,6 +765,7 @@ contains
          if (MasterProc) write(*,*) dtxt//"New PFTMAPS ", month, old_month
          if ( month /= old_month ) then 
            call MapPFT_LAI( month )
+           old_month = month
          end if
     end if
     

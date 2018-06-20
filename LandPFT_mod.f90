@@ -61,7 +61,7 @@ contains
     integer, intent(in) :: month
 
     real    :: lpj(LIMAX,LJMAX)  ! Emissions read from file
-    logical :: my_first_call = .true.
+    logical,save :: my_first_call = .true.
     integer :: pft
     character(len=20) :: varname
 
