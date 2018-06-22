@@ -15,7 +15,7 @@ module Convection_mod
 use Chemfields_mod,        only: xn_adv
 use ChemDims_mod,          only: NSPEC_ADV
 use Config_module,         only: KMAX_BND,KMAX_MID,PT,Pref
-use MetFields_mod ,        only: ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
+use MetFields_mod ,        only: ps,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
 use GridValues_mod,        only: dA, dB, sigma_bnd
 use Par_mod,               only: LIMAX,LJMAX,limax,ljmax,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: GRAV

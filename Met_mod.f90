@@ -1125,21 +1125,10 @@ subroutine MeteoRead()
      end do
   end do
 
-  if(foundsdot.and.sdot_at_mid)then
-    ! interpolation of sigma dot for bnd (half layers)
-    do k = KMAX_MID,2,-1
-      sdot(i,j,k,nr) = sdot(i,j,k-1,nr)          &
-           + (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))   &
-           * (sigma_bnd(k)-sigma_mid(k-1))       &
-           / (sigma_mid(k)-sigma_mid(k-1))
-    end do
-  end if
-  ! set sdot equal to zero at the top and bottom of atmosphere.
-  sdot(:,:,KMAX_BND,nr)=0.0
-  sdot(:,:,1,nr)=0.0
+  ! set etadot equal to zero at the top and bottom of atmosphere.
   Etadot(:,:,KMAX_BND,nr)=0.0
   Etadot(:,:,1,nr)=0.0
-  if(.not.foundsdot .and. .not.met(ix_Etadot)%found)then
+  if( .not.met(ix_Etadot)%found)then
     if(write_now)write(*,*)'WARNING: Etadot derived from horizontal winds '
     ! sdot derived from divergence=0 principle
     do j = 1,ljmax
@@ -1217,34 +1206,7 @@ subroutine MeteoRead()
     if (neighbor(SOUTH) .ne. NOPROC) then
       CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
     end if
-
-    do j = 1,ljmax
-      do i = 1,limax
-        Pmid=Ps_extended(i,j)-PT
-        Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))-PT
-        Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))-PT
-        Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))-PT
-        Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))-PT
-
-        sdot(i,j,KMAX_BND,nr)=0.0
-        sdot(i,j,1,nr)=0.0
-        sumdiv=0.0
-        do k=1,KMAX_MID
-          divk(k)=((u_xmj(i,j,k,nr)*Pu2-u_xmj(i-1,j,k,nr)*Pu1)         &
-               + (v_xmi(i,j,k,nr)*Pv2-v_xmi(i,j-1,k,nr)*Pv1))          &
-               * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
-               / GRIDWIDTH_M/Pmid
-          sumdiv=sumdiv+divk(k)
-        end do
-        do k=KMAX_MID,1,-1
-          sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(sigma_bnd(k+1)-sigma_bnd(k))&
-               *sumdiv+divk(k)
-        end do
-      end do
-    end do
-
-! New method introduced 26/2-2013. Old method sigma=(P-PT)/(ps-pt);
-! New method uses Eta=A/Pref+B; the method differ, see
+! Eta=A/Pref+B; see
 ! http://www.ecmwf.int/research/ifsdocs/DYNAMICS/Chap2_Discretization3.html#959545
 
     !(note that u_xmj and v_xmi have already been divided by xm here)

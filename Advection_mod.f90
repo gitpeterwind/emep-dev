@@ -82,7 +82,7 @@
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,&
                   USES,DEBUG_ADV,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
-  use MetFields_mod,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
+  use MetFields_mod,      only : ps,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
   use MassBudget_mod,     only : fluxin_top,fluxout_top,fluxin,fluxout
   use My_Timing_mod,      only : Code_timer, Add_2timing, tim_before,tim_after,NTIMING

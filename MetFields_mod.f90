@@ -113,7 +113,6 @@ module MetFields_mod
         EtaKz    &! vertical diffusivity in Eta coords
        ,SigmaKz  &! vertical diffusivity in sigma coords
        ,Etadot     &! vertical velocity, Eta coords, Pa/s
-       ,sdot     &! vertical velocity, sigma coords, 1/s
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
   real,target,public, save,allocatable, dimension(:,:,:,:) :: rain! used only by wrf met
@@ -219,8 +218,6 @@ module MetFields_mod
 ! input or not:
   logical, target, public, save :: &
      foundustar= .false.     & ! Used for MM5-type, where u_xmj* but not tau
-    ,foundsdot= .false.      & ! If not found: compute using divergence=0
-    ,sdot_at_mid= .false.    & ! set false if sdot is defined
     ,foundcc3d = .false.     & ! false if no cc3d in metdata
     ,foundSST= .false.       & ! false if no SeaSurfaceT in metdata
     ,foundSoilWater_uppr= .false.  & ! false if no SW-shallow
@@ -247,7 +244,7 @@ module MetFields_mod
      !NB: the value of model_surf_elevation will be set to default value based on surface pressure anyway
 
 ! specific indices of met
-  integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_sdot, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
+  integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
        ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
        ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
        ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
@@ -370,21 +367,6 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
   ix_th=ix
-
-  ix=ix+1
-  met(ix)%name             = 'sigma_dot'
-  met(ix)%dim              = 3
-  met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .true.
-  met(ix)%read_meteo       = .true.
-  met(ix)%needed           = .false.
-  met(ix)%found            => foundsdot
-  allocate(sdot(LIMAX,LJMAX,KMAX_BND,NMET))
-  sdot=0.0
-  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_BND,1:NMET)  => sdot
-  met(ix)%zsize = KMAX_BND
-  met(ix)%msize = NMET
-  ix_sdot=ix
 
   ix=ix+1
   met(ix)%name             = '3D_cloudcover'
