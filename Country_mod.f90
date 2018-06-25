@@ -27,7 +27,7 @@ module Country_mod
   public :: init_Country     ! sets country details
   public :: self_test        ! just to test numbering
 
-  integer, parameter, public  :: MAXNLAND = 420  ! max number of countries 
+  integer, parameter, public  :: MAXNLAND = 601  ! max number of countries 
   integer,  public            :: NLAND  ! actaua number of countries defined
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
