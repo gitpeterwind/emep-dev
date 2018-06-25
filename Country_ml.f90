@@ -26,7 +26,7 @@ module Country_ml
   public :: init_Country     ! sets country details
   public :: self_test        ! just to test numbering
 
-  integer, parameter, public  :: MAXNLAND = 400  ! max number of countries 
+  integer, parameter, public  :: MAXNLAND = 500  ! max number of countries
   integer,  public            :: NLAND  ! actaua number of countries defined
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
@@ -69,6 +69,7 @@ module Country_ml
   integer, public ::  IC_BG   ! Bulgaria                      
   integer, public :: IC_FCS   ! Former Czechoslovakia     
   integer, public ::  IC_DK   ! Denmark                       
+  integer, public ::  IC_GL   ! Greenland
   integer, public ::  IC_FI   ! Finland                       
   integer, public ::  IC_FR   ! France                        
   integer, public :: IC_GDR   ! Former East Germany           
@@ -456,6 +457,9 @@ Country( IC_FCS ) = cc( "FCS ",'-', 5 ,F,  5,  1 , "Former Czechoslovakia       
 ix=ix+1 
 IC_DK=ix
 Country( IC_DK ) = cc(  "DK ",'DENM', 6 ,F,  6,  1  , "Denmark                       " )
+ix=ix+1 
+IC_GL=ix
+Country( IC_GL ) = cc(  "GL ",'-', 601 ,F,  6, -100, "Greenland                     " )
 ix=ix+1 
 IC_FI=ix
 Country( IC_FI ) = cc(  "FI ",'FINL', 7 ,F,  7,  2  , "Finland                       " )
