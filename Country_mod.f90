@@ -71,6 +71,7 @@ module Country_mod
   integer, public ::  IC_BG   ! Bulgaria                      
   integer, public :: IC_FCS   ! Former Czechoslovakia     
   integer, public ::  IC_DK   ! Denmark                       
+  integer, public ::  IC_GL   ! Greenland                       
   integer, public ::  IC_FI   ! Finland                       
   integer, public ::  IC_FR   ! France                        
   integer, public :: IC_GDR   ! Former East Germany           
@@ -477,6 +478,9 @@ Country( IC_FCS ) = cc( "FCS ",'-', 5 ,F,  5,  5,  1 , "Former Czechoslovakia   
 ix=ix+1 
 IC_DK=ix
 Country( IC_DK ) = cc(  "DK ",'DENM', 6 ,F,  6,  6,  1  , "Denmark                       " )
+ix=ix+1 
+IC_GL=ix
+Country( IC_GL ) = cc(  "GL ",'-' , 601 ,F,  6,  6, -2  , "Greenland                     " )
 ix=ix+1 
 IC_FI=ix
 Country( IC_FI ) = cc(  "FI ",'FINL', 7 ,F,  7,   7,  2  , "Finland                       " )
