@@ -21,6 +21,25 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd  July 2018, Dave
+
+BUG FIXES
+
+Setup_1d_mod.
+  Check for DDspec(ipm)%Gv > 0, not 1 !! Was big bug!!
+  Smaller debug formatting changes
+  use size(rcphot,dim=1) instead of just size(rcphot) (only when debugging)
+
+DefPhotolysis_mod
+   Comment out HCOHCO options. (bug related to BoxChem compatability)
+
+ZCM_EmChem16x
+   Corrected various rates, including HCOHCO
+
+config_Outputs_EMEPSTD
+   Corrected numbering for rcAeroN2O5 and now rc98HO2
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd June 2018, Peter
 
 Removed sdot from code (was not in use). Only Etadot is used.

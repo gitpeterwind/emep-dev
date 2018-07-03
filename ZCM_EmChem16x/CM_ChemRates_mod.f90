@@ -35,10 +35,9 @@ contains
       , IDH2O2  &
       , IDNO3_NO2  &
       , IDHNO3  &
+      , IDHO2NO2  &
       , IDHCHO_H2  &
-      , IDCHOCHO_2CO  &
-      , IDCHOCHO_HCHO  &
-      , IDCHOCHO_2CHO  &
+      , IDCHOCHO  &
       , IDRCOCHO  &
     /)  
   end subroutine setPhotolUsed
@@ -198,60 +197,61 @@ contains
     rct(91,:) = 8.05e-16*EXP(-640*TINV)*3.34
     rct(92,:) = 1.20e-12*EXP(490*TINV)
     rct(93,:) = 1.20e-12*EXP(490*TINV)*2.249
-    rct(94,:) = UPTAKERATE(CNO3,  &
+    rct(94,:) = HYDROLYSISN2O5()
+    rct(95,:) = UPTAKERATE(CNO3,  &
               & GAM=0.001,  &
               & S=S_M2M3(AERO%PM,  &
               & :))
-    rct(95,:) = UPTAKERATE(CHNO3,  &
+    rct(96,:) = UPTAKERATE(CHNO3,  &
               & GAM=0.1,  &
               & S=S_M2M3(AERO%DU_C,  &
               & :))
-    rct(96,:) = UPTAKERATE(CHNO3,  &
+    rct(97,:) = UPTAKERATE(CHNO3,  &
               & GAM=0.01,  &
               & S=S_M2M3(AERO%SS_C,  &
               & :))
-    rct(97,:) = UPTAKERATE(CHO2,  &
+    rct(98,:) = UPTAKERATE(CHO2,  &
               & GAM=0.2,  &
               & S=S_M2M3(AERO%PM,  &
               & :))
-    rct(98,:) = 6.3e-16*EXP(-580.0*TINV)
-    rct(99,:) = 1.2e-11*EXP(444.0*TINV)
-    rct(100,:) = 1.2e-12*EXP(490.0*TINV)
-    rct(101,:) = 0.914*(2.91e-13*EXP(1300.0*TINV))
-    rct(102,:) = 4.0e-12*FGAS(ASOC_UG1,  &
+    rct(99,:) = 6.3e-16*EXP(-580.0*TINV)
+    rct(100,:) = 1.2e-11*EXP(444.0*TINV)
+    rct(101,:) = 1.2e-12*EXP(490.0*TINV)
+    rct(102,:) = 0.914*(2.91e-13*EXP(1300.0*TINV))
+    rct(103,:) = 4.0e-12*FGAS(ASOC_UG1,  &
                & :)
-    rct(103,:) = 4.0e-12*FGAS(ASOC_UG10,  &
+    rct(104,:) = 4.0e-12*FGAS(ASOC_UG10,  &
                & :)
-    rct(104,:) = 4.0e-12*FGAS(ASOC_UG1e2,  &
+    rct(105,:) = 4.0e-12*FGAS(ASOC_UG1e2,  &
                & :)
-    rct(105,:) = 4.0e-12*FGAS(ASOC_UG1e3,  &
+    rct(106,:) = 4.0e-12*FGAS(ASOC_UG1e3,  &
                & :)
-    rct(106,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1,  &
+    rct(107,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1,  &
                & :)
-    rct(107,:) = 4.0e-12*FGAS(NON_C_ASOA_UG10,  &
+    rct(108,:) = 4.0e-12*FGAS(NON_C_ASOA_UG10,  &
                & :)
-    rct(108,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1e2,  &
+    rct(109,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1e2,  &
                & :)
-    rct(109,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1e3,  &
+    rct(110,:) = 4.0e-12*FGAS(NON_C_ASOA_UG1e3,  &
                & :)
-    rct(110,:) = 4.0e-12*FGAS(BSOC_UG1,  &
+    rct(111,:) = 4.0e-12*FGAS(BSOC_UG1,  &
                & :)
-    rct(111,:) = 4.0e-12*FGAS(BSOC_UG10,  &
+    rct(112,:) = 4.0e-12*FGAS(BSOC_UG10,  &
                & :)
-    rct(112,:) = 4.0e-12*FGAS(BSOC_UG1e2,  &
+    rct(113,:) = 4.0e-12*FGAS(BSOC_UG1e2,  &
                & :)
-    rct(113,:) = 4.0e-12*FGAS(BSOC_UG1e3,  &
+    rct(114,:) = 4.0e-12*FGAS(BSOC_UG1e3,  &
                & :)
-    rct(114,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1,  &
+    rct(115,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1,  &
                & :)
-    rct(115,:) = 4.0e-12*FGAS(NON_C_BSOA_UG10,  &
+    rct(116,:) = 4.0e-12*FGAS(NON_C_BSOA_UG10,  &
                & :)
-    rct(116,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1e2,  &
+    rct(117,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1e2,  &
                & :)
-    rct(117,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1e3,  &
+    rct(118,:) = 4.0e-12*FGAS(NON_C_BSOA_UG1e3,  &
                & :)
-    rct(118,:) = EC_AGEING_RATE()
-    rct(119,:) = 1.44e-13+M*3.43e-33
+    rct(119,:) = EC_AGEING_RATE()
+    rct(120,:) = 1.44e-13+M*3.43e-33
   
   end subroutine setChemRates
 

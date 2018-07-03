@@ -25,15 +25,15 @@ module ChemDims_mod
     integer, public, parameter :: NWETDEP_ADV = 59
     
     ! No. rate coefficients
-    integer, parameter, public :: NCHEMRATES = 119
+    integer, parameter, public :: NCHEMRATES = 120
     
     ! No. photolysis rates used
-    integer, parameter, public :: NPHOTOLRATES = 15
+    integer, parameter, public :: NPHOTOLRATES = 14
     
     ! No. emission Files
     integer, parameter, public :: NEMIS_File = 7
     
     ! No. emission Specss
-    integer, parameter, public :: NEMIS_Specs = 43
+    integer, parameter, public :: NEMIS_Specs = 44
 
 end module ChemDims_mod
