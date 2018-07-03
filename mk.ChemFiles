@@ -1,6 +1,6 @@
 #
 # Usage: 
-#  mk.Chem A2018
+#  mk.Chem EmChem16x
 #
 # Copies files from ZCM_XXXX to current directory. These files are 
 # mainly produce by the ecosx/GenChem through the following steps:
