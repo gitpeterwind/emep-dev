@@ -39,6 +39,9 @@ ZCM_EmChem16x
 config_Outputs_EMEPSTD
    Corrected numbering for rcAeroN2O5 and now rc98HO2
 
+CLEANUP:
+   Removed most of A2018files. Shouldn't be needed now. Some files left while checking
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd June 2018, Peter
 
