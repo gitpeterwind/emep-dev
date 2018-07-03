@@ -74,9 +74,9 @@
     integer, public, parameter ::&
         IDHONO = 18  & !A2018 added as extended
        ,IDMEK     = IDCH3O2H & ! just name change CHECK
-       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
-       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
-       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
+!       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
+!       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
+!       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
        ,IDRCOCHO  = IDHCOHCO & ! Just name change CHECK
        ,IDCHOCHO  = IDHCOHCO   ! Just name change CHECK
 
