@@ -101,7 +101,7 @@ contains
 
     integer, intent(in) :: i,j    ! coordinates of column
     character(len=9)  :: dtxt='setup_1d:'
-    character(len=30)  :: fmt="(a,i3,99g10.3)"  ! default format
+    character(len=30)  :: fmt="(a32,i3,99es13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
    ! for surface area calcs (A2018): 
@@ -316,9 +316,9 @@ contains
              end if
 !          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
             !if ( MasterProc .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
-            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
-               'AREACHECK0: '//trim(species(ispec)%name), ispec, &
-                  is_finepm, is_ssalt, is_dust, ugtmp, ugpmF,ugSIApm, ugSSaltF, ugDustF
+            !if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
+            !   'AREACHECK0: '//trim(species(ispec)%name), ispec, &
+            !      is_finepm, is_ssalt, is_dust, ugtmp, ugpmF,ugSIApm, ugSSaltF, ugDustF
  
 
              if (  species(ispec)%name == 'SO4' ) then
@@ -335,8 +335,8 @@ contains
                write(*, fmt) dtxt//"UGSIA:"//trim(species(ispec)%name), &
                      k, ugtmp, ugpmF, ugpmC,&
                      ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
-               write(*,'(a,4L2,es12.3)') dtxt//trim(species(ispec)%name), &
-                     is_finepm, is_ssalt,is_dust,is_BC(ipm), ugtmp
+               !write(*,'(a,4L2,es12.3)') dtxt//trim(species(ispec)%name), &
+               !      is_finepm, is_ssalt,is_dust,is_BC(ipm), ugtmp
              end if
            end do ! ipm
 
@@ -366,10 +366,15 @@ contains
 
             ipm= aeroDDspec(iw) !M24 iGerber(iw)
 
-            if ( ipm < 1 ) CYCLE ! Component missing !
+            if ( ipm < 1 ) then
+               if ( debug_flag .and. k == KMAX_MID) &
+                   write(*,"(a,i)") dtxt//'CHECK:iPMNEG:',ipm
+               CYCLE ! Component missing !
+            end if
 
             Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
-            if ( DDspec(ipm)%Gb > 1 ) then
+            !JUL2018 BUG !!! if ( DDspec(ipm)%Gb > 1 ) then
+            if ( DDspec(ipm)%Gb > 0 ) then
               DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), DDspec(ipm)%Gb ) 
             else
               DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
@@ -382,18 +387,26 @@ contains
             if ( iw == AERO%DU_C )  ugtmp = ugDustC
 
             !if ( MasterProc .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
-            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,2i5,3es10.3)") &
-                "AREACHECK: "//trim(DDspec(ipm)%name), iw, ipm, Ddry(iw),DpgNw(iw,k),ugtmp 
 
             !BUG S_m2m3(iw,k) = pmSurfArea(ugpmF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+
             S_m2m3(iw,k) = pmSurfArea(ugtmp,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                   rho_kgm3=DDspec(ipm)%rho_p )
+
+            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,3i5,4es10.3)") &
+              "AREACHECK: "//trim(DDspec(ipm)%name), iw, ipm, &
+             DDspec(ipm)%Gb, &
+               Ddry(iw),DpgNw(iw,k),ugtmp,S_m2m3(iw,k)
+
             S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+
           end do ! iw
 
           ! Add all areas (misses some BC_c etc)
           iw=NSAREA_DEF
           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
+          if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,4es10.3)") &
+             "AREACHECK: "//"SUM", iw, ugpmf,ugSSaltC,ugDustC,S_m2m3(iw,k)
 
 
           if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
@@ -517,7 +530,8 @@ contains
      call checkValidArray(rct(:,KMAX_MID),dtxt//'arrayCheck RCT ')
    !if ( debug_flag .and. current_date%hour == 12 ) then
      if ( DebugCell .and. current_date%hour == 12 ) then
-       do n = 1, size(rcphot)
+       print *, "DBG: RCPHOT SIZE ",  size(rcphot,dim=1)
+       do n = 1, size(rcphot,dim=1)
          if( rcphot(n,KMAX_MID)<0.0) then
              print '(a,i3,es12.3)', 'RCPHOT:', n, rcphot(n,KMAX_MID)
          end if
