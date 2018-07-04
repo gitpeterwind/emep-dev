@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th  July 2018, Peter
+
+Changed default path of EmisHeights.txt
+
+work/Data/EmisHeights.txt -> EmisHeights_Rep17.txt
+
+Gave different files for Stallo/Elvis and Vilje! (Vilje will be unchanged now, sector 10 was different)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd  July 2018, Dave
 
 BUG FIXES
