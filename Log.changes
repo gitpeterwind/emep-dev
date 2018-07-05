@@ -131,6 +131,7 @@ Run mk.GenChem  or e.g. make EMEP, see above!!!!
 
 Also - GenChem makes femis.defaults in the ZCM_... directory
 
+
 !----------------------------------------------------------
 CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
@@ -139,9 +140,10 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-13th June 2018, Peter
+5th July 2018, Peter
 
-Bug when topography.nc not found and need_topo=F: then teh columnsources will not be taken. (bug was already corrected in dev version)
+Redefined default path for EmisHeights.txt. The new path give identical heights 
+as what was used on Vilje, but not what was used on Elvis or Stallo (!).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018, Peter

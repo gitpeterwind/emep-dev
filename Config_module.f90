@@ -584,7 +584,7 @@ type(names), public, save :: InputFiles(Size_InputFiles)
 !5) replace the name you used in the routine with XX_File
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
 character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20.txt'
-character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/inputs_emepdefaults_Jun2017/EmisHeights.txt'
+character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/inputs_emepdefaults_Jul2018/EmisHeights.txt'
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/AircraftEmis_FL.nc'
