@@ -21,6 +21,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th  July 2018, Dave
+
+Aqueous_mod: found error (k=0) when using DEBUG. Fixed by using RETURN in
+  WetDeposition call if kcloudtop < 1. Results for WDEP_specs identical,
+  but WDEP_PREC has tiny difference. Not understood, but the old code did
+  allow array overrun in e.g. dA(k).
+
+Biogenics_mod.f90: Use DEBUG%SOILNOX
+
+Config_module.f90: Use DEBUG%SOILNOX
+
+Emissions_mod.f90: Use DEBUG%SOILNOX, plus some extra writes (debugging)
+
+GridValues_mod.f90 : just another write statement whie checking GLOBAL_settings etc.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th  July 2018, Peter
 
 Changed default path of EmisHeights.txt
