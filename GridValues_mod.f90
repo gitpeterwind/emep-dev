@@ -2838,9 +2838,9 @@ subroutine set_EuropeanAndGlobal_Config()
      !Note that it should also allow for PS projection which can cover the North Pole, i.e. any longitude
      GLOBAL_settings = 'NO' !default
      !find if lat < 28 are included within the domain
-     if(gbacmin<28.0)then
+     if(gbacmin<19.0)then
         GLOBAL_settings = 'YES' !default
-        if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain extends below 28 degrees latitudes'
+        if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
      else
         !find if the point with lon = -32 and lat = 45 is within the domain
         call lb2ij(-32.0,45.0,ir,jr)
