@@ -1663,7 +1663,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   integer,dimension(ndim),intent(in), optional :: chunksizes,dimSizes
   character(len=*),intent(in), optional :: dimNames(ndim)
   integer :: iDimID,jDimID,kDimID,timeDimID,nDimID(10)
-  integer ::n, i
+  integer ::n, i, isize, jsize
   integer :: varID,dimVarID,nrecords,status
   real :: scale
   integer :: OUTtypeCDF !NetCDF code for type
@@ -1754,8 +1754,11 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
      else
         if(ndim==2)then
            !Recommended by Heiko for faster verification script
+           call check(nf90_inquire_dimension(ncFileID,idimID,len=isize))
+           call check(nf90_inquire_dimension(ncFileID,jdimID,len=jsize))
            call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
-                (/300,130,1/)),"chunk2D:"//trim(varname))         
+!                (/300,130,1/)),"chunk2D:"//trim(varname))         
+                (/min(isize,300),min(jsize,130),1/)),"chunk2D:"//trim(varname))         
         endif
      endif
   end if

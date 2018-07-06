@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th  July 2018, Peter
+
+Change chunk size of 2D output to 300 ,130 (i,j) to speed up the verification 
+script (recommended by Heiko)
+
+Changed the test for GLOBAL_setting with minlat=19 instead of 28 (EECCA was set 
+as global!) and East limit to -40
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th  July 2018, Dave
 
 Aqueous_mod: found error (k=0) when using DEBUG. Fixed by setting kcloudtop

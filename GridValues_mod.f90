@@ -2839,16 +2839,16 @@ subroutine set_EuropeanAndGlobal_Config()
      !We evaluate if the region extend outside the EMEP01 grid East, West or South
      !Note that it should also allow for PS projection which can cover the North Pole, i.e. any longitude
      GLOBAL_settings = 'NO' !default
-     !find if lat < 28 are included within the domain
+     !find if lat < 19 are included within the domain
      if(gbacmin<19.0)then
         GLOBAL_settings = 'YES' !default
         if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
      else
-        !find if the point with lon = -32 and lat = 45 is within the domain
-        call lb2ij(-32.0,45.0,ir,jr)
+        !find if the point with lon = -40 and lat = 45 is within the domain
+        call lb2ij(-40.0,45.0,ir,jr)
         if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
            GLOBAL_settings = 'YES' !default
-           if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=-32 at lat=45'
+           if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
         else 
            !find if the point with lon = 92 and lat = 45 is within the domain
            call lb2ij(92.0,45.0,ir,jr)
