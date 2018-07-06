@@ -1123,7 +1123,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
     overwrite,      &   ! overwrite if file already exists (in case fileName_given)
     create_var_only     ! only create the variable, without writing the data content
   integer, dimension(ndim), intent(in), optional :: &
-    chunksizes          ! nc4zip outpur writen in slizes, see NETCDF_DEFLATE_LEVEL
+    chunksizes          ! nc4zip output written in slices, see NETCDF_DEFLATE_LEVEL
   integer, optional, intent(inout) :: ncFileID_given !if present, do not close the file at return
                                                      !if >=0 at input, the file is already open 
                                                      !       and  ncFileID=ncFileID_given
@@ -1745,13 +1745,19 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   endif
 !define variable as to be compressed
   if(NETCDF_DEFLATE_LEVEL >= 0) then
-    call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
-               deflate_level=NETCDF_DEFLATE_LEVEL),"compress:"//trim(varname))
-    if(present(chunksizes))then      ! set chunk-size for 2d slices of 3d output
-      ! write(*,*)' chunksizes ',trim(varname),chunksizes
-      call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
-                 chunksizes(:)),"chunk:"//trim(varname))
-   endif
+     call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
+          deflate_level=NETCDF_DEFLATE_LEVEL),"compress:"//trim(varname))
+     if(present(chunksizes))then      ! set chunk-size for 2d slices of 3d output
+        ! write(*,*)' chunksizes ',trim(varname),chunksizes
+        call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
+             chunksizes(:)),"chunk:"//trim(varname))
+     else
+        if(ndim==2)then
+           !Recommended by Heiko for faster verification script
+           call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
+                (/300,130,1/)),"chunk2D:"//trim(varname))         
+        endif
+     endif
   end if
   !     FillValue=0.
   scale=1.
