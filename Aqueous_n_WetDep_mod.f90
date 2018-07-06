@@ -451,7 +451,9 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! ==> assume no cloud   DSJ18: leaves kcloudtop = -1
     !DSJ18 first thought of:
     !   if(kcloudtop<1) kcloudtop = KUPPER ! for safety ! DS J18
-    ! but added below RETURN if kcloudtop < 1. END DSJ18
+    ! but now use:
+      kcloudtop = -999 ! used as label for no cloud ! DS J18
+    !DSJ18 and  added below RETURN if kcloudtop < 1. END DSJ18
   endif
   
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
@@ -590,7 +592,6 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
- !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
   real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
   integer, parameter :: pH_ITER = 2 ! num iter to calc pH. 
                                     !Do not change without knowing what you are doing

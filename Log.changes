@@ -23,7 +23,8 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th  July 2018, Dave
 
-Aqueous_mod: found error (k=0) when using DEBUG. Fixed by using RETURN in
+Aqueous_mod: found error (k=0) when using DEBUG. Fixed by setting kcloudtop
+  to -999 in the "cirrus" cases that were not caught, and using RETURN in
   WetDeposition call if kcloudtop < 1. Results for WDEP_specs identical,
   but WDEP_PREC has tiny difference. Not understood, but the old code did
   allow array overrun in e.g. dA(k).
