@@ -20,7 +20,7 @@ use Config_module,only: &
 !    MONTHLY_GRIDEMIS, &  !NML
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-    DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
+    DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
     USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
     SEAFIX_GEA_NEEDED, & ! see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
@@ -1256,15 +1256,16 @@ subroutine newmonth
     end do
   end if
 
+  if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????"
   if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions
-    if(DEBUG_SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX START"
+    if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX START"
 
     ! read in map of annual N-deposition produced from pre-runs of EMEP model
     ! with script mkcdo.annualNdep
     call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
           interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
 
-    if(DEBUG_SOILNOX.and.debug_proc)&
+    if(DEBUG%SOILNOX.and.debug_proc)&
       write(*,"(a,4es12.3)") "Emissions_mod: SOILNOX AnnualDEBUG ", &
         AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
 
@@ -1281,7 +1282,7 @@ subroutine newmonth
       call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
-      if(DEBUG_SOILNOX.and.debug_proc) &
+      if(DEBUG%SOILNOX.and.debug_proc) &
         write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
     else
       !the year is not defined; average over all years
@@ -1296,7 +1297,7 @@ subroutine newmonth
             SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
           end do
         end do
-        if(DEBUG_SOILNOX.and.debug_proc) &
+        if(DEBUG%SOILNOX.and.debug_proc) &
           write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
             1995+(iyr-1), nstart,SoilNOx(debug_li, debug_lj), &
             "max: ", maxval(buffer), maxval(SoilNOx)
@@ -1304,13 +1305,13 @@ subroutine newmonth
       SoilNOx=SoilNOx/Nyears
     end if ! nstart test
 
-     if(DEBUG_SOILNOX.and.debug_proc) then
+     if(DEBUG%SOILNOX.and.debug_proc) then
         write(*,"(a,i3,3es10.3)") "After Global SOILNO ",&
              me,maxval(SoilNOx),SoilNOx(debug_li,debug_lj)
        !write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3)
      end if
   else ! no soil NO
-    if(DEBUG_SOILNOX.and.debug_proc) &
+    if(DEBUG%SOILNOX.and.debug_proc) &
       write(*,*) "Emissions DEBUG_SOILNOX - none"
   end if !  SOIL NO
 
