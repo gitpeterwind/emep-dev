@@ -48,7 +48,6 @@ module Biogenics_mod
                            DEBUG, & !A2018 BVOC_USED, 
                            MasterProc, &
                            USES, &
-                           DEBUG_SOILNOX, &
                            NATBIO, EmBio, EMEP_EuroBVOCFile
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, PrintLog, datewrite
@@ -698,7 +697,7 @@ module Biogenics_mod
 
       if ( .not. USES%EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
 
-      if( DEBUG_SOILNOX .and. debug_proc ) then
+      if( DEBUG%SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_mod DEBUG_SOILNOX EURO: ",&
           current_date%day, current_date%hour, current_date%seconds,&
           USES%EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
@@ -789,7 +788,7 @@ module Biogenics_mod
 
                     
                  end if
-                 if (  DEBUG_SOILNOX .and. debug_proc .and. &
+                 if (  DEBUG%SOILNOX .and. debug_proc .and. &
                      i == debug_li .and. j == debug_lj ) then
                    write(*, "(a,4i4,f7.2,9g12.3)") "LOOPING SOIL", daynumber, &
                    iLC, LC, LandCover(i,j)%SGS(iLC), t2_nwp(i,j,1)-273.15, &
@@ -814,7 +813,7 @@ module Biogenics_mod
          end do
       end do
 
-      if ( DEBUG_SOILNOX .and. debug_proc ) then
+      if ( DEBUG%SOILNOX .and. debug_proc ) then
          i = debug_li
          j = debug_lj
          write(*,"(a,4i4)") "RESET_SOILNOX: ",  1, limax, 1, ljmax

@@ -190,6 +190,7 @@ type, public :: emep_debug
     ,SETUP_1DCHEM    = .false. &
     ,SETUP_1DBIO     = .false. &
     ,SITES           = .false. &
+    ,SOILNOX         = .false. &
     ,SOLVER          = .false. &
     ,SOA             = .false. &
     ,STOFLUX         = .false. &
@@ -431,8 +432,7 @@ logical, public, parameter ::    &
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_RB             = .false. &
-  ,DEBUG_SOILWATER      = .false. &
-  ,DEBUG_SOILNOX        = .false.
+  ,DEBUG_SOILWATER      = .false. 
 
 !=============================================================================
 ! 3)  Source-receptor runs?

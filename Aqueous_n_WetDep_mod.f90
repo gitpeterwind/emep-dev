@@ -32,7 +32,7 @@ module Aqueous_mod
 use My_Derived_mod,    only: WDEP_WANTED ! Which outputs wanted!
 use My_Derived_mod,    only: nOutputWdep ! number WDEP used
 !A2018 use My_Derived_mod,    only: nWDEP => nOutputWdep ! number WDEP used
-use CheckStop_mod,     only: CheckStop
+use CheckStop_mod,     only: CheckStop, StopAll
 use ChemDims_mod             
 use ChemSpecs_mod             
 use ChemGroups_mod,    only: ChemGroups
@@ -82,7 +82,7 @@ logical, public, save,allocatable, dimension(:) :: &
 ! Variables used in module:
 real, private, save,allocatable, dimension(:) :: &
   pr_acc                  ! Accumulated precipitation
-!hf NEW (here for debugging)
+! (here for debugging)
 real, private, save,allocatable, dimension(:) :: &
   pH,so4_aq,no3_aq,nh4_aq,nh3_aq,hso3_aq,so2_aq,so32_aq,co2_aq,hco3_aq   ! pH in cloud
 
@@ -448,14 +448,19 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! Cloud above KUPPER are likely thin
      ! cirrus clouds, and if included may
      ! need special treatment...
-     ! ==> assume no cloud
+     ! ==> assume no cloud   DSJ18: leaves kcloudtop = -1
+    !DSJ18 first thought of:
+    !   if(kcloudtop<1) kcloudtop = KUPPER ! for safety ! DS J18
+    ! but now use:
+      kcloudtop = -999 ! used as label for no cloud ! DS J18
+    !DSJ18 and  added below RETURN if kcloudtop < 1. END DSJ18
   endif
   
-! sets up the aqueous phase reaction rates (SO2 oxidation) and the
-! fractional solubility
+ ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
+ ! fractional solubility
 
-!hf add pres
-!need to be called also if no clouds for non-cloud rates
+ !need to be called also if no clouds for non-cloud rates
+ !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
   call setup_aqurates(b ,cloudwater,incloud,pres)
 
   if(kcloudtop>KUPPER .and.kcloudtop<KMAX_MID)then
@@ -561,6 +566,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! DESCRIPTION
 ! sets the rate-coefficients for the aqueous-phase reactions
 !-----------------------------------------------------------------------
+ !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
   real, dimension(KUPPER:KMAX_MID) :: &
     b,          &  ! cloud-aread (fraction)
     cloudwater, &  ! cloud-water
@@ -586,7 +592,6 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
- !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
   real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
   integer, parameter :: pH_ITER = 2 ! num iter to calc pH. 
                                     !Do not change without knowing what you are doing
@@ -757,14 +762,24 @@ subroutine WetDeposition(i,j,debug_flag)
   real, dimension(KUPPER:KMAX_MID) :: lossfac ! EGU
   real, dimension(KUPPER:KMAX_MID) :: lossfacPMf ! for particle fraction of semi-volatile (VBS) species
 
+!DSJ18 simplified for kcloudtop<1
+  wdeploss(:) = 0.0
+  !lossfac(:) = 0.0
+  !lossfacPMf(:) = 0.0
+  !DSJ18 MOVED WDEP_PREC here:
+  if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
+  if ( kcloudtop < 1 ) RETURN ! DSJ18 skip wetdep calcs if no cloud
+
   invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
   f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
 ! Loop starting from above:
+  !DSJ18 original code crashed here with k=0 in dA
+  !DSJ18test if(kcloudtop<1)  print *, "XXDSJ18 ", kcloudtop, KUPPER ! for safety ! DS J18
   do k=kcloudtop, KMAX_MID           ! No need to go above cloudtop
     rho(k) = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ M(k)
   end do
 
-  wdeploss(:) = 0.0
+!DS MOVED  wdeploss(:) = 0.0
 
 ! calculate concentration after wet deposition and sum up the vertical
 ! column of the depositions for the fully soluble species.
@@ -832,7 +847,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
   end do ! icalc loop
 
-  if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
+  !DSJ18 MOVED to top if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
 
 ! add other losses into twetdep and wdep arrays:
   call WetDep_Budget(i,j,invgridarea,debug_flag)
