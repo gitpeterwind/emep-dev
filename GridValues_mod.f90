@@ -2830,6 +2830,8 @@ subroutine set_EuropeanAndGlobal_Config()
         endif
 
      endif 
+ else  !DS J2018 added:
+    if(me==0) write(*,*)'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
  endif
 
   if(GLOBAL_settings == 'NOTSET')then
