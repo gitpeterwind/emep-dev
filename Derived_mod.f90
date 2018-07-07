@@ -307,7 +307,7 @@ subroutine Define_Derived()
   character(len=30) :: dname, class
   character(len=10) :: unittxt
   character(len=TXTLEN_SHORT) :: outname, outunit, outtyp, outdim, subclass
-  character(len=11), parameter:: sub="DefDerived:"
+  character(len=*), parameter:: dtxt="DefDerived:"
   character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
@@ -394,7 +394,7 @@ subroutine Define_Derived()
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iout,trim(outname)
           if(iout<1)cycle
         end if
-        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+        call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,iout,unitscale,unittxt)
         outtyp = "FLYmax6h:SPEC"
@@ -408,7 +408,7 @@ subroutine Define_Derived()
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(class),iout,trim(outname)
           if(iout<1)cycle
         end if
-        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+        call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,-1,unitscale,unittxt)
         outtyp = "FLYmax6h:GROUP"
@@ -417,7 +417,7 @@ subroutine Define_Derived()
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
         iout=find_index(outname, species_adv(:)%name, any_case=.true. )
-        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+        call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,iout,unitscale,unittxt)
         outtyp = "COLUMN:SPEC"
@@ -425,7 +425,7 @@ subroutine Define_Derived()
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('COLUMN:GROUP')
         iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
-        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+        call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,-1,unitscale,unittxt)
         outtyp = "COLUMN:GROUP"
@@ -445,10 +445,10 @@ subroutine Define_Derived()
         case('AOD:SPEC','EXT:SPEC' )
           iout=find_index(outname,species_adv(:)%name, any_case=.true.)
         case default
-          call CheckStop(sub//"OutputFields%class  Unsupported "//&
+          call CheckStop(dtxt//"OutputFields%class  Unsupported "//&
             trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
         end select
-        call CheckStop(iout<0,sub//"OutputFields%class "//trim(class)//&
+        call CheckStop(iout<0,dtxt//"OutputFields%class "//trim(class)//&
                               " not found "//trim(outname))
         unitscale = 1.0
         unittxt   = trim(outunit)
@@ -482,12 +482,12 @@ subroutine Define_Derived()
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
           if(iadv<1)cycle
         end if
-        call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
+        call CheckStop(iadv<0,dtxt//"OutputFields Species not found "//trim(outname))
         iout = iadv
         call Units_Scale(outunit,iadv,unitscale,unittxt,volunit)
       case("SHL")
         ishl = find_index(outname,species_shl(:)%name, any_case=.true.)
-        call CheckStop(ishl<0,sub//"OutputFields Short lived Species not found "//trim(outname))
+        call CheckStop(ishl<0,dtxt//"OutputFields Short lived Species not found "//trim(outname))
         if(MasterProc) &
           write(*,*)"OutputFields Short lived Species found: "//trim(outname)
         iout = ishl
@@ -502,7 +502,7 @@ subroutine Define_Derived()
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),igrp,trim(outname)
           if(igrp<1)cycle
         end if
-        call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
+        call CheckStop(igrp<0,dtxt//"OutputFields Group not found "//trim(outname))
         iout = igrp
         call Units_Scale(outunit,-1,unitscale,unittxt,volunit,semivol=semivol)
         ! Units_Scale(iadv=-1) returns 1.0
@@ -511,7 +511,7 @@ subroutine Define_Derived()
         if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
           trims( outname // ':' // outunit // ':' // subclass )
       case default
-        call CheckStop(sub//" Unsupported OutputFields%outtyp "//&
+        call CheckStop(dtxt//" Unsupported OutputFields%outtyp "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       end select
 
@@ -522,14 +522,14 @@ subroutine Define_Derived()
         class = "SURF_"//trim(class)  //"_"//trim(outtyp)
         dname = "SURF_"//trim(outunit)//"_"//trim(outname)
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
-          sub//"OutputFields already defined output "//trim(dname))
+          dtxt//"OutputFields already defined output "//trim(dname))
       case("Local_Correct")
         Is3D = .false.
         class = "SURF_"//trim(class)  //"_"//trim(outtyp)
         dname = "SURF_LF_"//trim(outunit)//"_"//trim(outname)
         subclass = 'LocFrac_corrected'
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
-          sub//"OutputFields already defined output "//trim(dname))
+          dtxt//"OutputFields already defined output "//trim(dname))
 
         if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
@@ -539,13 +539,13 @@ subroutine Define_Derived()
         class = "3D_"//trim(class)  //"_"//trim(outtyp)
         dname = "D3_"//trim(outunit)//"_"//trim(outname)
         call CheckStop(find_index(dname,def_3d(:)%name, any_case=.true.)>0,&
-          sub//"OutputFields already defined output "//trim(dname))
+          dtxt//"OutputFields already defined output "//trim(dname))
 
         ! Always print out 3D info. Good to help avoid using 3d unless really needed!
         if( MasterProc ) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD 3D outputs",  &
           ind, iout, trim(dname),";", trim(class), outind,unitscale
       case default
-        call CheckStop(sub//" Unsupported OutputFields%outdim "//&
+        call CheckStop(dtxt//" Unsupported OutputFields%outdim "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       end select
 !FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
@@ -620,6 +620,7 @@ subroutine Define_Derived()
   do  ind = 1, NEMIS_BioNat
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
+    if(MasterProc) write(*,'(a,i4,a)') dtxt//'NatEmis ', ind, trim(dname)
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, 'YM' )
   end do
@@ -744,7 +745,7 @@ Is3D = .true.
   do i = 1, num_deriv2d
     if(dbg0) print *,"CHECK 2d", num_deriv2d, i, trim(wanted_deriv2d(i))
     if(MasterProc) call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
-        sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
+        dtxt//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name,any_case=.true. )
     if(ind>0)then
       f_2d(i) = def_2d(ind)
@@ -755,7 +756,7 @@ Is3D = .true.
       print *,"OOOPS N,N :", num_deriv2d, Nadded2d
       print "(a,i4,a)",("Had def_2d: ",idebug,&
         trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
-      call CheckStop(sub//"OOPS1 STOPPED" // trim( wanted_deriv2d(i) ) )
+      call CheckStop(dtxt//"OOPS1 STOPPED" // trim( wanted_deriv2d(i) ) )
     end if
   end do
 
@@ -763,7 +764,7 @@ Is3D = .true.
     if(dbg0) print *,"CHECK 3d", num_deriv3d, i, trim(wanted_deriv3d(i))
     if(MasterProc)&
       call CheckStop(count(f_3d(:i)%name==wanted_deriv3d(i))>0,&
-        sub//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
+        dtxt//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name,any_case=.true. )
     if(ind>0)then
       f_3d(i) = def_3d(ind)
@@ -774,7 +775,7 @@ Is3D = .true.
       print *,"OOOPS N,N :", num_deriv3d, Nadded3d
       print "(a,i4,a)",("Had def_3d: ",idebug,&
         trim(def_3d(idebug)%name),idebug = 1, Nadded3d)
-      call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv3d(i) ) )
+      call CheckStop(dtxt//"OOPS STOPPED" // trim( wanted_deriv3d(i) ) )
     end if
   end do
 
@@ -1639,8 +1640,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       !Not done, keep mg/m2  * GridArea_m2(i,j)
       if ( dbgP ) call write_debug(n,f_2d(n)%Index, "NatEmis")
       if( dbgP ) &
-        call datewrite("NatEmis-in-Derived, still kg/m2/s", &
-          f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj) /) )
+        call datewrite("NatEmis-in-Derived, kg/m2/s, "//trim(f_2d(n)%name), &
+          f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj), &
+                            maxval(EmisNat( f_2d(n)%Index, :,:)) /) )
 
     case ( "TotEmis" ) !emissions in kg/m2/s converted??
 
