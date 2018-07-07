@@ -21,6 +21,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th  July 2018, Dave
+
+ZCM_EmChem16x files: removed BIOTERP as species, and changed ordering of species
+
+Biogenic_mod.f90 - more use of dtxt and corrected case in Ash
+
+Derived_mod.f90 - changed sub to dtxt for easier greps
+
+My_Derived_mod.f90 - added BioNatC5H8 and BioNatTERP. CRUDE and confusing with
+  also code in Derived_mod.f90. FIX LATER.
+
+config_EMEPSTD.nml - added GLOBAL/EURO settings comments and DEBUG%STOFLUX
+                    (not needed, just as reminder while testing.)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th  July 2018, Peter
 
 Change chunk size of 2D output to 300 ,130 (i,j) to speed up the verification 
