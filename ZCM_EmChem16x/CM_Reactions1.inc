@@ -1204,15 +1204,6 @@
   xnew(MVK) = xold(MVK) + dt2 * P
 
 
-!-> BIOTERP
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for BIOTERP! xnew(BIOTERP) = max(0.0, xold(BIOTERP))
-
-
 !-> BPINENE
 
   P = 0.2* RCBIO(2,K)

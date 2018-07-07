@@ -19,8 +19,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "MGLYOX        " &
 , "C5H8          " &
 , "SHIPNOX       " &
-, "ASH_F         " &
-, "ASH_C         " &
 , "POM_F_FFUEL   " &
 , "POM_C_FFUEL   " &
 , "EC_F_FFUEL_NEW" &
@@ -43,4 +41,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "DUST_ROAD_C   " &
 , "DUST_SAH_F    " &
 , "DUST_SAH_C    " &
+, "ASH_F         " &
+, "ASH_C         " &
 /)
