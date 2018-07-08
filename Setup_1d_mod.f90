@@ -472,7 +472,7 @@ contains
             do iw = 1, NSAREA_CALC
              write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
-        end if
+  end if
 !A2018 PREV!
 !A2018 PREV!           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
 !A2018 PREV!
@@ -486,7 +486,7 @@ contains
 
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
-              do iw = 1, NSAREA_CALC
+              do iw = 1, NSAREA_DEF  !J2018 bug:CALC
                 SurfArea_um2cm3(iw,i,j) = 1.0e6* S_m2m3(iw,k)
               end do
            end if
