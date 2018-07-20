@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th  July 2018, Peter
+
+ReadField_CDF: Return zero (or Undef) when file or field not found and not needed
+(returned unchanged array before)
+
+ForestFire: replaced allocatable array rdemis and xrdemis by automatic arrays 
+(this is more efficient memorywise). Also set xrdemis to zero (was not done but 
+possibly is done automatically when the array is allocated).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th  July 2018, Peter
 
 Change chunk size of 2D output to 300 ,130 (i,j) to speed up the verification 

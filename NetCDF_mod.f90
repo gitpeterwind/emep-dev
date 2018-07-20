@@ -2287,7 +2287,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   !dimensions and indices:
   !Rvar is assumed to have declared dimensions LIMAX,LJMAX in 2D.
   !If 3D, k coordinate in Rvar assumed as first coordinate. Could consider to change this.
-  !If kstart<0, then all vertical levels are read in
   !nstart (optional) is the index of last dimension in the netcdf file, generally time dimension.
   !
   !undefined field values:
@@ -2440,8 +2439,24 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      debug = debug_flag .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
+
+  UnDef_local=0.0
+  if(present(UnDef))UnDef_local=UnDef
+
+  data3D=.false.
+  kstart_loc=0
+  kend_loc=0
+  if(present(kstart).or.present(kend))then
+     call CheckStop((.not. present(kstart).or. .not. present(kend)), &
+          "ReadField_CDF : both or none kstart and kend should be present")
+     kstart_loc=kstart
+     kend_loc=kend
+     data3D=.true.
+  end if
+
   if(present(needed))   fileneeded=needed
   if(present(found))found=.true.!default
+
   if(present(ncFileID_given))then
      ncFileID = ncFileID_given
   else
@@ -2460,6 +2475,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            if(present(found))found=.false.
            if(present(validity))validity=field_not_found
            if(present(unit))unit=' '
+           k2=1
+           if(data3D)k2=kend_loc-kstart_loc+1
+           Rvar(1:LIMAX*LJMAX*k2)=UnDef_local!works only for 2D or when kstart is defined!
            return
         end if
      end if
@@ -2474,8 +2492,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
        interpol_used/='mass_conservative',&
        'interpolation method not recognized')
 
-  UnDef_local=0.0
-  if(present(UnDef))UnDef_local=UnDef
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
@@ -2493,10 +2509,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
              trim(varname),nf90_strerror(status)
-          if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
-           if(present(found))found=.false.
-           if(present(validity))validity=field_not_found
-           if(present(unit))unit=' '
+        if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
+        if(present(found))found=.false.
+        if(present(validity))validity=field_not_found
+        if(present(unit))unit=' '
+        k2=1
+        if(data3D)k2=kend_loc-kstart_loc+1
+        Rvar(1:LIMAX*LJMAX*k2)=UnDef_local!works only for 2D or when kstart is defined!
         return
     end if
   end if
@@ -2521,16 +2540,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   fractions=.false.
   if(present(fractions_out))fractions=.true.
 
-  data3D=.false.
-  kstart_loc=0
-  if(present(kstart).or.present(kend))then
-     call CheckStop((.not. present(kstart).or. .not. present(kend)), &
-          "ReadField_CDF : both or none kstart and kend should be present")
-     kstart_loc=kstart
-     kend_loc=kend
-     data3D=.true.
-
-  end if
 
   !Check first that variable has data covering the relevant part of the grid:
 

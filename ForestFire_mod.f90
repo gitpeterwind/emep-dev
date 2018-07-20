@@ -232,7 +232,7 @@ subroutine Fire_Emis(daynumber)
   integer, intent(in) :: daynumber   ! daynumber (1,..... ,365)
 
 
-  real,allocatable :: rdemis(:,:)  ! Emissions read from file
+  real :: rdemis(LIMAX,LJMAX)  ! Emissions read from file
   integer :: i,j,nstart, alloc_err, iBB, n
   logical, save :: first_call = .true.
   integer, save  :: nn_old=-1
@@ -243,7 +243,7 @@ subroutine Fire_Emis(daynumber)
 
   character(len=TXTLEN_FILE), save :: fname='new'
   logical :: debug_ff=.false.,debug_nc=.false., newFFrecord=.false.
-  real, allocatable :: xrdemis(:,:) ! MODE=*_AVG
+  real :: xrdemis(LIMAX,LJMAX) ! MODE=*_AVG
   integer :: dn1, dn2, ndn          ! MODE=*_AVG
   integer :: yyyy, mm, dd
   character(len=*), parameter :: dtxt='BB:Fire_Emis:'
@@ -291,7 +291,6 @@ subroutine Fire_Emis(daynumber)
   if(debug_proc) write(*,'(a,5i5)') dtxt// "newFFrec checks ",&
       yyyy,mm,dd, dn1, dn2
   if(dn1<dn2)then
-    allocate(xrdemis(LIMAX,LJMAX),stat=alloc_err)
     nstart=daynumber    ! for debug info
     if(debug_proc) write(*,'(a,5i5)') dtxt// "FFalloc nstart= ", nstart
   else
@@ -313,8 +312,6 @@ subroutine Fire_Emis(daynumber)
   end if
 
   BiomassBurningEmis(:,:,:) = 0.0
-  allocate(rdemis(LIMAX,LJMAX),stat=alloc_err)
-  call CheckStop(alloc_err,dtxt//" rdemis alloc problem")
   
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
@@ -334,11 +331,11 @@ subroutine Fire_Emis(daynumber)
    ! if(.not.need_file|time|poll) continue if file|time|poll is not found
     rdemis(:,:)=0.0
 
-
 !--------- Aug 2017: methods merged. Keep UnDef=0 for future safety
 
     if(dn1<dn2)then
         rdemis = 0.0
+        xrdemis = 0.0
         ndn=0
         do dd = dn1, dn2
  
@@ -410,8 +407,6 @@ subroutine Fire_Emis(daynumber)
   ncFileID=closedID
 
   first_call  = .false.
-  deallocate(rdemis)
-  if(allocated(xrdemis)) deallocate(xrdemis)
 
   ! For cases where REMPPM25 s derived as the difference between PM25 and
   !  (BC+1.7*OC) we need some safety:
