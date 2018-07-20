@@ -340,6 +340,12 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_BioNatNO"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
+!J2018 Add here too.., HARD-CODED, also since TERP isn't a species name
+    tag_name(1) = "Emis_mgm2_BioNatC5H8"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+    tag_name(1) = "Emis_mgm2_BioNatTERP"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+!J2018
   if(USES%BIDIR) then
     tag_name(1) = "Emis_mgm2_BioNatNH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)

@@ -13,8 +13,6 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("NO3_c     ", "PMc       ", -999.0 ) &
 , dep_t("NH4_f     ", "PMf       ", -999.0 ) &
 , dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
-, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
-, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("POM_f_WOOD", "PMf       ", -999.0 ) &
 , dep_t("POM_f_FFUEL", "PMf       ", -999.0 ) &
 , dep_t("POM_c_FFUEL", "PMc       ", -999.0 ) &
@@ -59,4 +57,6 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("Dust_WB_c ", "PMc       ", -999.0 ) &
 , dep_t("Dust_SAH_f", "PMf       ", -999.0 ) &
 , dep_t("Dust_SAH_c", "PMc       ", -999.0 ) &
+, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
+, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 /)

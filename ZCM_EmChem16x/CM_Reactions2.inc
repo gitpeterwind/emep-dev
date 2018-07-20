@@ -48,24 +48,6 @@
   ! Nothing to do for NH4_f! xnew(NH4_f) = max(0.0, xold(NH4_f))
 
 
-!-> Ash_f
-
-  P = rcemis(ASH_F,K)
-  
-  ! L = 0.0
-  
-  xnew(Ash_f) = xold(Ash_f) + dt2 * P
-
-
-!-> Ash_c
-
-  P = rcemis(ASH_C,K)
-  
-  ! L = 0.0
-  
-  xnew(Ash_c) = xold(Ash_c) + dt2 * P
-
-
 !-> POM_f_WOOD
 
   P = rcemis(POM_F_WOOD,k)
@@ -237,5 +219,23 @@
   ! L = 0.0
   
   xnew(SeaSalt_c) = xold(SeaSalt_c) + dt2 * P
+
+
+!-> Ash_f
+
+  P = rcemis(ASH_F,K)
+  
+  ! L = 0.0
+  
+  xnew(Ash_f) = xold(Ash_f) + dt2 * P
+
+
+!-> Ash_c
+
+  P = rcemis(ASH_C,K)
+  
+  ! L = 0.0
+  
+  xnew(Ash_c) = xold(Ash_c) + dt2 * P
 
 

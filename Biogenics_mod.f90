@@ -113,7 +113,7 @@ module Biogenics_mod
            , "NO         " &
            , "NH3        " &
            , "Ash_f      " &
-           , "AsH_c      " &
+           , "Ash_c      " &
            , "SeaSalt_f  " &
            , "SeaSalt_c  " &
            , "Dust_WB_f  " &
@@ -299,6 +299,7 @@ module Biogenics_mod
     integer :: iVeg, iEmis, ibvoc, i,j
     character(len=1000) :: varname
     character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
+    character(len=*),parameter :: dtxt='BioModEuro:'
 
      do iVeg = 1, size(VegName)
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
@@ -313,10 +314,10 @@ module Biogenics_mod
 
  
          if( debug_proc ) then
-           write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
+           write(*, "(2a,f12.3,3i2)") dtxt//":E ", &
              trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), &
                iVeg, ibvoc, iEmis
-           write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", trim(varname), &
+           write(*, "(2a,2es12.3)") dtxt//":minmax ", trim(varname), &
              minval(bvocEF(:,:,ibvoc,iEmis)), maxval(bvocEF(:,:,ibvoc,iEmis))
          end if     
 
@@ -353,15 +354,15 @@ module Biogenics_mod
       character(len=15) :: merge_case
       real :: biso, bmt    !  Just for printout
       logical :: use_local, debug_flag
-      character(len=*),parameter :: dtxt='MergedBvoc:'
+      character(len=*),parameter :: dtxt='BioModMerge:'
 
 
       if ( debug_proc ) then
          write(*,*) dtxt//" Start"
          i= debug_li; j= debug_lj
          nlu= LandCover(i,j)%ncodes
-         write(*,*) 'MEGAN  DBG stuff:', me, debug_proc, debug_li, debug_lj
-         write(*,*) 'MEGAN  DBG codes:', nlu, LandCover(i,j)%codes(1:nlu)
+         write(*,*) dtxt//'MEGAN  stuff:', me, debug_proc, debug_li, debug_lj
+         write(*,*) dtxt//'MEGAN  codes:', nlu, LandCover(i,j)%codes(1:nlu)
       end if
 
       do i = 1, limax
@@ -399,7 +400,7 @@ module Biogenics_mod
                 if( debug_flag ) then
                    merge_case = 'defaultBVOC'
                   write(*,"(a,i3,8f8.2)") &
-                  "MergeBVOC: Outside local", iL, LandDefs(iL)%BiomassD,&
+                  dtxt//": Outside local", iL, LandDefs(iL)%BiomassD,&
                    LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
                 end if
            else
@@ -416,7 +417,7 @@ module Biogenics_mod
                 bmt    = bvocEF(i,j,iL,BIO_MTL)+bvocEF(i,j,iL,BIO_MTL)
               end if
               write(*,"(a24,2i4,2L2,f9.4,9f10.3)") &
-                "MergeBVOC:" // trim(merge_case), &
+                dtxt // trim(merge_case), &
                   iL, pft,  use_local, HaveLocalEF(iL),  &
                    LandCover(i,j)%fraction(iiL), biso, bmt,&
                     LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
@@ -439,7 +440,7 @@ module Biogenics_mod
       logical :: mydebug
       logical, save :: my_first_call = .true.
       real, allocatable, dimension(:,:,:) ::  workarray
-      character(len=*), parameter :: dtxt='SetDailyBVOC:' 
+      character(len=*), parameter :: dtxt='BioModSetDaily:' 
 
       if( MasterProc .and. DEBUG%BIO ) write(*,"(a,3i5)") dtxt//"start ", &
             daynumber, last_daynumber, last_bvoc_LC
@@ -523,6 +524,7 @@ module Biogenics_mod
 
     real    :: agts, agr, agtm, agct1, agct2, agct ,itk
     integer :: it, i
+    character(len=*), parameter :: dtxt='BioModTab:' 
 
     agts = 303.
     agr = 8.314
@@ -545,7 +547,7 @@ module Biogenics_mod
       !?? for terpene fac = 0.5*fac(iso): as mass terpene = 2xmass isoprene
 
       if(DEBUG%BIO  .and.  MasterProc ) &
-             write(6,"(A12,i4,5g12.3)") 'Biogenic ecfs: ', &
+             write(6,"(A,i4,5g12.3)") dtxt//'Biogenic ecfs: ', &
                   it, ( canopy_ecf(i,it), i=1, N_ECF )
     end do
     end subroutine TabulateECF
@@ -565,7 +567,7 @@ module Biogenics_mod
 
   integer, intent(in) ::  i,j
 
-  character(len=*), parameter :: dtxt = 'setup_bio:'
+  character(len=*), parameter :: dtxt='BioModSetup:' 
   integer :: it2m
   real    :: E_ISOP, E_MTP, E_MTL
 
@@ -667,16 +669,16 @@ module Biogenics_mod
  
     if ( dbg .and. current_date%seconds==0 ) then 
 
-      call datewrite("DBIO env ", it2m, (/ max(par,0.0), max(cL,0.0), &
+      call datewrite(dtxt//" env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
-      call datewrite("DBIO EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
+      call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j), SoilNH3(i,j) /) ) 
       !A2018 if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcemis(itot_NH3,KG) /) ) 
-      if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
-      call datewrite("DBIO rcemisL ", (/ &
+      if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
+      call datewrite(dtxt//" rcemisL ", (/ &
             rcbio(NATBIO%C5H8,KG), rcbio(NATBIO%TERP,KG) /))
             !A2018 rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
-      call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
+      call datewrite(dtxt//" EmisNat ", EmisNat(:,i,j) )
 
      end if
 

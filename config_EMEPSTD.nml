@@ -19,6 +19,8 @@
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
+!EUROPEAN_settings = 'YES',   ! Should now be automatic
+!GLOBAL_settings   = 'NO',
 !------------------------------
 ! changes March-April 2017
  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
@@ -188,8 +190,8 @@
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
-  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
-  DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   !
+  DEBUG%DRYDEP          = F,   !
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
@@ -197,7 +199,7 @@
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0,
   DEBUG%MOSAICS         = F,
-  DEBUG%PFT_MAPS        = 0,   ! in testing
+  DEBUG%PFT_MAPS        = 0,   ! 
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
@@ -206,7 +208,8 @@
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
   DEBUG%SOA             = F,
-  DEBUG%STOFLUX         = T,
+  DEBUG%SOILNOX         = F,
+  DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
