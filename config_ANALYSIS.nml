@@ -70,8 +70,6 @@
 &DA_CONFIG
   analysis_ndate=1,                   ! 1 date setup
   analysis_date(1)= -1,-1,-1,00,0000, ! analysis every hour of every day
-!+analysis_nspc=3,                    ! potentially analysed tracers (nChem)
-!+analysis_spc='O3','NO2','SO2','PM25','PM10', ! (varName)
 !------------------------------
 ! m1qn3 (solver) settings
 !------------------------------
@@ -88,8 +86,8 @@
 !------------------------------
 ! define B matrix to be used for each analysed component
 !------------------------------
-  nBnmc=3
-  Bnmc_name(1:5)='O3','NO2','SO2','PM25','PM10',
+  nBnmc=4                               ! nChem: potentially analysed tracers
+  Bnmc_name(1:4)='O3','NO2','CO','SO2', ! varName: should be indetical to DAOBS_GROUP
   Bnmc_filename='/work/arjos/Bnmc/batch-02/SPC_2010/output/nmc-BB.nc',
 &end
 !------------------------------

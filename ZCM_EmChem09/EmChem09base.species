@@ -81,7 +81,7 @@ CH3OH,1,CH3OH,xx,xx,xx,0,0,0,xx,xx,,!
 C2H5OH,1,C2H5OH,xx,xx,xx,0,0,0,xx,xx,,!
 ACETOL,1,CH3COCH2OH,xx,ALD,xx,0,0,0,xx,xx,,"!hydroxy acetone"
 H2,1,H2,xx,xx,xx,0,0,0,xx,xx,,!
-CO,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
+CO,1,CO,xx,xx,xx,0,0,0,xx,daObs,,!
 CH4,1,CH4,xx,xx,xx,0,0,0,xx,xx,,!
 SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX;daObs,,"!Move to slow?"
 *,,,,,,,,,xx,,,
