@@ -2991,7 +2991,7 @@ contains
   !-----------------------------------------------------------------------
   
     use MPI   , only : MPI_INTEGER
-    use MPI   , only : MPI_AllGather
+!   use MPI   , only : MPI_AllGather
     use MPIF90, only : MPIF90_Displacements
     
     use MPI_Groups_ml    , only : MPI_COMM_CALC

@@ -21,8 +21,8 @@ module DA_Util_ml
   use Par_ml           , only : me
   use MPI              , only : MPI_SUCCESS
   use MPI              , only : MPI_INTEGER, MPI_DOUBLE_PRECISION
-  use MPI              , only : MPI_AllGather
-  use MPI              , only : MPI_AllToAllV
+! use MPI              , only : MPI_AllGather
+! use MPI              , only : MPI_AllToAllV
 #endif
 
 

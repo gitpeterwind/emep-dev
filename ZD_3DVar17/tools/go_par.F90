@@ -358,7 +358,7 @@ contains
 
   subroutine Domains_Init( self, glbo, gubo, status )
 
-    use MPI, only : MPI_AllGather
+!   use MPI, only : MPI_AllGather
     use MPI, only : MPI_INTEGER
     
     ! --- const --------------------------------------
@@ -495,7 +495,7 @@ contains
   subroutine Domains_InitLocal( self, n, status )
 
 #ifdef _MPI
-    use MPI, only : MPI_AllGather
+!   use MPI, only : MPI_AllGather
     use MPI, only : MPI_INTEGER
 #endif
     
@@ -747,7 +747,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
@@ -976,7 +976,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
@@ -1208,7 +1208,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
@@ -1447,7 +1447,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
@@ -1644,7 +1644,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
@@ -1841,7 +1841,7 @@ contains
   
 #ifdef _MPI
     use MPI, only : MPI_DOUBLE_COMPLEX
-    use MPI, only : MPI_AllToAllV
+!   use MPI, only : MPI_AllToAllV
 #endif
 
     ! --- const ---------------------------------
