@@ -137,9 +137,9 @@ module OrganicAerosol_mod
    integer, save :: igrp_Cstar = -1, igrp_DeltaH = -1
    logical, save :: first_call = .true.
 
-   dbg = debug%SOA    > 0
+   dbg = MasterProc .and. DEBUG%SOA > 0
    if(dbg .and. first_call) write(*,*) dtxt // &
-       "ORGANIC_AEROSOLS?", ORGANIC_AEROSOLS, S1
+       "ORGANIC_AEROSOLS?", ORGANIC_AEROSOLS, S1, S2
 
    if( .not. ORGANIC_AEROSOLS  ) RETURN
 
@@ -192,7 +192,7 @@ module OrganicAerosol_mod
 
        do k = K1, K2
             BGND_OC(k) = BGND_OC(k) * exp( -h_km(k)/9.1 )
-            if(DEBUG%SOA .and. MasterProc ) write(*,"(a,i4,2f8.3)") &
+            if(dbg ) write(*,"(a,i4,2f8.3)") &
                "BGND_OC ", k, h_km(k),  BGND_OC(k)
        end do
        BGND_OA(:) = 2*BGND_OC(:)   ! Assume OA/OC = 2 for bgnd
@@ -242,7 +242,7 @@ module OrganicAerosol_mod
          do is = S1, S2
             write(6,"(a,i4,1x,a20,f7.1,i3,8es10.2)") &
              " Tab SOA: MW, Carbons, C*:", is, adjustl(species(is)%name), &
-              species(is)%molwt, species(is)%carbons, & 
+              species(is)%molwt, nint(species(is)%carbons), & 
               tabCiStar(is,273), tabCiStar(is,303)
          end do
        end if
@@ -272,11 +272,11 @@ module OrganicAerosol_mod
       COA(:) = BGND_OA(:)  ! Good starting estimate
       xn(itot_bgnd,:) = COA(:)/(molcc2ugm3*species(itot_bgnd)%molwt)  
       xn(itot_om25,:) = COA(:)/(molcc2ugm3*species(itot_om25)%molwt)  
-      if( dbg) write(*,"(a,3f8.3,2es10.2)") "COA, MW, xn TESTS ", COA(1),&
+      if( dbg) write(*,"(a,3f8.3,2es10.2)") "COA, MW, xn TESTS ", COA(K2),&
         species(itot_om25)%molwt, species(itot_bgnd)%molwt, &
-        xn(itot_bgnd,1), xn(itot_om25,1)
+        xn(itot_bgnd,K2), xn(itot_om25,K2)
 
-      if ( debug%SOA  >1 ) then ! Invent some concs!
+      if ( DEBUG%SOA  >1 ) then ! Invent some concs!
         do is = S1, S2
           xn(is,:) = 0.1/(molcc2ugm3*species(is)%molwt)   ! FAKE 0.1 ug/m3
         end do
@@ -317,10 +317,9 @@ module OrganicAerosol_mod
    nhour  = current_date%hour
    seconds = current_date%seconds
 
-   dbg0 = debug%SOA > 0
-   dbg1 = debug%SOA > 1
-   !if(dbg0) write(*,*) dtxt // "ORGANIC_AEROSOLS?", ORGANIC_AEROSOLS
-   if( dbg0 ) write(unit=*,fmt=*) "Into SOA"
+   dbg0 = debug_proc .and. DEBUG%SOA > 0
+   dbg1 = debug_proc .and. DEBUG%SOA > 1
+   if( dbg0 ) write(unit=*,fmt=*) "Into SOA", DEBUG%SOA, S1, S2
    if( .not. ORGANIC_AEROSOLS ) then
      if(MasterProc) write(*,*) dtxt // "skipped. ORGANIC_AEROSOLS=F"
      RETURN
@@ -463,7 +462,7 @@ module OrganicAerosol_mod
    real :: J16tmp
    logical :: dbg
 
-   dbg = ( DEBUG%SOA .and. debug_flag) 
+   dbg = ( DEBUG%SOA>0 .and. debug_flag) 
 
    if ( debug_flag ) write(*,*) "Skip Reset Organic Aerosol?", itot_bgnd 
    if( itot_bgnd < 1 ) then
@@ -505,7 +504,7 @@ module OrganicAerosol_mod
            Fpart(itot,:) * xn(itot,:) * species(itot)%molwt
    
       if(  dbg ) then
-        do k = K1, K2
+        do k = K2, K2  ! K1, K2
            write(*,"(a,3i4,1x,a15,9es12.3)") "OFSOA fac ", n, itot, k, &
              adjustl(species(itot)%name), Fpart(itot,k), &
              Fpart(itot,k) * xn(itot,k) * species(itot)%molwt*molcc2ugm3,&
