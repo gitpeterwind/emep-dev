@@ -189,8 +189,8 @@ contains
                  if( find_index( ispec, chemgroups(iBCcgroup)%specs ) >0) &
                     is_BC(ipm)  = .true.
               end if
-              if( MasterProc) write(*,*) dtxt//"is_BC ",&
-                  iBCcgroup, species(ispec)%name, is_BC(ipm)
+              !if( MasterProc) write(*,*) dtxt//"is_BC ",&
+              !    iBCcgroup, species(ispec)%name, is_BC(ipm)
           end do
        end if
 
