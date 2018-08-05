@@ -192,7 +192,6 @@ type, public :: emep_debug
     ,SITES           = .false. &
     ,SOILNOX         = .false. &
     ,SOLVER          = .false. &
-    ,SOA             = .false. &
     ,STOFLUX         = .false. &
     ,VDS             = .false.
   ! integer debug options allow different levels of verbosity
@@ -200,6 +199,7 @@ type, public :: emep_debug
       PFT_MAPS  = 0         & !< Future option
      ,LANDUSE   = 0         & !
      ,DO3SE     = 0         & !
+     ,SOA       = 0         &
      ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
   !----------------------------------------------------------
    integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
