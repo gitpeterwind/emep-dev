@@ -76,7 +76,7 @@
   subroutine doYieldModifications(txt)
      character(len=*), intent(in) :: txt
 
-     dbg = ( DEBUG%SOA .and. DebugCell )
+     dbg = ( DEBUG%SOA>0 .and. DebugCell )
 
      if ( YieldModifications(1:3) == 'VBS' ) then
        YieldModificationsInUse = .true.
