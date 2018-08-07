@@ -21,6 +21,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Aug 2018, Dave
+
+ZCM_EmChem16x/emissplt_run
+  Replaced  defaults.nox with new version containing SHIPNOx
+  Added specials files for all POLL
+
+On vilje, stallo, elvis:
+  ~mifapw/Data/ZCM_EmChem16x/emissplit_run:
+    Copied all files from above here. Used as default by Config_module.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Aug 2018, Dave
 
 ZCM_EmChem16x
