@@ -170,7 +170,7 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 0,
   DEBUG%STOFLUX         = F,
 ! Use integers to control debug level:
   DEBUG%PFT_MAPS        = 0,           ! in testing

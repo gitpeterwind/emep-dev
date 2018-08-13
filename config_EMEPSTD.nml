@@ -207,7 +207,7 @@
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 2,
   DEBUG%SOILNOX         = F,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
