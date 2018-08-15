@@ -37,6 +37,11 @@ use CheckStop_mod,      only: CheckStop
 use Chemfields_mod,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
 use ChemDims_mod,       only: NSPEC_SHL,NSPEC_ADV
 use ChemSpecs_mod                ! provide species names, IXADV_*
+use Config_module, only: KMAX_MID  &  ! Number of levels in vertical
+                            ,iyr_trend &  ! Used for e.g. future scenarios
+                            ,BGND_CH4  &  ! If positive, replaces defaults 
+                            ,USES, MasterProc, PPB, Pref, LoganO3File, DustFile
+use Debug_module,    only: DEBUG   ! -> DEBUG%BCS
 use Functions_mod,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_mod,     only: glon, glat   & ! full domain lat, long
                             ,debug_proc, debug_li, debug_lj & ! debugging
@@ -45,11 +50,6 @@ use Io_Progs_mod,       only: datewrite, PrintLog
 use Landuse_mod,        only: mainly_sea
 use LocalVariables_mod, only: Grid
 use MetFields_mod,      only: roa
-use Config_module, only: KMAX_MID  &  ! Number of levels in vertical
-                            ,iyr_trend &  ! Used for e.g. future scenarios
-                            ,BGND_CH4  &  ! If positive, replaces defaults 
-                            ,USES,DEBUG  & ! %BCs
-                            ,MasterProc, PPB, Pref, LoganO3File, DustFile
 use MPI_Groups_mod,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, &
                              MPI_COMM_CALC, IERROR
 use NetCDF_mod,         only: ReadField_CDF,vertical_interpolate

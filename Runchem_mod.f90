@@ -24,11 +24,9 @@ module RunChem_mod
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
-                              USES, & ! need USES%EMISSTACKS and more 
-                              USE_FASTJ, &
-                              dt_advec, &  ! for Emergency
-                              DEBUG_EMISSTACKS, & ! MKPS
-                              DebugCell, DEBUG    ! RUNCHEM
+                              USE_FASTJ, USES, dt_advec
+  use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
+                              ,DEBUG_EMISSTACKS ! MKPS
   use DefPhotolysis_mod, only: setup_phot
   use DefPhotolysis_mod  ! RDBG
   use DerivedFields_mod, only: f_2d

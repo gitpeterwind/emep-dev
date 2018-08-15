@@ -47,8 +47,7 @@ use BLPhysics_mod,         only: &
 use CheckStop_mod,         only: CheckStop
 use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
-     ,KMAX_BND, KMAX_MID, MasterProc, DEBUG_MET, nmax  &
-     ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
+     ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
      ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
      ,TEGEN_DATA, USES &
@@ -57,20 +56,22 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
      ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
-use FastJ_mod,             only: setup_phot_fastj,rcphot_3D
-use Functions_mod,         only: Exner_tab, Exner_nd
-use Functions_mod,         only: T_2_Tpot, StandardAtmos_kPa_2_km 
-use GridValues_mod,        only: glat, xm_i, xm_j, xm2         &
+use Debug_module,       only: DEBUG_MET,DEBUG_BLM, DEBUG_Kz, &
+                              DEBUG_SOILWATER, DEBUG_LANDIFY 
+use FastJ_mod,          only: setup_phot_fastj,rcphot_3D
+use Functions_mod,      only: Exner_tab, Exner_nd
+use Functions_mod,      only: T_2_Tpot, StandardAtmos_kPa_2_km 
+use GridValues_mod,     only: glat, xm_i, xm_j, xm2         &
        ,Poles, sigma_bnd, sigma_mid, xp, yp, fi, GRIDWIDTH_M  &
        ,debug_proc, debug_li, debug_lj, A_mid, B_mid          &
        ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd         &
        ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle
 
-use Io_mod ,               only: ios, datewrite, PrintLog, IO_LOG
-use Landuse_mod,           only: water_fraction, water_frac_set, &
+use Io_mod ,            only: ios, datewrite, PrintLog, IO_LOG
+use Landuse_mod,        only: water_fraction, water_frac_set, &
                                 likely_coastal, mainly_sea
 use MetFields_mod
-use MicroMet_mod,          only: PsiH  ! Only if USE_MIN_KZ
+use MicroMet_mod,       only: PsiH  ! Only if USE_MIN_KZ
 use MPI_Groups_mod,     only: MPI_DOUBLE_PRECISION, MPI_BYTE, MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&

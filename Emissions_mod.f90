@@ -19,10 +19,8 @@ use Config_module,only: &
     EMIS_OUT,      &    ! output emissions in ASCII or not
 !    MONTHLY_GRIDEMIS, &  !NML
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
-    DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-    DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
-    USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
-    SEAFIX_GEA_NEEDED, & ! see below
+    MasterProc, USES,  &  !
+    SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
     NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,USE_SECTORS_NAME,&
@@ -31,6 +29,8 @@ use Config_module,only: &
     AVG_SMI_2005_2010File,NdepFile
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
+use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
+                                DEBUG_EMISTIMEFACS, DEBUG_ROADDUST
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid

@@ -14,10 +14,10 @@
 use CheckStop_mod,           only: CheckStop
 use GridValues_mod,          only: i_local, j_local
 use Io_Nums_mod,             only: IO_TMP, IO_LOG
-use Config_module,      only: DEBUG, DEBUG, GRID, &
-                                  MasterProc, IIFULLDOM, JJFULLDOM
-use MPI_Groups_mod        , only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
-use KeyValueTypes,          only: KeyVal, KeyValue, LENKEYVAL
+use Config_module,           only: GRID, MasterProc, IIFULLDOM, JJFULLDOM
+use Debug_module,            only: DEBUG   ! -> DEBUG%IOPROG
+use MPI_Groups_mod,          only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
+use KeyValueTypes,           only: KeyVal, KeyValue, LENKEYVAL
 use Par_mod,                 only: me, limax,ljmax
 use SmallUtils_mod,          only: wordsplit, WriteArray
 use TimeDate_mod,            only: date,current_date

@@ -50,9 +50,9 @@ use GridValues_mod,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, Restri
 use Io_mod,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_mod,           only: roa
-use Config_module,      only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
-                                  IOU_INST,RUNDOMAIN,FORECAST,USES,&
-                                  DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
+use Config_module,           only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
+                                  IOU_INST,RUNDOMAIN,FORECAST,USES
+use Debug_module,           only: DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_mod  
 use netcdf,                 only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&

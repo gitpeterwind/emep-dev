@@ -24,8 +24,21 @@ program emep_Main
   use Chemfields_mod,    only: alloc_ChemFields
   use ChemSpecs_mod,     only: define_chemicals
   use ChemGroups_mod,    only: Init_ChemGroups
+  use Config_module,only: MasterProc, &   ! true for host processor, me==0
+       RUNDOMAIN,  &   ! Model domain
+       NPROC,      &   ! No. processors
+       METSTEP,    &   ! Hours between met input
+       runlabel1,  &   ! explanatory text
+       runlabel2,  &   ! explanatory text
+       iyr_trend, nmax,nstep , meteo,     &
+       IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
+       HOURLYFILE_ending, &
+       USES, USE_uEMEP,JUMPOVER29FEB,&
+       FORECAST, ANALYSIS, & ! FORECAST/ANALYSIS mode
+       Config_ModelConstants, startdate, enddate
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
+  use Debug_module,      only: DEBUG   ! -> DEBUG%MAINCODE
   use DefPhotolysis_mod, only: readdiss
   use Derived_mod,       only: Init_Derived, wanted_iou
   use EcoSystem_mod,     only: Init_EcoSystems
@@ -40,18 +53,6 @@ program emep_Main
   use Landuse_mod,       only: InitLandUse, SetLanduse
   use MassBudget_mod,    only: Init_massbudget, massbudget
   use Met_mod,           only: metfieldint, MetModel_LandUse, Meteoread
-  use Config_module,only: MasterProc, &   ! true for host processor, me==0
-       RUNDOMAIN,  &   ! Model domain
-       NPROC,      &   ! No. processors
-       METSTEP,    &   ! Hours between met input
-       runlabel1,  &   ! explanatory text
-       runlabel2,  &   ! explanatory text
-       iyr_trend, nmax,nstep , meteo,     &
-       IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
-       HOURLYFILE_ending, &
-       USES, USE_uEMEP,JUMPOVER29FEB,&
-       FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
-  use Config_module,     only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_mod!,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                     !          MasterPE,IERROR, MPI_world_init
   use Nest_mod,          only: wrtxn     ! write nested output (IC/BC)

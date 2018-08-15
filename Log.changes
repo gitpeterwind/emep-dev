@@ -21,6 +21,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Aug 2018, Dave
+
+NEW FILE: Debug_module - with variables moved from Config_module. This helps
+  compatability with ESX, and should also allow more space to add comments
+  concerning these debug variables.
+
+=> many changes in .f90 files
+
+SOA_mod.f90
+Solver_mod.f90
+YieldModifications_mod.f90
+
+  - modified yield modifications code and usage
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Aug 2018, Dave
 
 ZCM_EmChem16x/emissplt_run

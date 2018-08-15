@@ -44,31 +44,31 @@ use Chemfields_mod ,   only: cfac, so2nh3_24hr,Grid_snow
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
 use ChemSpecs_mod            ! several species needed
 use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
-                            DEBUG, DEBUG_ECOSYSTEMS, &
                             USES, USE_SOILNOX, &
                             MasterProc, &
                             PPBINV, IOU_INST,&
                             KUPPER, NLANDUSEMAX
+use Debug_module,       only: DEBUG, DEBUG_ECOSYSTEMS
 use DerivedFields_mod,  only: d_2d, f_2d, VGtest_out_ix
-use DO3SE_mod,         only: do3se
-use EcoSystem_mod,     only: EcoSystemFrac, Is_EcoSystem,  &
+use DO3SE_mod,          only: do3se
+use EcoSystem_mod,      only: EcoSystemFrac, Is_EcoSystem,  &
                             NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
 use GasParticleCoeffs_mod         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
-use GridValues_mod ,   only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
+use GridValues_mod ,    only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
      glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
-use Io_Progs_mod,      only: datewrite
-use Landuse_mod,       only: SetLandUse, Land_codes  & 
+use Io_Progs_mod,       only: datewrite
+use Landuse_mod,        only: SetLandUse, Land_codes  & 
                            ,NLUMAX &  ! Max. no countries per grid
                            ,LandCover   ! Provides codes, SGS, LAI, etc,
-use LandDefs_mod,      only: LandType, LandDefs, STUBBLE
-use LocalVariables_mod,only: Grid, L, iL ! Grid and sub-scale Met/Veg data
-use LocalVariables_mod,only: NLOCDRYDEP_MAX ! Used to store Vg
-use MassBudget_mod,    only: totddep
-use MetFields_mod,     only: u_ref, rh2m, sst
-use MetFields_mod,     only: tau, sdepth, SoilWater_deep, th,pzpbl
-use MicroMet_mod,      only: AerRes, Wind_at_h
-use MosaicOutputs_mod,     only: Add_MosaicOutput, MMC_RH
-use Par_mod,               only: limax,ljmax, me,li0,li1,lj0,lj1
+use LandDefs_mod,       only: LandType, LandDefs, STUBBLE
+use LocalVariables_mod, only: Grid, L, iL ! Grid and sub-scale Met/Veg data
+use LocalVariables_mod, only: NLOCDRYDEP_MAX ! Used to store Vg
+use MassBudget_mod,     only: totddep
+use MetFields_mod,      only: u_ref, rh2m, sst
+use MetFields_mod,      only: tau, sdepth, SoilWater_deep, th,pzpbl
+use MicroMet_mod,       only: AerRes, Wind_at_h
+use MosaicOutputs_mod,  only: Add_MosaicOutput, MMC_RH
+use Par_mod,            only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
 use Rb_mod,                only: Rb_gas
 use Rsurface_mod,          only: Rsurface, Rinc

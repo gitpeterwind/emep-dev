@@ -38,25 +38,25 @@ module ForestFire_mod
 !  emissions are needed, and keeps all forest-fire logic here
 !----------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop,CheckNC
-!use ChemDims_mod
 use ChemSpecs_mod
+use Config_module,         only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
+                                IOU_INST
+use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_mod,                only: PrintLog, datewrite, IO_NML
 use MetFields_mod,         only: z_bnd
-use Config_module,    only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
-                                DEBUG, IOU_INST
-use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
+use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_mod,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
 use OwnDataTypes_mod,      only: Deriv, TXTLEN_SHORT
 use Par_mod,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_mod, only: AVOG
-use ZchemData_mod,    only: rcemis
 use SmallUtils_mod,        only: find_index, key2str
 ! No. days per year, date-type:
 use TimeDate_mod,          only: current_date,day_of_year,max_day
 use TimeDate_ExtraUtil_mod,only: date2string,nctime2string,date2nctime,date2file
+use ZchemData_mod,         only: rcemis
 
 implicit none
 private

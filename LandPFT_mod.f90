@@ -7,10 +7,10 @@
 module LandPFT_mod
 
 use CheckStop_mod,   only: CheckStop, StopAll
+use Config_module,   only: MasterProc, PFT_MAPPINGS,GLOBAL_LAInBVOCFile
+use Debug_module,    only:  DEBUG   ! -> DEBUG%PFT_MAPS
 use GridValues_mod,  only: debug_proc, debug_li, debug_lj, glon, glat
-use Config_module,  only : DEBUG, MasterProc, PFT_MAPPINGS&
-                               ,GLOBAL_LAInBVOCFile
-use NetCDF_mod, only: ReadField_CDF
+use NetCDF_mod,      only: ReadField_CDF
 use Par_mod,         only: LIMAX, LJMAX, me
 use SmallUtils_mod,  only: find_index, NOT_FOUND, WriteArray, trims
 

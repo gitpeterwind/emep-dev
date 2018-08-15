@@ -20,18 +20,21 @@
 ! threshold wind friction velocity to soil moisture for arid and semi-arid
 ! areas. Ann. Geophysicae, 17,149-157.
 
- use Biogenics_mod,         only : EmisNat, EMIS_BioNat
- use CheckStop_mod,         only : CheckStop
- use Functions_mod,         only : ERFfunc
- use ChemSpecs_mod,            only : species
- use GridValues_mod,        only : glat, glon, i_fdom, j_fdom 
- use GridValues_mod,        only : debug_proc, debug_li, debug_lj
- use Io_mod,                only : PrintLog, datewrite
- use Landuse_mod,           only : LandCover, NLUMAX 
- use Landuse_mod,           only : water_fraction
- use LandDefs_mod,          only:  LandType
- use LocalVariables_mod,    only : Grid
- use MetFields_mod,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
+ use Biogenics_mod,      only: EmisNat, EMIS_BioNat
+ use CheckStop_mod,      only: CheckStop
+ use Config_module,      only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
+                               NPROC, MasterProc, USES
+ use Debug_module,       only: DEBUG_DUST
+ use Functions_mod,      only: ERFfunc
+ use ChemSpecs_mod,      only: species
+ use GridValues_mod,     only: glat, glon, i_fdom, j_fdom 
+ use GridValues_mod,     only: debug_proc, debug_li, debug_lj
+ use Io_mod,             only: PrintLog, datewrite
+ use Landuse_mod,        only: LandCover, NLUMAX 
+ use Landuse_mod,        only: water_fraction
+ use LandDefs_mod,       only:  LandType
+ use LocalVariables_mod, only: Grid
+ use MetFields_mod,      only: z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
                                   t2_nwp, sdepth, fh, ps, surface_precip, &
                                   rho_surf, &
                                   SoilWater => SoilWater_uppr,  &
@@ -39,18 +42,16 @@
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac,                   & 
                                   pwp, fc, SoilWaterSource
- use Config_module,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-                                  NPROC, MasterProc, USES, DEBUG_DUST
- use MicroMet_mod,          only : Wind_at_h
- use Par_mod,               only : me,LIMAX,LJMAX
- use Par_mod,               only : limax, ljmax ! Debugging 
- use PhysicalConstants_mod, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
+ use MicroMet_mod,       only: Wind_at_h
+ use Par_mod,            only: me,LIMAX,LJMAX
+ use Par_mod,            only: limax, ljmax ! Debugging 
+ use PhysicalConstants_mod, only: GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
- use ZchemData_mod,    only : rcemis 
- use ZchemData_mod,    only : rh
- use SmallUtils_mod,        only : find_index
- use SubMet_mod,            only : Sub
- use TimeDate_mod,          only : daynumber
+ use SmallUtils_mod,     only: find_index
+ use SubMet_mod,         only: Sub
+ use TimeDate_mod,       only: daynumber
+ use ZchemData_mod,      only: rcemis 
+ use ZchemData_mod,      only: rh
 
 !-----------------------------------------------
   implicit none

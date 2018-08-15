@@ -1,11 +1,10 @@
 module EcoSystem_mod
 
-use LandDefs_mod,        only: LandType
-use Config_module , only: MasterProc, DEBUG=>DEBUG_ECOSYSTEMS, &
-                              NLANDUSEMAX, IOU_YEAR, IOU_KEY
-use OwnDataTypes_mod,    only: Deriv, print_deriv_type &
-                              ,TXTLEN_DERIV, TXTLEN_SHORT
-use Par_mod,             only: LIMAX, LJMAX
+use Config_module ,   only: MasterProc, NLANDUSEMAX, IOU_YEAR, IOU_KEY
+use Debug_module,     only: DEBUG=>DEBUG_ECOSYSTEMS
+use LandDefs_mod,     only: LandType
+use OwnDataTypes_mod, only: Deriv, print_deriv_type, TXTLEN_DERIV, TXTLEN_SHORT
+use Par_mod,          only: LIMAX, LJMAX
 
 implicit none
 private

@@ -4,12 +4,12 @@
 module Landuse_mod
 
 use CheckStop_mod,   only: CheckStop,StopAll
-use Config_module,only: DEBUG, NLANDUSEMAX, SEA_LIMIT, & 
-                            USES, emep_debug, &
+use Config_module,   only: NLANDUSEMAX, SEA_LIMIT, USES,  &
                             FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
                             VEG_2dGS, VEG_2dGS_Params, & 
                             NPROC, IIFULLDOM, JJFULLDOM, &
                             MasterProc, LandCoverInputs 
+use Debug_module,    only: DEBUG   ! -> DEBUG%LANDUSE
 use DO3SE_mod,       only: fPhenology, Init_DO3SE
 use GridAllocate_mod,only: GridAllocate
 use GridValues_mod,  only:  glat , glon   & ! latitude,

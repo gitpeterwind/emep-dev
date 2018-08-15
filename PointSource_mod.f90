@@ -25,16 +25,15 @@ module PointSource_mod
 ! --- prelim module to introduce point sources.
 !
 use CheckStop_mod,       only: CheckStop
-use ChemSpecs_mod,          only: species
+use ChemSpecs_mod,       only: species
+use Config_module,  only: KMAX_MID, PT, Pref, MasterProc, USES
+use Debug_module,        only: DEBUG => DEBUG_EMISSTACKS
 use Functions_mod,       only: StandardAtmos_kPa_2_km, Tpot_2_T
 use GridValues_mod,      only: sigma_bnd, debug_proc &
                          , coord_in_processor, GridArea_m2
 use Io_Progs_mod,        only: open_file, ios, read_line, datewrite
 use LocalVariables_mod,  only: Grid ! Grid-meteorology
 use MetFields_mod,       only: pzpbl, z_bnd, z_mid
-use Config_module,  only: KMAX_MID, PT, Pref, MasterProc, &
-                              USES, & ! for PlumeMethod
-                              DEBUG => DEBUG_EMISSTACKS
 use Par_mod,             only: me, LIMAX, LJMAX, limax, ljmax, &
                               IRUNBEG,JRUNBEG, & ! TMP for debug
                               gi0, gi1, gj0, gj1

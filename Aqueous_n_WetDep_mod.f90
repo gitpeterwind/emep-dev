@@ -36,20 +36,20 @@ use CheckStop_mod,     only: CheckStop, StopAll
 use ChemDims_mod             
 use ChemSpecs_mod             
 use ChemGroups_mod,    only: ChemGroups
-use DerivedFields_mod, only: f_2d, d_2d     ! Contains Wet deposition fields
-use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep ! New A2018
-use GridValues_mod,    only: gridwidth_m,xm2,dA,dB
-use Io_mod,            only: IO_DEBUG, datewrite
-use MassBudget_mod,    only : wdeploss,totwdep
 use Config_module,only: &
     CHEMTMIN, CHEMTMAX      &       ! -> range of temperature
    ,MasterProc              &
-   ,DEBUG   &  !  => DEBUG%AQUEOUS, DEBUG%MY_WETDEP, DEBUG%pH &
    ,KMAX_MID                &       ! -> ground, k=20
    ,KUPPER                  &       ! -> top of cloud-chemistry, k=6
    ,KCHEMTOP                &       ! -> top of chemistry, now k=2
    ,dt => dt_advec          &       ! -> model timestep
    ,IOU_INST                        ! Index: instantaneous values
+use Debug_module,      only: DEBUG  !  => DEBUG%AQUEOUS, DEBUG%MY_WETDEP, DEBUG%pH
+use DerivedFields_mod, only: f_2d, d_2d     ! Contains Wet deposition fields
+use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep ! New A2018
+use GridValues_mod,    only: gridwidth_m,xm2,dA,dB
+use Io_mod,            only: IO_DEBUG, datewrite
+use MassBudget_mod,    only : wdeploss,totwdep
 use MetFields_mod,       only: pr, roa, z_bnd, cc3d, lwc
 use MetFields_mod,       only: ps
 use OrganicAerosol_mod,  only: ORGANIC_AEROSOLS

@@ -12,16 +12,16 @@ use CheckStop_mod,         only: CheckStop
 use ChemDims_mod,          only: NSPEC_TOT, NSPEC_SHL
 use ChemGroups_mod,        only: chemgroups
 use ChemSpecs_mod,         only: species
+use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
+                                USES, TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
+                                startdate,enddate,DataDir,GRID, TopoFile
+use Debug_module,          only:  DEBUG   ! -> DEBUG%COLSRC
 use EmisDef_mod,           only: VOLCANOES_LL
 use GridValues_mod,        only: xm2,sigma_bnd,GridArea_m2,&
                                 GRIDWIDTH_M,&
                                 coord_in_processor,coord_in_gridbox
 use Io_mod,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
 use MetFields_mod,         only: roa, z_bnd, u_xmj, v_xmi, foundtopo, model_surf_elevation
-use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
-                                USES,DEBUG,&
-                                TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
-                                startdate,enddate,DataDir,GRID, TopoFile
 use NetCDF_mod,            only: GetCDF_modelgrid
 use MPI_Groups_mod
 use Par_mod,               only: LIMAX, LJMAX, me

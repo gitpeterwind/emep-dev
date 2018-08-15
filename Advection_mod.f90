@@ -65,38 +65,39 @@
 ! The number of diffusion iterations can be chosen (ndiff).
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-  use Chemfields_mod,     only : xn_adv
-  use ChemDims_mod,       only : NSPEC_ADV
-  use ChemSpecs_mod,      only : species,species_adv
-  use CheckStop_mod,      only : CheckStop,StopAll
-  use Config_module,      only : EPSIL, dt_advec
-  use Convection_mod,     only : convection_pstar,convection_Eta
-  use EmisDef_mod,        only : NSECTORS, Nneighbors, loc_frac, loc_frac_1d
-  use GridValues_mod,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
+  use Chemfields_mod,     only: xn_adv
+  use ChemDims_mod,       only: NSPEC_ADV
+  use ChemSpecs_mod,      only: species,species_adv
+  use CheckStop_mod,      only: CheckStop,StopAll
+  use Config_module,      only: EPSIL, dt_advec
+  use Config_module, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
+                  dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, &
+                  NPROCX,NPROCY,NPROC, FORECAST,&
+                  USES,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
+  use Debug_module,       only: DEBUG_ADV
+  use Convection_mod,     only: convection_pstar,convection_Eta
+  use EmisDef_mod,        only: NSECTORS, Nneighbors, loc_frac, loc_frac_1d
+  use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
                                 extendarea_N
-  use Io_mod,             only : datewrite
-  use Io_Progs_mod,       only : PrintLog
-  use Config_module, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
-                  dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
-                  FORECAST,&
-                  USES,DEBUG_ADV,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
-  use MetFields_mod,      only : ps,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
+  use Io_mod,             only: datewrite
+  use Io_Progs_mod,       only: PrintLog
+  use MetFields_mod,      only: ps,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
-  use MassBudget_mod,     only : fluxin_top,fluxout_top,fluxin,fluxout
-  use My_Timing_mod,      only : Code_timer, Add_2timing, tim_before,tim_after,NTIMING
+  use MassBudget_mod,     only: fluxin_top,fluxout_top,fluxin,fluxout
+  use My_Timing_mod,      only: Code_timer, Add_2timing, tim_before,tim_after,NTIMING
   !do not use "only", because MPI_IN_PLACE does not behave well on certain versions of gfortran(?)
   use MPI_Groups_mod !,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
                     !       MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
                     !       request_n,request_s,request_xn_n,request_xn_s,&
                     !       request_e,request_w, request_xn_w, request_xn_e
-  use Par_mod,            only : LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
+  use Par_mod,            only: LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-  use PhysicalConstants_mod, only : GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only : uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff
+  use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
+  use uEMEP_mod, only: uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff
 
   implicit none
   private
