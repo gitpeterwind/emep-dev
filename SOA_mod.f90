@@ -37,13 +37,12 @@ module OrganicAerosol_mod
 
    use ChemGroups_mod  !XSOA , only :    &
 
+   use Config_module,  only: PT, Pref, CHEMTMIN, CHEMTMAX, &
+                             MasterProc,  & ! DebugCell, &
+                             K2 => KMAX_MID, K1 => KCHEMTOP
+   use Debug_module,   only: DebugCell, DEBUG  ! -> DEBUG%SOA
    use Functions_mod,  only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
    use GridValues_mod, only: A_mid,B_mid, debug_proc, debug_li, debug_lj
-   use Config_module,  only:  PT, Pref
-
-   use Config_module,  only: CHEMTMIN, CHEMTMAX, &
-                             MasterProc, DEBUG, &
-                             K2 => KMAX_MID, K1 => KCHEMTOP
    use Par_mod,        only: LIDIM => LIMAX, LJDIM => LJMAX, me
    use PhysicalConstants_mod, only : AVOG, RGAS_J 
    use ZchemData_mod,  only: itemp, xn => xn_2d, Fgas, Fpart
@@ -137,7 +136,8 @@ module OrganicAerosol_mod
    integer, save :: igrp_Cstar = -1, igrp_DeltaH = -1
    logical, save :: first_call = .true.
 
-   dbg = MasterProc .and. DEBUG%SOA > 0
+   !dbg = MasterProc .and. DEBUG%SOA > 0
+   dbg = first_call .and. DEBUG%SOA > 0
    if(dbg .and. first_call) write(*,*) dtxt // &
        "ORGANIC_AEROSOLS?", ORGANIC_AEROSOLS, S1, S2
 
@@ -317,8 +317,10 @@ module OrganicAerosol_mod
    nhour  = current_date%hour
    seconds = current_date%seconds
 
-   dbg0 = debug_proc .and. DEBUG%SOA > 0
-   dbg1 = debug_proc .and. DEBUG%SOA > 1
+if(first_tstep .and. DebugCell ) write(*,*) 'DSOA ', me, debug_proc, DebugCell,debug_flag
+   dbg0 = DebugCell .and. DEBUG%SOA > 0
+   !dbg0 = debug_proc .and. DEBUG%SOA > 0
+   dbg1 = DebugCell .and. DEBUG%SOA > 1
    if( dbg0 ) write(unit=*,fmt=*) "Into SOA", DEBUG%SOA, S1, S2
    if( .not. ORGANIC_AEROSOLS ) then
      if(MasterProc) write(*,*) dtxt // "skipped. ORGANIC_AEROSOLS=F"
