@@ -222,7 +222,7 @@ subroutine Fire_Emis(daynumber)
   logical :: debug_ff=.false.,debug_nc=.false.
   real, allocatable :: xrdemis(:,:) ! MODE=*_AVG
   integer :: dn1, dn2, ndn          ! MODE=*_AVG
-  integer :: yyyy, mm, dd
+  integer :: yyyy, mm, dd, hh
 
   if(first_call) call Config_Fire()
   debug_ff=debug_level(verbose)
@@ -231,9 +231,15 @@ subroutine Fire_Emis(daynumber)
   yyyy = current_date%year
   mm   = current_date%month 
   dd   = current_date%day
+  hh   = current_date%hour
   if(fire_year>1) yyyy=fire_year
   
   select case(MODE)
+    case("HOURLY_REC","H","h")
+      if(nn_old==hh) return         ! Calculate once per hour
+      nn_old=hh
+      dn1=hh
+      dn2=hh
     case("DAILY_REC","D","d")
       if(nn_old==daynumber) return  ! Calculate once per day
       nn_old=daynumber
@@ -259,7 +265,7 @@ subroutine Fire_Emis(daynumber)
   else
     ! newFFrecord: has pollutant|fname|record changed since last call?
     FF_poll=""
-    if(.not.newFFrecord([yyyy,mm,dd]))&
+    if(.not.newFFrecord([yyyy,mm,dd,hh]))&
       return                        ! Continue if new record||file  
   end if
 
@@ -296,7 +302,7 @@ subroutine Fire_Emis(daynumber)
         rdemis = 0.0
         ndn=0
         do dd = dn1, dn2
-          if(newFFrecord([yyyy,01,dd])) &
+          if(newFFrecord([yyyy,01,dd,00])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol=bbinterp,&
              needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
              ncFileID_given=ncFileID)
@@ -394,23 +400,24 @@ subroutine Fire_Emis(daynumber)
 
 contains
 
-function newFFrecord(ymd) result(new)
-  integer, intent(in) :: ymd(3)
+function newFFrecord(ymdh) result(new)
+  integer, intent(in) :: ymdh(4)
   logical :: new
 
   character(len=TXTLEN_SHORT), save      :: poll_old=''
   character(len=max_string_length), save :: file_old=''
   integer, save                          :: record_old=-1
-  real, dimension(366), save :: fdays=-1
+  real, dimension(745), save :: fdays=-1 ! up to a month of hourly recs
   logical :: fexist=.false.
   real :: ncday(0:1)
 
   ! Check: New file
   select case(BBMAP)
-    case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days")
-    case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days")
-    case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days")
+    case("GFED");fname=date2file(GFED_PATTERN,ymdh,persistence-1,"days")
+    case("FINN");fname=date2file(FINN_PATTERN,ymdh,persistence-1,"days")
+    case("GFAS");fname=date2file(GFAS_PATTERN,ymdh,persistence-1,"days")
   end select
+
   if(fname/=file_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new file: ",trim(fname)
@@ -430,7 +437,7 @@ function newFFrecord(ymd) result(new)
       return
     end if
   ! read all times records in fname, and process them
-    nread=-1                            
+    nread=-1
     fdays(:)=-1.0                       
     call ReadTimeCDF(fname,fdays,nread) 
     record_old=-1                       
@@ -443,7 +450,7 @@ function newFFrecord(ymd) result(new)
   end if
 
   ! Check: New time record
-  call date2nctime(ymd,ncday(1))
+  call date2nctime(ymdh,ncday(1))
   ncday(0)=ncday(1)-persistence+1
   nstart=MAXLOC(fdays(:nread),DIM=1,&
     MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<(ncday(1)+1.0)))
@@ -454,8 +461,8 @@ function newFFrecord(ymd) result(new)
     if((fdays(nstart)<ncday(0)).or.(fdays(nstart)>=(ncday(1)+1.0)))then
       if(MasterProc)then
         write(*,*)"ForestFire: no records between ",&
-          nctime2string("YYYY-MM-DD 00:00",ncday(0))," and ",&
-          nctime2string("YYYY-MM-DD 23:59",ncday(1))
+          nctime2string("YYYY-MM-DD hh:mm",ncday(0))," and ",&
+          nctime2string("YYYY-MM-DD hh:mm",ncday(1)+1.0)
         call CheckStop(need_date,"Missing ForestFire records")
       end if
       burning(:,:) = .false.
