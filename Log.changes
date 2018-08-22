@@ -23,10 +23,11 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Aug 2018, Dave
 
-TAGGING as rv4.18.
+TAGGING as rv4.20.
 
 This code differs mainly from rv4.17 as used in R2018 by using the new
 ecosx-based chemistry and YieldModifications, as detailed below.
+(Peter had used rv4.18, 19 for internal work.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Aug 2018, Dave
