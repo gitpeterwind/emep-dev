@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Aug 2018, Dave
+
+TAGGING as rv4.18.
+
+This code differs mainly from rv4.17 as used in R2018 by using the new
+ecosx-based chemistry and YieldModifications, as detailed below.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Aug 2018, Dave
 
 NEW FILE: Debug_module - with variables moved from Config_module. This helps
