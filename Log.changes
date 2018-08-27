@@ -21,6 +21,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Robert
+
+Added deposition parameters for some semi-volatile VBS-species (extending the 
+"Wesely Table") in GasParticleCoeffs_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Aug 2018, Peter
 
 Bug in wrf metdata for Lambert projection, when TRUELAT1 = TRUELAT2
