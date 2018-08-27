@@ -8,8 +8,8 @@
   !FINNv1.5 uses 7 more GEOS-CHEM species and 2 more EMEP:
   integer, private, parameter :: &
     !A2018 NBB_DEFS  = 27 & ! No mapping lines below
-    NBB_DEFS  = 27-6 & ! No mapping lines below
-   ,NEMEPSPECS  = 18-4   ! No EMEP chemical mech specs used
+    NBB_DEFS  = 27-1 & ! No mapping lines below
+   ,NEMEPSPECS  = 17   ! No EMEP chemical mech specs used
    !A2018 ,NEMEPSPECS  = 18   ! No EMEP chemical mech specs used
 
   !-----------------------------------------------------------------------!
@@ -39,12 +39,12 @@
    ,bbtype("MEK ",0.072 , 1.000, MEK         ) &
    ,bbtype("PRPE",0.042 , 1.000, C3H6        ) & 
 ! We read in OC and PM25, but want OM and REMPPM25
-!A2018tmp   ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Will need to subtract OM, BC
-!A2018tmp   ,bbtype("OC  ",1.7   , 1.000, FFIRE_OM    ) & ! Put OM/OC=1.7 in fac
-!A2018tmp   ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC    ) &
+   ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Will need to subtract OM, BC
+   ,bbtype("OC  ",1.7   , 1.000, FFIRE_OM    ) & ! Put OM/OC=1.7 in fac
+   ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC    ) &
 ! Subtract, assuming OM/OC=1.7. ForestFire_ml will pevent zeros
-!A2018tmp   ,bbtype("OC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract OM
-!A2018tmp   ,bbtype("BC  ",-1.0  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract BC
+   ,bbtype("OC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract OM
+   ,bbtype("BC  ",-1.0  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract BC
   ! FINN v1.5, GEOS-CHEM 2015 changes: excludes 1 species:
   ! and needs one less EMEP species, C5H8
    ! ,bbtype("ISOP",0.068 , 1.000, C5H8        ) &

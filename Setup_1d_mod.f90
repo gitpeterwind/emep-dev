@@ -21,8 +21,7 @@ use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
 use CheckStop_mod,    only:  CheckStop, StopAll,checkValidArray
 use ColumnSource_mod, only: ColumnRate
 use Config_module,    only:  &
-   DEBUG,DEBUG_MASS,DebugCell   &
-  ,SKIP_RCT                     & ! kHet tests
+   SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
   ,MasterProc                   & 
@@ -32,6 +31,7 @@ use Config_module,    only:  &
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Upper layer (k), upper level, and k for 1d fields
+use Debug_module,     only: DebugCell, DEBUG_MASS, DEBUG !->DEBUG%SETUP_1DCHEM
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
                                 , O_NH3, O_DMS, SplitEmisOut, EmisOut
@@ -189,8 +189,8 @@ contains
                  if( find_index( ispec, chemgroups(iBCcgroup)%specs ) >0) &
                     is_BC(ipm)  = .true.
               end if
-              if( MasterProc) write(*,*) dtxt//"is_BC ",&
-                  iBCcgroup, species(ispec)%name, is_BC(ipm)
+              !if( MasterProc) write(*,*) dtxt//"is_BC ",&
+              !    iBCcgroup, species(ispec)%name, is_BC(ipm)
           end do
        end if
 

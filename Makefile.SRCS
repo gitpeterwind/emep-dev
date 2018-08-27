@@ -13,6 +13,7 @@ SRCS ?=	\
 	ChemFunctions_mod.f90 Convection_mod.f90 ColumnSource_mod.f90 \
         CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 CM_ChemSpecs_mod.f90  \
 	Config_module.f90  \
+	Debug_module.f90 \
 	DefPhotolysis_mod.f90 Derived_mod.f90 DerivedFields_mod.f90 DO3SE_mod.f90 \
 	DryDep_mod.f90 DustProd_mod.f90 EcoSystem_mod.f90  \
  	emep_Main.f90 \

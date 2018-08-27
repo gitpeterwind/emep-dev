@@ -3,9 +3,15 @@ module EmisGet_mod
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
 use ChemSpecs_mod,     only: species 
+use Config_module,     only: NPROC, TXTLEN_NAME,  MasterProc,USES,&
+                             KMAX_MID,KMAX_BND, Pref,&
+                             SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
+                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, TXTLEN_FILE,&
+                             SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
+use Debug_module,      only: DEBUG, DEBUG_GETEMIS,DEBUG_ROADDUST
 use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
                             N_HFAC,N_SPLIT, EMIS_FILE, & 
                             VOLCANOES_LL, &
@@ -23,12 +29,6 @@ use GridValues_mod,    only: glon, glat, A_bnd, B_bnd
 use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
 use KeyValueTypes,    only: KeyVal
-use Config_module,only: NPROC, TXTLEN_NAME, &
-                             DEBUG,  KMAX_MID,KMAX_BND, Pref,&
-                             SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USES,&
-                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, TXTLEN_FILE,&
-                             SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile
 use MPI_Groups_mod   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
 use NetCDF_mod, only  : ReadField_CDF  !CDF_SNAP

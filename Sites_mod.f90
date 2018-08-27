@@ -6,11 +6,6 @@ module Sites_mod
 ! files "sites.dat" and "sondes.dat"
 !
 ! -----------------------------------------------------------------------
-
-use CheckStop_mod,  only : CheckStop, StopAll
-use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
-use ChemSpecs_mod
-use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use My_Outputs_mod, only : &  ! for sitesout
       NSITES_MAX, &
       NADV_SITE, NSHL_SITE, NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
@@ -20,34 +15,38 @@ use My_Outputs_mod, only : &  ! for sitesout
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, & 
       FREQ_SONDE, to_ug_ADV
 
-use DerivedFields_mod,  only : f_2d, d_2d  ! not used:, d_3d
-use Functions_mod,      only : Tpot_2_T    ! Conversion function
-use GridValues_mod,     only : lb2ij, i_fdom, j_fdom &
+use CheckStop_mod,      only: CheckStop, StopAll
+use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
+use ChemSpecs_mod
+use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
+use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
+                              ,RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
+                              ,SitesFile,SondesFile,KMAX_BND,PT, NPROC
+use Debug_module,       only: DEBUG   ! -> DEBUG%SITES
+use DerivedFields_mod,  only: f_2d, d_2d  ! not used:, d_3d
+use Functions_mod,      only: Tpot_2_T    ! Conversion function
+use GridValues_mod,     only: lb2ij, i_fdom, j_fdom &
                               , i_local, j_local, A_mid, B_mid
-use Io_mod,             only : check_file,open_file,ios &
+use Io_mod,             only: check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
+use KeyValueTypes,      only : KeyVal, KeyValue, LENKEYVAL
 use MetFields_mod,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_mod,      only : u_xmj, v_xmi, ps
-use Config_module, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
-                              ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
-                              , RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
-                              ,SitesFile,SondesFile
-use MPI_Groups_mod   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+use MPI_Groups_mod,     only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                              MPI_MIN, MPI_MAX, MPI_SUM, &
                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
 use PhysicalConstants_mod,only: ATWAIR
 use NetCDF_mod,         only : Create_CDF_sondes,Out_CDF_sondes,&
-                              NF90_FILL_INT,NF90_FILL_DOUBLE
+                                NF90_FILL_INT,NF90_FILL_DOUBLE
 use Par_mod,            only : li0,lj0,li1,lj1 &
-                              ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&
-                              ,GI0,GI1,GJ0,GJ1,me,LIMAX,LJMAX
+                                ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&
+                                ,GI0,GI1,GJ0,GJ1,me,LIMAX,LJMAX
 use SmallUtils_mod,     only : find_index
 use Tabulations_mod,    only : tab_esat_Pa
 use TimeDate_mod,       only : current_date
 use TimeDate_ExtraUtil_mod,   only : date2string
-use KeyValueTypes,       only : KeyVal, KeyValue, LENKEYVAL
 
 implicit none
 private                     ! stops variables being accessed outside

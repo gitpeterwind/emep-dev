@@ -44,11 +44,10 @@ module Biogenics_mod
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
-                           DebugCell, & !A2018comp
-                           DEBUG, & !A2018 BVOC_USED, 
                            MasterProc, &
                            USES, &
                            NATBIO, EmBio, EMEP_EuroBVOCFile
+  use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValueTypes,      only: KeyVal,KeyValue

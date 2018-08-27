@@ -3,11 +3,12 @@
 
 module LandDefs_mod
  use CheckStop_mod, only : CheckStop, StopAll
+ use Config_module, only : NLANDUSEMAX, MasterProc
+ use Config_module, only :  FLUX_VEGS
+ use Debug_module,  only:  DEBUG   ! -> DEBUG%LANDDEFS
  use Io_mod, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValueTypes, only :  KeyVal
  use LandPFT_mod,  only : PFT_CODES
- use Config_module, only : NLANDUSEMAX, MasterProc, DEBUG
- use Config_module, only :  FLUX_VEGS
  use SmallUtils_mod, only : find_index, trims
   implicit none
   private

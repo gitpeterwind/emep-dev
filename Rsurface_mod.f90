@@ -1,12 +1,11 @@
 module Rsurface_mod
 use CheckStop_mod,      only: CheckStop, StopAll
 use CoDep_mod,          only: CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
-use Config_module,      only: DEBUG, NO_CROPNH3DEP
+use Config_module,      only: NO_CROPNH3DEP
+use Debug_module,       only: DEBUG   ! -> DEBUG%RSUR
 use DO3SE_mod,          only: g_stomatal, do3se
 use GasParticleCoeffs_mod, only: nddep, DDspec,  &
                               idcmpO3, idcmpHNO3,idcmpNH3,idcmpSO2
-!A2018 use GasParticleCoeffs_mod,    only : DDdefs &  ! Extension of Wesely Table 2
-!2018   ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use Io_Progs_mod,       only: datewrite
 use LandDefs_mod,       only: LandDefs, LandType
 ! L (local) provides  t2C, rh, LAI, SAI, hveg, ustar, 

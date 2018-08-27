@@ -26,17 +26,18 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 module SoilWater_mod
- use GridValues_mod,     only : debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
+ use Config_module,      only: USES
+ use Debug_module,       only: DEBUG_SOILWATER
+ use GridValues_mod,     only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => glon
- use Io_Progs_mod,       only : PrintLog
- use Landuse_mod,        only : water_fraction
+ use Io_Progs_mod,       only: PrintLog
+ use Landuse_mod,        only: water_fraction
  use LocalVariables_mod, only: Grid
- use Met_mod,            only : extendarea
- use MetFields_mod,      only : SoilWater_deep, SoilWaterSource,fSW &
+ use Met_mod,            only: extendarea
+ use MetFields_mod,      only: SoilWater_deep, SoilWaterSource,fSW &
                                ,foundSoilWater_deep  ! false if no SW-deep
- use Config_module, only : USES, DEBUG_SOILWATER
- use Par_mod,            only : limax, ljmax, me
- use TimeDate_mod,       only : current_date, daynumber
+ use Par_mod,            only: limax, ljmax, me
+ use TimeDate_mod,       only: current_date, daynumber
 
 
     implicit none

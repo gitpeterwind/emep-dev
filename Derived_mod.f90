@@ -36,7 +36,6 @@ use Config_module,     only: &
   ,dt_advec           &
   ,PPBINV             & ! 1.0e9, for conversion of units
   ,PPTINV             & ! 1.0e12, for conversion of units
-  ,DEBUG              & ! gives DEBUG%AOT
   ,PT                 &
   ,FORECAST           & ! only daily (and hourly) output on FORECAST mode
   ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
@@ -47,6 +46,7 @@ use Config_module,     only: &
   ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
   HourlyEmisOut, SecEmisOutWanted, spinup_enddate
 
+use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d, VGtest_out_ix
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &

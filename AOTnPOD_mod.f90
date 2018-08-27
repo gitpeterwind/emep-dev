@@ -4,15 +4,16 @@
 module AOTx_mod
   use CheckStop_mod,  only : checkStop, StopAll
   use Chemfields_mod, only : xn_adv, cfac
-  use ChemSpecs_mod,     only : IXADV_O3
+  use ChemSpecs_mod,  only : IXADV_O3
+  use Config_module, only : dt_advec, KMAX_MID  & 
+                      ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
+  use Debug_module,   only:  DEBUG   ! -> DEBUG%AOT
   use DO3SE_mod
   use GridValues_mod, only : debug_li, debug_lj, debug_proc, i_fdom, j_fdom
   use Io_Progs_mod,   only : datewrite
   use LandDefs_mod,   only : LandType, LandDefs
   use LocalVariables_mod, only : Grid, L
   use MetFields_mod, only: zen
-  use Config_module, only : dt_advec, KMAX_MID, DEBUG  & 
-     ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use NumberConstants, only : UNDEF_R, UNDEF_I
   use OwnDataTypes_mod, only : TXTLEN_DERIV, TXTLEN_SHORT, TXTLEN_IND
   use Par_mod, only : LIMAX, LJMAX, limax, ljmax, me

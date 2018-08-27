@@ -21,6 +21,66 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Dave
+
+RE-TAGGING as rv4.30 (since there were problems with the attempt to re-name
+as rv4.20)
+
+Radiation_mod.f90 - just cleaned up units explanation
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Aug 2018, Dave
+
+TAGGING as rv4.20.
+
+This code differs mainly from rv4.17 as used in R2018 by using the new
+ecosx-based chemistry and YieldModifications, as detailed below.
+(Peter had used rv4.18, 19 for internal work.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Aug 2018, Dave
+
+NEW FILE: Debug_module - with variables moved from Config_module. This helps
+  compatability with ESX, and should also allow more space to add comments
+  concerning these debug variables.
+
+=> many changes in .f90 files
+
+SOA_mod.f90
+Solver_mod.f90
+YieldModifications_mod.f90
+
+  - modified yield modifications code and usage
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Aug 2018, Dave
+
+ZCM_EmChem16x/emissplt_run
+  Replaced  defaults.nox with new version containing SHIPNOx
+  Added specials files for all POLL
+
+On vilje, stallo, elvis:
+  ~mifapw/Data/ZCM_EmChem16x/emissplit_run:
+    Copied all files from above here. Used as default by Config_module.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Aug 2018, Dave
+
+ZCM_EmChem16x
+BiomassBurningMapping_FINNv1.5_to_EmChem16x.inc - added back PM 
+CM_* files: Added new style Yield Modification equations to match rv4.17master
+
+
+Small changes:
+
+Config_module - DEBUG%SOA now integer
+
+Setup_1d__mod.f90 - just removed some printout
+SOA_mod.f90 - corrected use of DEBUG%SOA
+YieldModifications_mod  - using integer DEBUG%SOA
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th  July 2018, Peter
 
 ReadField_CDF: Return zero (or Undef) when file or field not found and not needed

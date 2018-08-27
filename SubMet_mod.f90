@@ -10,24 +10,21 @@ module SubMet_mod
 !=============================================================================
 
 use CheckStop_mod, only: StopAll
-use Functions_mod, only : T_2_Tpot  !needed if FluxPROFILE == Ln95
-use MetFields_mod, only : ps        !needed if FluxPROFILE == Ln95
+use Config_module, only:  NLANDUSEMAX, FluxPROFILE, LANDIFY_MET, USES &
+                      , USE_ZREF & ! TEST
+                      , Zmix_ref !height at which concentration above different landuse are considered equal 
+use Debug_module,  only: DEBUG_SUBMET  ! Needs DEBUG_RUNCHEM to get debug_flag
+use Functions_mod, only: T_2_Tpot  !needed if FluxPROFILE == Ln95
+use MetFields_mod, only: ps        !needed if FluxPROFILE == Ln95
 
-use BLPhysics_mod, only : MIN_USTAR_LAND
-use CheckStop_mod, only : CheckStop
+use BLPhysics_mod, only: MIN_USTAR_LAND
+use CheckStop_mod, only: CheckStop
 use LandDefs_mod,   only: LandType, LandDefs
 use Landuse_mod,    only: LandCover
 use LocalVariables_mod, only: Grid, SubDat
-use MicroMet_mod, only :  PsiM, AerRes    !functions
-use MicroMet_mod, only :  Launiainen1995
-use Config_module, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
-                              , USE_ZREF & ! TEST
-                              , FluxPROFILE &
-                              , LANDIFY_MET   &
-                              , USES &
-                              , Zmix_ref !height at which concentration above different landuse are considered equal 
-use Config_module, only: NLANDUSEMAX
-use PhysicalConstants_mod, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
+use MicroMet_mod, only:  PsiM, AerRes    !functions
+use MicroMet_mod, only:  Launiainen1995
+use PhysicalConstants_mod, only: PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
 private

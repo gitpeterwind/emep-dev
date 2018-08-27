@@ -10,10 +10,10 @@ module DO3SE_mod
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use Config_module, only : NLANDUSEMAX, DEBUG, MasterProc, &
-      USES
-  use SmallUtils_mod,     only : find_index
-  use TimeDate_mod,       only : current_date, daynumber, print_date
+  use Config_module,   only : NLANDUSEMAX, MasterProc, USES
+  use Debug_module,    only:  DEBUG   ! -> DEBUG%DO3SE
+  use SmallUtils_mod,  only : find_index
+  use TimeDate_mod,    only : current_date, daynumber, print_date
 
   implicit none
   private

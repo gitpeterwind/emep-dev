@@ -29,12 +29,11 @@
     use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]
                              ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
-    !A2019 use ChemRates_rct_mod,   only: rct
-    use Config_module,     only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
-                                ,DebugCell, MasterProc, DEBUG, USES &
-                                ,NATBIO, YieldModifications
+    use Config_module,      only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
+                                ,MasterProc, USES, NATBIO, YieldModifications
+    use Debug_module,       only: DebugCell, DEBUG  ! DEBUG%DRYRUN
     use DefPhotolysis_mod         ! => IDHNO3, etc.
-    use EmisDef_mod,      only: KEMISTOP
+    use EmisDef_mod,        only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
     use Par_mod,            only: me, LIMAX, LJMAX
@@ -116,11 +115,10 @@ contains
            if(DEBUG%DRYRUN) write(*,*) "DEBUG%DRYRUN Solver"
        end if
 
-       if ( YieldModifications /= '-' ) then
-          ! sets YieldModificationsInUse
-          call doYieldModifications('first')
-       end if
-       first_call = .false.
+       !if ( YieldModifications /= '-' ) then
+       !   ! sets YieldModificationsInUse
+       !   call doYieldModifications('first')
+       !end if
     end if
 
 !======================================================
@@ -144,6 +142,8 @@ contains
 
     do k = 2, KMAX_MID
 
+       DebugCell = debug_flag .and. k==KMAX_MID
+
        xnew(:) = xn_2d(:,k)
 
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
@@ -153,8 +153,9 @@ contains
        !*************************************
        !     Start of integration loop      *
        !*************************************
-       if ( YieldModificationsInUse ) then
+       if ( first_call .or. YieldModificationsInUse ) then
           cell_tinv = tinv(k)
+          if( DebugCell ) write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv 
           call doYieldModifications('init')
        end if
 
@@ -205,27 +206,18 @@ end if
                    include 'CM_Reactions1.inc'
                    !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-                !end if
-                !if(k>=6)then
-                !   include 'My_FastReactions.inc'
-                !end if
-                !if(k>=KEMISTOP)then
-                !   include 'My_FastReactions.inc'
-                !end if
-
-                !Mar-Apr 2017 NEW
-                ! Allows change of gas/aerosol yield
-                ! BUT only takes effect on 2nd iteration
-                ! Still, we have nchem*niter loops
-
-                 if ( YieldModificationsInUse ) then
-                    runlabel='run'
-                    if( iter == toiter(k) ) runlabel='lastFastChem'
-                    call doYieldModifications(runlabel)
-
-                 end if
 
             end do !! End iterations
+
+           !YIELDs  Allows change of gas/aerosol yield, which currently is only used
+           !     for SOA species to be handled in CM_Reactions2
+
+            if ( YieldModificationsInUse ) then
+                !OLD if( DebugCell ) write(*,*) 'YIELD RUN  ', me, k, &
+                !OLD   1/cell_tinv, iter, toiter(k)
+                !OLD: if( iter == toiter(k) ) & ! runlabel='lastFastChem'
+                call doYieldModifications('run')
+           end if
 
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
@@ -247,6 +239,7 @@ end if
 
     end do ! End of vertical k-loop
 
+   first_call = .false.
   end subroutine chemistry
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

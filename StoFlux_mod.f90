@@ -2,17 +2,18 @@
 
 module StoFlux_mod
   use CheckStop_mod
-  use DO3SE_mod, only : do3se, nSumVPD, SumVPD_LC
-  use Io_Progs_mod, only : current_date, datewrite
-  use LandDefs_mod, only : LandType, STUBBLE, iLC_grass
-  use LocalVariables_mod, only : L, Grid
-  use MicroMet_mod, only : AerRes, Wind_at_h
-  use Config_module, only : NLANDUSEMAX, dt_advec, DEBUG
-  use Par_mod, only : LIMAX, LJMAX
-  use PhysicalConstants_mod, only : AVOG, KARMAN
-  use SmallUtils_mod, only : find_index
-  use SubMet_mod, only : Sub
+  use Config_module,         only: NLANDUSEMAX, dt_advec
+  use Debug_module,          only: DEBUG   ! -> DEBUG%GRIDVALUES
+  use DO3SE_mod,             only: do3se, nSumVPD, SumVPD_LC
   use GasParticleCoeffs_mod, only: DDspec !A2018 WES_O3, Rb_cor
+  use Io_Progs_mod,          only: current_date, datewrite
+  use LandDefs_mod,          only: LandType, STUBBLE, iLC_grass
+  use LocalVariables_mod,    only: L, Grid
+  use MicroMet_mod,          only: AerRes, Wind_at_h
+  use Par_mod,               only: LIMAX, LJMAX
+  use PhysicalConstants_mod, only: AVOG, KARMAN
+  use SmallUtils_mod,        only: find_index
+  use SubMet_mod,            only: Sub
   implicit none
   private
 

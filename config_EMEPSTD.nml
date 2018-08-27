@@ -32,7 +32,7 @@
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc', ! New with rv4.17
 !    'DataDir/LanduseGLC.nc',
- YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
+! YieldModifications = 'VBS-T10'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -207,13 +207,13 @@
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 0,
   DEBUG%SOILNOX         = F,
   DEBUG%STOFLUX         = F,
-!  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
+!  DEBUG%STOP_HH        = 2,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
-! DEBUG%IJ              =  60, 50,       ! Bremen
+ DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',

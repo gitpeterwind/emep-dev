@@ -8,6 +8,7 @@ module Config_module
 !A2018 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_mod,         only: CheckStop
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
+use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
 use Precision_mod,         only: dp
@@ -81,7 +82,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
  ! it makes sure the experiments are recorded in the config
  ! system
 
-  character(len=100), save, public :: YieldModifications = 'VBS' ! Default for EmChem16mt
+  character(len=100), save, public :: YieldModifications = 'VBS-T10' ! Default for EmChem16mt
 
   
   type, private :: LandCoverInputs_t
@@ -156,59 +157,59 @@ type(emep_useconfig), public, save :: USES
 logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. &!forces PFT_MAPS  = F, even if global grid
      ,FORCE_DEGREEDAY_FACTORS_TRUE
-type, public :: emep_debug
-  logical :: &
-     AOT             = .false. &
-    ,A2018           = .true.  & ! A2018 TMP while testing
-    ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
-    ,AQUEOUS         = .false. &
-    ,BCS             = .false. & ! BoundaryConditions
-    ,BIO             = .false. & !< Biogenic emissions
-    ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
-    ,COLUMN          = .false. & !  Used in Derived_mod for column integration
-    ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
-    ,DERIVED         = .false. & !
-    ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
-    ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
-    ,EQUIB           = .false. &   !MARS, EQSAM etc.
-    ,FORESTFIRE      = .false. &
-    ,GLOBBC          = .false. &
-    ,GRIDVALUES      = .false. &
-    ,HOURLY_OUTPUTS  = .false. & !
-    ,IOPROG          = .false. &
-    ,LANDDEFS        = .false. &
-    ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
-    ,MOSAICS         = .false. &
-    ,MY_DERIVED      = .false. &
-    ,pH              = .false. &
-    ,PHYCHEM         = .false. &
-    ,POLLEN          = .false. &
-    ,RSUR            = .false. & ! Surface resistance
-    ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
-       ,MY_WETDEP    = .false. &
-    ,SEASALT         = .false. &
-    ,SETUP_1DCHEM    = .false. &
-    ,SETUP_1DBIO     = .false. &
-    ,SITES           = .false. &
-    ,SOILNOX         = .false. &
-    ,SOLVER          = .false. &
-    ,SOA             = .false. &
-    ,STOFLUX         = .false. &
-    ,VDS             = .false.
-  ! integer debug options allow different levels of verbosity
-   integer               :: &
-      PFT_MAPS  = 0         & !< Future option
-     ,LANDUSE   = 0         & !
-     ,DO3SE     = 0         & !
-     ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
-  !----------------------------------------------------------
-   integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
-   character(len=20)     :: SPEC = 'O3'       ! default.
-   character(len=20)     :: datetxt = '-'       ! default.
-   integer               :: ISPEC = -999      ! Will be set after NML
-end type emep_debug
-type(emep_debug), public, save :: DEBUG
-
+!MOVEDtype, public :: emep_debug
+!MOVED  logical :: &
+!MOVED     AOT             = .false. &
+!MOVED    ,A2018           = .true.  & ! A2018 TMP while testing
+!MOVED    ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
+!MOVED    ,AQUEOUS         = .false. &
+!MOVED    ,BCS             = .false. & ! BoundaryConditions
+!MOVED    ,BIO             = .false. & !< Biogenic emissions
+!MOVED    ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
+!MOVED    ,COLUMN          = .false. & !  Used in Derived_mod for column integration
+!MOVED    ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
+!MOVED    ,DERIVED         = .false. & !
+!MOVED    ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
+!MOVED    ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
+!MOVED    ,EQUIB           = .false. &   !MARS, EQSAM etc.
+!MOVED    ,FORESTFIRE      = .false. &
+!MOVED    ,GLOBBC          = .false. &
+!MOVED    ,GRIDVALUES      = .false. &
+!MOVED    ,HOURLY_OUTPUTS  = .false. & !
+!MOVED    ,IOPROG          = .false. &
+!MOVED    ,LANDDEFS        = .false. &
+!MOVED    ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
+!MOVED    ,MOSAICS         = .false. &
+!MOVED    ,MY_DERIVED      = .false. &
+!MOVED    ,pH              = .false. &
+!MOVED    ,PHYCHEM         = .false. &
+!MOVED    ,POLLEN          = .false. &
+!MOVED    ,RSUR            = .false. & ! Surface resistance
+!MOVED    ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
+!MOVED       ,MY_WETDEP    = .false. &
+!MOVED    ,SEASALT         = .false. &
+!MOVED    ,SETUP_1DCHEM    = .false. &
+!MOVED    ,SETUP_1DBIO     = .false. &
+!MOVED    ,SITES           = .false. &
+!MOVED    ,SOILNOX         = .false. &
+!MOVED    ,SOLVER          = .false. &
+!MOVED    ,STOFLUX         = .false. &
+!MOVED    ,VDS             = .false.
+!MOVED  ! integer debug options allow different levels of verbosity
+!MOVED   integer               :: &
+!MOVED      PFT_MAPS  = 0         & !< Future option
+!MOVED     ,LANDUSE   = 0         & !
+!MOVED     ,DO3SE     = 0         & !
+!MOVED     ,SOA       = 0         &
+!MOVED     ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
+!MOVED  !----------------------------------------------------------
+!MOVED   integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
+!MOVED   character(len=20)     :: SPEC = 'O3'       ! default.
+!MOVED   character(len=20)     :: datetxt = '-'       ! default.
+!MOVED   integer               :: ISPEC = -999      ! Will be set after NML
+!MOVEDend type emep_debug
+!MOVEDtype(emep_debug), public, save :: DEBUG
+!MOVED
 
 !/ Emissions file treatment. Dims more than used.
 type, public :: emis_in
@@ -395,44 +396,45 @@ CHARACTER(LEN=3), public, save :: &
 ! codes which don't need Par_mod
 
 logical, public, save ::  MasterProc = .true.
-logical, public, save ::  DebugCell  = .false.
+!MOVED logical, public, save ::  DebugCell  = .false.
 
 !=============================================================================
 ! Some flags for model setup
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
-logical, public, parameter ::    &
-   DEBUG_ADV            = .false. &
-  ,PALEO_TEST = .false. &
-  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
-  ,DEBUG_DERIVED        = .false. &
-  ,DEBUG_ECOSYSTEMS     = .false. &
-  ,DEBUG_EMISSTACKS     = .false. &
-  ,DEBUG_Kz             = .false. &
-  !!,DEBUG_DRYDEP         = .false. &
-    ,DEBUG_MY_DRYDEP    = .false. &
-    ,DEBUG_CLOVER       = .false. &
-  ,DEBUG_EMISSIONS      = .false. &
-  ,DEBUG_EMISTIMEFACS   = .false. &
-  ,DEBUG_GETEMIS        = .false. &
-  ,DEBUG_LANDIFY        = .false. &
-  ,DEBUG_MASS           = .false. &
-  ,DEBUG_MET            = .false. &
-  ,DEBUG_NEST           = .false. &
-  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
-  ,DEBUG_NETCDF         = .false. &
-  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
-  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
-  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
-  ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-! ,DEBUG_POLLEN         = .false. &
-!MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
-    ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
-    ,DEBUG_ROADDUST     = .false. &
-    ,DEBUG_SUBMET         = .false. &
-    ,DEBUG_WETDEP       = .false. &
-  ,DEBUG_RB             = .false. &
-  ,DEBUG_SOILWATER      = .false. 
+logical, public, parameter :: PALEO_TEST = .false. 
+
+!MOVEDlogical, public, parameter ::    &
+!MOVED   DEBUG_ADV            = .false. &
+!MOVED  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
+!MOVED  ,DEBUG_DERIVED        = .false. &
+!MOVED  ,DEBUG_ECOSYSTEMS     = .false. &
+!MOVED  ,DEBUG_EMISSTACKS     = .false. &
+!MOVED  ,DEBUG_Kz             = .false. &
+!MOVED  !!,DEBUG_DRYDEP         = .false. &
+!MOVED    ,DEBUG_MY_DRYDEP    = .false. &
+!MOVED    ,DEBUG_CLOVER       = .false. &
+!MOVED  ,DEBUG_EMISSIONS      = .false. &
+!MOVED  ,DEBUG_EMISTIMEFACS   = .false. &
+!MOVED  ,DEBUG_GETEMIS        = .false. &
+!MOVED  ,DEBUG_LANDIFY        = .false. &
+!MOVED  ,DEBUG_MASS           = .false. &
+!MOVED  ,DEBUG_MET            = .false. &
+!MOVED  ,DEBUG_NEST           = .false. &
+!MOVED  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
+!MOVED  ,DEBUG_NETCDF         = .false. &
+!MOVED  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
+!MOVED  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
+!MOVED  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
+!MOVED  ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
+!MOVED! ,DEBUG_POLLEN         = .false. &
+!MOVED!MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
+!MOVED    ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
+!MOVED    ,DEBUG_ROADDUST     = .false. &
+!MOVED    ,DEBUG_SUBMET         = .false. &
+!MOVED    ,DEBUG_WETDEP       = .false. &
+!MOVED  ,DEBUG_RB             = .false. &
+!MOVED  ,DEBUG_SOILWATER      = .false. 
 
 !=============================================================================
 ! 3)  Source-receptor runs?

@@ -7,6 +7,8 @@ use CheckStop_mod,     only: CheckStop
 use ChemDims_mod,      only: NSPEC_ADV,NSPEC_SHL
 use ChemGroups_mod,    only: chemgroups
 use ChemSpecs_mod,     only: species_adv
+use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY
+use Debug_module,      only: DEBUG   ! -> DEBUG%MOSAICS
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
@@ -16,8 +18,6 @@ use LandDefs_mod,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "
 use Landuse_mod,       only: LandCover ! for POD
 use LocalVariables_mod,only: Grid,SubDat, L
 use MetFields_mod
-use Config_module,only: MasterProc, DEBUG, &
-                            NLANDUSEMAX, IOU_INST,IOU_KEY
 use OwnDataTypes_mod,  only: Deriv, print_deriv_type, typ_s5ind, typ_s1ind, typ_s3,&
                             TXTLEN_DERIV, TXTLEN_SHORT
 use SmallUtils_mod,    only: find_index, trims

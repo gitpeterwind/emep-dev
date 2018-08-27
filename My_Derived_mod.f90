@@ -33,12 +33,7 @@ use ChemDims_mod          ! Use IXADV_ indices...
 use ChemGroups_mod        ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemSpecs_mod         ! Use IXADV_ indices...
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, Nneighbors
-use EmisGet_mod,       only: nrcemis, iqrc2itot
-use GridValues_mod,    only: RestrictDomain
-use Io_Nums_mod,       only: IO_NML
-use Io_Progs_mod,      only: PrintLog
-use Config_module,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
+use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             USES, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
@@ -47,6 +42,12 @@ use Config_module,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DER
                             startdate, out_startdate, spinup_enddate,&
                             num_lev3d,lev3d &! 3D levels on 3D output
                             , SecEmisOutWanted
+use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
+use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, Nneighbors
+use EmisGet_mod,       only: nrcemis, iqrc2itot
+use GridValues_mod,    only: RestrictDomain
+use Io_Nums_mod,       only: IO_NML
+use Io_Progs_mod,      only: PrintLog
 use MosaicOutputs_mod, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
                             Init_MosaicMMC,  Add_MosaicMetConcs, &
                             Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP

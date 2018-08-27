@@ -44,18 +44,18 @@ use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
 use InterpolationRoutines_mod,  only : grid2grid_coeff
 use Config_module,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
-                             ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
                              ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
                              ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
                              ,PT,Pref,NLANDUSEMAX, model&
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
-                             ,SurfacePressureFile
-use Config_module,  only: SELECT_LEVELS_HOURLY,&  ! NML
+                             ,SurfacePressureFile &
+                             ,SELECT_LEVELS_HOURLY,&  ! NML
                               num_lev3d,lev3d         ! 3D levels on 3D output
-use MPI_Groups_mod, only     :MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
-                             MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
+use Debug_module,       only: DEBUG_NETCDF, DEBUG_NETCDF_RF
+use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
+                               MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
 use netcdf
 use OwnDataTypes_mod,   only : Deriv
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &

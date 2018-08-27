@@ -27,12 +27,10 @@
 !*****************************************************************************! 
 module Rb_mod
 
-use Config_module,    only :  DEBUG_RB
-use PhysicalConstants_mod, only :  KARMAN
-                    
+use Debug_module,          only: DEBUG_RB
 use GasParticleCoeffs_mod, only: nddep, DDspec
-!A2018DDdefs &  !  Table for 64 gases
-!A2018                       ,Rb_cor          !
+use PhysicalConstants_mod, only: KARMAN
+                    
 implicit none
 private
 

@@ -61,13 +61,14 @@
   use GridValues_mod    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_mod, only : Averageconserved_interpolate
   use Met_mod,       only: Getmeteofield
-  use Config_module, only: MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use Config_module, only: MasterProc
   use Config_module, only: IIFULLDOM, JJFULLDOM
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
                             HourlyFacFile,HourlyFacSpecialsFile,TXTLEN_FILE,&
                             USE_WRF_MET_NAMES
+  use Debug_module,  only:   DEBUG => DEBUG_EMISTIMEFACS
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8

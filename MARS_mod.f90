@@ -33,11 +33,12 @@ module MARS_mod
  ! Presently not in use, EQSAM is used for inorganic equilibrium stuff
  !------------------------------------------------------------------------
 
- use CheckStop_mod,       only : CheckStop
- use Io_mod,              only : ios, datewrite
+ use CheckStop_mod,       only: CheckStop
+ use Io_mod,              only: ios, datewrite
  use MARS_Aero_water_mod, only:  Awater!,awater_2900
- use Config_module,  only : NPROC, DEBUG
- use Par_mod,             only : me
+ use Config_module,       only: NPROC
+ use Debug_module,        only: DEBUG   ! -> DEBUG%EQUIB
+ use Par_mod,             only: me      ! processor number
  implicit none
  private
 

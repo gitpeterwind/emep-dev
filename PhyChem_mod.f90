@@ -15,7 +15,7 @@ use ChemSpecs_mod,     only: IXADV_SO2, IXADV_NH3, IXADV_O3, species
 use CoDep_mod,         only: make_so2nh3_24hr
 use Config_module,only: MasterProc, KMAX_MID, nmax, nstep,END_OF_EMEPDAY &
                            ,dt_advec       & ! time-step for phyche/advection
-                           ,DEBUG, PPBINV, PPTINV  &
+                           ,PPBINV, PPTINV  &
                            ,IOU_INST       &
                            ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
@@ -27,6 +27,7 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, nstep,END_OF_EMEPDAY &
                            ,fileName_O3_Top
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
+use Debug_module,      only: DEBUG   ! -> DEBUG%GRIDVALUES
 use Derived_mod,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_mod, only: d_2d, f_2d
 use DryDep_mod,        only: init_drydep
