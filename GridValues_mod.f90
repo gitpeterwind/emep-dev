@@ -669,6 +669,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     if(USE_WRF_MET_NAMES)then
       call check(nf90_get_att(ncFileID, nf90_global, "TRUELAT1",lat_stand1_lambert ))
       call check(nf90_get_att(ncFileID, nf90_global, "TRUELAT2",lat_stand2_lambert ))
+      lat0_lambert = lat_stand1_lambert
       call check(nf90_get_att(ncFileID, nf90_global, "STAND_LON",lon0_lambert ))
       earth_radius_lambert = earth_radius
     else
