@@ -21,6 +21,30 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Peter
+
+Bug in wrf metdata for Lambert projection, when TRUELAT1 = TRUELAT2
+Allow several meteo records within one METSTEP (when metdata has timestep less than one hour)
+Only superficially tested, and only wrf.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Dave
+
+RE-TAGGING as rv4.30 (since there were problems with the attempt to re-name
+as rv4.20)
+
+Radiation_mod.f90 - just cleaned up units explanation
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Aug 2018, Dave
+
+TAGGING as rv4.20.
+
+This code differs mainly from rv4.17 as used in R2018 by using the new
+ecosx-based chemistry and YieldModifications, as detailed below.
+(Peter had used rv4.18, 19 for internal work.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Aug 2018, Dave
 
 NEW FILE: Debug_module - with variables moved from Config_module. This helps

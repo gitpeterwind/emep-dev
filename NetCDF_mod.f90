@@ -4627,17 +4627,18 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
            name(j:j)=Times_string(j,i)
         end do
         call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
-        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2))
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2)),' minutes ',trim(wordarray(3))
         call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
         if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
         read(wordarray2(1),*)yyyy
         read(wordarray2(2),*)mo
         read(wordarray2(3),*)dd
-        read(wordarray(2),*)hh
+        read(wordarray(2),*)hh !colon, ":", is a default separator for wordsplit
+        read(wordarray(3),*)mi !colon, ":", is a default separator for wordsplit
         julian=julian_date(yyyy,mo,dd)
         julian_1900=julian_date(1900,1,1)
         diff_1900=julian-julian_1900
-        TimesInDays(i)=diff_1900+hh/24.0
+        TimesInDays(i)=diff_1900+hh/24.0+mi/24.0/60.0
      end do
   else
      varname='TFLAG'!SMOKE/CMAQ format
