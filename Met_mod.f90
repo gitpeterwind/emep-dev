@@ -95,6 +95,7 @@ integer, save   :: nrec          ! nrec=record to read in meteofile
 ! Nhh is the number of record in each meteo file (assume constant)
 ! (Nhh=8): nrec=1->00:00 nrec=2->03:00 ... nrec=8->21:00
 ! if nhour_first=3 then nrec=1->03:00 nrec=2->06:00...nrec=8->24:00
+integer, save   :: nrec_mult = 1     ! How many records to jump over at each metstep
 
 logical, save, private      :: xwf_done = .false. ! extended water-fraction array
 
@@ -157,7 +158,7 @@ subroutine MeteoRead_io()
     nmonth=next_inptime%month
     nday=next_inptime%day
     nhour=next_inptime%hour
-    nrec=nrec+1
+    nrec=nrec+nrec_mult
 
     if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
       meteoname = date2string(meteo,next_inptime,mode='YMDH')
@@ -174,6 +175,7 @@ subroutine MeteoRead_io()
       end if
       if(ME_IO==0)write(*,*)'io procs reading ',trim(meteoname)
     end if
+    if(nrec_mult/=1 .and. MasterProc)write(*,*)'reading record ',nrec
 
     do ix=1,Nmetfields
       if(met(ix)%read_meteo)then
@@ -310,10 +312,11 @@ subroutine MeteoRead()
   nr=2 !set to one only when the first time meteo is read
   call_msg = "Meteoread"
 
+  nrec=nrec+nrec_mult
 
   if(first_call)then !first time meteo is read
      nr = 1
-     nrec = 0
+     nrec = 1
      next_inptime = current_date
 
      KMAX=max(KMAX_MID,KMAX_MET)!so that allocated arrays are large for both use
@@ -357,7 +360,6 @@ subroutine MeteoRead()
 
   !Read rec=1 both for h=0 and h=3:00 in case 00:00 in 1st meteofile
 
-  nrec=nrec+1
 
   if(nrec>Nhh.or.nrec==1.or.first_call) then              ! start reading a new meteo input file
     meteoname = date2string(meteo,next_inptime,mode='YMDH')
@@ -380,6 +382,8 @@ subroutine MeteoRead()
   if(MasterProc.and.DEBUG_MET) write(*,*)'nrec,nhour=',nrec,nhour
 
   write_now=MasterProc.and.(DEBUG_MET.or.first_call) !inform of what is done with each field the first time
+
+  if((nrec_mult/=1 .and. MasterProc) .or. write_now)write(*,*)'reading record ',nrec
 
   !==============    Read the meteo fields  ================================================
 
@@ -2945,12 +2949,18 @@ subroutine Check_Meteo_Date_Type
         n=1
         call CheckStop('did not find correct meteo date in '//trim(meteoname))
 886     continue
-        nrec = n-1 !will take +1 later
+        nrec = n
         Nhh=NTime_Read
         nhour_first=0 !hour of the first record
         if(n==1)nhour_first=mod(nint(TimesInDays(1)*24),24)
-        write(*,*)'nhour_first =',nhour_first
+        write(*,*)n,' nhour_first =',nhour_first
         if(NTime_Read>1)METSTEP = nint((TimesInDays(2)-TimesInDays(1))*24.)
+        if(METSTEP<1)then
+           if(MasterProc)write(*,*)'WARNING: met timestep less than one hour; not tested ',(TimesInDays(2)-TimesInDays(1))*24.
+           METSTEP = 1
+           nrec_mult = nint(1.0/((TimesInDays(2)-TimesInDays(1))*24.))
+           if(MasterProc)write(*,*)'reading only every ',nrec_mult,' record'
+        endif
 
         call nctime2date(ndate,TimesInDays(n)) 
         if(abs(ndays_indate-TimesInDays(n))<halfsecond)then
@@ -2966,7 +2976,7 @@ subroutine Check_Meteo_Date_Type
         if(MasterProc)write(*,*)'time variable not found'
         nhour_first=0 !hour of the first record
         Nhh=8
-        nrec=0
+        nrec=1
         if(MasterProc_local)then
            write(*,*)'Did not check times, and assume nhour_first =',nhour_first
            write(*,*)'Assume  Nhh =',Nhh
@@ -3002,6 +3012,7 @@ subroutine Check_Meteo_Date_Type
     call check(nf90_close(ncFileID))
   end if
   if(me_calc>=0)then
+    CALL MPI_BCAST(nrec_mult,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(nrec,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
@@ -3009,6 +3020,7 @@ subroutine Check_Meteo_Date_Type
     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(MET_SHORT,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   else
+    CALL MPI_BCAST(nrec_mult,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(nrec,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
