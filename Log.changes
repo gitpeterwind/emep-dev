@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Peter
+
+Bug in wrf metdata for Lambert projection, when TRUELAT1 = TRUELAT2
+Allow several meteo records within one METSTEP (when metdata has timestep less than one hour)
+Only superficially tested, and only wrf.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Aug 2018, Dave
 
 RE-TAGGING as rv4.30 (since there were problems with the attempt to re-name
