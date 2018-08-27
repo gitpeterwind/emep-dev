@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Aug 2018, Dave
+
+RE-TAGGING as rv4.30 (since there were problems with the attempt to re-name
+as rv4.20)
+
+Radiation_mod.f90 - just cleaned up units explanation
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Aug 2018, Dave
 
 TAGGING as rv4.20.
