@@ -384,15 +384,17 @@ contains
                             PARsun,PARshade,LAIsunfrac)
 !===========================================================================
 !
-!    Calculates g_light, using methodology as described in Emberson et 
-!    al. (1998), eqns. 31-35, based upon sun/shade method of Norman (1979,1982)
+!    Calculates sun and shade components of incoming PAR (W/m2 on horizontal
+!    surface, using methodology as described in Emberson et  al. (2000,
+!    EMEP Note 6/00), eqns.  6-11, based upon sun/shade method of Norman (1979,1982)
+!    (N82 eqns. 14-17).
 
 !     input arguments:
 
     real, intent(in)  :: LAI       ! leaf area index (m^2/m^2), one-sided
     real, intent(in)  :: sinB      ! B = solar elevation angle; sinB = CosZen
     real, intent(in)  :: PARdbh, PARdif     ! Direct, diffuse Radn, W/m2
-    real, intent(out) :: PARsun, PARshade   ! Photosyn
+    real, intent(out) :: PARsun, PARshade   ! vegetation components of PAR, W/m2
     real, intent(out) :: LAIsunfrac
 
 
@@ -408,19 +410,13 @@ contains
     LAIsun = (1.0 - exp(-0.5*LAI/sinB) ) * sinB/cosA
     LAIsunfrac = LAIsun/LAI
 
-! PAR flux densities evaluated using method of
-! Norman (1982, p.79): 
-! "conceptually, 0.07 represents a scattering coefficient"  
+  ! PAR flux densities (W/m2) evaluated using method of Norman (1982, p.79): 
+  ! "conceptually, 0.07 represents a scattering coefficient"  
 
     PARshade = PARdif * exp(-0.5*LAI**0.7) +  &
                0.07 * PARdbh  * (1.1-0.1*LAI)*exp(-sinB)   
 
     PARsun = PARdbh *cosA/sinB + PARshade
-
-!.. Convert units, and to PAR fraction !NOT needed for WN17
-
-!WN17    PARshade = PARshade * Wm2_2uEPAR 
-!WN17    PARsun   = PARsun   * Wm2_2uEPAR 
 
   end subroutine CanopyPAR
 
