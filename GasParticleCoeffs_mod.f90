@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
  !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14     &! no. of gases in Wesely tables, DDdefs below
+        NDRYDEP_GASES = 14+6   &! no. of gases in Wesely tables, DDdefs below
        ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
@@ -137,6 +137,13 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'PAN  ',DH2O/2.8 , 2.8, 3.0E+00, 9999, 3.0E+03, 0.5,  0.,  -1,-1,-1,-1)&
  ! had f0 0.1, H* 1e5
  ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 2.6E+05,    6, 4.0E-04, 0.5,  0.,  -1,-1,-1,-1)&
+! additions for Hodzic VBS-scheme semivolatile species:
+ ,DD_t( 'LVASOA',DH2O/3.9 , 3.9, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LVASOA - to model Hodzics 0.01 anthropogenic VSOA bin
+ ,DD_t( 'SVASOA',DH2O/3.1 , 3.1, 1.3E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! SVASOA - to model Hodzics 10, 100 and 1000ug/m3 Anthropogenic VSOA bins
+ ,DD_t( 'LSVBSOA',DH2O/4.6 , 4.6, 6.3E+08, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LSVBSOA - to model Hodzics 0.01, 0.1, 1 and 10 ug/m3 Biogenic VSOA bins
+ ,DD_t( 'SVBSOA',DH2O/4.6 , 4.6, 3.2E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! SVBSOA - to model Hodzics 100ug/m3 Biogenic VSOA bin 
+ ,DD_t( 'PINONIC',DH2O/4.6 , 4.6, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! pinonic acid
+ ,DD_t( 'HCC7CO',DH2O/3.7 , 3.7, 3.9E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& 
 ! Particles:
 !A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
 !               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV sig  rhop  Gb(1-rural, 2-seasalt) 
