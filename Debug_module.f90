@@ -29,6 +29,7 @@ module Debug_module
     ,IOPROG          = .false. &
     ,LANDDEFS        = .false. &
     ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
+    ,MET             = .false. &
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
@@ -76,7 +77,6 @@ logical, public, parameter ::    &
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
-  ,DEBUG_MET            = .false. &
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_NETCDF         = .false. &
