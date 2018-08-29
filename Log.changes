@@ -21,6 +21,25 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 Aug 2018, Dave, based upon Matthieu, Peter code 
+
+Incomplete introduction of NWP as an option for Hmix
+Not tested yet since PBLH isn't in EECCA or EMEP01 standard data.
+
+ BLPhysics_mod
+     HmixMethod moved to PBL%
+
+ Config_module - moved HmixMethod
+ Debug_module  - DEBUG_MET becomes DEBUG%MET
+
+ MetFields_mod.f90
+    - added use of pbl_nwp. Set as needed if PBL%HmixMethod set at NWP
+
+ Met_mod.f90 
+    - NWP option uses pbl_nwp
+    - Also some tidy-ups (lines should be less than 78 chars wide)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Aug 2018, Robert
 
 Added deposition parameters for some semi-volatile VBS-species (extending the 
