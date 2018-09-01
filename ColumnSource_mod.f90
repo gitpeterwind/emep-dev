@@ -337,6 +337,7 @@ subroutine setRate()
   type(loc) :: dloc
   type(ems) :: dems
   integer :: stat,l,v,e,g
+  character(len=*), parameter :: dtxt='ColSrcSetRate:'
 ! Particles classes & default split as London VAAC setup for NAME
 ! from Witham&al:2011 Table 1
 !   Evolution of volcanic ash modelling at the London VAAC April 2010 --- April 2011
@@ -372,6 +373,7 @@ subroutine setRate()
   nloc=0
   l = 1
   doLOC: do ! read all entries on file, stop simulation if are too many entries 
+    call CheckStop ( l > size(PROC_LOC) , dtxt//' NEEDS larger size for PROC_LOC')
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doLOC            ! End of file
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
