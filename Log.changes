@@ -20,6 +20,21 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Sep 2018, Dave
+
+Aqueous - removed lots of A2018 comment lines
+
+ColumnSource  - added CheckStop for size of PROC_LOC (failed a DEBUG=yes test for global run)
+       NEEDS check. Why doesn't -1 for NMAX_LOC work as suggested in config_emep?
+       And ... please don't use l as a variable. Looks too much like 1 sometimes. This is one of our
+       few 'programming rules' ;-)
+
+Debug_module   - moved GETEMIS and ROADDUST to DEBUG% system
+EmisGet_mod    - moved GETEMIS and ROADDUST to DEBUG% system. Also some formatting to get < 78 char lines
+Emissions_mod  - moved GETEMIS and ROADDUST to DEBUG% system. Also some formatting to get < 78 char lines
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 Aug 2018, Dave, based upon Matthieu, Peter code 
 
