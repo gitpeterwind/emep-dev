@@ -27,7 +27,8 @@ module Met_mod
 
 use BLPhysics_mod,         only: &
    KZ_MINIMUM, KZ_SBL_LIMIT, PIELKE   &
-  ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
+!NWPHMIX  ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
+  , UnstableKzMethod, StableKzMethod, KzMethod  &
   ,USE_MIN_KZ              & ! From old code, is it needed?
   ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
   ,OB_invL_LIMIT           & !
@@ -56,7 +57,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
      ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
-use Debug_module,       only: DEBUG_MET,DEBUG_BLM, DEBUG_Kz, &
+use Debug_module,       only: DEBUG,DEBUG_BLM, DEBUG_Kz, &
                               DEBUG_SOILWATER, DEBUG_LANDIFY 
 use FastJ_mod,          only: setup_phot_fastj,rcphot_3D
 use Functions_mod,      only: Exner_tab, Exner_nd
@@ -189,7 +190,8 @@ subroutine MeteoRead_io()
         istart=gi0
         jstart=gj0
         call GetCDF_modelgrid(namefield,meteoname,meteo_3D,1,KMAX,nrec,1,&
-            imax_in=largeLIMAX,jmax_in=largeLJMAX,needed=met(ix)%needed,found=met(ix)%found)
+            imax_in=largeLIMAX,jmax_in=largeLJMAX,needed=met(ix)%needed,&
+            found=met(ix)%found)
         if(met(ix)%found)then
           if(KMAX==1)then
             ijk=0
@@ -237,9 +239,12 @@ subroutine MeteoRead_io()
 
         if(me_io==0)then
           if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
-          if(met(ix)%found.and.ndim==2)write(*,*)'typical value 2D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,1)
-          if(met(ix)%found.and.ndim==3)write(*,*)'typical value 3D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
-          if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
+          if(met(ix)%found.and.ndim==2)write(*,*)'typical value 2D = ',&
+                trim(namefield),me_io,met(ix)%field_shared(5,5,1)
+          if(met(ix)%found.and.ndim==3)write(*,*)'typical value 3D = ',&
+                trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
+          if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),&
+                ' in ',trim(meteoname)
         end if
       end if
     end do
@@ -354,7 +359,7 @@ subroutine MeteoRead()
   nday=next_inptime%day
   nhour=next_inptime%hour
 
-  if(MasterProc.and.DEBUG_MET) &
+  if(MasterProc.and.DEBUG%MET) &
     write(6,*) '*** nyear,nmonth,nday,nhour,nmdays2'    &
       ,next_inptime%year,next_inptime%month,next_inptime%day    &
       ,next_inptime%hour,nmdays(2)
@@ -380,9 +385,9 @@ subroutine MeteoRead()
     !could open and close file here instead of in Getmeteofield
   end if
 
-  if(MasterProc.and.DEBUG_MET) write(*,*)'nrec,nhour=',nrec,nhour
+  if(MasterProc.and.DEBUG%MET) write(*,*)'nrec,nhour=',nrec,nhour
 
-  write_now=MasterProc.and.(DEBUG_MET.or.first_call) !inform of what is done with each field the first time
+  write_now=MasterProc.and.(DEBUG%MET.or.first_call) !inform of what is done with each field the first time
 
   if((nrec_mult/=1 .and. MasterProc) .or. write_now)write(*,*)'reading record ',nrec
 
@@ -670,10 +675,12 @@ subroutine MeteoRead()
             MPI_MIN, MPI_COMM_CALC, IERROR)
        minprecip=x_out
        if(minprecip<-10)then
-          if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
+          if(me==0)write(*,*)'WARNING: found negative precipitations. '&
+             ,'set precipitations to zero!',minprecip
           surface_precip = 0.0
        else
-          surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+          surface_precip = max(0.0, & ! get only the variation. mm ->m/s
+             (surface_precip - surface_precip_old))*0.001/(METSTEP*3600)
        end if
        surface_precip_old = buff ! Accumulated precipitation
      end if
@@ -694,7 +701,8 @@ subroutine MeteoRead()
              MPI_MIN, MPI_COMM_CALC, IERROR)
       minprecip=x_out
       if(minprecip<-10)then
-        if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
+        if(me==0)write(*,*)'WARNING: found negative precipitations. ',&
+          ' set precipitations to zero!',minprecip
         surface_precip = 0.0
       else
         surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
@@ -943,8 +951,10 @@ subroutine MeteoRead()
       foundSMI1=.false.
       do isw = 1, size(possible_soilwater_uppr)
         namefield=possible_soilwater_uppr(isw)
-        if((DEBUG_SOILWATER.or.first_call).and.MasterProc) write(*,*) "Met_mod: soil water search ",isw,trim(namefield)
-        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,SoilWater_uppr(:,:,nr),found=foundSoilWater_uppr)
+        if((DEBUG_SOILWATER.or.first_call).and.MasterProc) &
+               write(*,*) "Met_mod: soil water search ",isw,trim(namefield)
+        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+               SoilWater_uppr(:,:,nr),found=foundSoilWater_uppr)
         if(foundSoilWater_uppr) then ! found
           foundSMI1=(index(namefield,"SMI")>0)
           exit
@@ -963,7 +973,8 @@ subroutine MeteoRead()
           if(MasterProc.and.first_call)write(*,*) " Rename soil water in HIRHAM"
           namefield='soil_water_second_layer'
         end if
-        if(MasterProc.and.first_call) write(*,*) "Met_mod: deep soil water search ", isw, trim(namefield)
+        if(MasterProc.and.first_call) write(*,*) "Met_mod: ', &
+          'deep soil water search ", isw, trim(namefield)
         call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
             SoilWater_deep(:,:,nr),found=foundSoilWater_deep)
         if(foundSoilWater_deep) then ! found
@@ -1391,7 +1402,10 @@ subroutine metfieldint
     div = 1./real(nmax-(nstep-1))
     do ix=1,Nmetfields
       if(met(ix)%time_interpolate)then
-        if(me==0.and.DEBUG_MET)&
+        !if(DEBUG%MET) print *, 'METINTERP ',me,trim(met(ix)%name)
+        !if(DEBUG%MET) print *, 'METSIZE   ',me,size(met(ix)%field,dim=4)
+
+        if(me==0.and.DEBUG%MET)&
           write(*,*)'interpolating in time ',ix,met(ix)%name
 
         met(ix)%field(:,:,:,1)    = met(ix)%field(:,:,:,1)                 &
@@ -1641,7 +1655,7 @@ subroutine BLPhysics()
 
     !======================================================================
     ! Hmix choices:
-    if ( HmixMethod == "TIZi" ) then
+    if ( PBL%HmixMethod == "TIZi" ) then
       ! Get Mixing height from "orig" method
       ! "old" exner-function of the full-levels
 
@@ -1662,7 +1676,7 @@ subroutine BLPhysics()
       end do
 
     else ! Newer non-TI methods
-      if ( HmixMethod == "SbRb" ) then
+      if ( PBL%HmixMethod == "SbRb" ) then
         call SeibertRiB_Hmix_3d(&
                 u_mid(1:limax,1:ljmax,:),  &
                 v_mid(1:limax,1:ljmax,:),  &
@@ -1670,7 +1684,7 @@ subroutine BLPhysics()
                 th(1:limax,1:ljmax,:,nr),  &
                 pzpbl(1:limax,1:ljmax))
 
-      elseif ( HmixMethod == "JcRb" ) then
+      elseif ( PBL%HmixMethod == "JcRb" ) then
         do i=1,limax
           do j=1,ljmax
             theta2 = t2_nwp(i,j,nr) * T_2_Tpot(ps(i,j,nr))
@@ -1679,6 +1693,14 @@ subroutine BLPhysics()
                 z_mid(i,j,:), th(i,j,:,nr),  pzpbl(i,j))
           end do
         end do
+      elseif ( PBL%HmixMethod == "NWP" ) then ! NWPHMIX
+        do i=1,limax
+          do j=1,ljmax
+             pzpbl(i,j) = pbl_nwp(i,j,1)
+          end do
+        end do
+        if ( DEBUG%MET .and. debug_proc) call datewrite("NWP HMIX: ", &
+           [ pbl_nwp(debug_li,debug_lj,1),pbl_nwp(debug_li,debug_lj,2) ] )
       else
         call CheckStop("Need HmixMethod")
       end if ! end of newer methods
@@ -2062,7 +2084,7 @@ subroutine landify(x,intxt,xmin,xmax,wfmin,xmask)
 
   ! We need the extended water-fraction too, but just once
   if ( .not. xwf_done ) then ! only need to do this once
-       if ( DEBUG_MET .and. debug_proc) write(*,*) "Landify xwf"
+       if ( DEBUG%MET .and. debug_proc) write(*,*) "Landify xwf"
        call extendarea( water_fraction(:,:), xwf, debug_flag)
        xwf_done = .true.
   end if
