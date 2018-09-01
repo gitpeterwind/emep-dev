@@ -23,6 +23,7 @@ module Debug_module
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
     ,FORESTFIRE      = .false. &
+    ,GETEMIS         = .false. &
     ,GLOBBC          = .false. &
     ,GRIDVALUES      = .false. &
     ,HOURLY_OUTPUTS  = .false. & !
@@ -34,6 +35,7 @@ module Debug_module
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
     ,POLLEN          = .false. &
+    ,ROADDUST        = .false. &
     ,RSUR            = .false. & ! Surface resistance
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
        ,MY_WETDEP    = .false. &
@@ -73,7 +75,6 @@ logical, public, parameter ::    &
     ,DEBUG_CLOVER       = .false. &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_EMISTIMEFACS   = .false. &
-  ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_MET            = .false. &
@@ -87,7 +88,6 @@ logical, public, parameter ::    &
 ! ,DEBUG_POLLEN         = .false. &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
-    ,DEBUG_ROADDUST     = .false. &
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_RB             = .false. &

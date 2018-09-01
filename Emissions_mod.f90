@@ -30,7 +30,7 @@ use Config_module,only: &
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
-                                DEBUG_EMISTIMEFACS, DEBUG_ROADDUST
+                                DEBUG_EMISTIMEFACS
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
@@ -616,7 +616,7 @@ contains
              do j=1,LJMAX
                 !Peter: Rough estimate to get something varying between 3.325 (SMI<0.5) and 1.0 (SMI>1)
                 SMI_roadfactor=3.325-(min(1.0,max(0.5,SMI(i,j)))-0.5)*2*(3.325-1.0)
-                !if(DEBUG_ROADDUST)&
+                !if(DEBUG%ROADDUST)&
                 !  WRITE(*,*)"i,j,RDECF:",i_fdom(i)-IRUNBEG+1,j_fdom(j)-JRUNBEG+1,SMI_roadfactor
                 do iic=road_nlandcode(i,j),1,-1
                    roaddust_emis_pot(i,j,iic,iem)=roaddust_emis_pot(i,j,1,iem) &
@@ -1077,7 +1077,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! -> Need to know day_of_week
             !    Relatively weak variation with day of week so use a simplified approach
 
-            ! if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
+            ! if( DEBUG%ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
             !    write(*,*)"DEBUG ROADDUST! Dry! ncc=", road_nlandcode(i,j)
             ! end if
 
@@ -1108,7 +1108,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               do iem = 1, NROAD_FILES
                 s = tfac * roaddust_emis_pot(i,j,icc,iem)
-                if(DEBUG_ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
+                if(DEBUG%ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
                   write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
                     iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
 
@@ -1117,7 +1117,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 gridrcroadd0(QROADDUST_CO,i,j)=gridrcroadd0(QROADDUST_CO,i,j) &
                      +(1.-ROADDUST_FINE_FRAC)*s
 
-                if(all([DEBUG_ROADDUST,debug_proc,i==debug_li,j==debug_lj]))then
+                if(all([DEBUG%ROADDUST,debug_proc,i==debug_li,j==debug_lj]))then
                   write(*,*)"gridrcroadfine"  ,gridrcroadd0(QROADDUST_FI,i,j)
                   write(*,*)"gridrcroadcoarse",gridrcroadd0(QROADDUST_CO,i,j)
                 end if
@@ -1164,7 +1164,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !  end do       ! k
 
   if(USES%ROADDUST)THEN
-    if(DEBUG_ROADDUST.and.debug_proc) &
+    if(DEBUG%ROADDUST.and.debug_proc) &
       write(*,*)"Before the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
     do j = 1,ljmax
       do i = 1,limax
@@ -1175,7 +1175,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         end do ! iqrc
       end do   ! i
     end do     ! j
-    if(DEBUG_ROADDUST.and.debug_proc) &
+    if(DEBUG%ROADDUST.and.debug_proc) &
       write(*,*)"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
   end if
 end subroutine EmisSet

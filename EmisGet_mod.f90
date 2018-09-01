@@ -11,7 +11,7 @@ use Config_module,     only: NPROC, TXTLEN_NAME,  MasterProc,USES,&
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
-use Debug_module,      only: DEBUG, DEBUG_GETEMIS,DEBUG_ROADDUST
+use Debug_module,      only: DEBUG
 use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
                             N_HFAC,N_SPLIT, EMIS_FILE, & 
                             VOLCANOES_LL, &
@@ -519,9 +519,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   e_fact(:,:,:) = 1.0            !**** default value = 1 ****
   e_fact_lonlat(:,:,:) = 1.0            !**** default value = 1 ****
 
-  associate ( debugm0 => ( DEBUG_GETEMIS .and. MasterProc ) )
+  associate ( debugm0 => ( DEBUG%GETEMIS .and. MasterProc ) )
 
-  if( debugm0 ) write(*,*) "Enters femis", me
+  if( debugm0 ) write(*,*) "Enters femis", me, trim(femisFile)
   call open_file(IO_EMIS,"r",femisFile,needed=.false.)
 
   if ( ios == NO_FILE ) then
@@ -650,10 +650,12 @@ end if
           if(debugm0) then
              write(unit=6,fmt=*) "FEMIS READ", inland, &
                   isec, (e_f(ic),ic=1,ncols)
-             write(unit=6,fmt="(2a,I3,a,i3,a)") " Emission factors from femis.dat, ",&
+             write(unit=6,fmt="(2a,I3,a,i3,a)") &
+                  " Emission factors from femis.dat, ",&
                   "landcode =", inland, ",  sector code =",isec, &
                   " (sector 0 applies to all sectors) :"
-             write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", (trim(txtinwords(qc(ie)+2)),&
+             write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", &
+                  (trim(txtinwords(qc(ie)+2)),&
                   " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILE-1), &
                   (trim(txtinwords(qc(ie)+2))," =",e_f(qc(ie))," ", &
                   ie=NEMIS_FILE,NEMIS_FILE)
@@ -667,7 +669,10 @@ end if
              
              ! find country number  corresponding to index as written in emisfile
              do iland1=1,NLAND
-                if(Country(iland1)%icode==inland) goto 544
+               if(Country(iland1)%icode==inland  ) then
+                 if (debugm0 .and. inland==6) write(*,*)'DKLAND',inland,iland1
+                 goto 544
+               end if
              end do
              
              if(MasterProc) write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
@@ -685,7 +690,8 @@ end if
        elseif (isec==100) then    ! Anthropogenic scenario
           !if you need this option, then just uncomment and check that
           !ANTROP_SECTORS is set according to your categories (10 for SNAP)
-          call CheckStop(SECTORS_NAME/='SNAP',"Anthropogenic not compatible with non-SNAP")
+          call CheckStop(SECTORS_NAME/='SNAP',&
+                "Anthropogenic not compatible with non-SNAP")
           isec1 = 1
           isec2 = ANTROP_SECTORS
        else                       ! one sector: isec
@@ -695,7 +701,8 @@ end if
        do ie = 1,NEMIS_FILE
           if(txtinwords(1)=='lonlat')then
              do isec = isec1, isec2
-                e_fact_lonlat(isec,N_femis_lonlat,ie) = e_fact_lonlat(isec,N_femis_lonlat,ie) * e_f_lonlat( qc(ie) )
+                e_fact_lonlat(isec,N_femis_lonlat,ie) = &
+                e_fact_lonlat(isec,N_femis_lonlat,ie) * e_f_lonlat( qc(ie) )
              end do !isec
           else
              do iq = iland1, iland2
@@ -704,10 +711,10 @@ end if
                 end do !isec
              end do !iq
              if (debugm0 ) then
-                write(unit=6,fmt=*) "IN NEMIS_FILE LOOP WE HAVE : ", ie, &
-                     qc(ie), e_f( qc(ie) )
-                write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
-             end if ! DEBUG_GETEMIS
+                write(unit=6,fmt='(a,2i5,f8.3,a,4i4)') 'NEMIS_FILE LOOP'//&
+                  ' HAS : ', ie, qc(ie), e_f( qc(ie) ), &
+                  ' loops over  (secs,ccs)', isec1, isec2, iland1, iland2
+             end if ! DEBUG%GETEMIS
           end if
        end do !ie
           
@@ -716,14 +723,15 @@ end if
   close(IO_EMIS)
 
   if( MasterProc) write(unit=6,fmt=*) "femis, read ", n, "i j lines from femis"
-  if( MasterProc) write(unit=6,fmt=*) "femis, read ", N_femis_lonlat, "lonlat lines from femis"
+  if( MasterProc) write(unit=6,fmt=*) "femis, read ", N_femis_lonlat, &
+                                      "lonlat lines from femis"
   if(debugm0) then
     ! Extra checks
-     write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
+     write(unit=6,fmt=*) "DEBUG%GETEMIS: DK femis gives: "
      write(unit=6,fmt="(6x, 30a10)") (EMIS_FILE(ie), ie=1,NEMIS_FILE)
      do isec = 1, NSECTORS
       write(unit=6,fmt="(i6, 30f10.4)") isec, &
-          (e_fact(isec,27,ie),ie=1,NEMIS_FILE)
+          (e_fact(isec,6,ie),ie=1,NEMIS_FILE)
      end do
   end if ! DEBUG
   ios = 0
@@ -786,7 +794,7 @@ end if
             if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
             call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
          end if
-         if( DEBUG_GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
+         if( DEBUG%GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
          emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
       end if
    end do
@@ -850,14 +858,14 @@ end if
       !ext meaning using levels from file (EmisHeightsFile)
       k1_ext(KMAX_BND)=0
       do isec=1,N_HFAC! could put inside but easier for debugging to put here now
-         if(DEBUG_GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
+         if(DEBUG%GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
          do k=KMAX_BND-1,max(1,KMAX_BND-nemis_kprofile),-1
 
 !count all contributions to model level k
 !i.e. between P_emep(k+1) and P_emep(k)
 
             P_emep=A_bnd(k)+B_bnd(k)*Pref !Pa
-            if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
+            if(DEBUG%GETEMIS.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
             !largest available P_ext smaller than P_emep (if possible)
             !k1_ext(k) is the external layer just below P_emep(k)
             k1_ext(k)= 0 !start at surface, and go up until P_emep
@@ -865,7 +873,7 @@ end if
                if(emis_P_level(k_ext)<P_emep)exit
                k1_ext(k)=k_ext
             end do
-            if(DEBUG_GETEMIS.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
+            if(DEBUG%GETEMIS.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
 
             !sum all contributions starting from last counted level (i.e. P_emep(k+1))
 
@@ -875,7 +883,7 @@ end if
                frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-emis_P_level(k1_ext(k+1)+1))&
                     /(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) &
+               if(DEBUG%GETEMIS.and.MasterProc) &
                 write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
                   k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),&
                   emis_P_level(k1_ext(k+1)+1),(A_bnd(k+1)+B_bnd(k+1)*Pref),&
@@ -884,7 +892,7 @@ end if
                !everything between P_emep(k+1) and P_emep(k)
                frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-P_emep)/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) &
+               if(DEBUG%GETEMIS.and.MasterProc) &
                 write(*,"(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
                     k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
                     (A_bnd(k+1)+B_bnd(k+1)*Pref ),P_emep,(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
@@ -893,7 +901,7 @@ end if
             !add all full levels in between
             do k_ext=k1_ext(k+1)+2,k1_ext(k)
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+emis_hprofile(k_ext,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) &
+               if(DEBUG%GETEMIS.and.MasterProc) &
                  write(*,"(A,I5,6F10.2)")'adding entire level',&
                    k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
             end do
@@ -902,7 +910,7 @@ end if
             if(emis_P_level(k1_ext(k+1)+1)>P_emep.and. k1_ext(k)<nemis_hprofile )then
                frac=(emis_P_level(k1_ext(k))-P_emep)/(emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+frac*emis_hprofile(k1_ext(k)+1,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
+               if(DEBUG%GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
                     frac,emis_hprofile(k1_ext(k)+1,isec),emis_P_level(k1_ext(k+1)+1),emis_P_level(k1_ext(k)),P_emep,&
                     (emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
             end if
@@ -988,7 +996,7 @@ end if
   iqrc = 0               ! Starting index in emisfrac array
   nrcsplit= 0                 !
 
-  debugm = (DEBUG_GETEMIS.and.MasterProc) 
+  debugm = (DEBUG%GETEMIS.and.MasterProc) 
 
   do ie = 1, NEMIS_FILE 
 
@@ -1019,7 +1027,7 @@ end if
        end if
 
 
-       if (debugm) write(*,*) "DEBUG_EMISGET split defaults=", defaults,fname
+       if (debugm) write(*,*) "DEBUG%GETEMIS split defaults=", defaults,fname
  
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
@@ -1037,7 +1045,7 @@ end if
         nsplit = nsplit - 2
 
         if ( MasterProc ) then
-          if(DEBUG_GETEMIS) then
+          if(DEBUG%GETEMIS) then
              write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
              write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
           end if
@@ -1177,10 +1185,10 @@ end if
 
                 ! just a check
                 !if ( DEBUG .and. iland == 27.and.MasterProc ) then 
-                if ( DEBUG_GETEMIS .and. iland == 101.and.MasterProc ) then 
+                if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then 
                     itot = tmp_iqrc2itot(iqrc)
                     write(*,"(a35,4i3,i4,a,f10.4)") &
-                      "DEBUG_EMISGET splitdef UK", isec, ie, i,  &
+                      "DEBUG%GETEMIS splitdef UK", isec, ie, i,  &
                        iqrc, itot, trim(species(itot)%name), &
                          tmp_emisfrac(iqrc,isec,iland)
                 end if
@@ -1203,7 +1211,7 @@ end if
   ! chemical scheme:
 
   do ie = 1, NEMIS_SPECS
-    if ( DEBUG_GETEMIS .and. MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
+    if ( DEBUG%GETEMIS .and. MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
        call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if bio, nat, or fire!! " // trim(EMIS_SPECS(ie)) )
        write(*,*) "WARNING: EmisSpec - emissions of this compound were specified",&
 &               " in the CM_reactions files, but not found in the ",&
@@ -1292,7 +1300,7 @@ end if
    !>============================
 
     if ( my_first_road ) then
-         if(DEBUG_ROADDUST)WRITE(*,*)"initializing sumroaddust!"
+         if(DEBUG%ROADDUST)WRITE(*,*)"initializing sumroaddust!"
          sumroaddust(:,:) =  0.0       ! initialize sums
          ios = 0
          my_first_road = .false.
@@ -1302,7 +1310,7 @@ end if
 
       globroad_dust_pot(:,:,:) = 0.0
 
-      if (DEBUG_ROADDUST) write(unit=6,fmt=*) "Called RoadDustGet with index, name", &
+      if (DEBUG%ROADDUST) write(unit=6,fmt=*) "Called RoadDustGet with index, name", &
            iemis, trim(emisname)
 !      fname = "emislist." // emisname
       fname = emisname
@@ -1323,7 +1331,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
 !            write(*,*)'dust to dust',iic,i,j, tmpdust
 
-            if( DEBUG_ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
+            if( DEBUG%ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
                 "DEBUG RoadDustGet "//trim(emisname) // ":" , iic, tmpdust
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"RoadDustGet: ios error2 in emission file")
@@ -1359,7 +1367,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
               globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
                         + tmpdust
-            if( DEBUG_ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
+            if( DEBUG%ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
                 "DEBUG RoadDustGet iland, globrdp",iland,globroad_dust_pot(i,j,iland)
 
 !   NOTE!!!! A climatological factor is still missing for the road dust!
@@ -1376,7 +1384,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
         end do READEMIS
         
-        if(DEBUG_ROADDUST) write(*,*)'done one, got sumroaddust=',sumroaddust(:,iemis)        
+        if(DEBUG%ROADDUST) write(*,*)'done one, got sumroaddust=',sumroaddust(:,iemis)        
 
         close(IO_EMIS)
         ios = 0
