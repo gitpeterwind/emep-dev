@@ -210,16 +210,13 @@ integer, public, parameter :: &
 
 ! And create an array to map from the "calc" to the advected species
 ! Use zeroth column to store number of species in that row
-!A2018 integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2adv
 
-!A2018:
   integer, private, save :: iwdepPMf  !A2018 was CWDEP_PMf
 ! arrays for species and groups, e.g. SOX, OXN
 integer, private, save :: nwgrpOut = 0, nwspecOut = 0  ! no. groups & specs
 integer, private, allocatable, dimension(:), save :: wetGroupOut, wetSpecOut
 type(group_umap), private, allocatable, dimension(:), target, save :: wetGroupOutUnits
 
-!A2018 type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
 
 integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_mod
 contains
@@ -227,21 +224,10 @@ contains
 subroutine Init_WetDep()
   integer :: iadv, igrp, icalc, n, nc, f2d, alloc_err
   character(len=30) :: dname
-!A2018 !/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1,
-!A2018 !  and the fallspeed of the raindroplets is assumed to be 5 m/s.
-!A2018   real, parameter :: FALLSPEED = 5.0               ! m/s
-!A2018   real, parameter :: SUBCLFAC = 5.2 / FALLSPEED
-!A2018 
-!A2018 !/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
-!A2018   real, parameter :: EFF25 = 0.02*SUBCLFAC, &
-!A2018                      EFFCO = 0.4 *SUBCLFAC, &
-!A2018                      EFFGI = 0.7 *SUBCLFAC
 
-!A2018: new
 
    call WetCoeffs()  ! Sets WDspec(:)% name, W_sca, W_sub
 
-!A2018: end new
   allocate(incloud(KUPPER:KMAX_MID),pr_acc(KUPPER:KMAX_MID))
   allocate(pH(KUPPER:KMAX_MID),so4_aq(KUPPER:KMAX_MID),no3_aq(KUPPER:KMAX_MID))
   allocate(nh4_aq(KUPPER:KMAX_MID),nh3_aq(KUPPER:KMAX_MID),hso3_aq(KUPPER:KMAX_MID))
@@ -253,32 +239,8 @@ subroutine Init_WetDep()
 !A2018 !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
 !A2018 !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
 !A2018 !    efficiency * SUBCLFAC
+!A2018 moved 
 !A2018 !/..                             W_Sca  W_sub
-!A2018   WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
-!A2018   WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
-!A2018   WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
-!A2018   WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   !
-!A2018   WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   !
-!A2018   WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  !
-!A2018   WetDep(CWDEP_ECfn)  = WScav(   0.05, EFF25)
-!A2018   WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
-!A2018   WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
-!A2018   WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
-!A2018   WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
-!A2018   WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
-!A2018   WetDep(CWDEP_POLLw) = WScav(   1.0,  SUBCLFAC) ! pollen
-!A2018 !RB extras:
-!A2018 !perhaps too high for MeOOH? About an order of magnitude lower H* than HCHO:
-!A2018   WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO - 
-!A2018   WetDep(CWDEP_0p2)  = WScav(   0.2, 0.06) !
-!A2018   WetDep(CWDEP_0p3)  = WScav(   0.3, 0.09) !
-!A2018   WetDep(CWDEP_0p4)  = WScav(   0.4, 0.12) !
-!A2018   WetDep(CWDEP_0p5)  = WScav(   0.5, 0.15) !
-!A2018   WetDep(CWDEP_0p6)  = WScav(   0.6, 0.18) !
-!A2018   WetDep(CWDEP_0p7)  = WScav(   0.7, 0.21) !
-!A2018   WetDep(CWDEP_0p8)  = WScav(   0.8, 0.24) ! 
-!A2018   WetDep(CWDEP_1p3)  = WScav(   1.3, 0.39) !
-
 ! Other PM compounds treated with SO4-LIKE array defined above
 
 !####################### gather indices from My_Derived
@@ -340,24 +302,6 @@ subroutine Init_WetDep()
 
 !####################### END indices here ##########
 
-!A2018! Now create table to map calc species to actual advected ones:
-!A2018  Calc2adv = 0
-!A2018  do n = 1, NWETDEP_ADV
-!A2018    icalc = WDepMap(n)%calc
-!A2018    iadv  = WDepMap(n)%ind
-!A2018    nc    = Calc2adv(icalc,0) + 1
-!A2018    if(MasterProc.and.DEBUG%AQUEOUS) write(*,"(a,4i5)") &
-!A2018      "CHECKING WetDep Calc2adv ", n,icalc,iadv,nc
-!A2018    Calc2adv(icalc,0 ) = nc
-!A2018    Calc2adv(icalc,nc) = iadv
-!A2018  end do
-!A2018
-!A2018  if(MasterProc.and.DEBUG%AQUEOUS) then
-!A2018    write(*,*) "FINAL WetDep Calc2adv "
-!A2018    write(*,"(i3,i4,15(1x,a))") (icalc, Calc2adv(icalc,0), &
-!A2018      (trim(species_adv(Calc2adv(icalc,nc))%name),nc=1,Calc2adv(icalc,0)),&
-!A2018        icalc=1,NWETDEP_CALC)
-!A2018  end if
 end subroutine Init_WetDep
 !-----------------------------------------------------------------------
 subroutine Setup_Clouds(i,j,debug_flag)

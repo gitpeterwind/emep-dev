@@ -1839,7 +1839,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   do n = 1, num_deriv3d
 
     index = f_3d(n)%index
-    class   = f_3d(n)%class
+    class = f_3d(n)%class
+    name  = f_3d(n)%name
 
     if(f_3d(n)%unit=="ppb") then
       inv_air_density3D(:,:,:) = 1.0

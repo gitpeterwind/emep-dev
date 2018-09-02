@@ -43,7 +43,7 @@ logical, save ::          &
   need_topo    = .true.     ! do not use column emissions if topo file is not found
 
 integer, save ::  &
-  NMAX_LOC = 5,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
+  NMAX_LOC = 6,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
   NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
 
 integer, save ::  &! No. of ... found on processor/subdomain
@@ -337,6 +337,7 @@ subroutine setRate()
   type(loc) :: dloc
   type(ems) :: dems
   integer :: stat,l,v,e,g
+  character(len=*), parameter :: dtxt='ColSrcSetRate:'
 ! Particles classes & default split as London VAAC setup for NAME
 ! from Witham&al:2011 Table 1
 !   Evolution of volcanic ash modelling at the London VAAC April 2010 --- April 2011
@@ -372,6 +373,7 @@ subroutine setRate()
   nloc=0
   l = 1
   doLOC: do ! read all entries on file, stop simulation if are too many entries 
+    call CheckStop ( l > size(PROC_LOC) , dtxt//' NEEDS larger size for PROC_LOC')
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doLOC            ! End of file
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
