@@ -118,7 +118,7 @@ contains
 
     real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
     integer :: landcode(LIMAX,LJMAX,NCMAX),nlandcode(LIMAX,LJMAX)
-    real :: lonlat_fac, fac
+    real :: lonlat_fac, fac, file_fac
 
     integer ::i,j,n,ic,i_cc,found, isec, sec_ix
     logical :: Cexist
@@ -157,7 +157,7 @@ contains
        sec_ix = 1
 762    continue !if several GNFR counterparts to one SNAP
        iem_used = iem !default
-       fac = 1.0 !default
+       file_fac = 1.0 !default
        foundEmis_id = .false.
        if(.not. fractionformat)then
           call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
@@ -197,9 +197,9 @@ contains
                 !could add case for any species
              endif
              if( ewords(7) == "fac" )then !optional, but "spec" must be used if "fac" is set
-                fac=-999.9
-                read(ewords(8),*)fac 
-                 if(abs(fac+999.9)<0.1)then !not good test
+                file_fac=-999.9
+                read(ewords(8),*)file_fac 
+                 if(abs(file_fac+999.9)<0.1)then !not good test
                    if(MasterProc)write(*,*)trim(ewords(8))//' NOT UNDERSTOOD AS REAL'
                    cycle
                 endif               
@@ -246,7 +246,7 @@ contains
              if(foundEmis_id)then
                 !for now no reductions applied
                 Emis_field(i,j,ix_Emis) = Emis_field(i,j,ix_Emis) +&
-                     cdfemis(i,j) * fac
+                     cdfemis(i,j) * file_fac
              else
                 if(use_mask)then
                    if(Emis_mask(i,j))cdfemis(i,j)=0.0
@@ -300,7 +300,7 @@ contains
                          end if
                       end do
                    end if
-                   fac = fac*lonlat_fac
+                   fac = file_fac*lonlat_fac
                    if(.not. fractionformat) fac = fac*e_fact(isec,ic,iem_used)
                    
                    !merge into existing emissions
