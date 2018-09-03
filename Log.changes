@@ -22,6 +22,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Sep 2018, Dave
+rv4.31 tag added
+since Robert will soon make changes that affect results
+rv4.31 can be associated with the (untested) NWP Hmix possibility
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Sep 2018, Peter
 
 Big bug when femis and non-fraction emissions are used (introduced 22 May 2018). 
