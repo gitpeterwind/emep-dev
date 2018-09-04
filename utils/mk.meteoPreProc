@@ -18,7 +18,7 @@ met=metdata_EC
 #GRID=EMEP
 #met=metdata
 
-for T in 18;  do
+for T in 18;  do  # Temperature threshold
 for year in {2015..2015}  # {2003..2005}   #   ! varies with grid
 do
   ./$prog $T $year /global/work/mifapw/emep/Data/$GRID/$met/$year $GRID-$year

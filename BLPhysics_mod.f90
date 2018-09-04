@@ -15,11 +15,12 @@ module BLPhysics_mod
 ! real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
 ! real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
 
-! Choose one Hmix method here (not needed for NWP?)
- character(len=4), parameter, public :: HmixMethod = &
-     "JcRb"   ! Jericevic
-    !"SbRb"   ! Seibert
-    !"TIZi"   ! Original from Trond Iversen tiphysics
+!NWPHmix now from Config_emep, NWP%HmixMethod
+!NWPHMIX! Choose one Hmix method here (not needed for NWP?)
+!NWPHMIX character(len=4), parameter, public :: HmixMethod = &
+!NWPHMIX     "JcRb"   ! Jericevic
+!NWPHMIX    !"SbRb"   ! Seibert
+!NWPHMIX    !"TIZi"   ! Original from Trond Iversen tiphysics
 
 ! Choose one Kz method here. Prefered method is likely to use O'brien
 ! in convective, Jericevic in Stable.
@@ -429,7 +430,7 @@ subroutine Test_BLM (mm,dd,hh,fH,u,v, zm, zb, pb, exnm, &
    ,Kz_PBF   ! Kz    "   "   flag=F
   real :: ziSeibert, ziJericevic, ziVenki, ziTI, ziVH
 
-    write(*,*)"HmixMETHOD "//HmixMethod
+    write(*,*)"HmixMETHOD "//PBL%HmixMethod
     write(*,*)"KzMETHOD "//KzMethod//"-U:"//UnstableKzMethod// &
               "-S:"//StableKzMethod
 

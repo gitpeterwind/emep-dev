@@ -1,6 +1,6 @@
 module MetFields_mod
 
-  use Config_module,  only : USES,USE_WRF_MET_NAMES,NPROC
+  use Config_module,  only : USES,USE_WRF_MET_NAMES,NPROC, PBL
   use MPI_Groups_mod     , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                  MPI_COMM_CALC, MPI_COMM_WORLD, MPI_COMM_SUB, MPISTATUS, &
                                  IERROR, ME_MPI, NPROC_MPI, largeLIMAX,largeLJMAX, share, share_logical
@@ -149,6 +149,7 @@ module MetFields_mod
  real,target,public, save,allocatable, dimension(:,:,:) :: &
         ps        &! Surface pressure Pa
        ,t2_nwp    & ! Temp 2 m   deg. K
+       ,pbl_nwp   & ! Planetary boundary layer height (m)
        ,fh        & ! surf.flux.sens.heat W/m^2
        ,fl        & ! latent heat flux W/m^2
 !       ,tau       & ! surf. stress  N/m^2
@@ -244,12 +245,13 @@ module MetFields_mod
      !NB: the value of model_surf_elevation will be set to default value based on surface pressure anyway
 
 ! specific indices of met
-  integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
-       ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
-       ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
-       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
-       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain,ix_irainc,ix_irainnc, ix_elev,&
-       ix_invL
+  integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_cc3d, ix_pr, &
+      ix_cw_met, ix_cnvuf, ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz,&
+      ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, ix_u_mid, ix_v_mid, ix_ps, &
+      ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
+      ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
+      ix_surface_precip, ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, &
+      ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -613,6 +615,27 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_ps=ix
 
+!NWPHMIX
+  ix=ix+1
+  met(ix)%name             = 'PBLH'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .false.
+  ! If we ask for this, we need it.
+  if ( PBL%HmixMethod == 'NWP' ) met(ix)%needed = .true.
+  met(ix)%found            = .false.
+  !DS allocate(pbl_nwp(LIMAX,LJMAX))
+  allocate(pbl_nwp(LIMAX,LJMAX,NMET))
+  pbl_nwp=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => pbl_nwp
+  met(ix)%zsize = 1
+  met(ix)%msize = NMET
+  ix_pblnwp=ix
+!NWPHMIX
+
+
   ix=ix+1
   met(ix)%name             = 'temperature_2m'
   met(ix)%dim              = 2
@@ -913,6 +936,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_vn=ix
 
+
 !can be used to output any 2d field, using 'MET2D'
   do n = 1, Nspecial2d
   ix=ix+1
@@ -1050,6 +1074,7 @@ end if
     allocate(rho_surf(LIMAX,LJMAX))
     allocate(Tpot2m(LIMAX,LJMAX))
     allocate(pzpbl(LIMAX,LJMAX))
+!    allocate(pbl_nwp(LIMAX,LJMAX))
     allocate(pwp(LIMAX,LJMAX))
     allocate(fc(LIMAX,LJMAX))
     allocate(xwf(LIMAX+2*NEXTEND,LJMAX+2*NEXTEND)) 

@@ -48,7 +48,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   type, private :: PBL_t
     real :: ZiMIN = 100.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                    ! maximum mixing height
-    character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix
+    character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix ! A2018 NWP
       ! JcRb = Jericevic/Richardson number method
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
   end type PBL_t
