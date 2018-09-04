@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
  !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14+6   &! no. of gases in Wesely tables, DDdefs below
+        NDRYDEP_GASES = 14+40  &! no. of gases in Wesely tables, DDdefs below
        ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
@@ -137,6 +137,43 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'PAN  ',DH2O/2.8 , 2.8, 3.0E+00, 9999, 3.0E+03, 0.5,  0.,  -1,-1,-1,-1)&
  ! had f0 0.1, H* 1e5
  ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 2.6E+05,    6, 4.0E-04, 0.5,  0.,  -1,-1,-1,-1)&
+ ! additional species for EmChem18:
+ ! ---
+ ,DD_t( 'MEK ',DH2O/2.7, 2.7, 2.0e1, 9999, 1.0E+04, 0.05, 0.,  -1,-1,-1,-1)& ! ? mesophyll resistance?
+ ,DD_t( 'MGLYOX',DH2O/2.5 , 2.5, 2.4E+04, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)&
+ ,DD_t( 'EGLYOX',DH2O/2.8 , 2.8, 2.8E+03, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)& ! similar parameters as HOCH2CO3H in the CRI version
+ ,DD_t( 'CO2C5OH',DH2O/3.2 , 3.2, 1.1E+06, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)& ![alt H*-estimate 3.1E+05]  similar parameters as RN12OOH in the CRI version
+ ,DD_t( 'HO2C5OOH',DH2O/3.4 , 3.4, 1.3E+06, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'MDSOLOOH',DH2O/3.3 , 3.3, 1.1E+05, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)& ! from CRI version
+ ,DD_t( 'DM123OOH',DH2O/3.75 , 3.75, 3.3E+02, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! 
+ ,DD_t( 'BZFUONE',DH2O/2.7 , 2.7, 1.E+02, 9999, 1.0E+04, 0.1, 0.,-1,-1,-1,-1)& 
+ ,DD_t( 'OCATEC1OOH',DH2O/3.88 , 3.88, 3.1E+06, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'HOCH2CO2H',DH2O/2.49 , 2.49, 4.2E+07, 9999, 1.0E+04, 0.05, 0.,-1,-1,-1,-1)& 
+ ,DD_t( 'OXYCATECH',DH2O/3.76, 3.76, 1.1E+07, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'C5DICARB', DH2O/3.1, 3.1, 6.E+05, 9999, 1.0E+04, 0.05, 0.,-1,-1,-1,-1)& ! perhaps f=0.1?
+ ,DD_t( 'C3PAN1',DH2O/3.3 , 3.3, 1.8E+05, 9999, 1.0E+04, 0.3, 0., -1,-1,-1,-1)&
+ ,DD_t( 'C5PAN18',DH2O/4.1, 4.1, 2.4E+03, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)&
+ ,DD_t( 'NOXYOL1OOH',DH2O/4.1, 4.1, 8.3E+04, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'NOXYOLOOH',DH2O/4.57, 4.57, 4.5E+10, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'OXNNCATOOH',DH2O/4.95, 4.95, 2.7E+14, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'MNO3OOH',DH2O/3.5, 3.5, 2.3E+04, 9999, 1.0E+04, 0.5, 0.,-1,-1,-1,-1)& ! changed parameters compared to CRI
+ ,DD_t( 'NC4MDCO2H',DH2O/3.77, 3.77, 3.1E+09, 9999, 1.0E+04, 0.1, 0.,-1,-1,-1,-1)& 
+ ,DD_t( 'OXNCATCOOH',DH2O/4.7, 4.7, 2.0E+13, 9999, 1.0E+04, 0.5, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
+ ,DD_t( 'MDSOLNO3', DH2O/3.5, 3.5, 1.0E+04, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps higher f would be better?
+ ,DD_t( 'VHISOLNO3', DH2O/4., 4., 1.5E+08, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps higher f would be better?
+ ,DD_t( 'MDNO3OH', DH2O/3.7, 3.7, 5.0e4, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! rather low soluble (H* ca 0.7 - 1.7e4 M/atm) organic nitrates (mixed group)
+ ,DD_t( 'LOSOLNO3', DH2O/4., 4., 6.0e3, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! low soluble (H* ca 4 - 7e3 M/atm) organic nitrates (mixed group)
+ ,DD_t( 'GLYOX', DH2O/2.1, 2.1, 3.0e5, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& !
+ ,DD_t( 'MEOOH', DH2O/1.9, 1.9, 3.0e2, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Methyl hydroperoxide - maybe reactivity should be higher!
+ ,DD_t( 'SHISOLOOH', DH2O/2.9, 2.9, 1.2e6, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Small (C2-C5) High solubility (estimated H* ca 1 - 1.4e6 M/atm) multifunctional organic hydroperoxides
+ ,DD_t( 'VHISOLOOH', DH2O/3.8, 3.8, 3.5e8, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Very high solubility (estimated H* > ca 1.2e7 M/atm) multifunctional organic hydroperoxides
+ ,DD_t( 'HYPERACET', DH2O/2.8, 2.8, 3.1e4, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& !
+ ,DD_t( 'VLSOLNO3', DH2O/3.2, 3.2, 1.0e0, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! very low solubility (H* < ca 1e3 M/atm) organic nitrates (mixed group)
+ ,DD_t( 'ACETOL', DH2O/2.6, 2.6, 8.0e3, 9999, 1.0E+04, 0.05, 0.,-1,-1,-1,-1)& 
+ ,DD_t( 'HOCH2CHO', DH2O/2.2, 2.2, 4.1e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& !glycolaldehyde
+ ,DD_t( 'CARB12', DH2O/3.1, 3.1, 3.4e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& ! moderately soluble carbonyls (mixed) with estimated H* ca 3.0 - 3.8E4 M/atm
+ ,DD_t( 'HISOLF0',DH2O/3.4, 3.4, 1.3E+10, 9999, 1.0E+04, 0., 0., -1,-1,-1,-1)& ! slightly changed parameters compared to CRI
+
 ! additions for Hodzic VBS-scheme semivolatile species:
  ,DD_t( 'LVASOA',DH2O/3.9 , 3.9, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LVASOA - to model Hodzics 0.01 anthropogenic VSOA bin
  ,DD_t( 'SVASOA',DH2O/3.1 , 3.1, 1.3E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! SVASOA - to model Hodzics 10, 100 and 1000ug/m3 Anthropogenic VSOA bins
@@ -179,7 +216,7 @@ type, private :: WD_t
   real :: W_sub
 end type WD_t
 
-integer, parameter :: NWETDEP_DEF = 22
+integer, parameter :: NWETDEP_DEF = 22+1
 type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
   WD_t('SO2'  , 0.3,  0.15)  &! Berge+Jakobsen
  ,WD_t('SO4'  , 1.0,  EFF25) &! Berge+Jakobsen
@@ -204,6 +241,7 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
  ,WD_t('0p6' , 0.6, 0.18) &!
  ,WD_t('0p7' , 0.7, 0.21) &!
  ,WD_t('0p8' , 0.8, 0.24) &! 
+ ,WD_t('1p2' , 1.2, 0.36) &!
  ,WD_t('1p3' , 1.3, 0.39) &!
 ]
 
