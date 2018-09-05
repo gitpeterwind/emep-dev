@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
  !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14+40  &! no. of gases in Wesely tables, DDdefs below
+        NDRYDEP_GASES = 14+41  &! no. of gases in Wesely tables, DDdefs below
        ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
@@ -173,6 +173,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'HOCH2CHO', DH2O/2.2, 2.2, 4.1e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& !glycolaldehyde
  ,DD_t( 'CARB12', DH2O/3.1, 3.1, 3.4e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& ! moderately soluble carbonyls (mixed) with estimated H* ca 3.0 - 3.8E4 M/atm
  ,DD_t( 'HISOLF0',DH2O/3.4, 3.4, 1.3E+10, 9999, 1.0E+04, 0., 0., -1,-1,-1,-1)& ! slightly changed parameters compared to CRI
+ ,DD_t( 'N2O5 ',DH2O/2.4, 2.4, 1.E14, 9999, 1.0E+04, 0., 0., -1,-1,-1,-1)& 
 
 ! additions for Hodzic VBS-scheme semivolatile species:
  ,DD_t( 'LVASOA',DH2O/3.9 , 3.9, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LVASOA - to model Hodzics 0.01 anthropogenic VSOA bin
