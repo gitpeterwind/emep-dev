@@ -22,6 +22,14 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Sep 2018, Dave
+
+femis for AIRCRAFT added:
+
+Country_mod:    used 900 for AIRCRAFT
+Emissions_mod:  uses e_fact to modify NOX emissions (only nox possible)
+Setup_1d_mod:   extra debug printout
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Sep 2018, Dave
 rv4.31 tag added
 since Robert will soon make changes that affect results
