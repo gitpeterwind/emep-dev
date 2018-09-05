@@ -5,6 +5,7 @@ module Emissions_mod
 !  with the 3D model.
 !_____________________________________________________________________________
 
+use AirEmis_mod, only : airn
 use Biogenics_mod,     only: SoilNOx, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
@@ -13,6 +14,7 @@ use ChemSpecs_mod,     only: NO2, SO2,species,species_adv
 use Chemfields_mod,    only: xn_adv
 use Config_module,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, &
+    KCHEMTOP, &         
     emis_inputlist, &   !TESTC
     EmisDir,      &    ! template for emission path
     DataDir,      &    ! template for path
@@ -1190,9 +1192,6 @@ subroutine newmonth
 !
 !   April 2010: read monthly aircraft NOx emissions
 !----------------------------------------------------------------------!
-  use AirEmis_mod, only : airn
-  use Config_module, only : KCHEMTOP, KMAX_MID
-  use NetCDF_mod, only : ReadField_CDF
 
   integer :: i, j, k, iyr, iemislist, n, sec_ix
   character(len=200) :: fname
@@ -1216,6 +1215,8 @@ subroutine newmonth
   logical :: use_lonlat_femis, monthlysectoremisreset, Cexist
   logical :: fractionformat
   integer :: emis_inputlist_NEMIS_FILE!number of files for each emis_inputlist(i)
+ ! For AIRCRAFT femis work
+  integer, save  :: iFemis, iemNOx
 
   monthlysectoremisreset =.false.
 
@@ -1230,6 +1231,14 @@ subroutine newmonth
     airn = 0.0
     kstart=KCHEMTOP
     kend=KMAX_MID
+
+    if ( first_call ) then
+        ! Scaling of aircraft. No real emission sector for aircraft (cc 900), so
+        ! femis file should have 900 0 fnox etc..
+        iFemis = find_index('AIRCRAFT',Country(:)%code )
+        iemNOx=find_index("nox",EMIS_FILE(:)) ! save this index
+        if(me==0) print *, "AIRF ", iFemis, iemNOx, e_fact(1,iFemis,iemNOx)  ! sec1, emis1
+    end if
 
     call ReadField_CDF_FL(AircraftEmis_FLFile,'NOx',airn,&
          current_date%month,kstart,kend,&
@@ -1250,6 +1259,7 @@ subroutine newmonth
       do j=1,ljmax
         do i=1,limax
           airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))&
+             * e_fact(1,iFemis,iemNOx) &  ! sec1, emis1 AIRCRAFT
                /(dA(k)+dB(k)*ps(i,j,1))*xm2(i,j)
         end do
       end do

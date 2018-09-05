@@ -258,6 +258,8 @@ integer, public :: IC_OCEC  ! Oceania
   ! Ship emissions when sea areas are not divided
   ! Eg. TNO emissions (added on 25th March 2009)
   integer,  public :: IC_INTSHIPS
+  ! Aircraft, used in AirEmis
+  integer,  public :: IC_AIRCRAFT
 
   ! New codes defined for the extended EMEP area in 2008
   integer, public :: IC_RFE! Rest of extended Russian Federation 
@@ -946,6 +948,9 @@ Country(IC_SAAR) = cc( "SAAR",'-', 251, F, 251,251, -100, "Saudi Arabia")
 ix=ix+1 
 IC_INTSHIPS=ix
 Country(IC_INTSHIPS) = cc( "INTSHIPS" ,'-',350 ,T, 350,350, -100  , "International ships" )
+ix=ix+1 
+IC_AIRCRAFT=ix
+Country(IC_AIRCRAFT) = cc( "AIRCRAFT" ,'-',900 ,T, 900,900, -100  , "International Flights" )
 ix=ix+1
 IC_KOSO=ix
 Country(IC_KOSO) = cc( "KOSO",'KOSO', 373, F, 373, 373, -100, "Kosovo")

@@ -650,7 +650,8 @@ subroutine setup_rcemis(i,j)
   if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
     write(*,"(a,2L2,10es10.3)") &
       dtxt//"AIRNOX ", USES%LIGHTNING_EMIS, USES%AIRCRAFT_EMIS, &
-      airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
+      airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j), &
+      airn(KCHEMTOP,i,j),airlig(KCHEMTOP,i,j)
 
   ! Road dust
   if(USES%ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
