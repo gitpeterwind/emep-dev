@@ -21,12 +21,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-6th Sep 2018, Robert
+6th Sep 2018, Robert, John, Dave
 
 GasParticleCoeffs_mod:
 
 BUG fix for problem triggered by 4th Sep version. The bug (using len(defnames)
 instead of size(defnames) has been around for months. 
+
+Some problems caught by gfortran:
+  My_Derived - removed NEMIS_FILE from use EmisDef_mod. Is in CM_ChemDims_mod
+
+  Setup_1d_mod:
+    write(*,"(a,i)") dtxt//'CHECK:iPMNEG:',ipm
+    -> write(*,"(a,i0)") dtxt//'CHECK:iPMNEG:',ipm
+
+  Makefile..SRCS
+    removed FUTURE_isocom.o FUTURE_ISOFWD.o FUTURE_isorev.o
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Sep 2018, Dave
