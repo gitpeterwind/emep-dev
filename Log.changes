@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Sep 2018, Robert
+
+GasParticleCoeffs_mod:
+
+BUG fix for problem triggered by 4th Sep version. The bug (using len(defnames)
+instead of size(defnames) has been around for months. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Sep 2018, Dave
 
 femis for AIRCRAFT added:
