@@ -35,7 +35,7 @@ contains
       , IDCH3CHO  &
       , IDNO3_NO2  &
       , IDCH3O2H  &
-      , IDCHOCHO_2CO  &
+      , IDCHOCHO  &
       , IDRCOCHO  &
       , IDMEK  &
     /)  

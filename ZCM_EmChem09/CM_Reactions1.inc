@@ -150,7 +150,7 @@
     + 2* rcphot(IDHCHO_H,k) * xnew(HCHO)  &
     + rcphot(IDCH3CHO,k) * xnew(CH3CHO)  &
     + rcphot(IDCH3O2H,k) * xnew(CH3OOH)  &
-    + 0.5* rcphot(IDCHOCHO_2CO,k) * xnew(GLYOX)  &
+    + 0.5* rcphot(IDCHOCHO,k) * xnew(GLYOX)  &
     + rcphot(IDRCOCHO,k) * xnew(MGLYOX)  &
     + rcphot(IDCH3O2H,k) * xnew(C2H5OOH)  &
     + rcphot(IDCH3O2H,k) * xnew(ETRO2H)  &
@@ -594,7 +594,7 @@
     + rcemis(GLYOX,k)
   
   L = rct(49,k) * xnew(OH)  &
-    + rcphot(IDCHOCHO_2CO,k)
+    + rcphot(IDCHOCHO,k)
   
   xnew(GLYOX) = (xold(GLYOX) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -677,7 +677,7 @@
   
   !-> HCHO cont.
     P = P +   rcphot(IDCH3O2H,k) * xnew(CH3OOH)  &
-    + 0.1* rcphot(IDCHOCHO_2CO,k) * xnew(GLYOX)  &
+    + 0.1* rcphot(IDCHOCHO,k) * xnew(GLYOX)  &
     + 1.56* rcphot(IDCH3O2H,k) * xnew(ETRO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(PRRO2H)  &
     + rcemis(HCHO,k)
@@ -1008,7 +1008,7 @@
     + rcphot(IDHCHO_H,k) * xnew(HCHO)  &
     + rcphot(IDHCHO_H2,k) * xnew(HCHO)  &
     + rcphot(IDCH3CHO,k) * xnew(CH3CHO)  &
-    + 1.9* rcphot(IDCHOCHO_2CO,k) * xnew(GLYOX)  &
+    + 1.9* rcphot(IDCHOCHO,k) * xnew(GLYOX)  &
     + rcphot(IDRCOCHO,k) * xnew(MGLYOX)  &
     + rcemis(CO,k)
   
