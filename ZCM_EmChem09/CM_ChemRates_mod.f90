@@ -44,14 +44,14 @@ contains
   subroutine setChemRates()
     !integer, intent(in) :: debug_level
   
-    rct(1,:) = (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LOGTDIV300)
+    rct(1,:) = (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*(LOG(TEMP/300)))
     rct(2,:) = 1.8e-11*N2*EXP(107.0*TINV)
     rct(3,:) = 3.2e-11*O2*EXP(67.0*TINV)
     rct(4,:) = 2.2e-10*H2O
     rct(5,:) = 1.4e-12*EXP(-1310.0*TINV)
     rct(6,:) = 1.4e-13*EXP(-2470.0*TINV)
     rct(7,:) = 1.7e-12*EXP(-940.0*TINV)
-    rct(8,:) = 2.03e-16*EXP(-4.57*LOG300DIVT)*EXP(693.0*TINV)
+    rct(8,:) = 2.03e-16*EXP(-4.57*(LOG(300/TEMP)))*EXP(693.0*TINV)
     rct(9,:) = 1.8e-11*EXP(110.0*TINV)
     rct(10,:) = 3.6e-12*EXP(270.0*TINV)
     rct(11,:) = 4.5e-14*EXP(-1260.0*TINV)
@@ -112,28 +112,28 @@ contains
     rct(60,:) = 8.5e-16*EXP(-1520.0*TINV)
     rct(61,:) = 3.15e-12*EXP(-450.0*TINV)
     rct(62,:) = 4.3e-13*EXP(1040.0*TINV)
-    rct(63,:) = (IUPAC_TROE(1.0e-31*EXP(1.6*LOG300DIVT),  &
-              & 3.0e-11*EXP(-0.3*LOG300DIVT),  &
+    rct(63,:) = (IUPAC_TROE(1.0e-31*EXP(1.6*(LOG(300/TEMP))),  &
+              & 3.0e-11*EXP(-0.3*(LOG(300/TEMP))),  &
               & 0.85,  &
               & M,  &
               & 0.75-1.27*LOG10(0.85)))
-    rct(64,:) = (IUPAC_TROE(3.6e-30*EXP(4.1*LOG300DIVT),  &
-              & 1.9e-12*EXP(-0.2*LOG300DIVT),  &
+    rct(64,:) = (IUPAC_TROE(3.6e-30*EXP(4.1*(LOG(300/TEMP))),  &
+              & 1.9e-12*EXP(-0.2*(LOG(300/TEMP))),  &
               & 0.35,  &
               & M,  &
               & 0.75-1.27*LOG10(0.35)))
-    rct(65,:) = (IUPAC_TROE(1.3e-3*EXP(3.5*LOG300DIVT)*EXP(-11000.0*TINV),  &
-              & 9.70e14*EXP(-0.1*LOG300DIVT)*EXP(-11080.0*TINV),  &
+    rct(65,:) = (IUPAC_TROE(1.3e-3*EXP(3.5*(LOG(300/TEMP)))*EXP(-11000.0*TINV),  &
+              & 9.70e14*EXP(-0.1*(LOG(300/TEMP)))*EXP(-11080.0*TINV),  &
               & 0.35,  &
               & M,  &
               & 0.75-1.27*LOG10(0.35)))
-    rct(66,:) = (IUPAC_TROE(3.3e-30*EXP(3.0*LOG300DIVT),  &
+    rct(66,:) = (IUPAC_TROE(3.3e-30*EXP(3.0*(LOG(300/TEMP))),  &
               & 4.1e-11,  &
               & 0.40,  &
               & M,  &
               & 0.75-1.27*LOG10(0.4)))
-    rct(67,:) = (IUPAC_TROE(2.7e-28*EXP(7.1*LOG300DIVT),  &
-              & 1.2e-11*EXP(0.9*LOG300DIVT),  &
+    rct(67,:) = (IUPAC_TROE(2.7e-28*EXP(7.1*(LOG(300/TEMP))),  &
+              & 1.2e-11*EXP(0.9*(LOG(300/TEMP))),  &
               & 0.3,  &
               & M,  &
               & 0.75-1.27*LOG10(0.3)))
@@ -142,18 +142,18 @@ contains
               & 0.3,  &
               & M,  &
               & 0.75-1.27*LOG10(0.3)))
-    rct(69,:) = (IUPAC_TROE(8.6e-29*EXP(3.1*LOG300DIVT),  &
-              & 9.0e-12*EXP(0.85*LOG300DIVT),  &
+    rct(69,:) = (IUPAC_TROE(8.6e-29*EXP(3.1*(LOG(300/TEMP))),  &
+              & 9.0e-12*EXP(0.85*(LOG(300/TEMP))),  &
               & 0.48,  &
               & M,  &
               & 0.75-1.27*LOG10(0.48)))
-    rct(70,:) = (IUPAC_TROE(8.0e-27*EXP(3.5*LOG300DIVT),  &
+    rct(70,:) = (IUPAC_TROE(8.0e-27*EXP(3.5*(LOG(300/TEMP))),  &
               & 3.0e-11*300.0*TINV,  &
               & 0.5,  &
               & M,  &
               & 0.75-1.27*LOG10(0.5)))
-    rct(71,:) = (IUPAC_TROE(7.4e-31*EXP(2.4*LOG300DIVT),  &
-              & 3.3e-11*EXP(0.3*LOG300DIVT),  &
+    rct(71,:) = (IUPAC_TROE(7.4e-31*EXP(2.4*(LOG(300/TEMP))),  &
+              & 3.3e-11*EXP(0.3*(LOG(300/TEMP))),  &
               & EXP(-TEMP/1420.0),  &
               & M,  &
               & 0.75+3.884e-4*TEMP))

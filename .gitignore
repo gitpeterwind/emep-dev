@@ -51,6 +51,7 @@
 /CM_*.inc
 /CM_*.f90
 /BiomassBurningMapping_CM.inc
+/*Mapping.inc
 /BoundaryConditions_CM.inc
 GenIn.*
 *GenOut*
@@ -67,7 +68,7 @@ ZCM_Emergency/emergency_location.csv
 
 # Makefile output
 /My_*.f90
-/Pollen*_ml.f90
+/Pollen*.f90
 .depend
 Unimod
 Unimod_3DVar
