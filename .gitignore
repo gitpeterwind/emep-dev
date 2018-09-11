@@ -45,14 +45,19 @@
 ### Unimod specific
 
 # GenChem output
-CM_*.txt
-CM_*.csv
-CM_*.inc
-CM_*.f90
-BiomassBurningMapping.inc
+/CM_*.log
+/CM_*.txt
+/CM_*.csv
+/CM_*.inc
+/CM_*.f90
+/BiomassBurningMapping_CM.inc
+/BoundaryConditions_CM.inc
 GenIn.*
 *GenOut*
-femis.defaults
+/femis.defaults
+
+# from ecosx branch
+box/
 
 # Emergency output
 ZCM_Emergency/Emergency.reactions
