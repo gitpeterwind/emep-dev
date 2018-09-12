@@ -108,7 +108,8 @@
     + rct(66,k) * xnew(NO2)  &
     + rct(69,k) * xnew(C2H4)  &
     + rct(70,k) * xnew(C3H6)  &
-    + rct(71,k) * xnew(NO)
+    + rct(71,k) * xnew(NO)  &
+    + rct(72,k) * xnew(SHIPNOX)
   
   xnew(OH) = (xold(OH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -508,7 +509,9 @@
 !-> HNO3
 
   P = rct(28,k) * xnew(NO3) * xnew(HCHO)  &
-    + rct(66,k) * xnew(NO2) * xnew(OH)
+    + rct(66,k) * xnew(NO2) * xnew(OH)  &
+    + rct(72,k) * xnew(SHIPNOX) * xnew(OH)  &
+    + 3.2e-5 * xnew(SHIPNOX)
   
   L = rct(15,k) * xnew(OH)  &
     + rcphot(IDHNO3,k)
@@ -780,9 +783,9 @@
 
   ! P = 0.0
   
-  L = rct(72,k) * xnew(O3)  &
-    + rct(73,k) * xnew(OH)  &
-    + rct(74,k) * xnew(NO3)
+  L = rct(73,k) * xnew(O3)  &
+    + rct(74,k) * xnew(OH)  &
+    + rct(75,k) * xnew(NO3)
   
   xnew(APINENE) = xold(APINENE) / (1.0 + dt2 * L)
 
@@ -1071,14 +1074,24 @@
   ! Nothing to do for NO3_c! xnew(NO3_c) = max(0.0, xold(NO3_c))
 
 
+!-> SHIPNOX
+
+  P = rcemis(SHIPNOX,k)
+  
+  L = rct(72,k) * xnew(OH)  &
+    + 3.2e-5
+  
+  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
+
+
 !-> TERPPeroxy
 
-  P = rct(72,k) * xnew(O3) * xnew(APINENE)  &
-    + rct(73,k) * xnew(OH) * xnew(APINENE)  &
-    + rct(74,k) * xnew(NO3) * xnew(APINENE)
+  P = rct(73,k) * xnew(O3) * xnew(APINENE)  &
+    + rct(74,k) * xnew(OH) * xnew(APINENE)  &
+    + rct(75,k) * xnew(NO3) * xnew(APINENE)
   
   L = rct(41,k) * xnew(NO)  &
-    + rct(75,k) * xnew(HO2)
+    + rct(76,k) * xnew(HO2)
   
   xnew(TERPPeroxy) = (xold(TERPPeroxy) + dt2 * P) / (1.0 + dt2 * L)
 

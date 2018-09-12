@@ -14,11 +14,12 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("H2O2      ", "SO2       ", -999.0 ) &
 , dep_t("ACETOL    ", "ALD       ", -999.0 ) &
 , dep_t("SO2       ", "SO2       ", -999.0 ) &
-, dep_t("SO4       ", "PMfS      ", -999.0 ) &
+, dep_t("SO4       ", "PMf       ", -999.0 ) &
 , dep_t("NH3       ", "NH3       ", -999.0 ) &
 , dep_t("NO3_f     ", "PMfN      ", -999.0 ) &
 , dep_t("NH4_f     ", "PMfN      ", -999.0 ) &
 , dep_t("NO3_c     ", "PMc       ", -999.0 ) &
+, dep_t("SHIPNOX   ", "NO2       ", -999.0 ) &
 , dep_t("POM_f_WOOD", "PMf       ", -999.0 ) &
 , dep_t("POM_f_FFUEL", "PMf       ", -999.0 ) &
 , dep_t("POM_c_FFUEL", "PMc       ", -999.0 ) &
