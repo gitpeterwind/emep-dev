@@ -553,23 +553,24 @@ contains
 
 
        if(MasterProc.and. emis_inputlist(iemislist)%periodicity == "once") then
-          call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
-          write(*     ,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)
-          write(IO_LOG,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)                
+          ! Added EMTAB to make parsing easy. These data are important!
+          call PrintLog("#EMTAB Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
+          write(*     ,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)
+          write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)                
           sumEU(:) = 0.0
-          fmt="(i4,1x,a9,3x,30(f12.2,:))"
+          fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
           do ic = 1, NLAND
              ccsum = sum( sumemis(ic,:) )
              icc=Country(ic)%icode
              if ( ccsum > 0.0 )then
-                write(*,     fmt) icc, Country(ic)%code, sumemis(ic,:)
-                write(IO_LOG,fmt) icc, Country(ic)%code, sumemis(ic,:)
+                write(*,     fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
+                write(IO_LOG,fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
              end if
              if(find_index(Country(ic)%code,EU28(:))>0) sumEU = sumEU + sumemis(ic,:)
           end do
           if ( sum(sumEU(:))>0.001) then
-             write(*     ,fmt) 0, "EU", sumEU(:)
-             write(IO_LOG,fmt) 0, "EU", sumEU(:)
+             write(*     ,fmt) 'EMTAB', 998, "EU", sumEU(:)
+             write(IO_LOG,fmt) 'EMTAB', 998, "EU", sumEU(:)
           end if
        end if
 
@@ -589,8 +590,8 @@ contains
 
 
     if(MasterProc)then
-       write(*     ,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
-       write(IO_LOG,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
+       write(*     ,"(a14,3x,30(f12.2,:))")'EMTAB 999 TOTAL',emsum(:)
+       write(IO_LOG,"(a14,3x,30(f12.2,:))")' EMTAB 999 TOTAL ',emsum(:)
     end if
 
     if(USES%ROADDUST) then

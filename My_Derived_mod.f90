@@ -43,7 +43,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             num_lev3d,lev3d &! 3D levels on 3D output
                             , SecEmisOutWanted
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, Nneighbors
+use EmisDef_mod,       only: NSECTORS, EMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML

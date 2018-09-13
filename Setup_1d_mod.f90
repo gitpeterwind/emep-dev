@@ -368,7 +368,7 @@ contains
 
             if ( ipm < 1 ) then
                if ( debug_flag .and. k == KMAX_MID) &
-                   write(*,"(a,i)") dtxt//'CHECK:iPMNEG:',ipm
+                   write(*,"(a,i0)") dtxt//'CHECK:iPMNEG:',ipm
                CYCLE ! Component missing !
             end if
 
