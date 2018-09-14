@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th Sep 2018, Robert
+
+YieldModifications_mod:
+
+Added Benzene and Toluene as SOA-precursors.
+Added RO2+RO2-reactions as part of the low-NOx-path to SOA.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Sep 2018, Robert, John, Dave
 
 GasParticleCoeffs_mod:
