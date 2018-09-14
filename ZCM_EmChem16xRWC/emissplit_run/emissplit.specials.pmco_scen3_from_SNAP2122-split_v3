@@ -4,7 +4,7 @@
 # change when emissions have artificial mass, e.g. 46 for NOx as NO2
 # Biomass burning emissions, IE_BB = 101 (not used here)
 # : MASS_ASSUMED 0
-99  99  POM_C_FFUEL  POM_C_WOOD  EC_C_FFUEL  EC_C_WOOD  PSO4C  REMPPM_C  #HEADERS
+99  99  POM_c_FFUEL  POM_c_WOOD  EC_c_FFUEL  EC_c_WOOD  PSO4c  REMPPM_c  #HEADERS
 #DATA                
 1  1  0.845793143  0  12.92918585  0  0  86.22502101  
 1  2  0.004507586  0  2.274362755  14.8938464  0  82.82728326  
