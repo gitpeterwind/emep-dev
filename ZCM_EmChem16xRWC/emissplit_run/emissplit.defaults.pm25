@@ -1,20 +1,19 @@
-# PPM25 splits for EmChem09
+# PPM25 splits for EmChem16xRWC
 # Key-word, MASS_ASSUMED= 0 by default, 
-# Here we simply split SNAP-2 equally between wood and ffuel. [RB: What??? there seem to be zero POM_F_WOOD and EC_F_WOOD here???] Should
-# be done in more detail
-# D. Simpson, May 2011, loosely based upon IIASA, POMI, CARBOSOL papers
+# Here we split SNAP-2 between wood and ffuel based on emission data for Europe from TNO. 
+# Other sectors(?) from D. Simpson, May 2011, loosely based upon IIASA, POMI, CARBOSOL papers
 # change when emissions have artificial mass, e.g. 46 for NOx as NO2
 : MASS_ASSUMED 0 
-99 99   POM_f_FFUEL POM_f_WOOD  EC_f_FFUEL_NEW EC_f_FFUEL_AGE  EC_f_WOOD_NEW EC_f_WOOD_AGE  PSO4f  REMPPM25  #HEADERS  
+99 99   POM_f_FFUEL POM_f_WOOD  EC_f_FFUEL_NEW EC_f_FFUEL_AGE  EC_f_WOOD_NEW EC_f_WOOD_AGE  PSO4f   REMPPM25  #HEADERS  
 #DATA
-0   1         2.0       0.0            4.0       1.0       0.0       0.0        0.0        93.0   
-0   2        50.0       0.0           16.0       4.0       0.0       0.0        0.0        30.0   
-0   3         5.0       0.0            8.0       2.0       0.0       0.0        0.0        85.0   
-0   4         5.0       0.0            4.0       1.0       0.0       0.0        0.0        90.0   
-0   5         5.0       0.0            4.0       1.0       0.0       0.0        0.0        90.0   
-0   6        10.0       0.0           32.0       8.0       0.0       0.0        0.0        50.0   
-0   7        40.0       0.0           16.0       4.0       0.0       0.0        0.0        40.0   
-0   8        60.0       0.0           20.0       5.0       0.0       0.0        0.0        15.0   
-0   9        40.0       0.0           24.0       6.0       0.0       0.0        0.0        30.0   
-0  10        40.0       0.0           16.0       4.0       0.0       0.0        0.0        40.0   
-0  11        70.0       0.0            0.0       0.0       0.0       0.0        0.0        30.0   
+0   1         2.0       0.0            4.0       1.0               0.0         0.0          0.0        93.0   
+0   2         6.32     79.36           2.21      0.55              7.27        1.82         0.01        2.46  
+0   3         5.0       0.0            8.0       2.0               0.0         0.0          0.0        85.0   
+0   4         5.0       0.0            4.0       1.0               0.0         0.0          0.0        90.0   
+0   5         5.0       0.0            4.0       1.0               0.0         0.0          0.0        90.0   
+0   6        10.0       0.0           32.0       8.0               0.0         0.0          0.0        50.0   
+0   7        40.0       0.0           16.0       4.0               0.0         0.0          0.0        40.0   
+0   8        60.0       0.0           20.0       5.0               0.0         0.0          0.0        15.0   
+0   9        40.0       0.0           24.0       6.0               0.0         0.0          0.0        30.0   
+0  10        40.0       0.0           16.0       4.0               0.0         0.0          0.0        40.0   
+0  11        70.0       0.0            0.0       0.0               0.0         0.0          0.0        30.0   
