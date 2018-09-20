@@ -337,11 +337,9 @@ subroutine pollen_flux(i,j,debug_flag)
   end do
 
   ! calculate daily mean temperatures
-  if(current_date%hour==0 .and. current_date%seconds==dt)&
-    t2_day(i,j) = 0.0
-  t2_day(i,j) = t2_day(i,j) + t2_nwp(i,j,1)*dt
   if(current_date%hour==0 .and. current_date%seconds==0)&
-    t2_day(i,j) = t2_day(i,j)/(3600*24)
+    t2_day(i,j) = 0.0
+  t2_day(i,j) = t2_day(i,j) + t2_nwp(i,j,1)*dt/(3600*24)
 
   !Need to set the meteorological fields if not defined in nwp.
   relhum = 0.0
@@ -395,7 +393,7 @@ subroutine pollen_flux(i,j,debug_flag)
         rweed_start(i,j) = daynumber
       ! meteo flowering thresholds can zero the heatsum
       if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
-        (current_date%hour==0 .and. current_date%seconds==0 .and. &
+        (current_date%hour==23 .and. current_date%seconds==3600-int(dt) .and. &
         t2_day(i,j)<DayTempThr_rweed))then
         heatsum(i,j,g)=0.0
         if(R(i,j,g)>0.0) &                        ! if flowering started 
