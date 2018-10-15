@@ -847,7 +847,7 @@ subroutine MeteoRead()
   ! NB: surface_precip is different than the one read directly from the
   ! metfile  (which has different units, and is the sum of the 2D
   ! large_scale_precipitations+convective_precipitations)
-  surface_precip(:,:) = pr(:,:,KMAX_MID) /METSTEP
+  surface_precip(:,:) = pr(:,:,KMAX_MID) * 3600 !mm/s -> mm/hr
 
   if(USES%CONVECTION)then
     cnvuf=max(0.0,cnvuf)      !no negative upward fluxes
