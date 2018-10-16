@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Oct 2018, Peter, Dave
+
+Bug in surface_precip (not "pr" the 3D precipitations).
+The value was set 3600*METSTEP (= 10800 usually) times too small.
+Like that since December 2013.
+
+surface_precip is used as threshold in CellMet_mod.f90 and DustProd_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Sep 2018, Robert
 
 YieldModifications_mod:

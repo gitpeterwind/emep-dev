@@ -122,7 +122,7 @@ module MetFields_mod
 
   ! since pr,cc3d,cc3dmax,cnvuf,cnvdf used only for 1 time layer - define without NMET
   real,target,public, save,allocatable, dimension(:,:,:) :: &
-        pr      & ! Precipitation
+        pr      & ! Precipitation in mm/s "passing" the layer
        ,cc3d    & ! 3-d cloud cover (cc3d),
        ,cc3dmax & ! and maximum for layers above a given layer
        ,lwc     & !liquid water content
