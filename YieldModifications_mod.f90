@@ -180,10 +180,10 @@
      ,vbs_t('APIN' , 136.0, 1.7, -999., 0.914, 3.6e-13, &     ! RO2-rate from MCM (weighted average of three RO2 species, from a-pinene+OH)
           [ 0.045,  0.015, 0.142, 0.061, 0.074, 0.165 ],&
           [ 0.093,  0.211, 0.064, 0.102, 0.110, 0.125 ])&
-     ,vbs_t('C15ivoc', 189.0, 1.7, -999.,  1.0 , 0.e-13, &  ! H16 IVOC+MW, f=1
+     ,vbs_t('C15ivoc', 189.0, 1.7, -999.,  1.0 , 2.5e-13, &  ! H16 IVOC+MW, f=1; using RO2-rate for DDECO2 in MCM
           [ 0.140,  0.136, 0.069, 0.019, 0.010, 0.012 ],&
           [ 0.315,  0.173, 0.046, 0.010, 0.007, 0.008 ])&
-     ,vbs_t('C13ivoc', 189.0, 1.7, -999.,  1.0 , 0.e-13, &  ! H16 IVOC+MW, f=1
+     ,vbs_t('C13ivoc', 189.0, 1.7, -999.,  1.0 , 2.5e-13, &  ! H16 IVOC+MW, f=1; using RO2-rate for DDECO2 in MCM
           [ 0.140,  0.136, 0.069, 0.019, 0.010, 0.012 ],&
           [ 0.315,  0.173, 0.046, 0.010, 0.007, 0.008 ])&
      ,vbs_t('BENZ',  78., 2.1, -999., 0.77, 8.8e-13, &     ! Hodzic BENZ. ? Mw,fHO2..
@@ -238,11 +238,20 @@
       select case(YieldModifications) ! initialise names, etc.
          case('VBS-T10')
             vbs   = vbs_T10
+            if ( MasterProc ) then
+               write(*,*) 'Using VBS-T10 yield modifications'
+            endif
          case('VBS-HM')
             vbs   = vbs_HM
+            if ( MasterProc ) then
+               write(*,*) 'Using VBS-HM yield modifications' 
+            endif
          case('VBS-TH')  ! Tsimpidi but Hodzic for IVOC
             vbs   = vbs_T10
             vbs(6) = vbs_HM(6)  ! IVOC
+            if ( MasterProc ) then
+               write(*,*) 'Using VBS-TH yield modifications' 
+            endif
          case default
             call StopAll(dtxt//'Unknown YieldModifications '//YieldModifications)
       end select
@@ -307,6 +316,11 @@
      if(xnew(NO)>1.0 ) fNO  = fluxNO/(fluxNO+fluxHO2*Yemep(isoa)%fHO2RO2+fluxRO2*Yemep(isoa)%kRO2 )
      YCTERP(:) = fno * Yemep(isoa)%highnox(:) + (1-fNO) * Yemep(isoa)%lownox(:)
      YNTERP(:) = YCTERP(:) * Yemep(isoa)%ratio
+
+     isoa=6  ! IVOC
+     if(xnew(NO)>1.0 ) fNO  = fluxNO/(fluxNO+fluxHO2*Yemep(isoa)%fHO2RO2+fluxRO2*Yemep(isoa)%kRO2 )
+     YCIVOC(:) = fno * Yemep(isoa)%highnox(:) + (1-fNO) * Yemep(isoa)%lownox(:)
+     YNIVOC(:) = YCIVOC(:) * Yemep(isoa)%ratio
 
      isoa=8 ! Benzene
      if(xnew(NO)>1.0 ) fNO  = fluxNO/(fluxNO+fluxHO2*Yemep(isoa)%fHO2RO2+fluxRO2*Yemep(isoa)%kRO2 )
