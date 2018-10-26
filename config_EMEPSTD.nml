@@ -32,7 +32,7 @@
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc', ! New with rv4.17
 !    'DataDir/LanduseGLC.nc',
-! YieldModifications = 'VBS-T10'   ! None for EmChems 'JPC-VY-acid',
+ YieldModifications = 'VBS-T10',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------

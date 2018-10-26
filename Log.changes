@@ -21,6 +21,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2018, Dave, (Peter)
+
+YieldModifications set to 'VBS-T10' in config_emep.nml, config_EMEPSTD.nml
+and config_EMEPGLOB.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2018, Peter, Dave
 
 Bug in surface_precip (not "pr" the 3D precipitations).
