@@ -19,7 +19,7 @@ use CheckStop_mod,      only: CheckStop, StopAll
 use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
 use ChemSpecs_mod
 use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
-use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
+use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
                               ,RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
                               ,SitesFile,SondesFile,KMAX_BND,PT, NPROC
 use Debug_module,       only: DEBUG   ! -> DEBUG%SITES
@@ -40,6 +40,7 @@ use MPI_Groups_mod,     only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_IN
 use PhysicalConstants_mod,only: ATWAIR
 use NetCDF_mod,         only : Create_CDF_sondes,Out_CDF_sondes,&
                                 NF90_FILL_INT,NF90_FILL_DOUBLE
+use OwnDataTypes_mod,    only: TXTLEN_NAME
 use Par_mod,            only : li0,lj0,li1,lj1 &
                                 ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&
                                 ,GI0,GI1,GJ0,GJ1,me,LIMAX,LJMAX
@@ -96,8 +97,8 @@ integer, public, parameter :: & ! Total No., levels included
    NOUT_SITE  = NSPC_SITE * 1 &
   ,NOUT_SONDE = NSPC_SONDE* NLEVELS_SONDE
 
-character(len=50), public, save, dimension(NSITES_MAX) :: site_name
-character(len=50), private, save, dimension(NSONDES_MAX):: sonde_name
+character(len=TXTLEN_NAME), public, save, dimension(NSITES_MAX) :: site_name
+character(len=TXTLEN_NAME), private, save, dimension(NSONDES_MAX):: sonde_name
 character(len=20), private, save, dimension(NSPC_SITE)  :: site_species
 character(len=20), private, save, dimension(NSPC_SONDE) :: sonde_species
 

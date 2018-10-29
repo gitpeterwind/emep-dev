@@ -5,6 +5,8 @@
 !*****************************************************************************! 
 module OwnDataTypes_mod
 use NumberConstants, only : UNDEF_I, UNDEF_R
+use TimeDate_mod,    only : timestamp
+
 implicit none
 private
 
@@ -14,7 +16,9 @@ public :: print_Asc2D
 integer, public, parameter :: &
   TXTLEN_DERIV = 34, &
   TXTLEN_SHORT = 28, &
-  TXTLEN_IND   =  6
+  TXTLEN_IND   =  6, &
+  TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
+  TXTLEN_FILE = 200    ! large enough for paths from namelists
 
 ! Contains some user-defined data-types, and routine associated
 ! with these. Collecting them here will
@@ -178,6 +182,48 @@ type, public :: poll_type
   integer, dimension(15) :: ix    ! Index of components to take (set by model)
   real, dimension(15)    :: mw=0.0 ! (set by model)
 end type poll_type
+
+
+!array of struct or struct of arrays? For searches it is best with struct of arrays
+!should describe only methods (timefactor, sector, emisheight etc.), not position dependent (like country)
+!position dependent properties (country), should be applied just after reading the data
+type, public :: Emis_id_type
+   character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
+   character(len=TXTLEN_NAME) :: varname = 'NOTSET' !name of variable in netcdf file
+   character(len=TXTLEN_NAME) :: species = 'NOTSET' !which species to put emissions into
+   character(len=TXTLEN_NAME) :: periodicity = 'hourly' !how often fresh values must be read from the netcdf file
+   type(timestamp)            :: end_of_validity_date = timestamp(0,0.0)
+   character(len=TXTLEN_NAME) :: units_in = 'mg/m2'!in the netcdf file
+   character(len=TXTLEN_NAME) :: units = 'g/s'!? as defined in the internal array
+   character(len=TXTLEN_NAME) :: country_ISO = 'N/A' !country name, for example FR for France, as defined in Country_mod
+   character(len=TXTLEN_NAME) :: projection = 'lon lat' !projection
+   integer :: Country_icode = 67 !country code number, for example 8 for France, as defined in Country_mod
+   integer :: sector = 0
+   integer :: height = 0 !could define own release height. not implemented
+   logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
+   real :: factor = 1.0 !scaling factor. multiply values by this number
+end type Emis_id_type
+
+!/ Emissions file treatment. Dims more than used.
+type, public :: emis_in
+  character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
+  integer :: Nincl=0, Nexcl=0
+  character(len=10), dimension(90) ::  incl = "-"
+  character(len=10), dimension(90) ::  excl = "-"
+  character(len=40), dimension(20) ::  pollName = "NOTSET"
+  character(len=40), dimension(20) ::  pollemepName = "NOTSET"
+  character(len=40) ::  periodicity = "NOTSET" !How often new data should be read in
+  character(len=40) ::  format = "NOTSET" !set to fraction, if fractions
+  character(len=40) ::  type = "sectors" !steers special treatments
+  logical ::  use_lonlat_femis = .true. !allows to switch off lonlat femis reductions 
+                                        !for specific emission files
+                                        !Country+sector specific reductions can be dealt
+                                        !with with incl/excl, so those are not affected
+  logical :: set_mask = .false.  !if T, set mask for each (i,j) where non zero emission is found
+  logical :: use_mask = .false.  !if T, do not include emission where mask is set 
+  character(len=40) ::  sector = "NOTSET" !put emissions into a specific sector (not yet implemented)
+  real ::  scale = 1.0 ! multiply by scale (not yet implemented)
+end type emis_in
 
 type, public :: uEMEP_type
   integer     :: Npoll=0    ! Number of pollutants to treat in total

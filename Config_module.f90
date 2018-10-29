@@ -10,7 +10,8 @@ use CheckStop_mod,         only: CheckStop
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
+use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
+                                 TXTLEN_NAME, TXTLEN_FILE
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
 
@@ -34,9 +35,9 @@ public :: Config_ModelConstants
 ! but for now we use the MY_OUTPUTS flag. EXP_NAME can
 ! now be anything descriptive.
 
-integer, public, parameter :: &
-  TXTLEN_NAME =  50, &
-  TXTLEN_FILE = 200    ! large enough for paths from namelists
+!integer, public, parameter :: &
+!  TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
+!  TXTLEN_FILE = 200    ! large enough for paths from namelists
 
 CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
 CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
@@ -86,9 +87,9 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
 
   
   type, private :: LandCoverInputs_t
-    character(len=200), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
-    character(len=200) :: LandDefs = '-'   !  LAI, h, etc (was Inputs_LandDefs
-    character(len=200) :: Do3seDefs = '-'  !  DO3SE inputs
+    character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
+    character(len=TXTLEN_FILE) :: LandDefs = '-'   !  LAI, h, etc (was Inputs_LandDefs
+    character(len=TXTLEN_FILE) :: Do3seDefs = '-'  !  DO3SE inputs
   end type LandCoverInputs_t
   type(LandCoverInputs_t), public, save :: LandCoverInputs=LandCoverInputs_t()
 
@@ -157,80 +158,8 @@ type(emep_useconfig), public, save :: USES
 logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. &!forces PFT_MAPS  = F, even if global grid
      ,FORCE_DEGREEDAY_FACTORS_TRUE
-!MOVEDtype, public :: emep_debug
-!MOVED  logical :: &
-!MOVED     AOT             = .false. &
-!MOVED    ,A2018           = .true.  & ! A2018 TMP while testing
-!MOVED    ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
-!MOVED    ,AQUEOUS         = .false. &
-!MOVED    ,BCS             = .false. & ! BoundaryConditions
-!MOVED    ,BIO             = .false. & !< Biogenic emissions
-!MOVED    ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
-!MOVED    ,COLUMN          = .false. & !  Used in Derived_mod for column integration
-!MOVED    ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
-!MOVED    ,DERIVED         = .false. & !
-!MOVED    ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
-!MOVED    ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
-!MOVED    ,EQUIB           = .false. &   !MARS, EQSAM etc.
-!MOVED    ,FORESTFIRE      = .false. &
-!MOVED    ,GLOBBC          = .false. &
-!MOVED    ,GRIDVALUES      = .false. &
-!MOVED    ,HOURLY_OUTPUTS  = .false. & !
-!MOVED    ,IOPROG          = .false. &
-!MOVED    ,LANDDEFS        = .false. &
-!MOVED    ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
-!MOVED    ,MOSAICS         = .false. &
-!MOVED    ,MY_DERIVED      = .false. &
-!MOVED    ,pH              = .false. &
-!MOVED    ,PHYCHEM         = .false. &
-!MOVED    ,POLLEN          = .false. &
-!MOVED    ,RSUR            = .false. & ! Surface resistance
-!MOVED    ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
-!MOVED       ,MY_WETDEP    = .false. &
-!MOVED    ,SEASALT         = .false. &
-!MOVED    ,SETUP_1DCHEM    = .false. &
-!MOVED    ,SETUP_1DBIO     = .false. &
-!MOVED    ,SITES           = .false. &
-!MOVED    ,SOILNOX         = .false. &
-!MOVED    ,SOLVER          = .false. &
-!MOVED    ,STOFLUX         = .false. &
-!MOVED    ,VDS             = .false.
-!MOVED  ! integer debug options allow different levels of verbosity
-!MOVED   integer               :: &
-!MOVED      PFT_MAPS  = 0         & !< Future option
-!MOVED     ,LANDUSE   = 0         & !
-!MOVED     ,DO3SE     = 0         & !
-!MOVED     ,SOA       = 0         &
-!MOVED     ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
-!MOVED  !----------------------------------------------------------
-!MOVED   integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
-!MOVED   character(len=20)     :: SPEC = 'O3'       ! default.
-!MOVED   character(len=20)     :: datetxt = '-'       ! default.
-!MOVED   integer               :: ISPEC = -999      ! Will be set after NML
-!MOVEDend type emep_debug
-!MOVEDtype(emep_debug), public, save :: DEBUG
-!MOVED
 
-!/ Emissions file treatment. Dims more than used.
-type, public :: emis_in
-  character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
-  integer :: Nincl=0, Nexcl=0
-  character(len=10), dimension(90) ::  incl = "-"
-  character(len=10), dimension(90) ::  excl = "-"
-  character(len=40), dimension(20) ::  pollName = "NOTSET"
-  character(len=40), dimension(20) ::  pollemepName = "NOTSET"
-  character(len=40) ::  periodicity = "NOTSET" !How often new data should be read in
-  character(len=40) ::  format = "NOTSET" !set to fraction, if fractions
-  character(len=40) ::  type = "sectors" !steers special treatments
-  logical ::  use_lonlat_femis = .true. !allows to switch off lonlat femis reductions 
-                                        !for specific emission files
-                                        !Country+sector specific reductions can be dealt
-                                        !with with incl/excl, so those are not affected
-  logical :: set_mask = .false.  !if T, set mask for each (i,j) where non zero emission is found
-  logical :: use_mask = .false.  !if T, do not include emission where mask is set 
-  character(len=40) ::  sector = "NOTSET" !put emissions into a specific sector (not yet implemented)
-  real ::  scale = 1.0 ! multiply by scale (not yet implemented)
-end type emis_in
+type(Emis_id_type), public, save:: Emis_source(10)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
@@ -403,38 +332,6 @@ logical, public, save ::  MasterProc = .true.
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
 logical, public, parameter :: PALEO_TEST = .false. 
-
-!MOVEDlogical, public, parameter ::    &
-!MOVED   DEBUG_ADV            = .false. &
-!MOVED  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
-!MOVED  ,DEBUG_DERIVED        = .false. &
-!MOVED  ,DEBUG_ECOSYSTEMS     = .false. &
-!MOVED  ,DEBUG_EMISSTACKS     = .false. &
-!MOVED  ,DEBUG_Kz             = .false. &
-!MOVED  !!,DEBUG_DRYDEP         = .false. &
-!MOVED    ,DEBUG_MY_DRYDEP    = .false. &
-!MOVED    ,DEBUG_CLOVER       = .false. &
-!MOVED  ,DEBUG_EMISSIONS      = .false. &
-!MOVED  ,DEBUG_EMISTIMEFACS   = .false. &
-!MOVED  ,DEBUG_GETEMIS        = .false. &
-!MOVED  ,DEBUG_LANDIFY        = .false. &
-!MOVED  ,DEBUG_MASS           = .false. &
-!MOVED  ,DEBUG_MET            = .false. &
-!MOVED  ,DEBUG_NEST           = .false. &
-!MOVED  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
-!MOVED  ,DEBUG_NETCDF         = .false. &
-!MOVED  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
-!MOVED  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
-!MOVED  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
-!MOVED  ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-!MOVED! ,DEBUG_POLLEN         = .false. &
-!MOVED!MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
-!MOVED    ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
-!MOVED    ,DEBUG_ROADDUST     = .false. &
-!MOVED    ,DEBUG_SUBMET         = .false. &
-!MOVED    ,DEBUG_WETDEP       = .false. &
-!MOVED  ,DEBUG_RB             = .false. &
-!MOVED  ,DEBUG_SOILWATER      = .false. 
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -674,6 +571,7 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
+character(len=TXTLEN_FILE), target, save, public :: Emis_sourceFiles(10) = 'NOTSET'
 
 !----------------------------------------------------------------------------
 contains
@@ -705,7 +603,7 @@ subroutine Config_ModelConstants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
-   ,EMIS_OUT, emis_inputlist, EmisDir &
+   ,EMIS_OUT, emis_inputlist, Emis_source, Emis_sourceFiles, EmisDir &
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,HourlyEmisOut         & ! to output emissions hourly
@@ -884,7 +782,11 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(DustFile)
   call associate_File(TopoFile)
   call associate_File(Monthly_patternsFile)
-
+  do i = 1, size(Emis_sourceFiles)
+     if(Emis_sourceFiles(i)/='NOTSET')then
+        call associate_File(Emis_sourceFiles(i))
+     endif
+  enddo
   do i = 1,size(InputFiles)
      if(associated(InputFiles(i)%filename))then
         InputFiles(i)%filename = key2str(InputFiles(i)%filename,'DataDir',DataDir)

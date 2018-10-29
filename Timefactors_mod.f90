@@ -66,10 +66,11 @@
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
-                            HourlyFacFile,HourlyFacSpecialsFile,TXTLEN_FILE,&
+                            HourlyFacFile,HourlyFacSpecialsFile,&
                             USE_WRF_MET_NAMES
   use Debug_module,  only:   DEBUG => DEBUG_EMISTIMEFACS
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
+  use OwnDataTypes_mod, only: TXTLEN_FILE
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_mod, only: PI

@@ -50,7 +50,6 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
-     ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
      ,TEGEN_DATA, USES &
      ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
@@ -77,6 +76,7 @@ use MPI_Groups_mod,     only: MPI_DOUBLE_PRECISION, MPI_BYTE, MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
                              largeLIMAX,largeLJMAX, MPISTATUS, MPI_MIN
+use OwnDataTypes_mod,      only: TXTLEN_FILE
 use Par_mod,               only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax, neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
      ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
@@ -2940,7 +2940,6 @@ subroutine Check_Meteo_Date_Type
   character(len=len(meteo)) :: meteoname
   integer :: nyear,nmonth,nday
   integer :: status,ncFileID,timeDimID,timeVarID,VarID,xtype
-  character (len = 50) :: timeunit
   character (len = 19) ::  Times_string
   integer ::ihh,ndate(4),n1,nseconds(1),n
   real :: ndays(1),Xminutes(24)

@@ -39,7 +39,7 @@ module ForestFire_mod
 !----------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemSpecs_mod
-use Config_module,         only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
+use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
                                 IOU_INST
 use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
@@ -49,7 +49,7 @@ use MetFields_mod,         only: z_bnd
 use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_mod,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
-use OwnDataTypes_mod,      only: Deriv, TXTLEN_SHORT
+use OwnDataTypes_mod,      only: Deriv, TXTLEN_SHORT, TXTLEN_FILE
 use Par_mod,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_mod, only: AVOG
 use SmallUtils_mod,        only: find_index, key2str

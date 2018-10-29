@@ -34,7 +34,9 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
-use ChemDims_mod, only : NEMIS_File
+use ChemDims_mod,     only : NEMIS_File
+use OwnDataTypes_mod, only : TXTLEN_NAME,TXTLEN_FILE, Emis_id_type
+
 implicit none
 private
 
@@ -160,10 +162,25 @@ integer,  public, save :: NEmis_id
 !array of struct or struct of arrays? For searches it is best with struct of arrays
 !should describe only methods (timefactor, sector, emisheight etc.), not position dependent (like country)
 !position dependent properties (country), should be applied just after reading the data
-type, public :: Emis_id_type
-   character(len=20) :: spec(10) = ''
-end type Emis_id_type
-type(Emis_id_type), public, save:: Emis_id
+!type, public :: Emis_id_type
+!   character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
+!   character(len=TXTLEN_NAME) :: varname = 'NOTSET' !name of variable in netcdf file
+!   character(len=TXTLEN_NAME) :: species = ''
+!   character(len=TXTLEN_NAME) :: periodicity = 'hourly' !how often fresh values must be read from the netcdf file
+!   character(len=TXTLEN_NAME) :: units_in = 'mg/m2'!in the netcdf file
+!   character(len=TXTLEN_NAME) :: units = 'g/s'!? as defined in the internal array
+!   character(len=TXTLEN_NAME) :: country_ISO = 'N/A' !country name, for example FR for France, as defined in Country_mod
+!   character(len=TXTLEN_NAME) :: projection = 'lon lat' !projection
+!   integer :: Country_icode = 67 !country code number, for example 8 for France, as defined in Country_mod
+!   integer :: sector = 0
+!   integer :: height = 0 !could define own release height. not implemented
+!   logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
+!   real :: factor = 1.0 !scaling factor. multiply values by this number
+!end type Emis_id_type
+type(Emis_id_type), public, save:: Emis_id(10)
+integer,  public, save :: NEmis_sources = 0
+real, allocatable, public, save,  dimension(:,:,:):: Emis_source_2D !One 2D map for each source
+!type(Emis_id_type), public, save:: Emis_source(10)
 integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
 integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
 real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis !yearly sector emissions

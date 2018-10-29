@@ -20,7 +20,20 @@ use Chemfields_mod,     only : xn_shl,xn_adv
 use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
 use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,      only : species
+use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
+                             ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
+                             ,NPROC, IIFULLDOM,JJFULLDOM &
+                             ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
+                             ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
+                             ,PT,Pref,NLANDUSEMAX, model&
+                             ,USE_EtaCOORDINATES,RUNDOMAIN&
+                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
+                             ,SurfacePressureFile &
+                             ,SELECT_LEVELS_HOURLY,&  ! NML
+                              num_lev3d,lev3d         ! 3D levels on 3D output
 use Country_mod,        only : NLAND, Country
+use Debug_module,       only : DEBUG_NETCDF, DEBUG_NETCDF_RF
+use Functions_mod,       only: StandardAtmos_km_2_kPa
 use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,debug_proc, debug_li, debug_lj &
                              ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
@@ -42,29 +55,16 @@ use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              x1_lambert,& !x value at i=1
                              y1_lambert  !y value at j=1                             
 use InterpolationRoutines_mod,  only : grid2grid_coeff
-use Config_module,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
-                             ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
-                             ,NPROC, IIFULLDOM,JJFULLDOM &
-                             ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
-                             ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
-                             ,PT,Pref,NLANDUSEMAX, model&
-                             ,USE_EtaCOORDINATES,RUNDOMAIN&
-                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
-                             ,SurfacePressureFile &
-                             ,SELECT_LEVELS_HOURLY,&  ! NML
-                              num_lev3d,lev3d         ! 3D levels on 3D output
-use Debug_module,       only: DEBUG_NETCDF, DEBUG_NETCDF_RF
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                                MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
 use netcdf
-use OwnDataTypes_mod,   only : Deriv
+use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
                               IRUNBEG,JRUNBEG,limax,ljmax, &
                               gi0,gj0,tgi0,tgi1,tgj0,tgj1,tlimax,tljmax
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
-use Functions_mod,       only: StandardAtmos_km_2_kPa
 use SmallUtils_mod,      only: wordsplit, find_index
 
 implicit none
@@ -105,6 +105,7 @@ public :: Create_CDF_sondes
 public :: check
 public :: IsCDFfractionFormat
 public :: ReadSectorName
+public :: check_lon_lat
 
 private :: CreatenetCDFfile
 private :: createnewvariable
@@ -2400,7 +2401,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, allocatable:: Mask_values(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
-  character(len = 50) :: interpol_used, data_projection=""
+  character(len = TXTLEN_NAME) :: interpol_used, data_projection=""
   real :: Grid_resolution_lon,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   logical ::  OnlyDefinedValues
@@ -2696,31 +2697,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err, trim(fileName)
   end if
 
-  used_lat_name = 'lat'!default
-  used_lon_name = 'lon'!default
+  call check_lon_lat(ncFileID, used_lon_name, used_lat_name, n, lonVarID, latVarID)
   if(present(use_lat_name)) used_lat_name=trim(use_lat_name)
   if(present(use_lon_name)) used_lon_name=trim(use_lon_name)
   if ( debug ) write(*,*) 'ReadCDF using lon name',trim(used_lon_name)
   if ( debug ) write(*,*) 'ReadCDF using lat name',trim(used_lat_name)
-  status=nf90_inq_varid(ncid = ncFileID, name=trim(used_lon_name), varID = lonVarID)
-  if(status /= nf90_noerr) then
-     status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-     if(status /= nf90_noerr) then
-        status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
-        call CheckStop(status /= nf90_noerr,'did not find longitude variable')
-     end if
-  end if
-  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon))
-
-  status=nf90_inq_varid(ncid = ncFileID, name=trim(used_lat_name), varID = latVarID)
-  if(status /= nf90_noerr) then
-     status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-     if(status /= nf90_noerr) then
-        status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = latVarID)
-        call CheckStop(status /= nf90_noerr,'did not find latitude variable')
-     end if
-  end if
-  call check(nf90_Inquire_Variable(ncid = ncFileID, varID = latVarID,xtype=xtype_lat))
 
   if(trim(data_projection)=="lon lat")then
      call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
@@ -4121,7 +4102,7 @@ end subroutine ReadField_CDF
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
-  character(len = 50) :: interpol_used, data_projection="",name
+  character(len = TXTLEN_NAME) :: interpol_used, data_projection="",name
   real :: Grid_resolution
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
@@ -4465,8 +4446,8 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   integer :: varID,ncFileID,ndims
   integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer, parameter::wordarraysize=20
-  character(len=50) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
-  character(len=50) :: wordarray2(wordarraysize)
+  character(len=TXTLEN_NAME) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
+  character(len=TXTLEN_NAME) :: wordarray2(wordarraysize)
   character, allocatable :: Times_string(:,:)
   integer :: string_length
   integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
@@ -4945,5 +4926,39 @@ end subroutine vertical_interpolate
       val=total
    end do
  end subroutine readfrac
+
+ subroutine check_lon_lat(ncFileID, lon_name, lat_name, ndims, lonVarID, latVarID)
+   !check that longitude and latitude for every gridcell is defined as a 2 dimenionsl array
+   !file is must be open already
+   character(len=*), intent(inout)  :: lon_name, lat_name
+   integer, intent(in)  :: ncFileID
+   integer, intent(out),optional  ::  lonVarID, latVarID
+   integer, intent(out)  :: ndims
+   integer :: status,VarID
+
+   lat_name = 'lat'
+   lon_name = 'lon'
+   status=nf90_inq_varid(ncid = ncFileID, name=trim(lon_name), varID = VarID)
+   if(status /= nf90_noerr) then
+      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = VarID)
+      if(status /= nf90_noerr) then
+         status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = VarID)
+         call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+      end if
+   end if
+   if(present(lonVarID))lonVarID=VarID
+   call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = VarID,ndims=ndims))
+       
+   status=nf90_inq_varid(ncid = ncFileID, name=trim(lat_name), varID = VarID)
+   if(status /= nf90_noerr) then
+      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = VarID)
+      if(status /= nf90_noerr) then
+         status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = VarID)
+         call CheckStop(status /= nf90_noerr,'did not find latitude variable')
+     end if
+   end if
+   if(present(latVarID))latVarID=VarID
+
+ end subroutine check_lon_lat
 
 endmodule NetCDF_mod

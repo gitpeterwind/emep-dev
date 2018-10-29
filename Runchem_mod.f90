@@ -28,7 +28,6 @@ module RunChem_mod
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
   use DefPhotolysis_mod, only: setup_phot
-  use DefPhotolysis_mod  ! RDBG
   use DerivedFields_mod, only: f_2d
   use DryDep_mod,        only: drydep
   use DustProd_mod,      only: WindDust  !DUST -> USES%DUST

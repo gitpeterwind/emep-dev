@@ -37,11 +37,12 @@ module AirEmis_mod
    use Io_mod                , only : IO_AIRN, IO_LIGHT, ios, open_file
    use GridValues_mod        , only : glon,glat, GRIDWIDTH_M
    use MetFields_mod         , only : z_bnd  
-   use Config_module    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
-                                     USES, TXTLEN_FILE, lightningFile
-   use MPI_Groups_mod, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+   use Config_module    ,      only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
+                                     USES, lightningFile
+   use MPI_Groups_mod,         only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                              MPI_MIN, MPI_MAX, MPI_SUM, &
                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
+   use OwnDataTypes_mod,        only: TXTLEN_FILE
    use Par_mod               , only : LIMAX, LJMAX, limax,ljmax, me
    use PhysicalConstants_mod , only : AVOG
    use SmallUtils_mod,         only : key2str

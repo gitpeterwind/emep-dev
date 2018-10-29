@@ -3,11 +3,12 @@ module EmisGet_mod
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
 use ChemSpecs_mod,     only: species 
-use Config_module,     only: NPROC, TXTLEN_NAME,  MasterProc,USES,&
+use Config_module,     only: NPROC, MasterProc,USES,&
                              KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, TXTLEN_FILE,&
-                             SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile
+                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, &
+                             SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile,&
+                             Emis_source
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
@@ -22,26 +23,30 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             ,cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes,GridEmis&
                             ,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
-                            ,Emis_field, Emis_id, NEmis_id
+                            ,Emis_field, NEmis_id, Emis_id, NEmis_sources
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local,j_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd
 use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
-use KeyValueTypes,    only: KeyVal
-use MPI_Groups_mod   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
+use KeyValueTypes,     only: KeyVal
+use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
-use NetCDF_mod, only  : ReadField_CDF  !CDF_SNAP
+use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat
 
-use Par_mod,            only: LIMAX, LJMAX, limax, ljmax, me
-use SmallUtils_mod,     only: wordsplit, find_index, key2str
+use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type
+use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
+use SmallUtils_mod,    only: wordsplit, find_index, key2str
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
-                             NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE
-
+                             NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
+                             nf90_get_att,nf90_global,nf90_get_att
+use TimeDate_mod, only     : date
 implicit none
 private
 
  ! subroutines:
+public  :: Emis_init_GetCdf  ! define constant parameters
+public  :: Emis_GetCdf       ! new formats
 public  :: EmisGetCdf        ! cdfemis
 public  :: EmisGetASCII      !new version of "EmisGet" which does not use fulldomain arrays
 public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
@@ -95,6 +100,14 @@ logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 integer, private ::i_femis_lonlat
 
 contains
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine Emis_GetCdf(Emis_source,Emis_2D,date_wanted)
+    type(Emis_id_type),intent(inout) :: Emis_source 
+    real, intent(out), dimension(LIMAX,LJMAX) :: Emis_2D
+    type(date), intent(in) :: date_wanted
+
+
+  end subroutine Emis_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
        Emis, EmisCodes, nEmisCodes, nstart,&
@@ -181,14 +194,14 @@ contains
                       if(MasterProc)write(*,*)'found '//species(iem_used)%name//' for '//trim(ewords(6))
                       !see if case has been found before
                       !shoudl search only among NEmis_id first!
-                      ix_Emis = find_index(ewords(6),Emis_id%spec(:))
+                      ix_Emis = find_index(ewords(6),Emis_id%species(:))
                       if(ix_Emis>0)then
                          if(MasterProc)write(*,*)trim(ewords(6))//' already defined'
                       else
                           if(MasterProc)write(*,*)NEmis_id,' defining new id '//trim(ewords(6))
                           NEmis_id = NEmis_id + 1
                           ix_Emis = NEmis_id
-                          Emis_id%spec(ix_Emis) = trim(ewords(6))
+                          Emis_id(ix_Emis)%species = trim(ewords(6))
                       endif
                       iem_used = 1
                       foundEmis_id = .true.
@@ -347,6 +360,79 @@ contains
     if(.not.fractionformat) call check(nf90_close(ncFileID))
 
   end subroutine EmisGetCdf
+
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine Emis_init_GetCdf(fname, filename)
+
+    !read in emissions from one file and set parameters
+
+    implicit none
+    character(len=*),intent(in) :: fname, filename
+   
+    character(len=100) :: projection, default_projection, name, cdfvarname, cdfspecies
+    character(len=30)  :: lon_name, lat_name
+    integer :: n, ix, varid, status, sector
+    integer :: nDimensions, nVariables, nAttributes, xtype, ndims
+    real :: x
+    integer :: ncFileID
+
+    status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
+    if( status /= nf90_noerr ) then
+       if( MasterProc )write(*,*)"ERROR: EmisGetCdf - couldn't open "//trim(fName)
+       CALL MPI_FINALIZE(IERROR)
+       stop
+    end if
+
+    default_projection = 'Unknown'
+    status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
+    if(status==nf90_noerr)then
+       default_projection = trim(projection)
+    endif
+    if(default_projection /= 'lon lat')then
+       !longitude and latitude for every gridcell must be defined in a 2 dimenionsl array
+       call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions)
+       call CheckStop(nDimensions /= 2,'longitude variable must be two dimensional '//trim(fName))
+    endif
+
+    !todo: read more global attributes to use as defaults
+
+    !loop over all variables
+    call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
+    do varid=1,nVariables
+       call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
+       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
+       if(status==nf90_noerr .and. ndims>=2)then
+          !we define a new emission source
+          NEmis_sources = NEmis_sources + 1
+          Emis_source(NEmis_sources)%filename = trim(filename) !filename is name before replacing YMDH
+          Emis_source(NEmis_sources)%varname = trim(cdfvarname)
+          Emis_source(NEmis_sources)%species = trim(cdfspecies)
+          Emis_source(NEmis_sources)%projection = trim(default_projection)
+          status = nf90_get_att(ncFileID,varid,"periodicity", name)
+          if(status==nf90_noerr)Emis_source(NEmis_sources)%periodicity = trim(name)
+          status = nf90_get_att(ncFileID,varid,"units", name)
+          if(status==nf90_noerr)Emis_source(NEmis_sources)%units_in = trim(name)
+          status = nf90_get_att(ncFileID,varid,"sector", sector)
+          if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
+          status = nf90_get_att(ncFileID,varid,"factor", x)
+          if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
+          status = nf90_get_att(ncFileID,varid,"country", name)
+          if(status==nf90_noerr)then
+             ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+             if(ix<0)then
+                if(me==0)write(*,*)'WARNING: country '//trim(name)//' not defined. file'//trim(fname)//' variable '//trim(cdfvarname)
+             else
+                Emis_source(NEmis_sources)%country_ISO = trim(name)
+             endif
+          endif
+         if(MasterProc)write(*,*)"Defined emission source ",NEmis_sources,Emis_source(NEmis_sources)
+          
+       endif
+        
+     enddo
+     call check(nf90_close(ncFileID))
+
+   end subroutine Emis_init_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine EmisGetASCII(iem, fname, emisname, sumemis_local, incl, nin, excl, nex, &

@@ -20,11 +20,10 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
 use MetFields_mod,     only: ps,roa,EtaKz
 use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1, HOURLYFILE_ending,&
-                            TXTLEN_FILE
+                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1, HOURLYFILE_ending
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF
-use OwnDataTypes_mod,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
+use OwnDataTypes_mod,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max, TXTLEN_FILE
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index

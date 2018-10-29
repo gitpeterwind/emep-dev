@@ -28,7 +28,8 @@ use Config_module,only: &
     NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,USE_SECTORS_NAME,&
     SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
-    AVG_SMI_2005_2010File,NdepFile
+    AVG_SMI_2005_2010File,NdepFile,&
+    startdate, Emis_source, Emis_sourceFiles
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
@@ -64,7 +65,8 @@ use EmisDef_mod,       only: &
      ,gnfr2snap,snap2gnfr&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT &   
-     ,Emis_field, Emis_id, NEmis_id
+     ,Emis_field, Emis_id, NEmis_id &
+     ,NEmis_sources, Emis_source_2D
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -80,7 +82,8 @@ use EmisGet_mod,       only: &
     ,emis_nsplit                 &  ! No. species per emis file
     ,RoadDustGet                 &  
     ,roaddust_masscorr           &   ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_mod...   
-    ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax,femis_lonlat_ic
+    ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax,femis_lonlat_ic&
+    ,Emis_init_GetCdf, Emis_GetCdf
 use GridValues_mod,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
@@ -94,6 +97,7 @@ use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTE
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
                             GetCDF_modelgrid,PrintCDF,ReadSectorName,check
 use netcdf
+use OwnDataTypes_mod,  only: TXTLEN_FILE
 use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
@@ -101,10 +105,9 @@ use PhysicalConstants_mod,only: GRAV, AVOG, ATWAIR
 use PointSource_mod,      only: readstacks !MKPS
 use ZchemData_mod,only: rcemis   ! ESX
 use SmallUtils_mod,    only: find_index,  key2str
-use ReadField_mod,     only: ReadField    ! Reads ascii fields
 use TimeDate_mod,      only: nydays, nmdays, date, current_date, &! No. days per 
                             tdif_secs,timestamp,make_timestamp,daynumber,day_of_week ! year, date-type, weekday 
-use TimeDate_ExtraUtil_mod,only :nctime2date
+use TimeDate_ExtraUtil_mod,only :nctime2date, date2string
 use Timefactors_mod,   only: &
      NewDayFactors          & ! subroutines
     ,DegreeDayFactors       & ! degree-days used for SNAP-2
@@ -118,6 +121,8 @@ implicit none
 private
 
 ! subroutines:
+public :: Init_Emissions    ! defines emission setup and formats
+public :: EmisUpdate        ! update emission
 public :: Emissions         ! Main emissions module 
 public :: newmonth
 public :: EmisSet           ! Sets emission rates every hour/time-step
@@ -143,6 +148,47 @@ character(len=*), parameter :: sub='Emissions:'
 logical, save :: mappingGNFR2SNAP = .false.
 
 contains
+!***********************************************************************
+  !new (Nov 2018) emission setup and formats
+  subroutine Init_Emissions
+    !loop through all sources to set parameters for each source.
+    !one source is defined as one two dimensional map.
+    !each source has parameters. Parameters are constant through the run.
+    !There are ways to set parameters. In increasing priority order:
+    !1) default
+    !2) read from global attributes in file
+    !3) read from variable attributes in file
+    !4) set in namelist (config_emep.nml)
+    character(len=TXTLEN_FILE) :: fname, filename
+    integer :: n
+    
+    NEmis_sources = 0
+    do n = 1, size(Emis_sourceFiles)
+       if(Emis_sourceFiles(n)/='NOTSET')then
+          !Read all variables and set parameters as needed
+          if(MasterProc)write(*,*)"Initializing Emissions from ",Emis_sourceFiles(n)
+          fname=trim(date2string(Emis_sourceFiles(n),startdate,mode='YMDH'))
+          call Emis_init_GetCdf(fname, filename)
+       endif
+    enddo
+    allocate(Emis_source_2D(LIMAX,LJMAX,NEmis_sources))
+  end subroutine Init_Emissions
+
+!***********************************************************************
+  subroutine EmisUpdate
+    !Update emission arrays, and read new sets as required
+    integer :: n
+    !loop over all sources and see which one need to be reread from files
+    do n = 1, NEmis_sources
+       
+       if(tdif_secs(make_timestamp(current_date),Emis_source(n)%end_of_validity_date) < 0.0)then
+          !values are no more valid, fetch new one
+          call Emis_GetCdf(Emis_source(n),Emis_source_2D(1,1,n),current_date)
+       endif
+    enddo
+    
+  end subroutine EmisUpdate
+
 !***********************************************************************
   subroutine Emissions(year)
     ! Initialize emission variables, and read yearly emissions
@@ -1137,7 +1183,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     end do     ! j
 
     do n = 1,NEmis_id
-       itot = find_index(Emis_id%spec(n),species(:)%name)
+       itot = find_index(Emis_id(n)%species,species(:)%name)
        iqrc = itot2iqrc(itot)
        k=KMAX_MID
        do j = 1,ljmax
@@ -1411,7 +1457,7 @@ subroutine newmonth
              nlandcode=0
              monthlysectoremisreset = .true.
              Emis_field = 0.0
-             Emis_id%spec = '' !to be removed, when searching only among NEmis_id 
+             Emis_id(:)%species = '' !to be removed, when searching only among NEmis_id 
              NEmis_id = 0
           endif
           fractionformat = ( emis_inputlist(iemislist)%format=='fractions' )

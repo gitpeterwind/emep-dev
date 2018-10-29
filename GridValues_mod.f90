@@ -23,7 +23,7 @@ use Config_module,      only: &
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile,&
-     TXTLEN_NAME, EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
+     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
 use Debug_module, only:  DEBUG   ! -> DEBUG%GRIDVALUES
 
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &

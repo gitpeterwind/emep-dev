@@ -5,7 +5,7 @@ module AOTx_mod
   use CheckStop_mod,  only : checkStop, StopAll
   use Chemfields_mod, only : xn_adv, cfac
   use ChemSpecs_mod,  only : IXADV_O3
-  use Config_module, only : dt_advec, KMAX_MID  & 
+  use Config_module, only : dt_advec, KMAX_MID & 
                       ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use Debug_module,   only:  DEBUG   ! -> DEBUG%AOT
   use DO3SE_mod
@@ -15,7 +15,7 @@ module AOTx_mod
   use LocalVariables_mod, only : Grid, L
   use MetFields_mod, only: zen
   use NumberConstants, only : UNDEF_R, UNDEF_I
-  use OwnDataTypes_mod, only : TXTLEN_DERIV, TXTLEN_SHORT, TXTLEN_IND
+  use OwnDataTypes_mod, only: TXTLEN_DERIV, TXTLEN_SHORT, TXTLEN_IND,TXTLEN_NAME
   use Par_mod, only : LIMAX, LJMAX, limax, ljmax, me
   use TimeDate_mod, only : current_date, print_date, jday => effectivdaynumber
   implicit none
@@ -78,7 +78,7 @@ contains
     logical :: dbg, is_MM, is_EU,  inGS
     logical, save :: first_call = .true.
     character(len=*),parameter :: dtxt='CalcAOTx:'
-    character(len=50) :: txt
+    character(len=TXTLEN_NAME) :: txt
 
    ! MM (Mapping Manual) means use daylight O3, EU uses 7:00 -- 18:59 UTC
 
