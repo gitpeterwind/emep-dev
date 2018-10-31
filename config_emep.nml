@@ -1,10 +1,10 @@
 &INPUT_PARA
-  GRID      = 'EMEP0302',
+  GRID      = 'EECCA',
   iyr_trend = 2016,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_18',
   startdate = 2016,01,01,00,
-  enddate   = 2016,01,01,24,
+  enddate   = 2016,01,01,03,
 &end
 &Machine_config
 !DataDir will attempted replaced by (in this order):
@@ -20,7 +20,7 @@
 &ModelConstants_config
 !NB: set the path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
-  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
@@ -54,10 +54,6 @@
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,            ! 
 !------------------------------ 
-  USES%EURO_SOILNOX      = T,            ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
-  USES%GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
-!------------------------------
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?

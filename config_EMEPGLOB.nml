@@ -51,10 +51,6 @@
   USES%AIRCRAFT_EMIS     = T,             ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,             ! 
 !------------------------------
-  USES%EURO_SOILNOX      = F,             ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,           ! Scale, default 1  (see ModelConstants_ml)
-  USES%GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
-!------------------------------
   USES%POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = F,             ! Only EECCA?
   USES%DUST              = T,             ! Only EECCA?

@@ -4433,12 +4433,14 @@ subroutine printCDF(name, array,unit)
   end subroutine printCDF
 
 
-subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
+subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
   !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
   !OR in years since 2000 if the times are defined in years!
+  !if present(time_wanted), find corresponding record and return it in NTime_Read
   character(len=*) ,intent(in):: filename
   real,intent(out) :: TimesInDays(:)
   integer, intent(inout) :: NTime_Read ! in:records to read, out:records readed
+  real,optional,intent(in) :: time_wanted!if present, find first record after this time (within 0.5 second difference)  
 
   real, allocatable :: times(:)
   integer, allocatable :: int_times(:,:,:)
@@ -4450,142 +4452,163 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   character(len=TXTLEN_NAME) :: wordarray2(wordarraysize)
   character, allocatable :: Times_string(:,:)
   integer :: string_length
-  integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-  logical:: proleptic_gregorian
+  integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode,startrecord
+  logical:: proleptic_gregorian, find_record
 
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
 
+  find_record = .false.
+  if(present(time_wanted)) find_record = .true.!only find the record needed
+  if(find_record) NTime_Read = 1
+
   varname='time'
   status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+
   if(status==nf90_noerr)then
-  if(DEBUG_NETCDF)write(*,*)'time variable exists: ',trim(varname)
-
-  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-  if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
-  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=ntimes))
-  if(NTime_Read<1)then
-    if(DEBUG_NETCDF)write(*,*)'reading all time records'
-    NTime_Read=ntimes
-  end if
-  call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-  call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-  allocate(times(NTime_Read))
-  call check(nf90_get_var(ncFileID, VarID, times,count=(/NTime_Read/)))
-
-  call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
-
-  if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
-    if(DEBUG_NETCDF)write(*,*)'time unit ',trim(timeunit(1:16))
-    do i=1,NTime_Read
-      yyyy=int(times(i))/10000
-      mo=int(times(i)-10000*yyyy)/100
-      dd=int(times(i)-10000*yyyy-100*mo)
-      hh=24.0*(times(i)-int(times(i)))
-      julian=julian_date(yyyy,mo,dd)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-      TimesInDays(i)=diff_1900+hh/24.0
-      if(DEBUG_NETCDF)write(*,*)'time ',yyyy,mo,dd,hh
-    end do
-  else if (trim(timeunit)=='month')then
-     !used for files with only 12 monthly values, without year
-     forall(i=1:NTime_Read) &
-     TimesInDays(i) = 30*(times(i)-1)+15
-  else
-     !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
-     
-     !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
-     call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-     if(DEBUG_NETCDF.and.MasterProc)&
-          write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
-     period=wordarray(1)
-     since=wordarray(2)
-     call CheckStop(since/='since',"since error "//trim(since))
-     
-     read(wordarray(3),*)yyyy
-     read(wordarray(4),*)mo
-     read(wordarray(5),*)dd
-     read(wordarray(6),*)hh
-     !read(wordarray(7),*)mi
-     !read(wordarray(8),*)ss  !did not work ???
-     mi=0
-     ss=0
-     
-     calendar='unknown'
-
-     status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
-     proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian'.or.calendar=='gregorian')
-     if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
-      write(*,*)'found proleptic_gregorian calendar'
-
-    if(yyyy/=0.or.proleptic_gregorian)then
-     !read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
-     !read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
-
-      if(DEBUG_NETCDF.and.MasterProc)&
-        write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
-         ' refdate ',yyyy,mo,dd,' time ',hh,mi,ss
-      ss=ss+60*mi+3600*hh
-      julian=julian_date(yyyy,mo,dd)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-     !if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
-      select case(period)
-      case('years')
-         !NB: not completely "standard" and compatible with the "days" setup
-        forall(i=1:NTime_Read) &
-           TimesInDays(i)=times(i)-(2000-yyyy)
-      case('days')
-        forall(i=1:NTime_Read) &
-           TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
-      case('hours')
-        forall(i=1:NTime_Read) &
-          TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
-      case('seconds')
-        forall(i=1:NTime_Read) &
-          TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
-      case('month')!used for files with only 12 monthly values, without year
-        forall(i=1:NTime_Read) &
-           TimesInDays(i) = 30*(times(i)-1)+15
-      case default
-        call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
-      end select
-
-    else
-      if(DEBUG_NETCDF.and.MasterProc)&
-        write(*,*)'assuming days since 0-01-01 00:00 and 365days'
-      call CheckStop(period/='days',"Error: only time in days implemented "//trim(period))
-      !assume units = "days since 0-01-01 00:00"
-      !and calendar = "365_day"
-      yyyy=int(times(1)/365)
-
-      julian=julian_date(yyyy,1,1)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-      forall(i=1:NTime_Read) &
-        TimesInDays(i)=diff_1900+times(i)-yyyy*365
-
-      !for leap years and dates after 28th February add one day to get Julian days
-      if(mod(yyyy,4)==0)then
-        forall(i=1:NTime_Read,times(i)-yyyy*365>59.999) & ! later than midnight on 
-           TimesInDays(i)=TimesInDays(i)+1.0              ! Feb 28th (59th day)
-        ! if the current date in the model is 29th of february, then this date
-        ! is not defined in the 365 days calendar.
-        ! We then assume that the 60th day is 29th of february in the netcdf file
-        ! and not the 1st of march.
-        ! Keep this separately as this may be defined differently in different situations.
-        ! This implementation works for the IFS-MOZART BC
-        if(current_date%month==2.and.current_date%day==29)then
-          write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
-          forall(i=1:NTime_Read,int(times(i)-yyyy*365)==60) & ! move Mar 1st
-            TimesInDays(i)=TimesInDays(i)-1.0                 ! to Feb 29th
-        end if
-      end if
+     if(DEBUG_NETCDF)write(*,*)'time variable exists: ',trim(varname)     
+     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+     if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=ntimes))
+     if(NTime_Read<1)then
+        if(DEBUG_NETCDF)write(*,*)'reading all time records'
+        NTime_Read=ntimes
      end if
-  end if
-  deallocate(times)
+     call CheckStop(ntimes<NTime_Read .and. .not.find_record, "to few records in "//trim(fileName))
+     call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+     allocate(times(NTime_Read))
+     
+     if(.not. find_record)ntimes=1
+
+     do startrecord = 1,ntimes !in case find_record, loop over one record at a time
+
+     call check(nf90_get_var(ncFileID, VarID, times, start = (/startrecord/),count=(/NTime_Read/)))
+     
+     call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
+     
+     if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
+        if(DEBUG_NETCDF)write(*,*)'time unit ',trim(timeunit(1:16))
+        do i=1,NTime_Read
+           yyyy=int(times(i))/10000
+           mo=int(times(i)-10000*yyyy)/100
+           dd=int(times(i)-10000*yyyy-100*mo)
+           hh=24.0*(times(i)-int(times(i)))
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           TimesInDays(i)=diff_1900+hh/24.0
+           if(DEBUG_NETCDF)write(*,*)'time ',yyyy,mo,dd,hh
+        end do
+     else if (trim(timeunit)=='month')then
+        !used for files with only 12 monthly values, without year
+        forall(i=1:NTime_Read) &
+             TimesInDays(i) = 30*(times(i)-1)+15
+     else
+        !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
+        
+        !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
+        call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
+        if(DEBUG_NETCDF.and.MasterProc)&
+             write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
+        period=wordarray(1)
+        since=wordarray(2)
+        call CheckStop(since/='since',"since error "//trim(since))
+        
+        read(wordarray(3),*)yyyy
+        read(wordarray(4),*)mo
+        read(wordarray(5),*)dd
+        read(wordarray(6),*)hh
+        !read(wordarray(7),*)mi
+        !read(wordarray(8),*)ss  !did not work ???
+        mi=0
+        ss=0
+        
+        calendar='unknown'
+        
+        status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
+        proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian'.or.calendar=='gregorian')
+        if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
+             write(*,*)'found proleptic_gregorian calendar'
+        
+        if(yyyy/=0.or.proleptic_gregorian)then
+           !read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
+           !read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
+           
+           if(DEBUG_NETCDF.and.MasterProc)&
+                write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
+                ' refdate ',yyyy,mo,dd,' time ',hh,mi,ss
+           ss=ss+60*mi+3600*hh
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           !if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
+           select case(period)
+           case('years')
+              !NB: not completely "standard" and compatible with the "days" setup
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=times(i)-(2000-yyyy)
+           case('days')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
+           case('hours')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
+           case('seconds')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+           case('month')!used for files with only 12 monthly values, without year
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i) = 30*(times(i)-1)+15
+           case default
+              call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
+           end select
+           
+        else
+           if(DEBUG_NETCDF.and.MasterProc)&
+                write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+           call CheckStop(period/='days',"Error: only time in days implemented "//trim(period))
+           !assume units = "days since 0-01-01 00:00"
+           !and calendar = "365_day"
+           yyyy=int(times(1)/365)
+           
+           julian=julian_date(yyyy,1,1)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           forall(i=1:NTime_Read) &
+                TimesInDays(i)=diff_1900+times(i)-yyyy*365
+           
+           !for leap years and dates after 28th February add one day to get Julian days
+           if(mod(yyyy,4)==0)then
+              forall(i=1:NTime_Read,times(i)-yyyy*365>59.999) & ! later than midnight on 
+                   TimesInDays(i)=TimesInDays(i)+1.0              ! Feb 28th (59th day)
+              ! if the current date in the model is 29th of february, then this date
+              ! is not defined in the 365 days calendar.
+              ! We then assume that the 60th day is 29th of february in the netcdf file
+              ! and not the 1st of march.
+              ! Keep this separately as this may be defined differently in different situations.
+              ! This implementation works for the IFS-MOZART BC
+              if(current_date%month==2.and.current_date%day==29)then
+                 write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
+                 forall(i=1:NTime_Read,int(times(i)-yyyy*365)==60) & ! move Mar 1st
+                      TimesInDays(i)=TimesInDays(i)-1.0                 ! to Feb 29th
+              end if
+           end if
+        end if
+     end if
+     if(find_record)then
+        if(TimesInDays(1)-time_wanted>-0.5/(24.0*3600.0))then
+           !we have found the right record
+           NTime_Read = startrecord
+           exit
+        endif
+     endif
+     enddo
+     deallocate(times)
+
+     call CheckStop(startrecord>ntimes.and.find_record, "did not find correct time in "//trim(fileName))
+
   else
+     call CheckStop(find_record,"find_record not implemented for time format in "//trim(fileName))
 !     write(*,*)'ReadTimeCDF '//trim(varname)//" not found in "//trim(fileName)
      varname='Times'!wrf format
      status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
@@ -4637,7 +4660,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
           
           allocate(int_times(2,1,ntimes))
           NTime_Read = ntimes
-!NB: we assume all variables have samre time stamp. Read only for first
+!NB: we assume all variables have same time stamp. Read only for first
           call check(nf90_get_var(ncFileID, VarID, int_times,count=(/2,1,ntimes/)))
           do i=1,NTime_Read
              yyyy=int_times(1,1,i)/1000

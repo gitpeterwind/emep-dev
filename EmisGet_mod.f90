@@ -32,7 +32,7 @@ use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
 use KeyValueTypes,     only: KeyVal
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
-use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat
+use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF
 
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
@@ -41,6 +41,8 @@ use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
                              nf90_get_att,nf90_global,nf90_get_att
 use TimeDate_mod, only     : date
+use TimeDate_ExtraUtil_mod, only : nctime2date,date2nctime, date2string
+
 implicit none
 private
 
@@ -105,8 +107,36 @@ contains
     type(Emis_id_type),intent(inout) :: Emis_source 
     real, intent(out), dimension(LIMAX,LJMAX) :: Emis_2D
     type(date), intent(in) :: date_wanted
+    real :: date_wanted_in_days,TimesInDays(1)
+    integer :: record
+    real mgh2kgs
 
+    fname = date2string(Emis_source%filename,date_wanted,mode='YMDH')
+    call date2nctime(date_wanted,date_wanted_in_days)
+    call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
 
+    call nctime2date(Emis_source%end_of_validity_date, TimesInDays(1))
+
+    if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
+    call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+                  known_projection=trim(Emis_source%projection),&
+                  interpol='conservative',&
+                  needed=.true.,UnDef=0.0,&
+                  debug_flag=.false.)
+
+    if(Emis_source%units_in == 'mg/m2')then
+       !convert into kg/m2/s
+       mgh2kgs = 1.0/(1000000.0*3600.0)
+       if(Emis_source%periodicity == 'hourly')then
+          Emis_2D = Emis_2D*mgh2kgs
+       else
+          call StopAll("Emis_source only implemented for houly. Found "//trim(Emis_source%periodicity))       
+       endif
+    else
+      call StopAll("Emis_source only implemented for mg/m2. Found "//trim(Emis_source%units_in))       
+    endif
+
+    
   end subroutine Emis_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
@@ -423,6 +453,7 @@ contains
                 if(me==0)write(*,*)'WARNING: country '//trim(name)//' not defined. file'//trim(fname)//' variable '//trim(cdfvarname)
              else
                 Emis_source(NEmis_sources)%country_ISO = trim(name)
+                Emis_source(NEmis_sources)%country_ix = ix
              endif
           endif
          if(MasterProc)write(*,*)"Defined emission source ",NEmis_sources,Emis_source(NEmis_sources)

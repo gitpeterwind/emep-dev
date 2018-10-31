@@ -192,15 +192,16 @@ type, public :: Emis_id_type
    character(len=TXTLEN_NAME) :: varname = 'NOTSET' !name of variable in netcdf file
    character(len=TXTLEN_NAME) :: species = 'NOTSET' !which species to put emissions into
    character(len=TXTLEN_NAME) :: periodicity = 'hourly' !how often fresh values must be read from the netcdf file
-   type(timestamp)            :: end_of_validity_date = timestamp(0,0.0)
+   type(timestamp)            :: end_of_validity_date = timestamp(0,0.0)!internal date to know when to fetch new data
    character(len=TXTLEN_NAME) :: units_in = 'mg/m2'!in the netcdf file
-   character(len=TXTLEN_NAME) :: units = 'g/s'!? as defined in the internal array
+   character(len=TXTLEN_NAME) :: units = 'kg/m2/s'! as used in the internal array Emis_2D
    character(len=TXTLEN_NAME) :: country_ISO = 'N/A' !country name, for example FR for France, as defined in Country_mod
-   character(len=TXTLEN_NAME) :: projection = 'lon lat' !projection
-   integer :: Country_icode = 67 !country code number, for example 8 for France, as defined in Country_mod
+   character(len=TXTLEN_NAME) :: projection = 'Unknown' !projection
+   integer :: country_ix = 67 !Internal country index. Does not have any meaning outside of code
    integer :: sector = 0
    integer :: height = 0 !could define own release height. not implemented
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
+   logical :: native_grid = .false. !Assumes that the grid projection and resolution is the same as meteo grid. Not yet implemented
    real :: factor = 1.0 !scaling factor. multiply values by this number
 end type Emis_id_type
 

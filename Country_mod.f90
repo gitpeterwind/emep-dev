@@ -132,7 +132,7 @@ module Country_mod
   integer, public ::  IC_EU   ! European Union
   integer, public ::  IC_US   ! USA
   integer, public ::  IC_CA   ! Canada
-  integer, public ::  IC_DUMMY1  ! Not-defined
+  integer, public ::  IC_DUMMY  ! Not-defined
   integer, public ::  IC_KG   ! Kyrgyzstan 
   integer, public ::  IC_AZ   ! Azerbaijan                 
   integer, public :: IC_ATX   ! ATL outside EMEP domain
@@ -673,8 +673,8 @@ ix=ix+1
 IC_CA=ix
 Country( IC_CA ) = cc(  "CA " ,'-', 66 ,F, 66, 66,  -100  , "Canada                        " )
 ix=ix+1 
-IC_DUMMY1=ix
-Country( IC_DUMMY1 ) &
+IC_DUMMY=ix
+Country( IC_DUMMY ) &
                  = cc(  "N/A" ,'-', 67 ,F,  67, 67, -100  , "Not_defined                   " )
 ix=ix+1
 IC_KG=ix

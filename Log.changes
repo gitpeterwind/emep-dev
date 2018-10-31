@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st Oct 2018, Peter
+
+New format for emissions. For now it will work side by side with the old format,
+and hopefully gradually take over.
+
+Also some other small changes:
+GLOBAL_SOILNOX set automatically true if global grid.
+Moved assign_nmax after metstep defined (bug, but nmax is almost not used anyway).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2018, Peter, Dave
 
 Bug in surface_precip (not "pr" the 3D precipitations).

@@ -168,7 +168,7 @@ contains
           !Read all variables and set parameters as needed
           if(MasterProc)write(*,*)"Initializing Emissions from ",Emis_sourceFiles(n)
           fname=trim(date2string(Emis_sourceFiles(n),startdate,mode='YMDH'))
-          call Emis_init_GetCdf(fname, filename)
+          call Emis_init_GetCdf(fname, Emis_sourceFiles(n))
        endif
     enddo
     allocate(Emis_source_2D(LIMAX,LJMAX,NEmis_sources))
@@ -179,11 +179,11 @@ contains
     !Update emission arrays, and read new sets as required
     integer :: n
     !loop over all sources and see which one need to be reread from files
-    do n = 1, NEmis_sources
-       
+    do n = 1, NEmis_sources      
        if(tdif_secs(make_timestamp(current_date),Emis_source(n)%end_of_validity_date) < 0.0)then
           !values are no more valid, fetch new one
-          call Emis_GetCdf(Emis_source(n),Emis_source_2D(1,1,n),current_date)
+          !todo: fetch all fields from same file at once
+         call Emis_GetCdf(Emis_source(n),Emis_source_2D(1,1,n),current_date)
        endif
     enddo
     
@@ -901,7 +901,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer :: i_Emis_4D
+  integer :: i_Emis_4D, iem_treated
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
 
@@ -1194,7 +1194,59 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           end do   ! i
        end do     ! j
     enddo
-  end if ! hourchange 
+
+!Add emissions from new format
+    do n = 1, NEmis_sources      
+       itot = find_index(Emis_source(n)%species,species(:)%name)
+       if(itot>0)then
+          !the species is directly defined (no splits, sector etc)
+          iqrc = itot2iqrc(itot)
+          k=KMAX_MID
+          do j = 1,ljmax
+             do i = 1,limax
+                gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
+                     + Emis_source_2D(i,j,n)*ehlpcom0    &
+                     *emis_masscorr(iqrc)
+             end do   ! i
+          end do     ! j
+       else
+          !the species is defines as a sector emission
+          iem_treated=find_index(Emis_source(n)%species,EMIS_FILE(:))
+          call CheckStop(iem<0, "did not recognize species "//trim(Emis_source(n)%species))
+          call CheckStop(Emis_source(n)%sector<=0," sector must be defined for "//trim(Emis_source(n)%varname))
+          isec = Emis_source(n)%sector
+          iland = Emis_source(n)%country_ix
+          iqrc = 0   ! index over emisfrac
+          do iem = 1, NEMIS_FILE 
+             do f = 1,emis_nsplit(iem)
+                iqrc = iqrc + 1
+                if(iem/=iem_treated)cycle !could do better: just to get iqrc right. Make a function itot(iem,f)
+                itot = iqrc2itot(iqrc)
+                do j = 1,ljmax
+                   do i = 1,limax
+                      s = Emis_source_2D(i,j,n) * emisfrac(iqrc,sec2split_map(isec),iland)
+
+                      SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
+                      if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
+                           SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
+                      ! Add up emissions in ktonne 
+                      totemadd(itot) = totemadd(itot) &
+                           + s * dtgrid * xmd(i,j)
+                      !  Assign to height levels 1-KEMISTOP
+                      do k=KEMISTOP,KMAX_MID
+                         gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
+                              + s&
+                              *ehlpcom0    &
+                              *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                              *emis_masscorr(iqrc)
+                      end do   ! k
+                   end do ! f
+                enddo
+             enddo
+          enddo
+       endif
+    enddo
+ end if ! hourchange 
  
 
 

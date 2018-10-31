@@ -156,8 +156,7 @@ end type emep_useconfig
 type(emep_useconfig), public, save :: USES
 
 logical,  public, save :: &
-      FORCE_PFT_MAPS_FALSE = .false. &!forces PFT_MAPS  = F, even if global grid
-     ,FORCE_DEGREEDAY_FACTORS_TRUE
+      FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
 type(Emis_id_type), public, save:: Emis_source(10)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()

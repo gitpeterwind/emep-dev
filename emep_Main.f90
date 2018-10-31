@@ -171,8 +171,6 @@ program emep_Main
 !TEST  call define_chemicals()    ! sets up species details
   call Init_ChemGroups()      ! sets up species details
 
-  call assign_nmax(METSTEP)   ! No. timesteps in inner loop
-
   call trajectory_init()
 
   call init_Country() ! In Country_mod, => NLAND, country codes and names, timezone
@@ -184,6 +182,8 @@ program emep_Main
   call Add_2timing(1,tim_after,tim_before,"landuse read in")
 
   call MeteoRead()
+
+  call assign_nmax(METSTEP)   ! No. timesteps in inner loop
 
   call Add_2timing(2,tim_after,tim_before,"Meteo read first record")
 
