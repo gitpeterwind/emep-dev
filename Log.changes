@@ -25,10 +25,17 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 New format for emissions. For now it will work side by side with the old format,
 and hopefully gradually take over.
+Should work exactly as before for old emissions only.
 
 Also some other small changes:
 GLOBAL_SOILNOX set automatically true if global grid.
 Moved assign_nmax after metstep defined (bug, but nmax is almost not used anyway).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2018, Dave, (Peter)
+
+YieldModifications set to 'VBS-T10' in config_emep.nml, config_EMEPSTD.nml
+and config_EMEPGLOB.nml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2018, Peter, Dave

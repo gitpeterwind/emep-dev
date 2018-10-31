@@ -27,7 +27,6 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
-! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
