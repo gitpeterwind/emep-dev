@@ -29,7 +29,7 @@ use Config_module,only: &
     SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
-    startdate, Emis_source, Emis_sourceFiles
+    startdate, Emis_source, Emis_sourceFiles, Emis_sources_in
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
@@ -97,7 +97,7 @@ use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTE
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
                             GetCDF_modelgrid,PrintCDF,ReadSectorName,check
 use netcdf
-use OwnDataTypes_mod,  only: TXTLEN_FILE
+use OwnDataTypes_mod,  only: TXTLEN_FILE, Emis_id_type
 use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
@@ -159,19 +159,82 @@ contains
     !2) read from global attributes in file
     !3) read from variable attributes in file
     !4) set in namelist (config_emep.nml)
-    character(len=TXTLEN_FILE) :: fname, filename
-    integer :: n
-    
+    integer, parameter ::maxnames=100
+    character(len=TXTLEN_FILE) :: fname, filename, names_in(maxnames)
+    integer :: i, n, nn, ix, nemis_old
+    integer :: startsource(size(Emis_sourceFiles)), endsource(size(Emis_sourceFiles))
+    type(Emis_id_type):: Emis_id_undefined !to get undefined values
+    !Note must distinguish between default and not undefined values, to know when config has defined a value, even if it is the default.
+    type(Emis_id_type):: Emis_sources_defaults !set values when not specified otherwise 
+
+    !1) define default values 
+    Emis_sources_defaults%periodicity = 'hourly'
+    Emis_sources_defaults%units = 'mg/m2/h'
+    Emis_sources_defaults%country_ISO = 'N/A'
+    Emis_sources_defaults%projection = 'lon lat'
+    Emis_sources_defaults%sector = 0
+    Emis_sources_defaults%factor = 1.0
+
+    Emis_source = Emis_sources_defaults!set all initial values to default
+
+    !2) read from global attributes in file
+    !3) read from variable attributes in file
     NEmis_sources = 0
     do n = 1, size(Emis_sourceFiles)
+       nemis_old = NEmis_sources
        if(Emis_sourceFiles(n)/='NOTSET')then
           !Read all variables and set parameters as needed
+          !find which variables names are defined in config
+          names_in='NOTSET'
+          i=0
+          do nn = 1, size(Emis_sources_in)
+             if(Emis_sources_in(nn)%file_rank == n)then
+                i = i+1
+                call CheckStop(i>maxnames,'Increase maxnames in Emissions_mod')
+                names_in(i)=trim(Emis_sources_in(nn)%varname)
+             endif
+          enddo
+
           if(MasterProc)write(*,*)"Initializing Emissions from ",Emis_sourceFiles(n)
           fname=trim(date2string(Emis_sourceFiles(n),startdate,mode='YMDH'))
-          call Emis_init_GetCdf(fname, Emis_sourceFiles(n))
+          call Emis_init_GetCdf(fname, Emis_sourceFiles(n),n, names_in, i)
        endif
+       startsource(n) = nemis_old + 1
+       endsource(n) = NEmis_sources
     enddo
     allocate(Emis_source_2D(LIMAX,LJMAX,NEmis_sources))
+
+    !4)overwrite parameters with settings from config_emep.nml if they are set
+    do n = 1, size(Emis_sources_in)
+       if(Emis_sources_in(n)%file_rank >0)then
+          nn = Emis_sources_in(n)%file_rank
+          do i = startsource(nn), endsource(nn)
+             if(me==0.and.Emis_source(i)%file_rank /= nn) write(*,*)'ACCOUNTING ERROR'
+             if(trim(Emis_sources_in(n)%varname)==trim(Emis_source(i)%varname))then
+                if(me==0) write(*,*)'overwriting parameters for '//trim(Emis_source(i)%varname)
+                if(Emis_sources_in(n)%periodicity /= Emis_id_undefined%periodicity) Emis_source(i)%periodicity = Emis_sources_in(n)%periodicity
+                if(Emis_sources_in(n)%species /= Emis_id_undefined%species) Emis_source(i)%species = Emis_sources_in(n)%species
+                if(Emis_sources_in(n)%units /= Emis_id_undefined%units) Emis_source(i)%units = Emis_sources_in(n)%units
+                if(Emis_sources_in(n)%sector /= Emis_id_undefined%sector) Emis_source(i)%sector = Emis_sources_in(n)%sector
+                if(Emis_sources_in(n)%factor /= Emis_id_undefined%factor) Emis_source(i)%factor = Emis_sources_in(n)%factor
+                if(Emis_sources_in(n)%country_ISO /= Emis_id_undefined%country_ISO)then
+                   Emis_source(i)%country_ISO = Emis_sources_in(n)%country_ISO
+                   ix = find_index(trim(Emis_sources_in(n)%country_ISO) ,Country(:)%code, first_only=.true.)
+                   if(ix<0)then
+                      if(me==0)write(*,*)'WARNING: country '//trim(Emis_sources_in(n)%country_ISO)//' not defined. '
+                   else
+                      Emis_source(NEmis_sources)%country_ix = ix
+                   endif
+                endif
+                if(Emis_sources_in(n)%projection /= Emis_id_undefined%projection) Emis_source(i)%projection = Emis_sources_in(n)%projection
+                if(Emis_sources_in(n)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) Emis_source(i)%include_in_local_fractions = Emis_sources_in(n)%include_in_local_fractions
+!                if(Emis_sources_in(n)% /= Emis_id_undefined%) Emis_source(i)% = Emis_sources_in(n)%
+                if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(i)
+             endif
+          enddo
+       endif
+    enddo
+
   end subroutine Init_Emissions
 
 !***********************************************************************

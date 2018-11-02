@@ -158,8 +158,8 @@ type(emep_useconfig), public, save :: USES
 logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
-type(Emis_id_type), public, save:: Emis_source(10)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
+type(Emis_id_type), public, save:: Emis_source(50), Emis_sources_in(50)
 
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
@@ -602,7 +602,8 @@ subroutine Config_ModelConstants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
-   ,EMIS_OUT, emis_inputlist, Emis_source, Emis_sourceFiles, EmisDir &
+   ,EMIS_OUT, emis_inputlist, EmisDir&
+   ,Emis_sources_in, Emis_sourceFiles &
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,HourlyEmisOut         & ! to output emissions hourly

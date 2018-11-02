@@ -32,7 +32,7 @@ use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
 use KeyValueTypes,     only: KeyVal
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
-use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF
+use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, GetCDF_modelgrid
 
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
@@ -117,14 +117,19 @@ contains
 
     call nctime2date(Emis_source%end_of_validity_date, TimesInDays(1))
 
-    if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
-    call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
-                  known_projection=trim(Emis_source%projection),&
-                  interpol='conservative',&
-                  needed=.true.,UnDef=0.0,&
-                  debug_flag=.false.)
+    if(trim(Emis_source%projection) == 'native')then
+       if(me==0)write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
+        call GetCDF_modelgrid(Emis_source%varname,fname,Emis_2D(1,1),1,1,record,1,needed=.true.)
+    else
+       if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
+       call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+            known_projection=trim(Emis_source%projection),&
+            interpol='conservative',&
+            needed=.true.,UnDef=0.0,&
+            debug_flag=.false.)
+    endif
 
-    if(Emis_source%units_in == 'mg/m2')then
+    if(Emis_source%units == 'mg/m2' .or. Emis_source%units == 'mg/m2/h')then
        !convert into kg/m2/s
        mgh2kgs = 1.0/(1000000.0*3600.0)
        if(Emis_source%periodicity == 'hourly')then
@@ -133,7 +138,8 @@ contains
           call StopAll("Emis_source only implemented for houly. Found "//trim(Emis_source%periodicity))       
        endif
     else
-      call StopAll("Emis_source only implemented for mg/m2. Found "//trim(Emis_source%units_in))       
+      call StopAll("Emis_source only implemented for mg/m2 or mg/m2/h. Found "//trim(Emis_source%units))       
+      !Note: very easy to implement more unit choices. Just add "if" cases here
     endif
 
     
@@ -392,19 +398,19 @@ contains
   end subroutine EmisGetCdf
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine Emis_init_GetCdf(fname, filename)
+  subroutine Emis_init_GetCdf(fname, filename, file_rank, names_in, nnames)
 
     !read in emissions from one file and set parameters
 
     implicit none
-    character(len=*),intent(in) :: fname, filename
-   
+    character(len=*),intent(in) :: fname, filename, names_in(*)
+    integer,intent(in) :: file_rank, nnames
     character(len=100) :: projection, default_projection, name, cdfvarname, cdfspecies
     character(len=30)  :: lon_name, lat_name
     integer :: n, ix, varid, status, sector
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
     real :: x
-    integer :: ncFileID
+    integer :: ncFileID, nemis_old
 
     status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
     if( status /= nf90_noerr ) then
@@ -413,11 +419,13 @@ contains
        stop
     end if
 
+    
     default_projection = 'Unknown'
     status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
     if(status==nf90_noerr)then
        default_projection = trim(projection)
     endif
+
     if(default_projection /= 'lon lat')then
        !longitude and latitude for every gridcell must be defined in a 2 dimenionsl array
        call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions)
@@ -425,23 +433,24 @@ contains
     endif
 
     !todo: read more global attributes to use as defaults
-
+    nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
     do varid=1,nVariables
        call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
        status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
-       if(status==nf90_noerr .and. ndims>=2)then
+       if((status==nf90_noerr .and. ndims>=2) .or. any(names_in(1:nnames)==cdfvarname))then
           !we define a new emission source
           NEmis_sources = NEmis_sources + 1
           Emis_source(NEmis_sources)%filename = trim(filename) !filename is name before replacing YMDH
           Emis_source(NEmis_sources)%varname = trim(cdfvarname)
           Emis_source(NEmis_sources)%species = trim(cdfspecies)
+          Emis_source(NEmis_sources)%file_rank = file_rank         
           Emis_source(NEmis_sources)%projection = trim(default_projection)
           status = nf90_get_att(ncFileID,varid,"periodicity", name)
           if(status==nf90_noerr)Emis_source(NEmis_sources)%periodicity = trim(name)
           status = nf90_get_att(ncFileID,varid,"units", name)
-          if(status==nf90_noerr)Emis_source(NEmis_sources)%units_in = trim(name)
+          if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
           status = nf90_get_att(ncFileID,varid,"sector", sector)
           if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
           status = nf90_get_att(ncFileID,varid,"factor", x)
@@ -456,7 +465,6 @@ contains
                 Emis_source(NEmis_sources)%country_ix = ix
              endif
           endif
-         if(MasterProc)write(*,*)"Defined emission source ",NEmis_sources,Emis_source(NEmis_sources)
           
        endif
         
