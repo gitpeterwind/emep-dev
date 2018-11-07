@@ -29,7 +29,7 @@ use Config_module,only: &
     SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
-    startdate, Emis_source, Emis_sourceFiles, Emis_sources_in
+    startdate, Emis_sourceFiles
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
@@ -66,7 +66,7 @@ use EmisDef_mod,       only: &
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT &   
      ,Emis_field, Emis_id, NEmis_id &
-     ,NEmis_sources, Emis_source_2D
+     ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source, Emis_source_2D
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -97,7 +97,7 @@ use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTE
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
                             GetCDF_modelgrid,PrintCDF,ReadSectorName,check
 use netcdf
-use OwnDataTypes_mod,  only: TXTLEN_FILE, Emis_id_type
+use OwnDataTypes_mod,  only: TXTLEN_FILE, Emis_id_type, EmisFile_id_type, Emis_sourceFile_id_type
 use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
@@ -105,9 +105,9 @@ use PhysicalConstants_mod,only: GRAV, AVOG, ATWAIR
 use PointSource_mod,      only: readstacks !MKPS
 use ZchemData_mod,only: rcemis   ! ESX
 use SmallUtils_mod,    only: find_index,  key2str
-use TimeDate_mod,      only: nydays, nmdays, date, current_date, &! No. days per 
+use TimeDate_mod,      only: nydays, nmdays, date, current_date,&! No. days per 
                             tdif_secs,timestamp,make_timestamp,daynumber,day_of_week ! year, date-type, weekday 
-use TimeDate_ExtraUtil_mod,only :nctime2date, date2string
+use TimeDate_ExtraUtil_mod,only :nctime2date, date2string, to_idate,date_is_reached
 use Timefactors_mod,   only: &
      NewDayFactors          & ! subroutines
     ,DegreeDayFactors       & ! degree-days used for SNAP-2
@@ -161,95 +161,127 @@ contains
     !4) set in namelist (config_emep.nml)
     integer, parameter ::maxnames=100
     character(len=TXTLEN_FILE) :: fname, filename, names_in(maxnames)
-    integer :: i, n, nn, ix, nemis_old
+    integer :: i, ii, n, nn, ix, nemis_old, isource
     integer :: startsource(size(Emis_sourceFiles)), endsource(size(Emis_sourceFiles))
     type(Emis_id_type):: Emis_id_undefined !to get undefined values
+    type(EmisFile_id_type):: Emisfile_undefined !set values when not specified otherwise 
     !Note must distinguish between default and not undefined values, to know when config has defined a value, even if it is the default.
     type(Emis_id_type):: Emis_sources_defaults !set values when not specified otherwise 
+    type(EmisFile_id_type):: Emisfile_defaults !set values when not specified otherwise 
+    integer :: EmisFilesMap(0:size(Emis_sourceFiles)) !index of EmisFile given index of EmisFile_sources
 
     !1) define default values 
-    Emis_sources_defaults%periodicity = 'hourly'
     Emis_sources_defaults%units = 'mg/m2/h'
     Emis_sources_defaults%country_ISO = 'N/A'
-    Emis_sources_defaults%projection = 'lon lat'
     Emis_sources_defaults%sector = 0
     Emis_sources_defaults%factor = 1.0
 
     Emis_source = Emis_sources_defaults!set all initial values to default
 
+    Emisfile_defaults%periodicity = 'hourly'
+    Emisfile_defaults%projection = 'lon lat'
+
     !2) read from global attributes in file
     !3) read from variable attributes in file
-    NEmis_sources = 0
+    !Emis_sourceFiles is read from config and then not modified
+    !EmisFiles collect all valid data and sources
+    NEmis_sources = 0 !total number of valid emis variables across all files
+    NEmisFile_sources = 0 !number of valid emission files
+    EmisFilesMap = 0 !index of EmisFile given index of EmisFile_sources
     do n = 1, size(Emis_sourceFiles)
        nemis_old = NEmis_sources
-       if(Emis_sourceFiles(n)/='NOTSET')then
+       if(Emis_sourceFiles(n)%filename/='NOTSET')then
           !Read all variables and set parameters as needed
           !find which variables names are defined in config
           names_in='NOTSET'
           i=0
-          do nn = 1, size(Emis_sources_in)
-             if(Emis_sources_in(nn)%file_rank == n)then
-                i = i+1
-                call CheckStop(i>maxnames,'Increase maxnames in Emissions_mod')
-                names_in(i)=trim(Emis_sources_in(nn)%varname)
+          do nn = 1, size(Emis_sourceFiles(n)%source)
+             if(Emis_sourceFiles(n)%source(nn)%varname/='NOTSET')then
+                i= i + 1
+                names_in(i)=trim(Emis_sourceFiles(n)%source(nn)%varname)
              endif
           enddo
 
           if(MasterProc)write(*,*)"Initializing Emissions from ",Emis_sourceFiles(n)
-          fname=trim(date2string(Emis_sourceFiles(n),startdate,mode='YMDH'))
-          call Emis_init_GetCdf(fname, Emis_sourceFiles(n),n, names_in, i)
+          call Emis_init_GetCdf(Emis_sourceFiles(n), EmisFiles(NEmisFile_sources+1), names_in, i)
+
        endif
        startsource(n) = nemis_old + 1
        endsource(n) = NEmis_sources
+       if(NEmis_sources>nemis_old)then
+          EmisFilesMap(NEmisFile_sources) = n
+          EmisFiles(NEmisFile_sources)%Nsources =  NEmis_sources - nemis_old
+          EmisFiles(NEmisFile_sources)%source_start =  nemis_old + 1
+          EmisFiles(NEmisFile_sources)%source_end =  NEmis_sources
+        endif
     enddo
     allocate(Emis_source_2D(LIMAX,LJMAX,NEmis_sources))
 
     !4)overwrite parameters with settings from config_emep.nml if they are set
-    do n = 1, size(Emis_sources_in)
-       if(Emis_sources_in(n)%file_rank >0)then
-          nn = Emis_sources_in(n)%file_rank
-          do i = startsource(nn), endsource(nn)
-             if(me==0.and.Emis_source(i)%file_rank /= nn) write(*,*)'ACCOUNTING ERROR'
-             if(trim(Emis_sources_in(n)%varname)==trim(Emis_source(i)%varname))then
-                if(me==0) write(*,*)'overwriting parameters for '//trim(Emis_source(i)%varname)
-                if(Emis_sources_in(n)%periodicity /= Emis_id_undefined%periodicity) Emis_source(i)%periodicity = Emis_sources_in(n)%periodicity
-                if(Emis_sources_in(n)%species /= Emis_id_undefined%species) Emis_source(i)%species = Emis_sources_in(n)%species
-                if(Emis_sources_in(n)%units /= Emis_id_undefined%units) Emis_source(i)%units = Emis_sources_in(n)%units
-                if(Emis_sources_in(n)%sector /= Emis_id_undefined%sector) Emis_source(i)%sector = Emis_sources_in(n)%sector
-                if(Emis_sources_in(n)%factor /= Emis_id_undefined%factor) Emis_source(i)%factor = Emis_sources_in(n)%factor
-                if(Emis_sources_in(n)%country_ISO /= Emis_id_undefined%country_ISO)then
-                   Emis_source(i)%country_ISO = Emis_sources_in(n)%country_ISO
-                   ix = find_index(trim(Emis_sources_in(n)%country_ISO) ,Country(:)%code, first_only=.true.)
+    !first overwrite the global attributes: projection and periodicity
+    do i = 1, size(Emis_sourceFiles)
+       n = EmisFilesMap(i)
+       if(i>0)then
+          if(Emis_sourceFiles(n)%periodicity /= Emisfile_undefined%periodicity) EmisFiles(i)%periodicity = Emis_sourceFiles(n)%periodicity
+          if(Emis_sourceFiles(n)%projection /= Emisfile_undefined%projection) EmisFiles(i)%projection = Emis_sourceFiles(n)%projection
+       endif
+    enddo
+
+    !then overwrite the variable attributes
+    do i = 1, NEmisFile_sources !loop over files
+       n = EmisFilesMap(i)
+       do isource=1,size(Emis_sourceFiles(n)%source) !loop over sources defined from config for that file
+          found = .false.
+          do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
+             if(trim(Emis_sourceFiles(n)%source(isource)%varname)==trim(Emis_source(ii)%varname))then
+                found = .true.
+                if(Emis_sourceFiles(n)%source(isource)%species /= Emis_id_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%source(isource)%species
+                if(Emis_sourceFiles(n)%source(isource)%units /= Emis_id_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%source(isource)%units
+                if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
+                if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
+                if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO)then
+                   Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
+                   ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
                    if(ix<0)then
-                      if(me==0)write(*,*)'WARNING: country '//trim(Emis_sources_in(n)%country_ISO)//' not defined. '
+                      if(me==0)write(*,*)'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
                    else
                       Emis_source(NEmis_sources)%country_ix = ix
                    endif
                 endif
-                if(Emis_sources_in(n)%projection /= Emis_id_undefined%projection) Emis_source(i)%projection = Emis_sources_in(n)%projection
-                if(Emis_sources_in(n)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) Emis_source(i)%include_in_local_fractions = Emis_sources_in(n)%include_in_local_fractions
-!                if(Emis_sources_in(n)% /= Emis_id_undefined%) Emis_source(i)% = Emis_sources_in(n)%
-                if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(i)
+                if(Emis_sourceFiles(n)%source(isource)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) &
+                     Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%source(isource)%include_in_local_fractions
+
+                if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(ii)
+
+                exit
              endif
           enddo
-       endif
+          if(.not. found .and. me==0)write(*,*)'WARNING: did not find '//Emis_sourceFiles(n)%source(isource)%varname//' in '//trim(Emis_sourceFiles(n)%filename)
+       enddo
     enddo
+
 
   end subroutine Init_Emissions
 
 !***********************************************************************
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
-    integer :: n
+    integer :: n, i
+    type(date) :: coming_date
+
+    coming_date = current_date
+    coming_date%seconds = coming_date%seconds + 1800!emis date is at end of period
+
     !loop over all sources and see which one need to be reread from files
-    do n = 1, NEmis_sources      
-       if(tdif_secs(make_timestamp(current_date),Emis_source(n)%end_of_validity_date) < 0.0)then
+    do n = 1, NEmisFile_sources     
+       if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
           !values are no more valid, fetch new one
-          !todo: fetch all fields from same file at once
-         call Emis_GetCdf(Emis_source(n),Emis_source_2D(1,1,n),current_date)
+          do i=EmisFiles(n)%source_start,EmisFiles(n)%source_end
+             call Emis_GetCdf(EmisFiles(n),Emis_source(i),Emis_source_2D(1,1,i),coming_date)
+          enddo
        endif
     enddo
-    
+ 
   end subroutine EmisUpdate
 
 !***********************************************************************
@@ -1303,7 +1335,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                               *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
                               *emis_masscorr(iqrc)
                       end do   ! k
-                   end do ! f
+                   end do ! i
                 enddo
              enddo
           enddo

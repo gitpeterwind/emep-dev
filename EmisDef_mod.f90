@@ -35,7 +35,8 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 use ChemDims_mod,     only : NEMIS_File
-use OwnDataTypes_mod, only : TXTLEN_NAME,TXTLEN_FILE, Emis_id_type
+use OwnDataTypes_mod, only : TXTLEN_NAME,TXTLEN_FILE, Emis_id_type, &
+                             EmisFile_id_type
 
 implicit none
 private
@@ -178,7 +179,10 @@ integer,  public, save :: NEmis_id
 !   real :: factor = 1.0 !scaling factor. multiply values by this number
 !end type Emis_id_type
 type(Emis_id_type), public, save:: Emis_id(10)
+type(EmisFile_id_type), public, save:: EmisFiles(20) !list of emission files after validation
+type(Emis_id_type), public, save:: Emis_source(50) !list of valid sources found in the emission files
 integer,  public, save :: NEmis_sources = 0
+integer,  public, save :: NEmisFile_sources = 0
 real, allocatable, public, save,  dimension(:,:,:):: Emis_source_2D !One 2D map for each source
 !type(Emis_id_type), public, save:: Emis_source(10)
 integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes

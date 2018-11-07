@@ -11,6 +11,7 @@ use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
+                                 EmisFile_id_type, Emis_sourceFile_id_type,&
                                  TXTLEN_NAME, TXTLEN_FILE
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -159,8 +160,7 @@ logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
-type(Emis_id_type), public, save:: Emis_source(50), Emis_sources_in(50)
-
+type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
@@ -570,7 +570,6 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
-character(len=TXTLEN_FILE), target, save, public :: Emis_sourceFiles(10) = 'NOTSET'
 
 !----------------------------------------------------------------------------
 contains
@@ -603,7 +602,7 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
-   ,Emis_sources_in, Emis_sourceFiles &
+   , Emis_sourceFiles &
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,HourlyEmisOut         & ! to output emissions hourly
@@ -783,8 +782,10 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(TopoFile)
   call associate_File(Monthly_patternsFile)
   do i = 1, size(Emis_sourceFiles)
-     if(Emis_sourceFiles(i)/='NOTSET')then
-        call associate_File(Emis_sourceFiles(i))
+     !part of a class cannot be a target (?) must therefore do this separately
+     if(Emis_sourceFiles(i)%filename/='NOTSET')then
+        Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'DataDir',DataDir)
+        Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'GRID',GRID)
      endif
   enddo
   do i = 1,size(InputFiles)

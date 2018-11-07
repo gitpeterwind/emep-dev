@@ -330,12 +330,12 @@ program emep_Main
 
     call Add_2timing(10,tim_after,tim_before,"Fires+BVOC")
 
-    if(MasterProc) print "(2(1X,A))",'current date and time:',&
-      date2string("YYYY-MM-DD hh:mm:ss",current_date)
-
     call Code_timer(tim_before2)
     call phyche()
     call Add_2timing(11,tim_after,tim_before2,"Total phyche")
+
+    if(MasterProc) print "(2(1X,A))",'current date and time:',&
+      date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
     call Code_timer(tim_before)
 
