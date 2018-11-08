@@ -202,7 +202,7 @@ contains
              endif
           enddo
 
-          if(MasterProc)write(*,*)"Initializing Emissions from ",Emis_sourceFiles(n)
+          if(MasterProc)write(*,*)"Initializing Emissions from ",trim(Emis_sourceFiles(n)%filename)
           call Emis_init_GetCdf(Emis_sourceFiles(n), EmisFiles(NEmisFile_sources+1), names_in, i)
 
        endif
@@ -231,6 +231,8 @@ contains
     do i = 1, NEmisFile_sources !loop over files
        n = EmisFilesMap(i)
        do isource=1,size(Emis_sourceFiles(n)%source) !loop over sources defined from config for that file
+          found = .true.
+          if(Emis_sourceFiles(n)%source(isource)%varname=='NOTSET')cycle
           found = .false.
           do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
              if(trim(Emis_sourceFiles(n)%source(isource)%varname)==trim(Emis_source(ii)%varname))then
@@ -276,7 +278,6 @@ contains
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
@@ -289,26 +290,32 @@ contains
              if(EmisFiles(n)%periodicity == 'yearly')then
                 if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/year'&
                      .or. Emis_source(is)%units == 'tons' .or. Emis_source(is)%units == 'tons/year')then
-                   fac = fac /(3600000*24*nydays)
+                   fac = fac /(1000*3600*24*nydays)
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
                    fac = fac /(3600*24*nydays)
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/year'&
                      .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/year')then
-                   fac = fac /(3.600*24*nydays)
+                   fac = fac*1000.0 /(3600*24*nydays)
+                else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/year'&
+                     .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/year')then
+                   fac = fac*1000000 /(3600*24*nydays)
                 else
                    call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
              else if(EmisFiles(n)%periodicity == 'monthly')then
                 if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/month'&
                      .or. Emis_source(is)%units == 'tons' .or. Emis_source(is)%units == 'tons/month')then
-                   fac = fac /(3600000*24)
+                   fac = fac /(1000*3600*24)
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
                    fac = fac /(3600*24)
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
                      .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
-                   fac = fac /(3.600*24)
+                   fac = fac*1000 /(3600*24)
+                else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
+                     .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
+                   fac = fac*1000000 /(3600*24)
                 else
                    call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
@@ -351,13 +358,14 @@ contains
              !now Emis_source_2D should be in kg/m2/s
           enddo
           !update date of valitdity
-          EmisFiles(n)%end_of_validity_date = date(current_date%year,1,1,0,0)
           if(EmisFiles(n)%periodicity == 'yearly')then
              !assumes only one record to read
+             EmisFiles(n)%end_of_validity_date = date(current_date%year,1,1,0,0)
              EmisFiles(n)%end_of_validity_date%year = EmisFiles(n)%end_of_validity_date%year + 1
           else if(EmisFiles(n)%periodicity == 'monthly')then
              !assumes 12 records, one for each month
-             EmisFiles(n)%end_of_validity_date%month = EmisFiles(n)%end_of_validity_date%month + 1     
+             EmisFiles(n)%end_of_validity_date = date(current_date%year,1,1,0,0)
+             EmisFiles(n)%end_of_validity_date%month = current_date%month + 1     
           else
              !the correct times must be written in the file and updated in Emis_GetCdf
           endif          

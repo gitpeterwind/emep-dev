@@ -137,7 +137,9 @@ contains
        if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
        if(Emis_source%units == 'tons/m2' .or. Emis_source%units == 'tons/m2/s' &
             .or. Emis_source%units == 'kg/m2' .or. Emis_source%units == 'kg/m2/s' &
-            .or. Emis_source%units == 'g/m2' .or. Emis_source%units == 'g/m2/s' )then
+            .or. Emis_source%units == 'g/m2' .or. Emis_source%units == 'g/m2/s' &
+            .or. Emis_source%units == 'mg/m2' .or. Emis_source%units == 'mg/m2/s' &
+            .or. Emis_source%units == 'g/m2/h' .or. Emis_source%units == 'mg/m2/h')then
           !per area units
           call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
                known_projection=trim(EmisFile%projection),&
@@ -146,7 +148,9 @@ contains
                debug_flag=.false.)
        else  if(Emis_source%units == 'tons' .or. Emis_source%units == 'tons/s' &
             .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
-            .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' )then
+            .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' &
+            .or. Emis_source%units == 'mg' .or. Emis_source%units == 'mg/s' &
+            .or. Emis_source%units == 'g/h'.or. Emis_source%units == 'mg/h')then
           !per gridcell unit
           call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
                known_projection=trim(EmisFile%projection),&
