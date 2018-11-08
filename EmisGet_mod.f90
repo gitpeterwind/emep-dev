@@ -106,46 +106,58 @@ integer, private ::i_femis_lonlat
 
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine Emis_GetCdf(EmisFile, Emis_source, Emis_2D,date_wanted)
+  subroutine Emis_GetCdf(EmisFile, Emis_source, Emis_2D, date_wanted)
     type(Emis_id_type),intent(inout) :: Emis_source 
     type(EmisFile_id_type),intent(inout) ::  EmisFile
     real, intent(out), dimension(LIMAX,LJMAX) :: Emis_2D
     type(date), intent(in) :: date_wanted
-    real :: date_wanted_in_days,TimesInDays(1)
+    real :: date_wanted_in_days, TimesInDays(1)
     integer :: record
-    real mgh2kgs
 
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
-    call date2nctime(date_wanted,date_wanted_in_days)
-    call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
 
-    call nctime2date(EmisFile%end_of_validity_date, TimesInDays(1))
+    if(EmisFile%periodicity == 'yearly')then
+       !assumes only one record to read
+       record = 1
+    else if(EmisFile%periodicity == 'monthly')then
+        !assumes 12 records, one for each month
+       record = date_wanted%month
+    else
+       !the correct time must be written in the file
+       call date2nctime(date_wanted,date_wanted_in_days)
+       call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
+       
+       call nctime2date(EmisFile%end_of_validity_date, TimesInDays(1))
+    endif
 
     if(trim(EmisFile%projection) == 'native')then
        if(me==0)write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
        call GetCDF_modelgrid(Emis_source%varname,fname,Emis_2D(1,1),1,1,record,1,needed=.true.)
     else
        if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
-       call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
-            known_projection=trim(EmisFile%projection),&
-            interpol='conservative',&
-            needed=.true.,UnDef=0.0,&
-            debug_flag=.false.)
+       if(Emis_source%units == 'tons/m2' .or. Emis_source%units == 'tons/m2/s' &
+            .or. Emis_source%units == 'kg/m2' .or. Emis_source%units == 'kg/m2/s' &
+            .or. Emis_source%units == 'g/m2' .or. Emis_source%units == 'g/m2/s' )then
+          !per area units
+          call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+               known_projection=trim(EmisFile%projection),&
+               interpol='conservative',&
+               needed=.true.,UnDef=0.0,&
+               debug_flag=.false.)
+       else  if(Emis_source%units == 'tons' .or. Emis_source%units == 'tons/s' &
+            .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
+            .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' )then
+          !per gridcell unit
+          call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+               known_projection=trim(EmisFile%projection),&
+               interpol='mass_conservative',&
+               needed=.true.,UnDef=0.0,&
+               debug_flag=.false.)          
+       else
+          call StopAll("Unit for emissions not recognized: "//trim(Emis_source%units))       
+       endif
     endif
 
-    if(Emis_source%units == 'mg/m2' .or. Emis_source%units == 'mg/m2/h')then
-       !convert into kg/m2/s
-       mgh2kgs = 1.0/(1000000.0*3600.0)
-       if(EmisFile%periodicity == 'hourly')then
-          Emis_2D = Emis_2D*mgh2kgs
-       else
-          call StopAll("Emis_source only implemented for houly. Found "//trim(EmisFile%periodicity))       
-       endif
-    else
-      call StopAll("Emis_source only implemented for mg/m2 or mg/m2/h. Found "//trim(Emis_source%units))       
-      !Note: very easy to implement more unit choices. Just add "if" cases here
-    endif
-    
   end subroutine Emis_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdf(iem, fname, sumemis_local, &

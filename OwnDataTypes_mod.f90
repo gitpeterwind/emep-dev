@@ -5,7 +5,7 @@
 !*****************************************************************************! 
 module OwnDataTypes_mod
 use NumberConstants, only : UNDEF_I, UNDEF_R
-use TimeDate_mod,    only : timestamp
+use TimeDate_mod,    only : date
 
 implicit none
 private
@@ -209,7 +209,7 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   type(timestamp) :: end_of_validity_date = timestamp(0,0.0)!internal date to know when to fetch new data
+   type(date) :: end_of_validity_date = date(0,0,0,0,0)!internal date to know when to fetch new data
    integer :: Nsources = 0
    integer :: source_start = 0
    integer :: source_end = 0
