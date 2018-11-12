@@ -221,10 +221,13 @@ contains
     !first overwrite the global attributes: projection and periodicity
     do i = 1, size(Emis_sourceFiles)
        n = EmisFilesMap(i)
-       if(i>0)then
+       if(n>0)then
           if(Emis_sourceFiles(n)%periodicity /= Emisfile_undefined%periodicity) EmisFiles(i)%periodicity = Emis_sourceFiles(n)%periodicity
           if(Emis_sourceFiles(n)%projection /= Emisfile_undefined%projection) EmisFiles(i)%projection = Emis_sourceFiles(n)%projection
-       endif
+          if(Emis_sourceFiles(n)%grid_resolution /= Emisfile_undefined%grid_resolution) EmisFiles(i)%grid_resolution = Emis_sourceFiles(n)%grid_resolution
+          call CheckStop(EmisFiles(i)%grid_resolution <=1.0E-5,'Grid_resolution must be defined for '//trim(Emis_sourceFiles(n)%filename))
+         
+        endif
     enddo
 
     !then overwrite the variable attributes
@@ -268,13 +271,14 @@ contains
 !***********************************************************************
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
-    integer :: n, i, j, is
+    integer :: n, i, j, is,date_limit(5)
     type(date) :: coming_date
     real :: fac
+    TYPE(timestamp)   :: ts1,ts2
 
+    ts1=make_timestamp(current_date)
     coming_date = current_date
     coming_date%seconds = coming_date%seconds + 1800!emis date is at end of period
-
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then

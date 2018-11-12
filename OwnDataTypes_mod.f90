@@ -202,6 +202,7 @@ type, public :: Emis_sourceFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
+   real                       :: grid_resolution = 0.0 !resolution of the emission file
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
 end type Emis_sourceFile_id_type
 
@@ -209,6 +210,7 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
+   real                       :: grid_resolution = 0.0!resolution of the emission file
    type(date) :: end_of_validity_date = date(0,0,0,0,0)!internal date to know when to fetch new data
    integer :: Nsources = 0
    integer :: source_start = 0

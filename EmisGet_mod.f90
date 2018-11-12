@@ -34,7 +34,7 @@ use KeyValueTypes,     only: KeyVal
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM&
                              , MPI_INTEGER, MPI_COMM_CALC, IERROR
 use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, &
-                             GetCDF_modelgrid
+                             GetCDF_modelgrid, make_gridresolution
 
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type, &
                              EmisFile_id_type, Emis_sourceFile_id_type
@@ -42,7 +42,8 @@ use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
 use SmallUtils_mod,    only: wordsplit, find_index, key2str
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
-                             nf90_get_att,nf90_global,nf90_get_att
+                             nf90_global,nf90_get_var,nf90_get_att
+use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod, only     : date
 use TimeDate_ExtraUtil_mod, only : nctime2date,date2nctime, date2string
 
@@ -144,6 +145,7 @@ contains
           call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
                known_projection=trim(EmisFile%projection),&
                interpol='conservative',&
+               Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)
        else  if(Emis_source%units == 'tons' .or. Emis_source%units == 'tons/s' &
@@ -152,9 +154,11 @@ contains
             .or. Emis_source%units == 'mg' .or. Emis_source%units == 'mg/s' &
             .or. Emis_source%units == 'g/h'.or. Emis_source%units == 'mg/h')then
           !per gridcell unit
-          call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+          if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', projection ',trim(EmisFile%projection),'resolution ',EmisFile%grid_resolution
+         call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
                known_projection=trim(EmisFile%projection),&
                interpol='mass_conservative',&
+               Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)          
        else
@@ -431,8 +435,9 @@ contains
     character(len=30)  :: lon_name, lat_name
     integer :: n, ix, varid, status, sector
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
-    real :: x
-    integer :: ncFileID, nemis_old
+    real :: x, resolution, default_resolution, Rlat(2)
+    integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
+    real, allocatable ::Rlat2D(:,:)
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -449,12 +454,15 @@ contains
        default_projection = trim(projection)
     endif
 
-    if(default_projection /= 'lon lat')then
-       !longitude and latitude for every gridcell must be defined in a 2 dimenionsl array
-       call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions)
-       call CheckStop(nDimensions /= 2,'longitude variable must be two dimensional '//trim(fName))
+    default_resolution = 0.0
+    status = nf90_get_att(ncFileID, nf90_global,"Grid_resolution", resolution)
+    if(status==nf90_noerr)then
+       default_resolution = resolution
+    else
+       call make_gridresolution(ncFileID, default_resolution)
+       if(me==0)write(*,*)'made resolution :',default_resolution
     endif
-
+    
 
     !todo: read more global attributes to use as defaults
     nemis_old = NEmis_sources
@@ -489,10 +497,11 @@ contains
         
     enddo
     if(nemis_old /= NEmis_sources)then
-       !at least one valid source found in the file
+       !at least one valid source found in the file       
        NEmisFile_sources = NEmisFile_sources + 1
        EmisFile%filename = EmisFile_in%filename            
-       EmisFile%projection = default_projection        
+       EmisFile%projection = default_projection
+       EmisFile%grid_resolution = default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
     endif

@@ -106,6 +106,7 @@ public :: check
 public :: IsCDFfractionFormat
 public :: ReadSectorName
 public :: check_lon_lat
+public :: make_gridresolution
 
 private :: CreatenetCDFfile
 private :: createnewvariable
@@ -2278,6 +2279,7 @@ end subroutine WriteCDF
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
      use_lat_name, use_lon_name,stagg, & !for telling the routine that the field is defined in a staggered grid
+     Grid_resolution_in, & !Better to put it as attribute, but can also be given here
      fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
      Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor,&
      needed,found,unit,validity,debug_flag,UnDef,ncFileID_given)
@@ -2366,6 +2368,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   character(len = *), optional,intent(in) :: known_projection
   character(len = *), optional,intent(in) :: use_lat_name, use_lon_name
   character(len = *), optional,intent(in) :: stagg
+  real, optional, intent(in) :: Grid_resolution_in !(approximative) resolution of the data, steers Ndiv
   logical, optional, intent(in) :: needed
   logical, optional, intent(out) :: found
   character(len=*), optional,intent(out) ::unit,validity
@@ -2653,6 +2656,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   end do
 
+  xtype_lon=NF90_FLOAT !default
+  xtype_lat=NF90_FLOAT !default
   if( present(known_projection) ) then
      data_projection = trim(known_projection)
      if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
@@ -2851,8 +2856,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call CheckStop(abs(Rlon(2)-Rlon(1))>180.0,&
           "longitude error: crossing of -180 not implemented. file "//trim(fileName))
      
-
+     
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
+     if(present(Grid_resolution_in))Grid_resolution = Grid_resolution_in
      Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude
      Resolution_fac = max(1.0,Grid_resolution/GRIDWIDTH_M)
      !the method chosen depends on the relative resolutions
@@ -3466,12 +3472,15 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      call CheckStop(data3D,"3D data in Stereographic projection not yet implemented")
 
-     status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-     if(status /= nf90_noerr)then
-        Grid_resolution=GRIDWIDTH_M_EMEP
-        if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
-     end if
-
+     if(present(Grid_resolution_in))then
+        Grid_resolution = Grid_resolution_in
+     else
+        status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+        if(status /= nf90_noerr)then
+           Grid_resolution=GRIDWIDTH_M_EMEP
+           if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
+        end if
+     endif
      !the method chosen depends on the relative resolutions
      if(interpol_used=='conservative'.and.Grid_resolution/GRIDWIDTH_M>2)then
         interpol_used='zero_order'!usually good enough, and keeps gradients
@@ -3726,8 +3735,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
 !        call CheckStop((data3D),"3D data in general projection not yet implemented for conservative interpolation")        
-        status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-        call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
+        if(present(Grid_resolution_in))then
+           Grid_resolution = Grid_resolution_in
+        else
+           status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+           call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
+        endif
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
@@ -4466,12 +4479,12 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
   status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
 
   if(status==nf90_noerr)then
-     if(DEBUG_NETCDF)write(*,*)'time variable exists: ',trim(varname)     
+     if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time variable exists: ',trim(varname)     
      call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
      if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=ntimes))
      if(NTime_Read<1)then
-        if(DEBUG_NETCDF)write(*,*)'reading all time records'
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'reading all time records'
         NTime_Read=ntimes
      end if
      call CheckStop(ntimes<NTime_Read .and. .not.find_record, "to few records in "//trim(fileName))
@@ -4487,7 +4500,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
      call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
      
      if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
-        if(DEBUG_NETCDF)write(*,*)'time unit ',trim(timeunit(1:16))
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time unit ',trim(timeunit(1:16))
         do i=1,NTime_Read
            yyyy=int(times(i))/10000
            mo=int(times(i)-10000*yyyy)/100
@@ -4497,7 +4510,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
            julian_1900=julian_date(1900,1,1)
            diff_1900=julian-julian_1900
            TimesInDays(i)=diff_1900+hh/24.0
-           if(DEBUG_NETCDF)write(*,*)'time ',yyyy,mo,dd,hh
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time ',yyyy,mo,dd,hh
         end do
      else if (trim(timeunit)=='month')then
         !used for files with only 12 monthly values, without year
@@ -4714,7 +4727,7 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
     status=nf90_get_att(ncFileID,VarID,"units",word)
     if(status==nf90_noerr)then
       if(word(1:3)=='hPa')then
-        if(MasterProc) write(*,*)'Changing hyam from hPa to Pa'
+        if(MasterProc) write(*,*)'Changing hyam from hPa to Pa in '//trim(filename)
         hyam_ext=100*hyam_ext
       end if
     end if
@@ -4951,7 +4964,7 @@ end subroutine vertical_interpolate
  end subroutine readfrac
 
  subroutine check_lon_lat(ncFileID, lon_name, lat_name, ndims, lonVarID, latVarID)
-   !check that longitude and latitude for every gridcell is defined as a 2 dimenionsl array
+   !check that longitude and latitude for every gridcell is defined as a 2 dimensional array
    !file is must be open already
    character(len=*), intent(inout)  :: lon_name, lat_name
    integer, intent(in)  :: ncFileID
@@ -4983,5 +4996,42 @@ end subroutine vertical_interpolate
    if(present(latVarID))latVarID=VarID
 
  end subroutine check_lon_lat
+
+ !this routine returns an approximate grid resolution in meters
+ !file must be open already, and is not closed
+ subroutine make_gridresolution(ncFileID,resolution)
+   integer, intent(in) :: ncFileID
+   real, intent(out)::resolution
+   real :: dlat
+   real, allocatable ::Rlat(:,:)
+   character(len=30)  :: lon_name, lat_name
+   integer :: nDimensions, xtype, lonVarID, latVarID, dimids(NF90_MAX_VAR_DIMS),dims(10),mindim,i,ndims,nAtts
+
+   call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions, lonVarID, latVarID)
+   call check(nf90_Inquire_Variable(ncFileID,latVarID,lat_name,ndims,xtype,dimids,nAtts),"EmisGetDimsId")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),len=dims(1)),"EmisGetDims")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(2),len=dims(2)),"EmisGetDims")
+   if(nDimensions==1)then
+      allocate(Rlat(dims(2),1))
+      call check(nf90_get_var(ncFileID, latVarID, Rlat,count=(/2/)))
+      dlat = abs(Rlat(2,1)-Rlat(1,1))
+   else   if(nDimensions==2)then
+      
+      allocate(Rlat(dims(1),dims(2)))
+      call check(nf90_get_var(ncFileID, latVarID, Rlat))
+      dlat=0.0
+      mindim = min(dims(1),dims(2))
+      do i = 2,mindim
+         !check only along both diagonal
+         if(abs(Rlat(i-1,i-1)-Rlat(i,i))>dlat)dlat=abs(Rlat(i-1,i-1)-Rlat(i,i))
+         if(abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))>dlat)dlat=abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))            
+      enddo
+      if(me==0)write(*,*)'Will set default resolution (it does not need to be exact)',resolution
+   else
+      call CheckStop('did not find one or two dimensional latitudes '//trim(lat_name))
+   endif
+   deallocate(Rlat)
+   resolution = EARTH_RADIUS*dlat*PI/180.0          
+ end subroutine make_gridresolution
 
 endmodule NetCDF_mod

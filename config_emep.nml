@@ -383,7 +383,7 @@ OutputConcs=
       'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! Tracer for forest fires:
-      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMDH', ! TEST
+      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! TEST
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
