@@ -431,6 +431,7 @@ contains
     type(EmisFile_id_type),intent(inout) ::  EmisFile
     integer,intent(in) :: nnames
     character(len=100) :: projection, default_projection, name, cdfvarname, cdfspecies
+    real :: factor, default_factor
     character(len= TXTLEN_FILE) :: fname
     character(len=30)  :: lon_name, lat_name
     integer :: n, ix, varid, status, sector
@@ -463,8 +464,12 @@ contains
        if(me==0)write(*,*)'made resolution :',default_resolution
     endif
     
+    default_factor = 1.0
+    status = nf90_get_att(ncFileID, nf90_global,"factor", factor)
+    if(status==nf90_noerr)then
+       default_factor = factor
+    endif
 
-    !todo: read more global attributes to use as defaults
     nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
@@ -502,6 +507,7 @@ contains
        EmisFile%filename = EmisFile_in%filename            
        EmisFile%projection = default_projection
        EmisFile%grid_resolution = default_resolution
+       EmisFile%factor = default_factor       
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
     endif

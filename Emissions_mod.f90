@@ -180,6 +180,7 @@ contains
 
     Emisfile_defaults%periodicity = 'hourly'
     Emisfile_defaults%projection = 'lon lat'
+    Emisfile_defaults%factor = 1.0
 
     !2) read from global attributes in file
     !3) read from variable attributes in file
@@ -226,6 +227,7 @@ contains
           if(Emis_sourceFiles(n)%projection /= Emisfile_undefined%projection) EmisFiles(i)%projection = Emis_sourceFiles(n)%projection
           if(Emis_sourceFiles(n)%grid_resolution /= Emisfile_undefined%grid_resolution) EmisFiles(i)%grid_resolution = Emis_sourceFiles(n)%grid_resolution
           call CheckStop(EmisFiles(i)%grid_resolution <=1.0E-5,'Grid_resolution must be defined for '//trim(Emis_sourceFiles(n)%filename))
+          if(Emis_sourceFiles(n)%factor /= Emisfile_undefined%factor) EmisFiles(i)%factor = Emis_sourceFiles(n)%factor
          
         endif
     enddo
@@ -284,12 +286,13 @@ contains
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
-             call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
+            call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
           
              !unit and factor conversions
              !convert into kg/m2/s
              
-             fac = Emis_source(is)%factor             
+             fac = EmisFiles(n)%factor
+             fac = fac* Emis_source(is)%factor             
              
              if(EmisFiles(n)%periodicity == 'yearly')then
                 if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/year'&
