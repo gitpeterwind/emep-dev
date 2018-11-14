@@ -226,6 +226,7 @@ module MetFields_mod
     ,foundrh2m= .false.   & ! false if no relative_humidity_2m in metdata
     ,foundtau= .false.   & ! false if no surface_stress in metdata
     ,foundsdepth= .false.    & ! false if no snow_flag depth in metdata
+    ,foundHmix= .false.& ! false if no PBL height found
     ,foundice= .false.       & ! false if no ice_nwp coverage (%) in metdata
     ,foundKz_met= .false.    & ! false if no Kz from meteorology
     ,foundconv= .false.      & ! false if convection not found or not used
@@ -617,18 +618,22 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
 
 !NWPHMIX
   ix=ix+1
-  met(ix)%name             = 'PBLH'
+  met(ix)%name             = 'PBLH' ! GLOBAL05
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%needed           = .false.
   ! If we ask for this, we need it.
-  if ( PBL%HmixMethod == 'NWP' ) met(ix)%needed = .true.
-  met(ix)%found            = .false.
-  !DS allocate(pbl_nwp(LIMAX,LJMAX))
+  if ( PBL%HmixMethod == 'NWP' )  then
+    met(ix)%needed = .true.
+    met(ix)%needed = .false. ! DS testing
+    met(ix)%found            => foundHmix
+    pbl_nwp=0.0
+  else
+    met(ix)%needed           = .false.
+    met(ix)%found            = .false.
+  end if
   allocate(pbl_nwp(LIMAX,LJMAX,NMET))
-  pbl_nwp=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => pbl_nwp
   met(ix)%zsize = 1
   met(ix)%msize = NMET
@@ -1074,7 +1079,6 @@ end if
     allocate(rho_surf(LIMAX,LJMAX))
     allocate(Tpot2m(LIMAX,LJMAX))
     allocate(pzpbl(LIMAX,LJMAX))
-!    allocate(pbl_nwp(LIMAX,LJMAX))
     allocate(pwp(LIMAX,LJMAX))
     allocate(fc(LIMAX,LJMAX))
     allocate(xwf(LIMAX+2*NEXTEND,LJMAX+2*NEXTEND)) 
