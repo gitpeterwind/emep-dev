@@ -177,6 +177,7 @@ character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
   DataDir = '.',  &
+  OwnInputDir = '.',  &  ! user-defined location
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
@@ -602,6 +603,7 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
+   ,OwnInputDir           &  !
    , Emis_sourceFiles &
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
@@ -786,13 +788,17 @@ subroutine Config_ModelConstants(iolog)
      if(Emis_sourceFiles(i)%filename/='NOTSET')then
         Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'DataDir',DataDir)
         Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'GRID',GRID)
+        Emis_sourceFiles(i)%filename = &
+          key2str(Emis_sourceFiles(i)%filename,'OwnInputDir',OwnInputDir)
      endif
   enddo
   do i = 1,size(InputFiles)
-     if(associated(InputFiles(i)%filename))then
-        InputFiles(i)%filename = key2str(InputFiles(i)%filename,'DataDir',DataDir)
-        InputFiles(i)%filename = key2str(InputFiles(i)%filename,'GRID',GRID)
-     endif
+    if(associated(InputFiles(i)%filename))then
+     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'DataDir',DataDir)
+     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
+     InputFiles(i)%filename = &
+            key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
+    endif
   enddo
 
   if(.not. USE_uEMEP)NTIMING_uEMEP = 0
