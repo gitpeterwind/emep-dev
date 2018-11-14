@@ -184,6 +184,8 @@ type(Emis_id_type), public, save:: Emis_source(50) !list of valid sources found 
 integer,  public, save :: NEmis_sources = 0
 integer,  public, save :: NEmisFile_sources = 0
 real, allocatable, public, save,  dimension(:,:,:):: Emis_source_2D !One 2D map for each source
+real, allocatable, public, save,  dimension(:,:,:,:):: Emis_source_3D !One 3D map for each source
+integer, allocatable, public, save,  dimension(:,:,:):: Emis_country_map !country indices for each gridcell
 !type(Emis_id_type), public, save:: Emis_source(10)
 integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
 integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes

@@ -21,6 +21,41 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 Nov 2018, Peter
+
+bug in wind_speed_3D output corrected
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Nov 2018, Peter
+
+On going... new format for emissions.
+The goal is to be able to read any emission file, without having to modify it, 
+simply by describing the main parameters in the config file.
+
+General structure as follows:
+One 2D (or 3D) array for each "source".
+One set of metadata for each file and each source (type(EmisFile_id_type) and type(Emis_id_type))
+
+subroutine Init_Emissions and Emis_init_GetCdf read and set all metadata parameters (only once)
+subroutine EmisUpdate update the 2D emission sources arrays when the data is outdated
+in the (old) subroutine EmisSet the emissions are integrated into the final gridrcemis array
+
+Metadata covers so far:
+Filename, variable name.
+Projection: 'lon lat' or not
+Periodicity: hourly, monthly, yearly...
+Grid resolution
+Multiplicative factors for emissions: femis, or global attribute or variable attribute
+Species (can be a emissions species that is splitted, or any single species)
+Sectors
+Country
+Units
+Flag to include this emission into the uEMEP local fractions.
+Internal variables, such as number of sources, source indices, country indices etc.
+
+Not yet implemented: timefactors, multicountry grids.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st Oct 2018, Peter
 
 New format for emissions. For now it will work side by side with the old format,

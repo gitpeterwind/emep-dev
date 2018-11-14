@@ -205,6 +205,7 @@ type, public :: Emis_sourceFile_id_type
    real                       :: grid_resolution = 0.0 !resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
+   logical :: apply_femis = .true. !whether the general femis.dat should be applied to sources from this file
 end type Emis_sourceFile_id_type
 
 type, public :: EmisFile_id_type

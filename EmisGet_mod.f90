@@ -434,7 +434,7 @@ contains
     real :: factor, default_factor
     character(len= TXTLEN_FILE) :: fname
     character(len=30)  :: lon_name, lat_name
-    integer :: n, ix, varid, status, sector
+    integer :: n, ix, varid, status, sector, iem, isec, iqrc, itot, f
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
     real :: x, resolution, default_resolution, Rlat(2)
     integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
@@ -497,7 +497,31 @@ contains
                 Emis_source(NEmis_sources)%country_ix = ix
              endif
           endif
-          
+          if(EmisFile_in%apply_femis)then
+             if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
+                ix = Country(Emis_source(NEmis_sources)%country_ix)%icode
+                isec = Emis_source(NEmis_sources)%sector
+                iem = find_index(Emis_source(NEmis_sources)%species,EMIS_FILE(:))
+                if(iem >0 )then
+                   !apply femis 
+                   Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
+                else
+                   !see if the species belongs to any of the splitted species
+                   iqrc = 0
+                   do iem = 1,NEMIS_FILE
+                      do f = 1,emis_nsplit(iem)
+                         iqrc = iqrc + 1
+                         itot = iqrc2itot(iqrc)
+                         if(trim(species(itot)%name)==trim(Emis_source(NEmis_sources)%species))then
+                            Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
+                            go to 888
+                         endif
+                      enddo
+                   enddo
+                   888 continue
+                endif
+             endif
+          endif
        endif
         
     enddo
@@ -511,7 +535,7 @@ contains
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
     endif
-    
+        
     call check(nf90_close(ncFileID))
     
   end subroutine Emis_init_GetCdf

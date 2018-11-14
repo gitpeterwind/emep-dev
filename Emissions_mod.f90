@@ -152,13 +152,20 @@ contains
   !new (Nov 2018) emission setup and formats
   subroutine Init_Emissions
     !loop through all sources to set parameters for each source.
-    !one source is defined as one two dimensional map.
+    !one source is defined as one two dimensional map giving emissions. 
+    !one file can have many sources.
     !each source has parameters. Parameters are constant through the run.
-    !There are ways to set parameters. In increasing priority order:
+    !There are several ways to set parameters. In increasing priority order:
     !1) default
     !2) read from global attributes in file
     !3) read from variable attributes in file
     !4) set in namelist (config_emep.nml)
+
+    !multiplicative factor on top of each other, from the most general:
+    !1) from femis.dat (can be switched off for specific files, but not for specific sources)
+    !2) global file attribute (can be overwritten by config)
+    !3) individual sources (can be overwritten by config)
+    
     integer, parameter ::maxnames=100
     character(len=TXTLEN_FILE) :: fname, filename, names_in(maxnames)
     integer :: i, ii, n, nn, ix, nemis_old, isource
@@ -288,11 +295,13 @@ contains
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
             call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
           
+            !reduction factors
+             fac = EmisFiles(n)%factor
+             fac = fac* Emis_source(is)%factor     
+
              !unit and factor conversions
              !convert into kg/m2/s
              
-             fac = EmisFiles(n)%factor
-             fac = fac* Emis_source(is)%factor             
              
              if(EmisFiles(n)%periodicity == 'yearly')then
                 if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/year'&
