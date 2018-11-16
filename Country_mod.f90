@@ -132,7 +132,7 @@ module Country_mod
   integer, public ::  IC_EU   ! European Union
   integer, public ::  IC_US   ! USA
   integer, public ::  IC_CA   ! Canada
-  integer, public ::  IC_DUMMY  ! Not-defined
+  integer, public :: IC_DUMMY  ! Generic or undefined country
   integer, public ::  IC_KG   ! Kyrgyzstan 
   integer, public ::  IC_AZ   ! Azerbaijan                 
   integer, public :: IC_ATX   ! ATL outside EMEP domain

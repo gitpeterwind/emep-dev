@@ -233,7 +233,7 @@ end subroutine init_uEMEP
 subroutine out_uEMEP(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
-  real :: xtot,scale,invtot
+  real :: xtot,scale,invtot,t1,t2
   integer ::i,j,k,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
@@ -621,8 +621,12 @@ subroutine out_uEMEP(iotyp)
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)
            !copy before dividing by loc_tot_full
-
-           if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_full(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
+           if(COMPUTE_LOCAL_TRANSPORT)then
+              t1 = MPI_WTIME()
+              call extendarea_N(loc_frac_full(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
+              t2 = MPI_WTIME()
+              if(me==0)write(*,*)'transport extendarea ',t2-t1,' seconds'
+           endif
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -643,6 +647,7 @@ subroutine out_uEMEP(iotyp)
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
 
            if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
+              t1 = MPI_WTIME()
               do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
                  !     do k = KMAX_MID,KMAX_MID
                  do j=1,ljmax
@@ -657,6 +662,8 @@ subroutine out_uEMEP(iotyp)
                     enddo
                  enddo
               enddo
+              t2 = MPI_WTIME()
+              if(me==0)write(*,*)'transport transpose ',t2-t1,' seconds'
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
               if(abs(av_fac_full)>1.E-5)then
@@ -666,8 +673,10 @@ subroutine out_uEMEP(iotyp)
               endif
              call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
+             t1 = MPI_WTIME()
+             if(me==0)write(*,*)'transport out ',t1-t2,' seconds'
            endif
-        enddo
+         enddo
 
         if(abs(av_fac_full)>1.E-5)then
            scale=1.0/av_fac_full

@@ -4,7 +4,8 @@ use mpi,only: MPI_REAL8,MPI_DOUBLE_PRECISION,MPI_DOUBLE_COMPLEX,&
               MPI_INTEGER,MPI_LOGICAL, MPI_BYTE,MPI_CHARACTER, &
               MPI_SUM,MPI_LOR,MPI_LAND,MPI_MAX,MPI_MIN, &
               MPI_COMM_WORLD,MPI_IN_PLACE,&
-              MPI_ADDRESS_KIND,MPI_INFO_NULL,MPI_STATUS_SIZE
+              MPI_ADDRESS_KIND,MPI_INFO_NULL,MPI_STATUS_SIZE,&
+              MPI_WTIME
 implicit none
 
 integer, public, parameter ::  MasterPE = 0 ! root/master processor

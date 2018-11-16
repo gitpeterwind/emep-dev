@@ -93,11 +93,12 @@ use Io_Progs_mod,      only: ios, open_file, datewrite, PrintLog
 use MetFields_mod,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_mod,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
-                            ,MPI_SUM,MPI_COMM_CALC, IERROR
+                            ,MPI_LOGICAL, MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
-                            GetCDF_modelgrid,PrintCDF,ReadSectorName,check
+                             GetCDF_modelgrid,PrintCDF,ReadSectorName,check,&
+                             create_country_emission_file, output_country_emissions
 use netcdf
-use OwnDataTypes_mod,  only: TXTLEN_FILE, Emis_id_type, EmisFile_id_type, Emis_sourceFile_id_type
+use OwnDataTypes_mod,  only: TXTLEN_FILE, TXTLEN_NAME,Emis_id_type, EmisFile_id_type, Emis_sourceFile_id_type
 use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
@@ -430,14 +431,17 @@ contains
     real :: fractions(LIMAX,LJMAX,NCMAX),SMI(LIMAX,LJMAX),SMI_roadfactor
     logical ::SMI_defined=.false.
     logical,save :: my_first_call=.true.  ! Used for femis call
-    character(len=40) :: varname, fmt,cdf_sector_name
-    integer :: allocerr, i_Emis_4D, sec_ix, ih, id, k, ncFileID, varID
-    character(len=200) ::fileName
+    character(len=TXTLEN_NAME) :: varname, fmt,cdf_sector_name, species_name
+    integer :: allocerr, i_Emis_4D, sec_ix, ih, id, k, ncFileID, varID, iland
+    character(len=TXTLEN_FILE) ::fileName
     integer :: emis_inputlist_NEMIS_FILE!number of files for each emis_inputlist(i)
+    real :: buffer(LIMAX,LJMAX)
+    logical country_owner_map(NLAND,NPROC)
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
     ios = 0
+    country_owner_map = .false.
 
     ! initialize emis_inputlist
     !>=========================================================
@@ -999,10 +1003,17 @@ contains
        call CheckStop(err3, "Allocation error 3 - gridrcroadd")
        call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
     end if
+
+    !output emissions
+    fileName = 'EMIS_OUT.nc'
+!Not ready
+!    call output_country_emissions(filename,GridEmis,GridEmisCodes,nGridEmisCodes,NSECTORS,NCMAX,EMIS_FILE,NEMIS_FILE)
+!    CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+!    stop
   end subroutine Emissions
 !----------------------------------------------------------------------!
 !>
-!! expandcclist converts e.g. EU28 to indivdual countries
+!! expandcclist converts e.g. EU28 to individual countries
 ! Only coded for EUMACC2 so far. Should probably use pointers from
 ! group names.
 !----------------------------------------------------------------------!
@@ -1106,7 +1117,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer :: i_Emis_4D, iem_treated
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
-
+ 
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
 
@@ -1206,7 +1217,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do icc = 1, ncc
           !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-
           !array index of country that should be used as reference for timefactor
           iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
           iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)

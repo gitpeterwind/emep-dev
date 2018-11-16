@@ -107,6 +107,10 @@ public :: IsCDFfractionFormat
 public :: ReadSectorName
 public :: check_lon_lat
 public :: make_gridresolution
+public :: create_country_emission_file
+public :: output_country_emissions
+
+
 
 private :: CreatenetCDFfile
 private :: createnewvariable
@@ -5034,4 +5038,205 @@ end subroutine vertical_interpolate
    resolution = EARTH_RADIUS*dlat*PI/180.0          
  end subroutine make_gridresolution
 
+ subroutine output_country_emissions(filename,GridEmis,GridEmisCodes,nGridEmisCodes,NSECTORS,NCMAX,EMIS_FILE,NEMIS_FILE)
+   !output emissions in a format readable by the code
+   implicit none
+   character(len=*),  intent(in)  :: filename,EMIS_FILE(NEMIS_FILE)
+   integer,  intent(in) :: NSECTORS,NCMAX,NEMIS_FILE
+   real, intent(in) ::GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
+   integer,  intent(in) :: GridEmisCodes(LIMAX,LJMAX,NCMAX),nGridEmisCodes(LIMAX,LJMAX)
+   logical :: country_owner_map(NLAND,NPROC), country_owner(NLAND), country_has_emis
+   integer :: varID,iDimID,jDimID,timeDimID,status,ncFileID
+   integer :: istart,jstart,icount,jcount
+   integer :: d,i,j,ij,k, isec, icc, iland, iem
+   real :: buff(MAXLIMAX*MAXLJMAX)
+   real, allocatable :: emis_full(:,:) 
+   character (len = TXTLEN_NAME) ::varname
+
+   call create_country_emission_file(fileName)
+
+   !make a map that show which CPU has non-zero emissions from each country
+   country_owner = .false.
+   country_owner_map = .false.
+   do j = 1,ljmax
+      do i = 1,limax
+         do icc = 1,nGridEmisCodes(i,j)
+            iland=find_index(GridEmisCodes(i,j,icc),Country(:)%icode)
+            country_owner(iland) = .true.
+         end do
+      end do
+   end do
+   call MPI_GATHER(country_owner,NLAND,MPI_LOGICAL,country_owner_map,NLAND,MPI_LOGICAL,0,MPI_COMM_CALC, IERROR)
+   
+   if(MasterProc)then
+      call check(nf90_open(trim(fileName),nf90_share+nf90_write,ncFileID))
+
+       allocate(emis_full(GIMAX,GJMAX))
+      !first create all variables
+       do iland = 1, NLAND
+         country_has_emis = .false.
+         do d = 1, NPROC
+            if(country_owner_map(iland,d))country_has_emis = .true.
+         enddo
+         if(.not. country_has_emis) cycle
+         
+         do isec = 1, NSECTORS
+            do iem = 1, NEMIS_File
+               44 FORMAT(A,I0,A)
+               write(varname,44)trim(EMIS_FILE(iem))//'_sec',isec,'_'//trim(Country(iland)%code)
+               status=nf90_inq_varid(ncFileID,varname,VarID)
+               if(status/=nf90_noerr)then
+                  write(*,*)me,' creating ',trim(varname),MasterProc
+                  call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
+                  call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
+                  call check(nf90_inq_dimid(ncFileID,"time"  ,timedimID),"dim:time")
+                  call check(nf90_def_var(ncFileID,varname,nf90_float,&
+                       [iDimID,jDimID,timeDimID]       ,varID),"def2d:"//trim(varname))
+                  call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
+                       deflate_level=4),"compress:"//trim(varname))
+                  call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
+                       (/min(GIMAX,300),min(GJMAX,130),1/)),"chunk2D:"//trim(varname))    
+                  
+                  call check(nf90_put_att(ncFileID,varID,"units",'kg'))
+                  call check(nf90_put_att(ncFileID,varID,"sector",isec))
+                  call check(nf90_put_att(ncFileID,varID,"species",trim(EMIS_File(iem))))
+               end if
+            end do
+         end do
+      end do
+   endif
+   
+   !gather data from other CPU into master
+   do iland = 1, NLAND
+      if(MasterProc)then
+         country_has_emis = .false.
+         do d = 1, NPROC
+            if(country_owner_map(iland,d))country_has_emis = .true.
+         enddo
+         if(.not. country_has_emis) cycle
+      else
+         if(.not. country_owner(iland)) cycle
+      endif
+      
+      do iem = 1, NEMIS_File
+         do isec = 1, NSECTORS
+            if(MasterProc)then
+               write(varname,44)trim(EMIS_FILE(iem))//'_sec',isec,'_'//trim(Country(iland)%code)
+               emis_full = 0.0 !important that default is zero
+               if(country_owner(iland))then
+                  do j = 1, ljmax
+                     do i = 1, limax
+                        do icc = 1,nGridEmisCodes(i,j)
+                           if(GridEmisCodes(i,j,icc)==iland)then
+                              emis_full(i,j) = emis_full(i,j) + GridEmis(isec,i,j,icc,iem)
+                           endif
+                        end do
+                     end do
+                  end do
+               endif
+               do d = 1, NPROC-1
+                  if(country_owner_map(iland,d+1))then
+                     CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d), MPI_BYTE, d, &
+                          isec+iem*NSECTORS+iland*NEMIS_File*NSECTORS,& !unique tag
+                          MPI_COMM_CALC, MPISTATUS, IERROR)
+                     ij = 0
+                     do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                        do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                           ij = ij+1
+                           emis_full(i,j) = buff(ij)
+                        end do
+                     end do
+                  endif
+               end do
+               
+               call check(nf90_inq_varid(ncFileID,trim(varname),varID),"inq:"//trim(varname))
+               call check(nf90_put_var(ncFileID,VarID,emis_full))
+               
+            else 
+               ! not master
+
+               ij = 0
+               do j=1, ljmax
+                  do i=1, limax
+                     ij = ij+1
+                     buff(ij)=0.0
+                     do icc = 1,nGridEmisCodes(i,j)
+                        if(GridEmisCodes(i,j,icc)==iland)then
+                           buff(ij)=buff(ij)+GridEmis(isec,i,j,icc,iem)
+                        endif
+                     enddo
+                  end do
+               end do
+               CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me), MPI_BYTE, 0, &
+                    isec+iem*NSECTORS+iland*NEMIS_File*NSECTORS,& !unique tag
+                    MPI_COMM_CALC, IERROR)
+            endif
+         end do
+      end do
+   end do
+   if(MasterProc)then
+      deallocate(emis_full)
+      call check(nf90_close(ncFileID))
+   end if
+  
+ end subroutine output_country_emissions
+
+ subroutine create_country_emission_file(fileName)
+   implicit none
+   character(len=*),  intent(in)  :: filename
+   integer :: iDimID,jDimID,timeDimID,ncFileID,VarID, longVarID,latVarID
+   real :: Buff2D(MAXLIMAX,MAXLJMAX,2)
+   integer :: istart,jstart,icount,jcount
+   integer :: i,j,k,iproc
+
+   ! the file does not exist yet or is overwritten
+   if(MasterProc) then 
+      if(DEBUG_NETCDF)write(*,*)'nf90_create '//trim(fileName)
+      call check(nf90_create(trim(fileName),nf90_hdf5,ncFileID),"create:"//trim(fileName))
+      
+      ! define coordinate dimensions
+      call check(nf90_def_dim(ncFileID,"i",GIMAX,iDimID),"dim:i")
+      call check(nf90_def_dim(ncFileID,"j",GJMAX,jDimID),"dim:j")
+      call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
+      
+      ! define coordinate variables
+      call check(nf90_def_var(ncFileID,"lat"   ,nf90_float,[iDimID,jDimID],latvarID))
+      call check(nf90_def_var(ncFileID,"lon"   ,nf90_float,[iDimID,jDimID],longvarID))
+      
+      call check(nf90_put_att(ncFileID,nf90_global,"projection",'generic'))
+      call check(nf90_put_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+      call check(nf90_close(ncFileID))
+      
+   endif
+      
+   Buff2D(1:limax,1:ljmax,1)=glon(1:limax,1:ljmax)
+   Buff2D(1:limax,1:ljmax,2)=glat(1:limax,1:ljmax)
+   if(MasterProc)then
+      call check(nf90_open(fileName,nf90_share+nf90_write,ncFileID))
+      do iproc=0,NPROC-1
+         if(iproc>0)&
+              CALL MPI_RECV(Buff2D,2*8*MAXLIMAX*MAXLJMAX, MPI_BYTE,iproc,&
+              iproc,MPI_COMM_CALC,MPISTATUS,IERROR)
+         !NB IBEGcdf, IRUNBEG, etc. relative to fulldomain
+         !    tgi0,tlimax, etc. relative to rundomain
+         
+        istart=tgi0(iproc)    ! restricted (IBEGcdf, JBEGcdf) domain
+        jstart=tgj0(iproc)    ! restricted domain
+        icount=tlimax(iproc)  ! both 
+        jcount=tljmax(iproc)  ! both 
+
+        call check(nf90_put_var(ncFileID,longVarID,   &
+             Buff2D(1:icount,1:jcount,1), &
+             start=[istart,jstart],count=[icount,jcount]))
+        call check(nf90_put_var(ncFileID, latVarID,   &
+             Buff2D(1:icount,1:jcount,2), &
+             start=[istart,jstart],count=[icount,jcount]))
+     end do
+     call check(nf90_close(ncFileID))
+  else
+     CALL MPI_SEND(Buff2D,2*8*MAXLIMAX*MAXLJMAX,MPI_BYTE,0,&
+          me,MPI_COMM_CALC,IERROR)
+  end if
+    
+end subroutine create_country_emission_file
 endmodule NetCDF_mod
