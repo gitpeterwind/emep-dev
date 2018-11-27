@@ -21,6 +21,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 Nov 2018, Dave
+
+Interim changes to get stuff into dev
+
+MetFields_mod
+Met_mod
+   in testing - enabled NWP Hmix, for now with GLOBAL05 variable 'blh'.
+
+Config_module
+   in testing - added OwnInputDir 
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 Nov 2018, Peter
 
 bug in wind_speed_3D output corrected
