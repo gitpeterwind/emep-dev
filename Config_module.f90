@@ -614,6 +614,7 @@ subroutine Config_ModelConstants(iolog)
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
    ,dt_advec & ! can be set to override dt_advec
+   ,METSTEP &
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
    ,EUROPEAN_settings & ! The domain covers Europe -> 
    ,GLOBAL_settings & ! The domain cover other regions too -> Convection
