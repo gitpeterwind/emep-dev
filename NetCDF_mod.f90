@@ -2097,8 +2097,14 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   if(i_fdom(1)==1)i1=i0+1
   if(j_fdom(1)==1)j1=j0+1
 ! Rvar=0.0
+
+  if(dims(1)<1 .or. dims(2)<1)then
+!     Rvar(1:LIMAX*LJMAX*(k_end-k_start+1)) = 0.0
+     call check(nf90_close(ncFileID))
+     return
+  endif
   totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
-  
+
   select case(xtype)
   case(NF90_SHORT,NF90_INT,NF90_BYTE)
     ! read scale/offset if present, otherwise assign default value
@@ -4535,11 +4541,14 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
         read(wordarray(4),*)mo
         read(wordarray(5),*)dd
         read(wordarray(6),*)hh
-        !read(wordarray(7),*)mi
-        !read(wordarray(8),*)ss  !did not work ???
-        mi=0
-        ss=0
-        
+        if( period == 'minutes' .or. period =='seconds' )then
+           read(wordarray(7),*)mi
+           read(wordarray(8),*)ss  !did not work for others?
+        else
+           mi=0
+           ss=0
+        endif
+
         calendar='unknown'
         
         status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
@@ -4570,6 +4579,10 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
            case('hours')
               forall(i=1:NTime_Read) &
                    TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
+           case('minutes')
+              read(wordarray(7),*)mi
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)*60.0+ss)/(3600.0*24.0)
            case('seconds')
               forall(i=1:NTime_Read) &
                    TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
@@ -4625,80 +4638,94 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
      call CheckStop(startrecord>ntimes.and.find_record, "did not find correct time in "//trim(fileName))
 
   else
-     call CheckStop(find_record,"find_record not implemented for time format in "//trim(fileName))
 !     write(*,*)'ReadTimeCDF '//trim(varname)//" not found in "//trim(fileName)
      varname='Times'!wrf format
      status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
      if(status==nf90_noerr)then
-     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-     if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
-     if(NTime_Read<1)then
-        if(DEBUG_NETCDF)write(*,*)'reading all time records'
-        NTime_Read=ntimes
-     end if
-     call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-     call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=string_length))
-     
-     allocate(Times_string(string_length,ntimes))
-     call check(nf90_get_var(ncFileID, VarID, Times_string(1:string_length,1:NTime_Read),count=(/string_length,NTime_Read/)))
-     do i=1,NTime_Read
-        do j=1,string_length
-           name(j:j)=Times_string(j,i)
+        call CheckStop(find_record,"find_record not implemented for time format in "//trim(fileName))
+        call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+        if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
+        if(NTime_Read<1)then
+           if(DEBUG_NETCDF)write(*,*)'reading all time records'
+           NTime_Read=ntimes
+        end if
+        call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+        call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=string_length))
+        
+        allocate(Times_string(string_length,ntimes))
+        call check(nf90_get_var(ncFileID, VarID, Times_string(1:string_length,1:NTime_Read),count=(/string_length,NTime_Read/)))
+        do i=1,NTime_Read
+           do j=1,string_length
+              name(j:j)=Times_string(j,i)
+           end do
+           call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2)),' minutes ',trim(wordarray(3))
+           call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
+           read(wordarray2(1),*)yyyy
+           read(wordarray2(2),*)mo
+           read(wordarray2(3),*)dd
+           read(wordarray(2),*)hh !colon, ":", is a default separator for wordsplit
+           read(wordarray(3),*)mi !colon, ":", is a default separator for wordsplit
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           TimesInDays(i)=diff_1900+hh/24.0+mi/24.0/60.0
         end do
-        call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
-        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2)),' minutes ',trim(wordarray(3))
-        call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
-        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
-        read(wordarray2(1),*)yyyy
-        read(wordarray2(2),*)mo
-        read(wordarray2(3),*)dd
-        read(wordarray(2),*)hh !colon, ":", is a default separator for wordsplit
-        read(wordarray(3),*)mi !colon, ":", is a default separator for wordsplit
-        julian=julian_date(yyyy,mo,dd)
-        julian_1900=julian_date(1900,1,1)
-        diff_1900=julian-julian_1900
-        TimesInDays(i)=diff_1900+hh/24.0+mi/24.0/60.0
-     end do
-  else
-     varname='TFLAG'!SMOKE/CMAQ format
-     status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
-     if(status==nf90_noerr)then
-          call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-          if(ndims/=3)write(*,*)'WARNING: TSTEP does not have 3 dimensions!? ',ndims
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(3),len=ntimes))
-          if(NTime_Read<1)then
-             if(DEBUG_NETCDF)write(*,*)'reading all time records'
-             NTime_Read=ntimes
-          end if
-          call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-          call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-          
-          allocate(int_times(2,1,ntimes))
-          NTime_Read = ntimes
-!NB: we assume all variables have same time stamp. Read only for first
-          call check(nf90_get_var(ncFileID, VarID, int_times,count=(/2,1,ntimes/)))
-          do i=1,NTime_Read
-             yyyy=int_times(1,1,i)/1000
-             mo=1!start at beginning of year
-             dd=mod(int_times(1,1,i),1000)!nb day of year!!
-             hh= int_times(1,2,i)/10000 + &
-                  1.0/60*(mod(int_times(1,2,i),10000)/100) + &
-                  1.0/3600*mod(int_times(1,2,i),100)
-             julian=julian_date(yyyy,mo,dd)
-             julian_1900=julian_date(1900,1,1)
-             diff_1900=julian-julian_1900
-             TimesInDays(i)=diff_1900+hh/24.0
-          end do
-          deallocate(int_times)
-       else
-          if(DEBUG_NETCDF)write(*,*)'time variable not found: ',trim(varname)
-          NTime_Read = 0
-       endif
-    endif
-  endif
+     else
+        varname='TFLAG'!SMOKE/CMAQ format
+        status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+        if(status==nf90_noerr)then
+           call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+           if(ndims/=3)write(*,*)'WARNING: TSTEP does not have 3 dimensions!? ',ndims
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(3),len=ntimes))
+           if(NTime_Read<1)then
+              if(DEBUG_NETCDF)write(*,*)'reading all time records'
+              NTime_Read=ntimes
+           end if
+           call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+           call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+           
+           allocate(int_times(2,1,NTime_Read))
+           !NB: we assume all variables have same time stamp. Read only for first
 
+           if(.not. find_record)ntimes=1
+
+           do startrecord = 1,ntimes !in case find_record, loop over one record at a time
+
+              call check(nf90_get_var(ncFileID, VarID, int_times,start = (/1,1,startrecord/),count=(/2,1,NTime_Read/)))
+              do i=1,NTime_Read
+                 yyyy=int_times(1,1,i)/1000
+                 mo=1!start at beginning of year
+                 dd=mod(int_times(1,1,i),1000)!nb day of year!!
+                 hh= int_times(2,1,i)/10000 + &
+                      1.0/60*(mod(int_times(2,1,i),10000)/100) + &
+                      1.0/3600*mod(int_times(2,1,i),100)
+                 julian=julian_date(yyyy,mo,dd)
+                 julian_1900=julian_date(1900,1,1)
+                 diff_1900=julian-julian_1900
+!                 if(me==0)write(*,*)'TFLAG time ',int_times(1,1,i),int_times(2,1,i),dd,hh
+                 TimesInDays(i)=diff_1900+hh/24.0
+              end do
+              if(find_record)then
+                 if(TimesInDays(1)-time_wanted>-0.5/(24.0*3600.0))then
+                    !we have found the right record        
+                    NTime_Read = startrecord
+                    exit
+                 endif
+                 if(startrecord == ntimes .and. me==0)write(*,*)'WARNING: did not find correct emis time. Last time found ',TimesInDays(1),' wanted ',time_wanted
+              endif
+           enddo
+           deallocate(int_times)
+        else
+           if(DEBUG_NETCDF)write(*,*)'time variable not found: ',trim(varname)
+           NTime_Read = 0
+        endif
+     endif
+  endif
+  
   call check(nf90_close(ncFileID))
 
 end subroutine ReadTimeCDF
@@ -4980,9 +5007,11 @@ end subroutine vertical_interpolate
    lon_name = 'lon'
    status=nf90_inq_varid(ncid = ncFileID, name=trim(lon_name), varID = VarID)
    if(status /= nf90_noerr) then
-      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = VarID)
+      lon_name = 'LON'
+      status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
       if(status /= nf90_noerr) then
-         status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = VarID)
+         lon_name = 'longitude'
+         status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
          call CheckStop(status /= nf90_noerr,'did not find longitude variable')
       end if
    end if
@@ -4991,9 +5020,11 @@ end subroutine vertical_interpolate
        
    status=nf90_inq_varid(ncid = ncFileID, name=trim(lat_name), varID = VarID)
    if(status /= nf90_noerr) then
-      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = VarID)
+      lat_name = 'LAT'
+      status=nf90_inq_varid(ncid = ncFileID, name = lat_name, varID = VarID)
       if(status /= nf90_noerr) then
-         status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = VarID)
+         lat_name = 'latitude'
+         status=nf90_inq_varid(ncid = ncFileID, name = lat_name, varID = VarID)
          call CheckStop(status /= nf90_noerr,'did not find latitude variable')
      end if
    end if
@@ -5013,10 +5044,11 @@ end subroutine vertical_interpolate
 
    call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions, lonVarID, latVarID)
    call check(nf90_Inquire_Variable(ncFileID,latVarID,lat_name,ndims,xtype,dimids,nAtts),"EmisGetDimsId")
-   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),len=dims(1)),"EmisGetDims")
-   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(2),len=dims(2)),"EmisGetDims")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=lonVarID,len=dims(1)),"EmisGetDims")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=latVarID,len=dims(2)),"EmisGetDims")
+
    if(nDimensions==1)then
-      allocate(Rlat(dims(2),1))
+      allocate(Rlat(2,1))
       call check(nf90_get_var(ncFileID, latVarID, Rlat,count=(/2/)))
       dlat = abs(Rlat(2,1)-Rlat(1,1))
    else   if(nDimensions==2)then

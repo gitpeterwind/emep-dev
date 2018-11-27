@@ -85,7 +85,9 @@ integer, public, save :: nrcemis, nrcsplit
 integer, public, dimension(NEMIS_FILE) , save :: emis_nsplit
 real, public,allocatable, dimension(:,:,:), save :: emisfrac
 integer, public,allocatable, dimension(:), save :: iqrc2itot
+integer, public,allocatable, dimension(:), save :: iqrc2iem
 integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
+integer, public, dimension(NSPEC_TOT,NEMIS_FILE) :: iemsplit2itot !maps from split and iem to itot 
 integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
 real, public,allocatable, dimension(:), save :: emis_masscorr
 real, public,allocatable, dimension(:), save :: roaddust_masscorr
@@ -107,10 +109,10 @@ integer, private ::i_femis_lonlat
 
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine Emis_GetCdf(EmisFile, Emis_source, Emis_2D, date_wanted)
+  subroutine Emis_GetCdf(EmisFile, Emis_source, Emis_XD, date_wanted)
     type(Emis_id_type),intent(inout) :: Emis_source 
     type(EmisFile_id_type),intent(inout) ::  EmisFile
-    real, intent(out), dimension(LIMAX,LJMAX) :: Emis_2D
+    real, intent(out), dimension(*) :: Emis_XD
     type(date), intent(in) :: date_wanted
     real :: date_wanted_in_days, TimesInDays(1)
     integer :: record
@@ -133,7 +135,16 @@ contains
 
     if(trim(EmisFile%projection) == 'native')then
        if(me==0)write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
-       call GetCDF_modelgrid(Emis_source%varname,fname,Emis_2D(1,1),1,1,record,1,needed=.true.)
+       if(Emis_source%is3D)then
+          call GetCDF_modelgrid(Emis_source%varname,fname,Emis_XD,&
+                            Emis_source%kstart, Emis_source%kend,record,1,&
+                            i_start=Emis_source%istart,j_start=Emis_source%jstart,&
+                            reverse_k=Emis_source%reversek,needed=.true.)
+       else
+          call GetCDF_modelgrid(Emis_source%varname,fname,Emis_XD,1,1,record,1,&
+                            i_start=Emis_source%istart,j_start=Emis_source%jstart,&
+                            needed=.true.)
+       endif
     else
        if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
        if(Emis_source%units == 'tons/m2' .or. Emis_source%units == 'tons/m2/s' &
@@ -142,7 +153,7 @@ contains
             .or. Emis_source%units == 'mg/m2' .or. Emis_source%units == 'mg/m2/s' &
             .or. Emis_source%units == 'g/m2/h' .or. Emis_source%units == 'mg/m2/h')then
           !per area units
-          call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+          call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
                interpol='conservative',&
                Grid_resolution_in = EmisFile%grid_resolution,&
@@ -154,15 +165,15 @@ contains
             .or. Emis_source%units == 'mg' .or. Emis_source%units == 'mg/s' &
             .or. Emis_source%units == 'g/h'.or. Emis_source%units == 'mg/h')then
           !per gridcell unit
-          if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', projection ',trim(EmisFile%projection),'resolution ',EmisFile%grid_resolution
-         call ReadField_CDF(fname,Emis_source%varname,Emis_2D(1,1),record,&
+          if(me==0)write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
+         call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
                interpol='mass_conservative',&
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)          
        else
-          call StopAll("Unit for emissions not recognized: "//trim(Emis_source%units))       
+          call StopAll("Unit for emissions not recognized: "//trim(Emis_source%units)//' '//trim(Emis_source%varname))
        endif
     endif
 
@@ -252,7 +263,7 @@ contains
                    else
                       if(MasterProc)write(*,*)'found '//species(iem_used)%name//' for '//trim(ewords(6))
                       !see if case has been found before
-                      !shoudl search only among NEmis_id first!
+                      !should search only among NEmis_id first!
                       ix_Emis = find_index(ewords(6),Emis_id%species(:))
                       if(ix_Emis>0)then
                          if(MasterProc)write(*,*)trim(ewords(6))//' already defined'
@@ -434,7 +445,7 @@ contains
     real :: factor, default_factor
     character(len= TXTLEN_FILE) :: fname
     character(len=30)  :: lon_name, lat_name
-    integer :: n, ix, varid, status, sector, iem, isec, iqrc, itot, f
+    integer :: n, nn, i, ix, varid, status, sector, iem, isec, iqrc, itot, f
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
     real :: x, resolution, default_resolution, Rlat(2)
     integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
@@ -448,22 +459,24 @@ contains
        stop
     end if
 
-    
-    default_projection = 'Unknown'
-    status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
-    if(status==nf90_noerr)then
-       default_projection = trim(projection)
-    endif
 
-    default_resolution = 0.0
-    status = nf90_get_att(ncFileID, nf90_global,"Grid_resolution", resolution)
-    if(status==nf90_noerr)then
-       default_resolution = resolution
-    else
-       call make_gridresolution(ncFileID, default_resolution)
-       if(me==0)write(*,*)'made resolution :',default_resolution
+    if(EmisFile_in%projection /= 'native')then
+       default_projection = 'Unknown'
+       status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
+       if(status==nf90_noerr)then
+          default_projection = trim(projection)
+       endif
+       
+       default_resolution = 0.0
+       status = nf90_get_att(ncFileID, nf90_global,"Grid_resolution", resolution)
+       if(status==nf90_noerr)then
+          default_resolution = resolution
+       else
+          call make_gridresolution(ncFileID, default_resolution)
+          if(me==0)write(*,*)'made resolution :',default_resolution
+       endif
     endif
-    
+       
     default_factor = 1.0
     status = nf90_get_att(ncFileID, nf90_global,"factor", factor)
     if(status==nf90_noerr)then
@@ -476,52 +489,63 @@ contains
     do varid=1,nVariables
        call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
        status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
-       if((status==nf90_noerr .and. ndims>=2) .or. any(names_in(1:nnames)==cdfvarname))then
-          !we define a new emission source
-          NEmis_sources = NEmis_sources + 1
-          Emis_source(NEmis_sources)%varname = trim(cdfvarname)
-          Emis_source(NEmis_sources)%species = trim(cdfspecies)
-          status = nf90_get_att(ncFileID,varid,"units", name)
-          if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
-          status = nf90_get_att(ncFileID,varid,"sector", sector)
-          if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
-          status = nf90_get_att(ncFileID,varid,"factor", x)
-          if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
-          status = nf90_get_att(ncFileID,varid,"country", name)
-          if(status==nf90_noerr)then
-             ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
-             if(ix<0)then
-                if(me==0)write(*,*)'WARNING: country '//trim(name)//' not defined. file'//trim(fname)//' variable '//trim(cdfvarname)
-             else
-                Emis_source(NEmis_sources)%country_ISO = trim(name)
-                Emis_source(NEmis_sources)%country_ix = ix
-             endif
+
+       nn = 0
+       do i = 1,size(EmisFile_in%source)       
+          if(EmisFile_in%source(i)%varname == cdfvarname)then
+             nn = nn + 1
+             Emis_source(NEmis_sources+nn)%ix_in=i
           endif
-          if(EmisFile_in%apply_femis)then
-             if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
-                ix = Country(Emis_source(NEmis_sources)%country_ix)%icode
-                isec = Emis_source(NEmis_sources)%sector
-                iem = find_index(Emis_source(NEmis_sources)%species,EMIS_FILE(:))
-                if(iem >0 )then
-                   !apply femis 
-                   Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
+       enddo
+       if((status==nf90_noerr .and. ndims>=2) .or. nn>0 )then
+          !can be that one source must be taken several times (for istance into different vertical levels)
+           do i = 1,max(1,nn)
+             !we define a new emission source
+             NEmis_sources = NEmis_sources + 1
+             Emis_source(NEmis_sources)%varname = trim(cdfvarname)
+             Emis_source(NEmis_sources)%species = trim(cdfspecies)
+             status = nf90_get_att(ncFileID,varid,"units", name)
+             if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
+             status = nf90_get_att(ncFileID,varid,"sector", sector)
+             if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
+             status = nf90_get_att(ncFileID,varid,"factor", x)
+             if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
+             status = nf90_get_att(ncFileID,varid,"country", name)
+             if(status==nf90_noerr)then
+                ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+                if(ix<0)then
+                   if(me==0)write(*,*)'WARNING: country '//trim(name)//' not defined. file'//trim(fname)//' variable '//trim(cdfvarname)
                 else
-                   !see if the species belongs to any of the splitted species
-                   iqrc = 0
-                   do iem = 1,NEMIS_FILE
-                      do f = 1,emis_nsplit(iem)
-                         iqrc = iqrc + 1
-                         itot = iqrc2itot(iqrc)
-                         if(trim(species(itot)%name)==trim(Emis_source(NEmis_sources)%species))then
-                            Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
-                            go to 888
-                         endif
-                      enddo
-                   enddo
-                   888 continue
+                   Emis_source(NEmis_sources)%country_ISO = trim(name)
+                   Emis_source(NEmis_sources)%country_ix = ix
                 endif
              endif
-          endif
+             if(EmisFile_in%apply_femis)then
+                if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
+                   ix = Country(Emis_source(NEmis_sources)%country_ix)%icode
+                   isec = Emis_source(NEmis_sources)%sector
+                   iem = find_index(Emis_source(NEmis_sources)%species,EMIS_FILE(:))
+                   if(iem >0 )then
+                      !apply femis 
+                      Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
+                   else
+                      !see if the species belongs to any of the splitted species
+                      iqrc = 0
+                      do iem = 1,NEMIS_FILE
+                         do f = 1,emis_nsplit(iem)
+                            iqrc = iqrc + 1
+                            itot = iqrc2itot(iqrc)
+                            if(trim(species(itot)%name)==trim(Emis_source(NEmis_sources)%species))then
+                               Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
+                               go to 888
+                            endif
+                         enddo
+                      enddo
+888                   continue
+                   endif
+                endif
+             endif
+          enddo
        endif
         
     enddo
@@ -1174,6 +1198,7 @@ end if
   real, dimension(NSPEC_ADV,N_SPLIT,NLAND) :: tmp_emisfrac
   real, dimension(NSPEC_ADV) :: tmp_emis_masscorr
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2itot !maps from iqrc 
+  integer, dimension(NSPEC_ADV) :: tmp_iqrc2iem !maps from iqrc 
   real, dimension(NMAX ) :: tmp 
   real     :: sumtmp
   integer  :: nsplit   &         ! No.columns data to be read
@@ -1183,10 +1208,13 @@ end if
   logical  :: defaults          ! Set to true for defaults, false for specials
   logical  :: debugm            ! debug flag on master proc 
   character(len=*), parameter :: dtxt = 'EmisGet:'
+  integer  :: itot_RDF
 !-----------------------------------------------
 
   iqrc = 0               ! Starting index in emisfrac array
   nrcsplit= 0                 !
+  itot2iqrc = -1 !init. Used to recognized non-split emissions (individual species)
+  iemsplit2itot = -1 !init
 
   debugm = (DEBUG%GETEMIS.and.MasterProc) 
 
@@ -1275,8 +1303,9 @@ end if
                   end if ! FAILURE
 
                   tmp_iqrc2itot(iqrc) = itot
+                  tmp_iqrc2iem(iqrc) = ie
                   itot2iqrc(itot)     = iqrc
-
+                  iemsplit2itot(emis_nsplit(ie),ie) = itot
                  ! Now, get factor needed for scaling emissions to molec
                   if ( Emis_MolWt(ie) == 0 ) then
                       tmp_emis_masscorr(iqrc) = 1.0/species(itot)%molwt
@@ -1421,12 +1450,14 @@ end if
   nrcemis = sum( emis_nsplit(:) )
   allocate(emisfrac(nrcemis,N_SPLIT,NLAND),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for emisfrac")
+  allocate(iqrc2iem(nrcemis),stat=allocerr)
   allocate(iqrc2itot(nrcemis),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for iqrc2itot")
   allocate(emis_masscorr(nrcemis),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for emis_masscorr")
   emisfrac(:,:,:)     = tmp_emisfrac(1:nrcemis,:,:)
   iqrc2itot(:)        = tmp_iqrc2itot(1:nrcemis)
+  iqrc2iem(:)        = tmp_iqrc2iem(1:nrcemis)
   emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
 
 !rb: not ideal place for this but used here for a start
@@ -1436,12 +1467,10 @@ end if
   if(USES%ROADDUST)THEN
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
-     if(MasterProc) &
-          write(*,'(A)') "WARNING! Molar mass assumed to be 200.0&
-            & for all road dust components. Emissions will be WRONG&
-            & if another value is set in the GenChem input!"
+     itot_RDF = find_index( "Dust_ROAD_f", species(:)%name    )
+     call CheckStop(itot_RDF<=0, "Asked for road dust but did not find Dust_ROAD_f")
      do ie=1,NROADDUST
-        roaddust_masscorr(ie)=1.0/200.
+        roaddust_masscorr(ie)=1.0/species(itot_RDF)%molwt
      end do
   end if
    

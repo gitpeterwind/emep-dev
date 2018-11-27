@@ -66,7 +66,9 @@ use EmisDef_mod,       only: &
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT &   
      ,Emis_field, Emis_id, NEmis_id &
-     ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source, Emis_source_2D
+     ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
+     , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources
+
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -78,6 +80,7 @@ use EmisGet_mod,       only: &
     ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
     ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
     ,iqrc2itot,itot2iqrc         &  ! maps from split index to total index
+    ,iqrc2iem,iemsplit2itot      &  ! maps from split index to emission index
     ,emis_masscorr               &  ! 1/molwt for most species
     ,emis_nsplit                 &  ! No. species per emis file
     ,RoadDustGet                 &  
@@ -166,6 +169,14 @@ contains
     !1) from femis.dat (can be switched off for specific files, but not for specific sources)
     !2) global file attribute (can be overwritten by config)
     !3) individual sources (can be overwritten by config)
+
+    !e_fact (femis) is applied through the source%factor in Emis_init_GetCdf
+
+    !Note on units "as SO2":
+    !if the sector is defined, units are defined "as SO2" and SO4 must include the 
+    !factor 0.6666 (=mw(SO2)/mw(SO4)) to be right. 
+    !If sector is defined as zero, no additional factor is required.
+
     
     integer, parameter ::maxnames=100
     character(len=TXTLEN_FILE) :: fname, filename, names_in(maxnames)
@@ -177,12 +188,21 @@ contains
     type(Emis_id_type):: Emis_sources_defaults !set values when not specified otherwise 
     type(EmisFile_id_type):: Emisfile_defaults !set values when not specified otherwise 
     integer :: EmisFilesMap(0:size(Emis_sourceFiles)) !index of EmisFile given index of EmisFile_sources
+    integer :: max_levels3D
 
     !1) define default values 
     Emis_sources_defaults%units = 'mg/m2/h'
     Emis_sources_defaults%country_ISO = 'N/A'
     Emis_sources_defaults%sector = 0
     Emis_sources_defaults%factor = 1.0
+    Emis_sources_defaults%injection_k = KMAX_MID
+    Emis_sources_defaults%is3D = .false.
+    Emis_sources_defaults%istart = 1 
+    Emis_sources_defaults%jstart = 1
+    Emis_sources_defaults%kstart = 1 
+    Emis_sources_defaults%kend = 1
+    Emis_sources_defaults%reversek = .false. 
+    Emis_sources_defaults%species_ix = -1 
 
     Emis_source = Emis_sources_defaults!set all initial values to default
 
@@ -194,7 +214,9 @@ contains
     !3) read from variable attributes in file
     !Emis_sourceFiles is read from config and then not modified
     !EmisFiles collect all valid data and sources
-    NEmis_sources = 0 !total number of valid emis variables across all files
+    NEmis_sources = 0 !total number of valid emis (also 3D) variables across all files
+    NEmis_3Dsources = 0 !total number of valid 3D emis variables across all files
+    max_levels3D = 1
     NEmisFile_sources = 0 !number of valid emission files
     EmisFilesMap = 0 !index of EmisFile given index of EmisFile_sources
     do n = 1, size(Emis_sourceFiles)
@@ -234,7 +256,9 @@ contains
           if(Emis_sourceFiles(n)%periodicity /= Emisfile_undefined%periodicity) EmisFiles(i)%periodicity = Emis_sourceFiles(n)%periodicity
           if(Emis_sourceFiles(n)%projection /= Emisfile_undefined%projection) EmisFiles(i)%projection = Emis_sourceFiles(n)%projection
           if(Emis_sourceFiles(n)%grid_resolution /= Emisfile_undefined%grid_resolution) EmisFiles(i)%grid_resolution = Emis_sourceFiles(n)%grid_resolution
+          if(Emis_sourceFiles(n)%projection /= 'native')then
           call CheckStop(EmisFiles(i)%grid_resolution <=1.0E-5,'Grid_resolution must be defined for '//trim(Emis_sourceFiles(n)%filename))
+          endif
           if(Emis_sourceFiles(n)%factor /= Emisfile_undefined%factor) EmisFiles(i)%factor = Emis_sourceFiles(n)%factor
          
         endif
@@ -243,70 +267,98 @@ contains
     !then overwrite the variable attributes
     do i = 1, NEmisFile_sources !loop over files
        n = EmisFilesMap(i)
-       do isource=1,size(Emis_sourceFiles(n)%source) !loop over sources defined from config for that file
-          found = .true.
-          if(Emis_sourceFiles(n)%source(isource)%varname=='NOTSET')cycle
-          found = .false.
-          do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
-             if(trim(Emis_sourceFiles(n)%source(isource)%varname)==trim(Emis_source(ii)%varname))then
-                found = .true.
-                if(Emis_sourceFiles(n)%source(isource)%species /= Emis_id_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%source(isource)%species
-                if(Emis_sourceFiles(n)%source(isource)%units /= Emis_id_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%source(isource)%units
-                if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
-                if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
-                if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO)then
-                   Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
-                   ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
-                   if(ix<0)then
-                      if(me==0)write(*,*)'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
-                   else
-                      Emis_source(NEmis_sources)%country_ix = ix
-                   endif
-                endif
-                if(Emis_sourceFiles(n)%source(isource)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) &
-                     Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%source(isource)%include_in_local_fractions
+       found = .false.
+       do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
+          isource = Emis_source(ii)%ix_in
+          if(isource>0)then
+             !source defined in config file
+             if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii
+             
+             found = .true.
+             if(Emis_sourceFiles(n)%source(isource)%species /= Emis_id_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%source(isource)%species
+             if(Emis_sourceFiles(n)%source(isource)%units /= Emis_id_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%source(isource)%units
+             if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
+             if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
+             if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
+             if(Emis_sourceFiles(n)%source(isource)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) &
+                  Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%source(isource)%include_in_local_fractions
+             
+             if(Emis_sourceFiles(n)%source(isource)%is3D .neqv. Emis_id_undefined%is3D) Emis_source(ii)%is3D = Emis_sourceFiles(n)%source(isource)%is3D
+             if(Emis_sourceFiles(n)%source(isource)%istart /= Emis_id_undefined%istart) Emis_source(ii)%istart = Emis_sourceFiles(n)%source(isource)%istart
+             if(Emis_sourceFiles(n)%source(isource)%jstart /= Emis_id_undefined%jstart) Emis_source(ii)%jstart = Emis_sourceFiles(n)%source(isource)%jstart
+             if(Emis_sourceFiles(n)%source(isource)%kstart /= Emis_id_undefined%kstart) Emis_source(ii)%kstart = Emis_sourceFiles(n)%source(isource)%kstart
+             if(Emis_sourceFiles(n)%source(isource)%kend /= Emis_id_undefined%kend) Emis_source(ii)%kend = Emis_sourceFiles(n)%source(isource)%kend
+             if(Emis_sourceFiles(n)%source(isource)%reversek .neqv. Emis_id_undefined%reversek) Emis_source(ii)%reversek = Emis_sourceFiles(n)%source(isource)%reversek
+             if(Emis_sourceFiles(n)%source(isource)%injection_k .neqv. Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
+          endif
+          ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
+          if(ix<0)then
+             if(me==0)write(*,*)'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
+          else
+             Emis_source(NEmis_sources)%country_ix = ix
+          endif
 
-                if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(ii)
-
-                exit
-             endif
-          enddo
-          if(.not. found .and. me==0)write(*,*)'WARNING: did not find '//Emis_sourceFiles(n)%source(isource)%varname//' in '//trim(Emis_sourceFiles(n)%filename)
+          !find if it is defined as an individual species
+          ix = find_index(Emis_source(ii)%species, species(:)%name )
+          if(ix>0)Emis_source(ii)%species_ix = ix
+          
+          max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
+          if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(ii)
+          
        enddo
+       if(.not. found .and. me==0)write(*,*)'WARNING: did not find '//Emis_sourceFiles(n)%source(isource)%varname//' in '//trim(Emis_sourceFiles(n)%filename)
+
     enddo
 
+    !find and define the 3D emissions
+    ix=0
+    do n=1, NEmis_sources
+       if(Emis_source(n)%is3D)Nemis_3Dsources = Nemis_3Dsources + 1
+       ix3Dmap(n)=ix
+    enddo
+    if(Nemis_3Dsources>0)then
+       if(me==0)write(*,*)'found ',Nemis_3Dsources,' 3D sources'
+       allocate(Emis_source_3D(LIMAX,LJMAX,max_levels3D,Nemis_3Dsources))
+    endif
 
   end subroutine Init_Emissions
 
 !***********************************************************************
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
-    integer :: n, i, j, is,date_limit(5)
+    integer :: n, i, j, ix, is, date_limit(5)
     type(date) :: coming_date
     real :: fac
     TYPE(timestamp)   :: ts1,ts2
 
     ts1=make_timestamp(current_date)
     coming_date = current_date
-    coming_date%seconds = coming_date%seconds + 1800!emis date is at end of period
+    coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
+          if(me==0)write(*,*)'Emis date is reached ',EmisFiles(n)%end_of_validity_date
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
-            call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
-          
-            !reduction factors
+             if(Emis_source(is)%is3D)then
+                ix = ix3Dmap(is)
+                Emis_source_3D(1:,1:,1:,ix)=0.0
+                call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_3D(1,1,1,ix),coming_date)
+             else
+                if(me==0)write(*,*)is,' getemis '//trim(Emis_source(is)%units)//' '//trim(Emis_source(is)%varname)
+                Emis_source_2D(1:,1:,is)=0.0
+                call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
+             endif
+                !reduction factors
              fac = EmisFiles(n)%factor
              fac = fac* Emis_source(is)%factor     
 
              !unit and factor conversions
              !convert into kg/m2/s
-             
-             
+                          
              if(EmisFiles(n)%periodicity == 'yearly')then
-                if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/year'&
-                     .or. Emis_source(is)%units == 'tons' .or. Emis_source(is)%units == 'tons/year')then
+                if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
+                     .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
                    fac = fac /(1000*3600*24*nydays)
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
@@ -321,22 +373,23 @@ contains
                    call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
              else if(EmisFiles(n)%periodicity == 'monthly')then
-                if(Emis_source(is)%units == 'tons/m2' .or. Emis_source(is)%units == 'tons/m2/month'&
-                     .or. Emis_source(is)%units == 'tons' .or. Emis_source(is)%units == 'tons/month')then
-                   fac = fac /(1000*3600*24)
+                if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
+                     .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
+                   fac = fac /(1000*3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
-                   fac = fac /(3600*24)
+                   fac = fac /(3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
                      .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
-                   fac = fac*1000 /(3600*24)
+                   fac = fac*1000 /(3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
                      .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
-                   fac = fac*1000000 /(3600*24)
+                   fac = fac*1000000 /(3600*24*nmdays(coming_date%month))
                 else
                    call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
              else
+!hourly
                 if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/h')then
                    !convert into kg/m2/s
                    fac = fac /(1000000.0*3600.0)
@@ -348,13 +401,15 @@ contains
                    if(EmisFiles(n)%periodicity /= 'hourly')then
                       call StopAll("Emis_source only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
                    endif
+                else if(Emis_source(is)%units == 'g/s')then
+                   fac = fac /(1000.0)
                 else
-                   call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units))       
+                   call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))       
                    !Note: easy to implement more unit choices. Just add "if" cases here
                 endif
              endif
              
-             if(Emis_source(is)%units == 'tons' .or. Emis_source(is)%units == 'tons/s' &
+             if(Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/s' &
                   .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/s' &
                   .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/s' )then   
                 !divide by gridarea
@@ -383,6 +438,9 @@ contains
              !assumes 12 records, one for each month
              EmisFiles(n)%end_of_validity_date = date(current_date%year,1,1,0,0)
              EmisFiles(n)%end_of_validity_date%month = current_date%month + 1     
+             if(EmisFiles(n)%end_of_validity_date%month>12)then
+                 EmisFiles(n)%end_of_validity_date = date(current_date%year+1,1,1,0,0)                 
+             endif
           else
              !the correct times must be written in the file and updated in Emis_GetCdf
           endif          
@@ -1409,51 +1467,66 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
 !Add emissions from new format
     do n = 1, NEmis_sources      
-       itot = find_index(Emis_source(n)%species,species(:)%name)
+       itot = Emis_source(n)%species_ix
+       isec = Emis_source(n)%sector
+       iland = Emis_source(n)%country_ix
        if(itot>0)then
-          !the species is directly defined (no splits, sector etc)
+          !the species is directly defined (no splits)
           iqrc = itot2iqrc(itot)
-          k=KMAX_MID
-          do j = 1,ljmax
-             do i = 1,limax
-                gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
-                     + Emis_source_2D(i,j,n)*ehlpcom0    &
-                     *emis_masscorr(iqrc)
-             end do   ! i
-          end do     ! j
+          if(isec>0)then
+             call CheckStop(iqrc<=0,"emitted sector species must belong to one of the splitted species")
+             iem = iqrc2iem(iqrc)
+             do j = 1,ljmax
+                do i = 1,limax
+                   s = Emis_source_2D(i,j,n)
+                   SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
+                   if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
+                        SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
+                      ! Add up emissions in ktonne 
+                   totemadd(itot) = totemadd(itot) &
+                        + s * dtgrid * xmd(i,j)
+                   !  Assign to height levels 1-KEMISTOP
+                   do k=KEMISTOP,KMAX_MID
+                      gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
+                           + s&
+                           *ehlpcom0    &
+                           *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                           *emis_masscorr(iqrc) !NB: assumes mass defined as a split nox, pm25... !
+                   end do   ! k
+                end do ! i
+             enddo
+          else
+             ! we do not include the emissions as a sector emission
+             !directly included in setup_rcemis
+          endif
        else
-          !the species is defines as a sector emission
-          iem_treated=find_index(Emis_source(n)%species,EMIS_FILE(:))
+          !the species is defined as a sector emission
+          iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
           call CheckStop(iem<0, "did not recognize species "//trim(Emis_source(n)%species))
           call CheckStop(Emis_source(n)%sector<=0," sector must be defined for "//trim(Emis_source(n)%varname))
-          isec = Emis_source(n)%sector
-          iland = Emis_source(n)%country_ix
-          iqrc = 0   ! index over emisfrac
-          do iem = 1, NEMIS_FILE 
-             do f = 1,emis_nsplit(iem)
-                iqrc = iqrc + 1
-                if(iem/=iem_treated)cycle !could do better: just to get iqrc right. Make a function itot(iem,f)
-                itot = iqrc2itot(iqrc)
-                do j = 1,ljmax
-                   do i = 1,limax
-                      s = Emis_source_2D(i,j,n) * emisfrac(iqrc,sec2split_map(isec),iland)
-
-                      SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
-                      if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
-                           SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
-                      ! Add up emissions in ktonne 
-                      totemadd(itot) = totemadd(itot) &
-                           + s * dtgrid * xmd(i,j)
-                      !  Assign to height levels 1-KEMISTOP
-                      do k=KEMISTOP,KMAX_MID
-                         gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
-                              + s&
-                              *ehlpcom0    &
-                              *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                              *emis_masscorr(iqrc)
-                      end do   ! k
-                   end do ! i
-                enddo
+          do f = 1,emis_nsplit(iem)
+             itot = iemsplit2itot(f,iem)
+             call CheckStop(itot<0, "did not recognize split "//trim(Emis_source(n)%species))
+             iqrc = itot2iqrc(itot)
+             do j = 1,ljmax
+                do i = 1,limax
+                   s = Emis_source_2D(i,j,n) * emisfrac(iqrc,sec2split_map(isec),iland)
+                   
+                   SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
+                   if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
+                        SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
+                   ! Add up emissions in ktonne 
+                   totemadd(itot) = totemadd(itot) &
+                        + s * dtgrid * xmd(i,j)
+                   !  Assign to height levels 1-KEMISTOP
+                   do k=KEMISTOP,KMAX_MID
+                      gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
+                           + s&
+                           *ehlpcom0    &
+                           *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                           *emis_masscorr(iqrc)
+                   end do   ! k
+                end do ! i
              enddo
           enddo
        endif

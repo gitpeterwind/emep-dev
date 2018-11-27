@@ -34,7 +34,8 @@ use Config_module,    only:  &
 use Debug_module,     only: DebugCell, DEBUG_MASS, DEBUG !->DEBUG%SETUP_1DCHEM
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS, SplitEmisOut, EmisOut
+                                , O_NH3, O_DMS, SplitEmisOut, EmisOut&
+                                , NEmis_sources, Emis_source, Emis_source_2D
 use EmisGet_mod,      only:  nrcemis, iqrc2itot, emis_nsplit, emis_masscorr
 use ForestFire_mod,   only: Fire_rcemis, burning
 use Functions_mod,    only:  Tpot_2_T
@@ -607,6 +608,10 @@ subroutine setup_rcemis(i,j)
   character(len=13) :: dtxt="setup_rcemis:"
   real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C,invDeltaZfac
   integer,save ::IC_NH3
+  real :: ehlpcom0
+
+  ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3              
+
 
   if(first_call)then
     inat_RDF = find_index( "Dust_ROAD_f", EMIS_BioNat(:) )
@@ -625,6 +630,21 @@ subroutine setup_rcemis(i,j)
   forall(k=KEMISTOP:KMAX_MID,iqrc=1:NRCEMIS) &
     rcemis(iqrc2itot(iqrc),k) = gridrcemis(iqrc,k,i,j)&
                                   *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
+
+
+!add emissions from new format which are "pure", i.e. not defined as one of the splitted or sector species
+    do n = 1, NEmis_sources      
+       itot = Emis_source(n)%species_ix
+       if(itot>0 .and. Emis_source(n)%sector<=0)then
+          k = Emis_source(n)%injection_k
+          rcemis(itot,k) = rcemis(itot,k)   &
+               + Emis_source_2D(i,j,n)*ehlpcom0    &
+               /species(itot)%molwt&
+               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
+       endif
+    enddo
+
+
 
   ! Volcanic emissions (SO2 and ASH),
   ! and Contribution from Emergeny scenarios
@@ -743,7 +763,6 @@ subroutine setup_rcemis(i,j)
         end if
      end do
   end if
-
 
   do k=KCHEMTOP, KMAX_MID
 

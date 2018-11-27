@@ -20,6 +20,33 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22-27 Nov 2018, Peter
+
+Time for CMAQ emissions improved, 3D emissions new format started (read but not yet used).
+Species cases:
+1) emitted species (nox,sox,pm25 ...) with sector (1...11)
+2) individual species (SO2, NO, NO2, ...) with sector. The species MUST be one of the splitted species.
+3) individual species (SO2, APINENE, O3 ...) without sector (<=0, or not specified)
+   In this case the emissions are summed up in setup_rcemis (not in EmisSet)
+
+Can inject into individual levels (only case 3), individual species without sector)
+
+e_fact (femis) is applied through the source%factor in Emis_init_GetCdf
+
+New format for FMI ship emissions included in config_emep.nml. 
+All attributes can specified and overwritten by the config (see example for EC).
+NB: this has different definitions, as the old method corrected REMPPM25 and
+POM_f_FFUEL for molecular weights, but should not (emissions in kg, not moles. to be confirmed by Jan Eiof?)
+
+Note on units "as SO2":
+if the sector is defined, units are defined "as SO2" and SO4 must include the 
+factor 0.6666 to be right. If sector is defined as zero, no factor is required.
+
+METSTEP settable in config
+Softcoded mw for roaddust
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14 Nov 2018, Dave
 

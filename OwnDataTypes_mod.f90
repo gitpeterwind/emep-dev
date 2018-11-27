@@ -188,13 +188,22 @@ end type poll_type
 type, public :: Emis_id_type
    character(len=TXTLEN_NAME) :: varname = 'NOTSET' !name of variable in netcdf file
    character(len=TXTLEN_NAME) :: species = 'NOTSET' !which species to put emissions into
-   character(len=TXTLEN_NAME) :: units = 'NOTSET'!in the netcdf file
+   character(len=TXTLEN_NAME) :: units = 'NOTSET'!units AFTER netcdf values are multiplied by factor
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
    integer :: sector = -1
-   real :: factor = -1.0 !scaling factor. multiply values by this number
+   integer :: species_ix = -1 ! internal index for species
+   integer :: injection_k = -1 !which model k level to put emissions into. Only for individual species 
+   real    :: factor = -1.0 ! scaling factor. multiply values by this number
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
    integer :: country_ix = 67 !Internal country index. Does not have any meaning outside of code
    integer :: height = 0 !could define own release height. not implemented
+   logical :: is3D = .false.
+   integer :: istart = -999
+   integer :: jstart = -999
+   integer :: kstart = -1
+   integer :: kend = -1
+   logical :: reversek = .true.
+   integer :: ix_in = -1!index of the corresponding source in the config defintions (internal use only)
 end type Emis_id_type
 
 integer, parameter, public :: NSOURCESMAX = 50
