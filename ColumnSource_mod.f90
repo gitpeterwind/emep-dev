@@ -44,7 +44,7 @@ logical, save ::          &
   need_topo    = .true.     ! do not use column emissions if topo file is not found
 
 integer, save ::  &
-  NMAX_LOC = 6,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
+  NMAX_LOC = 7,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
   NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
 
 integer, save ::  &! No. of ... found on processor/subdomain
