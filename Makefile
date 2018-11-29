@@ -198,6 +198,8 @@ AshInversion:
 	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar16 $(PROG)_3DVar16
 %-3DVar17: _3DVar
 	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar17 $(PROG)_3DVar17
+%-3DVar18: _3DVar
+	$(MAKE) -C ZD_3DVar18/ PROG=$(PROG)_3DVar18 $(PROG)_3DVar18
 
 
 # Archive: create $(PROG).tar.bz2
