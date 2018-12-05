@@ -518,7 +518,9 @@ contains
       !end do
       
       ! search in list of already defined keys:
-      iB = find_index( trim(ObsCompInfo(iObsComp)%Bfile), Bname(:) )
+      !iB = find_index( trim(ObsCompInfo(iObsComp)%Bfile), Bname(:) )
+      ! each seperate ...
+      iB = -1
       !! testing ..
       !write (gol,*) 'bbb2 iB=', iB
       ! new?
@@ -532,7 +534,7 @@ contains
         ! use B with model levels?
         select case ( trim(ObsCompInfo(iObsComp)%deriv) )
           !~ 2D operators:
-          case ( '2D-ML-SFC', '2D-OBS-SFC', '3D-ML-K1' )
+          case ( '2D-ML-SFC', '2D-OBS-SFC', '3D-ML-K1', '3D-ML-K2' )
             Bml(nBmat) = .false.
           !~ 3D operators:
           case ( '3D-ML', '3D-ML-SFC', '3D-ML-TC', '3D-ML-K' )
@@ -717,9 +719,13 @@ contains
 
 !#ifdef with_ajs
 !    ! debug ...
-!    dbg_i = 6
-!    dbg_j = 74
-!    dbg_cell = (dbg_i <= doms_adv_m%shp(2,me)) .and. (dbg_j <= doms_adv_m%shp(3,me))
+!    dbg_cell = .true.
+!    dbg_i = 25
+!    dbg_j = 23
+!    !call doms_adv_m%Inside( (/1,dbg_i,dbg_j,1/), status )
+!    !IF_ERROR_RETURN(status=1)
+!    !dbg_cell = status == 0
+!    !write (gol,*) 'xxx dbg_cell = ', dbg_cell; call goPr
 !#endif
 
     ! analyis tracers and order;
@@ -1355,12 +1361,6 @@ contains
                          du_loc=du_loc_B )
           IF_NOT_OK_RETURN(status=1)
           
-          ! info ...
-          if ( Bmats(iB)%nlev == 1 ) then
-            write (gol,'(a,":     copy component update (2D to 3D) ...")') rname; call goPr
-          else
-            write (gol,'(a,":     copy component update (3D) ...")') rname; call goPr
-          end if
           ! restore:
           if ( lny > 0 ) then
             ! copy:
@@ -1369,9 +1369,15 @@ contains
               iobs = Bmats(iB)%iObsComp(itracer)
               ! 2D to 3D ?
               if ( Bmats(iB)%nlev == 1 ) then
+                ! info ...
+                write (gol,'(a,":     copy 3D unobserved (B tracer ",i0,") into obs tracer ",i0," ...")') &
+                                     rname, itracer, iobs; call goPr
                 ! copy from 'unobserved' levels:
                 dx_loc(:,:,:,iobs) = du_loc_B(:,:,:,itracer)
               else
+                ! info ...
+                write (gol,'(a,":     copy 3D update (B tracer ",i0,") into obs tracer ",i0," ...")') &
+                                     rname, itracer, iobs; call goPr
                 ! copy, dx on all levels already:
                 dx_loc(:,:,:,iobs) = dx_loc_B(:,:,:,itracer)
               end if
@@ -1421,7 +1427,11 @@ contains
 
       ! loop over variables involved in analysis:
       do iObsComp = 1, nObsComp
-
+      
+        !! testing ..
+        !write (gol,'("xxx expand ",a)') trim(ObsCompInfo(iObsComp)%name); call goPr
+        !write (gol,'("xxx   deriv ",a)') trim(ObsCompInfo(iObsComp)%deriv); call goPr
+        
         ! (create neew routine "AnalysedFields" for this?)
         ! store analyzed fields (sfc,ml,tc) to output buffers if requested;
         ! switch between how simulations are derived:
@@ -1451,6 +1461,11 @@ contains
                 case ( 'ScaleBProfile' )
                   ! info ..
                   write (gol,'(a,"     scale with B profile  ...")') rname; call goPr
+                  !! testing ..
+                  !if ( dbg_cell ) then
+                  !  write (gol,*) 'xxx sf_an = ', sf_an(dbg_i,dbg_j,iObsComp); call goPr
+                  !  write (gol,*) 'xxx dx_an = ', dx_an(dbg_i,dbg_j,:,iObsComp); call goPr
+                  !end if
                   ! change original species following (sf+dx)/sf ratio:
                   call ObsCompInfo(iObsComp)%ChangeProfile( xn_adv, xn_adv_units, &
                                 sf_an(:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
@@ -1480,6 +1495,11 @@ contains
                 case ( 'ScaleBLFiCo' )
                   ! info ..
                   write (gol,'(a,"     change fine/coarse ratios in boundary layer ...")') rname; call goPr
+                  !! testing ..
+                  !if ( dbg_cell ) then
+                  !  write (gol,*) 'xxx sf_an = ', sf_an(dbg_i,dbg_j,iObsComp); call goPr
+                  !  write (gol,*) 'xxx dx_an = ', dx_an(dbg_i,dbg_j,:,iObsComp); call goPr
+                  !end if
                   ! analyzed total fine-pm is "xn_an+dx_an" ;
                   ! change fine/coarse ratio in "xn_adv" towards to this total,
                   ! but do not change the total fine+coarse:
@@ -1501,7 +1521,7 @@ contains
 
           ! dx contains 3D update
           ! (but only lowest layer might be used)
-          case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1' )
+          case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1', '3D-ML-K2' )
 
             ! copy 'observation analysis' fields into output buffers ;
             ! update 3D field, set surface to zero:
@@ -1542,12 +1562,12 @@ contains
                   ! info ..
                   write (gol,'(a,":   feedback ",a," (scale all layers) ...")') &
                                 rname, trim(ObsCompInfo(iObsComp)%name); call goPr
-                  ! index of surface layer:
-                  ilev = size(dx_an,3)
+                  !! index of surface layer:
+                  !ilev = size(dx_an,3)
                   ! change original species following (sf+dx)/sf ratio for lowest layer,
                   ! same factor in boundary layer and zero above:
                   call ObsCompInfo(iObsComp)%ChangeML( xn_adv, xn_adv_units, &
-                                xn_an(:,:,ilev,iObsComp), dx_an(:,:,ilev,iObsComp), xn_obs_units(iObsComp), &
+                                xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
                                 status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true. )
                   IF_NOT_OK_RETURN(status=1)
 
@@ -1556,13 +1576,27 @@ contains
                   ! info ..
                   write (gol,'(a,":   feedback ",a," (scale boundary layer) ...")') &
                                 rname, trim(ObsCompInfo(iObsComp)%name); call goPr
+                  !! index of surface layer:
+                  !ilev = size(dx_an,3)
+                  ! change original species following (sf+dx)/sf ratio for lowest layer,
+                  ! same factor in boundary layer and zero above:
+                  call ObsCompInfo(iObsComp)%ChangeML( xn_adv, xn_adv_units, &
+                                xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                                status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true., bl=.true. )
+                  IF_NOT_OK_RETURN(status=1)
+
+                !~ scale troposphere layer only
+                case ( 'ScaleTrop' )
+                  ! info ..
+                  write (gol,'(a,":   feedback ",a," (scale troposphere) ...")') &
+                                rname, trim(ObsCompInfo(iObsComp)%name); call goPr
                   ! index of surface layer:
                   ilev = size(dx_an,3)
                   ! change original species following (sf+dx)/sf ratio for lowest layer,
                   ! same factor in boundary layer and zero above:
-                  call ObsCompInfo(iObsComp)%ChangeML( xn_adv, xn_adv_units, &
-                                xn_an(:,:,ilev,iObsComp), dx_an(:,:,ilev,iObsComp), xn_obs_units(iObsComp), &
-                                status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true., bl=.true. )
+                  call ObsCompInfo(iObsComp)%ChangeVCD( xn_adv, xn_adv_units, &
+                                xn_an(:,:,:,iObsComp), dx_an(:,:,ilev,iObsComp), xn_obs_units(iObsComp), &
+                                status, verbose=.true. )
                   IF_NOT_OK_RETURN(status=1)
 
                 !~
@@ -1814,6 +1848,11 @@ contains
 
     ! --- begin -----------------------------
 
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy put ', trim(subclass); call goPr
+          !endif
+
     ! loop over 2D output fields:
     do iout = 1, size(f_2d)
       ! filter:
@@ -2027,8 +2066,13 @@ contains
                                           xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
                                           * fscale
           end if
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy put3d a ', trim(f_3d(iout)%txt), d_3d(iout,dbg_i,dbg_j,:,IOU_INST); call goPr
+          !endif
         end do  ! spec
       end if ! group
+
       ! add fraction of coarse nitrate ?
       if ( addno3c ) then
         ! find index of coarse nitrate:
@@ -2057,12 +2101,30 @@ contains
                                         xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
                                         * fscale
         end if
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy put3d b ', trim(f_3d(iout)%txt), d_3d(iout,dbg_i,dbg_j,:,IOU_INST); call goPr
+          !endif
       end if  ! add no3c frac
+
       ! add aerosol water?
       if ( addwater ) then
         ! add 3D aersosol water:
         d_3d(iout,:,:,:,IOU_INST) = d_3d(iout,:,:,:,IOU_INST) + PM25_water
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy put3d c ', trim(f_3d(iout)%txt), d_3d(iout,dbg_i,dbg_j,:,IOU_INST); call goPr
+          !endif
       end if ! add water
+
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  do k = 1, size(d_3d,4)
+          !    write (gol,*) 'yyy put3d max ', trim(f_3d(iout)%txt), ' layer ', k, &
+          !               maxval(d_3d(iout,:,:,k,IOU_INST)), maxloc(d_3d(iout,:,:,k,IOU_INST)); call goPr
+          !  end do
+          !endif
+
     end do  ! iout (3D output fields)
   
     ! ok
@@ -2568,27 +2630,27 @@ contains
     ! check ...
     select case ( omode )
       case ( 0 )
-        write (gol,'("omode==0: The simulator asks to stop by returning the value (indic=0)")'); call goErr
+        write (gol,'(a,": omode==0: The simulator asks to stop by returning the value (indic=0)")') rname; call goErr
         TRACEBACK; status=1; return
       case ( 1 )
-        write (gol,'("omode==1: Normal m1qn3 exit: successfull gradient test")'); call goPr
+        write (gol,'(a,": omode==1: Normal m1qn3 exit: successfull gradient test")') rname; call goPr
       case ( 2 )
-        write (gol,'("omode==2: One of the input arguments is not well initialized")'); call goErr
+        write (gol,'(a,": omode==2: One of the input arguments is not well initialized")') rname; call goErr
         TRACEBACK; status=1; return
       case ( 3 )
-        write (gol,'("omode==3: Line-search blocked on tmax = 10**20")'); call goErr
+        write (gol,'(a,": omode==3: Line-search blocked on tmax = 10**20")') rname; call goErr
         TRACEBACK; status=1; return
       case ( 4 )
-        write (gol,'("omode==4: Reached maximal number of iterations (maxiter)")'); call goPr
+        write (gol,'(a,": omode==4: Reached maximal number of iterations (maxiter)")') rname; call goPr
       case ( 5 )
-        write (gol,'("omode==5: Reached maximal number of simulations (maxsim)")'); call goPr
+        write (gol,'(a,": omode==5: Reached maximal number of simulations (maxsim)")') rname; call goPr
       case ( 6 )
-        write (gol,'("omode==6: Stop on dxmin during the line-search")'); call goPr
+        write (gol,'(a,": omode==6: Stop on dxmin during the line-search")') rname; call goPr
       case ( 7 )
-        write (gol,'("omode==7: Either <g,d> is nonnegative or <y,s> is nonpositive")'); call goErr
+        write (gol,'(a,": omode==7: Either <g,d> is nonnegative or <y,s> is nonpositive")') rname; call goErr
         TRACEBACK; status=1; return
       case default
-        write (gol,'("unsupported omode==",i0)') omode; call goErr
+        write (gol,'(a,": unsupported omode==",i0)') rname, omode; call goErr
         TRACEBACK; status=1; return
     end select
 
@@ -2621,7 +2683,7 @@ contains
 
     ! info ...
     if ( MasterProc ) then
-      write (gol,*) 'Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
+      write (gol,*) rname//': Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
     end if
 
 #ifdef with_ajs
@@ -2921,7 +2983,7 @@ contains
     use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
     use DA_Obs_ml            , only : T_ObsOpers
-    use DA_Obs_ml            , only : LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K1
+    use DA_Obs_ml            , only : LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K2
     use DA_Obs_ml            , only : LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC
 
     !-----------------------------------------------------------------------
@@ -3131,7 +3193,7 @@ contains
       !write (gol,'(a,": posteriori evaluation")') rname; call goPr
 
       ! clear:
-      call my_deallocate( MasterProc, "Postprocessing call to costFunction; no Chi2 need, so leave now." )
+      call my_deallocate( MasterProc, rname//": Postprocessing call to costFunction; no Chi2 need, so leave now." )
       ! ok
       status=0; return
 
@@ -3192,7 +3254,8 @@ contains
             !write (gol,*) rname//':    yyy1 yn     ', n, yn(n); call goPr
 
           ! scale profile using dx at first model layer
-          case ( LEVTYPE_3D_ML_K1 )
+          !case ( LEVTYPE_3D_ML_K1, LEVTYPE_3D_ML_K2 )
+          case ( LEVTYPE_3D_ML_K2 )
             ! check ...
             if ( Bmat%nlev /= 1 ) then
               write (gol,'("expected 2D fields for levtype sfc")'); call goErr
@@ -3351,7 +3414,8 @@ contains
           !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
 
         ! profile is scaled with factor relative to 2D analysis increment:
-        case ( LEVTYPE_3D_ML_K1 )
+        !case ( LEVTYPE_3D_ML_K1, LEVTYPE_3D_ML_K2 )
+        case ( LEVTYPE_3D_ML_K2 )
           ! check ...
           if ( Bmat%nlev /= 1 ) then
             write (gol,'("expected 2D fields for levtype sfc")'); call goErr

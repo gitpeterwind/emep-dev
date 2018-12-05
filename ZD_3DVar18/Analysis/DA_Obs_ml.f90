@@ -44,7 +44,8 @@ module DA_Obs_ml
   integer, parameter  ::  LEVTYPE_3D_ML      = 1  ! 3D model layers
   integer, parameter  ::  LEVTYPE_3D_ML_SFC  = 2  ! 3D model layers, surface simulation (3m)
   integer, parameter  ::  LEVTYPE_3D_ML_TC   = 3  ! 3D model layers, sum to total column
-  integer, parameter  ::  LEVTYPE_3D_ML_K1   = 4  ! 3D model layers, apply kernel for column
+  !integer, parameter  ::  LEVTYPE_3D_ML_K1   = 4  ! 3D model layers, apply kernel for column
+  integer, parameter  ::  LEVTYPE_3D_ML_K2   = 4  ! 3D model layers, apply kernel for column, trop
   integer, parameter  ::  LEVTYPE_2D_ML_SFC  = 5  ! 2D lowest model layer, surface simulation (3m)
   integer, parameter  ::  LEVTYPE_2D_OBS_SFC = 6  ! 2D simulated observations, surface simulation (3m)
   ! counter:
@@ -54,7 +55,7 @@ module DA_Obs_ml
                                         '3D_ML     ', &
                                         '3D_ML_SFC ', &
                                         '3D_ML_TC  ', &
-                                        '3D_ML_K1  ', &
+                                        '3D_ML_K2  ', &
                                         '2D_ML_SFC ', &
                                         '2D_OBS_SFC' /)
   
@@ -76,7 +77,8 @@ module DA_Obs_ml
   public    ::  LEVTYPE_3D_ML
   public    ::  LEVTYPE_3D_ML_SFC
   public    ::  LEVTYPE_3D_ML_TC
-  public    ::  LEVTYPE_3D_ML_K1
+  !public    ::  LEVTYPE_3D_ML_K1
+  public    ::  LEVTYPE_3D_ML_K2
   public    ::  LEVTYPE_2D_ML_SFC
   public    ::  LEVTYPE_2D_OBS_SFC
   
@@ -304,6 +306,7 @@ module DA_Obs_ml
     !procedure :: ChangeProfileFineCoarseRatio => ObsCompInfo_ChangeProfile_FineCoarseRatio
     procedure :: AdjustFineCoarseRatio        => ObsCompInfo_AdjustFineCoarseRatio
     procedure :: ChangeML                     => ObsCompInfo_ChangeML
+    procedure :: ChangeVCD                    => ObsCompInfo_ChangeVCD
     !
   end type T_ObsCompInfo
 
@@ -651,7 +654,8 @@ contains
       !  - eventually 'roa' (air density)
       !  - for surface: 'cfac' (due to deposition profile)
       !
-      case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1' )
+      !case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1', '3D-ML-K2' )
+      case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K2' )
       
         ! check ...
         if ( self%nspec /= 1 ) then
@@ -1051,6 +1055,11 @@ contains
     do i = 1, self%nspec
       ! global index:
       ispec = self%ispec(i)
+      ! check units ..
+      !if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+      !  write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+      ! TRACEBACK; status=1; return
+      !end if
       ! scale 3D:
       xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * ratio
       !! testing ...
@@ -2128,11 +2137,14 @@ contains
   !
   ! Input:
   !   xn_adv    :  model traces (all)
-  !   xn_obs    :  2D simulated observation field
-  !   dx_obs    :  2D analysis increments
+  !   xn_obs    :  simulated observation field
+  !   dx_obs    :  analysis increments
   !
-  ! Change tracers in boundary layer of 3D fields "xn_adv" following 2D ratio:
+  ! Change tracers in "xn_adv" following ratio:
   !    (xn_obs+dx_obs)/xn_obs
+  !
+  ! The 3D increment is used to ensure that factors applied
+  ! to the levels decrease to 1 at the top.
   !
   ! If bl=.true. layers are changed from bottom (nz) up to layer
   ! including boundary layer top ("pzpbl" from "MetFields_ml")
@@ -2150,8 +2162,8 @@ contains
     class(T_ObsCompInfo), intent(in)      ::  self
     real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
     character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
-    real, intent(in)                      ::  xn_obs(:,:)      ! (lnx,lny)
-    real, intent(in)                      ::  dx_obs(:,:)      ! (lnx,lny)
+    real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
+    real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
     character(len=*), intent(in)          ::  obs_units
     integer, intent(out)                  ::  status
     
@@ -2166,11 +2178,11 @@ contains
     ! --- local -----------------------------
     
     logical               ::  verb
-    integer               ::  nspec, lnx, lny, nz
-    integer               ::  is, ispec
-    integer               ::  i, j, k
-    real, allocatable     ::  ratio(:,:)  ! (lnx,lny)
     logical               ::  only_bl
+    integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  ratio(:,:)  ! (lnx,lny)
+    integer               ::  k
+    integer               ::  is, ispec
 
     ! --- begin -----------------------------
     
@@ -2202,53 +2214,47 @@ contains
     ! storage for relative change:
     allocate( ratio(lnx,lny), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
-    ! fill ratio, or set to unity if undefined (zero tracer sum):
-    where( xn_obs > 0.0 )
-      !              (   "analyzed" wrt obs   ) /  fg
-      ratio = ( xn_obs + dx_obs ) / xn_obs
-      !! TESTING: same ratio at all levels:
-      !ratio(:,:,k) = ( xn_obs + dx_obs(:,:,nz) ) / xn_obs
-    elsewhere
-      ratio = 1.0
-    end where
-    
-    ! use minimum ratio to avoid that all tracers are removed,
-    ! this would give errors from aerosol equilibrium routines:
-    ratio = max( 0.01, ratio )
-    ! maximum?
-    if ( present(maxratio) ) ratio = min( ratio, maxratio )
 
-    ! loop over contributing species:
-    do is = 1, self%nspec
-      ! global index:
-      ispec = self%ispec(is)
-    
-      ! loop over cells:
-      do i = 1, lnx
-        do j = 1, lny
+    ! loop over levels, skip top layer (boundary conditions):
+    do k = 2, nz
 
-          ! loop over levels (layer nz is equivalent to obs);
-          ! skip top layer (boundary conditions):
-          do k = 2, nz
-
-            ! layer ordered top (1) to bottom (nz),
-            ! gph boundaries for top (k) and bottom (k+1)
-            ! bottom below boundary layer?
-            if ( (only_bl .and. (z_bnd(i,j,k+1) < pzpbl(i,j))) &
-                 .or. (.not. only_bl) ) then
-
-              ! apply:
-              xn_adv(ispec,i,j,k) = xn_adv(ispec,i,j,k) * ratio(i,j)
-              
-            end if ! in bl
-
-          end do ! levels
-
-        end do ! j
-      end do ! i
+      ! fill ratio, or set to unity if undefined (zero tracer sum):
+      where( xn_obs(:,:,k) > 0.0 )
+        ratio = ( xn_obs(:,:,k) + dx_obs(:,:,k) ) / xn_obs(:,:,k)
+      elsewhere
+        ratio = 1.0
+      end where
       
-    end do ! specs
+      ! boundary layer only?
+      if ( only_bl ) then
+        ! reset if bottom is above boundary layer height:
+        where ( z_bnd(:,:,k+1) >= pzpbl )
+          ratio = 1.0
+        endwhere
+      end if
+
+      ! use minimum ratio to avoid that all tracers are removed,
+      ! this would give errors from aerosol equilibrium routines:
+      ratio = max( 0.01, ratio )
+      ! maximum?
+      if ( present(maxratio) ) ratio = min( ratio, maxratio )
+
+      ! loop over contributing species:
+      do is = 1, self%nspec
+        ! global index:
+        ispec = self%ispec(is)
+        ! check units ..
+        if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+          write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+        TRACEBACK; status=1; return
+        end if
+
+        ! apply:
+        xn_adv(ispec,:,:,k) = xn_adv(ispec,:,:,k) * ratio
+    
+      end do ! specs
+
+    end do ! levels
 
     ! clear:
     deallocate( ratio, stat=status )
@@ -2258,6 +2264,183 @@ contains
     status = 0
     
   end subroutine ObsCompInfo_ChangeML
+
+
+
+  ! *
+
+
+  !
+  ! Input:
+  !   xn_adv    :  model traces (all)
+  !   xn_obs    :  3D simulated observation field
+  !   dx_obs    :  2D analysis increments
+  !
+  ! Change tracers in "xn_adv" following vcd profile:
+  !    xn_obs(:) + vcd(:)/sum(vcd) dx_obs
+  !
+  ! No changes in layers above 200 hPa.
+  !
+  
+  subroutine ObsCompInfo_ChangeVCD( self, xn_adv, xn_adv_units, &
+                                       xn_obs, dx_obs, obs_units, status, &
+                                       verbose )
+
+
+    use PhysicalConstants_ml, only : Avog   ! 6.02e23 mlc/mole
+    use PhysicalConstants_ml, only : AtwAir ! 28.964 (g air)/mole
+    use GridValues_ml       , only : A_bnd, B_bnd
+    use MetFields_ml        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_ml        , only : roa
+    use MetFields_ml        , only : ps
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
+    real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
+    real, intent(in)                      ::  dx_obs(:,:)      ! (lnx,lny)
+    character(len=*), intent(in)          ::  obs_units
+    integer, intent(out)                  ::  status
+    
+    logical, intent(in), optional         ::  verbose
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeVCD'
+    
+    ! --- local -----------------------------
+    
+    logical               ::  verb
+    integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  vcd(:,:,:)        ! (lnx,lny,nz)
+    real, allocatable     ::  vc(:,:)           ! (lnx,lny)
+    real, allocatable     ::  fraction(:,:)     ! (lnx,lny)
+    real, allocatable     ::  ph(:,:,:)         ! (lnx,lny,nz)
+    integer               ::  ilev
+    integer               ::  i, j
+    integer               ::  is, ispec
+
+    ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
+    
+    ! shape:
+    nspec = size(xn_adv,1)
+    lnx   = size(xn_adv,2)
+    lny   = size(xn_adv,3)
+    nz    = size(xn_adv,4)
+    
+    !! testing ...
+    !i = 1
+    !j = 1
+    !write (gol,*) 'xxx testing pbl'; call goPr
+    !write (gol,*) 'xxx z_bnd ', lbound(z_bnd), ubound(z_bnd); call goPr
+    !do k = 1, nz
+    !  write (gol,*) 'xxx   layer top,bottom : ', z_bnd(i,j,k:k+1); call goPr
+    !end do
+    !write (gol,*) 'xxx pbl', pzpbl(i,j); call goPr
+    !TRACEBACK; status=1; return
+    
+    ! storage for column densities:
+    allocate( vcd(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! total:
+    allocate( vc(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! storage for fractions
+    allocate( fraction(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! half leel pressure:
+    allocate( ph(lnx,lny,0:nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! fill using hybride coeff;
+    ! first record of surface pressure is said to be the correct one ..
+    do j = 1, lny
+      do i = 1, lnx
+        ph(i,j,:) = A_bnd + B_bnd * ps(i,j,1)
+      end do
+    end do
+
+    ! [1e15 mlc/cm2]/m = 
+    !   (mole tracer)/(mole air)   ! input units (ppv)
+    !   * (kg air)/m3              ! applied later
+    !   * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
+    vcd = xn_obs * & ! ppv
+          roa(:,:,:,1) * & ! kg/m3
+          1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m
+
+    ! loop over levels:
+    do ilev = 1, nz
+      ! multiply with layer thickness:
+      !                 <units>/m    *                   m
+      vcd(:,:,ilev) = vcd(:,:,ilev)  * ( z_bnd(:,:,ilev) - z_bnd(:,:,ilev+1) )  ! <units>
+    end do
+    
+    ! skip above tropo:
+    where( ph(:,:,1:nz) < 200.0e2 )
+      vcd = 0.0  ! <units>
+    end where
+    
+    ! sum:
+    vc = sum(vcd,dim=3)  ! <units>
+    
+    !write (gol,*) 'vvv1 dx_obs = ', dx_obs(60,1); call goPr
+    !write (gol,*) 'vvv1 vc = ', vc(60,1); call goPr
+    
+    ! loop over levels, skip top layer (boundary conditions):
+    do ilev = 2, nz
+    
+      ! fractions:
+      where ( vc > 0.0 )
+        fraction = vcd(:,:,ilev) / vc
+      elsewhere
+        fraction = 1.0
+      end where
+
+      ! loop over contributing species:
+      do is = 1, self%nspec
+        ! global index:
+        ispec = self%ispec(is)
+        ! check units ..
+        if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+          write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+          TRACEBACK; status=1; return
+        end if
+        
+        !write (gol,*) 'vvv1 lev ', ilev, fraction(60,1), xn_adv(ispec,60,1,ilev), &
+        !          xn_adv(ispec,60,1,ilev) + fraction(60,1) * dx_obs(60,1); call goPr
+
+        ! apply:
+        xn_adv(ispec,:,:,ilev) = max( 0.0, xn_adv(ispec,:,:,ilev) + fraction * dx_obs )
+    
+      end do ! specs
+
+    end do ! levels
+    
+    !print *, 'break'
+    !TRACEBACK; status=1; return
+
+    ! clear:
+    deallocate( vcd, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( vc, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( fraction, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( ph, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_ChangeVCD
+
 
 
   !=========================================================================
@@ -2410,27 +2593,28 @@ contains
       write (gol,'(a,":     type      : ",a)') rname, trim(obsData(iObsData)%deriv); call goPr
       ! compare with current:
       iObsComp = -999
-      do i = 1, nObsComp
-        ! match?
-        if ( trim(obsData(iObsData)%name) == trim(ObsComp(i)) ) then
-          ! store index:
-          iObsComp = i
-          ! check ...
-          if ( trim(ObsBUnit(iObsComp)) /= trim(obsData(iObsData)%Bunit) ) then
-            write (gol,'("could not handle observations of the same component with different Bunits yet")'); call goErr
-            write (gol,'("obsdata Bunit   : ",a)') trim(obsData(iObsData)%Bunit); call goErr
-            write (gol,'("collected Bunit : ",a)') trim(ObsBUnit(iObsComp)); call goErr
-            TRACEBACK; status=1; return
-          end if
-          ! check ...
-          if ( trim(ObsBfile(iObsComp)) /= trim(obsData(iObsData)%Bfile) ) then
-            write (gol,'("could not handle observations of the same component for different Bfiles yet")'); call goErr
-            TRACEBACK; status=1; return
-          end if
-          ! leave:
-          exit
-        end if
-      end do
+!TESTING: all individually
+!      do i = 1, nObsComp
+!        ! match?
+!        if ( trim(obsData(iObsData)%name) == trim(ObsComp(i)) ) then
+!          ! store index:
+!          iObsComp = i
+!          ! check ...
+!          if ( trim(ObsBUnit(iObsComp)) /= trim(obsData(iObsData)%Bunit) ) then
+!            write (gol,'("could not handle observations of the same component with different Bunits yet")'); call goErr
+!            write (gol,'("obsdata Bunit   : ",a)') trim(obsData(iObsData)%Bunit); call goErr
+!            write (gol,'("collected Bunit : ",a)') trim(ObsBUnit(iObsComp)); call goErr
+!            TRACEBACK; status=1; return
+!          end if
+!          ! check ...
+!          if ( trim(ObsBfile(iObsComp)) /= trim(obsData(iObsData)%Bfile) ) then
+!            write (gol,'("could not handle observations of the same component for different Bfiles yet")'); call goErr
+!            TRACEBACK; status=1; return
+!          end if
+!          ! leave:
+!          exit
+!        end if
+!      end do
       ! not defined yet?
       if ( iObsComp < 0 ) then
         ! increase counter:
@@ -3360,6 +3544,8 @@ contains
     real                 ::  uconv
     logical              ::  needroa
     real, allocatable    ::  ph(:)  ! (0:nlev)
+    real, allocatable    ::  H0(:)  ! (1:nlev)
+    real, allocatable    ::  vcd(:)  ! (1:nlev)
     real                 ::  Hi
     real                 ::  xn1
     real                 ::  yn_blh
@@ -3581,7 +3767,8 @@ contains
     
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! derive from 3D model levels using kernels
-      case ( '3D-ML-K1' )
+      !case ( '3D-ML-K1', '3D-ML-K2' )
+      case ( '3D-ML-K2' )
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         ! only for single species yet ..
@@ -3595,8 +3782,6 @@ contains
         ! spec index in xn_adv array:
         ispec = ObsCompInfo(self%iObsComp)%ispec(itr)
 
-        ! defined on 3D field:
-        self%levtype = LEVTYPE_3D_ML_K1
         ! all levels are involved:
         self%l = (/1,nlev/)
 
@@ -3632,6 +3817,9 @@ contains
         !write (gol,*) 'xxx B_bnd ', lbound(B_bnd), ';', ubound(B_bnd); call goPr
         !write (gol,*) 'xxx cell  ', self%i, self%j; call goPr
         
+        ! Limit change of model profile to OMI trop.column top at 200 hPa?
+        ! First 17 layers are below this top ..
+        
         ! storage for model half level pressures:
         allocate( ph(0:nlev), stat=status )
         IF_NOT_OK_RETURN(status=1)
@@ -3653,18 +3841,25 @@ contains
         !end do
         !write (gol,'("ppp0 ")'); call goPr
         
+        ! jacobian without kernel:
+        allocate( H0(1:nlev), stat=status, source=0.0 )
+        IF_NOT_OK_RETURN(status=1)
+        ! partial columns:
+        allocate( vcd(1:nlev), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        
         ! loop over layers:
         do ilev = self%l(0), self%l(1)
           ! init with factor:
-          self%H_jac(ilev) = uconv   ! <units> / m / (kg/m3) / ppv
+          H0(ilev) = uconv   ! <units> / m / (kg/m3) / ppv
           ! use density conversion?
           if ( needroa ) then
-            !                  <units>/m/(kg/m3)/ppv      (kg/m3)
-            self%H_jac(ilev) =    self%H_jac(ilev)    * roa(i,j,ilev,1)   ! <units> / m / ppv
+            !          <units>/m/(kg/m3)/ppv      (kg/m3)
+            H0(ilev) =        H0(ilev)        * roa(i,j,ilev,1)   ! <units> / m / ppv
           end if
-          ! layer thickness:
-          !                   <units>/m/ppv   *                   m
-          self%H_jac(ilev) = self%H_jac(ilev) * ( z_bnd(i,j,ilev) - z_bnd(i,j,ilev+1) )  ! <units> / ppv
+          ! multiply with layer thickness:
+          !          <units>/m/ppv   *                   m
+          H0(ilev) =    H0(ilev)     * ( z_bnd(i,j,ilev) - z_bnd(i,j,ilev+1) )  ! <units> / ppv
           
           ! contribution of this layer in kernel-weighted column:
           call PartialColumnContribution( ph(ilev-1), ph(ilev), ObsKernels(self%iObsData)%nlayer, &
@@ -3673,8 +3868,11 @@ contains
                                            Hi, status )
           IF_NOT_OK_RETURN(status=1)
           ! apply:
-          !                   <units>/m/ppv   * 1
-          self%H_jac(ilev) = self%H_jac(ilev) * Hi  ! <units> / ppv
+          !                   <units>/m/ppv  * 1
+          self%H_jac(ilev) =      H0(ilev)   * Hi  ! <units> / ppv
+          
+          ! reset above 200 hPa:
+          if ( ph(ilev) < 200.0e2 ) H0(ilev) = 0.0
         
           !! testing ..
           !if ( modulo(self%stnid-1,10) == 0 ) then
@@ -3683,12 +3881,15 @@ contains
 
         end do ! ilev
         
+        !! testing ...
+        !write (gol,'("ppp1 model layers: ",i0)') nlev; call goPr
+        !do ilev = 1, nlev
+        !  write (gol,'("ppp1 layer ",i2,2f12.2,f16.2)') ilev, ph(ilev-1), ph(ilev), H0(ilev); call goPr
+        !end do
+        !write (gol,'("ppp1 ")'); call goPr
+        
         !write (gol,*) 'xxx break'; call goPr
         !TRACEBACK; status=1; return
-
-        ! clear:
-        deallocate( ph, stat=status )
-        IF_NOT_OK_RETURN(status=1)
 
         ! init simulation:
         yn = 0.0
@@ -3721,42 +3922,87 @@ contains
         !  TRACEBACK; status=1; return
         !end if
         
-        ! analysis should scale concentration in boundary layer
-        ! relative to change at lowest model layer
-        ! (which is also used to simulate surface (at 3m) concentrations)
-        !     vcd       [units]
-        !     --- dx    -------  [ppv]
-        !     xn1        [ppv]
-        ! where both xn1 and dx are in model concentration units
-        ! (observation operator H_jac converts to observations units, 
-        ! for example ug/m3 or 1e15 mlc/cm2)   
-        ! level from which surface is computed:
-        ilev = nlev    ! bottom layer (top-down order!)
-        ! conventration value for lowest layer (in model units):
-        xn1 = xn_obs(i,j,ilev,self%iObsComp)  ! ppv
-        !
-        !! the "ObsCompInfo(self%iObsComp)%units" is the units of B (probably "ug/m3")
-        !! and therefore the units of the analysis increment ;
-        !! the "unitconv(itr)" factor and "unitroa(itr)" flag convert from model units (ppb?)
-        !! to these "increment" units:
-        !xn1 = xn1 * ObsCompInfo(self%iObsComp)%unitconv(itr)
-        !if ( ObsCompInfo(self%iObsComp)%unitroa(itr) ) then
-        !  xn1 = xn1 * roa(i,j,ilev,1)
-        !end if
-        !
-        ! ratio between boundary layer column and surface value;
-        ! skip values with very small concentrations in lowest layer (in ppv):
-        if ( xn1 < 1.0e-12 ) then
-          self%H_jac1 = 0.0
-        else
-          !! TESTING: blame boundary layer only:
-          !self%H_jac1 = yn_blh / xn1   ! units/ppv
-          ! blame entire profile:
-          self%H_jac1 = yn / xn1   ! units/ppv
-        end if
+!        if ( trim(obsData(self%iObsData)%deriv) == '3D-ML-K1' ) then
+!
+!          ! analysis should scale concentration in boundary layer
+!          ! relative to change at lowest model layer
+!          ! (which is also used to simulate surface (at 3m) concentrations)
+!          !     vcd       [units]
+!          !     --- dx    -------  [ppv]
+!          !     xn1        [ppv]
+!          ! where both xn1 and dx are in model concentration units
+!          ! (observation operator H_jac converts to observations units, 
+!          ! for example ug/m3 or 1e15 mlc/cm2)   
+!          ! level from which surface is computed:
+!          ilev = nlev    ! bottom layer (top-down order!)
+!          ! conventration value for lowest layer (in model units):
+!          xn1 = xn_obs(i,j,ilev,self%iObsComp)  ! ppv
+!          !
+!          !! the "ObsCompInfo(self%iObsComp)%units" is the units of B (probably "ug/m3")
+!          !! and therefore the units of the analysis increment ;
+!          !! the "unitconv(itr)" factor and "unitroa(itr)" flag convert from model units (ppb?)
+!          !! to these "increment" units:
+!          !xn1 = xn1 * ObsCompInfo(self%iObsComp)%unitconv(itr)
+!          !if ( ObsCompInfo(self%iObsComp)%unitroa(itr) ) then
+!          !  xn1 = xn1 * roa(i,j,ilev,1)
+!          !end if
+!
+!          ! defined on 3D field:
+!          self%levtype = LEVTYPE_3D_ML_K1
+!          ! ratio between boundary layer column and surface value;
+!          ! skip values with very small concentrations in lowest layer (in ppv):
+!          if ( xn1 < 1.0e-12 ) then
+!            self%H_jac1 = 0.0
+!          else
+!            !! TESTING: blame boundary layer only:
+!            !self%H_jac1 = yn_blh / xn1   ! units/ppv
+!            ! blame entire profile:
+!            self%H_jac1 = yn / xn1   ! units/ppv
+!          end if
+!        
+!          !! testing ...
+!          !write (gol,*) 'xxx1 H_jac1 : ', yn_blh, xn1, self%H_jac1; call goPr
+!          
+!        else 
+        if ( trim(obsData(self%iObsData)%deriv) == '3D-ML-K2' ) then
+
+          ! defined on 3D field:
+          self%levtype = LEVTYPE_3D_ML_K2
+          
+          ! assume that increment dx is distrbuted relative to current vcd:
+          !   x(:) +  vcd(:)/sum(vcd(:)) dx
+          ! jacobian of observation operator w.r.t. dx:
+          !   H_jac^T vcd(:)/sum(vcd)
+          
+          ! current columns:
+          !     units/ppv             ppv
+          vcd =     H0    * xn_obs(i,j,:,self%iObsComp)  ! units
+          
+          ! jacobian for application of dx:
+          if ( sum(vcd) > 0.0 ) then
+            !                   units/ppv   units/units
+            self%H_jac1 = sum( self%H_jac * vcd )/sum(vcd)   ! units/ppv
+          else
+            ! no change:
+            self%H_jac1 = 0.0   ! units/ppv
+          end if
         
-        !! testing ...
-        !write (gol,*) 'xxx1 H_jac1 : ', yn_blh, xn1, self%H_jac1; call goPr
+          !! testing ...
+          !write (gol,*) 'xxx1 H_jac1 : ', i,j, sum(vcd), self%H_jac1; call goPr
+          !TRACEBACK; status=1; return
+          
+        else
+          write (gol,'("unsupported deriv `",a,"`")') trim(obsData(self%iObsData)%deriv); call goErr
+          TRACEBACK; status=1; return
+        end if
+
+        ! clear:
+        deallocate( ph, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        deallocate( H0, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        deallocate( vcd, stat=status )
+        IF_NOT_OK_RETURN(status=1)
                          
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! 2D field of observation simulations
@@ -3986,7 +4232,7 @@ contains
         !  TRACEBACK; status=1; return
         !end if
       !~ model levels:
-      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K1 )
+      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K2 )
         ! level range:
         l0 = self%l(0)
         l1 = self%l(1)
@@ -4594,8 +4840,8 @@ contains
         ! for logfile:
         if ( MasterProc ) then
           if ( tab_tot(iobscomp,ilevtype,1) > 0 ) then
-            write (gol,'("number of analyzed ",a6," ",a10," observations: ",i6)') &
-                              trim(ObsCompInfo(iobscomp)%name), &
+            write (gol,'(a,": number of analyzed ",a6," ",a10," observations: ",i6)') &
+                              rname, trim(ObsCompInfo(iobscomp)%name), &
                               trim(LEVTYPE_NAME(ilevtype)), tab_tot(iobscomp,ilevtype,1); call goPr
             !call PrintLog(gol)
           end if  ! any obs

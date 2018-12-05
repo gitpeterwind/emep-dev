@@ -47,8 +47,7 @@ module DA_Util_ml
   integer, parameter    ::  goFuRange(2) = (/200,999/)
 
   ! go_print
-  !logical, parameter  :: GO_QUIET = .true.
-  logical, parameter  :: GO_QUIET = .false.
+  logical, parameter  :: GO_QUIET = .true.
 #endif
 
 
