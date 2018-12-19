@@ -235,8 +235,10 @@ integer, public, save :: &
   logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
   logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
-! Methane background.
-  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_mod,
+! Methane background:
+!  -1 gives defaults in BoundaryConditions_mod
+!  -26,-45 or -85 gives RC26, P45, 85 for iyr_trend
+  real, public, save :: BGND_CH4 = -1  
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
@@ -515,6 +517,8 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
+! Can use RCP values of CH4 for given iyr_trend.
+character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 
@@ -621,6 +625,7 @@ subroutine Config_ModelConstants(iolog)
    ,EUROPEAN_settings & ! The domain covers Europe -> 
    ,GLOBAL_settings & ! The domain cover other regions too -> Convection
    ,fileName_O3_Top&
+   ,fileName_CH4_ibcs&
    ,femisFile&
    ,Vertical_levelsFile&
    ,EmisHeightsFile&
@@ -732,6 +737,13 @@ subroutine Config_ModelConstants(iolog)
      if(MasterProc)then
         write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
         write(*,*)trim(fileName_O3_Top)
+     end if
+  endif
+
+  if(trim(fileName_CH4_ibcs)/="NOTSET")then
+     fileName_CH4_ibcs = key2str(fileName_CH4_ibcs,'DataDir',DataDir)
+     if(MasterProc)then
+        write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
      end if
   endif
 

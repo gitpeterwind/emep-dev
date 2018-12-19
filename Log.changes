@@ -22,6 +22,19 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 Dec 2018, Dave
+
+Added possibility to take CH4 BCs from RCP values (2.6, 4.5, or 8.5 so far)
+
+BoundaryConditions_mod - now looks for fileName_CH4_ibcs
+Config_module          - adding fileName_CH4_ibcs
+config_emep.nml        - adding fileName_CH4_ibcs, commented out so far
+
+Setup_1d_mod - small clean out of A2018 comments
+
+Files added to DataDir/BoundaryConditions (stallo only so far).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22-27 Nov 2018, Peter
 
 Time for CMAQ emissions improved, 3D emissions new format started (read but not yet used).

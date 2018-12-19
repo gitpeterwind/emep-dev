@@ -14,9 +14,8 @@ use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV, NCHEMRATES, NEMIS_File
 use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemFunctions_mod,only: S_RiemerN2O5
-!A2018 use ChemGroups_mod,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP, chemgroups
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
-use ChemRates_mod,    only:  setChemrates ! A2018, rct, NRCT
+use ChemRates_mod,    only:  setChemrates ! rct, NRCT
 use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
 use CheckStop_mod,    only:  CheckStop, StopAll,checkValidArray
 use ColumnSource_mod, only: ColumnRate
@@ -105,7 +104,7 @@ contains
     character(len=30)  :: fmt="(a32,i3,99es13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
-   ! for surface area calcs (A2018): 
+   ! for surface area calcs: 
    ! had: SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7 ORIG=8,NSAREA=NSAREA_DEF
 !M24    integer, parameter :: NGERBER = NSAREA_DEF-1  ! Skip PM=7
 !M24    integer, save, dimension(NGERBER) :: iGerber
@@ -116,8 +115,6 @@ contains
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
     logical :: is_finepm, is_ssalt, is_dust, is_sia
     logical, dimension(size(PM10_GROUP)), save  :: is_BC 
-    !A2018 real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
-    !A2018 Array below might need reconsideration. Link between
     ! AERO and DDspec still confusing
     real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter. 
     integer :: iw, ipm ! for wet rad
@@ -131,8 +128,8 @@ contains
     integer           :: k, n, ispec   ! loop variables
     real              :: qsat ! saturation water content
     integer, save :: nSKIP_RCT = 0
-    integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup !A2018
-    integer, save :: iBCfgroup,iBCcgroup                     !A2018
+    integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup
+    integer, save :: iBCfgroup,iBCcgroup
     logical, save, dimension(size(PM10_GROUP)) :: & ! arrays
        is_finepm_a,   &  ! 
        is_ssalt_a,    &  ! 
@@ -147,7 +144,7 @@ contains
 
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
-      !A2018 - find surrogates for Gerber area calcs, to get Dp,rho,sigma)
+      !- find surrogates for Gerber area calcs, to get Dp,rho,sigma)
       ! Note, if a species is not found (eg seasalt) then iGerber
       ! is negative
       !QUERY: Should we then set USES%SURF_AREA False?
@@ -168,7 +165,7 @@ contains
        aeroDDspec(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
        aeroDDspec(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
 
-      !A2018 see which groups we have:
+      ! see which groups we have:
        iSIAgroup = find_index('SIA',chemgroups(:)%name)
        iSSgroup  = find_index('SS',chemgroups(:)%name)
        iDUgroup  = find_index('Dust',chemgroups(:)%name,any_case=.true.)
@@ -195,27 +192,22 @@ contains
           end do
        end if
 
-      !A2018 changes - SS and DU not essential now
-      !A2018 CHECK
-      !A2018 changes - SS and DU not essential now
+      ! changes - SS and DU not essential now
        do ipm = 1, size( PM10_GROUP )
           ispec = PM10_GROUP(ipm)
-          if ( iPMfgroup>0 ) is_finepm_a(ipm)  = & !A2018 methid
+          if ( iPMfgroup>0 ) is_finepm_a(ipm)  = &
                     ( find_index( ispec, chemgroups(iPMfgroup)%specs ) >0)
-          if ( iSSgroup>0 ) is_ssalt_a(ipm)  = & !A2018 methid
+          if ( iSSgroup>0 ) is_ssalt_a(ipm)  = &
                     ( find_index( ispec, chemgroups(iSSgroup)%specs ) >0)
-          if ( iDUgroup>0 ) is_dust_a(ipm)  = & !A2018 methid
+          if ( iDUgroup>0 ) is_dust_a(ipm)  = &
                     ( find_index( ispec, chemgroups(iDUgroup)%specs ) >0)
-          if ( iSIAgroup>0 ) is_sia_a(ipm)  = & !A2018 methid
+          if ( iSIAgroup>0 ) is_sia_a(ipm)  = &
                     ( find_index( ispec, chemgroups(iSIAgroup)%specs ) >0)
           if( MasterProc) then
             write(*,'(2a,5i5,5L2)') dtxt//"is_ PMf, SS, DU BC SIA? ",&
             species(ispec)%name, ipm, iPMfgroup,iSSgroup,iDUgroup,iBCfgroup,&
                is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm), is_sia_a(iPM)
           end if
-          !A2018 is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
-          !A2018 is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
-          !A2018 is_dust_a(ipm)   = ( find_index( ispec, DUST_GROUP )>0)
        enddo
 
        do n = 1, size(SKIP_RCT)
@@ -305,7 +297,6 @@ contains
                ugpmF  = ugpmF   + ugtmp
                if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
                if(is_dust ) ugDustF  = ugDustF   +  ugtmp
-               !A2018 if( find_index( ispec, SIA_GROUP )>0 ) &
                if( is_sia ) & !BUG iSIAgroup >0 ) &
                     ugSIApm  = ugSIApm + ugtmp
                if(is_BC(ipm)) ugBCf = ugBCf  +  ugtmp
@@ -330,7 +321,7 @@ contains
                ugNO3c= ugNO3c +  ugtmp
              end if
 
-            !A2018. Handle surface area here:
+            ! Handle surface area here:
  
              if( debug_flag .and. k==KMAX_MID ) then
                write(*, fmt) dtxt//"UGSIA:"//trim(species(ispec)%name), &
@@ -356,11 +347,11 @@ contains
           aero_fbc(k)     = ugBCf/ugpmF
           aero_fom(k)     = max(0.0, ugRemF)/ugpmF
 
-          !A2018 GERBER equations for wet radius
-          !A2018 New approach to Gerber. We use masses above. 
+          ! GERBER equations for wet radius
+          ! New approach to Gerber. We use masses above. 
           ! STILL CRUDE :-( NOT SURE THIS IS BEST APPROACH but
           ! hopefully works 'okay', maybe??!
-          !A2018 NOTE: There was a bug anyway in Gerber Table, but we recode
+          ! NOTE: There was a bug anyway in Gerber Table, but we recode
           ! now to avoid need for Inddry index
 
           do iw = 1, NSAREA_CALC ! Skips PM=7 which is sum
@@ -418,72 +409,13 @@ contains
               end if
           end if
 
-!A2018 PREV!          AREALOOP: do iw = 1, AERO%NSAREA 
-!A2018 PREV!
-!A2018 PREV!            Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
-!A2018 PREV!
-!A2018 PREV!            if( AERO%Gb(iw) > 0 ) then
-!A2018 PREV!              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
-!A2018 PREV!
-!A2018 PREV!            else ! index -1 indicates use dry (for dust)
-!A2018 PREV!              DpgNw(iw,k)  = Ddry(iw)
-!A2018 PREV!            end if
-!
-!A2018 PREV!            if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
-!A2018 PREV!              1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
-!A2018 PREV!          end do AREALOOP
-!A2018 PREV!
-!A2018 PREV!           iw= AERO%SIA_F
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!           iw= AERO%PM_F ! now use for fine PM
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!           iw= AERO%SS_F
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!           iw= AERO%SS_C
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!          ! dust - just used dry radius
-!A2018 PREV!           iw= AERO%DU_F
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!           iw= AERO%DU_C
-!A2018 PREV!           rho=AERO%PMdens(AERO%Inddry(iw))
-!A2018 PREV!           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-!A2018 PREV!                                     rho_kgm3=rho )
-!A2018 PREV!
-!A2018 PREV!!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
-!A2018 PREV!
-!tmp          if( debug_flag .and. k==20 )  then
-  if ( DebugCell .and. k==KMAX_MID ) then
+          if ( DebugCell .and. k==KMAX_MID ) then
             write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
             ugpmf, ugSSaltC, ugDustC
             do iw = 1, NSAREA_CALC
              write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
-  end if
-!A2018 PREV!
-!A2018 PREV!           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
-!A2018 PREV!
-!A2018 PREV!           ! For total area, we simply sum. We ignore some non-SS or dust _C.
-!A2018 PREV!           iw= AERO%PM
-!A2018 PREV!           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
-!A2018 PREV!                             + S_m2m3(AERO%DU_C,k) 
-
-!A2018SKIP           iw= AERO%ORIG
-!A2018SKIP           S_m2m3(iw,k) = S_RiemerN2O5(k)
+          end if
 
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
@@ -521,7 +453,6 @@ contains
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
 
-   !A2018 call set_rct_rates()
    !====================
    call setChemRates()
    !====================
@@ -561,7 +492,6 @@ contains
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then
             !check if index of rate constant (config) possible
-             !A2018 if ( f_2d(itmp)%index > NRCT ) then
              if ( f_2d(itmp)%index > NCHEMRATES ) then
                 if(MasterProc) write(*,*) 'RCT NOT AVAILABLE!', itmp, &
                   f_2d(itmp)%index, NCHEMRATES
@@ -763,6 +693,7 @@ subroutine setup_rcemis(i,j)
         end if
      end do
   end if
+
 
   do k=KCHEMTOP, KMAX_MID
 
