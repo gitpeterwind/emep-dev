@@ -81,9 +81,6 @@ module Biogenics_mod
   !/-- subroutines for soil NO
   public :: Set_SoilNOx
 
-  !A2018 INCLUDE 'mpif.h'
-  !A2018 include 'CM_EmisBioNat.inc'
-  !A2018 moved from Config_module:
   integer, public, parameter ::   NBVOC = 3
   character(len=4),public, save, dimension(NBVOC) :: &
      BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
@@ -622,7 +619,6 @@ module Biogenics_mod
      ! Emissions_mod (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
 
 
-      !A2018 rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
       rcbio(NATBIO%C5H8,KG)   = E_ISOP * biofac_ISOP/Grid%DeltaZ
       EmisNat(NATBIO%C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
 
@@ -637,7 +633,6 @@ module Biogenics_mod
 
  ! add pool-only terpenes rate;
   E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m) * EmBio%TerpFac
- !A2018 rcemis(itot_TERP,KG)    = rcemis(itot_TERP,KG) + &
   rcbio(NATBIO%TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
   EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
 
@@ -672,11 +667,9 @@ module Biogenics_mod
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
       call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j), SoilNH3(i,j) /) ) 
-      !A2018 if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcemis(itot_NH3,KG) /) ) 
       if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
       call datewrite(dtxt//" rcemisL ", (/ &
             rcbio(NATBIO%C5H8,KG), rcbio(NATBIO%TERP,KG) /))
-            !A2018 rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
       call datewrite(dtxt//" EmisNat ", EmisNat(:,i,j) )
 
      end if
