@@ -450,6 +450,7 @@ contains
     real :: x, resolution, default_resolution, Rlat(2)
     integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
     real, allocatable ::Rlat2D(:,:)
+    character(len=*), parameter :: dtxt='Em_inicdf:'
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -459,6 +460,12 @@ contains
        stop
     end if
 
+
+   !-------------
+    associate ( debugm0 => ( DEBUG%GETEMIS .and. MasterProc ) )
+   !-------------
+    if ( debugm0 ) write(*,*) dtxt//'Start File:',trim(fname)
+    
 
     if(EmisFile_in%projection /= 'native')then
        default_projection = 'Unknown'
@@ -473,7 +480,7 @@ contains
           default_resolution = resolution
        else
           call make_gridresolution(ncFileID, default_resolution)
-          if(me==0)write(*,*)'made resolution :',default_resolution
+          if(me==0)write(*,*)dtxt//'made resolution :',default_resolution
        endif
     endif
        
@@ -492,18 +499,23 @@ contains
 
        nn = 0
        do i = 1,size(EmisFile_in%source)       
+          !if ( debugm0 ) write(*,*) dtxt//'source:',trim(EmisFile_in%source(i)%varname)
           if(EmisFile_in%source(i)%varname == cdfvarname)then
              nn = nn + 1
              Emis_source(NEmis_sources+nn)%ix_in=i
+             if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
           endif
        enddo
        if((status==nf90_noerr .and. ndims>=2) .or. nn>0 )then
-          !can be that one source must be taken several times (for istance into different vertical levels)
+          !can be that one source must be taken several times (for istance
+          ! into different vertical levels)
            do i = 1,max(1,nn)
              !we define a new emission source
              NEmis_sources = NEmis_sources + 1
              Emis_source(NEmis_sources)%varname = trim(cdfvarname)
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
+             if ( debugm0 ) write(*,*) dtxt//'source add:',&
+              trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
              status = nf90_get_att(ncFileID,varid,"sector", sector)
@@ -514,10 +526,13 @@ contains
              if(status==nf90_noerr)then
                 ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
                 if(ix<0)then
-                   if(me==0)write(*,*)'WARNING: country '//trim(name)//' not defined. file'//trim(fname)//' variable '//trim(cdfvarname)
+                   if(me==0)write(*,*)dtxt//'WARNING: country '//trim(name)//&
+                     ' not defined. file'//trim(fname)//&
+                     ' variable '//trim(cdfvarname)
                 else
                    Emis_source(NEmis_sources)%country_ISO = trim(name)
                    Emis_source(NEmis_sources)%country_ix = ix
+                   if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(name)
                 endif
              endif
              if(EmisFile_in%apply_femis)then
@@ -556,11 +571,17 @@ contains
        EmisFile%projection = default_projection
        EmisFile%grid_resolution = default_resolution
        EmisFile%factor = default_factor       
+       if ( debugm0 ) write(*,*) dtxt//'valid File:',&
+           trim(EmisFile_in%filename),trim(default_projection), default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
     endif
         
     call check(nf90_close(ncFileID))
+    if ( debugm0 ) write(*,*) dtxt//'Finished File',trim(fname)
+   !-------------
+    end associate
+   !-------------
     
   end subroutine Emis_init_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -579,12 +600,13 @@ contains
     real :: tmpsec(NSECTORS),duml,dumh
     real ::lonlat_fac(NSECTORS)
     character(len=len(fname)+10) :: newfname !need some extra characters if the new name gets longer
+    character(len=*),parameter :: dtxt = 'Em_getAsc:'
 
       call open_file(IO_EMIS, "r", fname, needed=.false., iostat=ios)
 
       if(ios/=0)then
          22 format(5A)
-         if(MasterProc)write(*,22)'did not find ',trim(fname)
+         if(MasterProc)write(*,22)dtxt//'did not find ',trim(fname)
          !try to write pollutant with capital letters
          newfname=trim(fname)
          newfname=key2str(newfname,'gridsox','gridSOx')
@@ -1291,13 +1313,17 @@ end if
                   iqrc = iqrc + 1
                   emis_nsplit(ie) = emis_nsplit(ie) + 1
                
-                  if ( MasterProc .and. itot<1 ) then 
-                      print *, "EmisSplit FAILED idef ", me, idef, i, nsplit, trim( intext(idef,i) )
-                      print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
-                          " emissions into ",&
-                            (trim(Headers(n+2)),' ',n=1,nsplit),'using ',trim(fname)
-                      print "(a, i3,30a10)", "EmisSplit FAILED headers ", me, (intext(idef,n),n=1,nsplit)
-                    call CheckStop( itot<1, &
+                  ! This error, itot<1, is quite common when eg emissplit
+                  ! files don't match chemistry. Add extensive output
+                  if ( itot<1 ) then 
+                    print *, "EmisSplit FAILED idef ", me, idef, i, nsplit,&
+                      trim( intext(idef,i) )
+                    print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
+                      " emissions into ",&
+                       (trim(Headers(n+2)),' ',n=1,nsplit),'using ',trim(fname)
+                    print "(a, i3,30a10)", "EmisSplit FAILED headers ", &
+                        me, (intext(idef,n),n=1,nsplit)
+                    call StopAll( &
                        "EmisSplit FAILED "//trim(intext(idef,i)) //&
                        " possible incorrect Chem in run script?" )
                   end if ! FAILURE

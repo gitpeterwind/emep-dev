@@ -189,6 +189,7 @@ contains
     type(EmisFile_id_type):: Emisfile_defaults !set values when not specified otherwise 
     integer :: EmisFilesMap(0:size(Emis_sourceFiles)) !index of EmisFile given index of EmisFile_sources
     integer :: max_levels3D
+    character(len=*),parameter :: dtxt='Ini_Em:'
 
     !1) define default values 
     Emis_sources_defaults%units = 'mg/m2/h'
@@ -233,7 +234,8 @@ contains
              endif
           enddo
 
-          if(MasterProc)write(*,*)"Initializing Emissions from ",trim(Emis_sourceFiles(n)%filename)
+          if(MasterProc)write(*,*)dtxt//"Initializing Emissions from ",&
+             trim(Emis_sourceFiles(n)%filename)
           call Emis_init_GetCdf(Emis_sourceFiles(n), EmisFiles(NEmisFile_sources+1), names_in, i)
 
        endif
@@ -293,7 +295,7 @@ contains
           endif
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
           if(ix<0)then
-             if(me==0)write(*,*)'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
           else
              Emis_source(NEmis_sources)%country_ix = ix
           endif
@@ -303,10 +305,12 @@ contains
           if(ix>0)Emis_source(ii)%species_ix = ix
           
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
-          if(MasterProc)write(*,*)"REDefined emission source ",Emis_source(ii)
+          if(MasterProc)write(*,*)dtxt//"REDefined emission source ",Emis_source(ii)
           
        enddo
-       if(.not. found .and. me==0)write(*,*)'WARNING: did not find '//Emis_sourceFiles(n)%source(isource)%varname//' in '//trim(Emis_sourceFiles(n)%filename)
+       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find ', &
+          n, isource, trim(Emis_sourceFiles(n)%source(isource)%varname)//&
+           ' in '//trim(Emis_sourceFiles(n)%filename)
 
     enddo
 

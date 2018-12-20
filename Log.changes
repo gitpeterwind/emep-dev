@@ -22,6 +22,24 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 Dec 2018, Dave
+
+EmisGet_mod.f90
+Emissions_mod.f90
+
+  - added dtxt and debug write-outs
+
+Biogenics_mod.f90
+Rsurface_mod.f90
+StoFlux_mod.f90
+
+- removed some A2018 comments
+
+ZD_OZONE/My_Outputs
+
+- removed OD and OP from SHL SONDE outputs. (Easier for CB6 tests)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 Dec 2018, Dave
 
 Added possibility to take CH4 BCs from RCP values (2.6, 4.5, or 8.5 so far)
@@ -61,7 +79,7 @@ METSTEP settable in config
 Softcoded mw for roaddust
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-14 Nov 2018, Dave
+14- Nov 2018, Dave
 
 Interim changes to get stuff into dev
 
