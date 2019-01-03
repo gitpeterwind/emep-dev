@@ -782,7 +782,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       
       write(MetaData(0,1),"(A,':C:',A)")"File_Type",trim(fname)
       write(MetaData(0,2),"(A,':C:',A)")"meteo_source",trim(meteo)
-      write(MetaData(0,3),"(A,':I:',I0)")"Number_of_hours_bewtween_outputs",1
+      write(MetaData(0,3),"(A,':I:',I0)")"Number_of_hours_bewtween_outputs",f
       write(MetaData(0,4),"(A,':I:',I0)")"Number_of_stations_defined",NStations
       write(MetaData(0,5),"(A,':I:',I0)")"Model_domain_x_size",GIMAX
       write(MetaData(0,6),"(A,':I:',I0)")"Model_domain_y_size",GJMAX
