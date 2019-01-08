@@ -50,7 +50,6 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
-     ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
      ,TEGEN_DATA, USES &
      ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
@@ -77,6 +76,7 @@ use MPI_Groups_mod,     only: MPI_DOUBLE_PRECISION, MPI_BYTE, MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
                              largeLIMAX,largeLJMAX, MPISTATUS, MPI_MIN
+use OwnDataTypes_mod,      only: TXTLEN_FILE
 use Par_mod,               only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax, neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
      ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
@@ -123,6 +123,7 @@ subroutine MeteoRead_io()
 
   character(len=TXTLEN_FILE), save :: meteoname   ! name of the meteofile
   character(len=100) ::  namefield  ! name of the requested field
+  character(len=*), parameter :: dtxt='MetRd_io:'
   integer :: ix, KMAX, istart,jstart,ijk,i,j,k,k1,k2
   integer :: nr
   integer ::   ndim,nyear,nmonth,nday,nhour
@@ -136,7 +137,7 @@ subroutine MeteoRead_io()
   if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
   nr=2 !set to one only when the first time meteo is read
-  call_msg = "Meteoread"
+  call_msg = dtxt//"Meteoread"
   if(me_IO>=0)then
     if(first_call)then !first time meteo is read
       nr = 1
@@ -264,6 +265,7 @@ subroutine MeteoRead()
        ,unit='   ',validity='    '    ! field is either instaneous or averaged
   integer ::   ndim,nyear,nmonth,nday,nhour
   integer ::   nr   ! Fields are interpolate in
+  character(len=*), parameter :: dtxt='MetRd:'
 
   type(date)      ::  next_inptime             ! hfTD,addhours_to_input
   type(timestamp) ::  ts_now                   ! time in timestamp format
@@ -287,6 +289,11 @@ subroutine MeteoRead()
         "SMI3                   " &
        ,"SMI                    " &
        ,"deep_soil_water_content" /)
+   ! Hmix ditto:
+  character(len=*),  parameter :: &
+    possible_HmixNames(2) =  [ "pblh", &
+      "blh" ] ! GLOBAL05
+
   logical :: write_now
 
   real :: relh1,relh2,temperature,swp,wp, x_out
@@ -316,7 +323,7 @@ subroutine MeteoRead()
   endif
 
   nr=2 !set to one only when the first time meteo is read
-  call_msg = "Meteoread"
+  call_msg = dtxt//"Meteoread"
 
   nrec=nrec+nrec_mult
 
@@ -348,7 +355,7 @@ subroutine MeteoRead()
     ts_now = make_timestamp(current_date)
     call add_secs(ts_now,nsec)
     if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
-      if(MasterProc)write(*,*)'Jumping over one day for meteo_date!'
+      if(MasterProc)write(*,*)dtxt//'Jumping over one day for meteo_date!'
       call add_secs(ts_now,24*3600.)
     end if
     next_inptime=make_current_date(ts_now)
@@ -360,7 +367,7 @@ subroutine MeteoRead()
   nhour=next_inptime%hour
 
   if(MasterProc.and.DEBUG%MET) &
-    write(6,*) '*** nyear,nmonth,nday,nhour,nmdays2'    &
+    write(6,*) dtxt//'*** nyear,nmonth,nday,nhour,nmdays2'    &
       ,next_inptime%year,next_inptime%month,next_inptime%day    &
       ,next_inptime%hour,nmdays(2)
 
@@ -375,21 +382,23 @@ subroutine MeteoRead()
       !hour 00:00 from 1st January may be missing;checking first:
       inquire(file=meteoname,exist=fexist)
       if(.not.fexist)then
-        if(MasterProc)write(*,*)trim(meteoname),&
+        if(MasterProc)write(*,*)dtxt//trim(meteoname),&
             ' does not exist; using data from previous day'
         meteoname=date2string(meteo,next_inptime,-24*3600.0,mode='YMDH')
         nrec=Nhh
       end if
     end if
-    if(MasterProc)write(*,*)'reading ',trim(meteoname)
+    if(MasterProc)write(*,*)dtxt//'reading ',trim(meteoname)
     !could open and close file here instead of in Getmeteofield
   end if
 
-  if(MasterProc.and.DEBUG%MET) write(*,*)'nrec,nhour=',nrec,nhour
+  if(MasterProc.and.DEBUG%MET) write(*,*)dtxt//'nrec,nhour=',nrec,nhour
 
-  write_now=MasterProc.and.(DEBUG%MET.or.first_call) !inform of what is done with each field the first time
+ !inform of what is done with each field the first time:
+  write_now=MasterProc.and.(DEBUG%MET.or.first_call)
 
-  if((nrec_mult/=1 .and. MasterProc) .or. write_now)write(*,*)'reading record ',nrec
+  if((nrec_mult/=1 .and. MasterProc) .or. write_now) &
+      write(*,*)dtxt//'reading record ',nrec
 
   !==============    Read the meteo fields  ================================================
 
@@ -400,7 +409,7 @@ subroutine MeteoRead()
       nrix=min(met(ix)%msize,nr)
 
 !     if(met(ix)%ready)then
-      if(.false.)then
+      if(.false.)then ! DS QUERY
         select case(ndim)
         case(2)
           do j=1,ljmax
@@ -441,7 +450,7 @@ subroutine MeteoRead()
               maxval(met(ix)%field(:,:,kmax_mid,nrix))
           end select
         else
-         write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
+         write(*,*)dtxt//'did not find ',trim(namefield),' in ',trim(meteoname)
         end if
         if(me_calc<0)then
           select case(ndim)
@@ -941,6 +950,20 @@ subroutine MeteoRead()
 
   call CheckStop(USES%DUST.and..not.USES%SOILWATER,"Inconsistent SM, DUST")
 
+  if ( PBL%HmixMethod == "NWP") then
+    foundHmix=.false.
+    do isw = 1, size(possible_HmixNames)
+      namefield=possible_HmixNames(isw)
+      if(first_call.and.MasterProc) &
+            write(*,*) "Met_mod: HMIX search ",isw,trim(namefield)
+      call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+               pbl_nwp(:,:,nr),found=foundHmix)
+      if(foundHmix) then ! found
+          exit
+      end if
+    end do
+  end if ! PBL Hmix
+
   if(USES%SOILWATER) then
     ! Soil water fields. Somewhat tricky.
     ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
@@ -1079,10 +1102,10 @@ subroutine MeteoRead()
   !========================================
 
   if(.not.foundsdepth.and.write_now)&
-    write(*,*)' WARNING: snow_depth not found '
+    write(*,*)dtxt//' WARNING: snow_depth not found '
 
   if(.not.foundice.and.write_now)&
-    write(*,*)' WARNING: ice_nwp coverage (%) not found '
+    write(*,*)dtxt//' WARNING: ice_nwp coverage (%) not found '
 
 
   if(foundws10_met)then
@@ -1095,7 +1118,7 @@ subroutine MeteoRead()
            buff(:,:),found=foundws10_met)
     end if
     if(foundws10_met)then
-      if(write_now)write(*,*)' found v component of 10m wind '
+      if(write_now)write(*,*)dtxt//' found v component of 10m wind '
       ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
       if(LANDIFY_MET) call landify(ws_10m(:,:,nr),"WS10")
     end if
@@ -2940,7 +2963,6 @@ subroutine Check_Meteo_Date_Type
   character(len=len(meteo)) :: meteoname
   integer :: nyear,nmonth,nday
   integer :: status,ncFileID,timeDimID,timeVarID,VarID,xtype
-  character (len = 50) :: timeunit
   character (len = 19) ::  Times_string
   integer ::ihh,ndate(4),n1,nseconds(1),n
   real :: ndays(1),Xminutes(24)

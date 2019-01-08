@@ -705,7 +705,8 @@ function date_is_reached(date_limit) result(is_reached)
      call CheckStop('date format not supported ')
   endif
 
-  is_reached =  (nint(tdif_secs(ts1,ts2))<=0)  
+  !is_reached =  (nint(tdif_secs(ts1,ts2))<=0)  !gives floating point exception sometime??
+  is_reached = ((ts2%jdate-ts1%jdate)*3600.0*24.0+(ts2%secs-ts1%secs)<=1.0)
 
 end function date_is_reached
 

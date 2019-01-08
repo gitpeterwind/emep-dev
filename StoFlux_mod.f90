@@ -5,7 +5,7 @@ module StoFlux_mod
   use Config_module,         only: NLANDUSEMAX, dt_advec
   use Debug_module,          only: DEBUG   ! -> DEBUG%GRIDVALUES
   use DO3SE_mod,             only: do3se, nSumVPD, SumVPD_LC
-  use GasParticleCoeffs_mod, only: DDspec !A2018 WES_O3, Rb_cor
+  use GasParticleCoeffs_mod, only: DDspec
   use Io_Progs_mod,          only: current_date, datewrite
   use LandDefs_mod,          only: LandType, STUBBLE, iLC_grass
   use LocalVariables_mod,    only: L, Grid
@@ -34,7 +34,7 @@ module StoFlux_mod
 
   real, private, save :: gext_leaf = 1.0/2500.0
   real, private :: rc_leaf, rb_leaf
-  integer, private, save :: idepO3  ! A2018
+  integer, private, save :: idepO3 
 
 
 
@@ -48,7 +48,7 @@ contains
     integer ::  istat, iL
 
      if ( my_first_call ) then
-       idepO3 = find_index('O3',DDspec(:)%name) ! A2018
+       idepO3 = find_index('O3',DDspec(:)%name)
        allocate(SumVPD(LIMAX,LJMAX,nSumVPD),stat=istat)
        allocate(old_gsun(LIMAX,LJMAX,nSumVPD),stat=istat)
        do iL = 1, NLANDUSEMAX
@@ -180,7 +180,6 @@ contains
             gv = 0.0
             gvcms = 0.0
             if( L%g_sto > 1.0e-10 ) then
-              !A2018 gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
               gv = 1.0/ (2.0 * DDspec(idepO3)%Rb_cor /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
               gvcms = gv
 

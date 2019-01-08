@@ -1,10 +1,10 @@
 &INPUT_PARA
-  GRID      = 'EMEP0302',
+  GRID      = 'EECCA',
   iyr_trend = 2016,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_18',
   startdate = 2016,01,01,00,
-  enddate   = 2016,01,01,24,
+  enddate   = 2016,01,01,03,
 &end
 &Machine_config
 !DataDir will attempted replaced by (in this order):
@@ -20,7 +20,7 @@
 &ModelConstants_config
 !NB: set the path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
-  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
@@ -33,8 +33,6 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
-!    'DataDir/LanduseGLC.nc',
- YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -51,14 +49,11 @@
   USES%SOILWATER         = T,            ! Uses SMI from meteo data
   USES%CONVECTION        = F,
 !  fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
+!  fileName_CH4_ibcs   = 'DataDir/BoundaryConditions/ch4_fromRCP85.txt'  ! Uses CH4 from RCP for iyr_trend
   USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,            ! 
 !------------------------------ 
-  USES%EURO_SOILNOX      = T,            ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
-  USES%GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
-!------------------------------
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?
@@ -119,8 +114,17 @@
 !  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
-!  emis_inputlist(3)%name     = 'DataDir/FMIGlobShip2015monEmis.nc',  !
 
+!new format system ship emissions
+ Emis_sourceFiles(1)%filename = 'DataDir/FMIGlobShip2015mon_new.nc'
+!split EC:
+ Emis_sourceFiles(1)%source(1)%varname='EC',
+ Emis_sourceFiles(1)%source(1)%species='EC_f_FFUEL_new',
+ Emis_sourceFiles(1)%source(1)%factor=0.8, !80% as new
+ Emis_sourceFiles(1)%source(2)%varname='EC',
+ Emis_sourceFiles(1)%source(2)%species='EC_f_FFUEL_age',
+ Emis_sourceFiles(1)%source(2)%factor=0.2, !20% as age
+ 
   femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
 
   EMIS_OUT              = F,          ! Output emissions in separate files
@@ -130,8 +134,8 @@
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = F,          ! Used for FORECASTs usually
-  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
-  SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
+  BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
+  SKIP_RCT              = -1,    ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
               'Wheat_Irrigated', 'Wheat_NonIrrig',
@@ -389,7 +393,7 @@ OutputConcs=
       'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! Tracer for forest fires:
-      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMDH', ! TEST
+      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! TEST
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************

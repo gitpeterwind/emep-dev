@@ -16,7 +16,7 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_mod,      only: CheckStop
-   use Config_module,     only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC, IOU_INST,&
+   use Config_module,     only: KMAX_MID, KCHEMTOP, NPROC, IOU_INST,&
                                    MasterProc, &
                                    jcl1kmFile,jcl3kmFile,jclearFile,num_lev3d,lev3d
    use DerivedFields_mod,  only: d_3d, f_3d
@@ -27,9 +27,10 @@
    use MetFields_mod    , only : cc3d,cc3dmax,z_bnd,ps
    use MPI_Groups_mod   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
+   use OwnDataTypes_mod ,  only: TXTLEN_FILE
    use Par_mod      ,     only : me,LIMAX,LJMAX
    use SmallUtils_mod,     only: key2str, find_index
-   use ZchemData_mod,     only: rcphot
+   use ZchemData_mod,      only: rcphot
    implicit none
    private
 

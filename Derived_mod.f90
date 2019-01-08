@@ -735,9 +735,6 @@ Is3D = .true.
       call AddNewDeriv("D3_Zlev", "Z_BND", "-", "-", "m", &
            -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
 
-     case ("wind_speed_3D")
-      call AddNewDeriv("wind_speed_3D", "wind_speed_3D", "-", "-", "m", &
-                      -99 , -99, F, 1.0,   T, 'YM',    Is3D  )
     end select
   end do
 
@@ -1856,17 +1853,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       imet_tmp = find_index(f_3d(n)%subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if(imet_tmp>0) then
         if(met(imet_tmp)%dim==3)then
-          if( MasterProc.and.first_call) write(*,*) "MET3D"//trim(f_3d(n)%name), &
+          if( MasterProc.and.first_call) write(*,*) "MET3D "//trim(f_3d(n)%name), &
                 imet_tmp, met(imet_tmp)%field(2,2,KMAX_MID,1)
           forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
             d_3d(n,i,j,k,IOU_INST)=met(imet_tmp)%field(i,j,lev3d(k),1)
         elseif(MasterProc.and.first_call)then
           write(*,*) "Warning: requested 2D field with MET3D: ",trim(f_3d(n)%name)
         end if
-      elseif(first_call)then
+      else
         !make derived fields:
         select case ( f_3d(n)%subclass )
         case ("inv_wind_speed_3D")
+           !take 0.2m/s as minimum wind speed. Otherwise the average will be infinite if the wind gets zero any time.
            forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
                 d_3d(n,i,j,k,IOU_INST)=1.0/(0.2+sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2))
         case("wind_speed_3D")
@@ -1877,6 +1875,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
            if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
            d_3d(n,:,:,:,IOU_INST)=0.0
         end select
+	if( MasterProc.and.first_call)write(*,*) "MET3D "//trim(f_3d(n)%name)//' '//f_3d(n)%subclass, d_3d(n,2,2,num_lev3d,IOU_INST)
       end if
 
     ! Simple advected species:
@@ -2050,10 +2049,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case("dZ_BND","dZ")   ! level thickness
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=z_bnd(i,j,lev3d(k))-z_bnd(i,j,lev3d(k)+1)
-
-    case("wind_speed_3D")
-      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
-        d_3d(n,i,j,k,IOU_INST)=sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2)
 
     case("EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
       if(first_call)call AOD_init("Derived:"//trim(class))

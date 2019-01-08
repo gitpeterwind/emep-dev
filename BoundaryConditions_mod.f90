@@ -38,14 +38,17 @@ use Chemfields_mod,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
 use ChemDims_mod,       only: NSPEC_SHL,NSPEC_ADV
 use ChemSpecs_mod                ! provide species names, IXADV_*
 use Config_module, only: KMAX_MID  &  ! Number of levels in vertical
-                            ,iyr_trend &  ! Used for e.g. future scenarios
-                            ,BGND_CH4  &  ! If positive, replaces defaults 
-                            ,USES, MasterProc, PPB, Pref, LoganO3File, DustFile
+                     ,iyr_trend &  ! Used for e.g. future scenarios
+                     ! Two options for CH4. BGND_CH4 has priority.
+                     ,BGND_CH4  &  ! If positive, replaces defaults 
+                     ,fileName_CH4_ibcs & ! If present, replaces uses iyr_trend
+                     ,USES, MasterProc, PPB, Pref, LoganO3File, DustFile
 use Debug_module,    only: DEBUG   ! -> DEBUG%BCS
 use Functions_mod,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_mod,     only: glon, glat   & ! full domain lat, long
                             ,debug_proc, debug_li, debug_lj & ! debugging
                             ,i_fdom, j_fdom,A_mid,B_mid  !
+use Io_mod,             only: open_file, ios, IO_TMP
 use Io_Progs_mod,       only: datewrite, PrintLog
 use Landuse_mod,        only: mainly_sea
 use LocalVariables_mod, only: Grid
@@ -639,11 +642,13 @@ subroutine My_bcmap(iyr_trend)
 ! ---------------------------------------------------------------------------
   integer, intent(in) :: iyr_trend !ds Year for which BCs are wanted
   real :: trend_ch4
-  integer :: ii,i,k
+  integer :: ii,i,k, io_ch4, yr_rcp= -999
   real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
         ! Gives the factor for how much of the top-layer conc. that is left
         ! at bottom layer
-  character(len=80) :: txt
+  character(len=120) :: txt
+  real     ::  ch4_rcp
+  character(len=*),parameter :: dtxt='BCs_Mybcmap:'
 
   real :: top_misc_bc(NGLOB_BC+1:NTOT_BC) ! Conc. at top of misc bc
 !    real :: ratio_length(KMAX_MID)    ! Vertical length of the actual layer
@@ -661,34 +666,55 @@ subroutine My_bcmap(iyr_trend)
   ! concentrations specified in misc_bc are transferred correctly into the
   ! boundary conditions.
 
+  ! CH4 IBCs. Default is ACP2012 values unless overridden by BGND_CH4 or 
+  ! RCP settings
+  ! Default:
   ! set values of 1625 in 1980, 1780 in 1990, 1820 in 2000, and 1970 in
   ! 2010. Interpolate
   ! between these for other years. Values from EMEP Rep 3/97, Table 6.2 for
   ! 1980, 1990, and from CDIAC (Mace Head) data for 2000.
   ! 2010 also from Mace Head
 
-  if( iyr_trend >= 2010) then
-    top_misc_bc(IBC_CH4) =  1870.0
-  else if ( iyr_trend >= 2000) then
-    top_misc_bc(IBC_CH4) = 1820 + (iyr_trend-2000)*0.1*(1870-1820) 
-  else if ( iyr_trend >= 1990 ) then
-    top_misc_bc(IBC_CH4) = 1780.0 + (iyr_trend-1990)*0.1*(1820-1780.0)
-  else
-    top_misc_bc(IBC_CH4) = 1780.0 * exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
+  if ( BGND_CH4 == -1 ) then
+    if( iyr_trend >= 2010) then
+      top_misc_bc(IBC_CH4) =  1870.0
+    else if ( iyr_trend >= 2000) then
+      top_misc_bc(IBC_CH4) = 1820 + (iyr_trend-2000)*0.1*(1870-1820) 
+    else if ( iyr_trend >= 1990 ) then
+      top_misc_bc(IBC_CH4) = 1780.0 + (iyr_trend-1990)*0.1*(1820-1780.0)
+    else
+      top_misc_bc(IBC_CH4) = 1780.0 * exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
                                  !exp(-0.01*0.6633*(1975-iyr_trend)) ! Zander,1951-1975
-  end if
+    end if
 
+  else if ( fileName_CH4_ibcs /= 'NOTSET'  ) then ! use RCP26, 45 or 85, set in config_emep
+
+    call open_file(IO_TMP,'r',fileName_CH4_ibcs,needed=.true.)
+    call CheckStop(ios,dtxt//"CH4_ibcs error in "//trim(fileName_CH4_ibcs) )
+    do i=1, 9999  ! has 750 records while(.true.)
+       read(IO_TMP,'(a80)') txt
+       if ( txt(1:1) == '#' ) cycle
+       read(txt, *) yr_rcp, ch4_rcp
+       if ( yr_rcp == iyr_trend) exit
+    end do
+    close(IO_TMP)
+    top_misc_bc(IBC_CH4) =  ch4_rcp
+    if ( MasterProc ) write(*,*) dtxt//'CH4 SET from RCPs for CH4:', &
+      trim(fileName_CH4_ibcs), iyr_trend, ch4_rcp
+  end if
 
   ! Reset with namelist values if set
   if ( BGND_CH4 > 0 ) then
+    if ( MasterProc ) write(*,*) dtxt//'CH4 OVERRIDE for CH4:', BGND_CH4
      top_misc_bc(IBC_CH4) = BGND_CH4
   end if
 
   trend_ch4 = top_misc_bc(IBC_CH4)/1780.0
 
   if (MasterProc) then
-     write(txt,"(a,2i6,f8.1,f8.3)") "BC: CH4 settings (iyr,nml,ch4,trend): ",&
-             iyr_trend, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
+     print *, 'ARGH', iyr_trend, yr_rcp, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
+     write(txt,"(a,3i6,f8.1,f8.3)") dtxt//" CH4 settings (iyr,nml,ch4,trend): ",&
+             iyr_trend, yr_rcp, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
      call PrintLog(txt)
   end if
 
@@ -1289,7 +1315,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
          Dust_3D_emep=0.0
  
          if(ibc==IBC_DUST_C)then
-            varname='D3_ug_DUST_WB_C'  ! A2018QUERY : ARGH!  
+            varname='D3_ug_DUST_WB_C'  ! QUERY : ARGH!   RECODE more flexibly!
           if(me==0)write(*,*)'coarse DUST BIC read from climatological file'
          else if(ibc==IBC_DUST_F)then
             varname='D3_ug_DUST_WB_F'

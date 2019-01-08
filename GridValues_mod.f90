@@ -23,7 +23,7 @@ use Config_module,      only: &
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile,&
-     TXTLEN_NAME, EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
+     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
 use Debug_module, only:  DEBUG   ! -> DEBUG%GRIDVALUES
 
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &
@@ -2790,6 +2790,7 @@ subroutine set_EuropeanAndGlobal_Config()
   !1) USES%PFT_MAPS = .true. (can be overridden by FORCE_PFT_MAPS_FALSE)
   !2) USES%DEGREEDAY_FACTORS = .false.
   !3) USES%EURO_SOILNOX = .false.
+  !4) USES%GLOBAL_SOILNOX = .true.
   !
   !If the file is EUROPEAN:
   !nothing happens for now
@@ -2879,6 +2880,11 @@ subroutine set_EuropeanAndGlobal_Config()
      if(USES%DEGREEDAY_FACTORS)then        
         if(me==0)write(*,*)'WARNING: not using DEGREEDAY_FACTORS because GLOBAL grid'
         USES%DEGREEDAY_FACTORS = .false.
+     endif
+
+     if(.not. USES%GLOBAL_SOILNOX)then
+        if(me==0)write(*,*)'WARNING: setting GLOBAL_SOILNOX because GLOBAL grid'
+        USES%GLOBAL_SOILNOX = .true.
      endif
 
      if(USES%EURO_SOILNOX)then        

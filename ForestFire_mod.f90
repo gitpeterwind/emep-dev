@@ -39,7 +39,7 @@ module ForestFire_mod
 !----------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemSpecs_mod
-use Config_module,         only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
+use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
                                 IOU_INST
 use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
@@ -49,7 +49,7 @@ use MetFields_mod,         only: z_bnd
 use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_mod,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
-use OwnDataTypes_mod,      only: Deriv, TXTLEN_SHORT
+use OwnDataTypes_mod,      only: Deriv, TXTLEN_SHORT, TXTLEN_FILE
 use Par_mod,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_mod, only: AVOG
 use SmallUtils_mod,        only: find_index, key2str
@@ -245,7 +245,7 @@ subroutine Fire_Emis(daynumber)
   logical :: debug_ff=.false.,debug_nc=.false., newFFrecord=.false.
   real :: xrdemis(LIMAX,LJMAX) ! MODE=*_AVG
   integer :: dn1, dn2, ndn          ! MODE=*_AVG
-  integer :: yyyy, mm, dd
+  integer :: yyyy, mm, dd, hh
   character(len=*), parameter :: dtxt='BB:Fire_Emis:'
 
   if(first_call) call Config_Fire()
@@ -255,6 +255,7 @@ subroutine Fire_Emis(daynumber)
   yyyy = current_date%year
   mm   = current_date%month 
   dd   = current_date%day
+  hh   = current_date%hour
   if(fire_year>1) yyyy=fire_year
   
   if(debug_proc) write(*,'(a,7i5)') "current date and time BB-"//trim(MODE),&
@@ -263,6 +264,11 @@ subroutine Fire_Emis(daynumber)
       write(*,'(a,es12.3)') dtxt//'BBsum', sum(BiomassBurningEmis(1,:,:))
   end if
   select case(MODE)
+    case("HOURLY_REC","H","h")
+      if(nn_old==hh) return         ! Calculate once per hour
+      nn_old=hh
+      dn1=hh
+      dn2=hh
     case("DAILY_REC","D","d")
       if(nn_old==daynumber) return  ! Calculate once per day
       nn_old=daynumber
@@ -295,11 +301,11 @@ subroutine Fire_Emis(daynumber)
     if(debug_proc) write(*,'(a,5i5)') dtxt// "FFalloc nstart= ", nstart
   else
     ! newFFrecord: has pollutant|fname|record changed since last call?
-    call checkNewFFrecord([yyyy,mm,dd], ncFileID, fname, newFFrecord, nstart)
+    call checkNewFFrecord([yyyy,mm,dd,hh], ncFileID, fname, newFFrecord, nstart)
     if(debug_proc) write(*,'(a,L2,5i5)') dtxt// "FFchecked nstart= ",newFFrecord, nstart
     FF_poll=""
     if(.not.newFFrecord) then 
-       if(debug_proc) write(*,'(a,5i5)') dtxt//" newFFrec not set ", yyyy,mm,dd
+       if(debug_proc) write(*,'(a,5i5)') dtxt//" newFFrec not set ",yyyy,mm,dd,hh
        return                        ! Continue if new record||file  
     end if
   end if
@@ -338,8 +344,7 @@ subroutine Fire_Emis(daynumber)
         xrdemis = 0.0
         ndn=0
         do dd = dn1, dn2
- 
-          call checkNewFFrecord([yyyy,mm,dd], &
+          call checkNewFFrecord([yyyy,mm,dd,00], &
                 ncFileID, fname, newFFrecord, nstart)
           if(newFFrecord) then
             call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol=bbinterp,&
@@ -441,8 +446,8 @@ subroutine Fire_Emis(daynumber)
 
 end subroutine Fire_Emis
 
-subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
-  integer, intent(in) :: ymd(3)
+subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
+  integer, intent(in) :: ymdh(4)
   integer, intent(inout) :: ncFileID
   character(len=*), intent(inout) :: fname
   logical, intent(inout) :: new
@@ -451,7 +456,7 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
   character(len=TXTLEN_SHORT), save      :: poll_old=''
   character(len=TXTLEN_FILE), save :: file_old=''
   integer, save                          :: record_old=-1
-  real, dimension(366), save :: fdays=-1
+  real, dimension(745), save :: fdays=-1 ! up to a month of hourly recs
   logical :: fexist=.false.
   real :: ncday(0:1)
   character(len=*),parameter:: dtxt='BB:newFFrecord:'
@@ -459,16 +464,16 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
   ! Check: New file
   select case(BBMAP)
 !note: without "mode=YMDH", there might be problems with names containing 'ss'
-    case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days",mode='YMDH')
-    case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days",mode='YMDH')
-    case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days",mode='YMDH')
+    case("GFED");fname=date2file(GFED_PATTERN,ymdh,persistence-1,"days",mode='YMDH')
+    case("FINN");fname=date2file(FINN_PATTERN,ymdh,persistence-1,"days",mode='YMDH')
+    case("GFAS");fname=date2file(GFAS_PATTERN,ymdh,persistence-1,"days",mode='YMDH')
   end select
   fname=key2str(fname,'DataDir',DataDir) ! expand DataDir keysword
 
   !if(debug_proc .and. verbose >2 ) then
   if(debug_proc ) then
 
-    write(*,*)  dtxt//trim(fname), me, ymd ! TMP
+    write(*,*)  dtxt//trim(fname), me, ymdh ! TMP
     write(*,*)  dtxt//" Old:", trim(file_old)
     write(*,*)  dtxt//" IDs ", ncFileID, closedID ! TMP
   end if 
@@ -493,7 +498,7 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
       return
     end if
   ! read all times records in fname, and process them
-    nread=-1                            
+    nread=-1
     fdays(:)=-1.0                       
     call ReadTimeCDF(fname,fdays,nread) 
     if ( nread == 12 ) monthlyEmis = .true.
@@ -509,11 +514,11 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
   end if
 
   ! Check: New time record
-  call date2nctime(ymd,ncday(1))
+  call date2nctime(ymdh,ncday(1))
   ncday(0)=ncday(1)-persistence+1
   nstart=MAXLOC(fdays(:nread),DIM=1,&
     MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<(ncday(1)+1.0)))
-  if ( monthlyEmis ) nstart = ymd(2) !AUG
+  if ( monthlyEmis ) nstart = ymdh(2) !AUG
   if(nstart/=record_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) then
       write(*,'(a,3f8.1,2i5,f8.1)') dtxt//" ncday???    ",&
@@ -521,6 +526,17 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
       write(*,'(a,2i6,a,2f8.1)') dtxt//" new record: ",&
         nstart,record_old,nctime2string("(YYYY-MM-DD hh:mm)",&
           fdays(nstart)), fdays(nstart), persistence
+    end if
+    if((fdays(nstart)<ncday(0)).or.(fdays(nstart)>=(ncday(1)+1.0)))then
+      if(MasterProc)then
+        write(*,*)"ForestFire: no records between ",&
+          nctime2string("YYYY-MM-DD hh:mm",ncday(0))," and ",&
+          nctime2string("YYYY-MM-DD hh:mm",ncday(1)+1.0)
+        call CheckStop(need_date,"Missing ForestFire records")
+      end if
+      burning(:,:) = .false.
+      new=.false.
+      return
     end if
 
     if ( .not. monthlyEmis ) then

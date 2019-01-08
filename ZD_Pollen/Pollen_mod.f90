@@ -10,7 +10,8 @@ use Pollen_const_mod
 use PhysicalConstants_mod, only: AVOG
 use Biogenics_mod,         only: EMIS_BioNat, EmisNat
 use CheckStop_mod,         only: CheckStop,CheckNC
-use ChemSpecs,            only: NSPEC_SHL, species_adv
+use ChemDims_mod,          only: NSPEC_SHL
+use ChemSpecs_mod,         only: species_adv
 use Chemfields_mod,        only: xn_adv    ! emep model concs.
 use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
 use GasParticleCoeffs_mod, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS

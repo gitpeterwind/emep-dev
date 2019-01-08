@@ -20,7 +20,20 @@ use Chemfields_mod,     only : xn_shl,xn_adv
 use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
 use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,      only : species
+use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
+                             ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
+                             ,NPROC, IIFULLDOM,JJFULLDOM &
+                             ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
+                             ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
+                             ,PT,Pref,NLANDUSEMAX, model&
+                             ,USE_EtaCOORDINATES,RUNDOMAIN&
+                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
+                             ,SurfacePressureFile &
+                             ,SELECT_LEVELS_HOURLY,&  ! NML
+                              num_lev3d,lev3d         ! 3D levels on 3D output
 use Country_mod,        only : NLAND, Country
+use Debug_module,       only : DEBUG_NETCDF, DEBUG_NETCDF_RF
+use Functions_mod,       only: StandardAtmos_km_2_kPa
 use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,debug_proc, debug_li, debug_lj &
                              ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
@@ -42,29 +55,16 @@ use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              x1_lambert,& !x value at i=1
                              y1_lambert  !y value at j=1                             
 use InterpolationRoutines_mod,  only : grid2grid_coeff
-use Config_module,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
-                             ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
-                             ,NPROC, IIFULLDOM,JJFULLDOM &
-                             ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
-                             ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
-                             ,PT,Pref,NLANDUSEMAX, model&
-                             ,USE_EtaCOORDINATES,RUNDOMAIN&
-                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
-                             ,SurfacePressureFile &
-                             ,SELECT_LEVELS_HOURLY,&  ! NML
-                              num_lev3d,lev3d         ! 3D levels on 3D output
-use Debug_module,       only: DEBUG_NETCDF, DEBUG_NETCDF_RF
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                                MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
 use netcdf
-use OwnDataTypes_mod,   only : Deriv
+use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
                               IRUNBEG,JRUNBEG,limax,ljmax, &
                               gi0,gj0,tgi0,tgi1,tgj0,tgj1,tlimax,tljmax
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
-use Functions_mod,       only: StandardAtmos_km_2_kPa
 use SmallUtils_mod,      only: wordsplit, find_index
 
 implicit none
@@ -105,6 +105,12 @@ public :: Create_CDF_sondes
 public :: check
 public :: IsCDFfractionFormat
 public :: ReadSectorName
+public :: check_lon_lat
+public :: make_gridresolution
+public :: create_country_emission_file
+public :: output_country_emissions
+
+
 
 private :: CreatenetCDFfile
 private :: createnewvariable
@@ -2091,8 +2097,14 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   if(i_fdom(1)==1)i1=i0+1
   if(j_fdom(1)==1)j1=j0+1
 ! Rvar=0.0
+
+  if(dims(1)<1 .or. dims(2)<1)then
+!     Rvar(1:LIMAX*LJMAX*(k_end-k_start+1)) = 0.0
+     call check(nf90_close(ncFileID))
+     return
+  endif
   totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
-  
+
   select case(xtype)
   case(NF90_SHORT,NF90_INT,NF90_BYTE)
     ! read scale/offset if present, otherwise assign default value
@@ -2277,6 +2289,7 @@ end subroutine WriteCDF
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
      use_lat_name, use_lon_name,stagg, & !for telling the routine that the field is defined in a staggered grid
+     Grid_resolution_in, & !Better to put it as attribute, but can also be given here
      fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
      Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor,&
      needed,found,unit,validity,debug_flag,UnDef,ncFileID_given)
@@ -2365,6 +2378,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   character(len = *), optional,intent(in) :: known_projection
   character(len = *), optional,intent(in) :: use_lat_name, use_lon_name
   character(len = *), optional,intent(in) :: stagg
+  real, optional, intent(in) :: Grid_resolution_in !(approximative) resolution of the data, steers Ndiv
   logical, optional, intent(in) :: needed
   logical, optional, intent(out) :: found
   character(len=*), optional,intent(out) ::unit,validity
@@ -2400,7 +2414,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, allocatable:: Mask_values(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
-  character(len = 50) :: interpol_used, data_projection=""
+  character(len = TXTLEN_NAME) :: interpol_used, data_projection=""
   real :: Grid_resolution_lon,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   logical ::  OnlyDefinedValues
@@ -2652,6 +2666,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   end do
 
+  xtype_lon=NF90_FLOAT !default
+  xtype_lat=NF90_FLOAT !default
   if( present(known_projection) ) then
      data_projection = trim(known_projection)
      if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
@@ -2696,31 +2712,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err, trim(fileName)
   end if
 
-  used_lat_name = 'lat'!default
-  used_lon_name = 'lon'!default
+  call check_lon_lat(ncFileID, used_lon_name, used_lat_name, n, lonVarID, latVarID)
   if(present(use_lat_name)) used_lat_name=trim(use_lat_name)
   if(present(use_lon_name)) used_lon_name=trim(use_lon_name)
   if ( debug ) write(*,*) 'ReadCDF using lon name',trim(used_lon_name)
   if ( debug ) write(*,*) 'ReadCDF using lat name',trim(used_lat_name)
-  status=nf90_inq_varid(ncid = ncFileID, name=trim(used_lon_name), varID = lonVarID)
-  if(status /= nf90_noerr) then
-     status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-     if(status /= nf90_noerr) then
-        status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
-        call CheckStop(status /= nf90_noerr,'did not find longitude variable')
-     end if
-  end if
-  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon))
-
-  status=nf90_inq_varid(ncid = ncFileID, name=trim(used_lat_name), varID = latVarID)
-  if(status /= nf90_noerr) then
-     status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-     if(status /= nf90_noerr) then
-        status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = latVarID)
-        call CheckStop(status /= nf90_noerr,'did not find latitude variable')
-     end if
-  end if
-  call check(nf90_Inquire_Variable(ncid = ncFileID, varID = latVarID,xtype=xtype_lat))
 
   if(trim(data_projection)=="lon lat")then
      call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
@@ -2870,8 +2866,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call CheckStop(abs(Rlon(2)-Rlon(1))>180.0,&
           "longitude error: crossing of -180 not implemented. file "//trim(fileName))
      
-
+     
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
+     if(present(Grid_resolution_in))Grid_resolution = Grid_resolution_in
      Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude
      Resolution_fac = max(1.0,Grid_resolution/GRIDWIDTH_M)
      !the method chosen depends on the relative resolutions
@@ -3485,12 +3482,15 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      call CheckStop(data3D,"3D data in Stereographic projection not yet implemented")
 
-     status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-     if(status /= nf90_noerr)then
-        Grid_resolution=GRIDWIDTH_M_EMEP
-        if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
-     end if
-
+     if(present(Grid_resolution_in))then
+        Grid_resolution = Grid_resolution_in
+     else
+        status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+        if(status /= nf90_noerr)then
+           Grid_resolution=GRIDWIDTH_M_EMEP
+           if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
+        end if
+     endif
      !the method chosen depends on the relative resolutions
      if(interpol_used=='conservative'.and.Grid_resolution/GRIDWIDTH_M>2)then
         interpol_used='zero_order'!usually good enough, and keeps gradients
@@ -3745,8 +3745,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
 !        call CheckStop((data3D),"3D data in general projection not yet implemented for conservative interpolation")        
-        status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-        call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
+        if(present(Grid_resolution_in))then
+           Grid_resolution = Grid_resolution_in
+        else
+           status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+           call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
+        endif
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
@@ -4121,7 +4125,7 @@ end subroutine ReadField_CDF
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
-  character(len = 50) :: interpol_used, data_projection="",name
+  character(len = TXTLEN_NAME) :: interpol_used, data_projection="",name
   real :: Grid_resolution
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
@@ -4452,12 +4456,14 @@ subroutine printCDF(name, array,unit)
   end subroutine printCDF
 
 
-subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
+subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
   !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
   !OR in years since 2000 if the times are defined in years!
+  !if present(time_wanted), find corresponding record and return it in NTime_Read
   character(len=*) ,intent(in):: filename
   real,intent(out) :: TimesInDays(:)
   integer, intent(inout) :: NTime_Read ! in:records to read, out:records readed
+  real,optional,intent(in) :: time_wanted!if present, find first record after this time (within 0.5 second difference)  
 
   real, allocatable :: times(:)
   integer, allocatable :: int_times(:,:,:)
@@ -4465,219 +4471,261 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   integer :: varID,ncFileID,ndims
   integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer, parameter::wordarraysize=20
-  character(len=50) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
-  character(len=50) :: wordarray2(wordarraysize)
+  character(len=TXTLEN_NAME) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
+  character(len=TXTLEN_NAME) :: wordarray2(wordarraysize)
   character, allocatable :: Times_string(:,:)
   integer :: string_length
-  integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-  logical:: proleptic_gregorian
+  integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode,startrecord
+  logical:: proleptic_gregorian, find_record
 
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
 
+  find_record = .false.
+  if(present(time_wanted)) find_record = .true.!only find the record needed
+  if(find_record) NTime_Read = 1
+
   varname='time'
   status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+
   if(status==nf90_noerr)then
-  if(DEBUG_NETCDF)write(*,*)'time variable exists: ',trim(varname)
-
-  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-  if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
-  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=ntimes))
-  if(NTime_Read<1)then
-    if(DEBUG_NETCDF)write(*,*)'reading all time records'
-    NTime_Read=ntimes
-  end if
-  call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-  call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-  allocate(times(NTime_Read))
-  call check(nf90_get_var(ncFileID, VarID, times,count=(/NTime_Read/)))
-
-  call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
-
-  if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
-    if(DEBUG_NETCDF)write(*,*)'time unit ',trim(timeunit(1:16))
-    do i=1,NTime_Read
-      yyyy=int(times(i))/10000
-      mo=int(times(i)-10000*yyyy)/100
-      dd=int(times(i)-10000*yyyy-100*mo)
-      hh=24.0*(times(i)-int(times(i)))
-      julian=julian_date(yyyy,mo,dd)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-      TimesInDays(i)=diff_1900+hh/24.0
-      if(DEBUG_NETCDF)write(*,*)'time ',yyyy,mo,dd,hh
-    end do
-  else if (trim(timeunit)=='month')then
-     !used for files with only 12 monthly values, without year
-     forall(i=1:NTime_Read) &
-     TimesInDays(i) = 30*(times(i)-1)+15
-  else
-     !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
-     
-     !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
-     call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-     if(DEBUG_NETCDF.and.MasterProc)&
-          write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
-     period=wordarray(1)
-     since=wordarray(2)
-     call CheckStop(since/='since',"since error "//trim(since))
-     
-     read(wordarray(3),*)yyyy
-     read(wordarray(4),*)mo
-     read(wordarray(5),*)dd
-     read(wordarray(6),*)hh
-     !read(wordarray(7),*)mi
-     !read(wordarray(8),*)ss  !did not work ???
-     mi=0
-     ss=0
-     
-     calendar='unknown'
-
-     status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
-     proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian'.or.calendar=='gregorian')
-     if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
-      write(*,*)'found proleptic_gregorian calendar'
-
-    if(yyyy/=0.or.proleptic_gregorian)then
-     !read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
-     !read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
-
-      if(DEBUG_NETCDF.and.MasterProc)&
-        write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
-         ' refdate ',yyyy,mo,dd,' time ',hh,mi,ss
-      ss=ss+60*mi+3600*hh
-      julian=julian_date(yyyy,mo,dd)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-     !if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
-      select case(period)
-      case('years')
-         !NB: not completely "standard" and compatible with the "days" setup
-        forall(i=1:NTime_Read) &
-           TimesInDays(i)=times(i)-(2000-yyyy)
-      case('days')
-        forall(i=1:NTime_Read) &
-           TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
-      case('hours')
-        forall(i=1:NTime_Read) &
-          TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
-      case('seconds')
-        forall(i=1:NTime_Read) &
-          TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
-      case('month')!used for files with only 12 monthly values, without year
-        forall(i=1:NTime_Read) &
-           TimesInDays(i) = 30*(times(i)-1)+15
-      case default
-        call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
-      end select
-
-    else
-      if(DEBUG_NETCDF.and.MasterProc)&
-        write(*,*)'assuming days since 0-01-01 00:00 and 365days'
-      call CheckStop(period/='days',"Error: only time in days implemented "//trim(period))
-      !assume units = "days since 0-01-01 00:00"
-      !and calendar = "365_day"
-      yyyy=int(times(1)/365)
-
-      julian=julian_date(yyyy,1,1)
-      julian_1900=julian_date(1900,1,1)
-      diff_1900=julian-julian_1900
-      forall(i=1:NTime_Read) &
-        TimesInDays(i)=diff_1900+times(i)-yyyy*365
-
-      !for leap years and dates after 28th February add one day to get Julian days
-      if(mod(yyyy,4)==0)then
-        forall(i=1:NTime_Read,times(i)-yyyy*365>59.999) & ! later than midnight on 
-           TimesInDays(i)=TimesInDays(i)+1.0              ! Feb 28th (59th day)
-        ! if the current date in the model is 29th of february, then this date
-        ! is not defined in the 365 days calendar.
-        ! We then assume that the 60th day is 29th of february in the netcdf file
-        ! and not the 1st of march.
-        ! Keep this separately as this may be defined differently in different situations.
-        ! This implementation works for the IFS-MOZART BC
-        if(current_date%month==2.and.current_date%day==29)then
-          write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
-          forall(i=1:NTime_Read,int(times(i)-yyyy*365)==60) & ! move Mar 1st
-            TimesInDays(i)=TimesInDays(i)-1.0                 ! to Feb 29th
-        end if
-      end if
+     if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time variable exists: ',trim(varname)     
+     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+     if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=ntimes))
+     if(NTime_Read<1)then
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'reading all time records'
+        NTime_Read=ntimes
      end if
-  end if
-  deallocate(times)
+     call CheckStop(ntimes<NTime_Read .and. .not.find_record, "to few records in "//trim(fileName))
+     call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+     allocate(times(NTime_Read))
+     
+     if(.not. find_record)ntimes=1
+
+     do startrecord = 1,ntimes !in case find_record, loop over one record at a time
+
+     call check(nf90_get_var(ncFileID, VarID, times, start = (/startrecord/),count=(/NTime_Read/)))
+     
+     call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
+     
+     if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time unit ',trim(timeunit(1:16))
+        do i=1,NTime_Read
+           yyyy=int(times(i))/10000
+           mo=int(times(i)-10000*yyyy)/100
+           dd=int(times(i)-10000*yyyy-100*mo)
+           hh=24.0*(times(i)-int(times(i)))
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           TimesInDays(i)=diff_1900+hh/24.0
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'time ',yyyy,mo,dd,hh
+        end do
+     else if (trim(timeunit)=='month')then
+        !used for files with only 12 monthly values, without year
+        forall(i=1:NTime_Read) &
+             TimesInDays(i) = 30*(times(i)-1)+15
+     else
+        !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
+        
+        !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
+        call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
+        if(DEBUG_NETCDF.and.MasterProc)&
+             write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
+        period=wordarray(1)
+        since=wordarray(2)
+        call CheckStop(since/='since',"since error "//trim(since))
+        
+        read(wordarray(3),*)yyyy
+        read(wordarray(4),*)mo
+        read(wordarray(5),*)dd
+        read(wordarray(6),*)hh
+        if( period == 'minutes' .or. period =='seconds' )then
+           read(wordarray(7),*)mi
+           read(wordarray(8),*)ss  !did not work for others?
+        else
+           mi=0
+           ss=0
+        endif
+
+        calendar='unknown'
+        
+        status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
+        proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian'.or.calendar=='gregorian')
+        if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
+             write(*,*)'found proleptic_gregorian calendar'
+        
+        if(yyyy/=0.or.proleptic_gregorian)then
+           !read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
+           !read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
+           
+           if(DEBUG_NETCDF.and.MasterProc)&
+                write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
+                ' refdate ',yyyy,mo,dd,' time ',hh,mi,ss
+           ss=ss+60*mi+3600*hh
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           !if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
+           select case(period)
+           case('years')
+              !NB: not completely "standard" and compatible with the "days" setup
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=times(i)-(2000-yyyy)
+           case('days')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
+           case('hours')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
+           case('minutes')
+              read(wordarray(7),*)mi
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)*60.0+ss)/(3600.0*24.0)
+           case('seconds')
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+           case('month')!used for files with only 12 monthly values, without year
+              forall(i=1:NTime_Read) &
+                   TimesInDays(i) = 30*(times(i)-1)+15
+           case default
+              call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
+           end select
+           
+        else
+           if(DEBUG_NETCDF.and.MasterProc)&
+                write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+           call CheckStop(period/='days',"Error: only time in days implemented "//trim(period))
+           !assume units = "days since 0-01-01 00:00"
+           !and calendar = "365_day"
+           yyyy=int(times(1)/365)
+           
+           julian=julian_date(yyyy,1,1)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           forall(i=1:NTime_Read) &
+                TimesInDays(i)=diff_1900+times(i)-yyyy*365
+           
+           !for leap years and dates after 28th February add one day to get Julian days
+           if(mod(yyyy,4)==0)then
+              forall(i=1:NTime_Read,times(i)-yyyy*365>59.999) & ! later than midnight on 
+                   TimesInDays(i)=TimesInDays(i)+1.0              ! Feb 28th (59th day)
+              ! if the current date in the model is 29th of february, then this date
+              ! is not defined in the 365 days calendar.
+              ! We then assume that the 60th day is 29th of february in the netcdf file
+              ! and not the 1st of march.
+              ! Keep this separately as this may be defined differently in different situations.
+              ! This implementation works for the IFS-MOZART BC
+              if(current_date%month==2.and.current_date%day==29)then
+                 write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
+                 forall(i=1:NTime_Read,int(times(i)-yyyy*365)==60) & ! move Mar 1st
+                      TimesInDays(i)=TimesInDays(i)-1.0                 ! to Feb 29th
+              end if
+           end if
+        end if
+     end if
+     if(find_record)then
+        if(TimesInDays(1)-time_wanted>-0.5/(24.0*3600.0))then
+           !we have found the right record
+           NTime_Read = startrecord
+           exit
+        endif
+     endif
+     enddo
+     deallocate(times)
+
+     call CheckStop(startrecord>ntimes.and.find_record, "did not find correct time in "//trim(fileName))
+
   else
 !     write(*,*)'ReadTimeCDF '//trim(varname)//" not found in "//trim(fileName)
      varname='Times'!wrf format
      status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
      if(status==nf90_noerr)then
-     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-     if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
-     if(NTime_Read<1)then
-        if(DEBUG_NETCDF)write(*,*)'reading all time records'
-        NTime_Read=ntimes
-     end if
-     call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-     call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=string_length))
-     
-     allocate(Times_string(string_length,ntimes))
-     call check(nf90_get_var(ncFileID, VarID, Times_string(1:string_length,1:NTime_Read),count=(/string_length,NTime_Read/)))
-     do i=1,NTime_Read
-        do j=1,string_length
-           name(j:j)=Times_string(j,i)
+        call CheckStop(find_record,"find_record not implemented for time format in "//trim(fileName))
+        call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+        if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
+        if(NTime_Read<1)then
+           if(DEBUG_NETCDF)write(*,*)'reading all time records'
+           NTime_Read=ntimes
+        end if
+        call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+        call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=string_length))
+        
+        allocate(Times_string(string_length,ntimes))
+        call check(nf90_get_var(ncFileID, VarID, Times_string(1:string_length,1:NTime_Read),count=(/string_length,NTime_Read/)))
+        do i=1,NTime_Read
+           do j=1,string_length
+              name(j:j)=Times_string(j,i)
+           end do
+           call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2)),' minutes ',trim(wordarray(3))
+           call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
+           if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
+           read(wordarray2(1),*)yyyy
+           read(wordarray2(2),*)mo
+           read(wordarray2(3),*)dd
+           read(wordarray(2),*)hh !colon, ":", is a default separator for wordsplit
+           read(wordarray(3),*)mi !colon, ":", is a default separator for wordsplit
+           julian=julian_date(yyyy,mo,dd)
+           julian_1900=julian_date(1900,1,1)
+           diff_1900=julian-julian_1900
+           TimesInDays(i)=diff_1900+hh/24.0+mi/24.0/60.0
         end do
-        call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
-        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2)),' minutes ',trim(wordarray(3))
-        call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
-        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
-        read(wordarray2(1),*)yyyy
-        read(wordarray2(2),*)mo
-        read(wordarray2(3),*)dd
-        read(wordarray(2),*)hh !colon, ":", is a default separator for wordsplit
-        read(wordarray(3),*)mi !colon, ":", is a default separator for wordsplit
-        julian=julian_date(yyyy,mo,dd)
-        julian_1900=julian_date(1900,1,1)
-        diff_1900=julian-julian_1900
-        TimesInDays(i)=diff_1900+hh/24.0+mi/24.0/60.0
-     end do
-  else
-     varname='TFLAG'!SMOKE/CMAQ format
-     status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
-     if(status==nf90_noerr)then
-          call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-          if(ndims/=3)write(*,*)'WARNING: TSTEP does not have 3 dimensions!? ',ndims
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(3),len=ntimes))
-          if(NTime_Read<1)then
-             if(DEBUG_NETCDF)write(*,*)'reading all time records'
-             NTime_Read=ntimes
-          end if
-          call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-          call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
-          
-          allocate(int_times(2,1,ntimes))
-          NTime_Read = ntimes
-!NB: we assume all variables have samre time stamp. Read only for first
-          call check(nf90_get_var(ncFileID, VarID, int_times,count=(/2,1,ntimes/)))
-          do i=1,NTime_Read
-             yyyy=int_times(1,1,i)/1000
-             mo=1!start at beginning of year
-             dd=mod(int_times(1,1,i),1000)!nb day of year!!
-             hh= int_times(1,2,i)/10000 + &
-                  1.0/60*(mod(int_times(1,2,i),10000)/100) + &
-                  1.0/3600*mod(int_times(1,2,i),100)
-             julian=julian_date(yyyy,mo,dd)
-             julian_1900=julian_date(1900,1,1)
-             diff_1900=julian-julian_1900
-             TimesInDays(i)=diff_1900+hh/24.0
-          end do
-          deallocate(int_times)
-       else
-          if(DEBUG_NETCDF)write(*,*)'time variable not found: ',trim(varname)
-          NTime_Read = 0
-       endif
-    endif
-  endif
+     else
+        varname='TFLAG'!SMOKE/CMAQ format
+        status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+        if(status==nf90_noerr)then
+           call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+           if(ndims/=3)write(*,*)'WARNING: TSTEP does not have 3 dimensions!? ',ndims
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(3),len=ntimes))
+           if(NTime_Read<1)then
+              if(DEBUG_NETCDF)write(*,*)'reading all time records'
+              NTime_Read=ntimes
+           end if
+           call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+           call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+           
+           allocate(int_times(2,1,NTime_Read))
+           !NB: we assume all variables have same time stamp. Read only for first
 
+           if(.not. find_record)ntimes=1
+
+           do startrecord = 1,ntimes !in case find_record, loop over one record at a time
+
+              call check(nf90_get_var(ncFileID, VarID, int_times,start = (/1,1,startrecord/),count=(/2,1,NTime_Read/)))
+              do i=1,NTime_Read
+                 yyyy=int_times(1,1,i)/1000
+                 mo=1!start at beginning of year
+                 dd=mod(int_times(1,1,i),1000)!nb day of year!!
+                 hh= int_times(2,1,i)/10000 + &
+                      1.0/60*(mod(int_times(2,1,i),10000)/100) + &
+                      1.0/3600*mod(int_times(2,1,i),100)
+                 julian=julian_date(yyyy,mo,dd)
+                 julian_1900=julian_date(1900,1,1)
+                 diff_1900=julian-julian_1900
+!                 if(me==0)write(*,*)'TFLAG time ',int_times(1,1,i),int_times(2,1,i),dd,hh
+                 TimesInDays(i)=diff_1900+hh/24.0
+              end do
+              if(find_record)then
+                 if(TimesInDays(1)-time_wanted>-0.5/(24.0*3600.0))then
+                    !we have found the right record        
+                    NTime_Read = startrecord
+                    exit
+                 endif
+                 if(startrecord == ntimes .and. me==0)write(*,*)'WARNING: did not find correct emis time. Last time found ',TimesInDays(1),' wanted ',time_wanted
+              endif
+           enddo
+           deallocate(int_times)
+        else
+           if(DEBUG_NETCDF)write(*,*)'time variable not found: ',trim(varname)
+           NTime_Read = 0
+        endif
+     endif
+  endif
+  
   call check(nf90_close(ncFileID))
 
 end subroutine ReadTimeCDF
@@ -4710,7 +4758,7 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
     status=nf90_get_att(ncFileID,VarID,"units",word)
     if(status==nf90_noerr)then
       if(word(1:3)=='hPa')then
-        if(MasterProc) write(*,*)'Changing hyam from hPa to Pa'
+        if(MasterProc) write(*,*)'Changing hyam from hPa to Pa in '//trim(filename)
         hyam_ext=100*hyam_ext
       end if
     end if
@@ -4946,4 +4994,281 @@ end subroutine vertical_interpolate
    end do
  end subroutine readfrac
 
+ subroutine check_lon_lat(ncFileID, lon_name, lat_name, ndims, lonVarID, latVarID)
+   !check that longitude and latitude for every gridcell is defined as a 2 dimensional array
+   !file is must be open already
+   character(len=*), intent(inout)  :: lon_name, lat_name
+   integer, intent(in)  :: ncFileID
+   integer, intent(out),optional  ::  lonVarID, latVarID
+   integer, intent(out)  :: ndims
+   integer :: status,VarID
+
+   lat_name = 'lat'
+   lon_name = 'lon'
+   status=nf90_inq_varid(ncid = ncFileID, name=trim(lon_name), varID = VarID)
+   if(status /= nf90_noerr) then
+      lon_name = 'LON'
+      status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
+      if(status /= nf90_noerr) then
+         lon_name = 'longitude'
+         status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
+         call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+      end if
+   end if
+   if(present(lonVarID))lonVarID=VarID
+   call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = VarID,ndims=ndims))
+       
+   status=nf90_inq_varid(ncid = ncFileID, name=trim(lat_name), varID = VarID)
+   if(status /= nf90_noerr) then
+      lat_name = 'LAT'
+      status=nf90_inq_varid(ncid = ncFileID, name = lat_name, varID = VarID)
+      if(status /= nf90_noerr) then
+         lat_name = 'latitude'
+         status=nf90_inq_varid(ncid = ncFileID, name = lat_name, varID = VarID)
+         call CheckStop(status /= nf90_noerr,'did not find latitude variable')
+     end if
+   end if
+   if(present(latVarID))latVarID=VarID
+
+ end subroutine check_lon_lat
+
+ !this routine returns an approximate grid resolution in meters
+ !file must be open already, and is not closed
+ subroutine make_gridresolution(ncFileID,resolution)
+   integer, intent(in) :: ncFileID
+   real, intent(out)::resolution
+   real :: dlat
+   real, allocatable ::Rlat(:,:)
+   character(len=30)  :: lon_name, lat_name
+   integer :: nDimensions, xtype, lonVarID, latVarID, dimids(NF90_MAX_VAR_DIMS),dims(10),mindim,i,ndims,nAtts
+
+   call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions, lonVarID, latVarID)
+   call check(nf90_Inquire_Variable(ncFileID,latVarID,lat_name,ndims,xtype,dimids,nAtts),"EmisGetDimsId")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=lonVarID,len=dims(1)),"EmisGetDims")
+   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=latVarID,len=dims(2)),"EmisGetDims")
+
+   if(nDimensions==1)then
+      allocate(Rlat(2,1))
+      call check(nf90_get_var(ncFileID, latVarID, Rlat,count=(/2/)))
+      dlat = abs(Rlat(2,1)-Rlat(1,1))
+   else   if(nDimensions==2)then
+      
+      allocate(Rlat(dims(1),dims(2)))
+      call check(nf90_get_var(ncFileID, latVarID, Rlat))
+      dlat=0.0
+      mindim = min(dims(1),dims(2))
+      do i = 2,mindim
+         !check only along both diagonal
+         if(abs(Rlat(i-1,i-1)-Rlat(i,i))>dlat)dlat=abs(Rlat(i-1,i-1)-Rlat(i,i))
+         if(abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))>dlat)dlat=abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))            
+      enddo
+      if(me==0)write(*,*)'Will set default resolution (it does not need to be exact)',resolution
+   else
+      call CheckStop('did not find one or two dimensional latitudes '//trim(lat_name))
+   endif
+   deallocate(Rlat)
+   resolution = EARTH_RADIUS*dlat*PI/180.0          
+ end subroutine make_gridresolution
+
+ subroutine output_country_emissions(filename,GridEmis,GridEmisCodes,nGridEmisCodes,NSECTORS,NCMAX,EMIS_FILE,NEMIS_FILE)
+   !output emissions in a format readable by the code
+   implicit none
+   character(len=*),  intent(in)  :: filename,EMIS_FILE(NEMIS_FILE)
+   integer,  intent(in) :: NSECTORS,NCMAX,NEMIS_FILE
+   real, intent(in) ::GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
+   integer,  intent(in) :: GridEmisCodes(LIMAX,LJMAX,NCMAX),nGridEmisCodes(LIMAX,LJMAX)
+   logical :: country_owner_map(NLAND,NPROC), country_owner(NLAND), country_has_emis
+   integer :: varID,iDimID,jDimID,timeDimID,status,ncFileID
+   integer :: istart,jstart,icount,jcount
+   integer :: d,i,j,ij,k, isec, icc, iland, iem
+   real :: buff(MAXLIMAX*MAXLJMAX)
+   real, allocatable :: emis_full(:,:) 
+   character (len = TXTLEN_NAME) ::varname
+
+   call create_country_emission_file(fileName)
+
+   !make a map that show which CPU has non-zero emissions from each country
+   country_owner = .false.
+   country_owner_map = .false.
+   do j = 1,ljmax
+      do i = 1,limax
+         do icc = 1,nGridEmisCodes(i,j)
+            iland=find_index(GridEmisCodes(i,j,icc),Country(:)%icode)
+            country_owner(iland) = .true.
+         end do
+      end do
+   end do
+   call MPI_GATHER(country_owner,NLAND,MPI_LOGICAL,country_owner_map,NLAND,MPI_LOGICAL,0,MPI_COMM_CALC, IERROR)
+   
+   if(MasterProc)then
+      call check(nf90_open(trim(fileName),nf90_share+nf90_write,ncFileID))
+
+       allocate(emis_full(GIMAX,GJMAX))
+      !first create all variables
+       do iland = 1, NLAND
+         country_has_emis = .false.
+         do d = 1, NPROC
+            if(country_owner_map(iland,d))country_has_emis = .true.
+         enddo
+         if(.not. country_has_emis) cycle
+         
+         do isec = 1, NSECTORS
+            do iem = 1, NEMIS_File
+               44 FORMAT(A,I0,A)
+               write(varname,44)trim(EMIS_FILE(iem))//'_sec',isec,'_'//trim(Country(iland)%code)
+               status=nf90_inq_varid(ncFileID,varname,VarID)
+               if(status/=nf90_noerr)then
+                  write(*,*)me,' creating ',trim(varname),MasterProc
+                  call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
+                  call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
+                  call check(nf90_inq_dimid(ncFileID,"time"  ,timedimID),"dim:time")
+                  call check(nf90_def_var(ncFileID,varname,nf90_float,&
+                       [iDimID,jDimID,timeDimID]       ,varID),"def2d:"//trim(varname))
+                  call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
+                       deflate_level=4),"compress:"//trim(varname))
+                  call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
+                       (/min(GIMAX,300),min(GJMAX,130),1/)),"chunk2D:"//trim(varname))    
+                  
+                  call check(nf90_put_att(ncFileID,varID,"units",'kg'))
+                  call check(nf90_put_att(ncFileID,varID,"sector",isec))
+                  call check(nf90_put_att(ncFileID,varID,"species",trim(EMIS_File(iem))))
+               end if
+            end do
+         end do
+      end do
+   endif
+   
+   !gather data from other CPU into master
+   do iland = 1, NLAND
+      if(MasterProc)then
+         country_has_emis = .false.
+         do d = 1, NPROC
+            if(country_owner_map(iland,d))country_has_emis = .true.
+         enddo
+         if(.not. country_has_emis) cycle
+      else
+         if(.not. country_owner(iland)) cycle
+      endif
+      
+      do iem = 1, NEMIS_File
+         do isec = 1, NSECTORS
+            if(MasterProc)then
+               write(varname,44)trim(EMIS_FILE(iem))//'_sec',isec,'_'//trim(Country(iland)%code)
+               emis_full = 0.0 !important that default is zero
+               if(country_owner(iland))then
+                  do j = 1, ljmax
+                     do i = 1, limax
+                        do icc = 1,nGridEmisCodes(i,j)
+                           if(GridEmisCodes(i,j,icc)==iland)then
+                              emis_full(i,j) = emis_full(i,j) + GridEmis(isec,i,j,icc,iem)
+                           endif
+                        end do
+                     end do
+                  end do
+               endif
+               do d = 1, NPROC-1
+                  if(country_owner_map(iland,d+1))then
+                     CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d), MPI_BYTE, d, &
+                          isec+iem*NSECTORS+iland*NEMIS_File*NSECTORS,& !unique tag
+                          MPI_COMM_CALC, MPISTATUS, IERROR)
+                     ij = 0
+                     do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                        do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                           ij = ij+1
+                           emis_full(i,j) = buff(ij)
+                        end do
+                     end do
+                  endif
+               end do
+               
+               call check(nf90_inq_varid(ncFileID,trim(varname),varID),"inq:"//trim(varname))
+               call check(nf90_put_var(ncFileID,VarID,emis_full))
+               
+            else 
+               ! not master
+
+               ij = 0
+               do j=1, ljmax
+                  do i=1, limax
+                     ij = ij+1
+                     buff(ij)=0.0
+                     do icc = 1,nGridEmisCodes(i,j)
+                        if(GridEmisCodes(i,j,icc)==iland)then
+                           buff(ij)=buff(ij)+GridEmis(isec,i,j,icc,iem)
+                        endif
+                     enddo
+                  end do
+               end do
+               CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me), MPI_BYTE, 0, &
+                    isec+iem*NSECTORS+iland*NEMIS_File*NSECTORS,& !unique tag
+                    MPI_COMM_CALC, IERROR)
+            endif
+         end do
+      end do
+   end do
+   if(MasterProc)then
+      deallocate(emis_full)
+      call check(nf90_close(ncFileID))
+   end if
+  
+ end subroutine output_country_emissions
+
+ subroutine create_country_emission_file(fileName)
+   implicit none
+   character(len=*),  intent(in)  :: filename
+   integer :: iDimID,jDimID,timeDimID,ncFileID,VarID, longVarID,latVarID
+   real :: Buff2D(MAXLIMAX,MAXLJMAX,2)
+   integer :: istart,jstart,icount,jcount
+   integer :: i,j,k,iproc
+
+   ! the file does not exist yet or is overwritten
+   if(MasterProc) then 
+      if(DEBUG_NETCDF)write(*,*)'nf90_create '//trim(fileName)
+      call check(nf90_create(trim(fileName),nf90_hdf5,ncFileID),"create:"//trim(fileName))
+      
+      ! define coordinate dimensions
+      call check(nf90_def_dim(ncFileID,"i",GIMAX,iDimID),"dim:i")
+      call check(nf90_def_dim(ncFileID,"j",GJMAX,jDimID),"dim:j")
+      call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
+      
+      ! define coordinate variables
+      call check(nf90_def_var(ncFileID,"lat"   ,nf90_float,[iDimID,jDimID],latvarID))
+      call check(nf90_def_var(ncFileID,"lon"   ,nf90_float,[iDimID,jDimID],longvarID))
+      
+      call check(nf90_put_att(ncFileID,nf90_global,"projection",'generic'))
+      call check(nf90_put_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+      call check(nf90_close(ncFileID))
+      
+   endif
+      
+   Buff2D(1:limax,1:ljmax,1)=glon(1:limax,1:ljmax)
+   Buff2D(1:limax,1:ljmax,2)=glat(1:limax,1:ljmax)
+   if(MasterProc)then
+      call check(nf90_open(fileName,nf90_share+nf90_write,ncFileID))
+      do iproc=0,NPROC-1
+         if(iproc>0)&
+              CALL MPI_RECV(Buff2D,2*8*MAXLIMAX*MAXLJMAX, MPI_BYTE,iproc,&
+              iproc,MPI_COMM_CALC,MPISTATUS,IERROR)
+         !NB IBEGcdf, IRUNBEG, etc. relative to fulldomain
+         !    tgi0,tlimax, etc. relative to rundomain
+         
+        istart=tgi0(iproc)    ! restricted (IBEGcdf, JBEGcdf) domain
+        jstart=tgj0(iproc)    ! restricted domain
+        icount=tlimax(iproc)  ! both 
+        jcount=tljmax(iproc)  ! both 
+
+        call check(nf90_put_var(ncFileID,longVarID,   &
+             Buff2D(1:icount,1:jcount,1), &
+             start=[istart,jstart],count=[icount,jcount]))
+        call check(nf90_put_var(ncFileID, latVarID,   &
+             Buff2D(1:icount,1:jcount,2), &
+             start=[istart,jstart],count=[icount,jcount]))
+     end do
+     call check(nf90_close(ncFileID))
+  else
+     CALL MPI_SEND(Buff2D,2*8*MAXLIMAX*MAXLJMAX,MPI_BYTE,0,&
+          me,MPI_COMM_CALC,IERROR)
+  end if
+    
+end subroutine create_country_emission_file
 endmodule NetCDF_mod

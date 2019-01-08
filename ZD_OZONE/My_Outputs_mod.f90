@@ -107,7 +107,7 @@ integer, public, parameter :: &
   ,NLEVELS_SONDE =  20        &   ! No. k-levels (9 => 0--2500 m)
   ,FREQ_SONDE  =     1        &   ! Interval (hrs) between outputs
   ,NADV_SONDE  =    9         &   ! No.  advected species
-  ,NSHL_SONDE  =    3         &   ! No. short-lived species
+  ,NSHL_SONDE  =    1         &   ! No. short-lived species
   ,NXTRA_SONDE =    4             ! No. Misc. met. params
 
 integer, public, parameter, dimension(NADV_SONDE) :: &
@@ -115,7 +115,7 @@ integer, public, parameter, dimension(NADV_SONDE) :: &
                 IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4, IXADV_NH4_f, IXADV_NH3 ]
 
 integer, public, parameter, dimension(NSHL_SONDE) :: &
-  SONDE_SHL = [ IXSHL_OH, IXSHL_OD, IXSHL_OP ]
+  SONDE_SHL = [ IXSHL_OH ] ! , IXSHL_OD, IXSHL_OP ]
 character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
   SONDE_XTRA= [character(len=10):: &
    "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]

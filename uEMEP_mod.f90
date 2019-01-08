@@ -5,26 +5,27 @@ module uEMEP_mod
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
-use ChemSpecs_mod,     only: species_adv
+use ChemSpecs_mod,     only: species_adv,species
 use Country_mod,       only: MAXNLAND,NLAND,Country
-use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour, &
-                            loc_frac_hour_inst, loc_tot_hour_inst, &
-                            loc_frac_day, loc_tot_day, loc_frac_month,&
-                            loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS, &
-                            EMIS_FILE,nlandcode,landcode,&
-                            sec2tfac_map, sec2hfac_map ,ISNAP_DOM,secemis,&
-                            roaddust_emis_pot,KEMISTOP
+use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour,&
+                            loc_frac_hour_inst, loc_tot_hour_inst,loc_frac_day, &
+                            loc_tot_day, loc_frac_month,loc_tot_month,&
+                            loc_frac_full,loc_tot_full, NSECTORS,EMIS_FILE, &
+                            nlandcode,landcode,sec2tfac_map,sec2hfac_map, &
+                            ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
+                            NEmis_sources, Emis_source_2D, Emis_source
 
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
 use MetFields_mod,     only: ps,roa,EtaKz
-use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
-                            IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1, HOURLYFILE_ending,&
-                            TXTLEN_FILE
+use Config_module,     only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR&
+                             , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
+                             ,IOU_HOUR,IOU_HOUR_INST, KMAX_MID &
+                             ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
+                             ,HOURLYFILE_ending
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF
-use OwnDataTypes_mod,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
+use OwnDataTypes_mod,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max, TXTLEN_FILE
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
@@ -232,7 +233,7 @@ end subroutine init_uEMEP
 subroutine out_uEMEP(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
-  real :: xtot,scale,invtot
+  real :: xtot,scale,invtot,t1,t2
   integer ::i,j,k,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
@@ -620,8 +621,12 @@ subroutine out_uEMEP(iotyp)
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)
            !copy before dividing by loc_tot_full
-
-           if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_full(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
+           if(COMPUTE_LOCAL_TRANSPORT)then
+              t1 = MPI_WTIME()
+              call extendarea_N(loc_frac_full(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
+              t2 = MPI_WTIME()
+              if(me==0)write(*,*)'transport extendarea ',t2-t1,' seconds'
+           endif
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -642,6 +647,7 @@ subroutine out_uEMEP(iotyp)
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
 
            if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
+              t1 = MPI_WTIME()
               do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
                  !     do k = KMAX_MID,KMAX_MID
                  do j=1,ljmax
@@ -656,6 +662,8 @@ subroutine out_uEMEP(iotyp)
                     enddo
                  enddo
               enddo
+              t2 = MPI_WTIME()
+              if(me==0)write(*,*)'transport transpose ',t2-t1,' seconds'
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
               if(abs(av_fac_full)>1.E-5)then
@@ -665,8 +673,10 @@ subroutine out_uEMEP(iotyp)
               endif
              call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
+             t1 = MPI_WTIME()
+             if(me==0)write(*,*)'transport out ',t1-t2,' seconds'
            endif
-        enddo
+         enddo
 
         if(abs(av_fac_full)>1.E-5)then
            scale=1.0/av_fac_full
@@ -1059,9 +1069,8 @@ subroutine uEMEP_emis(indate)
 
   implicit none
   type(date), intent(in) :: indate  ! Gives year..seconds
-  integer :: i, j, k          ! coordinates, loop variables
+  integer :: i, j, k, n       ! coordinates, loop variables
   integer :: icc, ncc         ! No. of countries in grid.
-  integer :: iqrc             ! emis indices 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over 1..NEMIS_FILE
 
@@ -1143,7 +1152,6 @@ subroutine uEMEP_emis(indate)
            do isec = 1, Nsectors     ! Loop over snap codes
             ! Calculate emission rates from secemis, time-factors, 
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
-            iqrc = 0   ! index over emisfrac
             ! kg/m2/s
             
             tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
@@ -1161,6 +1169,7 @@ subroutine uEMEP_emis(indate)
 
               s = tfac * secemis(isec,i,j,icc,iem)
 
+
             do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
               emis_tot(k,iem)=emis_tot(k,iem)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
             end do
@@ -1176,7 +1185,30 @@ subroutine uEMEP_emis(indate)
         end do  ! isec
         !      ==================================================
       end do ! icc  
-      
+                     
+      !Add emissions from new format
+      do n = 1, NEmis_sources      
+         if(Emis_source(n)%include_in_local_fractions)then
+            ipoll = find_index(Emis_source(n)%species,species(:)%name)
+            if(ipoll>0)then
+               !the species is directly defined (no splits, sector etc)
+               !not included in uEMEP setup for now
+               call CheckStop("uEMEP: cannot include single species "//Emis_source(n)%species)              
+            else
+               !the species is defines as a sector emission
+               iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
+               isec = Emis_source(n)%sector
+               s = Emis_source_2D(i,j,n)
+               do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+                  emis_tot(k,iem)=emis_tot(k,iem)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
+               end do
+               
+               do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+                  emis_uemep(k,iem,isec)=emis_uemep(k,iem,isec)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
+               end do
+            endif
+         endif
+      enddo
 
       isec_poll1=1
       do ipoll=1,uEMEP%Npoll              

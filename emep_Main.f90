@@ -42,7 +42,7 @@ program emep_Main
   use DefPhotolysis_mod, only: readdiss
   use Derived_mod,       only: Init_Derived, wanted_iou
   use EcoSystem_mod,     only: Init_EcoSystems
-  use Emissions_mod,     only: Emissions, newmonth
+  use Emissions_mod,     only: Emissions, newmonth, Init_emissions, EmisUpdate
   use ForestFire_mod,    only: Fire_Emis
   use DryDep_mod,        only: init_DryDep ! sets up dry and wet dep
   !use GasParticleCoeffs_mod, only: init_DryDep ! sets up dry and wet dep
@@ -171,8 +171,6 @@ program emep_Main
 !TEST  call define_chemicals()    ! sets up species details
   call Init_ChemGroups()      ! sets up species details
 
-  call assign_nmax(METSTEP)   ! No. timesteps in inner loop
-
   call trajectory_init()
 
   call init_Country() ! In Country_mod, => NLAND, country codes and names, timezone
@@ -185,10 +183,13 @@ program emep_Main
 
   call MeteoRead()
 
+  call assign_nmax(METSTEP)   ! No. timesteps in inner loop
+
   call Add_2timing(2,tim_after,tim_before,"Meteo read first record")
 
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
+  call Init_emissions !new format
   call Emissions(yyyy)! should be set for the enddate year, not start?
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
@@ -323,16 +324,18 @@ program emep_Main
 
     call SetDailyBVOC() !daily
 
+    call EmisUpdate
+
     if(USES%FOREST_FIRES) call Fire_Emis(daynumber)
 
     call Add_2timing(10,tim_after,tim_before,"Fires+BVOC")
 
-    if(MasterProc) print "(2(1X,A))",'current date and time:',&
-      date2string("YYYY-MM-DD hh:mm:ss",current_date)
-
     call Code_timer(tim_before2)
     call phyche()
     call Add_2timing(11,tim_after,tim_before2,"Total phyche")
+
+    if(MasterProc) print "(2(1X,A))",'current date and time:',&
+      date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
     call Code_timer(tim_before)
 

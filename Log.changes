@@ -20,6 +20,129 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 Dec 2018, Dave
+
+EmisGet_mod.f90
+Emissions_mod.f90
+
+  - added dtxt and debug write-outs
+
+Biogenics_mod.f90
+Rsurface_mod.f90
+StoFlux_mod.f90
+
+- removed some A2018 comments
+
+ZD_OZONE/My_Outputs
+
+- removed OD and OP from SHL SONDE outputs. (Easier for CB6 tests)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 Dec 2018, Dave
+
+Added possibility to take CH4 BCs from RCP values (2.6, 4.5, or 8.5 so far)
+
+BoundaryConditions_mod - now looks for fileName_CH4_ibcs
+Config_module          - adding fileName_CH4_ibcs
+config_emep.nml        - adding fileName_CH4_ibcs, commented out so far
+
+Setup_1d_mod - small clean out of A2018 comments
+
+Files added to DataDir/BoundaryConditions (stallo only so far).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22-27 Nov 2018, Peter
+
+Time for CMAQ emissions improved, 3D emissions new format started (read but not yet used).
+Species cases:
+1) emitted species (nox,sox,pm25 ...) with sector (1...11)
+2) individual species (SO2, NO, NO2, ...) with sector. The species MUST be one of the splitted species.
+3) individual species (SO2, APINENE, O3 ...) without sector (<=0, or not specified)
+   In this case the emissions are summed up in setup_rcemis (not in EmisSet)
+
+Can inject into individual levels (only case 3), individual species without sector)
+
+e_fact (femis) is applied through the source%factor in Emis_init_GetCdf
+
+New format for FMI ship emissions included in config_emep.nml. 
+All attributes can specified and overwritten by the config (see example for EC).
+NB: this has different definitions, as the old method corrected REMPPM25 and
+POM_f_FFUEL for molecular weights, but should not (emissions in kg, not moles. to be confirmed by Jan Eiof?)
+
+Note on units "as SO2":
+if the sector is defined, units are defined "as SO2" and SO4 must include the 
+factor 0.6666 to be right. If sector is defined as zero, no factor is required.
+
+METSTEP settable in config
+Softcoded mw for roaddust
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14- Nov 2018, Dave
+
+Interim changes to get stuff into dev
+
+MetFields_mod
+Met_mod
+   in testing - enabled NWP Hmix, for now with GLOBAL05 variable 'blh'.
+
+Config_module
+   in testing - added OwnInputDir 
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 Nov 2018, Peter
+
+bug in wind_speed_3D output corrected
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Nov 2018, Peter
+
+On going... new format for emissions.
+The goal is to be able to read any emission file, without having to modify it, 
+simply by describing the main parameters in the config file.
+
+General structure as follows:
+One 2D (or 3D) array for each "source".
+One set of metadata for each file and each source (type(EmisFile_id_type) and type(Emis_id_type))
+
+subroutine Init_Emissions and Emis_init_GetCdf read and set all metadata parameters (only once)
+subroutine EmisUpdate update the 2D emission sources arrays when the data is outdated
+in the (old) subroutine EmisSet the emissions are integrated into the final gridrcemis array
+
+Metadata covers so far:
+Filename, variable name.
+Projection: 'lon lat' or not
+Periodicity: hourly, monthly, yearly...
+Grid resolution
+Multiplicative factors for emissions: femis, or global attribute or variable attribute
+Species (can be a emissions species that is splitted, or any single species)
+Sectors
+Country
+Units
+Flag to include this emission into the uEMEP local fractions.
+Internal variables, such as number of sources, source indices, country indices etc.
+
+Not yet implemented: timefactors, multicountry grids.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st Oct 2018, Peter
+
+New format for emissions. For now it will work side by side with the old format,
+and hopefully gradually take over.
+Should work exactly as before for old emissions only.
+
+Also some other small changes:
+GLOBAL_SOILNOX set automatically true if global grid.
+Moved assign_nmax after metstep defined (bug, but nmax is almost not used anyway).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2018, Dave, (Peter)
+
+YieldModifications set to 'VBS-T10' in config_emep.nml, config_EMEPSTD.nml
+and config_EMEPGLOB.nml
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2018, Peter, Dave
 

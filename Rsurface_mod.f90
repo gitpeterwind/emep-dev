@@ -33,7 +33,6 @@ real, public, save :: Rinc, RigsO, GnsO, RgsS
 contains
 ! =======================================================================
 
-  !A2018 subroutine Rsurface(i,j,DRYDEP_CALC,Gsto,Rsur,errmsg,debug_arg,fsnow) 
   subroutine Rsurface(i,j,Gsto,Rsur,errmsg,debug_arg,fsnow) 
 ! =======================================================================
 !
@@ -97,8 +96,6 @@ contains
 !......................................
 ! Input:
     integer, intent(in) :: i,j
-!A2018    integer, dimension(:), intent(in) :: &
-!A2018         DRYDEP_CALC   ! Array with DDdefs indices of gases wanted
 
 ! Output:
 
@@ -305,11 +302,8 @@ contains
      !-------------------------------------------------------------------------
      ! Calculate the Wesely variables Hstar (solubility) and f0 (reactivity)
 
-        !A2018 Hstar =DDdefs(2,iwes)    !Extract H*'s 
-        !A2018 f0    =DDdefs(5,iwes)    !Extract f0's
         Hstar =DDspec(icmp)%Hstar
         f0    =DDspec(icmp)%f0
-!print *, 'HHHH', icmp, DDspec(icmp)%name, Hstar, f0
 
      !-------------------------------------------------------------------------
      ! Ammonia is also special
@@ -369,7 +363,6 @@ contains
      ! ##############   4. Calculate Rsur for canopies   ###############
 
       if ( canopy  ) then   
-         !A2018 Gsto(icmp) = L%LAI*DDspec(icmp)%DRx *L%g_sto
          Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto
       end if
 

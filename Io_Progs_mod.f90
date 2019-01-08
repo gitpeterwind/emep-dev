@@ -18,6 +18,7 @@ use Config_module,           only: GRID, MasterProc, IIFULLDOM, JJFULLDOM
 use Debug_module,            only: DEBUG   ! -> DEBUG%IOPROG
 use MPI_Groups_mod,          only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
 use KeyValueTypes,           only: KeyVal, KeyValue, LENKEYVAL
+use OwnDataTypes_mod,        only: TXTLEN_NAME
 use Par_mod,                 only: me, limax,ljmax
 use SmallUtils_mod,          only: wordsplit, WriteArray
 use TimeDate_mod,            only: date,current_date
@@ -320,7 +321,7 @@ subroutine Read2D(fname,data2d,idata2d)
   character(len=20), dimension(3) :: Headers
   character(len=200) :: txtinput  ! Big enough to contain one full input record
   type(KeyVal), dimension(20)      :: KeyValues ! Info on units, coords, etc.
-  character(len=50) :: errmsg
+  character(len=TXTLEN_NAME) :: errmsg
 
   integer :: NHeaders, NKeys, Nlines, Nused
 

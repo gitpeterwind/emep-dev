@@ -1,7 +1,7 @@
 module OutputChem_mod
 
 use CheckStop_mod,      only: CheckStop
-use Config_module,     only: num_lev3d, MasterProc, TXTLEN_FILE, runlabel1,&
+use Config_module,     only: num_lev3d, MasterProc, runlabel1,&
                              FREQ_HOURLY, FORECAST, END_OF_EMEPDAY, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, &
                              IOU_HOUR_INST, IOU_MAX_MAX, HOURLYFILE_ending, &
@@ -16,7 +16,7 @@ use My_Outputs_mod,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
 use Io_mod,             only: IO_WRTCHEM, IO_TMP, datewrite
 use NetCDF_mod,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
-use OwnDataTypes_mod,   only: Deriv, print_deriv_type
+use OwnDataTypes_mod,   only: Deriv, print_deriv_type, TXTLEN_FILE
 use Par_mod,            only: LIMAX, LJMAX, me
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
                              ,daynumber,add2current_date
