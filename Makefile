@@ -65,6 +65,11 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LD := mpif90
   LDFLAGS += -Nmpi
   F90FLAGS += -Nmpi
+else ifneq (,$(findstring $(MACHINE),stratus nebula))
+  MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS+= $(shell nf-config --fflags)
+  MAKEDEPF90=makedepf90
 else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
