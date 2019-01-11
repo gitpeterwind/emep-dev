@@ -38,6 +38,7 @@ module ForestFire_mod
 !  emissions are needed, and keeps all forest-fire logic here
 !----------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop,CheckNC
+use ChemDims_mod ,         only: NSPEC_TOT
 use ChemSpecs_mod
 use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
                                 IOU_INST
@@ -88,10 +89,10 @@ integer :: iemep
 !  Mapping to EMEP species
 !
 type :: bbtype
-  character(len=TXTLEN_SHORT) :: BBname
-  real :: unitsfac
-  real :: frac
-  integer :: emep
+  character(len=TXTLEN_SHORT) :: BBname = "NOTSET"
+  real :: unitsfac = 1.0
+  real :: frac    = 1.0
+  integer :: emep = -1
 end type bbtype
 
 ! Here we include the relevant mapping file, which depends on
@@ -99,15 +100,24 @@ end type bbtype
 !----------------------------------------------
 !=> NBB_DEFS, NEMEPSPECS, FF_defs(NBB_DEFS)
 
-  include 'BiomassBurningMapping_CM.inc' 
+!  include 'BiomassBurningMapping_CM.inc' 
+!  include 'BiomassBurningMapping_CM_GFAS.inc' 
+!  include 'BiomassBurningMapping_CM_FINN.inc' 
+
+  character(len=200), public, save :: &
+    BiomassBurningMapping
+  integer, private, save:: &
+    NBB_DEFS    ,& ! No mapping lines below
+    NEMEPSPECS   ! No EMEP chemical mech specs used
+  type(bbtype), private, allocatable :: FF_defs(:)
 
 !----------------------------------------------
 ! matrix to get from forest-fire species to EMEP ones
 
-integer, save :: emep_used(NEMEPSPECS) = 0
-real,    save :: sum_emis(NEMEPSPECS) = 0
+integer, save, allocatable :: emep_used(:)
+real,    save, allocatable :: sum_emis(:)
 
-character(len=4), parameter :: BBMAP=BiomassBurningMapping(1:4)
+character(len=4) :: BBMAP = 'FINN'
 character(len=TXTLEN_SHORT) :: MODE="DAILY_REC"
 
 character(len=TXTLEN_FILE), save :: &
@@ -150,26 +160,9 @@ subroutine Config_Fire()
   character(len=*), parameter :: dtxt='BB:Config'
   NAMELIST /Fire_config/MODE,verbose,persistence,fire_year,&
                         need_file,need_date,need_poll,&
-                        GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
-                        
-  if(.not.first_call)return
-  call PrintLog(dtxt//" Mapping: "//trim(BiomassBurningMapping),MasterProc)
+                        BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
 
-  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
-  select case(BBMAP)
-    case("GFED")
-      persistence=8  ! 8-day records
-      bbinterp = 'conservative'
-    case("FINN")
-      persistence=1  ! 1-day records
-      bbinterp = 'mass_conservative'
-    case("GFAS")
-      persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
-      bbinterp = 'conservative'
-    case default
-      call CheckStop(dtxt//"Unknown Mapping")
-  end select
-
+  
   rewind(IO_NML)
   read(IO_NML,NML=Fire_config,iostat=ios)
   call CheckStop(ios,"NML=Fire_config")  
@@ -177,6 +170,34 @@ subroutine Config_Fire()
     write(*,*) dtxt//"NAMELIST IS "
     write(*,NML=Fire_config)
   end if
+                        
+  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
+
+  select case(BBMAP)
+    case("GFED")
+      persistence=8  ! 8-day records
+      bbinterp = 'conservative'
+    case("FINN")
+      persistence=1  ! 1-day records
+      bbinterp = 'mass_conservative'
+      BiomassBurningMapping = "FINNv1.5"
+   case("GFAS")
+      persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+      bbinterp = 'conservative'
+      BiomassBurningMapping = "GFASv1"
+   case default
+      call CheckStop(dtxt//"Unknown Mapping")
+  end select
+
+  call make_mapping !mapping definitions between forestfire species and emep species
+
+  call PrintLog(dtxt//" Mapping: "//trim(BiomassBurningMapping),MasterProc)
+
+  allocate(emep_used(NEMEPSPECS))
+  emep_used = 0
+  allocate(sum_emis(NEMEPSPECS))
+  sum_emis = 0.0
+
   
   ! set vebosity levels
   verbose=min(max(0,verbose),4) ! debug verbosity 0,..,4
@@ -206,8 +227,8 @@ if( iemep <1) print *, 'ABB', n, FF_defs(n)%emep, iemep
     if(ieCO<0 .and. species(iemep)%name=="CO" ) ieCO=ne
     if(ieCO<0 .and.FF_defs(n)%BBname=="CO"    ) ieCO=ne
 
-    if(MasterProc) write(*,"(a,2i4,2x,a)") dtxt//" Mapping EMEP ", &
-      ne, iemep, trim(species(iemep)%name)
+    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,"(i4,1x,a,i4,2x,a)")ne,dtxt//" Mapping "//trim(FF_defs(n)%BBName)//" onto " &
+      ,iemep, trim(species(iemep)%name)
   end do !n
   call CheckStop(ieCO<1,&
      dtxt//"No mapping for 'CO' found on "//BiomassBurningMapping)
@@ -221,6 +242,178 @@ if( iemep <1) print *, 'ABB', n, FF_defs(n)%emep, iemep
 
   first_call=.false.
 end subroutine Config_Fire
+
+subroutine make_mapping()
+  ! define the mapping between names and species defined in the forest fire input file, and emep species.
+  ! must be compatible for different chemistry schemes, i.e. all the emep species are not necessarily defined.
+  integer,  parameter :: &
+       NBB_DEFS_MAX  = 30 ! No mapping lines below
+  type(bbtype), target, dimension(NBB_DEFS_MAX) :: FF_defs_FINN, FF_defs_GFAS
+  type(bbtype), pointer, dimension(:) :: FF_defs_BBMAP !point to the actual BBMAP 
+  
+  integer :: emep_used(NSPEC_TOT)
+  
+  integer CO_ix, NO_ix ,NO2_ix            ,SO2_ix,   NH3_ix       ,&
+       C2H6_ix         ,CH3CHO_ix        ,NC4H10_ix        ,&
+       HCHO_ix           ,MEK_ix            ,C3H6_ix      ,&
+       FFIRE_OM_ix       ,FFIRE_BC_ix       ,FFIRE_REMPPM25_ix ,C5H8_ix    ,&
+       C2H4_ix           ,OXYL_ix         ,MGLYOX_ix         
+ 
+  integer, parameter :: DUMMY_ix = -1
+  integer CH4_ix, H2_ix, FFIRE_REMPPMco_ix, CH3OH_ix, C2H5OH_ix
+
+  integer i,n
+!first define the internal emep index of relevant species. Index will be negative if it is not among the emep species.
+  
+  CO_ix             = find_index("CO",species(:)%name)
+  NO_ix             = find_index("NO",species(:)%name)
+  NO2_ix            = find_index("NO2",species(:)%name)
+  SO2_ix            = find_index("SO2",species(:)%name)
+  NH3_ix            = find_index("NH3",species(:)%name)
+  C2H6_ix           = find_index("C2H6",species(:)%name)
+  CH3CHO_ix         = find_index("CH3CHO",species(:)%name)
+  NC4H10_ix         = find_index("NC4H10",species(:)%name)
+  HCHO_ix           = find_index("HCHO",species(:)%name)
+  MEK_ix            = find_index("MEK",species(:)%name)
+  C3H6_ix           = find_index("C3H6",species(:)%name)
+  FFIRE_OM_ix       = find_index("FFIRE_OM",species(:)%name)
+  FFIRE_BC_ix       = find_index("FFIRE_BC",species(:)%name)
+  FFIRE_REMPPM25_ix = find_index("FFIRE_REMPPM25",species(:)%name)
+  C5H8_ix           = find_index("C5H8",species(:)%name)
+  C2H4_ix           = find_index("C2H4",species(:)%name)
+  OXYL_ix           = find_index("OXYL",species(:)%name)
+  MGLYOX_ix         = find_index("MGLYOX",species(:)%name)
+  
+  CH4_ix         = find_index("CH4",species(:)%name)
+  H2_ix         = find_index("H2",species(:)%name)
+  FFIRE_REMPPMco_ix         = find_index("FFIRE_REMPPMco",species(:)%name)
+  CH3OH_ix         = find_index("CH3OH",species(:)%name)
+  C2H5OH_ix         = find_index("C2H5OH",species(:)%name)
+  
+
+  FF_defs_FINN = (/ &
+       bbtype("CO  ",0.028 , 1.000, CO_ix    ) & ! Tracer, will add to CO too
+       !A2018 tmp   ,bbtype("CO  ",0.028 , 1.000, FFIRE_CO    ) & ! Tracer, will add to CO too
+       ,bbtype("NO  ",0.030 , 1.000, NO_ix          ) &
+       ,bbtype("NO2 ",0.046 , 1.000, NO2_ix         ) &
+       ,bbtype("SO2 ",0.064 , 1.000, SO2_ix         ) &
+       ,bbtype("NH3 ",0.017 , 1.000, NH3_ix         ) &
+       ,bbtype("ACET",0.058 , 1.000, C2H6_ix        ) & !acetone 
+       ,bbtype("ALD2",0.044 , 1.000, CH3CHO_ix      ) &
+       ,bbtype("ALK4",0.058 , 1.000, NC4H10_ix      ) &
+       ,bbtype("C2H6",0.030 , 1.000, C2H6_ix        ) &
+       ,bbtype("C3H8",0.044 , 0.700, NC4H10_ix      ) & ! obs
+       ,bbtype("CH2O",0.030 , 1.000, HCHO_ix        ) &
+       ,bbtype("MEK ",0.072 , 1.000, MEK_ix         ) &
+       ,bbtype("PRPE",0.042 , 1.000, C3H6_ix        ) & 
+       ! We read in OC and PM25, but want OM and REMPPM25
+       ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25_ix ) & !  Will need to subtract OM, BC
+       ,bbtype("OC  ",1.7   , 1.000, FFIRE_OM_ix    ) & ! Put OM/OC=1.7 in fac
+       ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC_ix    ) &
+       ! Subtract, assuming OM/OC=1.7. ForestFire_ml will pevent zeros
+       ,bbtype("OC  ",-1.7  , 1.000, FFIRE_REMPPM25_ix ) & ! Will subtract OM
+       ,bbtype("BC  ",-1.0  , 1.000, FFIRE_REMPPM25_ix ) & ! Will subtract BC
+       ! FINN v1.5, GEOS-CHEM 2015 changes: excludes 1 species:
+       ! and needs one less EMEP species, C5H8
+       ! ,bbtype("ISOP",0.068 , 1.000, C5H8        ) &
+       ! FINN v1.5, GEOS-CHEM 2015 changes: added 8 species:
+       ! and needs 3 more EMEP species = C2H4, OXYL, MGLYOX
+       ,bbtype("C2H4",0.028 , 1.000, C2H4_ix        ) & ! v1.5, new EMEP
+       ,bbtype("C3H8",0.044 , 1.000, NC4H10_ix      ) & ! v1.5
+       ,bbtype("GLYC",0.060 , 1.000, CH3CHO_ix      ) & ! v1.5 hydroxy-aceteldehyed
+       ,bbtype("HAC", 0.060 , 1.000, C2H6_ix        ) & ! v1.5 hydroxy-acetone. Query surrogate?
+       ,bbtype("BENZ", 0.078 , 1.000, OXYL_ix      ) & ! v1.5, new EMEP
+       ,bbtype("TOLU", 0.092 , 1.000, OXYL_ix      ) & ! v1.5
+       ,bbtype("XYLE", 0.106 , 1.000, OXYL_ix      ) & ! v1.5
+       ,bbtype("MGLY", 0.072 , 1.000, MGLYOX_ix      ) & ! v1.5, new EMEP
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       /)
+  
+  
+  
+  FF_defs_GFAS = (/ &
+       bbtype("cofire       ", 1.000, 1.000, CO_ix            ), & ! 081.210 | Carbon Monoxide
+       bbtype("ch4fire      ", 1.000, 1.000, CH4_ix           ), & ! 082.210 | Methane
+       bbtype("h2fire       ", 1.000, 1.000, H2_ix            ), & ! 084.210 | Hydrogen
+       bbtype("noxfire      ", 1.000, 1.000, NO_ix            ), & ! 085.210 | Nitrogen Oxide. Use as NO
+       !   bbtype("pm10fire     ", 1.000, 1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10
+       !   bbtype("pm2p5fire    ", 1.000,-1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10 - PM 2.5
+       bbtype("pm2p5fire    ", 1.000, 1.000, FFIRE_REMPPM25_ix), & ! 087.210 | PM 2.5
+       bbtype("ocfire       ", 1.700,-1.000, FFIRE_REMPPM25_ix), & ! 090.210 | PM 2.5 - Organic Matter
+       bbtype("bcfire       ", 1.000,-1.000, FFIRE_REMPPM25_ix), & ! 091.210 | PM 2.5 - Black Carbon
+       bbtype("ocfire       ", 1.700, 1.000, FFIRE_OM_ix      ), & ! 090.210 | Organic Carbon --> O.Matter (OM/OC=1.7)
+       bbtype("bcfire       ", 1.000, 1.000, FFIRE_BC_ix      ), & ! 091.210 | Black Carbon
+       bbtype("so2fire      ", 1.000, 1.000, SO2_ix           ), & ! 102.210 | Sulfur Dioxide
+       bbtype("ch3ohfire    ", 1.000, 1.000, CH3OH_ix         ), & ! 103.210 | Methanol
+       bbtype("c2h5ohfire   ", 1.000, 1.000, C2H5OH_ix        ), & ! 104.210 | Ethanol
+       bbtype("c2h4fire     ", 1.000, 1.000, C2H4_ix          ), & ! 106.210 | Ethene
+       bbtype("c3h6fire     ", 1.000, 1.000, C3H6_ix          ), & ! 107.210 | Propene
+       bbtype("c5h8fire     ", 1.000, 1.000, C5H8_ix          ), & ! 108.210 | Isoprene
+       bbtype("toluenefire  ", 1.000, 1.000, OXYL_ix          ), & ! 110.210 | Toluene lump(C7H8+C6H6+C8H10)
+       bbtype("hialkenesfire", 1.000, 1.000, C3H6_ix          ), & ! 111.210 | Higher Alkenes (CnH2n, C>=4)
+       bbtype("hialkanesfire", 1.000, 1.000, NC4H10_ix        ), & ! 112.210 | Higher Alkanes (CnH2n+2, C>=4)
+       bbtype("ch2ofire     ", 1.000, 1.000, HCHO_ix          ), & ! 113.210 | Formaldehyde
+       bbtype("c2h4ofire    ", 1.000, 1.000, CH3CHO_ix        ), & ! 114.210 | Acetaldehyde
+       bbtype("nh3fire      ", 1.000, 1.000, NH3_ix           ), & ! 116.210 | Ammonia
+       bbtype("c2h6fire     ", 1.000, 1.000, C2H6_ix          ), & ! 118.210 | Ethane
+       bbtype("c4h10fire    ", 1.000, 1.000, NC4H10_ix        ) & ! 238.210 | Butanes
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       ,bbtype("DUMMY", 1.0 , 1.000, DUMMY_ix      ) & ! available for new species
+       /)
+
+  select case(BBMAP)
+  case("GFED")
+     
+  case("FINN")
+     FF_defs_BBMAP => FF_defs_FINN
+     BiomassBurningMapping = "FINNv1.5"
+  case("GFAS")
+     FF_defs_BBMAP => FF_defs_GFAS
+     BiomassBurningMapping = "GFASv1"
+  case default
+     call CheckStop("Unknown forest Fire Mapping")
+  end select
+  
+  !first count number of valid entries
+  NBB_DEFS = 0
+  do i = 1, size(FF_defs_BBMAP)
+     if( FF_defs_BBMAP(i)%emep > 0 ) then
+        NBB_DEFS = NBB_DEFS +1
+        if(masterproc)write(*,*)i,'ForestFire: '//trim(FF_defs_BBMAP(i)%BBName)&
+             //' mapped to '//species(FF_defs_BBMAP(i)%emep)%name
+     else
+        if(masterproc .and. FF_defs_BBMAP(i)%BBname/="DUMMY")&
+          write(*,*)'ForestFire: '//trim(FF_defs_BBMAP(i)%BBName)//' not used'
+     endif
+  enddo
+  allocate(FF_defs(NBB_DEFS))
+  !then copy only valid entries into array
+  do i = 1, size(FF_defs_BBMAP)
+     if( FF_defs_BBMAP(i)%emep > 0 ) FF_defs(i) = FF_defs_BBMAP(i)
+  enddo
+  
+  !find the number of unique emep species used
+  emep_used = -2 !initialize
+  NEMEPSPECS = 0
+  do n=1, NBB_DEFS              ! Only unique EMEP SPECS in emep_used 
+     iemep = FF_defs(n)%emep
+     if(find_index(iemep,emep_used(:))<0)then
+        NEMEPSPECS = NEMEPSPECS + 1
+        emep_used(NEMEPSPECS) = iemep
+     endif
+  enddo
+  if(masterproc)write(*,*)'Forest Fire will read ',NBB_DEFS,' species, mapped into ',NEMEPSPECS,' emep sppecies'
+  
+  
+end subroutine make_mapping
 
 subroutine Fire_Emis(daynumber)
 !.....................................................................
