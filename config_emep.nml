@@ -234,6 +234,7 @@
 ! Default EMEP setup is using 'FINN'
 !------------------------------
   need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
+  BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
   FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
   GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',

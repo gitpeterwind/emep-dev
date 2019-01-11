@@ -20,6 +20,19 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Jan 2019, Peter
+
+ForestFire is now a "normal" module: it does not need to be specially integrated 
+in the genchem and compilation process. One can switch between GFAS and FINN using 
+BBMAP in the config file. The existence of the relevant species are tested before 
+they are used and only the one existing are included.
+
+The module can still be defined with something like "if(OM25_ix>0)then..."
+for other types of chemical schemes. But it will always compile and use the
+species available from the default chemistry.
+
+NBB_DEFS and NEMEPSPECS are set automatically. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 Dec 2018, Dave
