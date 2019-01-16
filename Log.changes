@@ -21,6 +21,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11-14 Jan 2019, Robert
+
+GasParticleCoeffs_mod.f90: Added some deposition groups (used with CB6 scheme)
+DefPhotolysis_mod.f90:     Bug fix IDMEK now set = IDCH3COX (was IDCH3O2H)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Jan 2019, Peter
 
 ForestFire is now a "normal" module: it does not need to be specially integrated 

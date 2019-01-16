@@ -72,9 +72,29 @@
       IDCH3COY = 10 , IDHCOHCO = 11 , IDRCOHCO = 12 , &
       IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
       IDHO2NO2 = 16 , IDACETON = 17
+
+! Corresponding MCM-photolysis rates:
+! IDAO3    =  1 = IDO3_O3P = MCM_J2
+! IDBO3    =  2 = IDO3_O1D = MCM_J1
+! IDNO2    =  3 = MCM_J4
+! IDH2O2   =  4 = MCM_J3
+! IDHNO3   =  5 = MCM_J8
+! IDACH2O  =  6 = MCM_J11
+! IDBCH2O  =  7 = MCM_J12
+! IDCH3CHO =  8 = MCM_J13
+! IDCH3COX =  9 = MCM_J22
+! IDCH3COY = 10 = IDBIACET = MCM_J35 ! Based on the assumption that EMEP use the notation CH3COY in the same way as the OSLO CTM3
+! IDHCOHCO = 11 = ? MCM_J31+MCM_J32+MCM_J33 ?
+! IDRCOHCO = 12 = IDMGLYOX = MCM_J34
+! IDNO3    = 13 = ? MCM_J5+MCM_J6 ?
+! IDN2O5   = 14 = NOT_IN_MCM?
+! IDCH3O2H = 15 = MCM_J41
+! IDHO2NO2 = 16 = NOT_IN_MCM?
+! IDACETON = 17 = MCM_J21
+
     integer, public, parameter ::&
         IDHONO = 18  & !A2018 added as extended
-       ,IDMEK     = IDCH3O2H & ! just name change CHECK
+       ,IDMEK     = IDCH3COX & ! just name change CHECK
 !       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
 !       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
 !       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
