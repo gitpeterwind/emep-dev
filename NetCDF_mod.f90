@@ -5001,7 +5001,7 @@ end subroutine vertical_interpolate
    integer, intent(in)  :: ncFileID
    integer, intent(out),optional  ::  lonVarID, latVarID
    integer, intent(out)  :: ndims
-   integer :: status,VarID
+   integer :: status,VarID,len(4)
 
    lat_name = 'lat'
    lon_name = 'lon'
@@ -5044,14 +5044,14 @@ end subroutine vertical_interpolate
 
    call check_lon_lat(ncFileID, lon_name, lat_name, nDimensions, lonVarID, latVarID)
    call check(nf90_Inquire_Variable(ncFileID,latVarID,lat_name,ndims,xtype,dimids,nAtts),"EmisGetDimsId")
-   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=lonVarID,len=dims(1)),"EmisGetDims")
-   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=latVarID,len=dims(2)),"EmisGetDims")
 
    if(nDimensions==1)then
       allocate(Rlat(2,1))
       call check(nf90_get_var(ncFileID, latVarID, Rlat,count=(/2/)))
       dlat = abs(Rlat(2,1)-Rlat(1,1))
    else   if(nDimensions==2)then
+      call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),len=dims(1)),"EmisGetDims2D")
+      call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(2),len=dims(2)),"EmisGetDims2D")
       
       allocate(Rlat(dims(1),dims(2)))
       call check(nf90_get_var(ncFileID, latVarID, Rlat))
