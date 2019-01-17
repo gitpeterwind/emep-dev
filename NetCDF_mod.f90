@@ -1646,13 +1646,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         call date2nctime(date_start,rdaysstart)!start of period                
         call date2nctime(current_date,rdays)!now
         rdays = (rdaysstart+rdays)/2 !middle
-     else  if(iotyp==IOU_MON)then
-        date_start = (/current_date%year,current_date%month-1,1,0/)!start of month (0/negative allowed!)
-        call date2nctime(date_start,rdaysstart)!start of period                
-        call date2nctime(current_date,rdays)
-        rdays = (rdaysstart+rdays)/2
      else
-        call date2nctime(current_date,rdays,iotyp) !routine will subtract half hour or day if necessary
+        call date2nctime(current_date,rdays,iotyp) !routine will subtract half hour, day or month if necessary
      endif
      call check(nf90_put_var(ncFileID,VarID,rdays,start=(/nrecords/)))
      
