@@ -29,8 +29,9 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
                              ,SurfacePressureFile &
-                             ,SELECT_LEVELS_HOURLY,&  ! NML
-                              num_lev3d,lev3d         ! 3D levels on 3D output
+                             ,SELECT_LEVELS_HOURLY&  ! NML
+                             , num_lev3d,lev3d&      ! 3D levels on 3D output
+                             , startdate
 use Country_mod,        only : NLAND, Country
 use Debug_module,       only : DEBUG_NETCDF, DEBUG_NETCDF_RF
 use Functions_mod,       only: StandardAtmos_km_2_kPa
@@ -1012,7 +1013,7 @@ function define_var(vname,xtype,dimIDs) result(varID)
   case("time")
     call check(nf90_def_var(ncFileID,vname,xtype,dimIDs,varID),"def:"//trim(vname))
     select case(period_type)
-    case('instant','hourly','fullrun','unknown')
+    case('instant','hourly','unknown')
       call check(nf90_put_att(ncFileID,varID,"long_name","time at end of period"))
     case default
       call check(nf90_put_att(ncFileID,varID,"long_name","time at middle of period"))
@@ -1149,10 +1150,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   integer :: iDimID,jDimID,kDimID,timeVarID
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf
-  real(kind=8) :: rdays,rdays_time(1)
+  real(kind=8) :: rdays,rdays_time(1),rdaysstart
   logical :: overwrite_local,createfile=.false.
   integer, parameter :: IOU_GIVEN=-IOU_INST
-  integer ::domain(4),startvec(10),countvec(10),Nextradim,n,iextradim,iiextradim,nijk
+  integer ::domain(4),startvec(10),countvec(10),Nextradim,n,iextradim,iiextradim,nijk,date_start(4)
 
   domain=RUNDOMAIN!default domain (in fulldoamin coordinates)
 !fullrun, Monthly, Daily and hourly domains may be predefined
@@ -1640,7 +1641,19 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
      
      ! update time dim
      call check(nf90_inq_varid(ncFileID,"time",VarID))
-     call date2nctime(current_date,rdays,iotyp)
+     if(iotyp==IOU_YEAR)then
+        date_start = startdate!start of period        
+        call date2nctime(date_start,rdaysstart)!start of period                
+        call date2nctime(current_date,rdays)!now
+        rdays = (rdaysstart+rdays)/2 !middle
+     else  if(iotyp==IOU_MON)then
+        date_start = (/current_date%year,current_date%month-1,1,0/)!start of month (0/negative allowed!)
+        call date2nctime(date_start,rdaysstart)!start of period                
+        call date2nctime(current_date,rdays)
+        rdays = (rdaysstart+rdays)/2
+     else
+        call date2nctime(current_date,rdays,iotyp) !routine will subtract half hour or day if necessary
+     endif
      call check(nf90_put_var(ncFileID,VarID,rdays,start=(/nrecords/)))
      
      !close file if present(fileName_given)
@@ -5062,12 +5075,12 @@ end subroutine vertical_interpolate
          if(abs(Rlat(i-1,i-1)-Rlat(i,i))>dlat)dlat=abs(Rlat(i-1,i-1)-Rlat(i,i))
          if(abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))>dlat)dlat=abs(Rlat(mindim-i+2,i-1)-Rlat(mindim-i+1,i))            
       enddo
-      if(me==0)write(*,*)'Will set default resolution (it does not need to be exact)',resolution
    else
       call CheckStop('did not find one or two dimensional latitudes '//trim(lat_name))
    endif
    deallocate(Rlat)
    resolution = EARTH_RADIUS*dlat*PI/180.0          
+   if(me==0)write(*,*)'Will set default resolution (it does not need to be exact) ',resolution
  end subroutine make_gridresolution
 
  subroutine output_country_emissions(filename,GridEmis,GridEmisCodes,nGridEmisCodes,NSECTORS,NCMAX,EMIS_FILE,NEMIS_FILE)

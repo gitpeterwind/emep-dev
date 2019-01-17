@@ -170,9 +170,9 @@ logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions ho
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 
-  !Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
-  character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
-  character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domain cover other regions
+!Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
+character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
+character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domain cover other regions
 
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &

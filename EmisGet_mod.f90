@@ -131,6 +131,7 @@ contains
        call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
        
        call nctime2date(EmisFile%end_of_validity_date, TimesInDays(1))
+       if(me==0)write(*,*)record,'ENDOFVAL ', EmisFile%end_of_validity_date
     endif
 
     if(trim(EmisFile%projection) == 'native')then
@@ -480,7 +481,6 @@ contains
           default_resolution = resolution
        else
           call make_gridresolution(ncFileID, default_resolution)
-          if(me==0)write(*,*)dtxt//'made resolution :',default_resolution
        endif
     endif
        

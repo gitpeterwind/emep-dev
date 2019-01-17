@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 Jan 2019, Peter
+
+The timestamp (i.e. value of time variable) of the Base_fullrun.nc is set to 
+the middle of the run period (also if less than one year is run).
+The attribute is also set to "time at middle of period", so you can know which file is new or old.
+Same for monthly, although it was already done slightly differently.
+(Background: some scripts had problems since the time for a 2016 run
+for example was previously set to 2017-1-1 00:00)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11-14 Jan 2019, Robert
 
 GasParticleCoeffs_mod.f90: Added some deposition groups (used with CB6 scheme)

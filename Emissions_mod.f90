@@ -341,7 +341,7 @@ contains
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-          if(me==0)write(*,*)'Emis date is reached ',EmisFiles(n)%end_of_validity_date
+          if(me==0)write(*,*)'Emis date is reached ',EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
