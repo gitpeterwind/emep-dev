@@ -159,7 +159,7 @@ subroutine Config_Nest()
   integer :: ios,i
   logical, save :: first_call=.true.
   NAMELIST /Nest_config/ MODE_READ,MODE_SAVE,NHOURREAD,NHOURSAVE, &
-    template_read_3D,template_read_BC,template_write,&
+    template_read_3D,template_read_BC,template_write,BC_DAYS,&
     native_grid_3D,native_grid_BC,omit_zero_write,out_DOMAIN,&
     MET_inner,RUNDOMAIN_inner,&
     WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
