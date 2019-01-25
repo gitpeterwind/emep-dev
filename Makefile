@@ -66,7 +66,8 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LDFLAGS += -Nmpi
   F90FLAGS += -Nmpi
 else ifneq (,$(findstring $(MACHINE),stratus nebula))
-  MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
+# MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
+  MODULES = buildenv-intel/2018a-eb netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare FFTW/3.3.6-nsc1
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
   MAKEDEPF90=makedepf90
