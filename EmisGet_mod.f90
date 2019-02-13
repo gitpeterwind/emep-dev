@@ -24,7 +24,8 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             ,GridEmis,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
-                            ,EmisFiles, NEmisFile_sources, Emis_source
+                            ,EmisFiles, NEmisFile_sources, Emis_source &
+                            ,NEmis_sourcesMAX
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
@@ -502,6 +503,7 @@ contains
           !if ( debugm0 ) write(*,*) dtxt//'source:',trim(EmisFile_in%source(i)%varname)
           if(EmisFile_in%source(i)%varname == cdfvarname)then
              nn = nn + 1
+             call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"NEmis_sourcesMAX exceeded (A)")
              Emis_source(NEmis_sources+nn)%ix_in=i
              if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
           endif
@@ -511,6 +513,7 @@ contains
           ! into different vertical levels)
            do i = 1,max(1,nn)
              !we define a new emission source
+             call CheckStop(NEmis_sources+1 > NEmis_sourcesMAX,"NEmis_sourcesMAX exceeded (B)")
              NEmis_sources = NEmis_sources + 1
              Emis_source(NEmis_sources)%varname = trim(cdfvarname)
              Emis_source(NEmis_sources)%species = trim(cdfspecies)

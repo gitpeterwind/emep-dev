@@ -180,7 +180,8 @@ integer,  public, save :: NEmis_id
 !end type Emis_id_type
 type(Emis_id_type), public, save:: Emis_id(10)
 type(EmisFile_id_type), public, save:: EmisFiles(20) !list of emission files after validation
-type(Emis_id_type), public, save:: Emis_source(50) !list of valid sources found in the emission files
+integer,  public, parameter:: NEmis_sourcesMAX = 500
+type(Emis_id_type), public, save:: Emis_source(NEmis_sourcesMAX) !list of valid sources found in the emission files
 integer,  public, save :: NEmis_sources = 0
 integer,  public, save :: NEmis_3Dsources = 0
 integer,  public, save :: NEmisFile_sources = 0
