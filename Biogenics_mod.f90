@@ -645,8 +645,7 @@ module Biogenics_mod
     ! BUG WAS MISSING FROM OLD::::::!
    ! call StopAll(dtxt//'OLD BUG? SOIL NO NOT CHECKED YET')
     !rcbio(NATBIO%NO,KG)    =  SoilNOx(i,j) !LIKELY WRONG. TO BE FIXED
-    ! from OLD:
-     write(*,*)'DAVE PLEASE CHECK THIS!'
+    ! from OLD: write(*,*)'DAVE PLEASE CHECK THIS!'
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
     rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + SoilNOx(i,j)!email from Dave 7jan2019
   end if
