@@ -29,7 +29,8 @@ use Config_module,    only:  &
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
-  ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Upper layer (k), upper level, and k for 1d fields
+  ,KMAX_MID ,KMAX_BND, KCHEMTOP & ! Upper layer (k), upper level, and k for 1d fields
+  ,EmisSplit_OUT
 use Debug_module,     only: DebugCell, DEBUG_MASS, DEBUG !->DEBUG%SETUP_1DCHEM
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
@@ -50,9 +51,7 @@ use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, &
                            zen, Idirect, Idiffuse,z_bnd,ws_10m
-use My_Derived_mod,   only: EmisSplit_OUT
-use Par_mod,          only: me, & 
-                           gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
+use Par_mod,          only: me,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_mod,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_mod,    only: PARfrac, Wm2_uE
 use SmallUtils_mod,   only: find_index

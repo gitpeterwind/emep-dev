@@ -41,7 +41,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
                             startdate, out_startdate, spinup_enddate,&
                             num_lev3d,lev3d &! 3D levels on 3D output
-                            , SecEmisOutWanted
+                            , SecEmisOutWanted,EmisSplit_OUT
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
@@ -170,8 +170,6 @@ character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSLCS) :: &
 character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
   D3_OTHER  != (/ "D3_PM25water" /) !**** Under construction *******
             != (/ "D3_m_TH", "D3_m2s_Kz" /)
-
-logical, parameter, public :: EmisSplit_OUT = .false.
 
 integer, private :: i,j,k,n, ivoc, isec    ! Local loop variables
 
