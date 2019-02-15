@@ -302,8 +302,13 @@ contains
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
-          if(ix>0)Emis_source(ii)%species_ix = ix
-          
+          if(ix>0)then
+             Emis_source(ii)%species_ix = ix
+             if(Emis_source(ii)%include_in_local_fractions .and. USE_uEMEP )then
+                if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
+             endif
+          endif
+
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
           if(MasterProc)write(*,*)dtxt//"REDefined emission source ",Emis_source(ii)
           

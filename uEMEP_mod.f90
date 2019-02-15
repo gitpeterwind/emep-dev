@@ -1193,7 +1193,7 @@ subroutine uEMEP_emis(indate)
             if(ipoll>0)then
                !the species is directly defined (no splits, sector etc)
                !not included in uEMEP setup for now
-               call CheckStop("uEMEP: cannot include single species "//Emis_source(n)%species)              
+               !if(me==0)write(*,*)"WARNING uEMEP: cannot include single species "//Emis_source(n)%species
             else
                !the species is defines as a sector emission
                iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
