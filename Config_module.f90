@@ -670,7 +670,8 @@ subroutine Config_ModelConstants(iolog)
   ! Convert DEBUG%SPEC to index
   if(first_call)then
 
-    write(iolog,*) 'CHEM SCHEMES: ',trim(CM_schemes_ChemSpecs)
+    if(MasterProc)&
+         write(iolog,*) 'CHEM SCHEMES: ',trim(CM_schemes_ChemSpecs)
 
     ispec = find_index( DEBUG%SPEC, species(:)%name )
   ! print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
