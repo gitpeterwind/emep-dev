@@ -11,7 +11,7 @@ use Config_module,     only: NPROC, MasterProc,USES,&
                              startdate
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
-                             IC_NMR 
+                             IC_NMR,IC_DUMMY 
 use Debug_module,      only: DEBUG
 use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
                             N_HFAC,N_SPLIT, EMIS_FILE, & 
@@ -453,6 +453,7 @@ contains
     integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
     real, allocatable ::Rlat2D(:,:)
     character(len=*), parameter :: dtxt='Em_inicdf:'
+    integer :: countrycode
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -525,9 +526,9 @@ contains
              if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
-             status = nf90_get_att(ncFileID,varid,"country", name)
+             status = nf90_get_att(ncFileID,varid,"country", countrycode)
              if(status==nf90_noerr)then
-                ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+                ix = find_index(countrycode, Country(:)%icode)
                 if(ix<0)then
                    if(me==0)write(*,*)dtxt//'WARNING: country '//trim(name)//&
                      ' not defined. file'//trim(fname)//&
@@ -540,11 +541,21 @@ contains
              else
                 status = nf90_get_att(ncFileID,varid,"country_ISO", name)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%country_ISO = trim(name)
+                ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+                if(me==0)write(*,*)'defining country ISO',trim(name),' index ',ix
+                if(ix<0)then
+                   if(me==0)write(*,*)dtxt//'WARNING: country_ISO '//trim(name)//&
+                     ' not defined. file'//trim(fname)//&
+                     ' variable '//trim(cdfvarname)
+                else
+                   Emis_source(NEmis_sources)%country_ix = ix
                    if ( debugm0 ) write(*,*) dtxt//'country_ISO add:',ix,trim(name)
+                endif
              endif
              if(EmisFile_in%apply_femis)then
                 if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
-                   ix = Country(Emis_source(NEmis_sources)%country_ix)%icode
+                   ix = Emis_source(NEmis_sources)%country_ix
+                   if(ix<0)ix=IC_DUMMY
                    isec = Emis_source(NEmis_sources)%sector
                    iem = find_index(Emis_source(NEmis_sources)%species,EMIS_FILE(:))
                    if(iem >0 )then

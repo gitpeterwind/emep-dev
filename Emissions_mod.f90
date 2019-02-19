@@ -313,9 +313,8 @@ contains
           if(MasterProc)write(*,*)dtxt//"REDefined emission source ",Emis_source(ii)
           
        enddo
-       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find ', &
-          n, isource, trim(Emis_sourceFiles(n)%source(isource)%varname)//&
-           ' in '//trim(Emis_sourceFiles(n)%filename)
+!       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
+!            //trim(Emis_sourceFiles(n)%filename)
 
     enddo
 

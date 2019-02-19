@@ -189,8 +189,8 @@ program emep_Main
 
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
-  call Init_emissions !new format
   call Emissions(yyyy)! should be set for the enddate year, not start?
+  call Init_emissions !new format
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
 
