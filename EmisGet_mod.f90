@@ -537,6 +537,10 @@ contains
                    Emis_source(NEmis_sources)%country_ix = ix
                    if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(name)
                 endif
+             else
+                status = nf90_get_att(ncFileID,varid,"country_ISO", name)
+                if(status==nf90_noerr)Emis_source(NEmis_sources)%country_ISO = trim(name)
+                   if ( debugm0 ) write(*,*) dtxt//'country_ISO add:',ix,trim(name)
              endif
              if(EmisFile_in%apply_femis)then
                 if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
