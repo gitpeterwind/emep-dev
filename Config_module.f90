@@ -520,7 +520,7 @@ character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
 ! Can use RCP values of CH4 for given iyr_trend.
 character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
 
-logical, parameter, public :: EmisSplit_OUT = .true.
+logical, parameter, public :: EmisSplit_OUT = .false.
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
