@@ -31,7 +31,7 @@ use Config_module,only: &
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
-use Country_mod,       only: EU28,EUMACC2 !CdfSec
+use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
 use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
                                 DEBUG_EMISTIMEFACS
 use EmisDef_mod,       only: &
@@ -177,10 +177,16 @@ contains
     !factor 0.6666 (=mw(SO2)/mw(SO4)) to be right. 
     !If sector is defined as zero, no additional factor is required.
 
+    !note on apply_femis and some other parameters of type "logical":
+    !these cannot be defined on file and then possibly overwritten by config, 
+    !because it is not possible to distiguish between default and set values from config.
+    !apply_femis must be either default (true) or set to false by config
+    !include_in_local_fractions must be either default (true) or set to false by config
     
     integer, parameter ::maxnames=100
     character(len=TXTLEN_FILE) :: fname, filename, names_in(maxnames)
     integer :: i, ii, n, nn, ix, nemis_old, isource
+    integer :: isec, iland, iem, iqrc, itot, f
     integer :: startsource(size(Emis_sourceFiles)), endsource(size(Emis_sourceFiles))
     type(Emis_id_type):: Emis_id_undefined !to get undefined values
     type(EmisFile_id_type):: Emisfile_undefined !set values when not specified otherwise 
@@ -190,12 +196,15 @@ contains
     integer :: EmisFilesMap(0:size(Emis_sourceFiles)) !index of EmisFile given index of EmisFile_sources
     integer :: max_levels3D
     character(len=*),parameter :: dtxt='Ini_Em:'
+    logical :: found
 
     !1) define default values 
     Emis_sources_defaults%units = 'mg/m2/h'
     Emis_sources_defaults%country_ISO = 'N/A'
     Emis_sources_defaults%sector = 0
     Emis_sources_defaults%factor = 1.0
+    Emis_sources_defaults%include_in_local_fractions = .true.
+    Emis_sources_defaults%apply_femis = .true.
     Emis_sources_defaults%injection_k = KMAX_MID
     Emis_sources_defaults%is3D = .false.
     Emis_sources_defaults%istart = 1 
@@ -261,9 +270,7 @@ contains
           if(Emis_sourceFiles(n)%projection /= 'native')then
           call CheckStop(EmisFiles(i)%grid_resolution <=1.0E-5,'Grid_resolution must be defined for '//trim(Emis_sourceFiles(n)%filename))
           endif
-          if(Emis_sourceFiles(n)%factor /= Emisfile_undefined%factor) EmisFiles(i)%factor = Emis_sourceFiles(n)%factor
-         
-        endif
+       endif
     enddo
 
     !then overwrite the variable attributes
@@ -271,6 +278,8 @@ contains
        n = EmisFilesMap(i)
        found = .false.
        do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
+          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis!defines default, can be also be switched off for individual sources
+          Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions
           isource = Emis_source(ii)%ix_in
           if(isource>0)then
              !source defined in config file
@@ -282,8 +291,8 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
              if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
              if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
-             if(Emis_sourceFiles(n)%source(isource)%include_in_local_fractions /= Emis_id_undefined%include_in_local_fractions) &
-                  Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%source(isource)%include_in_local_fractions
+             if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
+             if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
              
              if(Emis_sourceFiles(n)%source(isource)%is3D .neqv. Emis_id_undefined%is3D) Emis_source(ii)%is3D = Emis_sourceFiles(n)%source(isource)%is3D
              if(Emis_sourceFiles(n)%source(isource)%istart /= Emis_id_undefined%istart) Emis_source(ii)%istart = Emis_sourceFiles(n)%source(isource)%istart
@@ -291,7 +300,7 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%kstart /= Emis_id_undefined%kstart) Emis_source(ii)%kstart = Emis_sourceFiles(n)%source(isource)%kstart
              if(Emis_sourceFiles(n)%source(isource)%kend /= Emis_id_undefined%kend) Emis_source(ii)%kend = Emis_sourceFiles(n)%source(isource)%kend
              if(Emis_sourceFiles(n)%source(isource)%reversek .neqv. Emis_id_undefined%reversek) Emis_source(ii)%reversek = Emis_sourceFiles(n)%source(isource)%reversek
-             if(Emis_sourceFiles(n)%source(isource)%injection_k .neqv. Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
+             if(Emis_sourceFiles(n)%source(isource)%injection_k /= Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
           endif
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
           if(ix<0)then
@@ -316,6 +325,38 @@ contains
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
 !            //trim(Emis_sourceFiles(n)%filename)
 
+    enddo
+
+    !include reduction factors
+    do n = 1, NEmis_sources      
+       if(Emis_source(n)%apply_femis)then
+          isec = Emis_source(n)%sector
+          if(Emis_source(n)%sector>0 .and. Emis_source(n)%sector<=NSECTORS)then
+             iland = Emis_source(n)%country_ix
+             if(iland<0)iland=IC_DUMMY
+             isec = Emis_source(n)%sector
+             iem = find_index(Emis_source(n)%species,EMIS_FILE(:))
+             if(iem >0 )then
+                !apply femis 
+                Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
+             else
+                !see if the species belongs to any of the splitted species
+                iqrc = 0
+                do iem = 1,NEMIS_FILE
+                   do f = 1,emis_nsplit(iem)
+                      iqrc = iqrc + 1
+                      itot = iqrc2itot(iqrc)
+                      if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
+                         Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
+                         go to 888
+                      endif
+                   enddo
+                enddo
+888             continue
+             endif
+          endif
+          
+       endif
     enddo
 
     !find and define the 3D emissions

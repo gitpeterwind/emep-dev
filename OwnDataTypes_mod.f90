@@ -195,6 +195,7 @@ type, public :: Emis_id_type
    integer :: injection_k = -1 !which model k level to put emissions into. Only for individual species 
    real    :: factor = -1.0 ! scaling factor. multiply values by this number
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
+   logical :: apply_femis = .true. !whether the general femis.dat should be applied to this source
    integer :: country_ix = 67 !Internal country index. Does not have any meaning outside of code
    integer :: height = 0 !could define own release height. not implemented
    logical :: is3D = .false.
@@ -215,6 +216,7 @@ type, public :: Emis_sourceFile_id_type
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
    logical :: apply_femis = .true. !whether the general femis.dat should be applied to sources from this file
+   logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
 end type Emis_sourceFile_id_type
 
 type, public :: EmisFile_id_type

@@ -10,7 +10,7 @@
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
   DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
-  DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis
+  DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis, Nebula
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM

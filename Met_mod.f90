@@ -292,7 +292,7 @@ subroutine MeteoRead()
    ! Hmix ditto:
   character(len=*),  parameter :: &
     possible_HmixNames(2) =  [ "pblh", &
-      "blh" ] ! GLOBAL05
+      "blh " ] ! GLOBAL05
 
   logical :: write_now
 

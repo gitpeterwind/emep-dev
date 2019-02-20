@@ -454,6 +454,7 @@ contains
     real, allocatable ::Rlat2D(:,:)
     character(len=*), parameter :: dtxt='Em_inicdf:'
     integer :: countrycode
+    logical :: apply_femis
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -550,32 +551,6 @@ contains
                 else
                    Emis_source(NEmis_sources)%country_ix = ix
                    if ( debugm0 ) write(*,*) dtxt//'country_ISO add:',ix,trim(name)
-                endif
-             endif
-             if(EmisFile_in%apply_femis)then
-                if(Emis_source(NEmis_sources)%sector>0 .and. Emis_source(NEmis_sources)%sector<=NSECTORS)then
-                   ix = Emis_source(NEmis_sources)%country_ix
-                   if(ix<0)ix=IC_DUMMY
-                   isec = Emis_source(NEmis_sources)%sector
-                   iem = find_index(Emis_source(NEmis_sources)%species,EMIS_FILE(:))
-                   if(iem >0 )then
-                      !apply femis 
-                      Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
-                   else
-                      !see if the species belongs to any of the splitted species
-                      iqrc = 0
-                      do iem = 1,NEMIS_FILE
-                         do f = 1,emis_nsplit(iem)
-                            iqrc = iqrc + 1
-                            itot = iqrc2itot(iqrc)
-                            if(trim(species(itot)%name)==trim(Emis_source(NEmis_sources)%species))then
-                               Emis_source(NEmis_sources)%factor = Emis_source(NEmis_sources)%factor * e_fact(isec,ix,iem)
-                               go to 888
-                            endif
-                         enddo
-                      enddo
-888                   continue
-                   endif
                 endif
              endif
           enddo
