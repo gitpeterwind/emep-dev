@@ -14,8 +14,8 @@ use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour,
                             nlandcode,landcode,sec2tfac_map,sec2hfac_map, &
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
-
-use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
+use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
+                             make_iland_for_time,itot2iqrc,iqrc2iem
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
 use MetFields_mod,     only: ps,roa,EtaKz
 use Config_module,     only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR&
@@ -34,6 +34,7 @@ use TimeDate_ExtraUtil_mod,only: date2string
 use Timefactors_mod,   only: &
     DegreeDayFactors       & ! degree-days used for SNAP-2
     ,Gridded_SNAP2_Factors, gridfac_HDD & 
+    ,GridTfac &!array with monthly gridded time factors
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_edd, timefac  ! time-factors
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
@@ -1082,8 +1083,8 @@ subroutine uEMEP_emis(indate)
   real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s       ! source term (emis) before splitting
   integer :: iland, iland_timefac, iland_timefac_hour  ! country codes, and codes for timefac 
-  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
-  integer ::icc_uemep
+  integer :: hour_iland
+  integer ::icc_uemep, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix, dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NEMIS_FILE,NSECTORS),emis_tot(KMAX_MID,NEMIS_FILE)
@@ -1104,13 +1105,7 @@ subroutine uEMEP_emis(indate)
   do j = lj0,lj1
     do i = li0,li1
       ncc = nlandcode(i,j)            ! No. of countries in grid
-     ! find the approximate local time:
-      lon = modulo(360+nint(glon(i,j)),360)
-      if(lon>180.0)lon=lon-360.0
-      hourloc= mod(nint(indate%hour+24*(1+lon/360.0)),24)
-      hour_longitude=hourloc
-      daytime_longitude=0
-      if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
+
       !*************************************************
       ! loop over sector emissions
       !*************************************************
@@ -1121,33 +1116,8 @@ subroutine uEMEP_emis(indate)
       do icc = 1, ncc
         !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
         iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-
-        !array index of country that should be used as reference for timefactor
-        iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
-        iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
-
-        if(Country(iland)%timezone==-100)then
-          daytime_iland=daytime_longitude
-          hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
-        else
-          daytime_iland=daytime(iland)
-          hour_iland=localhour(iland) + 1
-        end if
-        !if( hour_iland > 24 ) hour_iland = 1 !DSA12
-        wday_loc=wday 
-        if(hour_iland>24) then
-          hour_iland = hour_iland - 24
-          wday_loc=wday + 1
-          if(wday_loc==0)wday_loc=7 ! Sunday -> 7
-          if(wday_loc>7 )wday_loc=1 
-        end if
-        if(hour_iland<1) then
-           hour_iland = hour_iland + 24
-           wday_loc=wday - 1
-           if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
-           if(wday_loc>7 )wday_loc=1 
-        end if
-
+        call make_iland_for_time(.false., indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+        
         do iem = 1, NEMIS_FILE 
            do isec = 1, Nsectors     ! Loop over snap codes
             ! Calculate emission rates from secemis, time-factors, 
@@ -1157,29 +1127,30 @@ subroutine uEMEP_emis(indate)
             tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
-              !Degree days - only SNAP-2 
-              if(USES%DEGREEDAY_FACTORS .and. &
-                   sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
-                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
-                 ! we make use of a baseload even for SNAP2
-                 tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
-                      + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                      * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
-              end if ! =============== HDD 
+            if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,sec2tfac_map(isec),iem)
+            
+            !Degree days - only SNAP-2 
+            if(USES%DEGREEDAY_FACTORS .and. &
+                 sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+               ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
+               ! we make use of a baseload even for SNAP2
+               tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
+                    + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
+                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+            end if ! =============== HDD 
 
-              s = tfac * secemis(isec,i,j,icc,iem)
-
+            s = tfac * secemis(isec,i,j,icc,iem)
 
             do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
               emis_tot(k,iem)=emis_tot(k,iem)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
             end do
 
             !if(isec==uEMEP%sector .or. uEMEP%sector==0)then
-              do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
-                emis_uemep(k,iem,isec)=emis_uemep(k,iem,isec)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
-              end do
+            do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+               emis_uemep(k,iem,isec)=emis_uemep(k,iem,isec)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
+            end do
             !end if
-
+            
           end do ! iem
 
         end do  ! isec
@@ -1188,17 +1159,48 @@ subroutine uEMEP_emis(indate)
                      
       !Add emissions from new format
       do n = 1, NEmis_sources      
-         if(Emis_source(n)%include_in_local_fractions)then
-            ipoll = find_index(Emis_source(n)%species,species(:)%name)
-            if(ipoll>0)then
-               !the species is directly defined (no splits, sector etc)
-               !not included in uEMEP setup for now
-               !if(me==0)write(*,*)"WARNING uEMEP: cannot include single species "//Emis_source(n)%species
+         if(Emis_source(n)%include_in_local_fractions)then            
+            itot = Emis_source(n)%species_ix
+            isec = Emis_source(n)%sector
+            iland = Emis_source(n)%country_ix
+            if(itot>0)then
+               !the species is directly defined (no splits)
+               iqrc = itot2iqrc(itot)
+               if(isec>0)then
+                  call CheckStop(itot2iqrc(itot)<=0,"emitted sector species must belong to one of the splitted species")
+               endif
+               iem = iqrc2iem(iqrc)
             else
-               !the species is defines as a sector emission
                iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
-               isec = Emis_source(n)%sector
-               s = Emis_source_2D(i,j,n)
+            endif
+            if(isec>0)then
+               if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
+                  !we need to apply hourly factors
+                  call make_iland_for_time(.false., indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)                      
+                  tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                  if(Emis_source(n)%periodicity == 'yearly')then
+                     !apply monthly factor on top of hourly factors
+                     tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
+                  endif
+               else
+                  !not monthly or yearly emissions, timefactors must be included in emission values
+                  tfac = 1.0
+               endif
+
+               if (USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac=tfac* GridTfac(i,j,sec2tfac_map(isec),iem)
+               
+               !Degree days - only SNAP-2 
+               if(USES%DEGREEDAY_FACTORS .and. &
+                    sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                  ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
+                  ! we make use of a baseload even for SNAP2
+                  tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
+                       + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
+                       * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+               end if ! =============== HDD 
+ 
+               s = Emis_source_2D(i,j,n) * tfac
+               
                do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
                   emis_tot(k,iem)=emis_tot(k,iem)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
                end do

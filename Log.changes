@@ -21,6 +21,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Feb 2019, Peter
+
+Removed "daytime" (and localhour and hourloc) from Emissions_mod.f90 . Was not in use.
+
+Introduced timefactors for Emissions new format.
+yearly-> apply monthly and hourly factors
+monthly-> apply hourly factors
+other periodicity do not apply timefactors
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 Feb 2019, Dave
 
 Biogenics_mod.f90  - removed warning (DAVE PLEASE CHECK). Looks okay.

@@ -190,7 +190,10 @@ type, public :: Emis_id_type
    character(len=TXTLEN_NAME) :: species = 'NOTSET' !which species to put emissions into
    character(len=TXTLEN_NAME) :: units = 'NOTSET'!units AFTER netcdf values are multiplied by factor
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
-   integer :: sector = -1
+   character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
+   integer :: SNAPsector = -1 !sector defined as SNAP 
+   integer :: GNFRsector = -1 !sector defined as GNFR, not defined yet
+   integer :: sector = -1 !sector as defined in current model, according to USE_SECTORS_NAME  
    integer :: species_ix = -1 ! internal index for species
    integer :: injection_k = -1 !which model k level to put emissions into. Only for individual species 
    real    :: factor = -1.0 ! scaling factor. multiply values by this number

@@ -31,6 +31,7 @@ use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
 use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
+use Io_Progs_mod,      only: datewrite
 use KeyValueTypes,     only: KeyVal
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM&
                              , MPI_INTEGER, MPI_COMM_CALC, IERROR
@@ -47,6 +48,7 @@ use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod, only     : date
 use TimeDate_ExtraUtil_mod, only : nctime2date,date2nctime, date2string
+use Timefactors_mod,   only: fac_ehh24x7 
 
 implicit none
 private
@@ -61,6 +63,7 @@ public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
                              !     vertical emissions profile
 public  :: RoadDustGet       ! Collects road dust emission potentials
 public  :: femis             ! Sets emissions control factors 
+public  :: make_iland_for_time !make land indices for timefactors
 private :: CountEmisSpecs    !
 
 
@@ -1630,6 +1633,50 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         ios = 0
   end subroutine RoadDustGet
 
+
+subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+  ! make iland_timefac,hour_iland,wday_loc,iland_timefac_hour
+  implicit none
+  logical, intent(in):: debug_tfac
+  type(date), intent(in):: indate
+  integer, intent(in):: i,j,iland, wday
+  integer, intent(out):: iland_timefac,hour_iland,wday_loc,iland_timefac_hour
+
+  integer :: lon
+  iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
+  iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
+  if(Country(iland)%timezone==-100)then
+     ! find the approximate local time:
+     lon = modulo(360+nint(glon(i,j)),360)
+     if(lon>180.0)lon=lon-360.0
+     hour_iland= mod(nint(indate%hour+24*(lon/360.0)),24) + 1   ! add 1 to get 1..24 
+  else
+     hour_iland = indate%hour + Country(iland)%timezone + 1! add 1 to get 1..24 
+  end if
+  wday_loc=wday 
+  if(hour_iland>24) then
+     hour_iland = hour_iland - 24
+     wday_loc=wday + 1
+     if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+     if(wday_loc>7 )wday_loc=1 
+  end if
+  if(hour_iland<1) then
+     hour_iland = hour_iland + 24
+     wday_loc=wday - 1
+     if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
+     if(wday_loc>7 )wday_loc=1 
+  end if
+  
+  if(debug_tfac) then 
+     write(*,"(a,2i3,i5,3x,4i3)") "EmisSet DAYS times ", &
+          wday, wday_loc, iland,&
+          hour_iland, Country(iland)%timezone
+     call datewrite("EmisSet DAY 24x7:", &
+          (/ i, iland, wday, wday_loc, hour_iland /), &
+          (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
+  end if
+    
+end subroutine make_iland_for_time
 
 
 end module EmisGet_mod

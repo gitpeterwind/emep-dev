@@ -86,7 +86,7 @@ use EmisGet_mod,       only: &
     ,RoadDustGet                 &  
     ,roaddust_masscorr           &   ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_mod...   
     ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax,femis_lonlat_ic&
-    ,Emis_init_GetCdf, Emis_GetCdf
+    ,Emis_init_GetCdf, Emis_GetCdf, make_iland_for_time
 use GridValues_mod,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
@@ -216,7 +216,7 @@ contains
 
     Emis_source = Emis_sources_defaults!set all initial values to default
 
-    Emisfile_defaults%periodicity = 'hourly'
+    Emisfile_defaults%periodicity = 'time'
     Emisfile_defaults%projection = 'lon lat'
     Emisfile_defaults%factor = 1.0
 
@@ -280,6 +280,7 @@ contains
        do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
           Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis!defines default, can be also be switched off for individual sources
           Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions
+          Emis_source(ii)%periodicity = Emis_sourceFiles(n)%periodicity
           isource = Emis_source(ii)%ix_in
           if(isource>0)then
              !source defined in config file
@@ -452,6 +453,10 @@ contains
                    endif
                 else if(Emis_source(is)%units == 'g/s')then
                    fac = fac /(1000.0)
+                else if(Emis_source(is)%units == 'kg/s')then
+                   fac = fac
+                else if(Emis_source(is)%units == 'tonnes/s')then
+                   fac = fac * 1000.0
                 else
                    call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))       
                    !Note: easy to implement more unit choices. Just add "if" cases here
@@ -1202,10 +1207,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer :: iem              ! loop variable over 1..NEMIS_FILE
   integer :: itot             ! index in xn()
 
-  ! Save daytime value between calls, initialise to zero
-  integer, save, dimension(MAXNLAND) ::  daytime = 0  !  0=night, 1=day
-  integer, save, dimension(MAXNLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
-  integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
 
@@ -1219,8 +1220,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   real ::  oldtfac, lon
   logical :: debug_tfac
 
-  ! If timezone=-100, calculate daytime based on longitude rather than timezone
-  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
+  ! If timezone=-100, calculate time based on longitude rather than timezone
+  integer :: hour_iland,nstart
   integer :: i_Emis_4D, iem_treated
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
@@ -1290,14 +1291,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
       fac_ehh24x7(ISNAP_TRAF,1,4,1),fac_ehh24x7(ISNAP_TRAF,13,4,1)
   !..........................................
-  !  Look for day-night changes, after local time correction
-  !  (daytime(iland) not used if  LONGITUDE_TIME=true)
-  do iland = 1, NLAND
-    daytime(iland) = 0
-    hourloc        = indate%hour + Country(iland)%timezone
-    localhour(iland) = hourloc  ! here from 0 to 23
-    if(hourloc>=7 .and. hourloc<=18) daytime(iland)=1
-  end do ! iland
 
   if(hourchange) then 
     totemadd(:)  = 0.
@@ -1313,10 +1306,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         ! find the approximate local time:
         lon = modulo(360+nint(glon(i,j)),360)
         if(lon>180.0)lon=lon-360.0
-        hourloc= mod(nint(indate%hour+24*(lon/360.0)),24)
-        hour_longitude=hourloc
-        daytime_longitude=0
-        if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
+        
         !*************************************************
         ! First loop over sector emissions
         !*************************************************
@@ -1324,41 +1314,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do icc = 1, ncc
           !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-          !array index of country that should be used as reference for timefactor
-          iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
-          iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
+          call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
 
-          if(Country(iland)%timezone==-100)then
-            daytime_iland=daytime_longitude
-            hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
-          else
-            daytime_iland=daytime(iland)
-            hour_iland=localhour(iland) + 1
-          end if
-          !if( hour_iland > 24 ) hour_iland = 1 !DSA12
-          wday_loc=wday 
-          if(hour_iland>24) then
-            hour_iland = hour_iland - 24
-            wday_loc=wday + 1
-            if(wday_loc==0)wday_loc=7 ! Sunday -> 7
-            if(wday_loc>7 )wday_loc=1 
-          end if
-          if(hour_iland<1) then
-            hour_iland = hour_iland + 24
-            wday_loc=wday - 1
-            if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
-            if(wday_loc>7 )wday_loc=1 
-          end if
-          call CheckStop(hour_iland<1,"ERROR: HOUR Zero in EmisSet")
-          call CheckStop(hour_iland>24,"ERROR: HOUR >24 in EmisSet")
-          if(debug_tfac) then 
-          write(*,"(a,i4,2i3,i5,2i4,3x,4i3)") "EmisSet DAYS times ", daynumber, &
-            wday, wday_loc, iland, daytime_longitude, daytime_iland,&
-            hour_longitude, hour_iland, hourloc, Country(iland)%timezone
-          call datewrite("EmisSet DAY 24x7:", &
-            (/ icc, iland, wday, wday_loc, hour_iland /), &
-            (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
-          end if
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
           !  the found emission rates to gridrcemis as we go.
@@ -1455,9 +1412,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               iland = find_index(road_landcode(i,j,icc),Country(:)%icode)
               iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
               if(Country(iland)%timezone==-100)then
-                hour_iland=hour_longitude+1
+                hour_iland=mod(nint(indate%hour+24*(lon/360.0)),24) + 1
               else
-                hour_iland=localhour(iland)+1
+                hour_iland=indate%hour + Country(iland)%timezone + 1! add 1 to get 1..24 
               end if
 
               wday_loc = wday ! DS added here also, for fac_ehh24x7
@@ -1515,7 +1472,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     enddo
 
 !Add emissions from new format
-    do n = 1, NEmis_sources      
+    do n = 1, NEmis_sources 
        itot = Emis_source(n)%species_ix
        isec = Emis_source(n)%sector
        iland = Emis_source(n)%country_ix
@@ -1527,7 +1484,21 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              iem = iqrc2iem(iqrc)
              do j = 1,ljmax
                 do i = 1,limax
-                   s = Emis_source_2D(i,j,n)
+                   
+                   if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
+                      !we need to apply hourly factors
+                      call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)                      
+                      tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                      if(Emis_source(n)%periodicity == 'yearly')then
+                         !apply monthly factor on top of hourly factors
+                         tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
+                      endif                      
+                   else
+                      !not monthly or yearly emissions, timefactors must be included in emission values
+                      tfac = 1.0
+                   endif
+                   
+                   s = Emis_source_2D(i,j,n) * tfac
                    SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
                    if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
                         SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
@@ -1559,7 +1530,39 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              iqrc = itot2iqrc(itot)
              do j = 1,ljmax
                 do i = 1,limax
-                   s = Emis_source_2D(i,j,n) * emisfrac(iqrc,sec2split_map(isec),iland)
+                   if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
+                      !we need to apply hourly factors
+                      call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+                      tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                      if(Emis_source(n)%periodicity == 'yearly')then
+                         !apply monthly factor on top of hourly factors
+                         tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
+                      endif
+                   else
+                      !not monthly or yearly emissions, timefactors must be included in emission values
+                      tfac = 1.0
+                   endif
+                   
+                   if (USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac=tfac* GridTfac(i,j,sec2tfac_map(isec),iem)
+
+                   !Degree days - only SNAP-2 
+                   if(USES%DEGREEDAY_FACTORS .and. &
+                        sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                      oldtfac = tfac
+                      ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
+                      ! we make use of a baseload even for SNAP2
+                      tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
+                           + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
+                           * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                      
+                      if(debug_tfac .and. indate%hour==12 .and. iem==1) &
+                           write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
+                           isec, sec2tfac_map(isec),iland, daynumber, indate%hour, &
+                           timefac(iland_timefac,sec2tfac_map(isec),iem), t2_nwp(i,j,2)-273.15, &
+                           fac_min(iland,sec2tfac_map(isec),iem),  gridfac_HDD(i,j), tfac
+                   end if ! =============== HDD 
+    
+                   s = Emis_source_2D(i,j,n) * emisfrac(iqrc,sec2split_map(isec),iland) * tfac
                    
                    SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
                    if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
@@ -2096,4 +2099,4 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
 
 end subroutine EmisWriteOut
 
-endmodule Emissions_mod
+end module Emissions_mod
