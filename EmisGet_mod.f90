@@ -153,9 +153,9 @@ contains
     else
        if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
        if(Emis_source%units(1:9) == 'tonnes/m2'  &
-            .or. Emis_source%units(1:9) == 'kg/m2' &
-            .or. Emis_source%units(1:9) == 'g/m2'  &
-            .or. Emis_source%units(1:9) == 'mg/m2')then
+            .or. Emis_source%units(1:5) == 'kg/m2' &
+            .or. Emis_source%units(1:4) == 'g/m2'  &
+            .or. Emis_source%units(1:5) == 'mg/m2')then
           !per area units
           call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
