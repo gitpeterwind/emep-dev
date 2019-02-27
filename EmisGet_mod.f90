@@ -152,11 +152,10 @@ contains
        endif
     else
        if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
-       if(Emis_source%units == 'tons/m2' .or. Emis_source%units == 'tons/m2/s' &
-            .or. Emis_source%units == 'kg/m2' .or. Emis_source%units == 'kg/m2/s' &
-            .or. Emis_source%units == 'g/m2' .or. Emis_source%units == 'g/m2/s' &
-            .or. Emis_source%units == 'mg/m2' .or. Emis_source%units == 'mg/m2/s' &
-            .or. Emis_source%units == 'g/m2/h' .or. Emis_source%units == 'mg/m2/h')then
+       if(Emis_source%units(1:9) == 'tonnes/m2'  &
+            .or. Emis_source%units(1:9) == 'kg/m2' &
+            .or. Emis_source%units(1:9) == 'g/m2'  &
+            .or. Emis_source%units(1:9) == 'mg/m2')then
           !per area units
           call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
@@ -164,11 +163,15 @@ contains
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)
-       else  if(Emis_source%units == 'tons' .or. Emis_source%units == 'tons/s' &
+       else  if(Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
+            .or.Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
             .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
+            .or. Emis_source%units == 'kg/month' .or. Emis_source%units == 'kg/year' &
             .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' &
+            .or. Emis_source%units == 'g/month' .or. Emis_source%units == 'g/year' &
             .or. Emis_source%units == 'mg' .or. Emis_source%units == 'mg/s' &
-            .or. Emis_source%units == 'g/h'.or. Emis_source%units == 'mg/h')then
+            .or. Emis_source%units == 'mg/month' .or. Emis_source%units == 'mg/year' &
+            .or. Emis_source%units == 'g/h' .or. Emis_source%units == 'mg/h')then
           !per gridcell unit
           if(me==0)write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
          call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
@@ -178,7 +181,7 @@ contains
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)          
        else
-          call StopAll("Unit for emissions not recognized: "//trim(Emis_source%units)//' '//trim(Emis_source%varname))
+          call StopAll("EmisGet: Unit for emissions not recognized: "//trim(Emis_source%units)//' '//trim(Emis_source%varname))
        endif
     endif
 

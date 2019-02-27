@@ -409,32 +409,32 @@ contains
              if(EmisFiles(n)%periodicity == 'yearly')then
                 if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
                      .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
-                   fac = fac /(1000*3600*24*nydays)
+                   fac = fac * 1000/(3600*24*nydays)
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
                    fac = fac /(3600*24*nydays)
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/year'&
                      .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/year')then
-                   fac = fac*1000.0 /(3600*24*nydays)
+                   fac = fac /(1000.0*3600*24*nydays)
                 else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/year'&
                      .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/year')then
-                   fac = fac*1000000 /(3600*24*nydays)
+                   fac = fac /(1000000.0*3600*24*nydays)
                 else
                    call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
              else if(EmisFiles(n)%periodicity == 'monthly')then
                 if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
                      .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
-                   fac = fac /(1000*3600*24*nmdays(coming_date%month))
+                   fac = fac *1000/(3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
                      .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
                    fac = fac /(3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
                      .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
-                   fac = fac*1000 /(3600*24*nmdays(coming_date%month))
+                   fac = fac /(1000*3600*24*nmdays(coming_date%month))
                 else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
                      .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
-                   fac = fac*1000000 /(3600*24*nmdays(coming_date%month))
+                   fac = fac /(1000000*3600*24*nmdays(coming_date%month))
                 else
                    call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                 endif
@@ -443,13 +443,13 @@ contains
                 if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/h')then
                    !convert into kg/m2/s
                    fac = fac /(1000000.0*3600.0)
-                   if(EmisFiles(n)%periodicity /= 'hourly')then
-                      call StopAll("Emis_source only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
+                   if(EmisFiles(n)%periodicity /= 'hourly'.and. Emis_source(is)%units == 'mg/m2')then
+                      call StopAll("Emis_source unit mg/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
                    endif
                 else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/h')then
                    fac = fac /(1000.0*3600.0)
-                   if(EmisFiles(n)%periodicity /= 'hourly')then
-                      call StopAll("Emis_source only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
+                   if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
+                      call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
                    endif
                 else if(Emis_source(is)%units == 'g/s')then
                    fac = fac /(1000.0)
@@ -464,8 +464,14 @@ contains
              endif
              
              if(Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/s' &
+                  .or.Emis_source(is)%units == 'tonnes/month' .or. Emis_source(is)%units == 'tonnes/year' &
                   .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/s' &
-                  .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/s' )then   
+                  .or. Emis_source(is)%units == 'kg/month' .or. Emis_source(is)%units == 'kg/year' &
+                  .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/s' &
+                  .or. Emis_source(is)%units == 'g/month' .or. Emis_source(is)%units == 'g/year' &
+                  .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/s' &
+                  .or. Emis_source(is)%units == 'mg/month' .or. Emis_source(is)%units == 'mg/year' &
+                  .or. Emis_source(is)%units == 'g/h' .or. Emis_source(is)%units == 'mg/h')then   
                 !divide by gridarea
                 fac = fac / (GRIDWIDTH_M * GRIDWIDTH_M)
                 do j = 1,ljmax
