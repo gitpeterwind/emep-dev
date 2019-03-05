@@ -326,7 +326,7 @@ contains
           Reduc=e_fact(isec,:,iem_used)          
           call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=nstart,&
                interpol='mass_conservative',fractions_out=fractions,&
-               CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
+               CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.false.,debug_flag=.false.,&
                Undef=0.0)
        endif
        !end reading of data
