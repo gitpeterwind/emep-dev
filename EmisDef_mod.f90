@@ -117,7 +117,7 @@ private
 
 !TEST  specific definitions
    integer, public, parameter:: &
-          NSECTORS_TEST  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
+          NSECTORS_TEST  = 11 ! Number of sectors defined. Must match the sizes of the maps below
    integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to time factor class
         TEST_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to height distribution class
