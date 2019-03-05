@@ -666,9 +666,10 @@ contains
     ! init_sectors
     if(USE_SECTORS_NAME /='NOTSET')then
        SECTORS_NAME = trim(USE_SECTORS_NAME)
-       call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'SNAP'), &
-            'Only SNAP and GNFR can be defined as sector names, not '//trim(SECTORS_NAME))
+       call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'SNAP' .and. SECTORS_NAME /= 'TEST'), &
+            'Only SNAP and GNFR (and TEST) can be defined as sector names, not '//trim(SECTORS_NAME))
        if(Masterproc)write(*,*)"Forcing sector categories to ",trim(SECTORS_NAME)          
+       if(Masterproc .and. SECTORS_NAME == 'TEST')write(*,*)"WARNING: TEST sectors, requires to define sectors consistently yourself"
     endif
 
     if(SECTORS_NAME=='SNAP')then
