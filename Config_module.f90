@@ -5,7 +5,6 @@ module Config_module
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
-!A2018 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_mod,         only: CheckStop
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use Debug_module,          only: DEBUG, DebugCell
@@ -164,6 +163,8 @@ type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
+!DSHK - moved from parameter to here:
+logical, public, save :: EmisSplit_OUT = .false.
 
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 
@@ -520,7 +521,8 @@ character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
 ! Can use RCP values of CH4 for given iyr_trend.
 character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
 
-logical, parameter, public :: EmisSplit_OUT = .false.
+!DSHK logical, parameter, public :: EmisSplit_OUT = .false.
+!DSHK logical, parameter, public :: EmisSplit_OUT = .true.
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
@@ -607,6 +609,7 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
+   ,EmisSplit_OUT         & ! Output of species emissions !DSHK
    ,OwnInputDir           &  !
    , Emis_sourceFiles &
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
