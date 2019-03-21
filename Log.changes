@@ -21,6 +21,28 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20-21 Mar 2019, Dave
+
+** INTERIM COMMITS  ** OF ATTEMPTS TO cope with HK emissions
+                       labelled often with !DSHK
+
+Made start to allow lonlat femis to be applied outside, rather than inside box
+
+Config_module - moved EmisSplit_OUT to config namelist (default false)
+
+Debug_mod - changed DEBUG_EMISSIONS TO DEBUG%EMISSIONS (easier when debugging)
+
+EmisDef_mod -  added 12th TEST sector while testing HK
+               added logical femis_lonlat_internal - true if femis for inside domain
+
+EmisGet_mod -  uses femis_lonlat_internal flag for in or out exclusion
+               "xlonlat" in femis signals exclusion from outside lonlat domain
+               comments (#) now allowed in femis data section
+               use PrintLog and MasterProc instead of IO_LOG and me==0
+
+Emissions_mod - uses DEBUG%EMISSIONS, and extra debug changes
+          
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Feb 2019, Peter
 
 Removed "daytime" (and localhour and hourloc) from Emissions_mod.f90 . Was not in use.
