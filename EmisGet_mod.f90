@@ -23,13 +23,15 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             ,cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes&
                             ,GridEmis,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
+                            ,femis_lonlat_internal & !DSHK
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
                             ,NEmis_sourcesMAX
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
-use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
+!DSHK use Io_mod,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
+use Io_mod,            only: open_file, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
 use Io_Progs_mod,      only: datewrite
 use KeyValueTypes,     only: KeyVal
@@ -120,6 +122,13 @@ contains
     type(date), intent(in) :: date_wanted
     real :: date_wanted_in_days, TimesInDays(1)
     integer :: record
+    logical, save :: dbg= .false., first_call = .true. ! DS
+    character(len=*), parameter :: dtxt = 'Emis_GetCdf:'
+
+    if ( first_call ) then ! DS 
+      dbg =  ( MasterProc .and. DEBUG%GETEMIS )
+      first_call = .false.
+    end if
 
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
 
@@ -138,6 +147,7 @@ contains
        if(me==0)write(*,*)record,'ENDOFVAL ', EmisFile%end_of_validity_date
     endif
 
+    if( dbg ) write(*,*) dtxt//'Reading '//trim(fname)
     if(trim(EmisFile%projection) == 'native')then
        if(me==0)write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
        if(Emis_source%is3D)then
@@ -219,6 +229,7 @@ contains
     logical :: mappingGNFR2SNAP = .false., foundEmis_id
     integer :: iem_used, ix_Emis
 
+if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
     if(.not. fractionformat)then
        !not fraction format
        !loop over all variables
@@ -387,7 +398,13 @@ contains
                               glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
                               (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
                               femis_lonlat_ic(i_femis_lonlat)==landcode(i,j,n)) )then
-                            lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem_used) 
+                            !DSHK IN BOX:
+                            if ( femis_lonlat_internal(i_femis_lonlat) ) &    !DSHK
+                              lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem_used) 
+                         else if ( femis_lonlat_internal(i_femis_lonlat ) .eqv. .false. ) then !DSHK
+                              ! DSHK - apply functions outside box
+!print *, 'DSHK here A ', me, N_femis_lonlat, i_femis_lonlat, femis_lonlat_ic(i_femis_lonlat)
+                              lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem_used)  !DSHK
                          end if
                       end do
                    end if
@@ -669,13 +686,19 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              lonlat_fac=1.0
              if(N_femis_lonlat>0 .and. use_lonlat_femis)then
                 do i_femis_lonlat=1,N_femis_lonlat
+print *, 'DSHK here B ', me, N_femis_lonlat, i_femis_lonlat, femis_lonlat_ic(i_femis_lonlat)
                    if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                         glat(i,j)<femis_latmax(i_femis_lonlat).and.&
                         glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
                         glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
                         (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
-                        femis_lonlat_ic(i_femis_lonlat)==CC) )then
-                      lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iem) 
+                       femis_lonlat_ic(i_femis_lonlat)==CC) )then
+                   !DSHK IN BOX
+                       if ( femis_lonlat_internal(i_femis_lonlat) ) &
+                         lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iem) 
+                   !DSHK OUTSIDE BOX
+                   else if ( femis_lonlat_internal(i_femis_lonlat) .eqv. .false. ) then
+                     lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iem) 
                    end if
                 end do
              end if
@@ -750,6 +773,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   real, dimension(NCOLS_MAX):: e_f_lonlat      ! factors read from femis in lonlat format
   character(len=200) :: txt                    ! For read-in 
   character(len=30), dimension(NCOLS_MAX)::  txtinwords ! to read lines
+  character(len=*), parameter :: dtxt = 'femis:' !DS
+
  !--------------------------------------------------------
 
 
@@ -758,7 +783,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   associate ( debugm0 => ( DEBUG%GETEMIS .and. MasterProc ) )
 
-  if( debugm0 ) write(*,*) "Enters femis", me, trim(femisFile)
+  if( debugm0 ) write(*,*) dtxt//" Enters femis", me, trim(femisFile)
   call open_file(IO_EMIS,"r",femisFile,needed=.false.)
 
   if ( ios == NO_FILE ) then
@@ -773,7 +798,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   ! Pollutant names wil be checked against those defined in My_Emis_mod 
 
   read(unit=IO_EMIS,fmt="(a200)") txt
-  if(debugm0)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
+  !D if(debugm0)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
 
   call wordsplit(txt,NCOLS_MAX,txtinwords,ncols,ios)
   if(debugm0) then
@@ -817,24 +842,46 @@ end if
   n = 0
   N_femis_lonlat=0
 
-  if(me==0)write(IO_LOG,55)'femis reductions:'
+  !if(me==0)write(IO_LOG,55)'femis reductions:'
+
+  if(MasterProc) call PrintLog(dtxt//' reductions:')
+
   READFILE: do  ! ************ read lines of femis ***************
        read(unit=IO_EMIS,fmt="(a200)",iostat=ios) txt
+       if( debugm0 ) write(*,*) dtxt//' input:'//trim(txt), ios
        if ( ios <  0 ) exit READFILE                   ! End of file
        call CheckStop( ios > 0 , "EmisGet: read error in femis" )
+
+!DSHK: Allow comments in femis files:
+       if( txt(1:1) == '#' ) CYCLE ! Comments allowed DSHK
+
        call wordsplit(txt,NCOLS_MAX,txtinwords,nwords,ios)
        if ( nwords<3 ) cycle READFILE                   ! End of file
-       55 format(A)
-       if(me==0)write(IO_LOG,55)trim(txt)
-       if(txtinwords(1)=='lonlat')then
-!reductions defined with coordinates
+
+       if(MasterProc) call PrintLog(txt) ! DSHK
+ 
+       !lonlat box. reductions defined with coordinates
+       !DSHK if(txtinwords(1)=='lonlat')then xlonlat applies reductions outside
+       if(txtinwords(1)=='lonlat' .or.  txtinwords(1)=='xlonlat')then
+          if(debugm0) write(*,*) dtxt//' LONLAT'//trim(txtinwords(1) ), &
+               nwords, ncols !DSHK DEBUG
           if(nwords<ncols+6)then
              if(me==0)write(*,*)trim(femisFile)//' not understood ',nwords,ncols+5,txt
              call CheckStop( nwords<ncols+5 , "EmisGet: read error in femis lonlat" )
           end if
           !latmin,latmax,lonmin,lonmax
           N_femis_lonlat=N_femis_lonlat+1
+          femis_lonlat_internal(N_femis_lonlat) = .true.
           call CheckStop( N_femis_lonlat>MAXFEMISLONLAT, "EmisGet: increase MAXFEMISLONLAT" )
+
+         !DSHK apply reductions area external to box:
+          if( txtinwords(1) == 'xlonlat' ) then
+             femis_lonlat_internal(N_femis_lonlat) = .false.
+             if( debugm0 ) write(*,*) dtxt//' exclude outside:'//trim(txt)
+          else
+             if( debugm0 ) write(*,*) dtxt//' exclude inside:'//trim(txt)
+          end if
+
           inland = 0!default
           if(nwords>ncols+6)then
              !         76 format(A,4F,2I,20F)
@@ -859,6 +906,7 @@ end if
           endif
 
           femis_lonlat_ic(N_femis_lonlat) = inland !country code to reduce (or reduce all for 0)             
+
 
 !It is rather easy to get coordinates which are equals. 
 !In order to avoid random decisions when this happens, we increase slightly the bounds:
@@ -885,13 +933,14 @@ end if
           
           n = n + 1
           if(debugm0) then
-             write(unit=6,fmt=*) "FEMIS READ", inland, &
+             !DSwrite(unit=6,fmt=*) dtxt//"FEMIS READ", inland, &
+             write(unit=6,fmt='(a,2i5,99f9.4)') dtxt//"FEMIS READ", inland, &
                   isec, (e_f(ic),ic=1,ncols)
              write(unit=6,fmt="(2a,I3,a,i3,a)") &
-                  " Emission factors from femis.dat, ",&
+                  dtxt//" Emission factors from femis.dat, ",&
                   "landcode =", inland, ",  sector code =",isec, &
                   " (sector 0 applies to all sectors) :"
-             write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", &
+             write(unit=6,fmt="(a,14(a,a,F8.2,a))") " ", &
                   (trim(txtinwords(qc(ie)+2)),&
                   " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILE-1), &
                   (trim(txtinwords(qc(ie)+2))," =",e_f(qc(ie))," ", &
@@ -935,6 +984,7 @@ end if
           isec1 = isec
           isec2 = isec
        end if
+       if(debugm0) write(*,'(a,4i5)') dtxt//" SECS", inland, isec, isec1, isec2, trim(txtinwords(1))
        do ie = 1,NEMIS_FILE
           if(txtinwords(1)=='lonlat')then
              do isec = isec1, isec2
