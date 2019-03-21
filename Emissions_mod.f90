@@ -32,7 +32,7 @@ use Config_module,only: &
     startdate, Emis_sourceFiles
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
-use Debug_module,      only: DEBUG, MYDEBUG => DEBUG_EMISSIONS, & 
+use Debug_module,      only: DEBUG, & !DSHK MYDEBUG => DEBUG_EMISSIONS, & 
                                 DEBUG_EMISTIMEFACS
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
@@ -108,7 +108,7 @@ use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
 use PhysicalConstants_mod,only: GRAV, AVOG, ATWAIR
 use PointSource_mod,      only: readstacks !MKPS
 use ZchemData_mod,only: rcemis   ! ESX
-use SmallUtils_mod,    only: find_index,  key2str
+use SmallUtils_mod,    only: find_index,  key2str, trims
 use TimeDate_mod,      only: nydays, nmdays, date, current_date,&! No. days per 
                             tdif_secs,timestamp,make_timestamp,daynumber,day_of_week ! year, date-type, weekday 
 use TimeDate_ExtraUtil_mod,only :nctime2date, date2string, to_idate,date_is_reached
@@ -197,6 +197,12 @@ contains
     integer :: max_levels3D
     character(len=*),parameter :: dtxt='Ini_Em:'
     logical :: found
+    logical, save  :: first_call=.true., dbg
+    
+    if ( first_call ) then ! DSHK
+      dbg = DEBUG%EMISSIONS .and. MasterProc
+      first_call = .false.
+    end if
 
     !1) define default values 
     Emis_sources_defaults%units = 'mg/m2/h'
@@ -282,6 +288,7 @@ contains
           Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions
           Emis_source(ii)%periodicity = Emis_sourceFiles(n)%periodicity
           isource = Emis_source(ii)%ix_in
+     if(dbg) write(*,'(a,4i4,1x,a20)') 'DSHKisource ',n, ii, isource, NEmis_sources, trim(Emis_source(ii)%varname)
           if(isource>0)then
              !source defined in config file
              if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii
@@ -292,6 +299,14 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
              if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
              if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
+!HK DEBUG:
+  if (dbg .and. Emis_sourceFiles(n)%source(isource)%country_ISO &
+             /= Emis_id_undefined%country_ISO) then
+     write(*,'(a,3i4,1x,a30)') 'DSHKiso:',n, ii,isource, &
+       trims(Emis_source(ii)%varname //':'// Emis_source(ii)%country_ISO//':'//&
+             Emis_sourceFiles(n)%source(isource)%country_ISO )
+  end if
+!END HK DEBUG:
              if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
              if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
              
@@ -304,19 +319,29 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%injection_k /= Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
           endif
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
+          if(dbg)write(*,*)dtxt//'DSHK: country check'//trim(Emis_source(ii)%country_ISO), ix
           if(ix<0)then
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. '
+             !DSHK BUG? Index was n, but is ii wanted?
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. ' ! ORIG
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '!DS
           else
-             Emis_source(NEmis_sources)%country_ix = ix
+             !DSHK BUG: Emis_source(NEmis_sources)%country_ix = ix
+             Emis_source(ii)%country_ix = ix
+             if(dbg)write(*,*)dtxt//'DSHK: country found'//trim(Emis_source(ii)%country_ISO), ix, NEmis_sources
           endif
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
           if(ix>0)then
              Emis_source(ii)%species_ix = ix
+             if(dbg)write(*,'(a,i4,a)')dtxt//'DSHK: species found'// &
+                trim(Emis_source(ii)%country_ISO), ix, trim(species(ix)%name)
              if(Emis_source(ii)%include_in_local_fractions .and. USE_uEMEP )then
                 if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
              endif
+          else ! ix<=0 DSHK
+             if(dbg)write(*,'(a,i4,a)')dtxt//'DSHK: species not found'// &
+              trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
           endif
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
@@ -332,6 +357,8 @@ contains
     do n = 1, NEmis_sources      
        if(Emis_source(n)%apply_femis)then
           isec = Emis_source(n)%sector
+if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(Emis_source(n)%species) !  e_fact(8,231,iem)
+!CHIN_HON has 231
           if(Emis_source(n)%sector>0 .and. Emis_source(n)%sector<=NSECTORS)then
              iland = Emis_source(n)%country_ix
              if(iland<0)iland=IC_DUMMY
@@ -348,17 +375,20 @@ contains
                       iqrc = iqrc + 1
                       itot = iqrc2itot(iqrc)
                       if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
+                         if(dbg) write(*,'(a,5i4,a,f12.3)') 'DSHKs ', n, &
+                             isec, iland, Emis_source(n)%country_ix, iem, &
+                             trim( species(itot)%name ),  e_fact(isec,iland,iem)
                          Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
                          go to 888
                       endif
                    enddo
-                enddo
+                enddo ! iem
 888             continue
              endif
           endif
           
        endif
-    enddo
+    enddo ! n = 1, NEmis_sources      
 
     !find and define the 3D emissions
     ix=0
@@ -399,66 +429,71 @@ contains
                 Emis_source_2D(1:,1:,is)=0.0
                 call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
              endif
-                !reduction factors
+             !reduction factors
              fac = EmisFiles(n)%factor
              fac = fac* Emis_source(is)%factor     
-
+             
              !unit and factor conversions
              !convert into kg/m2/s
-                          
-             if(EmisFiles(n)%periodicity == 'yearly')then
-                if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
-                     .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
-                   fac = fac * 1000/(3600*24*nydays)
-                else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
-                     .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
-                   fac = fac /(3600*24*nydays)
-                else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/year'&
-                     .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/year')then
-                   fac = fac /(1000.0*3600*24*nydays)
-                else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/year'&
-                     .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/year')then
-                   fac = fac /(1000000.0*3600*24*nydays)
-                else
-                   call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
-                endif
-             else if(EmisFiles(n)%periodicity == 'monthly')then
-                if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
-                     .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
-                   fac = fac *1000/(3600*24*nmdays(coming_date%month))
-                else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
-                     .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
-                   fac = fac /(3600*24*nmdays(coming_date%month))
-                else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
-                     .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
-                   fac = fac /(1000*3600*24*nmdays(coming_date%month))
-                else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
-                     .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
-                   fac = fac /(1000000*3600*24*nmdays(coming_date%month))
-                else
-                   call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
-                endif
-             else
-!hourly
-                if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/h')then
-                   !convert into kg/m2/s
-                   fac = fac /(1000000.0*3600.0)
-                   if(EmisFiles(n)%periodicity /= 'hourly'.and. Emis_source(is)%units == 'mg/m2')then
-                      call StopAll("Emis_source unit mg/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
+             if(Emis_source(is)%units == 'kg/s' .or. Emis_source(is)%units == 'kg/m2/s')then
+                fac = fac
+             else if(Emis_source(is)%units == 'g/s' .or. Emis_source(is)%units == 'g/m2/s')then
+                fac = fac /(1000.0)
+             else if(Emis_source(is)%units == 'mg/s' .or. Emis_source(is)%units == 'mg/m2/s')then
+                fac = fac /(1000.0)
+             else  
+                !depends on periodicity
+                if(EmisFiles(n)%periodicity == 'yearly')then
+                   if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
+                        .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
+                      fac = fac * 1000/(3600*24*nydays)
+                   else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
+                        .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
+                      fac = fac /(3600*24*nydays)
+                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/year'&
+                        .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/year')then
+                      fac = fac /(1000.0*3600*24*nydays)
+                   else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/year'&
+                        .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/year')then
+                      fac = fac /(1000000.0*3600*24*nydays)
+                   else
+                      call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                    endif
-                else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/h')then
-                   fac = fac /(1000.0*3600.0)
-                   if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
-                      call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))       
+                else if(EmisFiles(n)%periodicity == 'monthly')then
+                   if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
+                        .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
+                      fac = fac *1000/(3600*24*nmdays(coming_date%month))
+                   else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
+                        .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
+                      fac = fac /(3600*24*nmdays(coming_date%month))
+                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
+                           .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
+                      fac = fac /(1000*3600*24*nmdays(coming_date%month))
+                   else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
+                        .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
+                      fac = fac /(1000000*3600*24*nmdays(coming_date%month))
+                   else
+                      call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                    endif
-                else if(Emis_source(is)%units == 'g/s')then
-                   fac = fac /(1000.0)
-                else if(Emis_source(is)%units == 'kg/s')then
-                   fac = fac
-                else if(Emis_source(is)%units == 'tonnes/s')then
-                   fac = fac * 1000.0
                 else
-                   call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))       
+                   !assume hourly
+                   if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/h')then
+                      !convert into kg/m2/s
+                      fac = fac /(1000000.0*3600.0)
+                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/h')then
+                      fac = fac /(1000.0*3600.0)
+                      if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
+                         call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))  
+                      endif
+                   else if(Emis_source(is)%units == 'g/s')then
+                      fac = fac /(1000.0)
+                   else if(Emis_source(is)%units == 'kg/s')then
+                      fac = fac
+                   else if(Emis_source(is)%units == 'tonnes/s')then
+                      fac = fac * 1000.0
+                   else
+                      call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))       
+                   endif
                    !Note: easy to implement more unit choices. Just add "if" cases here
                 endif
              endif
@@ -472,7 +507,7 @@ contains
                   .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/s' &
                   .or. Emis_source(is)%units == 'mg/month' .or. Emis_source(is)%units == 'mg/year' &
                   .or. Emis_source(is)%units == 'g/h' .or. Emis_source(is)%units == 'mg/h')then   
-                !divide by gridarea
+                   !divide by gridarea
                 fac = fac / (GRIDWIDTH_M * GRIDWIDTH_M)
                 do j = 1,ljmax
                    do i = 1,limax
@@ -1057,7 +1092,7 @@ contains
     ! with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
     ! The conversion factor then equals 1.27e-14
     tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
-    if(MYDEBUG.and.MasterProc) then
+    if(DEBUG%EMISSIONS .and.MasterProc) then
        write(*,*) "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
        write(*,*) "No. days in Emissions: ", nydays
        write(*,*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
@@ -1069,7 +1104,7 @@ contains
 
     iemCO=find_index("co",EMIS_FILE(:)) ! save this index
 
-    if(MYDEBUG.and.debug_proc.and.iemCO>0) &
+    if(DEBUG%EMISSIONS .and.debug_proc.and.iemCO>0) &
          write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
          sum(secemis(:,debug_li,debug_lj,:,iemCO))
 
@@ -1083,7 +1118,7 @@ contains
     landcode=GridEmisCodes
     secemis=GridEmis
 
-    if(MYDEBUG.and.debug_proc.and.iemCO>0) &
+    if(DEBUG%EMISSIONS .and.debug_proc.and.iemCO>0) &
          write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
          sum(secemis   (:,debug_li,debug_lj,:,iemCO))
 
@@ -1813,7 +1848,7 @@ subroutine newmonth
 
   ktonne_to_kgm2s = 1.0e6/(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-  if(MasterProc.and.MYDEBUG) then
+  if(MasterProc.and.DEBUG%EMISSIONS ) then
     write(*,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ', &
          current_date%month,ktonne_to_kgm2s
     write(*,*) ' first_dms_read = ', first_dms_read
@@ -2040,7 +2075,8 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
-  if(MYDEBUG) write(*,*)"CALLED "//trim(txt),me,&
+  associate ( dbg => DEBUG%EMISSIONS ) !DSHK
+  if(dbg ) write(*,*)"CALLED "//trim(txt),me,&
     maxval(emis),maxval(nsources),maxval(sources)
 
 !  allocate(locemis(LIMAX, LJMAX,NSECTORS), stat=msg(1) )
@@ -2069,7 +2105,7 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
             do icc = 1, ncc
               if(sources(i,j,icc)==iland) then
                 locemis(i,j,: ) = emis(:, i,j,icc)
-                if(MYDEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
+                if(dbg ) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
               end if
             end do
           end do
@@ -2094,7 +2130,8 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
       
       do isec = 1, NSECTORS
          lemis = locemis(:,:,isec)
-         if(MYDEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
+         if(dbg.and.debug_proc) write(*,*) trim(txt)//" lemis ",&
+             me,iland,isec,maxval(lemis(:,:))
       end do ! isec
       
     end if
@@ -2103,6 +2140,7 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
   end do
   
 !  deallocate(locemis,lemis)
+  end associate ! dbg
 
 end subroutine EmisWriteOut
 
