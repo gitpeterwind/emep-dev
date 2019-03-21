@@ -82,7 +82,8 @@ private
           N_TFAC  = 11  ! Number of timefactor classes defined
    integer, save, pointer, dimension(:), public :: sec2tfac_map => null()! mapping of sector to time factor class
    integer, save, public :: & !must be compatible with:
-          N_HFAC  = 11  ! Number of height distribution classes defined
+          N_HFAC  = 12  ! Number of height distribution classes defined
+         !DSHK N_HFAC  = 11  ! Number of height distribution classes defined
    integer, save, pointer, dimension(:), public :: sec2hfac_map => null()! mapping of sector to height distribution class
    integer, save, public :: & !must be compatible with: emisfrac
           N_SPLIT  = 11  ! Number of speciation classes defined
@@ -115,15 +116,16 @@ private
 
    integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
 
-!TEST  specific definitions
+!DSHK TEST added 1 extra specific definitions, and shortened lines
    integer, public, parameter:: &
-          NSECTORS_TEST  = 11 ! Number of sectors defined. Must match the sizes of the maps below
-   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to time factor class
-        TEST_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to height distribution class
-        TEST_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to height distribution class
-        TEST_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
+          NSECTORS_TEST  = 12 ! Number of sectors defined. Must match the sizes of the maps below
+   integer, save, target, dimension(NSECTORS_TEST), public :: &
+      ! mapping of sector to time factor class. values must be <= N_TFAC
+        TEST_sec2tfac_map  = [1,2,3,4,5,6,7,8,9,10,11,2] &
+      ! mapping of sector to height distribution class. vals must be <= N_HFAC
+       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11,12] & 
+      ! mapping of sector to height distribution class ! must be<=N_SPECIATION
+       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11,2] 
 
 
 !The sectors defined here are always SNAP sectors. Should NOT be changed if other
@@ -287,6 +289,8 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
 
   integer, parameter, public :: MAXFEMISLONLAT = 10!max number of lines with lonlat reductions
   integer,   public          :: N_femis_lonlat    !number of femis lonlat lines defined
+  !DS allow femis_lonlat to apply internal or external
+  logical, public, dimension(MAXFEMISLONLAT) :: femis_lonlat_internal = .true.
 
 
   integer, public, save :: NSecEmisOutWanted = 0 !sum of all sectors not included in this N
