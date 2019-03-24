@@ -2702,7 +2702,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            if(MasterProc)write(*,*)'Assuming lon lat projection, because lon is one-dimensional'
            data_projection = "lon lat"
         else
-           call CheckStop('did not find projection for file '//trim(fileName))           
+           if(MasterProc)write(*,*)'Warning: did not find projection for '//trim(fileName) 
+           data_projection = "Unknown"
         endif
      endif
   end if
@@ -3757,7 +3758,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            Grid_resolution = Grid_resolution_in
         else
            status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-           call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
+           if(status /= nf90_noerr)then
+              if(MasterProc)write(*,*)'warning did not find grid resolution in '//trim(fileName)
+              call make_gridresolution(ncFileID,Grid_resolution)
+           endif
         endif
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)

@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 Mar 2019, Peter
+
+Defined masks for emissions. Example of use:
+EmisMask(1)%filename = '/global/work/mifads/HongKong/emis4emep_3km/emis_3km_20161010_qt.nc'
+EmisMask(1)%cdfname = 'PMFINE'
+EmisMask(1)%ID = 'HK'
+EmisMask(1)%threshold = -1.0E-10
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20-21 Mar 2019, Dave
 
 ** INTERIM COMMITS  ** OF ATTEMPTS TO cope with HK emissions

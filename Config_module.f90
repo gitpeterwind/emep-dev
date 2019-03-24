@@ -11,7 +11,7 @@ use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
                                  EmisFile_id_type, Emis_sourceFile_id_type,&
-                                 TXTLEN_NAME, TXTLEN_FILE
+                                 TXTLEN_NAME, TXTLEN_FILE, Emis_mask_type
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
 
@@ -160,6 +160,7 @@ logical,  public, save :: &
 
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
+type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
@@ -611,7 +612,8 @@ subroutine Config_ModelConstants(iolog)
    ,EMIS_OUT, emis_inputlist, EmisDir&
    ,EmisSplit_OUT         & ! Output of species emissions !DSHK
    ,OwnInputDir           &  !
-   , Emis_sourceFiles &
+   ,Emis_sourceFiles      & ! new format
+   ,EmisMask              & ! new format
    ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,HourlyEmisOut         & ! to output emissions hourly

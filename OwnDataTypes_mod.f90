@@ -199,6 +199,10 @@ type, public :: Emis_id_type
    real    :: factor = -1.0 ! scaling factor. multiply values by this number
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
    logical :: apply_femis = .true. !whether the general femis.dat should be applied to this source
+   character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied
+   character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed
+   integer :: mask_ix = -1 ! mask index, >0 if set. Internal index, do not set 
+   integer :: mask_reverse_ix = -1 ! mask index, >0 if set. Internal index, do not set 
    integer :: country_ix = 67 !Internal country index. Does not have any meaning outside of code
    integer :: height = 0 !could define own release height. not implemented
    logical :: is3D = .false.
@@ -220,7 +224,16 @@ type, public :: Emis_sourceFile_id_type
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
    logical :: apply_femis = .true. !whether the general femis.dat should be applied to sources from this file
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
+   character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
+   character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file
 end type Emis_sourceFile_id_type
+
+type, public :: Emis_mask_type
+   character(len=TXTLEN_FILE) :: filename = 'NOTSET'! netcdf filename with path
+   character(len=TXTLEN_NAME) :: cdfname = 'NOTSET' ! name of the mask in the netcdf file
+   character(len=TXTLEN_NAME) :: ID = 'NOTSET' ! name that the user set to identify this mask
+   real                       :: threshold = 1.E-20 !min value below which is considered as zero (not masked)
+end type Emis_mask_type
 
 type, public :: EmisFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
@@ -232,6 +245,8 @@ type, public :: EmisFile_id_type
    integer :: Nsources = 0 !number of valid sources (i.e variables in the netcdf file)
    integer :: source_start = 0
    integer :: source_end = 0
+   character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
+   character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file
 end type EmisFile_id_type
 
 !/ Emissions file treatment. Dims more than used.

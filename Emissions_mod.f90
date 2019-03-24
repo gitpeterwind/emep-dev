@@ -29,7 +29,7 @@ use Config_module,only: &
     SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
-    startdate, Emis_sourceFiles
+    startdate, Emis_sourceFiles, EmisMask
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
 use Debug_module,      only: DEBUG, & !DSHK MYDEBUG => DEBUG_EMISSIONS, & 
@@ -64,7 +64,8 @@ use EmisDef_mod,       only: &
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,gnfr2snap,snap2gnfr&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
-     ,Emis_mask, Emis_mask_allocate, MASK_LIMIT &   
+     ,Emis_mask, Emis_mask_allocate, MASK_LIMIT & !old format
+     , NEmisMask, EmisMaskValues & !new format
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
      , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources
@@ -125,6 +126,7 @@ implicit none
 private
 
 ! subroutines:
+public :: Init_masks
 public :: Init_Emissions    ! defines emission setup and formats
 public :: EmisUpdate        ! update emission
 public :: Emissions         ! Main emissions module 
@@ -276,6 +278,8 @@ contains
           if(Emis_sourceFiles(n)%projection /= 'native')then
           call CheckStop(EmisFiles(i)%grid_resolution <=1.0E-5,'Grid_resolution must be defined for '//trim(Emis_sourceFiles(n)%filename))
           endif
+          if(Emis_sourceFiles(n)%mask_ID /= Emisfile_undefined%mask_ID) EmisFiles(i)%mask_ID = Emis_sourceFiles(n)%mask_ID
+          if(Emis_sourceFiles(n)%mask_ID_reverse /= Emisfile_undefined%mask_ID_reverse) EmisFiles(i)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
        endif
     enddo
 
@@ -284,9 +288,12 @@ contains
        n = EmisFilesMap(i)
        found = .false.
        do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
-          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis!defines default, can be also be switched off for individual sources
+          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis !defines default, can be also be switched off for individual sources
           Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions
           Emis_source(ii)%periodicity = Emis_sourceFiles(n)%periodicity
+          Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%mask_ID !defines default for sources in this file, can be also be redefined for individual sources
+          Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse !defines default for sources in this file, can be also be redefined for individual sources
+          
           isource = Emis_source(ii)%ix_in
      if(dbg) write(*,'(a,4i4,1x,a20)') 'DSHKisource ',n, ii, isource, NEmis_sources, trim(Emis_source(ii)%varname)
           if(isource>0)then
@@ -310,6 +317,9 @@ contains
              if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
              if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
              
+             if(Emis_sourceFiles(n)%source(isource)%mask_ID /= Emis_id_undefined%mask_ID) Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%source(isource)%mask_ID
+             if(Emis_sourceFiles(n)%source(isource)%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse) Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%source(isource)%mask_ID_reverse
+
              if(Emis_sourceFiles(n)%source(isource)%is3D .neqv. Emis_id_undefined%is3D) Emis_source(ii)%is3D = Emis_sourceFiles(n)%source(isource)%is3D
              if(Emis_sourceFiles(n)%source(isource)%istart /= Emis_id_undefined%istart) Emis_source(ii)%istart = Emis_sourceFiles(n)%source(isource)%istart
              if(Emis_sourceFiles(n)%source(isource)%jstart /= Emis_id_undefined%jstart) Emis_source(ii)%jstart = Emis_sourceFiles(n)%source(isource)%jstart
@@ -321,11 +331,8 @@ contains
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
           if(dbg)write(*,*)dtxt//'DSHK: country check'//trim(Emis_source(ii)%country_ISO), ix
           if(ix<0)then
-             !DSHK BUG? Index was n, but is ii wanted?
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(n)%country_ISO)//' not defined. ' ! ORIG
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '!DS
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '
           else
-             !DSHK BUG: Emis_source(NEmis_sources)%country_ix = ix
              Emis_source(ii)%country_ix = ix
              if(dbg)write(*,*)dtxt//'DSHK: country found'//trim(Emis_source(ii)%country_ISO), ix, NEmis_sources
           endif
@@ -345,7 +352,7 @@ contains
           endif
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
-          if(MasterProc)write(*,*)dtxt//"REDefined emission source ",Emis_source(ii)
+          if(MasterProc)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
           
        enddo
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
@@ -388,6 +395,27 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
           endif
           
        endif
+
+       !define  mask indices
+       if(Emis_source(n)%mask_ID /= Emis_id_undefined%mask_ID)then
+          ix = find_index(Emis_source(n)%mask_ID,EmisMask(:)%ID)
+          if(ix > 0)then
+             Emis_source(n)%mask_ix = ix
+          else
+             Emis_source(n)%mask_ix = Emis_id_undefined%mask_ix !in case somebody tries to set in config
+             if(MasterProc)write(*,*)'WARNING mask not defined ',trim(Emis_source(n)%mask_ID)
+          endif
+       endif
+       if(Emis_source(n)%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse)then
+          ix = find_index(Emis_source(n)%mask_ID_reverse,EmisMask(:)%ID)
+          if(ix > 0)then
+             Emis_source(n)%mask_reverse_ix = ix
+          else
+             Emis_source(n)%mask_reverse_ix = Emis_id_undefined%mask_reverse_ix !in case somebody tries to set in config
+             if(MasterProc)write(*,*)'WARNING mask not defined ',trim(Emis_source(n)%mask_ID_reverse)
+          endif
+       endif
+
     enddo ! n = 1, NEmis_sources      
 
     !find and define the 3D emissions
@@ -403,6 +431,75 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
 
   end subroutine Init_Emissions
 
+  subroutine Init_masks()
+    !sets and define the masks
+    real :: mask_cdf(LIMAX,LJMAX), xsum
+    logical :: found
+    integer :: iEmisMask = 0
+    integer :: i,ii,jj,ic
+
+    iEmisMask = 0
+    !1) find number of valid masks defined
+    do i = 1, size(EmisMask)
+       if(EmisMask(i)%filename /= 'NOTSET' .and. EmisMask(i)%cdfname /= 'NOTSET'&
+           .and. EmisMask(i)%ID /= 'NOTSET' ) then
+          iEmisMask = iEmisMask+1 !assumes the fields are defined, without checking
+       endif
+    enddo
+    NEmisMask = iEmisMask
+    allocate(EmisMaskValues(LIMAX,LJMAX,NEmisMask))
+   
+    !now set the values for the actual masks
+    iEmisMask = 0
+    do i = 1, size(EmisMask)
+       if(EmisMask(i)%filename /= 'NOTSET' .and. EmisMask(i)%cdfname /= 'NOTSET'&
+           .and. EmisMask(i)%ID /= 'NOTSET' ) then
+
+          iEmisMask = iEmisMask+1
+          call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
+               interpol='conservative', needed=.false.,found = found, UnDef=-1.0, debug_flag=.false.)
+
+          if(found)then
+             !set mask value
+             ic = 0
+             xsum = 0.0
+             do jj = 1, LJMAX
+             do ii = 1, LIMAX
+                xsum = xsum + mask_cdf(ii,jj)
+                if(mask_cdf(ii,jj)>EmisMask(i)%threshold)then
+                    EmisMaskValues(ii,jj,iEmisMask) = 0.0 !remove everything 
+                    ic = ic + 1
+                 else
+                    EmisMaskValues(ii,jj,iEmisMask) = 1.0 !keep everything
+                 endif
+             end do
+             end do
+             if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
+             if(ic>0)write(*,*)me,' masked ',ic,' cells'
+          else
+             if(MasterProc)write(*,*)'WARNING mask not found for ',trim(EmisMask(i)%cdfname)
+             EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
+          endif
+          
+          !to keep some compatibility with old format we also set old format masks
+          if(any(emis_inputlist(:)%use_mask))then
+             if(.not.allocated(Emis_mask))then
+                allocate(Emis_mask(LIMAX,LJMAX))
+                Emis_mask = .false.
+             endif
+             if(MasterProc)write(*,*)'defining mask for old formats ',trim(EmisMask(i)%cdfname)
+             do jj = 1, LJMAX
+                do ii = 1, LIMAX
+                   if(EmisMaskValues(ii,jj,iEmisMask)<0.5)Emis_mask(ii,jj) = .true.
+                enddo
+             enddo
+          endif
+
+       endif
+   enddo
+
+
+  end subroutine Init_masks
 !***********************************************************************
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
@@ -523,6 +620,24 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
              enddo
              
              !now Emis_source_2D should be in kg/m2/s
+          
+             !apply masks
+             !could easily be better CPU optimized if necessary by putting all factors in same i,j loop
+             if(Emis_source(is)%mask_ix>0)then
+                do j = 1,ljmax
+                   do i = 1,limax
+                      Emis_source_2D(i,j,is) = Emis_source_2D(i,j,is) * EmisMaskValues(i,j,Emis_source(is)%mask_ix)
+                   enddo
+                enddo
+             endif
+             if(Emis_source(is)%mask_reverse_ix>0)then
+                do j = 1,ljmax
+                   do i = 1,limax
+                      Emis_source_2D(i,j,is) = Emis_source_2D(i,j,is) * (1.0-EmisMaskValues(i,j,Emis_source(is)%mask_ix))!take complementary
+                   enddo
+                enddo
+             endif
+
           enddo
           !update date of valitdity
           if(EmisFiles(n)%periodicity == 'yearly')then
@@ -694,8 +809,12 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
     end do ! iemislist
 
     if(Emis_mask_allocate)then
-       allocate(Emis_mask(LIMAX,LJMAX))
-       Emis_mask = .false.
+       if(.not.allocated(Emis_mask))then
+          allocate(Emis_mask(LIMAX,LJMAX))
+          Emis_mask = .false.
+       else
+          !the masks has been set by init_mask
+       endif
     endif
 
     ! init_sectors

@@ -42,7 +42,8 @@ program emep_Main
   use DefPhotolysis_mod, only: readdiss
   use Derived_mod,       only: Init_Derived, wanted_iou
   use EcoSystem_mod,     only: Init_EcoSystems
-  use Emissions_mod,     only: Emissions, newmonth, Init_emissions, EmisUpdate
+  use Emissions_mod,     only: Emissions, newmonth, Init_masks, Init_emissions,&
+                               EmisUpdate
   use ForestFire_mod,    only: Fire_Emis
   use DryDep_mod,        only: init_DryDep ! sets up dry and wet dep
   !use GasParticleCoeffs_mod, only: init_DryDep ! sets up dry and wet dep
@@ -189,6 +190,7 @@ program emep_Main
 
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
+  call Init_masks()
   call Emissions(yyyy)! should be set for the enddate year, not start?
   call Init_emissions !new format
 
