@@ -2464,6 +2464,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   UnDef_local=0.0
   if(present(UnDef))UnDef_local=UnDef
+  if ( debug ) write(*,*) 'ReadCDF UnDef defined as: ',UnDef_local
 
   data3D=.false.
   kstart_loc=0
@@ -3129,9 +3130,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      end if
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
-
+        if ( debug )write(*,*)'interpol case ',interpol_used
+        
         if(projection=='lon lat')then
-           !exact integrals assuming uniform emission over emitter gridcells
+         if ( debug )write(*,*)'interpol case ',trim(interpol_used),' projection lon lat'
+          !exact integrals assuming uniform emission over emitter gridcells
            if(.not.allocated(fracfirstlon))then
               allocate(fracfirstlon(dims(1)),fraclastlon(dims(1)),ifirst(dims(1)),ilast(dims(1)))
               allocate(fracfirstlat(dims(2)),fraclastlat(dims(2)),jfirst(dims(2)),jlast(dims(2)))
@@ -3273,6 +3276,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            if(data3D)k2=kend_loc-kstart_loc+1
            ijk=LIMAX*LJMAX*k2
            Rvar(1:ijk)=0.0
+           allocate(Ivalues(ijk))
+           Ivalues = 0 !just to see if Rvar gets at least one value
 
            idiv=0
            do jg=1,dims(2)
@@ -3307,6 +3312,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           do k=1,k2
                              ijk=k+(ij-1)*k2
                              igjgk=igjg+(k-1)*dims(1)*dims(2)
+                             Ivalues(ijk)=Ivalues(ijk)+1
 
                              if(fractions)then
                                 call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
@@ -3326,7 +3332,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            enddo
 
         enddo
-        
+        do ijk=1,LIMAX*LJMAX*k2
+           if(Ivalues(ijk)<=0) Rvar(ijk) = UnDef_local
+        enddo
+        deallocate(Ivalues)
         deallocate(fracfirstlon,fraclastlon,ifirst,ilast)
         deallocate(fracfirstlat,fraclastlat,jfirst,jlast)
         
@@ -3412,7 +3421,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                       i== debug_li .and. j== debug_lj )
                  if ( debug_ij ) write(*,"(a,9i5)") 'DEBUG  -- INValues!',&
                       Ivalues(ijk), Nvalues(ijk), me, i,j,k
-                 if(Ivalues(ijk)<=0.)then
+                 if(Ivalues(ijk)<=0)then
                     if( .not.present(UnDef))then
                        write(*,"(a,a,4i4,6f10.3,2i6,6f10.3)") &
                             'ERROR, NetCDF_mod no values found here ! ', &

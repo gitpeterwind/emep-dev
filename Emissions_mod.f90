@@ -457,7 +457,7 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
 
           iEmisMask = iEmisMask+1
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
-               interpol='conservative', needed=.false.,found = found, UnDef=-1.0, debug_flag=.false.)
+               interpol='conservative', needed=.false.,found = found, UnDef=-1.0E10, debug_flag=.false.)
 
           if(found)then
              !set mask value
@@ -477,7 +477,7 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
              if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
              if(ic>0)write(*,*)me,' masked ',ic,' cells'
           else
-             if(MasterProc)write(*,*)'WARNING mask not found for ',trim(EmisMask(i)%cdfname)
+             call StopAll("Mask variable not found: "//trim(EmisMask(i)%cdfname))
              EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
           endif
           
