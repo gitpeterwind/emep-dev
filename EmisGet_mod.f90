@@ -592,6 +592,8 @@ if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
 !default values for sources
+       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
+       if(status==nf90_noerr)EmisFile%species = trim(cdfspecies)
        status = nf90_get_att(ncFileID,nf90_global,"units", name)
        if(status==nf90_noerr)EmisFile%units = trim(name)
        status = nf90_get_att(ncFileID,nf90_global,"sector", sector)

@@ -223,6 +223,7 @@ type, public :: Emis_sourceFile_id_type
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
 !default values for sources:
+   character(len=TXTLEN_NAME) :: species = 'NOTSET' !default emep species
    character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
    integer :: sector = -1 !default sector 
@@ -249,6 +250,7 @@ type, public :: EmisFile_id_type
    integer :: Nsources = 0 !number of valid sources (i.e variables in the netcdf file)
    integer :: source_start = 0
    integer :: source_end = 0
+   character(len=TXTLEN_NAME) :: species = 'NOTSET' !default emep species
    character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
    integer :: sector = -1 !default sector .NB: not read from attributes
