@@ -534,7 +534,7 @@ if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
           endif
        enddo
        if((status==nf90_noerr .and. ndims>=2) .or. nn>0 )then
-          !can be that one source must be taken several times (for istance
+          !can be that one source must be taken several times (for instance
           ! into different vertical levels)
            do i = 1,max(1,nn)
              !we define a new emission source
@@ -591,6 +591,14 @@ if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
            trim(EmisFile_in%filename),trim(default_projection), default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
+!default values for sources
+       status = nf90_get_att(ncFileID,nf90_global,"units", name)
+       if(status==nf90_noerr)EmisFile%units = trim(name)
+       status = nf90_get_att(ncFileID,nf90_global,"sector", sector)
+       if(status==nf90_noerr)EmisFile%sector = sector
+       status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
+       if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
+
     endif
         
     call check(nf90_close(ncFileID))

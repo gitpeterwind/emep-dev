@@ -190,8 +190,8 @@ contains
     integer :: i, ii, n, nn, ix, nemis_old, isource
     integer :: isec, iland, iem, iqrc, itot, f
     integer :: startsource(size(Emis_sourceFiles)), endsource(size(Emis_sourceFiles))
-    type(Emis_id_type):: Emis_id_undefined !to get undefined values
-    type(EmisFile_id_type):: Emisfile_undefined !set values when not specified otherwise 
+    type(Emis_id_type):: Emis_id_undefined !to get undefined source values
+    type(EmisFile_id_type):: Emisfile_undefined !to get undefined file values
     !Note must distinguish between default and not undefined values, to know when config has defined a value, even if it is the default.
     type(Emis_id_type):: Emis_sources_defaults !set values when not specified otherwise 
     type(EmisFile_id_type):: Emisfile_defaults !set values when not specified otherwise 
@@ -206,7 +206,7 @@ contains
       first_call = .false.
     end if
 
-    !1) define default values 
+    !1) define lowest level default values 
     Emis_sources_defaults%units = 'mg/m2/h'
     Emis_sources_defaults%country_ISO = 'N/A'
     Emis_sources_defaults%sector = 0
@@ -280,6 +280,9 @@ contains
           endif
           if(Emis_sourceFiles(n)%mask_ID /= Emisfile_undefined%mask_ID) EmisFiles(i)%mask_ID = Emis_sourceFiles(n)%mask_ID
           if(Emis_sourceFiles(n)%mask_ID_reverse /= Emisfile_undefined%mask_ID_reverse) EmisFiles(i)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
+          if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) EmisFiles(i)%units = Emis_sourceFiles(n)%units 
+          if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) EmisFiles(i)%country_ISO = Emis_sourceFiles(n)%country_ISO
+          if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) EmisFiles(i)%sector = Emis_sourceFiles(n)%sector
        endif
     enddo
 
@@ -288,11 +291,15 @@ contains
        n = EmisFilesMap(i)
        found = .false.
        do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
-          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis !defines default, can be also be switched off for individual sources
+          !set source default = file parameter if they are set. Defines default for sources in this file, can be also be redefined for individual sources
+          if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%units
+          if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%country_ISO
+          if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%sector
+          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis
           Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions
           Emis_source(ii)%periodicity = Emis_sourceFiles(n)%periodicity
-          Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%mask_ID !defines default for sources in this file, can be also be redefined for individual sources
-          Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse !defines default for sources in this file, can be also be redefined for individual sources
+          Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%mask_ID
+          Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
           
           isource = Emis_source(ii)%ix_in
      if(dbg) write(*,'(a,4i4,1x,a20)') 'DSHKisource ',n, ii, isource, NEmis_sources, trim(Emis_source(ii)%varname)

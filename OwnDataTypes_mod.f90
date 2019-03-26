@@ -222,6 +222,10 @@ type, public :: Emis_sourceFile_id_type
    real                       :: grid_resolution = 0.0 !resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
+!default values for sources:
+   character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
+   character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
+   integer :: sector = -1 !default sector 
    logical :: apply_femis = .true. !whether the general femis.dat should be applied to sources from this file
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
    character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
@@ -245,8 +249,11 @@ type, public :: EmisFile_id_type
    integer :: Nsources = 0 !number of valid sources (i.e variables in the netcdf file)
    integer :: source_start = 0
    integer :: source_end = 0
-   character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
-   character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file
+   character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
+   character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
+   integer :: sector = -1 !default sector .NB: not read from attributes
+   character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file .NB: not read from attributes
+   character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file .NB: not read from attributes
 end type EmisFile_id_type
 
 !/ Emissions file treatment. Dims more than used.
