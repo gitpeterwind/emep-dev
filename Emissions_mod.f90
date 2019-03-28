@@ -32,7 +32,7 @@ use Config_module,only: &
     startdate, Emis_sourceFiles, EmisMask
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
-use Debug_module,      only: DEBUG, & !DSHK MYDEBUG => DEBUG_EMISSIONS, & 
+use Debug_module,      only: DEBUG, & !DEBUG => DEBUG_EMISSIONS, & 
                                 DEBUG_EMISTIMEFACS
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
@@ -202,7 +202,7 @@ contains
     logical :: found
     logical, save  :: first_call=.true., dbg
     
-    if ( first_call ) then ! DSHK
+    if ( first_call ) then
       dbg = DEBUG%EMISSIONS .and. MasterProc
       first_call = .false.
     end if
@@ -305,7 +305,7 @@ contains
           Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
           
           isource = Emis_source(ii)%ix_in
-     if(dbg) write(*,'(a,4i4,1x,a20)') 'DSHKisource ',n, ii, isource, NEmis_sources, trim(Emis_source(ii)%varname)
+          if(dbg) write(*,'(a,4i4,1x,a20)') 'wrting config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
           if(isource>0)then
              !source defined in config file
              if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii
@@ -316,14 +316,6 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
              if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
              if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
-!HK DEBUG:
-  if (dbg .and. Emis_sourceFiles(n)%source(isource)%country_ISO &
-             /= Emis_id_undefined%country_ISO) then
-     write(*,'(a,3i4,1x,a30)') 'DSHKiso:',n, ii,isource, &
-       trims(Emis_source(ii)%varname //':'// Emis_source(ii)%country_ISO//':'//&
-             Emis_sourceFiles(n)%source(isource)%country_ISO )
-  end if
-!END HK DEBUG:
              if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
              if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
              
@@ -339,30 +331,29 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%injection_k /= Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
           endif
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
-          if(dbg)write(*,*)dtxt//'DSHK: country check'//trim(Emis_source(ii)%country_ISO), ix
           if(ix<0)then
              if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '
           else
              Emis_source(ii)%country_ix = ix
-             if(dbg)write(*,*)dtxt//'DSHK: country found'//trim(Emis_source(ii)%country_ISO), ix, NEmis_sources
+             if(dbg)write(*,*)dtxt//'country found '//trim(Emis_source(ii)%country_ISO), ix, NEmis_sources
           endif
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
           if(ix>0)then
              Emis_source(ii)%species_ix = ix
-             if(dbg)write(*,'(a,i4,a)')dtxt//'DSHK: species found'// &
-                trim(Emis_source(ii)%country_ISO), ix, trim(species(ix)%name)
+             if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
+                trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
              if(Emis_source(ii)%include_in_local_fractions .and. USE_uEMEP )then
                 if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
              endif
-          else ! ix<=0 DSHK
-             if(dbg)write(*,'(a,i4,a)')dtxt//'DSHK: species not found'// &
+          else ! ix<=0 
+             if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
               trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
           endif
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
-          if(MasterProc)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
+          if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
           
        enddo
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
@@ -374,8 +365,6 @@ contains
     do n = 1, NEmis_sources      
        if(Emis_source(n)%apply_femis)then
           isec = Emis_source(n)%sector
-if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(Emis_source(n)%species) !  e_fact(8,231,iem)
-!CHIN_HON has 231
           if(Emis_source(n)%sector>0 .and. Emis_source(n)%sector<=NSECTORS)then
              iland = Emis_source(n)%country_ix
              if(iland<0)iland=IC_DUMMY
@@ -392,9 +381,10 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
                       iqrc = iqrc + 1
                       itot = iqrc2itot(iqrc)
                       if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
-                         if(dbg) write(*,'(a,5i4,a,f12.3)') 'DSHKs ', n, &
-                             isec, iland, Emis_source(n)%country_ix, iem, &
-                             trim( species(itot)%name ),  e_fact(isec,iland,iem)
+                         if(dbg) write(*,'(a,5i4,a,f12.3)')&
+                              trim(Emis_source(n)%species)//' included in '//trim(EMIS_FILE(iem)), n, &
+                              isec, iland, Emis_source(n)%country_ix, iem, &
+                              trim( species(itot)%name ),  e_fact(isec,iland,iem)
                          Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
                          go to 888
                       endif
@@ -524,7 +514,7 @@ if(dbg) write(*,'(a,3i4,a)') 'DSHKf ', n, isec, Emis_source(n)%country_ix, trim(
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-          if(me==0)write(*,*)'Emis date is reached ',EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
+          if(me==0)write(*,*)'Emis: update date is reached ',EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
@@ -1844,7 +1834,9 @@ subroutine newmonth
         ! femis file should have 900 0 fnox etc..
         iFemis = find_index('AIRCRAFT',Country(:)%code )
         iemNOx=find_index("nox",EMIS_FILE(:)) ! save this index
-        if(me==0) print *, "AIRF ", iFemis, iemNOx, e_fact(1,iFemis,iemNOx)  ! sec1, emis1
+        if(me==0.and.abs(1.0-e_fact(1,iFemis,iemNOx))>1.0E-2)&
+             print *,iFemis,iemNOx," AIRCRAFT emission scaled by ",&
+             e_fact(1,iFemis,iemNOx)
     end if
 
     call ReadField_CDF_FL(AircraftEmis_FLFile,'NOx',airn,&
@@ -2204,7 +2196,7 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
-  associate ( dbg => DEBUG%EMISSIONS ) !DSHK
+  associate ( dbg => DEBUG%EMISSIONS )
   if(dbg ) write(*,*)"CALLED "//trim(txt),me,&
     maxval(emis),maxval(nsources),maxval(sources)
 

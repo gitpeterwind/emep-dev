@@ -413,7 +413,7 @@ OutputConcs=
       'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
@@ -433,8 +433,8 @@ OutputConcs=
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
-      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', !! ALWAYS as ugC
-      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+!      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', !! ALWAYS as ugC
+!      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_FFUELOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_WOODOA25_OC'    ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_FFIREOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
@@ -458,14 +458,14 @@ OutputConcs=
       'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'SQT_SOA_NV'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
-      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+!      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
-      'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+!      'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 ! zero for NONVOL:
-      'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
-      'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
-      'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! NEVER as ugC
+!      'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!      'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!      'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! NEVER as ugC
 ! Sep16 tests
       'FFIRE_BC'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_REMPPM25'   ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
@@ -477,12 +477,12 @@ OutputConcs=
       'SURF_ug_PM25_rh50'   ,'ug' ,'2d','PM25_rh50' ,'MISC','YMD',
       'SURF_ug_PM10_rh50'   ,'ug' ,'2d','PM10_rh50' ,'MISC','YMD',
 !---------------------------------------------
-      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
       'ASH'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !-- Emergency: Nuclear accident (5 entries)
     ! 'CS137'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     ! 'I131'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',

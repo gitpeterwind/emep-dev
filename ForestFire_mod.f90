@@ -410,7 +410,8 @@ subroutine make_mapping()
         emep_used(NEMEPSPECS) = iemep
      endif
   enddo
-  if(masterproc)write(*,*)'Forest Fire will read ',NBB_DEFS,' species, mapped into ',NEMEPSPECS,' emep sppecies'
+  if(masterproc)write(*,fmt='(A,I5,A,I5,A)')&
+       'Forest Fire will read ',NBB_DEFS,' species, mapped into ',NEMEPSPECS,' emep species'
   
   
 end subroutine make_mapping

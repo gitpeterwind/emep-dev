@@ -167,13 +167,6 @@
         if(newseason==4)season3='oct' 
 
         if(first_call)then
-          ! if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
-!A2018 Now done in ChemFields
-!A2018           if(.not.(allocated(rcphot))) then
-if(MasterProc)  write(*,*) 'EX XALLOC RCPHOT'
-!A2018               allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
-!A2018               rcphot(:,:) = 0.0
-!A2018           end if
            allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
            allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
            allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))

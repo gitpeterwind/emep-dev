@@ -443,10 +443,10 @@ subroutine MeteoRead()
           write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
           select case(ndim)
           case(2)
-            write(*,*)'typical value = ',met(ix)%field(5,5,1,nrix),&
+            write(*,*)'example values = ',met(ix)%field(5,5,1,nrix),&
               maxval(met(ix)%field(:,:,1,nrix))
           case(3)
-            write(*,*)'typical value = ',met(ix)%field(5,5,kmax_mid,nrix),&
+            write(*,*)'example values = ',met(ix)%field(5,5,kmax_mid,nrix),&
               maxval(met(ix)%field(:,:,kmax_mid,nrix))
           end select
         else

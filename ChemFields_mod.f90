@@ -96,13 +96,10 @@ contains
 
     allocate(rct(NCHEMRATES,KCHEMTOP:KMAX_MID))
     rct = 0.0
-if(MasterProc) write(*,*) 'XALLOC RCT'
-!allocated in DefPhotol??
 
-    !A2018 allocate(rcphot(NPHOTOLRATES,KCHEMTOP:KMAX_MID))
     allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
     rcphot = 0.0
-if(MasterProc) write(*,*) 'XALLOC RCPHOT'
+
     !TMPA2018 allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
     allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
     rcbio = 0.0

@@ -712,7 +712,6 @@ subroutine My_bcmap(iyr_trend)
   trend_ch4 = top_misc_bc(IBC_CH4)/1780.0
 
   if (MasterProc) then
-     print *, 'ARGH', iyr_trend, yr_rcp, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
      write(txt,"(a,3i6,f8.1,f8.3)") dtxt//" CH4 settings (iyr,nml,ch4,trend): ",&
              iyr_trend, yr_rcp, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
      call PrintLog(txt)
@@ -1225,6 +1224,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
      O3_logan_emep=0.0
  
      varname='O3'
+     if(me==0)write(*,*)'reading IBC for O3 from ',trim(LoganO3File)
      call  ReadField_CDF(LoganO3File,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
           needed=.true.,debug_flag=.false.)
      !interpolate vertically

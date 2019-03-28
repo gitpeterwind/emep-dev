@@ -39,7 +39,6 @@ private
 !/- subroutines:
 
   public :: InitLanduse
-  public :: ReadLanduse
   public :: SetLanduse
   private :: Polygon         ! Used for LAI
   private :: MedLAI          ! Used for LAI, Medit.
@@ -119,18 +118,7 @@ contains
 
     if(MasterProc) write(*,*) dtxt//" nFluxVegs= ",nFluxVegs
 
-
-    filefound=.false.
-    call ReadLandUse(filefound) !=> Land_codes, Percentage cover per grid
-
-    ! ReadLandUse_CDF use Max Posch 5km landuse over emep area and glc200 where
-    ! this data is not defined.
-
-    if(.not.filefound) then
-        if(MasterProc) write(*,*) dtxt//" Into CDF "
-        call ReadLandUse_CDF(filefound) !=> Land_codes, % cover per grid
-    end if
-
+    call ReadLandUse_CDF(filefound) !=> Land_codes, % cover per grid
 
     ! Quick safety check
     ! we check that the length of the land-codes isn't equal to our declared
@@ -274,136 +262,6 @@ contains
     water_frac_set = .true.  ! just to inform other routines
     
   end subroutine InitLanduse
- !==========================================================================
-  subroutine ReadLanduse(filefound)
-
-   logical :: filefound
-   integer :: i,j,lu, index_lu, maxlufound
-   character(len=20), dimension(NLANDUSEMAX+10) :: Headers
-   type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
-   character(len=50) :: fname
-   character(len=*), parameter :: dtxt="ReadLanduse:"
-   integer :: NHeaders, NKeys, Nlines
-   logical :: dbgij
-   real :: sumfrac
-   
-  ! Specify the assumed coords and units - Read2DN will check that the data
-  ! conform to these.
-    type(keyval), dimension(2) :: CheckValues = &
-        (/ keyval("Units","PercentGrid"), &
-           keyval("Coords","ModelCoords") /)
-
- ! temporary arrays used.  Will re-write one day....
-   real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
-   real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
-   integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
-   integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
-
-   if ( DEBUG%LANDUSE>0 .and. MasterProc ) &
-        write(*,*) dtxt//"LANDUSE: Starting ReadLandUse "
-
-   maxlufound = 0   
-   Nlines = 0
-
-   landuse_ncodes(:,:)   = 0     !***  initialise  ***
-   landuse_codes(:,:,:)  = 0     !***  initialise  ***
-   landuse_data  (:,:,:) = 0.0   !***  initialise  ***
-
-!------------------------------------------------------------------------------
-
-      ! Read Header info - this will define landuse classes for model
-
-      fname = "Inputs.Landuse"
-      if ( MasterProc ) then
-         call open_file(IO_TMP,"r",fname,needed=.false.)
-      end if
-      call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
-      if(ios==0)then
-         if ( DEBUG%LANDUSE>0 .and. MasterProc ) write(*,*)'found '//trim(fname) 
-         filefound=.true.
-
-         call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,&
-                     Headers,Keyvalues,CheckValues)
-         
-         call CheckStop( errmsg , dtxt//"Read Headers" // fname )
-         
-         ! The first two columns are assumed for now to be ix,iy, hence:
-
-         NHeaders = NHeaders -2
-         call CheckStop( NHeaders /= NLANDUSE_EMEP, &
-              dtxt//"Inputs.Landuse not consistent with NLANDUSE_EMEP")
-
-          NLand_codes=NHeaders        
-        
-         ! *** HERE we set the Landuse_codes ***
-         do i = 1,  NLand_codes
-            Land_codes(i) = trim ( Headers(i+2) )
-         end do
-         if(MasterProc)then
-            write(*,*)NLand_codes,dtxt//&
-           ' landuse categories defined from Inputs.Landuse:'
-            write(*,fmt="(20(A,1x))")(trim(Land_codes(i)),i=1,NLand_codes)
-         end if
-
-         ! Then data:
-         
-         call Read2DN("Inputs.Landuse",NLand_codes,landuse_in,&
-                 HeadersRead=.true.)
-         
-         !-------------------------------------------------------------------
-         
-         if ( DEBUG%LANDUSE>0 .and. MasterProc ) then
-            write(*,*) "LANDUSE: LAND_CODES ARE ", NHeaders
-            call WriteArray(Land_codes,NLand_codes,"Land_Codes")
-         end if
-         
-      else
-         filefound=.false.
-         if(MasterProc)Write(*,*)'Inputs.Landuse not found'
-         return
-         call StopAll('Inputs.Landuse not found') 
-      end if
-
-!      call printCDF('LU', landuse_in(:,:,1),'??')
-
-    do i = 1, limax
-       do j = 1, ljmax
-           dbgij = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
-           do lu = 1, NLand_codes
-              if ( landuse_in(i,j,lu) > 0.0 ) then
-
-                 call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
-                         index_lu, maxlufound, landuse_codes, landuse_ncodes)
-   
-                     landuse_data(i,j,index_lu) = &
-                       landuse_data(i,j,index_lu) + 0.01 * landuse_in(i,j,lu)
-               end if
-               if ( DEBUG%LANDUSE>0 .and. dbgij )  &
-                       write(*,"(a15,i3,f8.4,a10,i3,f8.4)") "DEBUG Landuse ",&
-                          lu, landuse_in(i,j,lu), &
-                           "index_lu ", index_lu, landuse_data(i,j,index_lu)
-           end do ! lu
-           LandCover(i,j)%ncodes  = landuse_ncodes(i,j)
-           LandCover(i,j)%codes(:) = landuse_codes(i,j,:)
-           LandCover(i,j)%fraction(:)  = landuse_data(i,j,:)
-
-           sumfrac = sum( LandCover(i,j)%fraction(:) )
-
-             if (  sumfrac < 0.99 .or. sumfrac > 1.01 ) then
-               write(unit=errmsg,fmt="(a19,3i4,f12.4,8i4)") &
-                 "Land SumFrac Error ", me,  &
-                    i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
-                       i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax)
-               call CheckStop(errmsg)
-             end if
-
-      end do  !j
-   end do  !i
-
-   if (DEBUG%LANDUSE>1) write(6,*) "Landuse_mod: me, Nlines, maxlufound, ascii = ", &
-                                  me, Nlines, maxlufound
-
-  end subroutine  ReadLanduse
  
   subroutine ReadLanduse_CDF(filefound)
     ! Read data in other grid and interpolate to present grid

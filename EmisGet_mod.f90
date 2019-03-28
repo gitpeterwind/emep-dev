@@ -566,14 +566,13 @@ if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
                 status = nf90_get_att(ncFileID,varid,"country_ISO", name)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%country_ISO = trim(name)
                 ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
-                if(me==0)write(*,*)'defining country ISO',trim(name),' index ',ix
                 if(ix<0)then
                    if(me==0)write(*,*)dtxt//'WARNING: country_ISO '//trim(name)//&
                      ' not defined. file'//trim(fname)//&
                      ' variable '//trim(cdfvarname)
                 else
                    Emis_source(NEmis_sources)%country_ix = ix
-                   if ( debugm0 ) write(*,*) dtxt//'country_ISO add:',ix,trim(name)
+                   if ( debugm0 ) write(*,*) dtxt//'country_ISO add: ',ix,trim(name)
                 endif
              endif
           enddo

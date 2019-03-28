@@ -234,14 +234,14 @@ subroutine GridRead(meteo,cyclicgrid)
       if(MasterProc)&
         write(*,*)'Define vertical levels from ',trim(Vertical_levelsFile)
       read(IO_TMP,*)KMAX_MID
-      if(MasterProc)&
-        write(*,*)KMAX_MID, 'vertical levels '
+      if(MasterProc)write(*,*)KMAX_MID, 'vertical levels '
       External_Levels_Def=.true.
       ! Must use eta coordinates
       if(MasterProc.and..not.USE_EtaCOORDINATES)&
         write(*,*)'WARNING: using hybrid levels even if not asked to! '
       USE_EtaCOORDINATES=.true.
     else
+      if(MasterProc)write(*,*)'WARNING: could not open '//trim(Vertical_levelsFile)
       External_Levels_Def=.false.
       close(IO_TMP)
       KMAX_MID=KMAX_MET
@@ -1038,9 +1038,9 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
         found_metlevels=.true.
       end if
       if(MET_REVERSE_K)then
-        if(MasterProc)write(*,*)"Reversed vertical levels from met, P at levels boundaries:"
+        if(MasterProc)write(*,*)"Reversed vertical levels from met, P at level boundaries:"
       else
-        if(MasterProc)write(*,*)"Vertical levels from met, P at levels boundaries:"
+        if(MasterProc)write(*,*)"Vertical levels from met, P at level boundaries:"
       end if
       do k=1,KMAX_MET+1
         if(MasterProc)write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
@@ -1062,7 +1062,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
           B_bnd_met(k)=B_bnd_met(k+1)-2.0*(B_bnd_met(k+1)-B_bnd_met(k))!from mid to bnd values!
         end do
         
-        if(MasterProc)write(*,*)'Met hybrid vertical coordinates, P at levels boundaries:'
+        if(MasterProc)write(*,*)'Metdata pressure at level boundaries:'
         do k=1,KMAX_MET+1
           if(MasterProc)write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
         end do
@@ -1106,7 +1106,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     end do
     sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
     
-    if(MasterProc)write(*,*)"Hybrid vertical coordinates, P at levels boundaries:"
+    if(MasterProc)write(*,*)"Model pressure at level boundaries:"
     do k=1,KMAX_MID+1
 44    FORMAT(i4,10F12.2)
       if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k)
@@ -1171,7 +1171,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     dEta_i(k)=1.0/(dA(k)/Pref+dB(k))
   end do
   Eta_bnd(KMAX_MID+1)=A_bnd(KMAX_MID+1)/Pref+B_bnd(KMAX_MID+1)
-  if(MasterProc)write(*,*)'External_Levels ',External_Levels_Def
+
   if(External_Levels_Def)call make_vertical_levels_interpolation_coeff
   
   do j=0,LJMAX
@@ -1195,7 +1195,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       lat_ext(i+1,j)+&
       lat_ext(i,j+1)+&
       lat_ext(i+1,j+1))
-    end do
+   end do
   end do
   
   !ensure that lon values are within [-180,+180]]
@@ -1934,7 +1934,7 @@ subroutine make_vertical_levels_interpolation_coeff
       write(*,77)k, ' interpolated from levels ', k1_met(k),' and ',k2_met(k),P_mod,p1,p2,x_k1_met(k)
 77    format(I4,A,I3,A,I3,13f11.3)
       if(x_k1_met(k)<-0.00001 .or. (1.0-x_k1_met(k))<-0.00001)then
-        write(*,*)'WARNING: Extrapolation of data. This is NOT recommended for several metfields'
+        write(*,*)'WARNING: Extrapolation of data. This is NOT recommended for some metfields'
       end if
       
     end do
