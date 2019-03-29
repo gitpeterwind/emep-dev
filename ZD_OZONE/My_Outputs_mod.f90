@@ -15,7 +15,7 @@ use ChemGroups_mod,     only: chemgroups
 use Debug_module,       only: DEBUG   ! -> DEBUG%COLSRC and POLLEN
 use DerivedFields_mod,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use Config_module, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
-                             MY_OUTPUTS, FORECAST, USES, &
+                             MY_OUTPUTS, USES, &
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_mod, only: ATWAIR
 use OwnDataTypes_mod,   only: Asc2D
@@ -254,32 +254,6 @@ subroutine set_output_defs
   case("INVERSION") ! use hourly Derived output in the near future
     nhourly_out=19
     nlevels_hourly = 1
-  case("MACC_ENS","CAMS50_ENS","FORECAST")
-    nhourly_out=0
-    nlevels_hourly=0
-!- moved to Hourly/Derived
-!-  nlevels_hourly=9
-!-  nhourly_out=nhourly_out+15
-!-  if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
-!-  if(USES%AOD     )nhourly_out=nhourly_out+1
-    if(USES%POLLEN  )then
-      nlevels_hourly=1
-      call pollen_check(gpoll)
-!-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)
-      if(DEBUG%POLLEN)&
-      nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)*3-1
-    endif
-!- moved to Hourly/Derived
-!-case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
-!-  nhourly_out=4
-!-  nlevels_hourly=1
-!-case("MACC_POL","CAMS71_SR","CITYSR")
-!-  nhourly_out=2
-!-  nlevels_hourly=1
-!-case("MACC_NMC")
-!-  nhourly_out=4
-!-  nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
-!-  call CheckStop(.not.USES%AOD,"MACC_NMC hourly output needs USES%AOD")
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
@@ -403,120 +377,6 @@ subroutine set_output_defs
       hr_out(j)=Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
            1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
     enddo
-  case("MACC_ENS","CAMS50_ENS","FORECAST")
-!-  levels_hourly = [0,1,2,3,4,6,9,10,12]
-!-  pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
-!-  pm10 =find_index("PM10"    ,chemgroups(:)%name)
-!-  nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
-!-  rn222=find_index("RN222"  ,species_adv(:)%name)
-!**               name     type     ispec
-!**               nk unit unit_conv  max
-!- moved to Hourly/Derived
-!-  j=15;hr_out(1:j) = (/&
-!-    Asc2D("o3_5km"    ,"BCVugXX",IXADV_O3   ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
-!-    Asc2D("no_5km"    ,"BCVugXX",IXADV_NO   ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
-!-    Asc2D("no2_5km"   ,"BCVugXX",IXADV_NO2  ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
-!-    Asc2D("so2_5km"   ,"BCVugXX",IXADV_SO2  ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
-!-    Asc2D("co_5km"    ,"BCVugXX",IXADV_CO   ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
-!-    Asc2D("nh3_5km"   ,"BCVugXX",IXADV_NH3  ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NH3),-999.9),&
-!-    Asc2D("pan_5km"   ,"BCVugXX",IXADV_PAN  ,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_PAN),-999.9),&
-!-    Asc2D("nmvoc_5km" ,"BCVugXXgroup",nmvoc,&
-!-          NLEVELS_HOURLY,"ugC",1.0                ,-999.9),&
-!-    Asc2D("pm25_5km"  ,"BCVugXXgroup",pm25,&
-!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-!-    Asc2D("pm10_5km"  ,"BCVugXXgroup",pm10,&
-!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-!-    Asc2D("pm_h2o_5km","PMwater",00         ,&
-!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9)/)
-!! Partial/Full COLUMN/COLUMgroup calculations:kk$
-!!   hr_out%nk indecate the number of levels in the column,
-!!     1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
-!!       otherwise     ==>  Full column: all model levels
-!- moved to Hourly/Derived
-!-     Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
-!-           1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9),&
-!-     Asc2D("o3_col"    ,"COLUMN",IXADV_O3   ,&
-!-           1,"ug",to_ug_ADV(IXADV_O3)              ,-999.9),&
-!-     Asc2D("co_col"    ,"COLUMN",IXADV_CO   ,&
-!-           1,"ug",to_ug_ADV(IXADV_CO)              ,-999.9),&
-!-     Asc2D("hcho_col"  ,"COLUMN",IXADV_HCHO ,&
-!-           1,"ug",to_ug_ADV(IXADV_HCHO)            ,-999.9)/)
-!!          1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9)/)
-!- moved to Hourly/Derived
-!-  if(rn222>0)then
-!-    j=j+1;hr_out(j) = &
-!-    Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
-!-          NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9)
-!-  endif
-!-  if(USES%AOD)then
-!-    j=j+1;hr_out(j) = &
-!-    Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
-!-          1," ",1.0                               ,-999.9)
-!-  endif
-    if(USES%POLLEN)then
-      j=0
-      levels_hourly = 0
-!- moved to Hourly/Derived
-!-    do i=1,size(chemgroups(gpoll)%specs)
-!-      idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
-!-      j=j+1;hr_out(j) = &
-!-      Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
-!-            1,"grains/m3",to_number_m3,-999.9)
-!-    enddo
-      if(DEBUG%POLLEN)then
-        do i=1,size(chemgroups(gpoll)%specs)
-          idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
-          if(i<3)then
-            j=j+1;hr_out(j) = &
-            Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
-              1,"degree day" ,1.0,-999.9)
-          endif
-          j=j+2;hr_out(j-1:j) = (/&
-          Asc2D(trim(species_adv(idx)%name)//"_emiss"  ,"pollen_emiss",i,&
-              1,"grains/m2/h",1.0,-999.9),&
-          Asc2D(trim(species_adv(idx)%name)//"_left"   ,"pollen_left" ,i,&
-              1,"grains/m3"  ,1.0,-999.9)/)
-        enddo
-      endif
-    endif
-  case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
-    call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
-    levels_hourly = [0]
-!**         name     type     ofmt    ispec
-!**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    hr_out(:) = (/&
-      Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"       ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("NO2" ,"D2D_inst",find_index("SURF_ug_NO2"      ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("PM25","D2D_inst",find_index("SURF_ug_PM25_rh50",f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50",f_2d(:)%name),&
-            1,"ug",1.0,-999.9)/)
-  case("MACC_POL","CAMS71_SR","CITYSR")
-    levels_hourly = [0]
-    j=2;hr_out(1:j) = (/&
-      Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"       ,f_2d(:)%name),1,"ug",1.0,-999.9),&
-      Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50",f_2d(:)%name),1,"ug",1.0,-999.9)/)
-  case("MACC_NMC")
-    call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
-    SELECT_LEVELS_HOURLY=.false.  ! do not select levels, get them all
-    hr_out(:)= (/ &
-      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
-           1             ,"",1.0,-9999.9),&
-      Asc2D("EXT_550nm" ,"D3D_inst",find_index("EXT_550nm",f_3d(:)%name),&
-           NLEVELS_HOURLY,"",1.0,-9999.9),&
-      Asc2D("PMFINE","BCVugXXgroup",find_index("PMFINE",chemgroups(:)%name),&
-           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9),&
-      Asc2D("PM10" ,"BCVugXXgroup",find_index("PM10"   ,chemgroups(:)%name),&
-           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9)/)
   case("IMPACT2C") ! Dave's starting set. Uses Out3D to get 3m and 45m concs.
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
     hr_out(:)= (/ &
@@ -676,7 +536,7 @@ subroutine set_output_defs
         "Hourly",i, "Nhourly",NHOURLY_OUT,&
         "HourlyIndex",idx,"Spec",hr_out(i)%spec,&
         "Name",trim(hr_out(i)%name),"Type",trim(hr_out(i)%type)
-      call CheckStop(.not.FORECAST,trim(errmsg))
+      call CheckStop(trim(errmsg))
       write(*,*)trim(errmsg)
       write(*,*)"Warning: reduced ourly output"
     endif

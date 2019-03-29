@@ -12,7 +12,6 @@
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'ANALYSIS',
-  MY_OUTPUTS            = '',         ! deprecated hourly out: MACC_ENS|MACC_EVA
 !------------------------------
   EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
   EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
@@ -52,11 +51,10 @@
   EmisDir               ='DataDir/Emis_TNO7_MACCIII',
   emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = T,
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = T,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = T,          ! Used for FORECASTs usually
+  USES%AOD               = T,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements

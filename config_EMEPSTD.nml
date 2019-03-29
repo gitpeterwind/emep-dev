@@ -122,11 +122,10 @@
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations

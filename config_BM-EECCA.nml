@@ -58,11 +58,10 @@
 !------------------------------
   emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = T,          ! Used for FORECASTs usually
+  USES%AOD               = T,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements

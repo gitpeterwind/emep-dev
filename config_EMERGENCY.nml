@@ -64,13 +64,12 @@
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap'
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = T,
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   USES%PreADV            = T,          ! Distribute point-source before advection
   USES%NOCHEM            = T,          ! Turns off chemistry
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
 !------------------------------
   DEBUG%GLOBBC          = F,
   DEBUG%HOURLY_OUTPUTS  = F,

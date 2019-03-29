@@ -37,7 +37,6 @@ use Config_module,     only: &
   ,PPBINV             & ! 1.0e9, for conversion of units
   ,PPTINV             & ! 1.0e12, for conversion of units
   ,PT                 &
-  ,FORECAST           & ! only daily (and hourly) output on FORECAST mode
   ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
   ,num_lev3d,lev3d    & ! 3D levels on 3D output
   ! output types corresponding to instantaneous,year,month,day
@@ -809,13 +808,12 @@ Is3D = .true.
     iou_list(IOU_DAY+1:)=.false.  ! for SOURCE_RECEPTOR mode which makes
                                   ! it easy for debugging
 
-  if(FORECAST)then                ! reduce output on FORECAST mode
-    select case(nint(tdif_days(to_stamp(startdate),to_stamp(enddate))))
-      case(   : 27);iou_list(:IOU_DAY-1)=.false. ! Only dayly & hourly outputs
-      case( 28:180);iou_list(:IOU_MON-1)=.false. ! .. and monthly
-      case(181:   );                             ! .. and full-run
-    end select
-  end if
+  ! reduce output: skip monthly/full-run for runs under 28/181 days
+  select case(nint(tdif_days(to_stamp(startdate),to_stamp(enddate))))
+    case(   : 27);iou_list(:IOU_DAY-1)=.false. ! Only dayly & hourly outputs
+    case( 28:180);iou_list(:IOU_MON-1)=.false. ! .. and monthly
+    case(181:   );                             ! .. and full-run
+  end select
 
   if(dbgP) write(*,"(A,': ',10(I2,A2,L2,:,','))")"Wanted IOUs",&
     (iou,IOU_KEY(iou),iou_list(iou),iou=IOU_MIN,IOU_MAX)
