@@ -6,12 +6,12 @@ module Nest_mod
 !    'NONE':      do not read (default)
 !    'NHOUR':     read every NHOURREAD
 !    'START':     read at the start of run
-!    'FORECAST':  read at the start of run, if the files are found
+!    'RESTART:    read at the start of run, if the files are found
 !  MODE_SAVE
 !    'NONE':      do not write (default)
 !    'NHOUR':     write every NHOURSAVE
 !    'END':       write at end of run
-!    'FORECAST':  write every OUTDATE(1:FORECAST_NDUMP)
+!    'OUTDATE':   write every OUTDATE(1:OUTDATE_NDUMP)
 !
 ! To make a nested run:
 ! 1) run with MODE_SAVE='NHOUR' to write out 3d BC (name in filename_write defined below)
@@ -36,7 +36,7 @@ module Nest_mod
 ! External Boundary (BC) and Initial Conditions (IC)
 !   ExternalBICs_mod should handle different for different external sources.
 !   Experiment specific information must be set on ExternalBICs namelists.
-!   So far coded for FORECAST and EnsClimRCA(?) work.
+!   So far coded for CIFS (CAMS50/71) and EnsClimRCA(?) work.
 use ExternalBICs_mod,     only: set_extbic, icbc, ICBC_FMT,&
       EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
       iw, ie, js, jn, kt, & ! i West/East bnd; j North/South bnd; k Top
@@ -51,7 +51,7 @@ use Io_mod,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_mod,           only: roa
 use Config_module,           only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
-                                  IOU_INST,RUNDOMAIN,FORECAST,USES
+                                  IOU_INST,RUNDOMAIN,USES
 use Debug_module,           only: DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_mod  
 use netcdf,                 only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
@@ -71,11 +71,11 @@ use SmallUtils_mod,          only: find_index,key2str,to_upper
 use ChemGroups_mod,          only: chemgroups
 implicit none
 
-! Nested input/output on FORECAST mode
-integer,private,parameter :: FORECAST_NDUMP_MAX = 4  ! Number of nested output
-integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by emepctm.f90
-! on FORECAST mode (1: start next forecast; 2-4: NMC statistics)
-type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
+! Nested input/output on OUTDATE mode
+integer,private,parameter :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
+integer, public, save     :: OUTDATE_NDUMP     = 1  ! Read by emepctm.f90
+! on forecast run (1: start next forecast; 2-4: NMC statistics)
+type(date), public :: outdate(OUTDATE_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
 integer, public, save :: out_DOMAIN(4) ! =[istart,iend,jstart,jend]
@@ -91,8 +91,8 @@ logical, private, save :: mydebug =  .false.
 
 integer,private,parameter ::  len_mode=20
 character(len=len_mode),private, parameter :: &
-  READ_MODES(5)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','START','MONTH'],&
-  SAVE_MODES(5)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','END','MONTH']
+  READ_MODES(5)=[character(len=len_mode)::'NONE','RESTART','NHOUR','START','MONTH'],&
+  SAVE_MODES(5)=[character(len=len_mode)::'NONE','OUTDATE','NHOUR','END','MONTH']
 character(len=len_mode),private, save ::  &
   MODE_READ='',&  ! read  mode
   MODE_SAVE=''    ! write mode
@@ -162,11 +162,11 @@ subroutine Config_Nest()
     template_read_3D,template_read_BC,template_write,BC_DAYS,&
     native_grid_3D,native_grid_BC,omit_zero_write,out_DOMAIN,&
     MET_inner,RUNDOMAIN_inner,&
-    WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
+    WRITE_SPC,WRITE_GRP,OUTDATE_NDUMP,outdate
 
   if(.not.first_call)return
   mydebug = DEBUG_NEST.and.MasterProc
-! default write/read supported modes: do nothing (unless FORECAST mode)
+! default write/read supported modes: do nothing
   MODE_READ='NONE'
   MODE_SAVE='NONE'
 ! write/read frequency: Hours between consecutive saves(wrtxn)/reads(readxn)
@@ -181,17 +181,12 @@ subroutine Config_Nest()
     write(*,*) "NAMELIST IS "
     write(*,NML=Nest_config)
   end if
-! FORECAST overrides write/read modes
-  if(FORECAST)then
-    MODE_READ='FORECAST'
-  elseif(MODE_READ=='')then
+  if(MODE_READ=='')then
     MODE_READ='NONE'
   else
     MODE_READ=to_upper(MODE_READ)
   end if
-  if(FORECAST)then
-    MODE_SAVE='FORECAST'
-  elseif(MODE_SAVE=='')then
+  if(MODE_SAVE=='')then
     MODE_SAVE='NONE'
   else
     MODE_SAVE=to_upper(MODE_SAVE)
@@ -219,13 +214,13 @@ subroutine Config_Nest()
   call init_icbc(cdate=current_date)
 ! Ensure out-domain is not larger than run-domain
   if(MODE_SAVE/='NONE')call RestrictDomain(out_DOMAIN)
-! Ensure that only FORECAST_NDUMP are taking into account
-  if(MODE_SAVE=='FORECAST')then
-    if(FORECAST_NDUMP<FORECAST_NDUMP_MAX)&
-      outdate(FORECAST_NDUMP+1:FORECAST_NDUMP_MAX)%day=0
+! Ensure that only OUTDATE_NDUMP are taking into account
+  if(MODE_SAVE=='OUTDATE')then
+    if(OUTDATE_NDUMP<OUTDATE_NDUMP_MAX)&
+      outdate(OUTDATE_NDUMP+1:OUTDATE_NDUMP_MAX)%day=0
     if(MasterProc)&
-      write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
-       (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
+      write (*,"(1X,A,10(1X,A,:,','))")'OUTDATE nest/dump at:',&
+       (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,OUTDATE_NDUMP)
   end if
   first_call=.false.
 end subroutine Config_Nest
@@ -273,21 +268,12 @@ subroutine readxn(indate)
   if(DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_call
 
 ! Update filenames according to date following templates defined on Nest_config nml
-  if(MODE_READ=='FORECAST')then
-    filename_read_3D=date2string(template_read_3D,ndate,&
-                                 mode='YMDH',debug=mydebug)
-    filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",&
-                                 mode='YMDH',debug=mydebug)
-    inquire(file=filename_read_3D,exist=fexist_3D)
-    inquire(file=filename_read_BC,exist=fexist_BC)
-  else
-    filename_read_3D=date2string(template_read_3D,ndate,&
-                                 mode='YMDH',debug=mydebug)
-    filename_read_BC=date2string(template_read_BC,date_nextfile,&
-                                 mode='YMDH',debug=mydebug)
-    fexist_3D=.true.  ! assume 3D file exists
-    fexist_BC=.true.  ! assume BC file exists
-  end if
+  filename_read_3D=date2string(template_read_3D,ndate,&
+                               mode='YMDH',debug=mydebug)
+  filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",&
+                               mode='YMDH',debug=mydebug)
+  inquire(file=filename_read_3D,exist=fexist_3D)
+  inquire(file=filename_read_BC,exist=fexist_BC)
 
   if(first_call)then
     first_call=.false.
@@ -379,16 +365,16 @@ subroutine wrtxn(indate,WriteNow)
   if(overwrite.and.MasterProc)then
     filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
     inquire(file=fileName_write,exist=overwrite)
-    call CheckStop(overwrite.and.MODE_SAVE/='FORECAST',&
+    call CheckStop(overwrite.and.MODE_SAVE/='OUTDATE',&
       "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))
   end if
 
   select case(MODE_SAVE)
   case('END')
     if(.not.WriteNow)return
-  case('FORECAST')
+  case('OUTDATE')
     outdate(:)%seconds=0   ! output only at full hours
-    if(.not.compare_date(FORECAST_NDUMP,indate,outdate(:FORECAST_NDUMP),&
+    if(.not.compare_date(OUTDATE_NDUMP,indate,outdate(:OUTDATE_NDUMP),&
                          wildcard=-1))return
     if(MasterProc) write(*,*)&
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
@@ -450,7 +436,7 @@ subroutine wrtxn(indate,WriteNow)
            "Can not be written to file:",trim(filename_write),""
         end if
       end do
-    elseif(FORECAST.and.USES%POLLEN)then
+    elseif(USES%POLLEN)then
       ! POLLEN group members are written to pollen restart/dump file
       call pollen_check(igrp=i)
       if(i>0)then

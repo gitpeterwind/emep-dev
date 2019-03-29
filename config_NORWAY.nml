@@ -125,8 +125,8 @@
 &end
 &Nest_config
 !-------- Read/Write MODEs
-  MODE_READ = 'FORECAST',     ! at the start of run, if files are found
-  MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  MODE_READ = 'RESTART',      ! at the start of run, if files are found
+  MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 !-------- File name templates for Nest I/O
   template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
 ! template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
@@ -143,7 +143,7 @@
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
 ! omit_zero_write= T,                               ! further reduce output
-  FORECAST_NDUMP = 1,                       ! Nr. CWF dump dates
+  OUTDATE_NDUMP  = 1,                       ! Nr. CWF dump dates
   outdate        = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1:4)   = -1,-1,-1,00,0000,        ! everyday at 00:00
 !                  -1,-1,-1,12,0000,        ! everyday at 12:00

@@ -89,8 +89,8 @@
 &end
 &Nest_config
 !-------- Read/Write MODEs
-  MODE_READ = 'FORECAST',     ! at the start of run, if files are found
-  MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  MODE_READ = 'RESTART',      ! at the start of run, if files are found
+  MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
   native_grid_3D   = T,       ! initial conditions always in same grid
   native_grid_BC   = T,       ! BC not used
 !-------- File name templates for Nest I/O
@@ -100,7 +100,7 @@
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
-  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
+  OUTDATE_NDUMP    = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &ExternalBICs_config
