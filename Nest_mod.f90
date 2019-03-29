@@ -93,7 +93,7 @@ integer,private,parameter ::  len_mode=20
 character(len=len_mode),private, parameter :: &
   READ_MODES(5)=[character(len=len_mode)::'NONE','RESTART','NHOUR','START','MONTH'],&
   SAVE_MODES(5)=[character(len=len_mode)::'NONE','OUTDATE','NHOUR','END','MONTH']
-character(len=len_mode),private, save ::  &
+character(len=len_mode),public, save ::  &
   MODE_READ='',&  ! read  mode
   MODE_SAVE=''    ! write mode
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
