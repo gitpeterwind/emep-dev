@@ -21,6 +21,42 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 Mar 2019, Alvaro
+
+Remove FORECAST mode
+https://github.com/metno/emep-ctm/issues/51
+https://github.com/metno/emep-mscw/issues/127
+
+Advection_mod, BoundaryConditions_mod, ForestFire_mod, NetCDF_mod:
+- remove from use call and update comments
+
+Config_module and config_*.nml:
+- remove FORECAST option
+
+Derived_mod:
+- skip monthly output for runs under 28 days
+- skip full-run under for runs under 181 days
+
+My_Outputs_mod.f90:
+- remove deprecated/old-style hourly output
+
+emep_Main, PhyChem_mod and ZD_Pollen/Pollen_mod:
+- implement forecast restart/dump logic
+- remove zero hour output, no longer needed
+
+Nest_mod and config_*.nml:
+- rename MODE_READ='FORECAST' to MODE_READ='RESTART'
+- rename MODE_WRITE='FORECAST' to MODE_WRITE='OUTDATE'
+- rename FORECAST_NDUMP and OUTDATE_NDUMP.
+
+OutputChem_mod, Config_module and config_*.nml:
+- new option USES%PROGRESS_FILES to output progress files,
+  e.g. CWF_12FC-20190321_hourInst.msg for CWF_12FC-20190321_hourInst.nc,
+  and modelrun.finished at the end of the run.
+
+Note: The pollen modules are broken since c22db23 (Apr 2018)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 Mar 2019, Peter
 
 Defined masks for emissions. Example of use:
