@@ -54,6 +54,7 @@
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,            ! 
 !------------------------------ 
+  USES%PROGRESS_FILES    = T,            ! write to file.msg for each output in file.nc
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?

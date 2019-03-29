@@ -57,6 +57,7 @@
   EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
   USES%GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
 !------------------------------
+  USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?
