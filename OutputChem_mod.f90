@@ -2,10 +2,10 @@ module OutputChem_mod
 
 use CheckStop_mod,      only: CheckStop
 use Config_module,     only: num_lev3d, MasterProc, runlabel1,&
-                             FREQ_HOURLY, FORECAST, END_OF_EMEPDAY, METSTEP, &
+                             FREQ_HOURLY, END_OF_EMEPDAY, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, &
                              IOU_HOUR_INST, IOU_MAX_MAX, HOURLYFILE_ending, &
-                             startdate, enddate, out_startdate, USE_uEMEP
+                             startdate, enddate, out_startdate, USE_uEMEP, USES
 use Debug_module,       only: DEBUG => DEBUG_OUTPUTCHEM
 use Derived_mod,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
@@ -201,7 +201,7 @@ subroutine Output_fields(iotyp)
   endif
 
   ! Write text file to mark output is finished
-  if(.not.all([FORECAST,MasterProc,wanted_iou(iotyp)]))return
+  if(.not.all([USES%PROGRESS_FILES,MasterProc,wanted_iou(iotyp)]))return
   i=index(filename_iou(iotyp),'.nc')-1
   if(i<1)i=len_trim(filename_iou(iotyp))
   open(IO_TMP,file=filename_iou(iotyp)(1:i)//'.msg',position='append')

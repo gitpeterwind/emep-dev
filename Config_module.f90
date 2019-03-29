@@ -119,6 +119,7 @@ type, public :: emep_useconfig
     ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
     ,AOD          = .false. &
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
+    ,PROGRESS_FILES   = .false. &! write to file.msg for each output in file.nc
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
@@ -203,7 +204,7 @@ logical, public, save ::             &
  ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
 !
 ! Output flags
- ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
+ ,SELECT_LEVELS_HOURLY  = .false.    & ! for 3DPROFILES
  ,ZERO_ORDER_ADVEC  = .false.        & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
