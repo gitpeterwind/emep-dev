@@ -72,7 +72,7 @@
   use Config_module,      only: EPSIL, dt_advec
   use Config_module, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, &
-                  NPROCX,NPROCY,NPROC, FORECAST,&
+                  NPROCX,NPROCY,NPROC, &
                   USES,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_pstar,convection_Eta

@@ -182,7 +182,7 @@ subroutine Config_Fire()
       bbinterp = 'mass_conservative'
       BiomassBurningMapping = "FINNv1.5"
    case("GFAS")
-      persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+      persistence=3  ! 1-day records, valid for 3 day in forecast runs
       bbinterp = 'conservative'
       BiomassBurningMapping = "GFASv1"
    case default

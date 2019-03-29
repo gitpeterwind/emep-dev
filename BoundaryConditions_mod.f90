@@ -22,7 +22,7 @@ module BoundaryConditions_mod
 !      Unified EMEP model species the global model fdata are
 !      assigned to (bc2xn_adv, bc2xn_bgn arrays).
 !
-!   3. NB: Nest_mod.f90 - In nested runs (such as FORECAST mode), the ICs & BCs
+!   3. NB: Nest_mod.f90 - In nested runs (such as forecast runs), the ICs & BCs
 !      are reseted by readxn (Nest_mod), superseeding the IC/BCs in this module.
 ! -----------------------------------------------------------------------
 ! 

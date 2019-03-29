@@ -21,7 +21,7 @@ use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
 use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,      only : species
 use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
-                             ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
+                             ,MasterProc, NETCDF_DEFLATE_LEVEL &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
                              ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
                              ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
