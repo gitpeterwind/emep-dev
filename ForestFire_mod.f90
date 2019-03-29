@@ -44,7 +44,7 @@ use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
                                 IOU_INST
 use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
-                                debug_proc,xm2,GRIDWIDTH_M
+                                debug_proc,xm2,GRIDWIDTH_M, A_bnd,B_bnd
 use Io_mod,                only: PrintLog, datewrite, IO_NML
 use MetFields_mod,         only: z_bnd
 use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
@@ -68,6 +68,7 @@ real,  allocatable, dimension(:,:,:), save :: BiomassBurningEmis
 logical, save :: monthlyEmis = .false.
 
 integer, save :: ieCO=-1 ! index for CO
+integer, save :: KEMISFIRE
 
 character(len=TXTLEN_SHORT), save :: FF_poll = 'NOT_SET'
 integer :: iemep
@@ -156,7 +157,7 @@ logical, save ::    &
 contains
 subroutine Config_Fire()
   logical, save :: first_call=.true.
-  integer :: ios, ne, n
+  integer :: ios, ne, n, k
   character(len=*), parameter :: dtxt='BB:Config'
   NAMELIST /Fire_config/MODE,verbose,persistence,fire_year,&
                         need_file,need_date,need_poll,&
@@ -239,6 +240,16 @@ if( iemep <1) print *, 'ABB', n, FF_defs(n)%emep, iemep
   end if
   call CheckStop(any(emep_used<1),&
      dtxt//"UNSET FFIRE EMEP "//BiomassBurningMapping)
+
+!crude release height defintion which is model levels independent 
+!highest level is the highest level boundary below 800 hPa = ca 2000 m (standard atmosphere)
+  do k = KMAX_MID+1,2,-1
+     if(A_bnd(k)+101325.0*B_bnd(k)< 80000.0)exit
+  enddo
+  KEMISFIRE = k
+  if(MasterProc .and. first_call)write(*,fmt='(A,I3,A)')&
+       'Forest Fire emissions will be distributed evenly into the',&
+       KMAX_MID - KEMISFIRE + 1,' lowest levels'
 
   first_call=.false.
 end subroutine Config_Fire
@@ -770,11 +781,10 @@ subroutine Fire_rcemis(i,j)
 
   integer, intent(in) :: i,j
 
-  integer, parameter :: KEMISFIRE = 12
-  real, dimension(KEMISFIRE:KMAX_MID) :: invDeltaZfac !  height of layer in m div 9
+  real, dimension(KMAX_MID) :: invDeltaZfac !  height of layer in m div 9
   integer ::  k, n, iem
 
-  integer ::  N_LEVELS  ! = 9.0 here
+  integer ::  N_LEVELS  ! = 9 for standard 20 model levels
 
   character(len=*), parameter :: dtxt = 'BB:rcemis'
   real    :: origrc, fac
