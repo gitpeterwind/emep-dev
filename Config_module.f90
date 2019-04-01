@@ -195,8 +195,7 @@ integer, public, save :: spinup_enddate(4)=(/0,0,0,0/) ! end of spinup. Does not
 real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
-  FORECAST              = .false.    & ! reset in namelist
- ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
+  TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_AMINEAQ        = .false.       & ! MKPS
@@ -600,13 +599,13 @@ subroutine Config_ModelConstants(iolog)
    ,YieldModifications &  ! Allows dynamic change of chemical yields
    ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,DEBUG  & !
-   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
+   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, TFMM
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
-   ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
+   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. 3DPROFILES
+   ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct

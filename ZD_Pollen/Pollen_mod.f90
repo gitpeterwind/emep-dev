@@ -22,12 +22,13 @@ use LocalVariables_mod,    only: Grid
 use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_mod,          only: Wind_at_h
-use Config_module,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
+use Config_module,    only: AERO, KMAX_MID, nstep, DataDir, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 TXTLEN_FILE, dt=>dt_advec, DEBUG
 use MPI_Groups_mod,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
-use Nest_mod,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
+use Nest_mod,              only: outdate,OUTDATE_NDUMP,out_DOMAIN,&
+                                MODE_READ,MODE_SAVE,&
                                 template_read_IC=>template_read_3D,&
                                 template_write_IC=>template_write
 use NetCDF_mod,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
@@ -230,7 +231,7 @@ subroutine pollen_flux(i,j,debug_flag)
   if(first_call) then
     if(.not.checkdates(daynumber,"pollen"))return
     call Config_Pollen()
-    if(FORECAST) call pollen_read()
+    call pollen_read()
 
     allocate(p_day(LIMAX,LJMAX),AreaPOLL(LIMAX,LJMAX,POLLEN_NUM),h_day(LIMAX,LJMAX))
     p_day(:,:) =current_date%day
@@ -703,13 +704,14 @@ subroutine pollen_read()
   character(len=len(template_read)) :: filename
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
+  if(MODE_READ/='START' .and. MODE_READ/='RESTART') return
   if(.not.checkdates(daynumber,"pollen")) return
   if(.not.first_call) return
   first_call=.false.
 
   call Config_Pollen()
   filename=date2string(template_read,current_date)
-  nstart=getRecord(filename,current_date,.not.FORECAST)
+  nstart=getRecord(filename,current_date,MODE_READ=='START')
   if(nstart<1) return
   if(MasterProc)&
     write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
@@ -721,7 +723,7 @@ subroutine pollen_read()
 ! pollen adv (not written by Nest_mod)
 !------------------------
     call GetCDF_modelgrid(trim(spc),filename,data,&
-          1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+          1,KMAX_MID,nstart,1,needed=MODE_READ=='START',found=found)
     if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)xn_adv(iadv(g),:,:,:)=data(:,:,:)
 !------------------------
@@ -729,7 +731,7 @@ subroutine pollen_read()
 !------------------------
     spc=trim(POLLEN_GROUP(g))//'_rest'
     call GetCDF_modelgrid(trim(spc),filename,data(:,:,1),&
-        1,1,nstart,1,needed=.not.FORECAST,found=found)
+        1,1,nstart,1,needed=MODE_READ=='START',found=found)
     if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)R(:,:,g)=N_TOT(g)-data(:,:,1)
 !------------------------
@@ -738,7 +740,7 @@ subroutine pollen_read()
     if(g>size(heatsum,DIM=3))cycle
     spc=trim(POLLEN_GROUP(g))//'_heatsum'
     call GetCDF_modelgrid(trim(spc),filename,heatsum(:,:,g),&
-        1,1,nstart,1,needed=.not.FORECAST,found=found)
+        1,1,nstart,1,needed=MODE_READ=='START',found=found)
     if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
   end do
   deallocate(data)
@@ -755,9 +757,10 @@ subroutine pollen_dump()
   type(Deriv) :: def1
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
+  if(MODE_WRITE/='OUTDATE') return
   if(.not.checkdates(daynumber,"pollen")) return
-  if(.not.compare_date(FORECAST_NDUMP,current_date,&
-                       outdate(:FORECAST_NDUMP),wildcard=-1))return
+  if(.not.compare_date(OUTDATE_NDUMP,current_date,&
+                       outdate(:OUTDATE_NDUMP),wildcard=-1))return
   call CheckStop(allocated(R).NEQV.allocated(heatsum),&
     "Pollen: rest/heatsum allocated error")
   if(.not.(allocated(R).and.allocated(heatsum))) return

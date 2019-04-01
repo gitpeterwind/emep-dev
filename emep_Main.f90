@@ -34,7 +34,7 @@ program emep_Main
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        HOURLYFILE_ending, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
-       FORECAST, ANALYSIS, & ! FORECAST/ANALYSIS mode
+       ANALYSIS, & ! forecast in ANALYSIS mode
        Config_ModelConstants, startdate, enddate
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
@@ -365,13 +365,13 @@ program emep_Main
   !
   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  if(.not.FORECAST) call wrtxn(current_date,.true.)
+  call wrtxn(current_date,.true.)
   call massbudget()
 
   call Output_timing(IO_MYTIM,me,NPROC,GIMAX,GJMAX)
 
-  ! write 'modelrun.finished' file to flag the end of the FORECAST
-  if(MasterProc.and.FORECAST)then
+  ! write 'modelrun.finished' file to flag the end of the run
+  if(MasterProc.and.USES%PROGRESS_FILES)then
     open(1,file='modelrun.finished')
     close(1)
   end if

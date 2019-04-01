@@ -19,6 +19,8 @@
   DailyFacFile          = 'DataDir/DailyFac.POLL',
   HourlyFacFile         = 'DataDir/HourlyFacs.INERIS',
   EMEP_EuroBVOCFile     = 'DataDir/EMEP_EuroBVOC.nc',
+  SitesFile             = 'DataDir/sites.dat',
+  SondesFile            = 'DataDir/sondes.dat',
 !------------------------------
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
