@@ -17,12 +17,14 @@ if [[ $chem == CWF* ]]; then
   echo "Processing $chem for CWF"
   cp ZCM_$chem/CM* .
   cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
-  cp ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc   BiomassBurningMapping_CM.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
 elif [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
   echo "Processing $chem"
   cp ZCM_$chem/CM* .
   cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
-  cp ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc BiomassBurningMapping_CM.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
 else
   echo "Not found $chem"
 fi

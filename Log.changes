@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Apr 2019, Peter
+
+FirestFire_mod must now take both BiomassBurningMapping_FINN.inc and 
+BiomassBurningMapping_GFAS.inc
+The choice of which one to use is set in config.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 Mar 2019, Peter
 
 Defined masks for emissions. Example of use:

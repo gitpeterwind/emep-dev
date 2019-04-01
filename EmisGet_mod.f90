@@ -229,7 +229,6 @@ contains
     logical :: mappingGNFR2SNAP = .false., foundEmis_id
     integer :: iem_used, ix_Emis
 
-if( MasterProc) write(*,*) 'DSHK CHECKING ', trim(fname)
     if(.not. fractionformat)then
        !not fraction format
        !loop over all variables
@@ -695,7 +694,6 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              lonlat_fac=1.0
              if(N_femis_lonlat>0 .and. use_lonlat_femis)then
                 do i_femis_lonlat=1,N_femis_lonlat
-print *, 'DSHK here B ', me, N_femis_lonlat, i_femis_lonlat, femis_lonlat_ic(i_femis_lonlat)
                    if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                         glat(i,j)<femis_latmax(i_femis_lonlat).and.&
                         glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
