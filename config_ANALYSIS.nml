@@ -41,7 +41,7 @@
   USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
   USES%PROGRESS_FILES    = T,          ! write to file.msg for each output in file.nc
-  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%SKIP_INCOMPLETE_OUTPUT = T,     ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%ROADDUST          = F,          ! Only EECCA?
   USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3

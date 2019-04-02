@@ -814,12 +814,15 @@ Is3D = .true.
     iou_list(IOU_DAY+1:)=.false.  ! for SOURCE_RECEPTOR mode which makes
                                   ! it easy for debugging
 
-  ! reduce output: skip monthly/full-run for runs under 28/181 days
-  select case(nint(tdif_days(to_stamp(startdate),to_stamp(enddate))))
-    case(   : 27);iou_list(:IOU_DAY-1)=.false. ! Only dayly & hourly outputs
-    case( 28:180);iou_list(:IOU_MON-1)=.false. ! .. and monthly
-    case(181:   );                             ! .. and full-run
-  end select
+  if(USES%SKIP_INCOMPLETE_OUTPUT)then             ! reduce output
+    ! skip daily/monthly/full-run for runs under 1/28/181 days
+    select case(INT(tdif_days(to_stamp(startdate),to_stamp(enddate))))
+      case(      0);iou_list(:IOU_HOUR-1)=.false. ! Only hourly outputs
+      case(  1: 27);iou_list(: IOU_DAY-1)=.false. ! .. and dayly
+      case( 28:180);iou_list(: IOU_MON-1)=.false. ! .. and monthly
+      case(181:   );                              ! .. and full-run
+    end select
+  end if
 
   if(dbgP) write(*,"(A,': ',10(I2,A2,L2,:,','))")"Wanted IOUs",&
     (iou,IOU_KEY(iou),iou_list(iou),iou=IOU_MIN,IOU_MAX)

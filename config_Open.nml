@@ -51,7 +51,8 @@
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USES%PROGRESS_FILES    = T,         ! write to file.msg for each output in file.nc
+  USES%PROGRESS_FILES    = F,         ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = F,    ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,
   USES%ROADDUST          = T,
   USES%DUST              = T,
