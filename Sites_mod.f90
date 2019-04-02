@@ -327,7 +327,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
          " Nos. ", n, nlocal, s_gx(n), s_gy(n) , s_gz(n), " =>  ", &
           s_x(nlocal), s_y(nlocal), s_z(nlocal)
         write(6,"(a,i3,a,2i3,4a)") Sub// trim(fname), me, &
-         " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(nlocal))
+         " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(s_n(nlocal)))
 
      end if
 
