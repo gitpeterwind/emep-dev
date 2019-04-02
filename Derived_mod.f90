@@ -68,7 +68,8 @@ use My_Derived_mod, only : &
     Init_My_Deriv, My_DerivFunc,    &
     OutputFields, nOutputFields,    &
     nOutputMisc, OutputMisc,        &
-    nOutputWdep, WDEP_WANTED, D3_OTHER
+    nOutputWdep, WDEP_WANTED, D3_OTHER,&
+    PS_needed
 
 use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_mod,      only: Deriv, print_Deriv_type, &
@@ -310,7 +311,8 @@ subroutine Define_Derived()
   character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
-  
+  logical :: found
+
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
 
@@ -335,8 +337,12 @@ subroutine Define_Derived()
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
-  call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   'YM' )
+  call AddNewDeriv( "PSURF","PSURF",  "SURF","-",   "hPa", &
+          -99,  -99,  F,  1.0,  T,  'YM' )
+
+!NB: do not remove or change name. PS is part of vertical coordinates definition!!
+  call AddNewDeriv( "PS","PSURF",  "SURF","-",   "hPa", &
+          -99,  -99,  F,  1.0,  T,  'YMD'//trim(PS_needed) )
 
   !Added for TFMM scale runs
 !A17  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &

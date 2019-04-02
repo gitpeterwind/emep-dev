@@ -170,15 +170,17 @@ character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSLCS) :: &
 character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
   D3_OTHER  != (/ "D3_PM25water" /) !**** Under construction *******
             != (/ "D3_m_TH", "D3_m2s_Kz" /)
-
+character(len=len(NOT_SET_STRING)), public, save :: PS_needed
 integer, private :: i,j,k,n, ivoc, isec    ! Local loop variables
+logical ::found_3D_hourly, found_3D_hourly_inst
+logical ::found_hourly_PS, found_hourly_inst_PS
 
 contains
 
 !=========================================================================
 subroutine Init_My_Deriv()
 
-  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc, neigh
+  integer :: i, ix, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc, neigh
   integer :: nOutputConcs
   character(len=100) :: errmsg,line
   character(len=TXTLEN_DERIV), dimension(size(OutputConcs(:)%txt1)) :: &
@@ -270,6 +272,11 @@ subroutine Init_My_Deriv()
   nOutputNewMos = find_index("-", NewMosaic(:)%txt1, first_only=.true. ) -1
        
   if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
+  found_3D_hourly = .false.
+  found_3D_hourly_inst = .false.
+  found_hourly_PS = .false.
+  found_hourly_inst_PS = .false.
+
   do i = 1,nOutputMisc  
     Is3D=(OutputMisc(i)%class=="MET3D").or.(OutputMisc(i)%name(1:2)=='D3')&
          .or.(OutputMisc(i)%subclass(1:2)=='D3')
@@ -283,6 +290,12 @@ subroutine Init_My_Deriv()
     else
       call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
     end if
+    if(tag_name(1)=="PS" .and. scan(OutputMisc(i)%iotype,'H')>0)then
+       found_hourly_PS = .true.
+    endif
+    if(tag_name(1)=="PS" .and. scan(OutputMisc(i)%iotype,'I')>0)then
+       found_hourly_inst_PS = .true.
+    endif
   end do
    ! OutputVegO3 will be added to derived fields from within the Mosaics_mod
    ! after adding 
@@ -434,6 +447,7 @@ subroutine Init_My_Deriv()
   !   OutputConcs = (/  typ_s5ind("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
   !                     typ_s5ind("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),&
 
+  
   do n = 1, nOutputConcs
     outname= trim(OutputConcs(n)%txt1)
     outunit= trim(OutputConcs(n)%txt2)
@@ -511,7 +525,7 @@ subroutine Init_My_Deriv()
         call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
         nOutputFields = nOutputFields + 1
           OutputFields(nOutputFields) = OutputConcs(n)
-
+          Is3D=.true.
       case default
         if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
         call PrintLog("WARNING: Unsupported My_Derived OutputField%outdim: "&
@@ -522,15 +536,68 @@ subroutine Init_My_Deriv()
       call CheckStop("My_Deriv: Unsupported OutputConcs" // &
           trim(outname)//":"//trim(outtyp)//":"//trim(outdim))
     end if
+    if(Is3D .and. scan(OutputConcs(n)%ind,'H')>0)found_3D_hourly = .true.
+    if(Is3D .and. scan(OutputConcs(n)%ind,'I')>0)found_3D_hourly_inst = .true.
+    if(tag_name(1)=="PS" .and. scan(OutputConcs(n)%ind,'H')>0)found_hourly_PS = .true.
+    if(tag_name(1)=="PS" .and. scan(OutputConcs(n)%ind,'I')>0)found_hourly_inst_PS = .true.
 
     if(debug0)write(*,*)"OutputFields-tags ",n,trim(outname),"->",tag_name(1)
-  end do
+ end do
 
   ! ditto wanted_deriv3d....
   if (.not.SOURCE_RECEPTOR.and.size(D3_OTHER)>0) then
     call AddArray( D3_OTHER,  wanted_deriv3d, NOT_SET_STRING, errmsg)
     call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
   end if
+
+
+!if 3D hourly outputs are produced, we MUST output PS for defining the vertical coordinates
+  PS_needed = NOT_SET_STRING
+  tag_name(1) = "PS"  
+
+  PS_needed = ''     
+  if(found_3D_hourly .or. found_hourly_PS) PS_needed = trim(PS_needed)//'H'
+  if(found_3D_hourly_inst .or. found_hourly_inst_PS) PS_needed = trim(PS_needed)//'I'
+
+  if((found_3D_hourly .and. .not. found_hourly_PS ).or. &
+       found_3D_hourly_inst .and. .not. found_hourly_inst_PS )then
+     if(MasterProc)write(*,*)'adding PS in hourly output ',trim(PS_needed)
+     if(find_index(tag_name(1),wanted_deriv2d)<1)then
+        call AddArray( tag_name(1:1), wanted_deriv2d,NOT_SET_STRING, errmsg)
+     else
+        ix=find_index(tag_name(1),OutputMisc(:)%name)
+        if(ix>0)then
+           !add hourly outputs
+           if(found_3D_hourly)OutputMisc(ix)%iotype=trim(OutputMisc(ix)%iotype)//'H'
+           if(found_3D_hourly_inst)OutputMisc(ix)%iotype=trim(OutputMisc(ix)%iotype)//'I'
+      else
+          ix=find_index(tag_name(1),OutputConcs(:)%txt1)
+          if(ix>0)then
+             !add hourly outputs
+            if(found_3D_hourly)OutputConcs(ix)%ind=trim(OutputConcs(ix)%ind)//'H'
+            if(found_3D_hourly_inst)OutputConcs(ix)%ind=trim(OutputConcs(ix)%ind)//'I'
+          else
+             if(MasterProc)write(*,*)'WARNING : problem writing out PS in hourly'
+          endif
+        end if        
+     end if
+  end if
+
+!  do i = 1, num_deriv3d
+!     if(me==0)write(*,*)'derived ',f_3d(i)%name,IOU_HOUR,f_3d(i)%iotype
+!     if ( wanted_iou(IOU_HOUR,f_3d(i)%iotype) ) then
+!        found=.false.
+!        do n = 1, num_deriv2d
+!           if(me==0)write(*,*)'derived2d ',f_2d(n)%name,f_2d(n)%iotype
+!           if(f_2d(n)%name=='PS'.and. wanted_iou(IOU_HOUR,f_2d(n)%iotype) )then
+!              found=.true.
+!              exit
+!           endif
+!        enddo
+!             NOT_SET_STRING, errmsg)
+!        exit
+!    end if   
+!  enddo
 
 ! TEST HERE
   mynum_deriv2d = LenArray( wanted_deriv2d, NOT_SET_STRING )
