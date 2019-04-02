@@ -50,7 +50,7 @@
 /CM_*.csv
 /CM_*.inc
 /CM_*.f90
-/BiomassBurningMapping_CM.inc
+/BiomassBurningMapping_*.inc
 /*Mapping.inc
 /BoundaryConditions_CM.inc
 GenIn.*
