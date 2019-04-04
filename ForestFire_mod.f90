@@ -635,9 +635,10 @@ subroutine Fire_rcemis(i,j)
   integer ::  N_LEVELS  ! = 9 for standard 20 model levels
 
   character(len=*), parameter :: dtxt = 'BB:rcemis'
-  real    :: origrc, fac
+  real    :: origrc, fac, dP, P0
   logical :: debug_flag
 
+  P0 = 101325.0
   debug_flag = (DEBUG%FORESTFIRE.and.debug_proc .and.&
                 i==debug_li.and.j==debug_lj)
   if(debug_flag.and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
@@ -659,12 +660,13 @@ subroutine Fire_rcemis(i,j)
   !  i.e. fmap should be 0.001*Av/MW
   !  (plus account for the fraction of the inventory assigned to EMEP species)
 
-
-  !/ Here we just divide by the number of levels. Biased towards
-  !  different levels since thickness and air content differ. Simple though.
-
+  !  We distribute the emissions evenly, i.e. proportionnally to the levels thickness.
+  !  The "thickness" is measured in a pressure scale (also the partial pressure of pollutants 
+  !  decreases with height). For simplicity we do not account for difference in surface 
+  !  pressure for the distribution.
+  
   do k = KEMISFIRE, KMAX_MID
-    invDeltaZfac(k) = 1.0/ (z_bnd(i,j,k) - z_bnd(i,j,k+1)) /N_LEVELS
+     invDeltaZfac(k) = 1.0/ (z_bnd(i,j,k) - z_bnd(i,j,k+1)) 
   end do
  
   do n = 1, NEMEPSPECS 
@@ -673,8 +675,11 @@ subroutine Fire_rcemis(i,j)
     fac =  0.001 * AVOG /species(iem)%molwt    ! MW scale if needed
 
     ! distribute vertically:
+    !dP=total "thickness"
+    dP = A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1) - (A_bnd(KEMISFIRE)+P0*B_bnd(KEMISFIRE))    
     do k = KEMISFIRE, KMAX_MID
-      rcemis(iem,k) = rcemis(iem,k) + BiomassBurningEmis(n,i,j)*invDeltaZfac(k)*fac
+      rcemis(iem,k) = rcemis(iem,k) + BiomassBurningEmis(n,i,j)*invDeltaZfac(k)*fac&
+           *(A_bnd(k+1)+P0*B_bnd(k+1) - (A_bnd(k)+P0*B_bnd(k)))/dP!scale with layer thickness
     end do !k
 
     if(debug_flag) then

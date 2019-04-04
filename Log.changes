@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 Apr 2019, Peter
+
+Forest Fire emissions distributed evenly taking into account layer thickness 
+(measured in pressure difference). (Precedent version would double emissions 
+into a layer if the layer is cut in two!)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 Apr 2019, Peter
 
 PS is added to hourly files iftey are 3D. This is required to define the 
