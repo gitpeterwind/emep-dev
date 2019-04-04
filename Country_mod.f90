@@ -255,6 +255,15 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_BL8
   integer,  public :: IC_BL9
 
+  ! CAMS-TNO sea regions (added Nov 2018)
+  integer,  public :: IC_GRS  !Greenland Sea
+  integer,  public :: IC_BAR  !Barents Sea
+  integer,  public :: IC_ENC  !English Channel
+  integer,  public :: IC_NWS  !Norwegian Sea
+  integer,  public :: IC_IRC  !Irish Sea
+  integer,  public :: IC_PSG  !Persian Gulf
+  integer,  public :: IC_KAR  !Kara Sea 
+
   ! Ship emissions when sea areas are not divided
   ! Eg. TNO emissions (added on 25th March 2009)
   integer,  public :: IC_INTSHIPS
@@ -329,7 +338,7 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_HT1020
   integer,  public :: IC_HT1000
 
-! UNEP SR regions
+! UNEP SR and new GAINS regions
   integer,  public :: IC_BANG_DHAK
   integer,  public :: IC_BANG_REST
   integer,  public :: IC_CHIN_ANHU
@@ -420,7 +429,26 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_THAI_SPEN
   integer,  public :: IC_IRAN_REST
   integer,  public :: IC_IRAN_TEHR
-
+  integer,  public :: IC_VIET_BNIH
+  integer,  public :: IC_VIET_HYEN
+  integer,  public :: IC_VIET_OCAR
+  integer,  public :: IC_VIET_ONOR
+  integer,  public :: IC_USAM_ALAS
+  integer,  public :: IC_USAM_REST
+  integer,  public :: IC_EGYP_CAIR
+  integer,  public :: IC_EGYP_REST
+  integer,  public :: IC_NAFR_WHOL
+  integer,  public :: IC_NIGE_LAGO
+  integer,  public :: IC_NIGE_OLAG
+  integer,  public :: IC_NIGE_REST
+  integer,  public :: IC_SAFR_JOBG
+  integer,  public :: IC_SAFR_REST
+  integer,  public :: IC_RSAF_WHOL
+  integer,  public :: IC_EAFR_WHOL
+  integer,  public :: IC_WAFR_WHOL
+  integer,  public :: IC_KENY_WHOL
+  integer,  public :: IC_TANZ_WHOL
+  integer,  public :: IC_NIGE_WHOL 
  
   integer,  public :: IC_BERLIN
   integer,  public :: IC_BRUSSEL
@@ -1150,7 +1178,7 @@ ix=ix+1
 IC_HT1020 = ix
 Country(IC_HT1020 ) = cc(  "HT1020",'-' ,1020 ,T,  30, 30, -100,  "undefined" )
 
-!UNEP SR regions'
+!UNEP SR and new GAINS regions'
 ix=ix+1
 IC_BANG_DHAK = ix
 Country(IC_BANG_DHAK) = cc( "BANG_DHAK",'-',  252 , F,   252 ,252 ,-100, "Bangladesh:Dhaka")
@@ -1420,7 +1448,67 @@ IC_IRAN_REST = ix
 Country(IC_IRAN_REST) = cc( "IRAN_REST",'-',  391 , F,   391 ,391 ,-100, "Iran:Rest_of_Iran")
 ix=ix+1
 IC_IRAN_TEHR = ix
-Country(IC_IRAN_TEHR) = cc( "IRAN_TEHR",'-',  392 , F,   392 , 392 ,-100, "Iran:Teheran")
+Country(IC_IRAN_TEHR) = cc( "IRAN_TEHR",'-',  392 , F,   392 ,392 ,-100, "Iran:Teheran")
+ix=ix+1
+IC_VIET_BNIH = ix
+Country(IC_VIET_BNIH) = cc( "VIET_BNIH", '-', 470 , F,   239 ,239 ,-100, "Vietnam:Bac_Ninh")
+ix=ix+1
+IC_VIET_HYEN = ix
+Country(IC_VIET_HYEN) = cc( "VIET_HYEN",'-',  471 , F,   239 ,239 ,-100, "Vietnam:Hung_Yen")
+ix=ix+1
+IC_VIET_OCAR = ix
+Country(IC_VIET_OCAR) = cc( "VIET_OCAR",'-',  472 , F,   239 ,239 , -100, "Vietnam:Other_Ha_Noi_Capital_Region")
+ix=ix+1
+IC_VIET_ONOR = ix
+Country(IC_VIET_ONOR) = cc( "VIET_ONOR",'-',  473 , F,   239 ,239 ,-100, "Vietnam:Other_Northern_Vietnam")
+ix=ix+1
+IC_USAM_ALAS = ix
+Country(IC_USAM_ALAS) = cc( "USAM_ALAS",'-',  474 , F,    65 ,65, -100, "Alaska")
+ix=ix+1
+IC_USAM_REST = ix
+Country(IC_USAM_REST) = cc( "USAM_REST", '-', 475 , F,    65 ,65, -100, "United_States_(without_Alaska)")
+ix=ix+1
+IC_EGYP_CAIR = ix
+Country(IC_EGYP_CAIR) = cc( "EGYP_CAIR",'-',  476 , F,    63 , 63, -100, "Egypt:Cairo_area")
+ix=ix+1
+IC_EGYP_REST = ix
+Country(IC_EGYP_REST) = cc( "EGYP_REST",'-',  477 , F,    63 , 63, -100, "Egypt_(remaining)")
+ix=ix+1
+IC_NAFR_WHOL = ix
+Country(IC_NAFR_WHOL) = cc( "NAFR_WHOL",'-',  478 , F,   224 , 224,-100, "Algeria_Libya_Morocco_Tunisia_Western_Sahara")
+ix=ix+1
+IC_NIGE_LAGO = ix
+Country(IC_NIGE_LAGO) = cc( "NIGE_LAGO",'-',  479 , F,   226 , 226, -100, "Lagos_State_(Nigeria)")
+ix=ix+1
+IC_NIGE_OLAG = ix
+Country(IC_NIGE_OLAG) = cc( "NIGE_OLAG",'-',  480 , F,   226 , 226,-100, "Ogun_Osun_Oyo_states_(Nigeria)")
+ix=ix+1
+IC_NIGE_REST = ix
+Country(IC_NIGE_REST) = cc( "NIGE_REST",'-',  481 , F,   226 , 226,-100, "Nigeria_excl_Lagos_Ogun_Osun_Oyo")
+ix=ix+1
+IC_SAFR_JOBG = ix
+Country(IC_SAFR_JOBG) = cc( "SAFR_JOBG",'-',  482 , F,   231 , 231, -100, "South_Africa:Greater_Johannesburg")
+ix=ix+1
+IC_SAFR_REST = ix
+Country(IC_SAFR_REST) = cc( "SAFR_REST",'-',  483 , F,   231 , 231, -100, "South_Africa_(remaining)")
+ix=ix+1
+IC_RSAF_WHOL = ix
+Country(IC_RSAF_WHOL) = cc( "RSAF_WHOL",'-',  484 , F,   226 , 226, -100, "Rest_of_Southern_Africa")
+ix=ix+1
+IC_EAFR_WHOL = ix
+Country(IC_EAFR_WHOL) = cc( "EAFR_WHOL",'-',  485 , F,   226 , 226, -100, "Eastern_Africa")
+ix=ix+1
+IC_WAFR_WHOL = ix
+Country(IC_WAFR_WHOL) = cc( "WAFR_WHOL",'-',  486 , F,   226 , 226, -100, "Western_Africa")
+ix=ix+1
+IC_KENY_WHOL = ix
+Country(IC_KENY_WHOL) = cc( "KENY_WHOL",'-',  487 , F,   226 , 226, -100, "Kenya")
+ix=ix+1
+IC_TANZ_WHOL = ix
+Country(IC_TANZ_WHOL) = cc( "TANZ_WHOL",'-',  488 , F,   226 , 226, -100, "Tanzania")
+ix=ix+1
+IC_NIGE_WHOL = ix
+Country(IC_NIGE_WHOL) = cc( "NIGE_WHOL",'-',  489 , F,   226 , 226, -100, "Nigeria")
 
 
 !City codes
@@ -1475,6 +1563,31 @@ Country(IC_STOCKHOLM) = cc( "STOCKHOLM", '-',  416 , F,   23, 416 , 1, "SE:STOCK
 ix=ix+1
 IC_GENEVA = ix
 Country(IC_GENEVA) = cc( "GENEVA", '-',  417 , F,   24, 417 , 1, "CH:GENEVA")
+
+! CAMS-TNO sea regions
+ix=ix+1 
+IC_GRS=ix
+Country( IC_GRS) = cc(  "GRS" , '-', 501 ,T, 32, 32,  -100  , "Greenland Sea")
+ix=ix+1 
+IC_BAR=ix
+Country( IC_BAR) = cc(  "BAR" , '-', 502 ,T, 32, 32,  -100  , "Barents Sea")
+ix=ix+1 
+IC_NWS=ix
+Country( IC_NWS) = cc(  "NWS" , '-', 503 ,T, 32, 32,  -100  , "Norwegian Sea")
+ix=ix+1 
+IC_ENC=ix
+Country( IC_ENC) = cc(  "ENC" , '-', 504 ,T, 32, 32,  -100  , "English Channel")
+ix=ix+1 
+IC_IRC=ix
+Country( IC_IRC) = cc(  "IRC" , '-', 505 ,T, 32, 32,  -100  , "Irish Sea")
+ix=ix+1 
+IC_KAR=ix
+Country( IC_KAR) = cc(  "KAR" , '-', 506 ,T, 32, 32,  -100  , "Kara Sea")
+ix=ix+1 
+IC_PSG=ix
+Country( IC_PSG) = cc(  "PSG" , '-', 507 ,T, 507, 507,  -100  , "Persian Gulf")
+
+
 
 NLAND=ix !actual number of countries defined
 
