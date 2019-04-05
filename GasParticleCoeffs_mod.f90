@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
  !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14+45  &! no. of gases in Wesely tables, DDdefs below
+        NDRYDEP_GASES = 14+46  &! no. of gases in Wesely tables, DDdefs below
        ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
@@ -152,6 +152,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'DICARB', DH2O/3.0, 3.0, 2.3e5, 9999,  1.0E+04, 0., 0., -1,-1,-1,-1)& ! DICARB - mixture of C4 and C5 dicarbonyls + UCARB12 (which is not a dicarbonyl but with similar estimated D and H*
  ,DD_t( 'MEOOH', DH2O/1.9, 1.9, 3.0e2, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Methyl hydroperoxide - maybe reactivity should be higher!
  ,DD_t( 'SHISOLOOH', DH2O/2.9, 2.9, 1.2e6, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Small (C2-C5) High solubility (estimated H* ca 1 - 1.4e6 M/atm) multifunctional organic hydroperoxides
+ ,DD_t( 'LHISOLOOH', DH2O/4.3, 4.3, 1.6e6, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Large (C7-C10) High solubility (estimated H* ca 1.6e6 M/atm) multifunctional organic hydroperoxides
  ,DD_t( 'VHISOLOOH', DH2O/3.8, 3.8, 3.5e8, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! Very high solubility (estimated H* > ca 1.2e7 M/atm) multifunctional organic hydroperoxides
  ,DD_t( 'VHISOLNO3', DH2O/4., 4., 1.5E+08, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps higher f would be better?
  ,DD_t( 'CO2C5OH',DH2O/3.2 , 3.2, 1.1E+06, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)& ![alt H*-estimate 3.1E+05]  similar parameters as RN12OOH in the CRI version
