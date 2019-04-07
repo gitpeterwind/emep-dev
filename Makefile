@@ -80,7 +80,7 @@ else ifeq ($(MACHINE),abel)
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
 else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
   # sudo apt-get install makedepf90 libmpich-dev libnetcdf-dev libnetcdff-dev
-  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
+  F90FLAGS = -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --cflags)
   MAKEDEPF90 = /usr/bin/makedepf90
