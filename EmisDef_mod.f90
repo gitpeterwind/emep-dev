@@ -93,11 +93,11 @@ private
    integer, public, parameter :: &
           NSECTORS_SNAP  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
    integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to time factor class
-        SNAP_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
+        SNAP_sec2tfac_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
-        SNAP_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
+        SNAP_sec2hfac_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_HFAC
    integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
-        SNAP_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
+        SNAP_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_SPECIATION
 !   integer, save, dimension(NSECTORS_SNAP) ::snap2gnfr=(/1,3,2,4,13,5,6,7,10,11,-1/)
    integer, save, dimension(NSECTORS_SNAP,3), public ::snap2gnfr=reshape([1,3,2,4,13,5,6,7,10,11,-1 &
                                                           ,-1,-1,-1,-1,-1,-1,-1,8,-1,12,-1 &
@@ -108,11 +108,11 @@ private
    integer, public, parameter :: &
           NSECTORS_GNFR  = 13    ! Number of sectors defined in GNFR emissions
    integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to time factor class
-        GNFR_sec2tfac_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_TFAC
+        GNFR_sec2tfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
-        GNFR_sec2hfac_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_HFAC
+        GNFR_sec2hfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_HFAC
    integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
-        GNFR_sec2split_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_SPECIATION
+        GNFR_sec2split_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_SPECIATION
 
    integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
 
