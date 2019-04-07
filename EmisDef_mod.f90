@@ -116,16 +116,16 @@ private
 
    integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
 
-!DSHK TEST added 1 extra specific definitions, and shortened lines
+!TEST to try own defintions
    integer, public, parameter:: &
-          NSECTORS_TEST  = 12 ! Number of sectors defined. Must match the sizes of the maps below
+          NSECTORS_TEST  = 11 ! Number of sectors defined. Must match the sizes of the maps below
    integer, save, target, dimension(NSECTORS_TEST), public :: &
       ! mapping of sector to time factor class. values must be <= N_TFAC
-        TEST_sec2tfac_map  = [1,2,3,4,5,6,7,8,9,10,11,2] &
+        TEST_sec2tfac_map  = [1,2,3,4,5,6,7,8,9,10,11] &
       ! mapping of sector to height distribution class. vals must be <= N_HFAC
-       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11,12] & 
+       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11] & 
       ! mapping of sector to height distribution class ! must be<=N_SPECIATION
-       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11,2] 
+       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11] 
 
 
 !The sectors defined here are always SNAP sectors. Should NOT be changed if other
