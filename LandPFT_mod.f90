@@ -119,7 +119,6 @@ contains
     
 return ! JAN31TEST
      if ( my_first_call ) then
-         !A2018 allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,size(BVOC_USED)) )
          allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,nbvoc) )
          my_first_call = .false.
      end if

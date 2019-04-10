@@ -23,7 +23,7 @@
     use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
     use CheckStop_mod,      only: CheckStop, StopAll
     use ChemFunctions_mod,  only: VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
-    use ChemGroups_mod !A2018,     only: RO2_POOL, RO2_GROUP
+    use ChemGroups_mod !,     only: RO2_POOL, RO2_GROUP
     use ChemDims_mod               ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_mod              ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]

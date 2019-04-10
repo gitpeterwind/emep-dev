@@ -315,7 +315,7 @@ end function find_indices
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
 !> Simpler to understand than use of iachar etc. (see same web side).
 
-!A2018 Pure Function to_upper (str) Result (string)
+! Pure Function to_upper (str) Result (string)
 elemental Function to_upper (str) Result (string)
 
 !   ==============================

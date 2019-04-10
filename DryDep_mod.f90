@@ -154,7 +154,7 @@ contains
 
   if ( my_first_call ) then 
 
-     call GetDepMapping() !A2018 creates DDspec, DDmapping
+     call GetDepMapping()    ! creates DDspec, DDmapping
      call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
      if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
@@ -163,7 +163,7 @@ contains
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), Vg_eff(nddep), &
          Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) ,eff_fac(nddep))
 
-     call CheckStop( NLOCDRYDEP_MAX < nddep, & !A2018 NDRYDEP_CALC, &
+     call CheckStop( NLOCDRYDEP_MAX < nddep, &
         "Need to increase size of NLOCDRYDEP_MAX" )
 
      !Need to re-implement one day
@@ -375,20 +375,15 @@ contains
         xn_2d(O3,K2)*surf_ppb, no2fac
     end if
 
-   !A2018 new....
 
-     call GasCoeffs(Grid%t2)             ! Sets DDdefs coeffs.
-     call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=DEBUG%A2018)
+    call GasCoeffs(Grid%t2)             ! Sets DDdefs coeffs.
 
-   !A2018 end new....
+    call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=DEBUG%A2018)
 
     call Setup_StoFlux( daynumber )
 
 ! - can set settling velcoty here since not landuse dependent
 
-    !A2018 do nae = 1, AERO%NSIZE
-    !A2018   AERO%Vs(nae) = SettlingVelocity( Grid%t2, Grid%rho_ref, &
-    !A2018                    AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
     do icmp = 1, nddep
       if ( DDspec(icmp)%is_gas ) CYCLE
       BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
@@ -432,13 +427,10 @@ contains
         L = Sub(iL)    ! ! Assign e.g. Sub(iL)ustar to ustar
 
 
-         !A2018 call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
          call Rb_gas(L%is_water, L%ustar, L%z0, BL(:)%Rb)
 
-         !A2018 call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
          call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
 
-         !A2018 do n = 1, NDRYDEP_CALC
          do icmp = 1, nddep    !DSQUERY - Check aerosol usage!
 
            !(L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur) is resistance from mid layer and down
@@ -495,10 +487,8 @@ contains
              end if
 
 
-         !A2018 call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
          call Rb_gas(L%is_water, L%ustar, L%z0, BL(:)%Rb)
 
-         !A2018 call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
          call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
 
          if(dbghh) call datewrite(dtxt//"STOFRAC "//LandDefs(iL)%name, &
@@ -517,7 +507,6 @@ contains
 !BIDIR SKIP         wet =   Grid%wetarea  ! QUERY Now used for BIDIR
 !BIDIR SKIP         dry =   1.0 - wet     !  "  "
 
-         !A2018 do n = 1, NDRYDEP_CALC
          do icmp = 1, nddep
 
            ! ================================================
@@ -565,8 +554,6 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
 
            else ! particles
             ! ================================================
-
-              !A2018 nae = AERO_SIZE(icmp) ! See GasParticleCoeffs_mod
 
               if ( LandType(iL)%is_forest  ) then 
 
@@ -638,7 +625,7 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
         !/-- only grab gradients over land-areas
 
          if ( L%is_water ) then
-            do icmp = 1, nddep !A2018 NDRYDEP_CALC
+            do icmp = 1, nddep
                if(USES%EFFECTIVE_RESISTANCE)then
                   sea_ratio(icmp) =  Vg_eff(icmp)/Vg_3m(icmp)
                else
@@ -647,7 +634,7 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
             end do
          else
             Sumland = Sumland + L%coverage
-            do icmp = 1, nddep !A2018 NDRYDEP_CALC
+            do icmp = 1, nddep
                if(USES%EFFECTIVE_RESISTANCE)then
                   Vg_ratio(icmp) =  Vg_ratio(icmp) &
                                    + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
@@ -770,7 +757,7 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
      if ( vg_set(icmp) ) then
          call StopAll('NOT CODED')
          !A2018 DepLoss(nadv) =   & ! Use directly set Vg
-         !A2018     ( 1.0 - exp ( -DDepMap(icmp)%vg * dtz ) ) * xn_2d( ntot,K2)
+         !A2018( 1.0 - exp ( -DDepMap(icmp)%vg * dtz ) ) * xn_2d( ntot,K2)
          cfac(nadv, i,j) = 1.0   ! Crude, for now.
      end if
  
@@ -913,10 +900,9 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
                   (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
                    gradient_fac( icmp)
         end if
-     end do CMPLOOP ! is !A2018
+     end do CMPLOOP ! is
    end do DDEPLOOP ! n
   ! ===================================================================
-  !A2018 end do GASLOOP2 ! n
 
 
    convfac =  convfac/M(K2)
@@ -927,8 +913,6 @@ if( first_ddep .and. icmp==idcmpNO2 ) write(*,*) 'DBGXNO2 WRONG'
      do icmp = 1, nddep
        do ispec = 1, size(DDmapping(icmp)%advspecs)  ! Real species now
           nadv = DDmapping(icmp)%advspecs(ispec)  ! Real species now
-          !A2018 do n = 1, NDRYDEP_ADV
-          !A2018 nadv    = DDepMap(icmp)%ind
            totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
        end do ! is
      end do ! icmp

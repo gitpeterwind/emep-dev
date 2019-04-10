@@ -54,7 +54,7 @@ use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneigh
                             ,SecEmisOut, EmisOut, SplitEmisOut, &
                             isec2SecOutWanted
 use EmisGet_mod,       only: nrcemis,iqrc2itot
-use GasParticleCoeffs_mod, only: DDdefs !A2018
+use GasParticleCoeffs_mod, only: DDdefs
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
@@ -225,7 +225,6 @@ subroutine Init_Derived()
   call Define_Derived()
   call Setups()  ! just for VOC now
 
-!A2018   select case(nint(AERO%DpgV(2)*1e7))
   iddefPMc = find_index('PMc',DDdefs(:)%name, any_case=.true.)
   select case(nint(DDdefs(iddefPMc)%umDpgV*10))
     case(25);fracPM25=0.37
@@ -1080,10 +1079,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
       end forall
-!A2018    case ( "SurfAreaORIG_um2cm3" )
-!A2018       forall ( i=1:limax, j=1:ljmax )
-!A2018         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%ORIG,i,j)
-!A2018       end forall
 
     case ( "u_ref" )
       forall ( i=1:limax, j=1:ljmax )

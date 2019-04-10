@@ -49,7 +49,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   type, private :: PBL_t
     real :: ZiMIN = 100.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                    ! maximum mixing height
-    character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix ! A2018 NWP
+    character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix 
       ! JcRb = Jericevic/Richardson number method
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
   end type PBL_t
@@ -64,7 +64,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
- !A2018 - allows rcbio in CM_Reactions, but we access elements with
+  ! - allows rcbio in CM_Reactions, but we access elements with
   ! the natbio indices here. These much match the indices used in rcbio
   ! We only use rcbio for isoprene and terpenes so far,  since
   ! soil NO, NH3 emissions etc are dealt with through rcemis.
@@ -269,14 +269,6 @@ character(len=4), parameter, public :: &
   FluxPROFILE = "Iter"
 ! FluxPROFILE = "Ln95"  ! use Launiainen1995 EXPERIMENTAL. Fails in some areas
 
-! Biogenics. Use 3 even if no terpene chemistry - simplifies
-! rest of code.  iso = isoprene, mtp = monoterpenes from pools,
-! mtl = monoterpenes with light dependence
-!DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
-!A2018 integer, public, parameter ::   NBVOC = 3
-!A2018 character(len=4),public, save, dimension(NBVOC) :: &
-!A2018   BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
-
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
 !and there are also NH3 emission over sea areas. The former problem makes
@@ -378,61 +370,6 @@ integer, public, parameter ::  &
 
 integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but can be reset by metdata
 real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal 
-
-!Namelist controlled: aerosols
-!Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
-
-!Now in AeroConstants_mod.f90
-!!A2018 integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
-!integer, parameter, public :: NSAREA_DEF = 7 ! skip ORIG=Riemer
-!type, public :: aero_t
-!  character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
-!  logical          :: DYNAMICS = .false.
-!  integer          :: NSIZE    = 7
-!!A2018  real, dimension(7) :: &
-!!A2018!??               F       C      G      
-!!A2018     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
-!!A2018    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
-!!A2018    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
-!!A2018    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
-!!A2018    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
-!!A2018
-!!A2018 QUERY - FIGURE OUT LINKS TO GasParticleCoeffs
-!! For surface area we track the following (NSD=not seasalt or dust)
-!! Must make sizes match NSAREA_DEF above
-!! NB PM is sum of PMf and PMC
-! integer :: & ! A2018 *** NUMBERS CHANGED *** PM=5 moved to end
-!   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7,ORIG=8,NSAREA=NSAREA_DEF
-!!A2018
-!!A2018! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
-!!A2018! For Gerber (Gb), -1 indicates to use dry radius
-!!A2018character(len=4), dimension(NSAREA_DEF) :: &
-!!A2018  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
-!!A2018integer, dimension(NSAREA_DEF) ::&
-!!A2018!??         sia pmf   ssf duf  pm  ssc  duc   orig
-!!A2018  Inddry = [ 1,   1,   1,  1,   2,   3,   4,   3], &
-!!A2018  Gb     = [ 1,   1,   2, -1,   1,   2,  -1,  -1]
-!end type aero_t
-!type(aero_t), public, save :: AERO = aero_t()
-
-!Not needed:?
-!A2018 simplified version, matches Table 6 of ACP2012 (except FN)
-!type, public :: bulkaero_t
-!  real :: umDpgV  ! mass/volumne median diameter (um)
-!  real :: umDpgN  ! number median diameter (um)
-!  real :: sigma 
-!  real :: rho_p   ! kg/m3
-!  character(len=30) :: species
-!end type bulkaero_t
-!type(aerobulk_t), public, dimension(4), save ::
-!   aerobulk = [
-!     aerobulk_t(0.33, 1.8, UNDEF_R, 1600.0,  'Fine-model SIA,EC, OA') & !?SSF?
-!    ,aerobulk_t(3.0 , 2.0, UNDEF_R, 2200.0,  'coarse-nitrate') &
-!    ,aerobulk_t(4.0 , 2.0, UNDEF_R, 2200.0,  'coarse-sea-salt') &
-!    ,aerobulk_t(4.5 , 2.2, UNDEF_R, 2600.0,  'coarse dust,sand') &
-!  ]
-
 
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in
@@ -685,9 +622,6 @@ subroutine Config_ModelConstants(iolog)
     DEBUG%ISPEC = ispec
     first_call = .false.
 
-!A2018    do i = 1, size(AERO%DpgN(:))
-!A2018      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
-!A2018    end do
   end if
 
   if(MasterProc)then

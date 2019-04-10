@@ -52,7 +52,7 @@ contains
    
     integer :: icmp             ! gaseous species
 
-!A2018 QUERY - GasP.. has 0.2178-e4 as DH2O. Should use
+!QUERY - GasP.. has 0.2178-e4 as DH2O. Should use
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
     real            :: D_i              ! Diffusivity of gas species, m2/s
 
@@ -63,14 +63,12 @@ contains
 
 !.........  Loop over all required gases   ................................
 
-  GASLOOP: do icmp = 1, nddep !A2018 size( DRYDEP_GAS )
-              !A2018   iwes = DRYDEP_GAS(icmp)
+  GASLOOP: do icmp = 1, nddep
 
      if ( .not. DDspec(icmp)%is_gas ) CYCLE
 
      if   ( water ) then
 
-          !A2018 D_i = D_H2O / DDdefs(1,iwes)  ! CORR !
           D_i = D_H2O / DDspec(icmp)%Dx ! SHOULD USE DH2ODx
 
           Rb(icmp) = log( z0 * KARMAN * ustar/ D_i )

@@ -219,8 +219,8 @@ subroutine Config_Fire()
     
     ne = ne + 1
     emep_used(ne) = iemep
-!A2018
-if( iemep <1) print *, 'ABB', n, FF_defs_BB(n)%emep, iemep
+
+    if( iemep <1) print *, 'ABB', n, FF_defs_BB(n)%emep, iemep
 
     ! CO is special. Keep the index
     !TRACER if(species(iemep)%name=="CO") ieCO=ne

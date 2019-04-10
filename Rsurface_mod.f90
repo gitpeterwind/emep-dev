@@ -314,11 +314,11 @@ contains
 
           if  (canopy .or. L%is_veg ) then
             Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
-            Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto !A2018 changed notation. CHECK
-          else !OLD Looks odd
+            Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto
+          else !OLD
             Gns(icmp) = 1.0e-5*Hstar*GnsS + f0*GnsO
           end if
-          Gns(icmp) = min( 0.1, Gns(icmp) ) ! OCT2017 FIX
+          Gns(icmp) = min( 0.1, Gns(icmp) ) ! FIX
           if ( Gns(icmp) > 0.1 ) then
              print *, "BIGGNS-NH3 ", canopy, L%is_veg, Rns_NH3, lowTcorr, RsnowS
              call StopAll('BIGGNS-NH3')
@@ -351,13 +351,6 @@ contains
      ! but for conductances, not resistances (pragmatic, I know!)
 
        Gns(icmp) = 1.0e-5*Hstar*GnsS + f0 * GnsO 
-!NO:     Gns(icmp) = min( 0.1, Gns(icmp) ) ! OCT2017 FIX
-!          if ( Gns(icmp) > 0.1 ) then
-!             print '(a,2i3,2L3,6f10.3,g10.2,f10.3)', "BIGC ", icmp, iL,&
-!                 canopy, L%is_veg, Rns_SO2, lowTcorr, RsnowS, GnsS, Gns(icmp),&
-!                 f0, 1.0e-5*Hstar, 1/do3se(iL)%RgsS
-!             call StopAll('BIGGNS-ICMP')
-!          end if
 
 
      ! ##############   4. Calculate Rsur for canopies   ###############
@@ -366,7 +359,7 @@ contains
          Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto
       end if
 
-!WHY?      Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
+!WHY?  Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
 
       Rsur(icmp) = 1.0/( Gsto(icmp) + Gns(icmp)  )
 

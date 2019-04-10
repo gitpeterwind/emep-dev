@@ -12,7 +12,7 @@ use Debug_module,      only: DEBUG   ! -> DEBUG%MOSAICS
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
-use GasParticleCoeffs_mod,  only:  DDspec !DS A2018 CDDEP_O3
+use GasParticleCoeffs_mod,  only:  DDspec
 use Io_Progs_mod,      only: datewrite
 use LandDefs_mod,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_mod,       only: LandCover ! for POD
@@ -461,7 +461,6 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
 
     case("VG","Rs","Rns","Gns") ! could we use RG_LABELS? 
       cdep = itot2Calc(nadv+NSPEC_SHL)  ! e.g. IXADV_O3 to calc index
-!A2018 test if ( cdep < 1 ) print *, 'CDEP', nadv, 'AAARGH' // species_adv(nadv)%name ! 24 hno3
       Gs   = Sub(iLC)%Gsur(cdep)
       Gns  = Sub(iLC)%Gns(cdep)
 
@@ -470,9 +469,6 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
         write(*,*) "ERROR: OutVgR name", MosaicOutput(imc)%name
         write(*,*) "ERROR: Negative cdep", cdep, imc, MosaicOutput(imc)%Index
         write(*,*) "ERROR: itot2CALC had size", size(itot2Calc)
-!A2018        do n = 1, size( itot2Calc)
-!A2018          write(*,*) "DEPADVLIST ", n, itot2Calc(n)
-!A2018        end do
         call CheckStop(cdep<1,dtxt//"ERROR: Negative cdep")
       end if
 

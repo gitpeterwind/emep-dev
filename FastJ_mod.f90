@@ -3292,7 +3292,7 @@
         use PhysicalConstants_mod, only :KAPPA, RGAS_KG, GRAV
         use Radiation_mod, only : ZenithAngleS,ZenithAngle
         use TimeDate_mod, only : daynumber,current_date
-        use ZchemData_mod, only: rcphot !A2018
+        use ZchemData_mod, only: rcphot
 
       USE FJX_CMN_MOD
 

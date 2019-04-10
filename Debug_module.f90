@@ -10,7 +10,6 @@ module Debug_module
  type, public :: emep_debug
   logical :: &
      AOT             = .false. &
-    ,A2018           = .true.  & ! A2018 TMP while testing
     ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions

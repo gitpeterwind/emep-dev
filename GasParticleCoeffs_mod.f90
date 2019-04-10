@@ -53,7 +53,7 @@ module GasParticleCoeffs_mod
      DH2O    = 21.78e-6 &! m2/s at STP, Massman
     ,NU_AIR0 =  1.35e-5  ! Kin. viscosity of air, m2/s, 273K
   real, public, save       :: nu_air = UNDEF_R  ! Kin. viscosity of air, m2/s
- !OLD DH2O    = 21.0e-6 &! A2018 comp old  m2/s at STP, Massman
+ !OLD DH2O    = 21.0e-6 &! comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
         NDRYDEP_GASES = 14+46  &! no. of gases in Wesely tables, DDdefs below
@@ -189,14 +189,14 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 !end Hodzic species
 
 ! Particles:
-!A2018 SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
+! SHOULD CHECK and make consistent with ACP2012 Table 6 (or updated version)
 !               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  umDpgV sig  rhop  Gb(1-rural, 2-seasalt) 
  ,DD_t( 'PMf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)& ! as SAI_F 
  ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)&! as SIA_F
  ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 1600,  1)&! as SIA_F
  ,DD_t( 'SSf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2200,  2)& ! as SSF
  ,DD_t( 'DUf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2600, -1)& ! NEW?? CHECK
-!A2018 QUERY
+! QUERY
  ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 2200,  1)& ! as PM QUERY 20
  ! SSc, DUc and POLLd have dummy values, CHECK!!
  ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 4.80,  2.0, 2200,  2)& ! 
