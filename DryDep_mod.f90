@@ -378,7 +378,7 @@ contains
 
     call GasCoeffs(Grid%t2)             ! Sets DDdefs coeffs.
 
-    call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=DEBUG%A2018)
+    call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=debug_flag)
 
     call Setup_StoFlux( daynumber )
 
