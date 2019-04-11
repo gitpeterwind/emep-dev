@@ -117,15 +117,18 @@
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
 
-!new format system ship emissions
- Emis_sourceFiles(1)%filename = 'DataDir/FMIGlobShip2015mon_new.nc'
-!split EC:
- Emis_sourceFiles(1)%source(1)%varname='EC',
- Emis_sourceFiles(1)%source(1)%species='EC_f_FFUEL_new',
- Emis_sourceFiles(1)%source(1)%factor=0.8, !80% as new
- Emis_sourceFiles(1)%source(2)%varname='EC',
- Emis_sourceFiles(1)%source(2)%species='EC_f_FFUEL_age',
- Emis_sourceFiles(1)%source(2)%factor=0.2, !20% as age
+!!new format system ship emissions
+!! ** WARNING! uncommenting the first line will add ALL emissions from
+!! this file, e.g. SO2, NOx, etc.
+!!
+! Emis_sourceFiles(1)%filename = 'DataDir/FMIGlobShip2015mon_new.nc'
+!!split EC:
+! Emis_sourceFiles(1)%source(1)%varname='EC',
+! Emis_sourceFiles(1)%source(1)%species='EC_f_FFUEL_new',
+! Emis_sourceFiles(1)%source(1)%factor=0.8, !80% as new
+! Emis_sourceFiles(1)%source(2)%varname='EC',
+! Emis_sourceFiles(1)%source(2)%species='EC_f_FFUEL_age',
+! Emis_sourceFiles(1)%source(2)%factor=0.2, !20% as age
  
   femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
 
