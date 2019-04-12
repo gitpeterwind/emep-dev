@@ -2,14 +2,15 @@
   GRID      = 'EMERGENCY',
   iyr_trend = 2010,
   runlabel1 = 'eemep',
-  runlabel2 = 'rv4_14',
+  runlabel2 = '2019_opensource',
   startdate = 2010,04,13,000000,
   enddate   = 2010,04,14,000000,
 &end
 !!put here only machine specific data.
 &Machine_config
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/home/metno_op/emep/eemep2/input/eEMEP_OpenSource',
+  DataPath(1) = '/lustre/storeB/project/fou/kl/eva/eemep/HPC/emep/eemep2/input/E
+MEP_MSC-W_model.rv4.17.OpenSource/input',
 &end
 !------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -18,24 +19,32 @@
 !------------------------------
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
-  dt_advec              = 450, ! only point-sources, need shorter timesteps
+  dt_advec              = 600, ! only point-sources, need shorter timesteps
+  Vertical_levelsFile   = 'Vertical_levels.txt'
+  EmisHeightsFile       = 'DataDir/EmisHeights.txt',
+  SplitDefaultFile      = 'DataDir/emissplit.defaults.POLL',
+  SplitSpecialsFile     = 'DataDir/emissplit.specials.POLL',
+  MonthlyFacFile        = 'DataDir/MonthlyFac.POLL',
+  DailyFacFile          = 'DataDir/DailyFac.POLL',
+  HourlyFacFile         = 'DataDir/HourlyFacs.INERIS',
+  EMEP_EuroBVOCFile     = 'DataDir/EMEP_EuroBVOC.nc',
+!------------------------------
   EXP_NAME              = 'EMERGENCY',
-  MY_OUTPUTS            = '', ! outputs now defined in config_Outputs
+  MY_OUTPUTS            = '', ! defined in config_Outputs
 ! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
- EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
- EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
- LandCoverInputs%MapFile =
-    'DataDir/Landuse_PS_5km_LC.nc',    ! 1km also available
-    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
- YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
+  EmBio%GlobBvocMethod  = 'GLC-CLM', ! default for GLOBAL runs, not used for Europe
+  EmBio%CLF             =  0.59,     ! 1/1.7 for CLM
+  LandCoverInputs%LandDefs  = 'DataDir/Inputs_LandDefs.csv',
+  LandCoverInputs%Do3seDefs = 'DataDir/Inputs_DO3SE.csv',
+  LandCoverInputs%MapFile   = 'DataDir/Landuse_PS_5km_LC.nc',
+                              'DataDir/glc2000xCLMf18.nc',
+  YieldModifications    = 'VBS', 
+  PBL%ZiMIN             =  50.0,
   USES%testname         = 'EMERGENCY',
   USES%FOREST_FIRES     = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = F,
-  USES%GRIDDED_EMIS_MONTHLY_FACTOR = F, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = F,         ! PFT LAI tests
   USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
@@ -84,7 +93,6 @@
 !------------------------------
 ! flocdef="DataDir/volcano_location.csv",
 ! femsdef="DataDir/volcano_emission.csv",
-  topo_nc="DataDir/GRID/topography.nc",
   need_topo=T, ! stop simulation if topo_nc not found
   NMAX_LOC=1, ! number of locations (-1 for autodetect)
   NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)

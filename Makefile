@@ -21,10 +21,10 @@ ifeq ($(MACHINE),stallo)
   MODULES = netCDF-Fortran/4.4.4-intel-2016b
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
-  MAKEDEPF90=/home/mifapw/bin/makedepf90
+  MAKEDEPF90=makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-  F90=mpiifort
+  F90=mpif90
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
   MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
