@@ -30,7 +30,7 @@ program emep_Main
        METSTEP,    &   ! Hours between met input
        runlabel1,  &   ! explanatory text
        runlabel2,  &   ! explanatory text
-       iyr_trend, nmax,nstep , meteo,     &
+       iyr_trend, nmax,step_main , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        HOURLYFILE_ending, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
@@ -251,7 +251,7 @@ program emep_Main
 
   mm_old = 0
   oldseason = 0
-  nstep=0
+  step_main=0
 
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   !
@@ -260,7 +260,7 @@ program emep_Main
   !
   do while(.not.End_of_Run)        ! main time-loop , timestep is dt_advec
 
-    nstep=mod(nstep,nmax)+1 !loops from 1 to nmax, between two meteo read
+    step_main=step_main + 1 !main loop with dt_advec between each step
 
     !FUTURE if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
 
