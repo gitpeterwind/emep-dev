@@ -413,7 +413,7 @@ real, public, parameter :: &
 !
 !  additional parameters
 !
-integer, public, save   :: nterm, nmax, nstep &
+integer, public, save   :: nterm, nmax, step_main &
                          , iyr_trend ! Year specified for say BC changes
 
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text

@@ -13,7 +13,7 @@ use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
 use ChemSpecs_mod,     only: NO2, SO2,species,species_adv
 use Chemfields_mod,    only: xn_adv
 use Config_module,only: &
-    KMAX_MID, KMAX_BND, PT ,dt_advec, &
+    KMAX_MID, KMAX_BND, PT ,dt_advec, step_main, &
     KCHEMTOP, &         
     emis_inputlist, &   !TESTC
     EmisDir,      &    ! template for emission path
@@ -515,7 +515,9 @@ contains
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-          if(me==0)write(*,*)'Emis: update date is reached ',EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
+          if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
+               write(*,*)'Emis: update date is reached ',&
+               EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
           !values are no more valid, fetch new one
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
@@ -523,7 +525,8 @@ contains
                 Emis_source_3D(1:,1:,1:,ix)=0.0
                 call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_3D(1,1,1,ix),coming_date)
              else
-                if(me==0)write(*,*)is,' getemis '//trim(Emis_source(is)%units)//' '//trim(Emis_source(is)%varname)
+                if(me==0.and. (step_main<10 .or. DEBUG%EMISSIONS))write(*,*)is,&
+                     ' getemis '//trim(Emis_source(is)%units)//' '//trim(Emis_source(is)%varname)
                 Emis_source_2D(1:,1:,is)=0.0
                 call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_2D(1,1,is),coming_date)
              endif

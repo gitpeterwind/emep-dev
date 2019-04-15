@@ -23,7 +23,7 @@ module RunChem_mod
   use ChemSpecs_mod                     ! DEBUG ONLY
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
-                              KMAX_MID, END_OF_EMEPDAY, nstep,  &
+                              KMAX_MID, END_OF_EMEPDAY, step_main,  &
                               USE_FASTJ, USES, dt_advec
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
@@ -229,7 +229,7 @@ subroutine runchem()
                 
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
-      if(mod(nstep,2)/=0) then 
+      if(mod(step_main,2)/=0) then 
         call AerosolEquilib(debug_flag)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'D')

@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Apr 2019, Peter
+
+Replaced nstep by step_main. It is slightly different, now it always increase.
+The results will be slightly different, because mod(nstep,2) which is used to alternate in the timesplitting, was not alternating every nmax. now it does.
+
+Reduced the writings of 'dividing each gridcell...' and some new emission comments. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Apr 2019, Dave
 
 Small problem-fixes:

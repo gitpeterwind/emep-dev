@@ -3,7 +3,7 @@ module EmisGet_mod
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
 use ChemSpecs_mod,     only: species 
-use Config_module,     only: NPROC, MasterProc,USES,&
+use Config_module,     only: NPROC, MasterProc,USES,step_main,&
                              KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              IIFULLDOM,JJFULLDOM, SECTORS_NAME, &
@@ -144,12 +144,14 @@ contains
        call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
        
        call nctime2date(EmisFile%end_of_validity_date, TimesInDays(1))
-       if(me==0)write(*,*)record,'ENDOFVAL ', EmisFile%end_of_validity_date
+       if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
+            write(*,*)record,'ENDOFVAL ', EmisFile%end_of_validity_date
     endif
 
     if( dbg ) write(*,*) dtxt//'Reading '//trim(fname)
     if(trim(EmisFile%projection) == 'native')then
-       if(me==0)write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
+       if(me==0.and. (step_main==1 .or. DEBUG%EMISSIONS))&
+            write(*,*)'reading  new '//trim(Emis_source%varname)//' from native grid, record ',record
        if(Emis_source%is3D)then
           call GetCDF_modelgrid(Emis_source%varname,fname,Emis_XD,&
                             Emis_source%kstart, Emis_source%kend,record,1,&
@@ -161,7 +163,8 @@ contains
                             needed=.true.)
        endif
     else
-       if(me==0)write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
+       if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
+            write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
        if(Emis_source%units(1:9) == 'tonnes/m2'  &
             .or. Emis_source%units(1:5) == 'kg/m2' &
             .or. Emis_source%units(1:4) == 'g/m2'  &
@@ -183,7 +186,8 @@ contains
             .or. Emis_source%units == 'mg/month' .or. Emis_source%units == 'mg/year' &
             .or. Emis_source%units == 'g/h' .or. Emis_source%units == 'mg/h')then
           !per gridcell unit
-          if(me==0)write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
+          if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
+               write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
          call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
                interpol='mass_conservative',&

@@ -31,7 +31,7 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              ,SurfacePressureFile &
                              ,SELECT_LEVELS_HOURLY&  ! NML
                              , num_lev3d,lev3d&      ! 3D levels on 3D output
-                             , startdate
+                             , startdate, step_main
 use Country_mod,        only : NLAND, Country
 use Debug_module,       only : DEBUG_NETCDF, DEBUG_NETCDF_RF
 use Functions_mod,       only: StandardAtmos_km_2_kPa
@@ -3775,7 +3775,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
-        if(Ndiv>1.and.MasterProc)then
+        if(Ndiv>1.and.MasterProc .and.step_main == 1 )then
            write(*,*)'dividing each gridcell into ',Ndiv2,' pieces'
         end if
 

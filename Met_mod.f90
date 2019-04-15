@@ -51,7 +51,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
      ,TEGEN_DATA, USES &
-     ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
+     ,step_main,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
@@ -1421,8 +1421,8 @@ subroutine metfieldint
   real :: div
   integer :: ix
 
-  if (nstep.lt.nmax) then
-    div = 1./real(nmax-(nstep-1))
+  if (mod(step_main,nmax) > 0) then
+    div = 1./real(nmax-(mod(step_main,nmax)-1))
     do ix=1,Nmetfields
       if(met(ix)%time_interpolate)then
         !if(DEBUG%MET) print *, 'METINTERP ',me,trim(met(ix)%name)
