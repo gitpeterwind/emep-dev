@@ -101,6 +101,11 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
     c = text(i:i)
     if( all(c/=s) ) then
       is = is + 1
+      if ( is> len(wordarray) ) then !DSJJ
+         errcode = 2
+         print *, "ERROR in WORDSPLIT IS: ", trim(text(:i))
+         exit
+      end if
       wordarray(iw)(is:is) = c
       wasinword = .true.
     elseif ( wasinword ) then
