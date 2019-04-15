@@ -56,11 +56,11 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   type(PBL_t), public, save :: PBL = PBL_t()
 
   type, private :: EmBio_t
-    character(len=10) :: GlobBvocMethod = '-' ! can be MEGAN
+    character(len=10) :: GlobBvocMethod = 'GLC-CLM' ! can be MEGAN
     real :: IsopFac = 1.0                     ! for experiments
     real :: TerpFac = 1.0                     ! for experiments
   ! canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
-    real :: CLF     = 1.0                     ! canopy factor, leaf vs branch emissions
+    real :: CLF     = 0.59                    ! canopy factor, leaf vs branch emissions
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
@@ -88,8 +88,8 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   
   type, private :: LandCoverInputs_t
     character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
-    character(len=TXTLEN_FILE) :: LandDefs = '-'   !  LAI, h, etc (was Inputs_LandDefs
-    character(len=TXTLEN_FILE) :: Do3seDefs = '-'  !  DO3SE inputs
+    character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
+    character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
   end type LandCoverInputs_t
   type(LandCoverInputs_t), public, save :: LandCoverInputs=LandCoverInputs_t()
 
