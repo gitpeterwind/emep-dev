@@ -477,7 +477,8 @@ contains
              if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
              if(ic>0)write(*,*)me,' masked ',ic,' cells'
           else
-             call StopAll("Mask variable not found: "//trim(EmisMask(i)%cdfname))
+             call StopAll("Mask variable not found: "//trim(EmisMask(i)%cdfname)// &
+                  ':'//trim(EmisMask(i)%filename))
              EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
           endif
           
