@@ -746,6 +746,14 @@ subroutine Config_ModelConstants(iolog)
           key2str(Emis_sourceFiles(i)%filename,'OwnInputDir',OwnInputDir)
      endif
   enddo
+  do i = 1, size(EmisMask)
+     if(EmisMask(i)%filename/='NOTSET')then
+        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'DataDir',DataDir)
+        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'GRID',GRID)
+        EmisMask(i)%filename = &
+          key2str(EmisMask(i)%filename,'OwnInputDir',OwnInputDir)
+     endif
+  enddo
   do i = 1,size(InputFiles)
     if(associated(InputFiles(i)%filename))then
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'DataDir',DataDir)
