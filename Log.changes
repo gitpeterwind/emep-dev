@@ -21,6 +21,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Apr 2019, Dave
+
+Small problem-fixes:
+
+
+Config_module: OwnInputDir enabled for EmisMask 
+
+Emissions_mod: Added filename to error message from EmisMask
+
+Landuse_mod:  Allow longer and more ewords to cope with complex fName
+
+SmallUtils_mod:  Extra error message if eword too long 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Apr 2019, Dave
 
 config_emep.nml. Comments added about Emis_source. FMI stuff commented out.
