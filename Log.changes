@@ -24,7 +24,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Apr 2019, Peter
 
 Replaced nstep by step_main. It is slightly different, now it always increase.
-The results will be slightly different, because mod(nstep,2) which is used to alternate in the timesplitting, was not alternating every nmax. now it does.
+The results can be slightly different, because mod(nstep,2) which is used to alternate 
+in the timesplitting, is not alternating every nmax, if nmax is odd. 
+(Now it does always alternating). 
+You choose nmax by setting dt_advec in config. For example dt_advec=900.0 will 
+give nmax=12 and identical results. 
 
 Reduced the writings of 'dividing each gridcell...' and some new emission comments. 
 
