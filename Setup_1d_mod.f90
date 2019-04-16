@@ -543,10 +543,10 @@ subroutine setup_rcemis(i,j)
 
 
   if(first_call)then
-    inat_RDF = find_index( "Dust_ROAD_f", EMIS_BioNat(:) )
-    inat_RDC = find_index( "Dust_ROAD_c", EMIS_BioNat(:) )
-    itot_RDF = find_index( "Dust_ROAD_f", species(:)%name    )
-    itot_RDC = find_index( "Dust_ROAD_c", species(:)%name    )
+    inat_RDF = find_index( "Dust_ROAD_f", EMIS_BioNat(:) , any_case=.true. )
+    inat_RDC = find_index( "Dust_ROAD_c", EMIS_BioNat(:) , any_case=.true. )
+    itot_RDF = find_index( "Dust_ROAD_f", species(:)%name  , any_case=.true.  )
+    itot_RDC = find_index( "Dust_ROAD_c", species(:)%name  , any_case=.true.  )
     itot_Rn222=find_index( "RN222", species(:)%name    )
     IC_NH3=find_index( "NH3", species(:)%name    )
     first_call = .false.
