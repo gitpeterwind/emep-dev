@@ -23,7 +23,9 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Apr 2019, Robert
 
-Some find_index changed to case insensitive (to avoid problems with some old 
+* Added ZCM_EmChem16z directory -- for updated chemistry scheme
+
+* Some find_index changed to case insensitive (to avoid problems with some old 
 model versions using capital F instead of f for "fine" particle components etc.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
