@@ -150,20 +150,20 @@ subroutine Wrtchem(ONLY_HOUR)
 
   !== Output at the end of the run
   if ( End_of_Run ) then
-    if(nhour/=END_OF_EMEPDAY) call Output_fields(IOU_DAY)! Daily outputs
-    call Output_fields(IOU_YEAR)  ! Yearly outputs
-  end if
-
+     if(nhour/=END_OF_EMEPDAY) call Output_fields(IOU_DAY)! Daily outputs
+     call Output_fields(IOU_YEAR)  ! Yearly outputs
+  endif
 
   !/ NEW MONTH
-  if (nday == 1 .and. nhour == 0) then
-    nmonpr = nmonth-1
-    if (nmonpr == 0) nmonpr=12
-
-    !== Monthly output ====
-    call Output_fields(IOU_MON)
-
-    call ResetDerived(IOU_MON)
+  if ( End_of_Run .or. (nday == 1 .and. nhour == 0)) then
+     nmonpr = nmonth
+     if(nday == 1 .and. nhour == 0)nmonpr = nmonth-1
+     if (nmonpr == 0) nmonpr=12
+     
+     !== Monthly output ====
+     call Output_fields(IOU_MON)
+     
+     call ResetDerived(IOU_MON)
   end if              ! End of NEW MONTH
 
   first_call=.false.

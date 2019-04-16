@@ -23,6 +23,13 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Apr 2019, Peter
 
+The model will output also part of monthes if startdate or enddateare not at 
+start/end of the month. 
+The timestamps should always point to the middle of the period.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Apr 2019, Peter
+
 NetCDF_mod: added debug1 to get 'interpolating from' printouts only on first
   step_main unless debug specified
 
