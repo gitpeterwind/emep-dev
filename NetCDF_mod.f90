@@ -2447,6 +2447,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::Rlatmin,Rlatmax,dRlat,dRlati, Resolution_fac
   integer, allocatable ::ifirst(:),ilast(:),jfirst(:),jlast(:)
   real, allocatable :: fracfirstlon(:),fraclastlon(:),fracfirstlat(:),fraclastlat(:)
+  logical, save :: debug1   ! -> output on 1st step, or when debug set
 
   !_______________________________________________________________________________
   !
@@ -2461,6 +2462,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      debug = debug_flag .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
+
+  debug1 = ( (MasterProc .and. step_main == 1) .or. debug )
 
   UnDef_local=0.0
   if(present(UnDef))UnDef_local=UnDef
@@ -3489,7 +3492,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      !_________________________________________________________________________________________________________
   elseif(data_projection=="Stereographic")then
      !we assume that data is originally in Polar Stereographic projection
-     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     !DS if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(debug1)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
 
      !get coordinates
      !check that there are dimensions called i and j
@@ -3757,8 +3761,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
-     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
-     if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     !DS if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     !DS f(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(debug1) write(*,*)'interpolatingL from ', &
+        trim(data_projection), ' to ',trim(projection)
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
