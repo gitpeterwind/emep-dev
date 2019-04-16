@@ -1646,8 +1646,30 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         call date2nctime(date_start,rdaysstart)!start of period                
         call date2nctime(current_date,rdays)!now
         rdays = (rdaysstart+rdays)/2 !middle
+     else if (iotyp==IOU_MON) then
+        !careful month can be incomplete in first month or last month or both
+        if((mod(12+current_date%month-startdate(2),12)==1 .and.&
+             (current_date%day==1 .and. current_date%hour==0)).or.&
+             (mod(12+current_date%month-startdate(2),12)==0).and.&
+             (current_date%day/=1 .or. current_date%hour/=0))then       
+           !first month outputted
+           date_start = startdate!start of period        
+        else
+           !the start is at the start of the current month
+           date_start(1) = current_date%year
+           date_start(3) = 1
+           date_start(4) = 0
+           if(current_date%day==1 .and. current_date%hour==0)then
+              date_start(2) = current_date%month-1
+           else
+              date_start(2) = current_date%month           
+           endif
+        endif
+        call date2nctime(date_start,rdaysstart)!start of period                
+        call date2nctime(current_date,rdays)!now
+        rdays = (rdaysstart+rdays)/2 !middle        
      else
-        call date2nctime(current_date,rdays,iotyp) !routine will subtract half hour, day or month if necessary
+        call date2nctime(current_date,rdays,iotyp) !routine will subtract half hour, day  if necessary
      endif
      call check(nf90_put_var(ncFileID,VarID,rdays,start=(/nrecords/)))
      
@@ -2447,6 +2469,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::Rlatmin,Rlatmax,dRlat,dRlati, Resolution_fac
   integer, allocatable ::ifirst(:),ilast(:),jfirst(:),jlast(:)
   real, allocatable :: fracfirstlon(:),fraclastlon(:),fracfirstlat(:),fraclastlat(:)
+  logical, save :: debug1   ! -> output on 1st step, or when debug set
 
   !_______________________________________________________________________________
   !
@@ -2461,6 +2484,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      debug = debug_flag .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
+
+  debug1 = ( (MasterProc .and. step_main == 1) .or. debug )
 
   UnDef_local=0.0
   if(present(UnDef))UnDef_local=UnDef
@@ -3489,7 +3514,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      !_________________________________________________________________________________________________________
   elseif(data_projection=="Stereographic")then
      !we assume that data is originally in Polar Stereographic projection
-     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(debug1)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
 
      !get coordinates
      !check that there are dimensions called i and j
@@ -3757,8 +3782,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
-     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
-     if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(debug1) write(*,*)'interpolatingL from ', &
+        trim(data_projection), ' to ',trim(projection)
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
