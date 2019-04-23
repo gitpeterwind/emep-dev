@@ -6,7 +6,7 @@ OutputMisc=
 ! 'gravset_ash_4','USET','gravset_3D','ASH_4','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_7','USET','gravset_3D','ASH_7','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_9','USET','gravset_3D','ASH_9','',-99,-99,F,-99.9,T,'I',
- 'PS',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'HI',
+! 'PS',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'HI',
 
 
 OutputConcs=
