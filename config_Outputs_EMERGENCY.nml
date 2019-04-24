@@ -1,6 +1,6 @@
 &OutputConcs_config
-OutputMisc=
-! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,av,iotype,
+!OutputMisc=
+! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,avg,period,
 !--DEBUG gravset
 ! 'gravset_ash_1','USET','gravset_3D','ASH_1','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_4','USET','gravset_3D','ASH_4','',-99,-99,F,-99.9,T,'I',
@@ -79,8 +79,10 @@ OutputConcs=
 ! 'ASH_L18'        ,'','550nm','AOD:GROUP','MISC','I',
 ! 'ASH_L19'        ,'','550nm','AOD:GROUP','MISC','I',
 &end
+
+! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+
 &OutputDep_config
-! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
   DDEP_ECOS =
     'Grid     ', 'Y',
     'Conif    ', 'Y',

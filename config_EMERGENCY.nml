@@ -91,8 +91,8 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
 !------------------------------
 ! flocdef="DataDir/volcano_location.csv",
 ! femsdef="DataDir/volcano_emission.csv",
-  need_topo=T, ! stop simulation if TopoFile not found
-  NMAX_LOC=1, ! number of locations (-1 for autodetect)
+  need_topo=T, ! stop simulation if topo_nc not found
+  NMAX_LOC=20, ! number of locations (-1 for autodetect)
   NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)
 &end
 &Nest_config
