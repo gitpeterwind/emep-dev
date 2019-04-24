@@ -4,6 +4,11 @@
 # Written by Johan S. Wind April 2017
 # Modified by Peter Wind June 2017
 
+# For ubuntu install libraries with:
+# sudo apt-get install python3-pyqt5 
+# sudo apt install python3-netcdf4 
+# then remove the first line of this script and one of the # in the second line
+
 import sys
 sys.path.append('/home/mifapw/software/PyQt5_gpl-5.8.2')
 from PyQt5.QtGui import *

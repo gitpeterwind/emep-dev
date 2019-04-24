@@ -12,7 +12,6 @@
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'ANALYSIS',
-  MY_OUTPUTS            = '',         ! deprecated hourly out: MACC_ENS|MACC_EVA
 !------------------------------
   EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
   EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
@@ -41,7 +40,8 @@
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%PROGRESS_FILES    = T,          ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = T,     ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%ROADDUST          = F,          ! Only EECCA?
   USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
@@ -52,11 +52,10 @@
   EmisDir               ='DataDir/Emis_TNO7_MACCIII',
   emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = T,
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = T,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = T,          ! Used for FORECASTs usually
+  USES%AOD               = T,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
@@ -141,8 +140,8 @@
 &end
 &Nest_config
 !-------- Read/Write MODEs
-  MODE_READ = 'FORECAST',     ! at the start of run, if files are found
-  MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  MODE_READ = 'RESTART',      ! at the start of run, if files are found
+  MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 !-------- File name templates for Nest I/O
   template_read_3D = '../RESTART/CWF_00AN-YYYYMMDD_restart.nc',
   template_read_BC = 'DataDir/GRID/Boundary_conditions/YYYY_ENS/cwf-cifs_hYYYYMMDD12_raqbc',
@@ -153,7 +152,7 @@
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
 ! omit_zero_write= T,                               ! further reduce output
-  FORECAST_NDUMP = 1,                       ! Nr. CWF dump dates
+  OUTDATE_NDUMP = 1,                        ! Nr. CWF dump dates
   outdate        = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1:4)   = -1,-1,-1,00,0000,        ! everyday at 00:00
 !                  -1,-1,-1,12,0000,        ! everyday at 12:00

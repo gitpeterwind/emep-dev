@@ -27,7 +27,6 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
-! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -51,10 +50,8 @@
   USES%AIRCRAFT_EMIS     = T,             ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,             ! 
 !------------------------------
-  USES%EURO_SOILNOX      = F,             ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,           ! Scale, default 1  (see ModelConstants_ml)
-  USES%GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
-!------------------------------
+  USES%PROGRESS_FILES    = F,             ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = F,        ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = F,             ! Only EECCA?
   USES%DUST              = T,             ! Only EECCA?
@@ -114,11 +111,10 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
  ! emis_inputlist(2)%incl(1:) = 'INTSHIPS', 
 
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
@@ -170,7 +166,7 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 0,
   DEBUG%STOFLUX         = F,
 ! Use integers to control debug level:
   DEBUG%PFT_MAPS        = 0,           ! in testing
@@ -214,11 +210,11 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
   MODE_READ = 'NONE',         ! do nothing
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
-! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
-!  MODE_SAVE = 'NONE',         ! do nothing
+! MODE_READ = 'RESTART',      ! at the start of run, if files are found
+  MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
-! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+! MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NHOURREAD = 1,              ! hours between reads. Fraction of 24
 ! NHOURSAVE = 3,              ! hours between saves. Fraction of 24
 !-------- File name templates for Nest I/O

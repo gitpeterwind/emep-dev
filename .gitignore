@@ -45,14 +45,20 @@
 ### Unimod specific
 
 # GenChem output
-CM_*.txt
-CM_*.csv
-CM_*.inc
-CM_*.f90
-BiomassBurningMapping.inc
+/CM_*.log
+/CM_*.txt
+/CM_*.csv
+/CM_*.inc
+/CM_*.f90
+/BiomassBurningMapping_*.inc
+/*Mapping.inc
+/BoundaryConditions_CM.inc
 GenIn.*
 *GenOut*
-femis.defaults
+/femis.defaults
+
+# from ecosx branch
+box/
 
 # Emergency output
 ZCM_Emergency/Emergency.reactions
@@ -62,7 +68,7 @@ ZCM_Emergency/emergency_location.csv
 
 # Makefile output
 /My_*.f90
-/Pollen*_ml.f90
+/Pollen*.f90
 .depend
 Unimod
 Unimod_3DVar
@@ -71,3 +77,7 @@ ZD_3DVar/m1qn3-3.3-distrib
 ZD_3DVar16/tools/PortGO.md
 ZD_3DVar16/Makefile.deps
 ZD_3DVar17/Makefile.deps
+
+# New binary names
+emepctm
+emepctm_3DVar

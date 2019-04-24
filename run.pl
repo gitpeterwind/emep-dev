@@ -36,12 +36,12 @@
 #PBS -l select=4:ncpus=16:mpiprocs=16 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 #
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=07:20:00
 # Make results readable for others:
-##PBS -W umask=0022
+#PBS -W umask=0022
 # Account for billing
-##PBS -A nn2890k
-#PBS -A mifa01kl
+#PBS -A nn2890k
+##PBS -A mifa01kl
 # Multiple tasks for paralel SR runs (one task per country)
 ##PBS -t 1-56
 #___________________________________________________________________
@@ -127,7 +127,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_16feb14","EmChem16a","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_17box","EmChem16x","A2018","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_17aug13","EmChem16x","A2018e","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -253,20 +254,21 @@ die "No ChemDir! $ChemDir\n" unless -d $ChemDir;
 
 
 #---- emislist --------------------------------------------------------
-open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
-  my @emislist = split(/,/,<EMIS>);
-  print "EMISLIST ", join(" ", @emislist ), "\n";
-close(EMIS);
+#A2018 skip: open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
+#  my @emislist = split(/,/,<EMIS>);
+#  print "EMISLIST ", join(" ", @emislist ), "\n";
+#close(EMIS);
+#A2018 skip
 #----  chem packages  (e.g. EmChembase PMmass ) -----------------------
-open(CHEM,"<$ProgDir/CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
-  my @packages = <CHEM> or die "Need CM_chempackage.txt!\n" ;
-  print "CHEM packages:\n @packages\n";
-close(CHEM);
+#open(CHEM,"<$ProgDir/CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
+#  my @packages = <CHEM> or die "Need CM_chempackage.txt!\n" ;
+#  print "CHEM packages:\n @packages\n";
+#close(CHEM);
 #----------------------------------------------------------------------
 
 # Check that the code directory has the chem files we want:
 # Now use mk.GenChem, CM_ files erased from ZCM_ directories
-#die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
+#die "Mis-Match chemistry, emepctm.$testv Chem: $Chem" if
 #  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
 my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
@@ -284,10 +286,10 @@ my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
 #ds check: and change
 chdir "$ProgDir";
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"
-#  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
+#  unless $ENV{PWD} =~ /emepctm.$testv.$year/;
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
-my $version     = "Unimod" ;
+my $version     = "emepctm" ;
 my $PROGRAM     = "$ProgDir/$version";        # programme
 my $subv        = "$testv" ;                  # sub-version (to track changes)
 
@@ -326,10 +328,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="01";      # last month, use 2-digits!
+my $mm1 ="06";      # first month, use 2-digits!
+my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  2;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -474,7 +476,7 @@ foreach my $scenflag ( @runs ) {
   mylink( "Linking:", $old, $new);
  }
 #=================== INPUT FILES =========================================
-# ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
+# ToDo Change noxsplit.default to defaults, as with voc (also in emepctm)
 
 
   EMEP::Sr::generate_updated_femis(@$scenflag) if ($SR);
@@ -487,7 +489,7 @@ foreach my $scenflag ( @runs ) {
   print "\n";
 
 # compile/copy executable to $RESDIR/
-  my $LPROG = "Unimod";
+  my $LPROG = "emepctm";
   if($MAKEMODE){  # compile/link program into $RESDIR/
     system(@MAKE,"$MAKEMODE","-C$ProgDir/",
            "ARCHIVE=yes","BINDIR=$RESDIR/") == 0
@@ -515,7 +517,7 @@ foreach my $scenflag ( @runs ) {
 #    die "METFILE not found:\n\t$f\n" unless -e $f;
 #  }
 
-# namelist with input parameters (to be read by Unimod.f90 and other modules)
+# namelist with input parameters (to be read by emep_Main.f90 and other modules)
   my $nml="";
   my %h=(%BENCHMARK,MetDir=>"$MetDir");
   if(%BENCHMARK){
@@ -608,7 +610,6 @@ Emission units: Gg/year
 ------------------------------
 Version: $testv
 Chemical scheme: $Chem
-@packages
 SR?  $SR
 iyr_trend: $iyr_trend
 ------------------------------

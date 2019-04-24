@@ -26,11 +26,10 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, *IMPACT2C*
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for *IMPACT2C*
   USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
 !--- "fake" vegetation for ozone POD calculations
 FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
 !FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_BEECH" "ACE_BEECH" "NEUR_SPRUCE",  ! Do not need to fill array :-)
@@ -54,11 +53,11 @@ FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
   MODE_READ = 'NONE',         ! do nothing
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
-! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
+! MODE_READ = 'RESTART',      ! at the start of run, if files are found
   MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
-! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+! MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NHOURREAD = 1,              ! hours between reads. Fraction of 24
 ! NHOURSAVE = 3,              ! hours between saves. Fraction of 24
 !-------- File name templates for Nest I/O

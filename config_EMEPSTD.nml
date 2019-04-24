@@ -19,6 +19,8 @@
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
+!EUROPEAN_settings = 'YES',   ! Should now be automatic
+!GLOBAL_settings   = 'NO',
 !------------------------------
 ! changes March-April 2017
  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
@@ -29,8 +31,6 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc', ! New with rv4.17
-!    'DataDir/LanduseGLC.nc',
- YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -57,6 +57,8 @@
   EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
   USES%GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
 !------------------------------
+  USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = F,       ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?
@@ -122,11 +124,10 @@
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
@@ -188,8 +189,8 @@
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
-  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
-  DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   !
+  DEBUG%DRYDEP          = F,   !
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
@@ -197,7 +198,7 @@
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0,
   DEBUG%MOSAICS         = F,
-  DEBUG%PFT_MAPS        = 0,   ! in testing
+  DEBUG%PFT_MAPS        = 0,   ! 
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
@@ -205,12 +206,13 @@
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 0,
+  DEBUG%SOILNOX         = F,
   DEBUG%STOFLUX         = F,
-!  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
+!  DEBUG%STOP_HH        = 2,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
-! DEBUG%IJ              =  60, 50,       ! Bremen
+ DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
@@ -242,11 +244,11 @@
   MODE_READ = 'NONE',         ! do nothing
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
-! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
+! MODE_READ = 'RESTART',      ! at the start of run, if files are found
   MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
-! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+! MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NHOURREAD = 1,              ! hours between reads. Fraction of 24
 ! NHOURSAVE = 3,              ! hours between saves. Fraction of 24
 !-------- File name templates for Nest I/O

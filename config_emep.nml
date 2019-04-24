@@ -1,15 +1,16 @@
 &INPUT_PARA
   GRID      = 'EECCA',
-  iyr_trend = 2010,
+  iyr_trend = 2016,
   runlabel1 = 'Base',
-  runlabel2 = 'rv4_15a_EmChem16mt_svnexporte_Base_2010_Trend2010',
-  startdate = 2010,01,01,000000,
-  enddate   = 2010,01,01,000024,
+  runlabel2 = 'rv4_18',
+  startdate = 2016,01,01,00,
+  enddate   = 2016,01,01,03,
 &end
 &Machine_config
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
   DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+  DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis, Nebula
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -19,7 +20,7 @@
 &ModelConstants_config
 !NB: set the path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
-  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
@@ -32,8 +33,6 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
-!    'DataDir/LanduseGLC.nc',
- YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -42,24 +41,21 @@
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,            ! Reads PointSources file
-  USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
   USES%n2o5HydrolysisMethod = "Smix" ! "SmixTen" "Gamma:0.002" NOT:"OrigRiemer"
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
-  USES%PFT_MAPS         = F,            ! PFT LAI tests
 !  USES%MonthlyNH3       = 'LOTOS',      !  Better monthly profile, for Europe only!
 !------------------------------
   USES%SOILWATER         = T,            ! Uses SMI from meteo data
   USES%CONVECTION        = F,
 !  fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
+!  fileName_CH4_ibcs   = 'DataDir/BoundaryConditions/ch4_fromRCP85.txt'  ! Uses CH4 from RCP for iyr_trend
   USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,            ! 
 !------------------------------ 
-  USES%EURO_SOILNOX      = T,            ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
-  USES%GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
-!------------------------------
+  USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = F,       ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = T,            ! Only EECCA?
   USES%DUST              = T,            ! Only EECCA?
@@ -84,7 +80,7 @@
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
 !  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
-  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII_2011.nc',
 !  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 ! PANDA=HTAP+MEIC
@@ -120,20 +116,30 @@
 !  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
-!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
-!  emis_inputlist(3)%type = 'Special_ShipEmis',
 
+!!new format system ship emissions
+!! ** WARNING! uncommenting the first line will add ALL emissions from
+!! this file, e.g. SO2, NOx, etc.
+!!
+! Emis_sourceFiles(1)%filename = 'DataDir/FMIGlobShip2015mon_new.nc'
+!!split EC:
+! Emis_sourceFiles(1)%source(1)%varname='EC',
+! Emis_sourceFiles(1)%source(1)%species='EC_f_FFUEL_new',
+! Emis_sourceFiles(1)%source(1)%factor=0.8, !80% as new
+! Emis_sourceFiles(1)%source(2)%varname='EC',
+! Emis_sourceFiles(1)%source(2)%species='EC_f_FFUEL_age',
+! Emis_sourceFiles(1)%source(2)%factor=0.2, !20% as age
+ 
   femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for FORECASTs usually
-  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
-  SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
+  USES%AOD               = F,          ! Used for forecasts usually
+  BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
+  SKIP_RCT              = -1,    ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
               'Wheat_Irrigated', 'Wheat_NonIrrig',
@@ -167,11 +173,6 @@
 
 !-------- Sub domain (x0,x1,y0,y1)
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
- RUNDOMAIN =  1, 360, 2, 179,      !GLOBAL05  reduced around South Norway
-! RUNDOMAIN =  230, 530, 150, 415,      !EMEP01 reduced around South Norway
-! RUNDOMAIN =  230, 450, 120, 350,      !EMEP01 reduced South Norway Apr 2017
-! RUNDOMAIN =  370, 420, 270, 320,      !EMEP01 small oslo tests reduced to South Norway
-! RUNDOMAIN =  330, 430, 250, 350,      !EMEP01 reduced to South Norway
 !!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
 ! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests
@@ -210,7 +211,7 @@
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
-  DEBUG%SOA             = F,
+  DEBUG%SOA             = 0,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
@@ -237,6 +238,7 @@
 ! Default EMEP setup is using 'FINN'
 !------------------------------
   need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
+  BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
   FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
   GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
@@ -246,11 +248,11 @@
   MODE_READ = 'NONE',         ! do nothing
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
-! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
+! MODE_READ = 'RESTART',      ! at the start of run, if files are found
   MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
-! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+! MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NHOURREAD = 1,              ! hours between reads. Fraction of 24
 ! NHOURSAVE = 3,              ! hours between saves. Fraction of 24
 !-------- File name templates for Nest I/O
@@ -379,7 +381,7 @@ OutputConcs=
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
 ! DO NOT USE ppb!!!
       'OH'                 ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
-      'ISRO2'              ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
+!TMPA2018      'ISRO2'              ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
 ! ppb                                                      
       'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMDI', !! HOUR_INST
       'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
@@ -396,7 +398,7 @@ OutputConcs=
       'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! Tracer for forest fires:
-      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMDH', ! TEST
+      'FFIRE_CO' ,       'ppb'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! TEST
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
@@ -415,7 +417,7 @@ OutputConcs=
       'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
@@ -435,8 +437,8 @@ OutputConcs=
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
-      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', !! ALWAYS as ugC
-      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+!      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', !! ALWAYS as ugC
+!      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_FFUELOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_WOODOA25_OC'    ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
     ! 'PART_FFIREOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
@@ -460,14 +462,14 @@ OutputConcs=
       'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'SQT_SOA_NV'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
-      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+!      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
-      'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+!      'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 ! zero for NONVOL:
-      'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
-      'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
-      'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! NEVER as ugC
+!      'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!      'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!      'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! NEVER as ugC
 ! Sep16 tests
       'FFIRE_BC'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_REMPPM25'   ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
@@ -479,12 +481,12 @@ OutputConcs=
       'SURF_ug_PM25_rh50'   ,'ug' ,'2d','PM25_rh50' ,'MISC','YMD',
       'SURF_ug_PM10_rh50'   ,'ug' ,'2d','PM10_rh50' ,'MISC','YMD',
 !---------------------------------------------
-      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
       'ASH'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !-- Emergency: Nuclear accident (5 entries)
     ! 'CS137'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     ! 'I131'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -642,4 +644,5 @@ COLUMNDAT_WANTED =
 ! num_lev3d=3,lev3d_from_surface=T, ! 3 levels from surface: 20,19,18
 ! num_lev3d=3,lev3d_from_surface=F, ! 3 levels from model top: 1,2,3
 ! num_lev3d=8,lev3d_from_surface=T,lev3d=1,2,3,4,6,9,10,12, ! CAMS50 levels
+!spinup_enddate = 2016,01,02,00,!example spinup period
 &end
