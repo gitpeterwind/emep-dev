@@ -1,11 +1,14 @@
-vers=rv4.17;year=2018                 # Input version/year flags
-tdir=$HOME/Unify                      # top directory - change $HOME as required
-idir=$tdir/emep-mscw                  # Input dir
+vers=rv4.32beta;year=2019                 # Input version/year flags
+idir=`dirname ${BASH_SOURCE[0]}`      # Input dir
+idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
+tdir=`dirname $idir`                  # top directory
 
 odir=EMEP_MSC-W_model.$vers.OpenSource
-odir=$tdir/$odir                      # Output dir, choose flag or location
+odir=$tdir/$odir                      # Output dir
 cdir=$odir/code                       # code directory
-mkdir -p $cdir
+# shallow clone open source code, if it does not exisist already
+[[ -d $cdir ]] || git clone --branch source --depth 1 \
+  git@github.com:metno/emep-ctm.git $cdir
 
 echo "Making $cdir"
 
@@ -49,3 +52,5 @@ awk '{if(NR>4) print $0 }' $idir/.depend > $cdir/dependencies
 cp -u $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
 cp -f $idir/Makefile.SRCS $cdir/
 sed -i "s/SRCS/FOBJ/;s/.f90/.o/g;s/.inc$/.o/;" $cdir/Makefile.SRCS
+
+echo "OpenSource $TAG at $cdir"
