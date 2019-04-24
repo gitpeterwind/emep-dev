@@ -14,7 +14,7 @@ use ChemGroups_mod,        only: chemgroups
 use ChemSpecs_mod,         only: species
 use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
                                 USES, dt_advec,dt_advec_inv,&
-                                startdate,enddate,DataDir,GRID, TopoFile
+                                startdate,enddate,DataDir,TopoFile
 use Debug_module,          only:  DEBUG   ! -> DEBUG%COLSRC
 use EmisDef_mod,           only: VOLCANOES_LL
 use GridValues_mod,        only: xm2,sigma_bnd,GridArea_m2,&
