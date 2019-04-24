@@ -1,4 +1,4 @@
-vers=rv4.32beta;year=2019                 # Input version/year flags
+vers=rv4.32;year=2019                 # Input version/year flags
 idir=`dirname ${BASH_SOURCE[0]}`      # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                  # top directory
@@ -41,7 +41,7 @@ for i in *.f90 *.inc gpl.txt modrun.sh CITATION.txt; do
 done
 
 cp -f $idir/config_Open.nml $cdir/config_emep.nml   # configuration file
-cp -u $idir/README_Open.md  $cdir/README.md         # OpenSource README
+cp -f $idir/README_Open.md  $cdir/README.md         # OpenSource README
 
 #-- 2)  dependencies ----------------------------------------------------------
 
@@ -49,7 +49,7 @@ awk '{if(NR>4) print $0 }' $idir/.depend > $cdir/dependencies
 
 #-- 3)  Makefile stuff ----------------------------------------------------------
 
-cp -u $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
+cp -f $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
 cp -f $idir/Makefile.SRCS $cdir/
 sed -i "s/SRCS/FOBJ/;s/.f90/.o/g;s/.inc$/.o/;" $cdir/Makefile.SRCS
 
