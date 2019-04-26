@@ -56,7 +56,7 @@ module GasParticleCoeffs_mod
  !OLD DH2O    = 21.0e-6 &! comp old  m2/s at STP, Massman
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14+46  &! no. of gases in Wesely tables, DDdefs below
+        NDRYDEP_GASES = 14+47  &! no. of gases in Wesely tables, DDdefs below
        ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
@@ -164,8 +164,9 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'OCATEC1OOH',DH2O/3.88 , 3.88, 3.1E+06, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
  ,DD_t( 'HOCH2CO2H',DH2O/2.49 , 2.49, 4.2E+07, 9999, 1.0E+04, 0.05, 0.,-1,-1,-1,-1)& 
  ,DD_t( 'OXYCATECH',DH2O/3.76, 3.76, 1.1E+07, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
- ,DD_t( 'C3PAN1 ',DH2O/3.3 , 3.3, 1.8E+05, 9999, 1.0E+04, 0.3, 0., -1,-1,-1,-1)&
- ,DD_t( 'C5PAN18 ',DH2O/4.1, 4.1, 2.4E+03, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)&
+ ,DD_t( 'C3PAN1',DH2O/3.3, 3.3, 1.8E+05, 9999, 1.0E+04, 0.3, 0., -1,-1,-1,-1)&
+ ,DD_t( 'C5PAN18',DH2O/4.1, 4.1, 2.4E+03, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)&
+ ,DD_t( 'MPAN',DH2O/3.4, 3.4, 3.0E+0, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)&
  ,DD_t( 'NOXYOL1OOH',DH2O/4.1, 4.1, 8.3E+04, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
  ,DD_t( 'NOXYOLOOH',DH2O/4.57, 4.57, 4.5E+10, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
  ,DD_t( 'OXNNCATOOH',DH2O/4.95, 4.95, 2.7E+14, 9999, 1.0E+04, 0.2, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
@@ -179,13 +180,13 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'HOCH2CHO', DH2O/2.2, 2.2, 4.1e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& !glycolaldehyde
  ,DD_t( 'CARB12', DH2O/3.1, 3.1, 3.4e4, 9999, 1.0E+04, 0., 0.,-1,-1,-1,-1)& ! moderately soluble carbonyls (mixed) with estimated H* ca 3.0 - 3.8E4 M/atm
  ,DD_t( 'CH3CO2H', DH2O/2.0, 2.0, 7.0e5, 9999,  1.0E+04, 0, 0.,-1,-1,-1,-1)& !acetic acid
+ ,DD_t( 'PINONIC',DH2O/4.6 , 4.6, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! pinonic acid
+ ,DD_t( 'HCC7CO',DH2O/3.7 , 3.7, 3.9E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& 
 ! additions for Hodzic VBS-scheme semivolatile species:
  ,DD_t( 'LVASOA',DH2O/3.9 , 3.9, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LVASOA - to model Hodzics 0.01 anthropogenic VSOA bin
  ,DD_t( 'SVASOA',DH2O/3.1 , 3.1, 1.3E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! SVASOA - to model Hodzics 10, 100 and 1000ug/m3 Anthropogenic VSOA bins
  ,DD_t( 'LSVBSOA',DH2O/4.6 , 4.6, 6.3E+08, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! LSVBSOA - to model Hodzics 0.01, 0.1, 1 and 10 ug/m3 Biogenic VSOA bins
  ,DD_t( 'SVBSOA',DH2O/4.6 , 4.6, 3.2E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! SVBSOA - to model Hodzics 100ug/m3 Biogenic VSOA bin 
- ,DD_t( 'PINONIC',DH2O/4.6 , 4.6, 1.3E+07, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& ! pinonic acid
- ,DD_t( 'HCC7CO',DH2O/3.7 , 3.7, 3.9E+05, 9999, 1.0E+04, 0.,  0.,  -1,-1,-1,-1)& 
 !end Hodzic species
 
 ! Particles:
