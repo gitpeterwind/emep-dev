@@ -21,6 +21,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 May 2019, Peter
+
+Small bug in interpolation from Polar stereo to Polar stereo.
+In the case when all these conditions are met:
+1) interpolation from Polar stereo to Polar stereo
+2) Conservative or mass conservative
+3) Resolution of in grid is at coarser than met resolution/3
+
+There is a small shift in the diagonbal direction (1/3 gridcell).
+This does not affect landuse PS to EECCA (exception 3))
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Apr 2019, Robert
 
 Added dry deposition parameters for MPAN
