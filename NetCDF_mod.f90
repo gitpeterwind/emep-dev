@@ -3607,8 +3607,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         Grid_resolution_div=Grid_resolution/Ndiv
-        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
-        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        xp_ext_div=(xp_ext-0.5)*Ndiv+0.5
+        yp_ext_div=(yp_ext-0.5)*Ndiv+0.5
         an_ext_div=an_ext*Ndiv
 
         if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical'.and.projection/='lambert')then
@@ -3638,6 +3638,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
+
 !                    if(abs(lat-57.0)<0.01 .and. abs(lon-1.3)<0.01)write(*,*)'fullij ',lat,lon,me,i,j
 !                    if(abs(lon-15)<0.02 .and. abs(lat-63)<0.02)write(*,*)jg,ig,lon,lat,i,j,me
                     !convert from fulldomain to local domain
@@ -3724,8 +3725,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         Ndiv=1
         Grid_resolution_div=Grid_resolution/Ndiv
-        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
-        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        xp_ext_div=(xp_ext-0.5)*Ndiv+0.5
+        yp_ext_div=(yp_ext-0.5)*Ndiv+0.5
         an_ext_div=an_ext*Ndiv
         if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
 
