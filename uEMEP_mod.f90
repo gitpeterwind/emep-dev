@@ -157,7 +157,7 @@ subroutine init_uEMEP
 !!$     endif
      if(uEMEP%poll(ipoll)%emis=="nh3 ")then
         uEMEP%poll(ipoll)%Nix=0
-        ixnh4=find_index("NH4_F",species_adv(:)%name)
+        ixnh4=find_index("NH4_F",species_adv(:)%name , any_case=.true.)
         ixnh3=find_index("NH3",species_adv(:)%name)
         do ix=1,NSPEC_ADV
            if(ix/=ixnh4.and.ix/=ixnh3)cycle!not reduced nitrogen

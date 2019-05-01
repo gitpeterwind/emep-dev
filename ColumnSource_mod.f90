@@ -14,7 +14,7 @@ use ChemGroups_mod,        only: chemgroups
 use ChemSpecs_mod,         only: species
 use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
                                 USES, dt_advec,dt_advec_inv,&
-                                startdate,enddate,DataDir,GRID, TopoFile
+                                startdate,enddate,DataDir,TopoFile
 use Debug_module,          only:  DEBUG   ! -> DEBUG%COLSRC
 use EmisDef_mod,           only: VOLCANOES_LL
 use GridValues_mod,        only: xm2,sigma_bnd,GridArea_m2,&
@@ -374,9 +374,9 @@ subroutine setRate()
   nloc=0
   l = 1
   doLOC: do ! read all entries on file, stop simulation if are too many entries 
-    call CheckStop ( l > size(PROC_LOC) , dtxt//' NEEDS larger size for PROC_LOC')
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doLOC            ! End of file
+    call CheckStop ( l > size(PROC_LOC) , dtxt//' NEEDS larger size for PROC_LOC')
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
     if(txtline(1:1)=='#')cycle doLOC  ! Comment line
     dloc=getVent(txtline)

@@ -1553,7 +1553,7 @@ end if
   if(USES%ROADDUST)THEN
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
-     itot_RDF = find_index( "Dust_ROAD_f", species(:)%name    )
+     itot_RDF = find_index( "Dust_ROAD_f", species(:)%name ,any_case=.true. )
      call CheckStop(itot_RDF<=0, "Asked for road dust but did not find Dust_ROAD_f")
      do ie=1,NROADDUST
         roaddust_masscorr(ie)=1.0/species(itot_RDF)%molwt

@@ -1,0 +1,20 @@
+# VOC splits for EmChem16z -- Sectors 1 and 3-11 created by mkEC19emissplitMCM.py with speciation based on an MCM emission split file: MCM_v3.3.emissplit.defaults.voc
+# and using EmChem19small_Matrix.4MCM_onlyMCM for transforming emissions of MCM compounds to EmChem16z "species".
+# SNAP Sector 2 modified by RB, based on Passant 2002 (gas and coal) and Hays et al. 2008 (oil) in combination with data from various sources regarding emissions 
+# from wood combustion and using data from TNO to get "emission weighted average" European fossil -- wood fuel split for 2011 (TNO scenario 2 and 4)
+# Key-word, MASS_ASSUMED= 0 by default,
+# change when emissions have artificial mass, e.g. 46 for NOx as NO2
+: MASS_ASSUMED 0
+99 99 NC4H10 OXYL  C2H4  C3H6   HCHO  MEK   TOLUENE CH3OH C2H6  CH3CHO C2H5OH BENZENE C5H8 APINENE GLYOX MGLYOX MACR SQT_SOA_nv UNREAC #HEADERS
+#DATA
+ 0 1  10.345 6.62  3.154 3.325 55.905 0.0   1.017   0.704 17.039 0.02    0.0   1.869   0.0   0.0    0.0   0.0    0.0    0.0      0.0 
+ 0 2  5.1884 10.6189 16.5157 6.3725 2.0203 0.7354 1.5328 19.2548 17.3399 4.5929 1.0086 6.8247 0.4584 0.2751 3.1272 0.005 1.8338 0.0312 2.2645 
+ 0 3  30.702 1.746 9.171 2.027 24.323 0.093 2.611   2.472  9.579 0.059  3.058 13.833   0.0   0.0    0.0   0.0    0.0    0.0      0.324 
+ 0 4  29.068 8.701 6.449 2.83   1.19 0.2445 2.451   3.486 3.8185 1.013 32.024  0.973   0.0  0.128   0.0   0.0    0.0    0.0      7.622
+ 0 5  66.911 0.089 0.451 0.629  0.078 0.0   0.098   0.014 31.315 0.0     0.0   0.321  0.008  0.0    0.0   0.0    0.0    0.0      0.086
+ 0 6  31.856 13.764 0.702 0.0  0.272 6.8645 3.74   10.946 10.2605 0.068 17.264  0.0    0.0   0.0    0.0   0.0    0.0    0.0      4.263 
+ 0 7 36.206 23.294 11.805 5.122 2.905 0.104 8.73   4.0765 2.2135 1.842   0.0    1.99   0.0   0.0    0.0   0.0    0.0    0.0      1.708
+ 0 8 21.593 22.542 17.032 5.211 5.68 0.053  9.03   5.462  2.934  4.022   0.0   4.321   0.0   0.0    0.0   0.0    0.0    0.0      2.119 
+ 0 9  10.558 2.815 5.486 0.913 17.06 0.522  0.983  0.508  52.943 0.009  1.983  4.275   0.0   0.0    0.0   0.0    0.0    0.0      1.947
+ 0 10  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0  0.0    0.0      100.0 
+ 0 11  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 100.0 0.0 0.0 0.0  0.0    0.0      0.0 
