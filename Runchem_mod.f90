@@ -23,8 +23,8 @@ module RunChem_mod
   use ChemSpecs_mod                     ! DEBUG ONLY
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
-                              KMAX_MID, END_OF_EMEPDAY, nstep,  &
-                              USE_FASTJ, USES, dt_advec
+                              KMAX_MID, END_OF_EMEPDAY, step_main,  &
+                              USE_FASTJ, USES, AOD_WANTED, dt_advec
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
   use DefPhotolysis_mod, only: setup_phot
@@ -264,8 +264,7 @@ subroutine runchem()
 
 
       !// Calculate Aerosol Optical Depth
-      if(USES%AOD)  &
-        call AOD_Ext(i,j,debug_flag)
+      if(AOD_WANTED) call AOD_Ext(i,j,debug_flag)
 
       !  Calculates PM water: 1. for ambient Rh and T (3D)
       !!  and for filter equlibration conditions (2D at surface) 

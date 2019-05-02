@@ -137,7 +137,6 @@
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USES%AOD               = F,          ! Used for forecasts usually
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
   SKIP_RCT              = -1,    ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
@@ -497,7 +496,7 @@ OutputConcs=
     !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
 !-- New AOD(2d)/EXT(3d) system
     !!'AOD'                ,' '  ,'350nm','AOD:GROUP','MISC','YMD',
-      'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
+    ! 'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'AOD'                ,' '  ,'870nm','AOD:GROUP','MISC','YMD',
     ! 'SO4'                ,' '  ,'550nm','AOD:SPEC' ,'MISC','YMD',
     !!'NO3'                ,' '  ,'550nm','AOD:SPEC' ,'MISC','YMD',
@@ -508,7 +507,7 @@ OutputConcs=
     !!'PPM10'              ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     !!'PPM25_FIRE'         ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'EXT'                ,'1/m','350nm','EXT:GROUP','MISC','YM',
-      'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
+    !  'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
 ! ============================================================
 !
 ! o3 metrics --------------- SEP 2015 added here -----------------------------
