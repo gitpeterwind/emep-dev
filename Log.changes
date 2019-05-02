@@ -21,6 +21,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 May 2019, Peter
+
+Topography is read from HGT in case WRF meteo. It will automatically redefine
+Topofile (cannot be defined from config then!)
+Also more robust GetCDF_modelgrid when dimensions are incompatible (will now 
+stop only if the file is "needed")
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 May 2019, Peter
 
 Small bug in interpolation from Polar stereo to Polar stereo.

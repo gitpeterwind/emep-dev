@@ -2030,6 +2030,13 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   i0=0;j0=0!origin, i.e. (i=0,j=0) coordinate
   if(present(i_start))i0=i_start-1
   if(present(j_start))j0=j_start-1
+  if(i0>imax .or. j0>jmax)then
+     if(.not.needed)then
+        if(me==0)write(*,*)'WARNING: '//trim(fileName)//'has incompatible grid. Cannot read '//trim(varname)
+        found=.false.
+        return
+     endif
+  endif
   call CheckStop(i0>imax, "NetCDF_mod i: subdomain not compatible. cannot handle this")
   call CheckStop(j0>jmax, "NetCDF_mod j: subdomain not compatible. cannot handle this")
   if(MasterProc.and.DEBUG_NETCDF)&

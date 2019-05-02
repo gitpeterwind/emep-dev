@@ -3096,6 +3096,8 @@ subroutine read_surf_elevation(ix)
           met(ix)%field,1,needed=.true.,interpol='zero_order')
      
      met(ix)%field=1000.0*StandardAtmos_kPa_2_km(0.001*met(ix)%field)
+  else
+     if( me==0 )write(*,*)'Read met topography '//trim(met(ix)%name)//' from '//trim(TopoFile)//', typical value:',met(ix)%field(5,5,1,1)
   endif
 
 end subroutine read_surf_elevation
