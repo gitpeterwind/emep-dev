@@ -36,6 +36,9 @@ are requested in outputs
 Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
 config file treatments (i.e. DataDir and OwnInputDir are replaced).
 
+Met_inner for nesting tries to replace datadir and dates if not found 
+(but not GRID, as it should be another grid usually)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 May 2019, Peter
 

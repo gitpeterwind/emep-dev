@@ -50,8 +50,9 @@ use GridValues_mod,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, Restri
 use Io_mod,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_mod,           only: roa
-use Config_module,           only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
-                                  IOU_INST,RUNDOMAIN,USES
+use Config_module,           only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
+                                   OwnInputDir, GRID,&
+                                   IOU_INST,RUNDOMAIN,USES
 use Debug_module,           only: DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_mod  
 use netcdf,                 only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
@@ -1006,7 +1007,7 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
 
   !find lon and lat of boundaries of grid and build mask_restrict
   integer,intent(inout) ::rundomain_ext(4)
-  character(len=*),intent(in) :: filename_read
+  character(len=*),intent(inout) :: filename_read
   integer ::GIMAX_ext,GJMAX_ext
   integer :: ncFileID,varid,status
   integer :: i,j,n
@@ -1023,6 +1024,15 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
   !Read dimensions (global)
   if(me==0)then
      status = nf90_open(trim(filename_read),nf90_nowrite,ncFileID)
+     if(status/=nf90_noerr) then
+        filename_read=key2str(trim(filename_read),'DataDir',DataDir)
+        filename_read=key2str(trim(filename_read),'OwnInputDir',OwnInputDir)
+        status = nf90_open(trim(filename_read),nf90_nowrite,ncFileID)
+        if(status/=nf90_noerr) then
+           filename_read=date2string(filename_read,current_date,mode='YMDH')
+           status = nf90_open(trim(filename_read),nf90_nowrite,ncFileID)
+        endif
+     endif
      if(status/=nf90_noerr) then
         print *,'init_mask_restrict: not found',trim(filename_read)      
      else
