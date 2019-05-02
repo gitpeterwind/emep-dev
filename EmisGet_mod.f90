@@ -204,7 +204,7 @@ contains
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
        Emis, EmisCodes, nEmisCodes, nstart,&
        incl, nin, excl, nex, use_lonlat_femis, &
-       set_mask,use_mask, fractionformat, type)
+       set_mask,use_mask,pollName, fractionformat, type)
 
     !read in emissions in fraction format and add results into
     !Emis, nEmisCodes and nEmisCodes
@@ -212,7 +212,7 @@ contains
 
     implicit none
     integer, intent(in) ::iem, nin, nex,nstart
-    character(len=*),intent(in) :: fname, incl(*),excl(*),type
+    character(len=*),intent(in) :: fname, incl(*),excl(*),pollName(*),type
     real,intent(inout) ::Emis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
     integer,intent(inout) ::nEmisCodes(LIMAX,LJMAX)
     integer,intent(inout) ::EmisCodes(LIMAX,LJMAX,NCMAX)
@@ -266,6 +266,7 @@ contains
        foundEmis_id = .false.
        if(.not. fractionformat)then
           call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
+          if(me==0)write(*,*)'reading ',trim(cdfvarname)
           ewords=''
           if( index(cdfvarname, "Emis:") >0 )then
              ! Emission terms look like, e.g. Emis:FR:snap:7
@@ -311,6 +312,10 @@ contains
              endif
 
              cdfemis = 0.0 ! safety, shouldn't be needed though
+             if(pollName(1)/='NOTSET')then
+                if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
+                if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
+             end if             
              call ReadField_CDF(fname,cdfvarname,cdfemis,nstart=nstart,&
                   interpol='mass_conservative',&
                   needed=.false.,UnDef=0.0,&
@@ -337,6 +342,11 @@ contains
              write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
           endif
           
+          if(pollName(1)/='NOTSET')then
+             cdfemis = 0.0 ! safety, shouldn't be needed though
+             if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
+             if(Masterproc.and.isec==1)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
+          end if
           Reduc=e_fact(isec,:,iem_used)          
           call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=nstart,&
                interpol='mass_conservative',fractions_out=fractions,&

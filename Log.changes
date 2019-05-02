@@ -28,6 +28,8 @@ Topofile (cannot be defined from config then!)
 Also more robust GetCDF_modelgrid when dimensions are incompatible (will now 
 stop only if the file is "needed")
 
+The emis_inputlist%PollName functionality was broken (since May 2018?). Repaired.
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 May 2019, Peter

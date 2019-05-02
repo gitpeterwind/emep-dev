@@ -1015,7 +1015,7 @@ contains
           do iem = 1, emis_inputlist_NEMIS_FILE
              if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
                 if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
-                if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+                if(Masterproc)write(*,"(A)")'using PollNames restrictions '
              end if
              fname = key2str(trim(emis_inputlist(iemislist)%name),'POLL',EMIS_FILE(iem))
 
@@ -1024,6 +1024,7 @@ contains
                   emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
                   emis_inputlist(iemislist)%use_lonlat_femis,&
                   emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask,&
+                  emis_inputlist(iemislist)%pollName,&
                   fractionformat,emis_inputlist(iemislist)%type)
 
           end do!NEMIS_FILE
@@ -2005,7 +2006,7 @@ subroutine newmonth
           sumemis_local(:,iem) = 0.0
           if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
              if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
-             if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(emis_inputlist(iemislist)%name)
+             if(Masterproc)write(*,*)'using PollNames restrictions '
           end if
           !reset emissions only once each month
           if(.not.monthlysectoremisreset)then
@@ -2024,6 +2025,7 @@ subroutine newmonth
                emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
                emis_inputlist(iemislist)%use_lonlat_femis,&
                emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask,&
+               emis_inputlist(iemislist)%pollName,&
                fractionformat,emis_inputlist(iemislist)%type)
           
        end do! iem = 1,NEMIS_FILE
