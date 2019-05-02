@@ -91,7 +91,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
   end type LandCoverInputs_t
-  type(LandCoverInputs_t), public, save :: LandCoverInputs=LandCoverInputs_t()
+  type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
 
 ! Namelist controlled:
@@ -117,7 +117,6 @@ type, public :: emep_useconfig
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
     ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
-    ,AOD          = .false. &
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,PROGRESS_FILES   = .false. &! write to file.msg for each output in file.nc
     ,SKIP_INCOMPLETE_OUTPUT = .false. & ! skip daily/montly/fullrun output for runs under 1/28/181 days
@@ -132,6 +131,8 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = .false.     &!
     ,PFT_MAPS         = .false.  &! 
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
+
+
 
  ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
@@ -166,8 +167,10 @@ type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
-!DSHK - moved from parameter to here:
+
 logical, public, save :: EmisSplit_OUT = .false.
+
+logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD requested in output
 
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 
@@ -456,12 +459,9 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
-character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
+character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "NOTSET"
 ! Can use RCP values of CH4 for given iyr_trend.
-character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
-
-!DSHK logical, parameter, public :: EmisSplit_OUT = .false.
-!DSHK logical, parameter, public :: EmisSplit_OUT = .true.
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
@@ -672,40 +672,14 @@ subroutine Config_ModelConstants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  if(trim(fileName_O3_Top)/="NOTSET")then
-     fileName_O3_Top = key2str(fileName_O3_Top,'DataDir',DataDir)
-     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
-     if(MasterProc)then
-        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
-        write(*,*)trim(fileName_O3_Top)
-     end if
-  endif
-
-  if(trim(fileName_CH4_ibcs)/="NOTSET")then
-     fileName_CH4_ibcs = key2str(fileName_CH4_ibcs,'DataDir',DataDir)
-     if(MasterProc)then
-        write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
-     end if
-  endif
-
  ! LandCoverInputs
-  !print *, dtxt//'Landcover data:', trim(DataDir)
   do i = 1, size(LandCoverInputs%MapFile(:))
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
-       LandCoverInputs%MapFile(i)= &
-          key2str(LandCoverInputs%MapFile(i),'DataDir',DataDir)
-!       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
-       if(MasterProc)then
-          write(*,*)dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
-       end if
+       call associate_File(LandCoverInputs%MapFile(i))
     end if
   end do
-  LandCoverInputs%LandDefs=&
-       key2str(LandCoverInputs%LandDefs,'DataDir',DataDir)
-  LandCoverInputs%Do3seDefs=&
-       key2str(LandCoverInputs%Do3seDefs,'DataDir',DataDir)
-  !print *, dtxt//'Landcover =>', LandCoverInputs
-
+  call associate_File(LandCoverInputs%LandDefs)
+  call associate_File(LandCoverInputs%Do3seDefs)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)
@@ -737,6 +711,8 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(DustFile)
   call associate_File(TopoFile)
   call associate_File(Monthly_patternsFile)
+  call associate_File(fileName_O3_Top)
+  call associate_File(fileName_CH4_ibcs)
   do i = 1, size(Emis_sourceFiles)
      !part of a class cannot be a target (?) must therefore do this separately
      if(Emis_sourceFiles(i)%filename/='NOTSET')then
@@ -762,6 +738,16 @@ subroutine Config_ModelConstants(iolog)
             key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
     endif
   enddo
+  if(trim(fileName_O3_Top)/="NOTSET")then
+     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
+     if(MasterProc)then
+        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
+        write(*,*)trim(fileName_O3_Top)
+     end if
+  endif
+  if(trim(fileName_CH4_ibcs)/="NOTSET" .and. MasterProc)then
+     write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
+  endif
 
   if(.not. USE_uEMEP)NTIMING_uEMEP = 0
 

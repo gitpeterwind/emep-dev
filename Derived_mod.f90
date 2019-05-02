@@ -41,7 +41,7 @@ use Config_module,     only: &
   ,num_lev3d,lev3d    & ! 3D levels on 3D output
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
-  ,MasterProc, SOURCE_RECEPTOR &
+  ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
   ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
   HourlyEmisOut, SecEmisOutWanted, spinup_enddate
 
@@ -437,7 +437,7 @@ subroutine Define_Derived()
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
-        if(.not.USES%AOD)cycle
+        if(.not.AOD_WANTED)cycle
         select case(class)
         case('AOD:GROUP','EXT:GROUP')
           select case(outname)

@@ -15,7 +15,7 @@ use ChemGroups_mod,     only: chemgroups
 use Debug_module,       only: DEBUG   ! -> DEBUG%COLSRC and POLLEN
 use DerivedFields_mod,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use Config_module, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
-                             MY_OUTPUTS, USES, &
+                             MY_OUTPUTS, USES, AOD_WANTED,&
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_mod, only: ATWAIR
 use OwnDataTypes_mod,   only: Asc2D
@@ -269,7 +269,7 @@ subroutine set_output_defs
     nlevels_hourly = 1
   case("TRENDS")
     nhourly_out=2
-    if(USES%AOD     )nhourly_out=nhourly_out+1
+    if(AOD_WANTED    )nhourly_out=nhourly_out+1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   case("TRENDS@12UTC")
     nhourly_out=3
@@ -497,7 +497,7 @@ subroutine set_output_defs
       Asc2D("no2_col","COLUMN" ,IXADV_NO2,1,"molec/cm2",to_molec_cm2,-999.9) &
 !!    Asc2D("no2_col","COLUMN" ,IXADV_NO2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9) &
     /)
-    if(USES%AOD)then
+    if(AOD_WANTED)then
       j=j+1;hr_out(j) = &
       Asc2D("AOD_550nm","D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
             1," ",1.0,-999.9)

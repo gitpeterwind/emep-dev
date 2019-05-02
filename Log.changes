@@ -30,6 +30,11 @@ stop only if the file is "needed")
 
 The emis_inputlist%PollName functionality was broken (since May 2018?). Repaired.
 
+USES%AOD removed. Instead AOD_WANTED is set to true if any AOD or EXT variable 
+are requested in outputs
+
+Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
+config file treatments (i.e. DataDir and OwnInputDir are replaced).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 May 2019, Peter
@@ -40,7 +45,7 @@ In the case when all these conditions are met:
 2) Conservative or mass conservative
 3) Resolution of in grid is at coarser than met resolution/3
 
-There is a small shift in the diagonbal direction (1/3 gridcell).
+There is a small shift in the diagonal direction (1/3 gridcell).
 This does not affect landuse PS to EECCA (exception 3))
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

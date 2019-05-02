@@ -41,7 +41,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
                             startdate, out_startdate, spinup_enddate,&
                             num_lev3d,lev3d &! 3D levels on 3D output
-                            , SecEmisOutWanted,EmisSplit_OUT
+                            , SecEmisOutWanted,EmisSplit_OUT, AOD_WANTED
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
@@ -458,7 +458,7 @@ subroutine Init_My_Deriv()
         tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
-        if(.not.USES%AOD)cycle
+        AOD_WANTED = .true.
         if(outname(1:3)/=outtyp(1:3))&
           outname  = outtyp(1:3)//"_"//trim(outname)
         tag_name(1)=            trim(outname)//"_"//trim(outdim)
