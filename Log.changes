@@ -21,6 +21,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 May 2019, Peter
+
+Merged INPUT_PARA and Machine_config namelists into ModelConstants_config
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 May 2019, Peter
 
 Topography is read from HGT in case WRF meteo. It will automatically redefine
@@ -37,7 +42,7 @@ Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
 config file treatments (i.e. DataDir and OwnInputDir are replaced).
 
 Met_inner for nesting tries to replace datadir and dates if not found 
-(but not GRID, as it should be another grid usually)
+(but not GRID, as it should be another grid usually) (not tested)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 May 2019, Peter

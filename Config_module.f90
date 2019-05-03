@@ -598,11 +598,11 @@ subroutine Config_ModelConstants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   ,Monthly_patternsFile
-  NAMELIST /Machine_config/ DataPath
+   ,Monthly_patternsFile&
+   ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
+   ,DataPath
 
-  NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
-       startdate,enddate!,meteo
+  DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=ModelConstants_config)
@@ -612,7 +612,6 @@ subroutine Config_ModelConstants(iolog)
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
-
     if(MasterProc)&
          write(iolog,*) 'CHEM SCHEMES: ',trim(CM_schemes_ChemSpecs)
 
@@ -621,20 +620,13 @@ subroutine Config_ModelConstants(iolog)
     call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))
     DEBUG%ISPEC = ispec
     first_call = .false.
-
   end if
 
   if(MasterProc)then
     write(*, * ) dtxt//"NAMELIST START "
-  ! write(*, NML=ModelConstants_config)
-  ! write(*,* ) "NAMELIST IOLOG IS ", iolog
     write(iolog,*) dtxt//"NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   end if
-
-  DataPath(1) = '.'!default
-  rewind(IO_NML)
-  read(IO_NML,NML=Machine_config)
 
   do i=1,size(DataPath)
     if(DataPath(i)=="NOTSET")then
@@ -656,10 +648,6 @@ subroutine Config_ModelConstants(iolog)
       exit
     end if
   end do
-
-
-  rewind(IO_NML)
-  read(IO_NML,NML=INPUT_PARA)
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
