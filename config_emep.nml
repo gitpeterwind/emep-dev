@@ -22,6 +22,11 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+
+!additional config (will overwrite config from config_emep.nml)
+!ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
+
+
 ! changes March-April 2017
  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
  EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
@@ -159,14 +164,15 @@
   uEMEP%poll(2)%sector(2)=7
   uEMEP%poll(2)%sector(3)=8
 
-  !uEMEP frequency of output separate file for each. Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  !uEMEP frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
   uEMEP%YEAR = T !set T as default
   uEMEP%HOUR_INST = F !set F as default
 
-  uEMEP%dist = 3  !how far the neighbors can be in each direction (NB: high cost for large dist)
-  uEMEP%Nvert = 7 !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+  uEMEP%dist = 3,  !how far the neighbors can be in each direction (NB: high cost for large dist)
+  uEMEP%Nvert = 7, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
 
 !  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
+
 
 !-------- Sub domain (x0,x1,y0,y1)
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
@@ -217,8 +223,7 @@
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
-&end
-&ColumnSource_config
+
 !------------------------------
 ! volcanic emissions from passive degassing and historical eruptions
 !------------------------------
@@ -227,18 +232,18 @@
   need_topo=T, ! Do not use column emissions if topography.nc not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
-&end
-&Fire_config
+
 !------------------------------
 ! ForestFire data is selected in mk.GenChem.  
 ! Check in mk.GenChem to find out which data is linked.
 ! Default EMEP setup is using 'FINN'
 !------------------------------
-  need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
+  BBneed_poll = F,  ! Avoids problems with missing ISOP in later FINN data
   BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
   FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
-  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc'
+
 &end
 &Nest_config
 !-------- Read/Write MODEs
@@ -349,9 +354,9 @@ OutputConcs=
      ! and are probably best used for short-lived species. REMEMBER that boundary
      ! cells are not calculated, hence expect zeros on edges.
      ! NOTE SURE  how this compares with COLUMNDAT below
-      'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CH4',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CO',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
+      'NO2',          'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
+      'CH4',          'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
+      'CO',           'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
      !----------------------------------------------------------------
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
@@ -624,9 +629,9 @@ OutputVegO3=
 
 &OutputMisc_config
 COLUMNDAT_WANTED = 
-  'NO2','k20',
-  'CH4','k20',
-  'CO' ,'k20',
+  'NO2','kmax',
+  'CH4','kmax',
+  'CO' ,'kmax',
 &end
 &OutputSize_config
 !restrict size of output files. (Sizes defined with respect to fulldomain)

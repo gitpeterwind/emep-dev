@@ -41,7 +41,10 @@ use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemDims_mod ,         only: NSPEC_TOT
 use ChemSpecs_mod
 use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
-                                IOU_INST
+                                IOU_INST,BBMODE,BBverbose,persistence,&
+                                fire_year,&
+                                BBneed_file,BBneed_date,BBneed_poll,&
+                                BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
 use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M, A_bnd,B_bnd
@@ -118,13 +121,7 @@ end type bbtype
 integer, save, allocatable :: emep_used(:)
 real,    save, allocatable :: sum_emis(:)
 
-character(len=4) :: BBMAP = 'FINN'
-character(len=TXTLEN_SHORT) :: MODE="DAILY_REC"
 
-character(len=TXTLEN_FILE), save :: &
-  GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
-  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
-  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
 ! interpolation method in ReadField_CDF
 character(len=30), save :: bbinterp = '-'
@@ -143,15 +140,8 @@ character(len=30), save :: bbinterp = '-'
   !as small as the gridcell in the netcdf file, the values will also be
   !reduced by a factor 2.
 
-integer, save ::    &
-  verbose=1,        & ! debug verbosity 0,..,4
-  persistence=1,    & ! persistence in days
-  fire_year=-1,     & ! override current year
-  nread=-1            ! records in forest fire file
+integer,   save :: nread=-1   ! records in forest fire file
 logical, save ::    &
-  need_file=.true., & ! stop if don't find file
-  need_date=.true., & ! stop if don't find time record
-  need_poll=.true., & ! stop if don't find pollutant
   debug_level(-1:5)=.false.
 ! =======================================================================
 contains
@@ -159,19 +149,7 @@ subroutine Config_Fire()
   logical, save :: first_call=.true.
   integer :: ios, ne, n, k
   character(len=*), parameter :: dtxt='BB:Config'
-  NAMELIST /Fire_config/MODE,verbose,persistence,fire_year,&
-                        need_file,need_date,need_poll,&
-                        BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
 
-  
-  rewind(IO_NML)
-  read(IO_NML,NML=Fire_config,iostat=ios)
-  call CheckStop(ios,"NML=Fire_config")  
-  if(DEBUG%FORESTFIRE.and.MasterProc)then
-    write(*,*) dtxt//"NAMELIST IS "
-    write(*,NML=Fire_config)
-  end if
-                        
   if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
 
   select case(BBMAP)
@@ -201,7 +179,7 @@ subroutine Config_Fire()
 
   
   ! set vebosity levels
-  verbose=min(max(0,verbose),4) ! debug verbosity 0,..,4
+  BBverbose=min(max(0,BBverbose),4) ! debug verbosity 0,..,4
   debug_level(:0)=.false.
   debug_level(1)=DEBUG%FORESTFIRE.and.MasterProc.and.first_call
   debug_level(2)=DEBUG%FORESTFIRE.and.MasterProc
@@ -302,8 +280,8 @@ subroutine Fire_Emis(daynumber)
   character(len=*), parameter :: dtxt='BB:Fire_Emis:'
 
   if(first_call) call Config_Fire()
-  debug_ff=debug_level(verbose)
-  debug_nc=debug_level(verbose-1)
+  debug_ff=debug_level(BBverbose)
+  debug_nc=debug_level(BBverbose-1)
 
   yyyy = current_date%year
   mm   = current_date%month 
@@ -311,12 +289,12 @@ subroutine Fire_Emis(daynumber)
   hh   = current_date%hour
   if(fire_year>1) yyyy=fire_year
   
-  if(debug_proc) write(*,'(a,7i5)') "current date and time BB-"//trim(MODE),&
+  if(debug_proc) write(*,'(a,7i5)') "current date and time BB-"//trim(BBMODE),&
       yyyy,mm,dd,fire_year, nn_old, mm
   if ( debug_proc .and. allocated(BiomassBurningEmis) )  then
       write(*,'(a,es12.3)') dtxt//'BBsum', sum(BiomassBurningEmis(1,:,:))
   end if
-  select case(MODE)
+  select case(BBMODE)
     case("HOURLY_REC","H","h")
       if(nn_old==hh) return         ! Calculate once per hour
       nn_old=hh
@@ -344,7 +322,7 @@ subroutine Fire_Emis(daynumber)
       dn1=day_of_year(yyyy,01,01)
       dn2=day_of_year(yyyy,12,31)
     case default
-      call CheckStop("Unknown ForestFire MODE="//trim(MODE))
+      call CheckStop("Unknown ForestFire MODE="//trim(BBMODE))
   end select
 
   if(debug_proc) write(*,'(a,5i5)') dtxt// "newFFrec checks ",&
@@ -365,7 +343,7 @@ subroutine Fire_Emis(daynumber)
 
   if(debug_proc) then
     write(*,'(a,5i5)') dtxt// "newFFrec WAS set ", yyyy,mm,dd, dn1, dn2
-    write(*,*) dtxt//'Starting MODE=',trim(MODE),&
+    write(*,*) dtxt//'Starting MODE=',trim(BBMODE),&
       date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call,debug_ff,debug_nc
     write(*,*) dtxt//' Interp= ', trim(bbinterp), dn1, dn2, nstart
   end if
@@ -401,7 +379,7 @@ subroutine Fire_Emis(daynumber)
                 ncFileID, fname, newFFrecord, nstart)
           if(newFFrecord) then
             call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol=bbinterp,&
-             needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
+             needed=BBneed_poll,UnDef=0.0,debug_flag=debug_nc,&
              ncFileID_given=ncFileID)
           end if
           rdemis = rdemis + xrdemis                 ! month total
@@ -410,7 +388,7 @@ subroutine Fire_Emis(daynumber)
     else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol=bbinterp,&
-          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
+          needed=BBneed_poll,UnDef=0.0,debug_flag=debug_nc,&
           ncFileID_given=ncFileID)
         if( debug_proc.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
            dtxt//" CO READ: ", nstart, trim(FF_poll), maxval(rdemis)
@@ -523,7 +501,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
   end select
   fname=key2str(fname,'DataDir',DataDir) ! expand DataDir keysword
 
-  !if(debug_proc .and. verbose >2 ) then
+  !if(debug_proc .and. BBverbose >2 ) then
   if(debug_proc ) then
 
     write(*,*)  dtxt//trim(fname), me, ymdh ! TMP
@@ -544,7 +522,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
     if(.not.fexist)then
       if(MasterProc)then
         !print *, dtxt//" file not found: ",trim(fname(36:))
-        call CheckStop(need_file,dtxt//"Missing file:"//trim(fname))
+        call CheckStop(BBneed_file,dtxt//"Missing file:"//trim(fname))
       end if
       burning(:,:) = .false.
       new=.false.
@@ -585,7 +563,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
         write(*,*)"ForestFire: no records between ",&
           nctime2string("YYYY-MM-DD hh:mm",ncday(0))," and ",&
           nctime2string("YYYY-MM-DD hh:mm",ncday(1)+1.0)
-        call CheckStop(need_date,"Missing ForestFire records")
+        call CheckStop(BBneed_date,"Missing ForestFire records")
       end if
       burning(:,:) = .false.
       new=.false.
@@ -598,7 +576,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
            write(*,*)dtxt//" no records between ",&
              nctime2string("YYYY-MM-DD 00:00",ncday(0))," and ",&
              nctime2string("YYYY-MM-DD 23:59",ncday(1))
-           call CheckStop(need_date,dtxt//"Missing records")
+           call CheckStop(BBneed_date,dtxt//"Missing records")
          end if
          burning(:,:) = .false.
          new=.false.
