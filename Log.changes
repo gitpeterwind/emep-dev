@@ -21,6 +21,26 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 May 2019, Peter
+
+Merged Columns and ForestFire config namelists into ModelConstants_config
+NB: some BB variables have changed name: 
+MODE->BBMODE
+need_file->BBneed_file
+need_date->BBneed_date
+need_poll->BBneed_poll
+verbose->BBverbose
+
+Allow to include additonal namelist files. Example:
+ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
+ExtraConfigFile(2)='OwnInputDir/MyVerySpecialConfig.nml',
+
+The definition of the last namelist is used if variables are set several times.
+
+Also replaced k20 with kmax in config, since we do not necessarily use 20 
+levels.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 May 2019, Peter
 
 Merged INPUT_PARA and Machine_config namelists into ModelConstants_config

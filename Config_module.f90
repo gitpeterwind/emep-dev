@@ -11,7 +11,8 @@ use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
                                  EmisFile_id_type, Emis_sourceFile_id_type,&
-                                 TXTLEN_NAME, TXTLEN_FILE, Emis_mask_type
+                                 TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
+                                 Emis_mask_type
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
 
@@ -153,8 +154,8 @@ type, public :: emep_useconfig
    logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
    character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
    character(len=20)      :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
-
 end type emep_useconfig
+
 type(emep_useconfig), public, save :: USES
 
 logical,  public, save :: &
@@ -250,6 +251,9 @@ integer, public, save :: &
 !Machine_config variables
  character (len=TXTLEN_FILE), public :: DataPath(20) = 'NOTSET'
 !
+!Extra namelists
+ character (len=TXTLEN_FILE), public :: ExtraConfigFile(20) = 'NOTSET'
+
 !------------ END OF NAMELIST VARIABLES ------------------------------------!
 
 ! Some flags for model setup will be removed when code is sufficiently tested
@@ -465,6 +469,32 @@ character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp4
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
+!ColumnsSource config
+integer,  public, save ::  &
+  NMAX_LOC = 7,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
+  NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
+character(len=TXTLEN_FILE),  public, save :: &
+  flocdef="columnsource_location.csv",  & ! see locdef
+  femsdef="columnsource_emission.csv"     ! see emsdef
+logical,  public, save ::          &
+  need_topo    = .true.     ! do not use column emissions if topo file is not found
+
+!Forest Fire config
+character(len=4),  public , save:: BBMAP = 'FINN'
+integer,  public, save ::    &
+  BBverbose=1,        & ! debug verbosity 0,..,4
+  persistence=1,    & ! persistence in days
+  fire_year=-1        ! override current year
+logical,  public, save ::    &
+  BBneed_file=.true., & ! stop if don't find file
+  BBneed_date=.true., & ! stop if don't find time record
+  BBneed_poll=.true.    ! stop if don't find pollutant
+character(len=TXTLEN_SHORT),  public, save :: BBMODE="DAILY_REC"
+character(len=TXTLEN_FILE),  public, save :: &
+  GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
+  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
+  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
+
 !file names
 type, public ::names
 character(len=TXTLEN_FILE), pointer:: filename => null()
@@ -600,13 +630,33 @@ subroutine Config_ModelConstants(iolog)
    ,TopoFile&
    ,Monthly_patternsFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
-   ,DataPath
+   ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
+   ,BBMODE,BBverbose,persistence,fire_year&
+   ,BBneed_file,BBneed_date,BBneed_poll&
+   ,BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN&
+   ,DataPath&
+   ,ExtraConfigFile
 
   DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=ModelConstants_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
+  
+!before any conversion, read the additional namelists
+  do i = 1, size(ExtraConfigFile)
+     if(ExtraConfigFile(i)/="NOTSET")then
+        !NB: replacements have not been made yet
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
+        if(MasterProc)&
+         write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
+        open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
+        read(IO_tmp,NML=ModelConstants_config)
+        close(IO_tmp)
+     endif
+  enddo
 
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
 
