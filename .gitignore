@@ -81,3 +81,7 @@ ZD_3DVar17/Makefile.deps
 # New binary names
 emepctm
 emepctm_3DVar
+meteoproc
+
+# Old modules
+*_ml.f90
