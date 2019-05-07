@@ -12,14 +12,7 @@
 chem=$1
 echo CHEM $chem
 
-if [[ $chem == CWF* ]]; then
-  chem=${chem/CWF/EmChem}
-  echo "Processing $chem for CWF"
-  cp ZCM_$chem/CM* .
-  cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
-  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
-  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
-elif [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
+if [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
   echo "Processing $chem"
   cp ZCM_$chem/CM* .
   cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
