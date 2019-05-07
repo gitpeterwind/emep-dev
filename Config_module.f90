@@ -6,20 +6,23 @@ module Config_module
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop
+use ChemDims_mod,          only: NSPEC_ADV
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
+use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
                                  EmisFile_id_type, Emis_sourceFile_id_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  Emis_mask_type
+use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
 
 implicit none
 private
 
-public :: Config_ModelConstants
+public :: Config_Constants
 
 !=============================================================================
 ! Experiment name:
@@ -57,11 +60,11 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   type(PBL_t), public, save :: PBL = PBL_t()
 
   type, private :: EmBio_t
-    character(len=10) :: GlobBvocMethod = '-' ! can be MEGAN
+    character(len=10) :: GlobBvocMethod = 'GLC-CLM' ! can be MEGAN
     real :: IsopFac = 1.0                     ! for experiments
     real :: TerpFac = 1.0                     ! for experiments
   ! canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
-    real :: CLF     = 1.0                     ! canopy factor, leaf vs branch emissions
+    real :: CLF     = 0.59                    ! canopy factor, leaf vs branch emissions
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
@@ -89,10 +92,10 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
   
   type, private :: LandCoverInputs_t
     character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
-    character(len=TXTLEN_FILE) :: LandDefs = '-'   !  LAI, h, etc (was Inputs_LandDefs
-    character(len=TXTLEN_FILE) :: Do3seDefs = '-'  !  DO3SE inputs
+    character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
+    character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
   end type LandCoverInputs_t
-  type(LandCoverInputs_t), public, save :: LandCoverInputs=LandCoverInputs_t()
+  type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
 
 ! Namelist controlled:
@@ -118,7 +121,6 @@ type, public :: emep_useconfig
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
     ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
-    ,AOD          = .false. &
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,PROGRESS_FILES   = .false. &! write to file.msg for each output in file.nc
     ,SKIP_INCOMPLETE_OUTPUT = .false. & ! skip daily/montly/fullrun output for runs under 1/28/181 days
@@ -133,6 +135,8 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = .false.     &!
     ,PFT_MAPS         = .false.  &! 
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
+
+
 
  ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
@@ -167,8 +171,10 @@ type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
-!DSHK - moved from parameter to here:
+
 logical, public, save :: EmisSplit_OUT = .false.
+
+logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD requested in output
 
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 
@@ -248,6 +254,76 @@ integer, public, save :: &
 !
   logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 
+!ColumnsSource config
+integer,  public, save ::  &
+  NMAX_LOC = 7,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
+  NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
+character(len=TXTLEN_FILE),  public, save :: &
+  flocdef="columnsource_location.csv",  & ! see locdef
+  femsdef="columnsource_emission.csv"     ! see emsdef
+logical,  public, save ::          &
+  need_topo    = .true.     ! do not use column emissions if topo file is not found
+
+!Forest Fire config
+character(len=4),  public , save:: BBMAP = 'FINN'
+integer,  public, save ::    &
+  BBverbose=1,        & ! debug verbosity 0,..,4
+  persistence=1,    & ! persistence in days
+  fire_year=-1        ! override current year
+logical,  public, save ::    &
+  BBneed_file=.true., & ! stop if don't find file
+  BBneed_date=.true., & ! stop if don't find time record
+  BBneed_poll=.true.    ! stop if don't find pollutant
+character(len=TXTLEN_SHORT),  public, save :: BBMODE="DAILY_REC"
+character(len=TXTLEN_FILE),  public, save :: &
+  GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
+  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
+  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
+
+! Nest config
+character(len=TXTLEN_SHORT),public, save ::  &
+  NEST_MODE_READ='NONE',&  ! read  mode
+  NEST_MODE_SAVE='NONE'    ! write mode
+integer, public, save :: NEST_NHOURSAVE=3,NEST_NHOURREAD=1 ! write/read frequency
+!if(NEST_NHOURREAD<NEST_NHOURSAVE) the data is interpolated in time
+
+character(len=TXTLEN_FILE),public, target, save ::  &
+  NEST_template_read_3D = 'EMEP_IN.nc',&       ! Different paths can be set here
+  NEST_template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
+  NEST_template_write   = 'EMEP_OUT.nc'        ! on namelist, if needed.
+
+integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
+              ! 0 means "do not look for old files"
+
+! Nested input/output on OUTDATE mode
+integer,public,parameter :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
+integer, public, save     :: NEST_OUTDATE_NDUMP     = 1  ! Read by emepctm.f90
+! on forecast run (1: start next forecast; 2-4: NMC statistics)
+type(date), public :: NEST_outdate(OUTDATE_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
+
+character(len=TXTLEN_FILE),public, save :: NEST_MET_inner ='NOTSET' !path to metdata for inner grid
+integer, save, public :: NEST_RUNDOMAIN_inner(4)=-1 ! RUNDOMAIN used for run in inner grid
+! Limit output, e.g. for NMC statistics (3DVar)
+character(len=TXTLEN_SHORT), public, save :: &
+  NEST_WRITE_SPC(NSPEC_ADV), NEST_WRITE_GRP(size(chemgroups))
+
+!coordinates of subdomain to write, relative to FULL domain (only used in write mode)
+integer, public, save :: NEST_out_DOMAIN(4)=-1 ! =[istart,iend,jstart,jend]
+
+logical,public, save ::  &               ! if IC/BC are in the same model/run
+  NEST_native_grid_3D = .false.,&              ! grid, the expensive call to
+  NEST_native_grid_BC = .false.,&              ! grid2grid_coeff in init_nest can be avoided
+  NEST_omit_zero_write= .false.                ! skip const=0.0 variables
+
+logical, public, save :: &
+  USE_EXTERNAL_BIC = .false., & ! use external (non emepctm) BCs
+  TOP_BC           = .false.    ! BCs include top level
+character(len=TXTLEN_SHORT),public, save :: &
+  EXTERNAL_BIC_NAME    = "DUMMY", EXTERNAL_BIC_VERSION = "use_any"
+character(len=TXTLEN_FILE),public, target, save :: &
+  filename_eta     = 'EMEP_IN_BC_eta.zaxis'
+
+
 !Machine_config variables
  character (len=TXTLEN_FILE), public :: DataPath(20) = 'NOTSET'
 !
@@ -282,7 +358,7 @@ character(len=4), parameter, public :: &
 !are used on the HIRHAM domain, this is not a problem.
 
 logical, public, save :: &
-  SEAFIX_GEA_NEEDED = .false. ! only if problems. Read from ModelConstants_config
+  SEAFIX_GEA_NEEDED = .false. ! only if problems. Read from Model_config
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
@@ -299,7 +375,7 @@ integer, public :: &  ! Full domain, set automatically from meteorology
   KMAX_BND, &         ! Number of level boundaries (=KMAX_MID+1)
   IIFULLDOM,JJFULLDOM ! Full grid
 
-! Sub-domains, in fulldomain coordinates. Read on ModelConstants_config
+! Sub-domains, in fulldomain coordinates. Read on Model_config
 integer, public, save, dimension(4) :: &
   RUNDOMAIN =-999,  & ! run sub-domain
   fullrun_DOMAIN,   & ! fullrun (year) output sub-domain
@@ -417,7 +493,7 @@ real, public, parameter :: &
 !
 !  additional parameters
 !
-integer, public, save   :: nterm, nmax, nstep &
+integer, public, save   :: nterm, nmax, step_main &
                          , iyr_trend ! Year specified for say BC changes
 
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
@@ -460,52 +536,23 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
-character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
+character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "NOTSET"
 ! Can use RCP values of CH4 for given iyr_trend.
-character(len=TXTLEN_FILE), public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
-
-!DSHK logical, parameter, public :: EmisSplit_OUT = .false.
-!DSHK logical, parameter, public :: EmisSplit_OUT = .true.
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
-
-!ColumnsSource config
-integer,  public, save ::  &
-  NMAX_LOC = 7,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
-  NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
-character(len=TXTLEN_FILE),  public, save :: &
-  flocdef="columnsource_location.csv",  & ! see locdef
-  femsdef="columnsource_emission.csv"     ! see emsdef
-logical,  public, save ::          &
-  need_topo    = .true.     ! do not use column emissions if topo file is not found
-
-!Forest Fire config
-character(len=4),  public , save:: BBMAP = 'FINN'
-integer,  public, save ::    &
-  BBverbose=1,        & ! debug verbosity 0,..,4
-  persistence=1,    & ! persistence in days
-  fire_year=-1        ! override current year
-logical,  public, save ::    &
-  BBneed_file=.true., & ! stop if don't find file
-  BBneed_date=.true., & ! stop if don't find time record
-  BBneed_poll=.true.    ! stop if don't find pollutant
-character(len=TXTLEN_SHORT),  public, save :: BBMODE="DAILY_REC"
-character(len=TXTLEN_FILE),  public, save :: &
-  GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
-  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
-  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
 !file names
 type, public ::names
 character(len=TXTLEN_FILE), pointer:: filename => null()
 end type names
-integer, public, parameter :: Size_InputFiles = 40
+integer, public, parameter :: Size_InputFiles = 60
 type(names), public, save :: InputFiles(Size_InputFiles)
 
 !To add a new filename:
 !1) add a line just here below, XXFile = '/default/Path/Default.name'
-!2) add the XXFile in NAMELIST /ModelConstants_config/
-!3) add a call associate_File(XXFile) near the end of Config_ModelConstants
+!2) add the XXFile in NAMELIST /Model_config/
+!3) add a call associate_File(XXFile) near the end of Config_Constants
 !4) In the routine using the file, add the XXFile under  "use Config_module"
 !5) replace the name you used in the routine with XXFile
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
@@ -549,7 +596,7 @@ character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'Data
 
 !----------------------------------------------------------------------------
 contains
-subroutine Config_ModelConstants(iolog)
+subroutine Config_Constants(iolog)
   integer, intent(in) :: iolog ! for Log file
 
   integer :: i, j, ispec, iostat
@@ -557,7 +604,7 @@ subroutine Config_ModelConstants(iolog)
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
 
-  NAMELIST /ModelConstants_config/ &
+  NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
@@ -635,12 +682,18 @@ subroutine Config_ModelConstants(iolog)
    ,BBneed_file,BBneed_date,BBneed_poll&
    ,BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN&
    ,DataPath&
-   ,ExtraConfigFile
+   ,ExtraConfigFile&
+   ,NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE &
+   ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write,BC_DAYS&
+   ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
+   ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
+   ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&
+   ,USE_EXTERNAL_BIC,EXTERNAL_BIC_NAME,EXTERNAL_BIC_VERSION,TOP_BC,filename_eta
 
   DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
-  read(IO_NML,NML=ModelConstants_config)
+  read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
   
 !before any conversion, read the additional namelists
@@ -653,7 +706,7 @@ subroutine Config_ModelConstants(iolog)
         if(MasterProc)&
          write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
         open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
-        read(IO_tmp,NML=ModelConstants_config)
+        read(IO_tmp,NML=Model_config)
         close(IO_tmp)
      endif
   enddo
@@ -675,7 +728,7 @@ subroutine Config_ModelConstants(iolog)
   if(MasterProc)then
     write(*, * ) dtxt//"NAMELIST START "
     write(iolog,*) dtxt//"NAMELIST IS "
-    write(iolog, NML=ModelConstants_config)
+    write(iolog, NML=Model_config)
   end if
 
   do i=1,size(DataPath)
@@ -710,40 +763,14 @@ subroutine Config_ModelConstants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  if(trim(fileName_O3_Top)/="NOTSET")then
-     fileName_O3_Top = key2str(fileName_O3_Top,'DataDir',DataDir)
-     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
-     if(MasterProc)then
-        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
-        write(*,*)trim(fileName_O3_Top)
-     end if
-  endif
-
-  if(trim(fileName_CH4_ibcs)/="NOTSET")then
-     fileName_CH4_ibcs = key2str(fileName_CH4_ibcs,'DataDir',DataDir)
-     if(MasterProc)then
-        write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
-     end if
-  endif
-
  ! LandCoverInputs
-  !print *, dtxt//'Landcover data:', trim(DataDir)
   do i = 1, size(LandCoverInputs%MapFile(:))
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
-       LandCoverInputs%MapFile(i)= &
-          key2str(LandCoverInputs%MapFile(i),'DataDir',DataDir)
-!       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
-       if(MasterProc)then
-          write(*,*)dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
-       end if
+       call associate_File(LandCoverInputs%MapFile(i))
     end if
   end do
-  LandCoverInputs%LandDefs=&
-       key2str(LandCoverInputs%LandDefs,'DataDir',DataDir)
-  LandCoverInputs%Do3seDefs=&
-       key2str(LandCoverInputs%Do3seDefs,'DataDir',DataDir)
-  !print *, dtxt//'Landcover =>', LandCoverInputs
-
+  call associate_File(LandCoverInputs%LandDefs)
+  call associate_File(LandCoverInputs%Do3seDefs)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)
@@ -775,6 +802,13 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(DustFile)
   call associate_File(TopoFile)
   call associate_File(Monthly_patternsFile)
+  call associate_File(fileName_O3_Top)
+  call associate_File(fileName_CH4_ibcs)
+  call associate_File(NEST_template_read_3D)
+  call associate_File(NEST_template_read_BC)
+  call associate_File(NEST_template_write)
+  call associate_File(filename_eta)
+
   do i = 1, size(Emis_sourceFiles)
      !part of a class cannot be a target (?) must therefore do this separately
      if(Emis_sourceFiles(i)%filename/='NOTSET')then
@@ -782,6 +816,14 @@ subroutine Config_ModelConstants(iolog)
         Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'GRID',GRID)
         Emis_sourceFiles(i)%filename = &
           key2str(Emis_sourceFiles(i)%filename,'OwnInputDir',OwnInputDir)
+     endif
+  enddo
+  do i = 1, size(EmisMask)
+     if(EmisMask(i)%filename/='NOTSET')then
+        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'DataDir',DataDir)
+        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'GRID',GRID)
+        EmisMask(i)%filename = &
+          key2str(EmisMask(i)%filename,'OwnInputDir',OwnInputDir)
      endif
   enddo
   do i = 1,size(InputFiles)
@@ -792,10 +834,20 @@ subroutine Config_ModelConstants(iolog)
             key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
     endif
   enddo
+  if(trim(fileName_O3_Top)/="NOTSET")then
+     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
+     if(MasterProc)then
+        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
+        write(*,*)trim(fileName_O3_Top)
+     end if
+  endif
+  if(trim(fileName_CH4_ibcs)/="NOTSET" .and. MasterProc)then
+     write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
+  endif
 
   if(.not. USE_uEMEP)NTIMING_uEMEP = 0
 
-end subroutine Config_ModelConstants
+end subroutine Config_Constants
 
 subroutine associate_File(FileName)
   integer, save::ix=0
@@ -809,5 +861,5 @@ end module Config_module
 !_____________________________________________________________________________
 !!TSTEMX program testr
 !!TSTEMX use Config_module
-!!TSTEXM !FAILS due to mpi call Config_ModelConstants()
+!!TSTEXM !FAILS due to mpi call Config_Constants()
 !!TSTEMX end program testr

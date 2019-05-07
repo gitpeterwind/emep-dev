@@ -193,12 +193,12 @@ subroutine Init_My_Deriv()
     lev3d_from_surface=.false. ! levels are to be read from surface up
   character(len=2)::  isec_char
   character(len=3)::  neigh_char
-  NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
-  NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED,SDEP_WANTED,&
-             NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt
-  NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,&
-              hour_DOMAIN, out_startdate, spinup_enddate,&
-              num_lev3d,lev3d,lev3d_from_surface
+  NAMELIST /Output_config/OutputMisc,OutputConcs,OutputVegO3,&
+       DDEP_ECOS, DDEP_WANTED, WDEP_WANTED,SDEP_WANTED,&
+       NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt,&
+       fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,&
+       hour_DOMAIN, out_startdate, spinup_enddate,&
+       num_lev3d,lev3d,lev3d_from_surface
 
 ! default output sizes
   fullrun_DOMAIN = RUNDOMAIN
@@ -218,19 +218,7 @@ subroutine Init_My_Deriv()
   debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
   rewind(IO_NML)
-  read(IO_NML,NML=OutputConcs_config,iostat=istat, iomsg=errmsg)
-  if (istat/=0) then
-      backspace(IO_NML)
-      read(IO_NML,fmt='(A)') line
-      call CheckStop(errmsg , errmsg // ": " // trim(line))
-  end if
-  read(IO_NML,NML=OutputDep_config,iostat=istat, iomsg=errmsg)
-  if (istat/=0) then
-      backspace(IO_NML)
-      read(IO_NML,fmt='(A)') line
-      call CheckStop(errmsg , errmsg // ": " // trim(line))
-  end if
-  read(IO_NML,NML=OutputSize_config,iostat=istat, iomsg=errmsg)
+  read(IO_NML,NML=Output_config,iostat=istat, iomsg=errmsg)
   if (istat/=0) then
       backspace(IO_NML)
       read(IO_NML,fmt='(A)') line
