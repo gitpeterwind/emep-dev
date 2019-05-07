@@ -14,7 +14,7 @@ use ChemDims_mod,          only: NSPEC_SHL
 use ChemSpecs_mod,         only: species_adv
 use Chemfields_mod,        only: xn_adv    ! emep model concs.
 use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
-use GasParticleCoeffs_mod, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
+use GasParticleCoeffs_mod, only: DDdefs
 use Functions_mod,         only: heaviside
 use GridValues_mod ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Landuse_mod,           only: LandCover
@@ -22,15 +22,16 @@ use LocalVariables_mod,    only: Grid
 use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_mod,          only: Wind_at_h
-use Config_module,         only: AERO, KMAX_MID, DataDir, &
+use Config_module,         only: KMAX_MID, DataDir, &
                                  METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                 dt=>dt_advec, DEBUG
+                                 dt=>dt_advec, DEBUG,&
+                                 outdate=>NEST_OUTDATE,OUTDATE_NDUMP=>NEST_OUTDATE_NDUMP,&
+                                 out_DOMAIN=>NEST_out_DOMAIN,&
+                                 MODE_READ=>NEST_MODE_READ,MODE_SAVE=>NEST_MODE_SAVE,&
+                                 template_read_IC=>NEST_template_read_3D,&
+                                 template_write_IC=>NEST_template_write
 use MPI_Groups_mod,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
-use Nest_mod,              only: outdate,OUTDATE_NDUMP,out_DOMAIN,&
-                                MODE_READ,MODE_SAVE,&
-                                template_read_IC=>template_read_3D,&
-                                template_write_IC=>template_write
 use NetCDF_mod,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
                                 ReadTimeCDF,CDFtype=>Real4
 use netcdf,                only: nf90_close
@@ -151,16 +152,17 @@ subroutine Config_Pollen()
     call CheckStop(inat(g)<0,"EMIS_BioNat misses: "//POLLEN_GROUP(g))
     call CheckStop(iadv(g)<0,"species_adv misses: "//POLLEN_GROUP(g))
 
-    ! override gravitational setling params
+    ! check gravitational setling params
     select case(POLLEN_GROUP(g))
-      case(BIRCH);n=AERO_SIZE(CDDEP_BIRCH)
-      case(OLIVE);n=AERO_SIZE(CDDEP_OLIVE)
-      case(RWEED);n=AERO_SIZE(CDDEP_RWEED)
-      case(GRASS);n=AERO_SIZE(CDDEP_GRASS)
+      case(BIRCH);n=find_index('POLLb',DDdefs(:)%name)
+      case(OLIVE);n=find_index('POLLo',DDdefs(:)%name)
+      case(RWEED);n=find_index('POLLr',DDdefs(:)%name)
+      case(GRASS);n=find_index('POLLg',DDdefs(:)%name)
     end select
-    AERO%DpgV(n)=D_POLL(g)*1e-6  ! um to m
-  ! AERO%sigma(n)=0.01
-    AERO%PMdens(n)=POLL_DENS*1e-3 ! g/m3 to kg/m3
+    call CheckStop(n<0,"DDdefs misses: "//POLLEN_GROUP(g))
+    call CheckStop(DDdefs(n)%umDpgV,D_POLL(g),"Wrong DDdefs%umDpgV: "//POLLEN_GROUP(g))
+    call CheckStop(DDdefs(n)%sigma ,0.01     ,"Wrong DDdefs%sigma: "//POLLEN_GROUP(g))
+    call CheckStop(DDdefs(n)%rho_p ,POLL_DENS*1e-3,"Wrong DDdefs%rho_p: "//POLLEN_GROUP(g))
   end do
   if(MasterProc)write(*,"(A,10(' adv#',I3,'=',A,1X,es10.3,:))") &
     "Pollen: ",(iadv(g),POLLEN_GROUP(g),grain_wt(g),g=1,POLLEN_NUM)
