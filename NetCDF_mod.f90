@@ -59,7 +59,7 @@ use InterpolationRoutines_mod,  only : grid2grid_coeff
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                                MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
 use netcdf
-use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME
+use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME, TXTLEN_FILE
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
                               IRUNBEG,JRUNBEG,limax,ljmax, &
                               gi0,gj0,tgi0,tgi1,tgj0,tgj1,tlimax,tljmax
@@ -70,10 +70,7 @@ use SmallUtils_mod,      only: wordsplit, find_index
 
 implicit none
 
-integer, public, parameter :: &
-  max_filename_length=200 ! large enough to include paths, eg Nest_config namelist
-
-character(len=max_filename_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   fileName      = 'NotSet',&
   fileName_iou(IOU_INST:IOU_HOUR_EXTRA)=&
     ['out_inst.nc    ','out_year.nc    ','out_month.nc   ','out_day.nc     ',&
