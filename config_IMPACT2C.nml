@@ -12,25 +12,24 @@
   USES%FOREST_FIRES      = T,
 !------------------------------
 !
-  USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,          ! NB: Switch on for global
+  USES%SOILWATER         = T,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,          ! NB: Switch on for global
   USES%DEGREEDAY_FACTORS = T,
 !xx  USE_FOREST_FIRES      = T,
-  USE_SEASALT           = T,
+  USES%SEASALT           = T,
   USE_SOILNOX           = F,          ! diff for global + Euro runs, *NOT for IMPACT2C*
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,          ! Only EECCA?
-  USE_DUST              = F,          ! Only EECCA?
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, *IMPACT2C*
-  FORECAST              = F,
-  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for *IMPACT2C*
+  USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for forecasts usually
 !--- "fake" vegetation for ozone POD calculations
 FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
 !FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_BEECH" "ACE_BEECH" "NEUR_SPRUCE",  ! Do not need to fill array :-)
@@ -54,11 +53,11 @@ FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
   MODE_READ = 'NONE',         ! do nothing
 ! MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! MODE_READ = 'START',        ! at the start of run
-! MODE_READ = 'FORECAST',     ! at the start of run, if files are found
+! MODE_READ = 'RESTART',      ! at the start of run, if files are found
   MODE_SAVE = 'NONE',         ! do nothing
 ! MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! MODE_SAVE = 'END',          ! at end of run
-! MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+! MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NHOURREAD = 1,              ! hours between reads. Fraction of 24
 ! NHOURSAVE = 3,              ! hours between saves. Fraction of 24
 !-------- File name templates for Nest I/O
@@ -72,9 +71,9 @@ FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
 ! out_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
 &end
 &Fire_config
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

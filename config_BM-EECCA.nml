@@ -33,21 +33,21 @@
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
   USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
-  USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,          ! False for EECCA runs performs better
+  USES%SOILWATER         = T,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,          ! False for EECCA runs performs better
   CONVECTION_FACTOR     = 0.33,
 !  USES%DEGREEDAY_FACTORS = T,
-  USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USES%SEASALT           = T,
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
-  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = T,          ! Only EECCA?
-  USE_DUST              = T,          ! Only EECCA?
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = T,          ! Only EECCA?
+  USES%DUST              = T,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
@@ -58,11 +58,10 @@
 !------------------------------
   emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
-  FORECAST              = F,
-  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
+  USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = T,          ! Used for FORECASTs usually
+  USES%AOD               = T,          ! Used for forecasts usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements

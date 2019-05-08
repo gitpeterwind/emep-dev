@@ -30,8 +30,8 @@ Try to:
 - Use pull requests
 - Read about git [best practices][]
 
-[cheat sheet]:    https://services.github.com/kit/downloads/github-git-cheat-sheet.pdf
-[best practices]: http://moveelo.com/blog/git-best-practices-for-teams
+[cheat sheet]:    https://education.github.com/git-cheat-sheet-education.pdf
+[best practices]: https://sethrobertson.github.io/GitBestPractices/
 
 #### More git info
 Print the github [cheat sheet][]

@@ -1,0 +1,37 @@
+#
+# Usage: 
+#  mk.Chem EmChem16x
+#
+# Copies files from ZCM_XXXX to current directory. These files are 
+# mainly produce by the ecosx/GenChem through the following steps:
+# 1. cd ecosx/box/src
+# 2. ../scripts/emep_setup.sh EmChem16  (for example)
+# 3. Send ZCM_EmChem16 to stallo/vilje
+# 4. Sort out BiomassBurningMapping and BoundaryConditions
+
+chem=$1
+echo CHEM $chem
+
+if [[ $chem == CWF* ]]; then
+  chem=${chem/CWF/EmChem}
+  echo "Processing $chem for CWF"
+  cp ZCM_$chem/CM* .
+  cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
+elif [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
+  echo "Processing $chem"
+  cp ZCM_$chem/CM* .
+  cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
+  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
+else
+  echo "Not found $chem"
+fi
+
+# ZCM_$chem has:
+# BoundaryConditions_$chem.inc BiomassBurningMapping_FINNv1.5_to_$chem.inc
+# CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 #
+# CM_ChemSpecs_mod.f90 CM_DryDep.inc CM_EmisFile.inc CM_emislist.csv
+# CM_EmisSpecs.inc CM_Reactions1.inc CM_Reactions2.inc CM_Reactions.log
+# CM_WetDep.inc emissplit_run

@@ -1,0 +1,231 @@
+!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+&end
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
+!------------------------------
+&ModelConstants_config
+  meteo                 = './meteoYYYYMMDD.nc',
+  EXP_NAME              = 'FORECAST',
+!-----------------------------
+  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+  EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+! EmBio%IsopFac        =  1.0,
+  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+  LandCoverInputs%MapFile =
+!    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+!    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+!!   'DataDir/LanduseGLC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+  YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
+!------------------------------
+  USES%testname         = 'FORECAST',
+  USES%FOREST_FIRES     = F,
+  USES%EMISSTACKS       = F,          ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS= F,
+  USES%PlumeMethod      = 'PVDI',     ! default PVDI, possible: NILU, ASMI, PVDI
+!------------------------------
+  USES%SOILWATER         = T,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
+  USES%SEASALT           = T,
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
+!------------------------------
+  USES%EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!------------------------------
+  USES%PROGRESS_FILES    = T,          ! write to file.msg for each output in file.nc
+  USES%SKIP_INCOMPLETE_OUTPUT = T,     ! skip daily/montly/fullrun output for runs under 1/28/181 days
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = T,          ! Only EECCA?
+  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,          ! Used for TFMM runs
+  INERIS_SNAP2          = F,          ! Used for TFMM runs
+!------------------------------
+  USE_SECTORS_NAME = 'SNAP',
+  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
+  emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
+!  EmisDir                 = 'DataDir/emis01deg_EMEP',
+!  emis_inputlist(1)%name  = 'EmisDir/GNFREmis_EMEP01_2015_120617.nc',
+  emis_inputlist(2)%name= 'DataDir/DMS.nc',
+  emis_inputlist(2)%type= 'DMS',
+  SecEmisOutPoll(1:)    = 'pm25','nox',
+!------------------------------
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
+  USES%ASH              = F,          ! Used for forecasts and Status 2010
+  ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
+  USES%AOD              = F,          ! Used for forecasts usually
+  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
+!--- 'fake' vegetation for ozone POD calculations
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
+
+!-------uEMEP setup example
+  USE_uEMEP             = T,
+  uEMEP%poll(1:3)%emis  = 'pm25','pmco','nox',
+  uEMEP%poll(1)%sector(1:6)=0,1,2,4,7,8,
+  uEMEP%poll(2)%sector(1:6)=0,1,2,4,7,8,
+  uEMEP%poll(3)%sector(1:6)=0,1,2,4,7,8,
+  uEMEP%YEAR  = T,
+  uEMEP%MONTH = F,
+  uEMEP%DAY   = F,
+  uEMEP%HOUR  = T,
+  uEMEP%HOUR_INST = F,
+  uEMEP%dist  = 2, ! how far the neighbors can be in each direction (NB: high cost for large dist)
+  uEMEP%Nvert = 7, ! How many vertical level to include in treatment. Should be higher than highest emissions (?)
+  uEMEP%COMPUTE_LOCAL_TRANSPORT = F !output also the 'reverse' i.e from source to receptor
+!--- uEMEP output domain (x0,x1,y0,y1): (3.25W..34E)x(56.5N..72.125N)
+!  uEMEP%DOMAIN = 108, 257, 213, 338,
+!-------- Sub domain (x0,x1,y0,y1)
+! RUNDOMAIN =   100,300, 350, 500, 
+! RUNDOMAIN =   150,680, 190, 860,
+! RUNDOMAIN =   149,679, 189, 859,
+!-------- 
+&end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/volcano_location.csv_20160610",
+  femsdef="DataDir/volcano_emission.csv_20160610",
+  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=F, ! stop simulation if topo_nc not found
+! NMAX_LOC=-1, ! estimate from lines in flocdef
+! NMAX_EMS=-1, ! estiamte from lines in femsdef
+&end
+&Fire_config
+  need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
+  GFED_PATTERN='$GFED',#GFED
+  FINN_PATTERN='$FINN',#FINN
+  GFAS_PATTERN='$GFAS',#GFAS
+&end
+&Pollen_config
+  birch_frac_nc  = '$birch_frac',#birch_frac
+  birch_data_nc  = '$birch_data',#birch_data
+  birch_corr_nc  = '$birch_corr',#birch_corr
+  olive_data_nc  = '$olive_data',#olive_data
+! grass_field_nc = '$grass_frac',#grass_frac
+! grass_time_nc  = '$grass_time',#grass_time
+! grass_mode = 'linear',
+  grass_field_nc = '$grass_data',#grass_data
+  grass_time_nc  = '$grass_data',#grass_data
+  grass_mode = 'gamma',
+  template_read  = '$poll_read',#poll_read
+  template_write = '$poll_write',#poll_write
+&end
+&Nest_config
+!-------- Read/Write MODEs
+  MODE_READ = 'RESTART',      ! at the start of run, if files are found
+  MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
+!-------- File name templates for Nest I/O
+  template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
+! template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
+!  template_read_BC = '/prod/forecast/work/emep/cwf/input/ICs/CWF_12AQ-YYYYMMDD_aqbc.nc'
+  template_read_BC = '/prod/forecast/work/emep/cwf/input/ICs/CWF_12AQ-20171201_aqbc.nc'
+  template_write   = '$dump',#dump            ! in Nest_ml
+  native_grid_3D = T,                         ! restart file on the same grid
+  native_grid_BC = F,                         ! nest-bc file on a different grid
+!-------- Sub domain for write modes 
+! out_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!--- uEMEP output domain (x0,x1,y0,y1): (3.25W..34E)x(56.5N..72.125N)
+!  out_DOMAIN     = 108, 257, 213, 338,
+!-------- CWF dump/restart
+! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
+! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
+! omit_zero_write= T,                               ! further reduce output
+  OUTDATE_NDUMP  = 1,                       ! Nr. CWF dump dates
+  outdate        = $outdate,                ! 1st,2nd CWF dump dates
+! outdate(1:4)   = -1,-1,-1,00,0000,        ! everyday at 00:00
+!                  -1,-1,-1,12,0000,        ! everyday at 12:00
+!                  -1,-1,-1,06,0000,        ! everyday at 06:00
+!                  -1,-1,-1,18,0000,        ! everyday at 18:00
+! outdate(1:2)   = -1,-1,01,00,0000,        !  1st of every month at 00:00
+!                  -1,-1,16,00,0000,        ! 16th of every month at 00:00
+! outdate(1:4)   = -1,01,01,00,0000,        ! Jan 1st at 00:00
+!                  -1,04,01,00,0000,        ! Apr 1st at 00:00
+!                  -1,07,01,00,0000,        ! Jul 1st at 00:00
+!                  -1,10,01,00,0000,        ! Oct 1st at 00:00
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
+  EXTERNAL_BIC_NAME    = 'EMEP',
+  EXTERNAL_BIC_VERSION = 'EMEP',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
+  TOP_BC               = T,
+  filename_eta         = '$filename_eta',#filename_eta
+&end
+&ExternalBICs_bc
+! BC EMEP
+  description='EMEP','EMEP',59,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'               ,'O3'               ,1.0,T,F,-1,
+    'CH4'              ,'CH4'              ,1.0,T,F,-1,
+    'SO2'              ,'SO2'              ,1.0,T,F,-1,
+    'SO4'              ,'SO4'              ,1.0,T,F,-1,
+    'NO'               ,'NO'               ,1.0,T,F,-1,
+    'NO2'              ,'NO2'              ,1.0,T,F,-1,
+    'N2O5'             ,'N2O5'             ,1.0,T,F,-1,
+    'NO3'              ,'NO3'              ,1.0,T,F,-1,
+    'NO3_C'            ,'NO3_C'            ,1.0,T,F,-1,
+    'NO3_F'            ,'NO3_F'            ,1.0,T,F,-1,
+    'PAN'              ,'PAN'              ,1.0,T,F,-1,
+    'HNO3'             ,'HNO3'             ,1.0,T,F,-1,
+    'CO'               ,'CO'               ,1.0,T,F,-1,
+    'SEASALT_F'        ,'SEASALT_F'        ,1.0,T,F,-1,
+    'SEASALT_C'        ,'SEASALT_C'        ,1.0,T,F,-1,
+    'DUST_SAH_F'       ,'DUST_SAH_F'       ,1.0,T,F,-1,
+    'DUST_SAH_C'       ,'DUST_SAH_C'       ,1.0,T,F,-1,
+    'OXYL'             ,'OXYL'             ,1.0,T,F,-1,
+    'NC4H10'           ,'NC4H10'           ,1.0,T,F,-1,
+    'C2H6'             ,'C2H6'             ,1.0,T,F,-1,
+    'HCHO'             ,'HCHO'             ,1.0,T,F,-1,
+    'FFIRE_OM'         ,'FFIRE_OM'         ,1.0,T,F,-1,
+    'FFIRE_BC'         ,'FFIRE_BC'         ,1.0,T,F,-1,
+    'FFIRE_REMPPM25'   ,'FFIRE_REMPPM25'   ,1.0,T,F,-1,
+    'CH3CHO'           ,'CH3CHO'           ,1.0,T,F,-1,
+    'C3H6'             ,'C3H6'             ,1.0,T,F,-1,
+    'C5H8'             ,'C5H8'             ,1.0,T,F,-1,
+    'C2H4'             ,'C2H4'             ,1.0,T,F,-1,
+    'CH3COO2'          ,'CH3COO2'          ,1.0,T,F,-1,
+    'EC_C_WOOD'        ,'EC_C_WOOD'        ,1.0,T,F,-1,
+    'EC_C_FFUEL'       ,'EC_C_FFUEL'       ,1.0,T,F,-1,
+    'EC_F_FFUEL_NEW'   ,'EC_F_FFUEL_NEW'   ,1.0,T,F,-1,
+    'EC_F_FFUEL_AGE'   ,'EC_F_FFUEL_AGE'   ,1.0,T,F,-1,
+    'EC_F_WOOD_NEW'    ,'EC_F_WOOD_NEW'    ,1.0,T,F,-1,
+    'EC_F_WOOD_AGE'    ,'EC_F_WOOD_AGE'    ,1.0,T,F,-1,
+    'HONO'             ,'HONO'             ,1.0,T,F,-1,
+    'NON_C_ASOA_NG100' ,'NON_C_ASOA_NG100' ,1.0,T,F,-1,
+    'NON_C_ASOA_UG1'   ,'NON_C_ASOA_UG1'   ,1.0,T,F,-1,
+    'NON_C_ASOA_UG10'  ,'NON_C_ASOA_UG10'  ,1.0,T,F,-1,
+    'NON_C_ASOA_UG1E2' ,'NON_C_ASOA_UG1E2' ,1.0,T,F,-1,
+    'NON_C_ASOA_UG1E3' ,'NON_C_ASOA_UG1E3' ,1.0,T,F,-1,
+    'NON_C_BSOA_NG100' ,'NON_C_BSOA_NG100' ,1.0,T,F,-1,
+    'NON_C_BSOA_UG1'   ,'NON_C_BSOA_UG1'   ,1.0,T,F,-1,
+    'NON_C_BSOA_UG10'  ,'NON_C_BSOA_UG10'  ,1.0,T,F,-1,
+    'NON_C_BSOA_UG1E2' ,'NON_C_BSOA_UG1E2' ,1.0,T,F,-1,
+    'NON_C_BSOA_UG1E3' ,'NON_C_BSOA_UG1E3' ,1.0,T,F,-1,
+    'POM_C_FFUEL'      ,'POM_C_FFUEL'      ,1.0,T,F,-1,
+    'POM_F_FFUEL'      ,'POM_F_FFUEL'      ,1.0,T,F,-1,
+    'POM_F_WOOD'       ,'POM_F_WOOD'       ,1.0,T,F,-1,
+    'ASOC_NG100'       ,'ASOC_NG100'       ,1.0,T,F,-1,
+    'ASOC_UG1'         ,'ASOC_UG1'         ,1.0,T,F,-1,
+    'ASOC_UG10'        ,'ASOC_UG10'        ,1.0,T,F,-1,
+    'ASOC_UG1E2'       ,'ASOC_UG1E2'       ,1.0,T,F,-1,
+    'ASOC_UG1E3'       ,'ASOC_UG1E3'       ,1.0,T,F,-1,
+    'BSOC_NG100'       ,'BSOC_NG100'       ,1.0,T,F,-1,
+    'BSOC_UG1'         ,'BSOC_UG1'         ,1.0,T,F,-1,
+    'BSOC_UG10'        ,'BSOC_UG10'        ,1.0,T,F,-1,
+    'BSOC_UG1E2'       ,'BSOC_UG1E2'       ,1.0,T,F,-1,
+    'BSOC_UG1E3'       ,'BSOC_UG1E3'       ,1.0,T,F,-1,
+&end

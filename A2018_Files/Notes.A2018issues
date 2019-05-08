@@ -1,0 +1,62 @@
+BUGS found in old ?? !!!
+
+1)   if USES%GLOBAL_SOILNOX didn't set rcemis?!!
+
+2) Gerber tab was:
+  ! Gerber, TAble 2, simplified for ext,. coeffs.
+   real, parameter, dimension(4) :: &
+     !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
+      C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
+     ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
+
+ with SS2 used for fine-aerosol. But SS2 should hace C7=1.83.
+
+
+RCPHOTextended - use in FastJ
+  - also had to use NRCPHOTextended in ChemFields. Relation to NPHOTOL awaits
+    new photolysis system
+
+
+GenChem disabled just now. Copy CM and other  files from A2018_Files directory
+
+CM_BoundaryConditions - needed from CM_Apr9 jjst now
+
+DefPhotolysis - needs to use EMEP indices. Map from MCM??
+
+My_Derived_mod
+
+Had to hard-code some changes just now:
+
+  CM_AerExt - NEEDS FIX!!!!
+
+  cp ZCM_EmChem16a/EmChem16abase.BoundaryConditions CM_BoundaryConditions.inc
+  CM_ChemRates - skip Photol for now
+
+  BiomassBurning - mapping
+
+
+CDDEP_PNfNH4 - was it done right before in EMEP?
+             - need to implemet in ESX
+
+Aerosols - lots of work/checks needed!!
+
+  The main definitions are now in GasParticleCoeffs
+
+  check Dp, DpgV, etc - notation and values
+
+  AERO Gerber etc ---- NEEDS CHeck
+
+  NSAREA etc .... 
+
+ALSO needs PMfSS to be sent back to ES...
+
+SettlingVelocity - do we use wet diamter at all? Guess we should!
+
+
+
+------------------------------------------------
+DONE:
+  Disabled BVOC group. Need to re-instate with new NATBIO
+
+  SOA_ re-instate CiStar etc..
+

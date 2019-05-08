@@ -1,8 +1,13 @@
 #!/home/mifapw/anaconda3/envs/conda_python3_netcdf4_pyqt5_hdf4/bin/python3
-
+##!/usr/bin/python3
 
 # Written by Johan S. Wind April 2017
-# Modified by Peter Wind May 2017
+# Modified by Peter Wind June 2017
+
+# For ubuntu install libraries with:
+# sudo apt-get install python3-pyqt5 
+# sudo apt install python3-netcdf4 
+# then remove the first line of this script and one of the # in the second line
 
 import sys
 sys.path.append('/home/mifapw/software/PyQt5_gpl-5.8.2')
@@ -65,7 +70,7 @@ class ContourPlotter:
                     self.lines.append([])
 
 class DimEdit(QWidget):
-    def __init__(self, par, dimid, map_or_over):
+    def __init__(self, par, dimid, map_or_over, AreaActived):
         super(DimEdit, self).__init__(par)#init QWidget
 
         self.par = par #parent
@@ -94,6 +99,7 @@ class DimEdit(QWidget):
         self.setMinimumSize(180, 60)
         self.setMaximumSize(180, 60)
         self.map_or_over = map_or_over
+        self.AreaActived = AreaActived
         self.updateText()
 
     def updateText(self):#write text in side bar
@@ -186,6 +192,7 @@ class MapView(QWidget):
 #        self.resize(self.data_w*4, self.data_h*4)
 
         self.overlay = 0
+        self.ActivatedM = [[0 for col in range(self.overh)] for row in range(self.overw)]
         #self.overx = self.overy = 0
 
         self.contour = ContourPlotter(self.par)#coastal line
@@ -200,10 +207,11 @@ class MapView(QWidget):
     
         maxval = max(self.data.flatten())
 
-        if re.search(r'fraction', self.par.reg_poll): 
-            oscale = 1.0
-        else:
-            oscale = 1.0/(1.E-6+ maxval)
+        #if re.search(r'fraction', self.par.reg_poll): 
+        #    oscale = 1.0
+        #else:
+        #    oscale = 1.0/(1.E-6+ maxval)
+        oscale = 1.0/(1.E-6+ maxval)
             
         for y in range(self.data_h):
             for x in range(self.data_w):
@@ -219,21 +227,55 @@ class MapView(QWidget):
         self.repaint()
 
     def updateOverlay(self):
-        odata = self.par.fh.variables[self.par.loc_poll][self.par.dim[1][0],self.par.dim[1][1],self.data_h-1-self.overy,self.overx,:,:]
-        self.overh, self.overw = odata.shape
+        if self.par.AreaActivated and self.overlay:
+            adata = self.par.fh.variables[self.par.loc_poll][self.par.dim[1][0],self.par.dim[1][1],self.data_h-1-self.par.areay,self.par.areax,:,:]
+            dx = self.par.areax - self.par.overx
+            dy = self.par.areay - self.par.overy
+            active_sign = 1
+            if (abs(dx)<self.overw/2 and abs(dy)<self.overh/2):
+                if self.ActivatedM[int(dy+self.overh/2)][int(dx+self.overw/2)] == 0:
+                    self.ActivatedM[int(dy+self.overh/2)][int(dx+self.overw/2)] = 1
+                    for y in range(self.overh):
+                        if y+dy < self.overh:
+                            for x in range(self.overw):
+                                if x+dx < self.overw:
+                                    self.par.odata[y,x] += adata[y+dy,x+dx]
+                                
+                else:
+                    self.ActivatedM[int(dy+self.overh/2)][int(dx+self.overw/2)] = 0
+                    for y in range(self.overh):
+                        if y+dy < self.overh:
+                            for x in range(self.overw):
+                                if x+dx < self.overw:
+                                    self.par.odata[y,x] -= adata[y+dy,x+dx]
+                    
+        else:
+            self.par.odata = self.par.fh.variables[self.par.loc_poll][self.par.dim[1][0],self.par.dim[1][1],self.data_h-1-self.par.overy,self.par.overx,:,:]
+            self.ActivatedM = [[0 for col in range(self.overh)] for row in range(self.overw)]           
+            self.ActivatedM[int(self.overh/2)][int(self.overw/2)] = 1
+
+        self.overh, self.overw = self.par.odata.shape
         self.overimg = QImage(self.overw, self.overh, QImage.Format_ARGB32)
         
         sum = 0
         oscale = 1.0
-        maxval = max(self.data.flatten())
-        if re.search(r'transport', self.par.loc_poll): oscale = 1.0/(1.E-6+odata[int((self.overh-1)/2),int((self.overw-1)/2)])
+        Nsum = 0
         for y in range(self.overh):
             for x in range(self.overw):
-                v = odata[self.overh-1-y,x]
-                v *= oscale
+                Nsum += self.ActivatedM[y][x]
+
+        maxval = max(self.par.odata.flatten())
+        if re.search(r'transport', self.par.loc_poll): oscale = 1.0/(1.E-6+self.par.odata[int((self.overh-1)/2),int((self.overw-1)/2)])
+
+        oscale = 1.0/(1.E-6+ maxval)
+
+        for y in range(self.overh):
+            for x in range(self.overw):
+                v = self.par.odata[self.overh-1-y,x]
                 sum += v
+                v *= oscale
                 self.overimg.setPixel(x, y, toColor(v).rgb())
-        self.par.slabel.setText("Local sum: %.1f%%"%(sum*100))
+        self.par.slabel.setText("Local sum: %.1f%%"%((sum*100)/Nsum))
         self.par.colorScale_loc.scale = 1.0/oscale
         self.par.colorScale_loc.unit = self.par.fh.variables[self.par.loc_poll].units
         self.par.colorScale_loc.name = self.par.fh.variables[self.par.loc_poll].long_name
@@ -257,17 +299,24 @@ class MapView(QWidget):
         self.setToolTip(txt)
     def mousePressEvent(self, e):
         if self.overlay:
-            self.overlay = 0
-            self.setMouseTracking(1)
-            self.par.slabel.setText("Local sum:")
-            self.repaint()
+            if self.par.AreaActivated:
+                x, y = e.pos().x(), e.pos().y()
+                self.par.areax, self.par.areay = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
+                self.setMouseTracking(1)
+                self.updateOverlay()
+            else:
+                self.overlay = 0
+                self.ActivatedM = [[0 for col in range(self.overh)] for row in range(self.overw)]
+                self.setMouseTracking(1)
+                self.repaint()
         else:
             x, y = e.pos().x(), e.pos().y()
-            self.overx, self.overy = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
-
+            self.par.overx, self.par.overy = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
+            self.par.slabel.setText("Local sum:")
             self.overlay = 1
             self.setToolTip('')
             self.setMouseTracking(0)
+            self.ActivatedM[int(self.overh/2)][int(self.overw/2)] = 1
             self.updateOverlay()
 
     def paintEvent(self, e):
@@ -289,12 +338,16 @@ class MapView(QWidget):
                     p.drawLine(last[0]*sw, h-last[1]*sh, j[0]*sw, h-j[1]*sh)
                 last = j
 
-        if self.overlay:            
-            rect = QRectF(self.overx*sw-(self.overw-1)/2*sw, self.overy*sh-(self.overh-1)/2*sh, self.overw*sw, self.overh*sh)
+        if self.overlay or self.par.AreaActivated:            
+            rect = QRectF(self.par.overx*sw-(self.overw-1)/2*sw, self.par.overy*sh-(self.overh-1)/2*sh, self.overw*sw, self.overh*sh)
             rect2 = QRect(rect.left()-3, rect.top()-3, rect.width()+7, rect.height()+7)
 
             p.fillRect(rect2, QColor(0,0,0))
             p.drawImage(rect, self.overimg)
+            for y in range(self.overh):
+                for x in range(self.overw):
+                    if(self.ActivatedM[y][x]):
+                        p.drawText((self.par.overx+x-self.overw/2+1)*sw-w/2, (self.par.overy+y-self.overh/2+1)*sh-h/2, int(w),int(h), Qt.AlignCenter, 'x')
 
         p.end()
 
@@ -323,6 +376,12 @@ class Main(QWidget):
                 self.loc_poll = var #init
                 break
 
+        abutton = QPushButton("AreaSum")
+        self.AreaActivated = 0
+        abutton.clicked.connect(self.AreaActivate)
+        self.areax = 0
+        self.areay = 0
+
         self.slabel = QLabel("Local sum: ")
         font = QFont()
         font.setPixelSize(20)
@@ -338,8 +397,9 @@ class Main(QWidget):
         self.slabel.setMaximumSize(180, 30)
         obutton.setMaximumSize(180, 30)
         qbutton.setMaximumSize(180, 30)
+        abutton.setMaximumSize(180, 30)
 
-        self.adjusts = [DimEdit(self, [0,1][i%2], i//2) for i in range(4)]
+        self.adjusts = [DimEdit(self, [0,1][i%2], i//2, 0) for i in range(4)]
 
         reg_spec = QComboBox(self)
         print(len(self.fh.variables))
@@ -360,6 +420,7 @@ class Main(QWidget):
 
 
         sidebar.addWidget(QLabel("Urban"))
+        sidebar.addWidget(abutton)
  
         sidebar.addWidget(self.slabel)
 
@@ -388,7 +449,7 @@ class Main(QWidget):
         self.setLayout(hlayout)
         
         self.resize(900, 900)
-        self.move(1600,200)
+        self.move(1100,200)
         self.show()
 
 
@@ -398,6 +459,15 @@ class Main(QWidget):
     def set_pollutant_loc(self, text):
         self.loc_poll = text
         self.mapView.updateOverlay()
+
+    def AreaActivate(self):
+        if(self.AreaActivated):
+            self.AreaActivated = 0
+            print("deactivated")
+        else:
+            self.AreaActivated = 1
+            print("activated")
+        
 
     def openFile(self):
         fname, idontknow = QFileDialog.getOpenFileName(self, "Open file", ".")
