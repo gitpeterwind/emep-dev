@@ -43,7 +43,7 @@ use Config_module,     only: &
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
   ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
-  HourlyEmisOut, SecEmisOutWanted, spinup_enddate
+  HourlyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
 
 use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
@@ -67,8 +67,8 @@ use My_Derived_mod, only : &
     wanted_deriv2d, wanted_deriv3d, & ! names of wanted derived fields
     Init_My_Deriv, My_DerivFunc,    &
     OutputFields, nOutputFields,    &
-    nOutputMisc, OutputMisc,        &
-    nOutputWdep, WDEP_WANTED, D3_OTHER,&
+    nOutputMisc,        &
+    nOutputWdep, D3_OTHER,&
     PS_needed
 
 use NumberConstants,      only: UNDEF_R

@@ -168,6 +168,23 @@ type, public :: VBST
 end type VBST
 !==================
 
+
+type, public:: O3cl_t
+   character(len=TXTLEN_DERIV) :: name = '-'  ! e.g. POD1_IAM_DF
+   character(len=TXTLEN_SHORT) :: class = '-' ! POD or AOT
+   real    :: Threshold = UNDEF_R     ! Threshold or CL, e.f. AOTx or AFstY
+   character(len=TXTLEN_SHORT) :: defn = '-'  !  MM or EU definitions
+   character(len=TXTLEN_SHORT) :: txtLC = '-' !  CF, DF, IAM_CF etc.
+   logical :: RelSGS = .false.  ! true if accumulation period is relative to
+   ! start of growing season (SGS)
+   ! can be false it fixed, e.g. April 1st
+   integer :: SAccPeriod = UNDEF_I  ! Start of accumulation period, either
+   ! rel to SGS or day number, days
+   integer :: EAccPeriod = UNDEF_I  ! End ...., days
+   character(len=TXTLEN_IND)            :: iotype = '-'! .. 'M'=>IOU_MON, 'D'=>IOU_DAY, ...
+end type O3cl_t
+
+
 !==================
 ! uEMEP parameters
 integer, public, parameter :: Npoll_uemep_max=7 !max number of uEMEP pollutant

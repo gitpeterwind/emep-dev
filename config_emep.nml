@@ -275,17 +275,10 @@
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
   EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
 
-&end
-
-!
-! END OF Model_config
-!
-!================================================================================!
 !
 ! START OF OUTPUT config
 !
 
-&Output_config
 !-------------------- ---------------------------------------------------------
 ! Common 2D and 3D outputs. Select here, giving unit, type, etc. 
 ! 1) OutputConcs
