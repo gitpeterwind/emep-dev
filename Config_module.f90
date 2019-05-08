@@ -14,7 +14,8 @@ use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
                                  EmisFile_id_type, Emis_sourceFile_id_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
-                                 Emis_mask_type
+                                  TXTLEN_DERIV, Emis_mask_type, &
+                                 Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -194,8 +195,8 @@ character(len=TXTLEN_FILE), public, save :: &
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
-integer, public, save :: out_startdate(4)=(/0,0,0,0/) ! start of the output of data
-integer, public, save :: spinup_enddate(4)=(/0,0,0,0/) ! end of spinup. Does not average concentration etc before that date
+integer, public, save :: out_startdate(4)=(/-1,-1,-1,-1/) ! start of the output of data
+integer, public, save :: spinup_enddate(4)=(/-1,-1,-1,-1/) ! end of spinup. Does not average concentration etc before that date
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -296,7 +297,7 @@ integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in
               ! 0 means "do not look for old files"
 
 ! Nested input/output on OUTDATE mode
-integer,public,parameter :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
+integer,public,parameter  :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
 integer, public, save     :: NEST_OUTDATE_NDUMP     = 1  ! Read by emepctm.f90
 ! on forecast run (1: start next forecast; 2-4: NMC statistics)
 type(date), public :: NEST_outdate(OUTDATE_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
@@ -323,6 +324,56 @@ character(len=TXTLEN_SHORT),public, save :: &
 character(len=TXTLEN_FILE),public, target, save :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
 
+!Output_config variables
+
+integer, public, parameter ::       &
+  MAX_NUM_DERIV2D = 343,            &
+  MAX_NUM_DDEP_ECOS = 9,            & ! Grid, Conif, etc.
+  MAX_NUM_NEWMOS  = 30,             & !New system.
+  ! Older system
+  MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:
+  MAX_NUM_MOSLCS    = 10,           & !careful here, we multiply by prev:
+  MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
+  MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
+
+type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
+type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: &
+  OutputConcs = typ_s5ind("-","-","-","-","-","-")
+
+integer, parameter, private :: MAXNVO3  = 60
+type(O3cl_t), public, save, dimension(MAXNVO3) :: OutputVegO3 = O3cl_t()
+
+! Depositions
+type(typ_s1ind), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
+  DDEP_ECOS = typ_s1ind("-",'-') ! e.g. "Grid","YMD", 
+
+type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
+  DDEP_WANTED = typ_s3('-','-','-'), & ! e.g. typ_s3("SO2",SPEC,"mgS"),
+  SDEP_WANTED = typ_s3('-','-','-')    ! Stomatal deposition (for HTAP)
+
+type(typ_s4), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
+  WDEP_WANTED = typ_s4('-','-','-','-')
+
+!- specify some species and land-covers we want to output
+! dep. velocities for in netcdf files. Set in My_DryDep_mod.
+! NewMosaic seems to mean new-style, to avoid  needing all combinations
+! of MET & LC
+type(typ_s5ind), public, save, dimension(MAX_NUM_NEWMOS) :: &
+  NewMosaic = typ_s5ind('-','-','-','-','-','-')
+
+
+! For met-data and canopy concs/fluxes ...
+character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSCONCS) :: &
+  MOSAIC_METCONCS = '-' ! = [character(len=TXTLEN_DERIV):: & 
+     !,"VPD","FstO3","EVAP","Gsto" ,"USTAR","INVL"/)
+! "USTAR","LAI","CanopyO3","FstO3"] ! SKIP CanopyO3
+! "g_sto" needs more work - only set as L%g_sto
+
+character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSLCS) :: &
+  MET_LCS = '-' 
+! [character(len=TXTLEN_DERIV)::  "DF","GR","BF","TC","IAM_DF","IAM_CR"]
+
+character(len=10), public, save ::  Mosaic_timefmt='YM'  ! eg 'YMD'
 
 !Machine_config variables
  character (len=TXTLEN_FILE), public :: DataPath(20) = 'NOTSET'
@@ -376,17 +427,20 @@ integer, public :: &  ! Full domain, set automatically from meteorology
   IIFULLDOM,JJFULLDOM ! Full grid
 
 ! Sub-domains, in fulldomain coordinates. Read on Model_config
+! negative values means: rundomain size if not other specified.
 integer, public, save, dimension(4) :: &
   RUNDOMAIN =-999,  & ! run sub-domain
-  fullrun_DOMAIN,   & ! fullrun (year) output sub-domain
-  month_DOMAIN,     & ! montly output sub-domain
-  day_DOMAIN,       & ! daily  output sub-domain
-  hour_DOMAIN         ! hourly output sub-domain
+  fullrun_DOMAIN=-999,   & ! fullrun (year) output sub-domain
+  month_DOMAIN=-999,     & ! montly output sub-domain
+  day_DOMAIN=-999,       & ! daily  output sub-domain
+  hour_DOMAIN =-999        ! hourly output sub-domain
 
 ! 3D Output: all modell levels will be outputed by default
 ! see Init_My_Deriv and OutputSize_config for details
 integer, public, save ::  &
   num_lev3d=0,lev3d(60)=0 ! numbers of levels,list of levels
+logical, public, save ::  &
+    lev3d_from_surface=.false. ! levels are to be read from surface up
 
 integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
@@ -688,7 +742,13 @@ subroutine Config_Constants(iolog)
    ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
    ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
    ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&
-   ,USE_EXTERNAL_BIC,EXTERNAL_BIC_NAME,EXTERNAL_BIC_VERSION,TOP_BC,filename_eta
+   ,USE_EXTERNAL_BIC,EXTERNAL_BIC_NAME,EXTERNAL_BIC_VERSION,TOP_BC,filename_eta&
+   ,OutputMisc,OutputConcs,OutputVegO3&
+   ,DDEP_ECOS, DDEP_WANTED, WDEP_WANTED,SDEP_WANTED&
+   ,NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt&
+   ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN&
+   ,hour_DOMAIN, out_startdate, spinup_enddate&
+   ,num_lev3d,lev3d,lev3d_from_surface
 
   DataPath(1) = '.'!default
 
