@@ -17,8 +17,8 @@ module DA_Util_ml
   !se go_date,  only: TDate, Get, AnyDate, IsAnyDate, TIncrDate, &
   !                   Extract_Ref_and_Step, operator(-), rTotal, Num_to_Date
 #else
-  use ModelConstants_ml, only : nproc
-  use Par_ml           , only : me
+  use Config_module    , only : nproc
+  use Par_mod          , only : me
   use MPI              , only : MPI_SUCCESS
   use MPI              , only : MPI_INTEGER, MPI_DOUBLE_PRECISION
 ! use MPI              , only : MPI_AllGather
@@ -135,8 +135,8 @@ contains
   
   subroutine DA_Util_Init( status )
 
-    use ModelConstants_ml, only : masterProc
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
+    use Config_module     , only : masterProc
+    use MPI_Groups_mod    , only : MPI_COMM_CALC
 
     ! --- in/out ----------------------------
     

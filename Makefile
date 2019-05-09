@@ -133,7 +133,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_mod.f90 \
 	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90
 
@@ -143,7 +143,7 @@ MACC-EVAan: MACC-EVA-3DVar16  # 3DVar run, with EVA nest/dump output
 Pollen:     MACC-Pollen
 
 # Pollen for MACC FC runs
-MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
+MACC MACC-Pollen 3DVar%: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
 MACC MACC-Pollen: ./ZD_Pollen/Pollen_mod.f90 ./ZD_Pollen/Pollen_const_mod.f90
 
 # Test
@@ -192,12 +192,11 @@ AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: Bnmc / 3DVar
-%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
-%-Bnmc %-3DVar: $$@
-	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
-%-3DVar16 %-3DVar17 %-3DVar18: ZD_3DVAR=$$(@:-%=ZD_%)
-%-3DVar16 %-3DVar17 %-3DVar18: $$@
-	$(MAKE) -C $(ZD_3DVAR)/ PROG=$(PROG)_3DVar $(PROG)_3DVar
+#%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
+#%-Bnmc %-3DVar: $$@
+#	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
+3DVar16 3DVar17 3DVar18: MACC
+	$(MAKE) -C ZD_$@/ PROG=$(PROG)_$@ $(PROG)_$@
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2

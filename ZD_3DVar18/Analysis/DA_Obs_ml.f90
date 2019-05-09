@@ -14,16 +14,16 @@ module DA_Obs_ml
   use DA_Util_ml,       only: ngol, gol, goPr, goErr
   use MPI   ,           only: MPI_SUCCESS, MPI_Error_String
   use NetCDF,           only: NF90_NOERR, NF90_StrError
-  use TimeDate_ml,      only: current_date
-  use CheckStop_ml,     only: CheckStop
-  use Functions_ml,     only: great_circle_distance
-  use ChemSpecs_adv_ml, only: NSPEC_ADV
-  use ChemChemicals_ml, only: species_adv
-  use ChemGroups_ml,    only: chemgroups
-  use Io_Progs_ml,      only: PrintLog
-  use ModelConstants_ml,only: MasterProc,runlabel1
-  use SmallUtils_ml,    only: find_index
-  use TimeDate_ExtraUtil_ml, only: date2string
+  use TimeDate_mod,     only: current_date
+  use CheckStop_mod,    only: CheckStop
+  use Functions_mod,    only: great_circle_distance
+  use ChemDims_mod,     only: NSPEC_ADV
+  use ChemSpecs_mod,    only: species_adv
+  use ChemGroups_mod,   only: chemgroups
+  use Io_Progs_mod,     only: PrintLog
+  use Config_module,    only: MasterProc,runlabel1
+  use SmallUtils_mod,   only: find_index
+  use TimeDate_ExtraUtil_mod,only: date2string
   use DA_ml           , only : debug => DEBUG_DA
   use DA_ml           , only : dafmt => da_fmt_msg
   use DA_ml           , only : damsg => da_msg
@@ -351,9 +351,9 @@ contains
   subroutine ObsCompInfo_Init( self, name, units, deriv, Bfile, indices, status, &
                                  with_no3c_frac, with_pmwater, feedback, feedback_type, Bsigfac )
   
-    use Units_ml        , only : Units_Scale
-    use SmallUtils_ml   , only : find_index
-    use ChemChemicals_ml, only : species_adv
+    use Units_mod       , only : Units_Scale
+    use SmallUtils_mod  , only : find_index
+    use ChemSpecs_mod   , only : species_adv
 
     ! --- in/out ----------------------------
     
@@ -495,7 +495,7 @@ contains
   
   subroutine ObsCompInfo_Show( self, status )
 
-    use ChemChemicals_ml, only : species_adv
+    use ChemSpecs_mod, only : species_adv
   
     ! --- in/out ----------------------------
     
@@ -558,9 +558,9 @@ contains
   subroutine ObsCompInfo_FillFields( self, xn_adv, xn_adv_units, &
                                        xn_obs_sfc, xn_obs_ml, xn_obs_units, status )
   
-    use MetFields_ml , only : roa
-    use ChemFields_ml, only : cfac
-    use Chemfields_ml, only : PM25_water, PM25_water_rh50
+    use MetFields_mod , only : roa
+    use ChemFields_mod, only : cfac
+    use Chemfields_mod, only : PM25_water, PM25_water_rh50
 
     ! --- in/out ----------------------------
     
@@ -802,8 +802,8 @@ contains
                                                    xn_obs, dx_obs, obs_units, status, &
                                                    maxratio, verbose )
   
-    use MetFields_ml , only : roa
-    use Chemfields_ml, only : PM25_water
+    use MetFields_mod , only : roa
+    use Chemfields_mod, only : PM25_water
 
     ! --- in/out ----------------------------
     
@@ -947,10 +947,10 @@ contains
                                        xn_obs, dx_obs, obs_units, status, &
                                        maxratio, verbose, bl )
 
-    use MetFields_ml , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-    use MetFields_ml , only : pzpbl    ! (nx,ny) boundary layer height
-    use Chemfields_ml, only : PM25_water         ! (i,j,k) model levels
-    use Chemfields_ml, only : PM25_water_rh50    ! (i,j) surface
+    use MetFields_mod , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod , only : pzpbl    ! (nx,ny) boundary layer height
+    use Chemfields_mod, only : PM25_water         ! (i,j,k) model levels
+    use Chemfields_mod, only : PM25_water_rh50    ! (i,j) surface
 
     ! --- in/out ----------------------------
     
@@ -1116,17 +1116,17 @@ contains
 !                                                     xn_obs, dx_obs, obs_units, status, &
 !                                                     verbose, bl )
 !
-!    use ChemGroups_ml    , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
-!    use ChemSpecs_shl_ml , only : NSPEC_SHL  ! number of short-lived tracers
-!    use ChemChemicals_ml , only : species_adv
-!    use Units_ml         , only : Units_Scale
-!    use MetFields_ml     , only : roa
-!    use MetFields_ml     , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-!    use MetFields_ml     , only : pzpbl    ! (nx,ny) boundary layer height
-!    use Chemfields_ml    , only : cfac               ! (i,j) 50m -> 3m factor
-!    use Chemfields_ml    , only : PM25_water         ! (i,j,k) model levels
-!    use Chemfields_ml    , only : PM25_water_rh50    ! (i,j) surface
-!    use ModelConstants_ml, only : lev3d, num_lev3d
+!    use ChemGroups_mod   , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+!    use ChemDims_mod     , only : NSPEC_SHL  ! number of short-lived tracers
+!    use ChemSpecs_mod    , only : species_adv
+!    use Units_mod        , only : Units_Scale
+!    use MetFields_mod    , only : roa
+!    use MetFields_mod    , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+!    use MetFields_mod    , only : pzpbl    ! (nx,ny) boundary layer height
+!    use Chemfields_mod   , only : cfac               ! (i,j) 50m -> 3m factor
+!    use Chemfields_mod   , only : PM25_water         ! (i,j,k) model levels
+!    use Chemfields_mod   , only : PM25_water_rh50    ! (i,j) surface
+!    use Config_module, only : lev3d, num_lev3d
 !
 !    ! --- in/out ----------------------------
 !    
@@ -1227,7 +1227,7 @@ contains
 !    ispm = .false.    
 !    ! loop over pm collections:
 !    do ipm = 1, npm
-!      ! use group defined in 'ChemGroups_ml':
+!      ! use group defined in 'ChemGroups_mod':
 !      if ( ipm == ipm_fine ) then
 !        out_group => PMFINE_GROUP
 !      else
@@ -1713,16 +1713,16 @@ contains
                                                      xn_obs, dx_obs, obs_units, status, &
                                                      verbose, bl )
 
-    use ChemGroups_ml    , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
-    use ChemSpecs_shl_ml , only : NSPEC_SHL  ! number of short-lived tracers
-    use ChemChemicals_ml , only : species_adv
-    use Units_ml         , only : Units_Scale
-    use MetFields_ml     , only : roa
-    use MetFields_ml     , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-    use MetFields_ml     , only : pzpbl    ! (nx,ny) boundary layer height
-    use Chemfields_ml    , only : cfac               ! (i,j) 50m -> 3m factor
-    use Chemfields_ml    , only : PM25_water         ! (i,j,k) model levels
-    use Chemfields_ml    , only : PM25_water_rh50    ! (i,j) surface
+    use ChemGroups_mod   , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+    use ChemDims_mod     , only : NSPEC_SHL  ! number of short-lived tracers
+    use ChemSpecs_mod    , only : species_adv
+    use Units_mod        , only : Units_Scale
+    use MetFields_mod    , only : roa
+    use MetFields_mod    , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod    , only : pzpbl    ! (nx,ny) boundary layer height
+    use Chemfields_mod   , only : cfac               ! (i,j) 50m -> 3m factor
+    use Chemfields_mod   , only : PM25_water         ! (i,j,k) model levels
+    use Chemfields_mod   , only : PM25_water_rh50    ! (i,j) surface
 
     ! --- in/out ----------------------------
     
@@ -1833,7 +1833,7 @@ contains
     ispm = .false.    
     ! loop over pm collections:
     do ipm = 1, npm
-      ! use group defined in 'ChemGroups_ml':
+      ! use group defined in 'ChemGroups_mod':
       if ( ipm == ipm_fine ) then
         out_group => PMFINE_GROUP
       else
@@ -2154,8 +2154,8 @@ contains
                                        xn_obs, dx_obs, obs_units, status, &
                                        maxratio, verbose, bl )
 
-    use MetFields_ml, only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-    use MetFields_ml, only : pzpbl    ! (nx,ny) boundary layer height
+    use MetFields_mod, only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod, only : pzpbl    ! (nx,ny) boundary layer height
 
     ! --- in/out ----------------------------
     
@@ -2287,12 +2287,12 @@ contains
                                        verbose )
 
 
-    use PhysicalConstants_ml, only : Avog   ! 6.02e23 mlc/mole
-    use PhysicalConstants_ml, only : AtwAir ! 28.964 (g air)/mole
-    use GridValues_ml       , only : A_bnd, B_bnd
-    use MetFields_ml        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-    use MetFields_ml        , only : roa
-    use MetFields_ml        , only : ps
+    use PhysicalConstants_mod, only : Avog   ! 6.02e23 mlc/mole
+    use PhysicalConstants_mod, only : AtwAir ! 28.964 (g air)/mole
+    use GridValues_mod       , only : A_bnd, B_bnd
+    use MetFields_mod        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod        , only : roa
+    use MetFields_mod        , only : ps
 
     ! --- in/out ----------------------------
     
@@ -2452,11 +2452,11 @@ contains
   
   subroutine DA_Obs_Init( status )
   
-    use Io_ml           , only : IO_NML
-    use SmallUtils_ml   , only : find_index
-    use ChemChemicals_ml, only : species_adv
-    use ChemGroups_ml   , only : PPM25_GROUP, PPM10_GROUP, PMFINE_GROUP, PM10_GROUP
-    use ChemSpecs_shl_ml, only : NSPEC_SHL  ! number of short-lived tracers, offseet to PM groups
+    use Io_mod          , only : IO_NML
+    use SmallUtils_mod  , only : find_index
+    use ChemSpecs_mod   , only : species_adv
+    use ChemGroups_mod  , only : PPM25_GROUP, PPM10_GROUP, PMFINE_GROUP, PM10_GROUP
+    use ChemDims_mod    , only : NSPEC_SHL  ! number of short-lived tracers, offseet to PM groups
     
     ! --- in/out ----------------------------
     
@@ -2666,7 +2666,7 @@ contains
         !
         !!~ total primary fine pm:
         !case ( 'PPM25' )
-        !  ! use group defined in 'CM_ChemGroups_ml',
+        !  ! use group defined in 'CM_ChemGroups_mod',
         !  ! for index in xn_adv remove the offset for short-lived species:
         !  call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
         !                                   trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
@@ -2676,7 +2676,7 @@ contains
         !  !
         !!~ total primary coarse pm:
         !case ( 'PPM10' )
-        !  ! use group defined in 'CM_ChemGroups_ml',
+        !  ! use group defined in 'CM_ChemGroups_mod',
         !  ! for index in xn_adv remove the offset for short-lived species:
         !  call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
         !                                   trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
@@ -2686,7 +2686,7 @@ contains
         !
         !~ total fine pm:
         case ( 'PM25' )
-          ! use group defined in 'CM_ChemGroups_ml',
+          ! use group defined in 'CM_ChemGroups_mod',
           ! for index in xn_adv remove the offset for short-lived species;
           ! also add part of coarse nitrate and aerosol water:
           call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
@@ -2700,7 +2700,7 @@ contains
           !
         !~ total coarse pm:
         case ( 'PM10' )
-          ! use group defined in 'CM_ChemGroups_ml',
+          ! use group defined in 'CM_ChemGroups_mod',
           ! for index in xn_adv remove the offset for short-lived species;
           ! also add aerosol water:
           call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
@@ -3501,17 +3501,17 @@ contains
   ! @author AMVB
   !-----------------------------------------------------------------------
 
-    use PhysicalConstants_ml, only : Avog   ! 6.02e23 mlc/mole
-    use PhysicalConstants_ml, only : AtwAir ! 28.964 (g air)/mole
-    use GridValues_ml       , only : glon,glat,coord_in_domain
-    use GridValues_ml       , only : A_bnd, B_bnd
-    use MetFields_ml        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
-    use MetFields_ml        , only : pzpbl    ! (nx,ny) boundary layer height
-    use MetFields_ml        , only : roa
-    use MetFields_ml        , only : ps
-    use ChemFields_ml       , only : cfac
-    use ChemFields_ml       , only : PM25_water
-    use ChemFields_ml       , only : pm25_water_rh50
+    use PhysicalConstants_mod, only : Avog   ! 6.02e23 mlc/mole
+    use PhysicalConstants_mod, only : AtwAir ! 28.964 (g air)/mole
+    use GridValues_mod       , only : glon,glat,coord_in_domain
+    use GridValues_mod       , only : A_bnd, B_bnd
+    use MetFields_mod        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod        , only : pzpbl    ! (nx,ny) boundary layer height
+    use MetFields_mod        , only : roa
+    use MetFields_mod        , only : ps
+    use ChemFields_mod       , only : cfac
+    use ChemFields_mod       , only : PM25_water
+    use ChemFields_mod       , only : pm25_water_rh50
 
     ! --- in/out ----------------------------
     
@@ -4445,9 +4445,9 @@ contains
     use MPI   , only : MPI_INTEGER
     use MPIF90, only : MPIF90_Displacements
     
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use ModelConstants_ml, only : nproc
-    use Par_ml           , only : me
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Config_module    , only : nproc
+    use Par_mod          , only : me
 
     ! --- in/out -----------------------------
     
@@ -4527,9 +4527,9 @@ contains
     use MPIF90       , only : MPIF90_AllToAllV
     use MPIF90       , only : MPIF90_Displacements
     
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use ModelConstants_ml, only : nproc
-    use Par_ml           , only : me
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Config_module    , only : nproc
+    use Par_mod          , only : me
     use DA_Util_ml       , only : T_Domains
     
     ! --- in/out -----------------------------
@@ -4740,8 +4740,8 @@ contains
   subroutine ObsOpers_SelectTracers( self, H, iObsComps, status, nana )
 
     use MPIF90           , only : MPIF90_AllReduce, MPI_SUM
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use ModelConstants_ml, only : MasterProc
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Config_module    , only : MasterProc
 
     ! --- in/out -----------------------------
     
@@ -4919,10 +4919,10 @@ contains
     use MPIF90           , only : MPIF90_Displacements
     use MPIF90           , only : MPIF90_GatherV
     use MPIF90           , only : MPIF90_BCast
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use MPI_Groups_ml    , only : MasterPE
-    use ModelConstants_ml, only : nproc
-    use Par_ml           , only : me
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use MPI_Groups_mod   , only : MasterPE
+    use Config_module    , only : nproc
+    use Par_mod          , only : me
 
     ! --- in/out -----------------------------
     
@@ -5228,11 +5228,11 @@ contains
     use MPIF90           , only : MPIF90_AllGather
     use MPIF90           , only : MPIF90_Displacements
     use MPIF90           , only : MPIF90_GatherV
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use MPI_Groups_ml    , only : MasterPE
-    use ModelConstants_ml, only : nproc
-    use Par_ml           , only : me
-    use TimeDate_ml      , only : date
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use MPI_Groups_mod   , only : MasterPE
+    use Config_module    , only : nproc
+    use Par_mod          , only : me
+    use TimeDate_mod     , only : date
     use C3PO             , only : Datafile
     use C3PO             , only : Dimension
     use C3PO             , only : IntegerCoordinate
@@ -6054,11 +6054,11 @@ contains
   subroutine read_obs( domain, maxobs, &
                         stnid, flat,flon,falt, y,stddev, scode, analyse, &
                         ipar, nobs, status )
-    use GridValues_ml, only : coord_in_domain
-    use Io_ml        , only : IO_TMP
-    use AOD_PM_ml    , only : AOD_init,wavelength
-    use MPI          , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
-    use MPI_Groups_ml, only : MPI_COMM_CALC
+    use GridValues_mod, only : coord_in_domain
+    use Io_mod        , only : IO_TMP
+    use AOD_PM_mod    , only : AOD_init,wavelength
+    use MPI           , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
+    use MPI_Groups_mod, only : MPI_COMM_CALC
   
     ! --- in/out ---------------------------------
 
@@ -6219,8 +6219,8 @@ contains
                             stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
                             nobs, status )
 
-    use GridValues_ml, only : coord_in_domain
-    use Io_ml        , only : IO_TMP
+    use GridValues_mod, only : coord_in_domain
+    use Io_mod        , only : IO_TMP
   
     ! --- in/out ---------------------------------
 
@@ -6394,7 +6394,7 @@ contains
                             stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
                             nobs, status )
 
-    use GridValues_ml, only : coord_in_domain
+    use GridValues_mod, only : coord_in_domain
     use EMIP_OMI     , only : T_EMIP_OMI
   
     ! --- in/out ---------------------------------

@@ -13,19 +13,19 @@
 !
 !*****************************************************************************!
 
-module DA_3DVar_ml
+module DA_3DVar_mod
 
 #ifdef with_ajs
   use GO, only : gol, goPr, goErr
   use GO, only : GO_Print_Set
   !use GO, only : goMem
-  !use Par_ml, only : me
-  !use ChemChemicals_ml , only : species_adv
+  !use Par_mod, only : me
+  !use ChemSpecs_mod , only : species_adv
   !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
 #else
   use DA_Util_ml     , only : gol, goPr, goErr
 #endif
-  use TimeDate_ml    , only : date
+  use TimeDate_mod   , only : date
   use EMEP_BCovarSqrt, only : T_BCovarSqrt
   use DA_Util_ml     , only : T_Domains
 
@@ -45,7 +45,7 @@ module DA_3DVar_ml
 
   ! --- const -----------------------------------------
 
-  character(len=*), parameter  ::  mname = 'DA_3DVar_ml'
+  character(len=*), parameter  ::  mname = 'DA_3DVar_mod'
 
   ! timing parameters:
   integer, parameter  ::  NTIMING_3DVAR = 0
@@ -148,10 +148,10 @@ contains
     use DA_Util_ml       , only : GO_Print_Set
 #endif
     use DA_Util_ml       , only : goGetFU
-    use ModelConstants_ml, only : masterProc
-    use ModelConstants_ml, only : KMAX_MID
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use Io_Nums_ml       , only : IO_NML
+    use Config_module    , only : masterProc
+    use Config_module    , only : KMAX_MID
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Io_Nums_mod      , only : IO_NML
     use DA_ml            , only : nlev
     use DA_Obs_ml        , only : DA_Obs_Init
 
@@ -272,7 +272,7 @@ contains
   subroutine DA_3DVar_Done( status )
 
     use DA_Util_ml       , only : DA_Util_Done
-    use ModelConstants_ml, only : MasterProc
+    use Config_module    , only : MasterProc
     use DA_Obs_ml        , only : DA_Obs_Done
 
     ! --- in/out ----------------------------
@@ -356,10 +356,10 @@ contains
   ! @author M.Kahnert & AMVB
   !-----------------------------------------------------------------------
 
-    use ModelConstants_ml    , only : ANALYSIS
-    use ModelConstants_ml    , only : MasterProc
-    use TimeDate_ml          , only : current_date
-    use TimeDate_ExtraUtil_ml, only : date2string,compare_date
+    use Config_module        , only : ANALYSIS
+    use Config_module        , only : MasterProc
+    use TimeDate_mod         , only : current_date
+    use TimeDate_ExtraUtil_mod,only : date2string,compare_date
     use DA_ml                , only : dafmt     => da_fmt_msg
     use DA_ml                , only : DAFMT_DEF => DA_FMT_DEF
     use DA_ml                , only : debug => DEBUG_DA
@@ -425,19 +425,19 @@ contains
   !-----------------------------------------------------------------------
 
     use MPIF90               , only : MPIF90_BCast
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use ModelConstants_ml    , only : MasterProc, nproc
-    use ModelConstants_ml    , only : RUNDOMAIN
-    use ModelConstants_ml    , only : KMAX_MID
-    use ModelConstants_ml    , only : KMAX_BND, KCHEMTOP
-    use MPI_Groups_ml        , only : MasterPE
-    use Par_ml               , only : me
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
-    use ChemGroups_ml        , only : chemgroups       ! group  names
-    use ChemSpecs_adv_ml     , only : NSPEC_ADV
-    use ChemSpecs_shl_ml     , only : NSPEC_SHL        ! Maps indices
-    use SmallUtils_ml        , only : find_index
-    use Io_Nums_ml           , only : IO_NML
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use Config_module        , only : MasterProc, nproc
+    use Config_module        , only : RUNDOMAIN
+    use Config_module        , only : KMAX_MID
+    use Config_module        , only : KMAX_BND, KCHEMTOP
+    use MPI_Groups_mod       , only : MasterPE
+    use Par_mod              , only : me
+    use Par_mod              , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use ChemGroups_mod       , only : chemgroups       ! group  names
+    use ChemDims_mod         , only : NSPEC_ADV
+    use ChemDims_mod         , only : NSPEC_SHL        ! Maps indices
+    use SmallUtils_mod       , only : find_index
+    use Io_Nums_mod          , only : IO_NML
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : nObsComp, ObsCompInfo
@@ -757,23 +757,23 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use ModelConstants_ml    , only : RUNDOMAIN
-    use ModelConstants_ml    , only : KMAX_MID
-    use MPI_Groups_ml        , only : MasterPE
-    use My_Timing_ml         , only : Code_timer, Add_2timing
-    use TimeDate_ml          , only : date  ! date/time structure
-    use Par_ml               , only : me
-    use Par_ml               , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
-    use Par_ml               , only : limax, ljmax
-    use GridValues_ml        , only : glon, glat
-    use ChemSpecs_adv_ml     , only : NSPEC_ADV
-    use MetFields_ml         , only : z_bnd
-    use ChemFields_ml        , only : xn_adv
-    use Chemfields_ml        , only : PM25_water
-    use Chemfields_ml        , only : PM25_water_rh50
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use Config_module        , only : MasterProc, NPROC
+    use Config_module        , only : RUNDOMAIN
+    use Config_module        , only : KMAX_MID
+    use MPI_Groups_mod       , only : MasterPE
+    use My_Timing_mod        , only : Code_timer, Add_2timing
+    use TimeDate_mod         , only : date  ! date/time structure
+    use Par_mod              , only : me
+    use Par_mod              , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
+    use Par_mod              , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use Par_mod              , only : limax, ljmax
+    use GridValues_mod       , only : glon, glat
+    use ChemDims_mod         , only : NSPEC_ADV
+    use MetFields_mod        , only : z_bnd
+    use ChemFields_mod       , only : xn_adv
+    use Chemfields_mod       , only : PM25_water
+    use Chemfields_mod       , only : PM25_water_rh50
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : damsg => da_msg
@@ -1659,20 +1659,20 @@ contains
 
   subroutine Fill_Output_xn_adv( subclass, xn_adv, status )
 
-    use DerivedFields_ml     , only : d_2d, f_2d, d_3d, f_3d
-    use ModelConstants_ml    , only : IOU_INST, num_lev3d, lev3d
-    use ModelConstants_ml    , only : KMAX_MID
-    use ChemGroups_ml        , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
-    use ChemSpecs_shl_ml     , only : NSPEC_SHL  ! number of short-lived tracers
-    use ChemChemicals_ml     , only : species_adv
-    use Chemfields_ml        , only : cfac
-    use Chemfields_ml        , only : PM25_water_rh50  ! (i,j) surface
-    use Chemfields_ml        , only : PM25_water       ! (i,j,k) model levels
-    use MetFields_ml         , only : roa
-    use Units_ml             , only : Units_Scale
-    use SmallUtils_ml        , only : find_index
+    use DerivedFields_mod    , only : d_2d, f_2d, d_3d, f_3d
+    use Config_module        , only : IOU_INST, num_lev3d, lev3d
+    use Config_module        , only : KMAX_MID
+    use ChemGroups_mod       , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+    use ChemDims_mod         , only : NSPEC_SHL  ! number of short-lived tracers
+    use ChemSpecs_mod        , only : species_adv
+    use Chemfields_mod       , only : cfac
+    use Chemfields_mod       , only : PM25_water_rh50  ! (i,j) surface
+    use Chemfields_mod       , only : PM25_water       ! (i,j,k) model levels
+    use MetFields_mod        , only : roa
+    use Units_mod            , only : Units_Scale
+    use SmallUtils_mod       , only : find_index
     
-    !use da_obs_ml, only : dbg_cell, dbg_i, dbg_j
+    !use da_obs_mod, only : dbg_cell, dbg_i, dbg_j
 
     ! --- in/out ----------------------------
     
@@ -1709,7 +1709,7 @@ contains
       select case ( trim(f_2d(iout)%txt) )
         !~ total fine pm:
         case ( 'PM25' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PMFINE_GROUP
           ! offset:
           out_offset = NSPEC_SHL
@@ -1719,7 +1719,7 @@ contains
           addno3c = .true.
         !~ total coarse pm:
         case ( 'PM10' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PM10_GROUP
           ! offset:
           out_offset = NSPEC_SHL
@@ -1840,7 +1840,7 @@ contains
       select case ( trim(f_3d(iout)%txt) )
         !~ total fine pm:
         case ( 'PM25' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PMFINE_GROUP
           ! offset:
           out_offset = NSPEC_SHL
@@ -1850,7 +1850,7 @@ contains
           addno3c = .true.
         !~ total coarse pm:
         case ( 'PM10' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PM10_GROUP
           ! offset:
           out_offset = NSPEC_SHL
@@ -1963,8 +1963,8 @@ contains
 
   subroutine Fill_Output_sf_xn( subclass, txt, sf, xn, units, status )
 
-    use DerivedFields_ml     , only : d_2d, f_2d, d_3d, f_3d
-    use ModelConstants_ml    , only : IOU_INST, num_lev3d, lev3d
+    use DerivedFields_mod    , only : d_2d, f_2d, d_3d, f_3d
+    use Config_module        , only : IOU_INST, num_lev3d, lev3d
 
     ! --- in/out ----------------------------
     
@@ -2048,14 +2048,14 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use MPI_Groups_ml        , only : MasterPE
-    use My_Timing_ml         , only : Code_timer, Add_2timing
+    use Config_module        , only : MasterProc, NPROC
+    use MPI_Groups_mod       , only : MasterPE
+    use My_Timing_mod        , only : Code_timer, Add_2timing
     use DA_Util_ml           , only : norm
-    use Io_ml                , only : m1qn3_io=>IO_TMP  ! write unit for m1qn3 printouts
-    use TimeDate_ml          , only : date,current_date ! date/time structure
-    use TimeDate_ExtraUtil_ml, only : date2string
-    use Par_ml               , only : me
+    use Io_mod               , only : m1qn3_io=>IO_TMP  ! write unit for m1qn3 printouts
+    use TimeDate_mod         , only : date,current_date ! date/time structure
+    use TimeDate_ExtraUtil_mod,only : date2string
+    use Par_mod              , only : me
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
@@ -2561,7 +2561,7 @@ contains
   subroutine euclid_hcr( n, x, y, ps, izs, rzs, dzs )
 
     use MPIF90       , only : MPIF90_AllReduce, MPI_SUM
-    use MPI_Groups_ml, only : MPI_COMM_CALC
+    use MPI_Groups_mod,only : MPI_COMM_CALC
 
     ! --- in/out ---------------------------------
 
@@ -2620,9 +2620,9 @@ contains
   ! On output, innov contains the innovations.
   ! @author M.Kahnert
   !-----------------------------------------------------------------------
-    use Par_ml               , only : me
-    use ModelConstants_ml    , only : MasterProc
-    use GridValues_ml        , only : coord_in_processor
+    use Par_mod              , only : me
+    use Config_module        , only : MasterProc
+    use GridValues_mod       , only : coord_in_processor
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : obsData
@@ -2787,13 +2787,13 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End
 #endif
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use MPI_Groups_ml        , only : MasterPE
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use Par_ml               , only : me
-    use Par_ml               , only : limax, ljmax
-    use Par_ml               , only : tgi0, tgi1, tgj0, tgj1
-    use My_Timing_ml         , only : Add_2timing
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use MPI_Groups_mod       , only : MasterPE
+    use Config_module        , only : MasterProc, NPROC
+    use Par_mod              , only : me
+    use Par_mod              , only : limax, ljmax
+    use Par_mod              , only : tgi0, tgi1, tgj0, tgj1
+    use My_Timing_mod        , only : Add_2timing
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
@@ -3449,4 +3449,4 @@ contains
 
   end subroutine costFunction
 
-end module DA_3DVar_ml
+end module DA_3DVar_mod
