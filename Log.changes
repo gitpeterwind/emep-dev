@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 May 2019, Peter
+
+Nest stops if Met_inner not found (was only a warning before)
+
+uEMEP: local fraction "completeness" diagnostic. Outputs a value for each 
+gridcell that sums all the local fractions. 1.0-> all sources have been found.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7-8 May 2019, Peter
 
 Renamed ModelConstants_config -> Model_config
