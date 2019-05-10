@@ -990,7 +990,7 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
         endif
      endif
      if(status/=nf90_noerr) then
-        print *,'init_mask_restrict: not found',trim(filename_read)      
+        call CheckStop('init_mask_restrict: not found: '//trim(filename_read))
      else
         MASK_SET = .true.
         print *,'init_mask_restrict: reading ',trim(filename_read)
