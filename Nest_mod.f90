@@ -568,7 +568,7 @@ function find_icbc(filename_read,varname) result(found)
 !----------------------------------------------------------------------------!
   implicit none
   character(len=*), intent(in)               :: filename_read
-  character(len=*), dimension(:), intent(in) :: varname
+  character(len=*), dimension(:), intent(inout) :: varname
   logical, dimension(size(varname))          :: found
   integer :: ncFileID,varID,status,n
 
@@ -582,6 +582,11 @@ function find_icbc(filename_read,varname) result(found)
       do n=1,size(varname)
         if(varname(n)=="") cycle
         status=nf90_inq_varid(ncFileID,trim(varname(n)),varID)
+        ! try again with upper case
+        if(status/=nf90_noerr)then
+          varname(n)=to_upper(varname(n))
+          status=nf90_inq_varid(ncFileID,trim(varname(n)),varID)
+        end if
         found(n)=(status==nf90_noerr)
       end do
       call check(nf90_close(ncFileID))

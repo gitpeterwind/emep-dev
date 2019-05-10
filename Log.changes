@@ -29,6 +29,22 @@ uEMEP: local fraction "completeness" diagnostic. Outputs a value for each
 gridcell that sums all the local fractions. 1.0-> all sources have been found.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7-9 May 2019, Alvaro
+
+Add CheckStop_real2 to compare reals to machine precision
+
+Support IC/BCs from older model versions
+Nest_mod will try upper case variables name when the variable is not found
+
+Update pollen mopules
+- add EmChem09cwf (EmChem09 w/pollen)
+- update pollen modules from cams50
+- fix pollen dependency on Config_module (previously Nest_mod)
+- fix pollen dependency on GasParticleCoeffs_mod
+- add pollen spcs to DD_t
+- add pollen spcs to EMIS_BioNat
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7-8 May 2019, Peter
 
 Renamed ModelConstants_config -> Model_config
