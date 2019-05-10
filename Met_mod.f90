@@ -65,7 +65,8 @@ use GridValues_mod,     only: glat, xm_i, xm_j, xm2         &
        ,Poles, sigma_bnd, sigma_mid, xp, yp, fi, GRIDWIDTH_M  &
        ,debug_proc, debug_li, debug_lj, A_mid, B_mid          &
        ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd         &
-       ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle
+       ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle&
+       ,Meteo_Get_KMAXMET,remake_vertical_levels_interpolation_coeff
 
 use Io_mod ,            only: ios, datewrite, PrintLog, IO_LOG
 use Landuse_mod,        only: water_fraction, water_frac_set, &
@@ -373,11 +374,30 @@ subroutine MeteoRead()
 
   !Read rec=1 both for h=0 and h=3:00 in case 00:00 in 1st meteofile
 
-
   if(nrec>Nhh.or.nrec==1.or.first_call) then              ! start reading a new meteo input file
     meteoname = date2string(meteo,next_inptime,mode='YMDH')
 
-    nrec = 1
+    !check if the number of vertical levels has changed
+    call Meteo_Get_KMAXMET(meteoname,kmax)
+
+    if(kmax/=KMAX_MET)then
+       if(me==0)write(*,*)'WARNING: number of vertical levels in meteo file has changed from ',KMAX_MET,' to ', KMAX
+       if(me==0)write(*,*)'recalculating vertical interpolation coefficients'
+       if(kmax>KMAX_MET .and. kmax>KMAX_MID)then
+          !resize arrays
+          if(MasterProc)then
+             deallocate(var_global)
+             allocate(var_global(GIMAX,GJMAX,KMAX))
+          end if
+          deallocate(var_local)
+          allocate(var_local(MAXLIMAX,MAXLJMAX,KMAX))
+       endif
+
+       call remake_vertical_levels_interpolation_coeff(meteoname)
+
+    endif
+
+    if(.not.first_call)nrec = 1
     if(nday==1.and.nmonth==1)then
       !hour 00:00 from 1st January may be missing;checking first:
       inquire(file=meteoname,exist=fexist)

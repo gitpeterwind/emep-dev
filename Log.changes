@@ -31,6 +31,10 @@ gridcell that sums all the local fractions. 1.0-> all sources have been found.
 new format emissions: accept unit kt (and kt/year, kt/m2, kt/m2/year/).
 and corrected bug when units where mg/s or mg/m2/s (were factor 1000 too small)
 
+number of vertical levels in meteo file are checked each time a new meteofile 
+is read. If it has changed (happens in CAMS?), the vertical interpolations coefficients are recalculated. 
+Maybe a bug when not starting the run at hour=0 corrected (nrec was set to 1 at first call in meteoread)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7-9 May 2019, Alvaro
 
