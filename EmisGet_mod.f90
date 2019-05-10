@@ -165,7 +165,8 @@ contains
     else
        if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
             write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
-       if(Emis_source%units(1:9) == 'tonnes/m2'  &
+       if(Emis_source%units(1:5) == 'kt/m2'  &
+            .or. Emis_source%units(1:9) == 'tonnes/m2'  &
             .or. Emis_source%units(1:5) == 'kg/m2' &
             .or. Emis_source%units(1:4) == 'g/m2'  &
             .or. Emis_source%units(1:5) == 'mg/m2')then
@@ -176,8 +177,10 @@ contains
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)
-       else  if(Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
-            .or.Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
+       else  if(Emis_source%units == 'kt' .or. Emis_source%units == 'kt/s' &
+            .or. Emis_source%units == 'kt/month' .or. Emis_source%units == 'kt/year' &
+            .or. Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
+            .or. Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
             .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
             .or. Emis_source%units == 'kg/month' .or. Emis_source%units == 'kg/year' &
             .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' &

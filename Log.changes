@@ -28,6 +28,9 @@ Nest stops if Met_inner not found (was only a warning before)
 uEMEP: local fraction "completeness" diagnostic. Outputs a value for each 
 gridcell that sums all the local fractions. 1.0-> all sources have been found.
 
+new format emissions: accept unit kt (and kt/year, kt/m2, kt/m2/year/).
+and corrected bug when units where mg/s or mg/m2/s (were factor 1000 too small)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7-9 May 2019, Alvaro
 
