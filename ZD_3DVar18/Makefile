@@ -44,6 +44,8 @@ include Makefile.conf
 	$(F77) -c -o $@ $(FFLAGS) $(INCS) $<
 	@echo ' '
 
+../NetCDF_ml.o: FFLAGS += -fpe-all=3
+
 # ------------------------------------------------
 # rules
 # ------------------------------------------------
@@ -65,7 +67,7 @@ clean:
 
 include ../Makefile.SRCS
 SRCS := $(addprefix ../,$(filter-out My_3DVar_mod.f90,$(SRCS))) \
-	DA_ml.f90 Analysis/DA_3DVar_ml.f90 Analysis/DA_Obs_ml.f90 \
+	DA_ml.f90 Analysis/DA_3DVar_ml.f90 Analysis/DA_Obs_ml.f90 Analysis/EMIP_OMI.f90 \
 	B_NMC/c3po_coordinates.F90 B_NMC/c3po_datafile.F90 B_NMC/c3po.F90 \
         B_NMC/linalg_lapack_350.F90 B_NMC/linalg.F90 B_NMC/emep_nmc_linalg.F90 \
 	B_NMC/emep_bcovarsqrt.F90 \

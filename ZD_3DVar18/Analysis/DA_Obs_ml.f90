@@ -23,7 +23,7 @@ module DA_Obs_ml
   use Io_Progs_mod,     only: PrintLog
   use Config_module,    only: MasterProc,runlabel1
   use SmallUtils_mod,   only: find_index
-  use TimeDate_ExtraUtil_mod, only: date2string
+  use TimeDate_ExtraUtil_mod,only: date2string
   use DA_ml           , only : debug => DEBUG_DA
   use DA_ml           , only : dafmt => da_fmt_msg
   use DA_ml           , only : damsg => da_msg
@@ -44,8 +44,9 @@ module DA_Obs_ml
   integer, parameter  ::  LEVTYPE_3D_ML      = 1  ! 3D model layers
   integer, parameter  ::  LEVTYPE_3D_ML_SFC  = 2  ! 3D model layers, surface simulation (3m)
   integer, parameter  ::  LEVTYPE_3D_ML_TC   = 3  ! 3D model layers, sum to total column
-  integer, parameter  ::  LEVTYPE_2D_ML_SFC  = 4  ! 2D lowest model layer, surface simulation (3m)
-  integer, parameter  ::  LEVTYPE_2D_ML_SFCP = 5  ! 2D lowest model layer, surface simulation (3m), scale profile
+  !integer, parameter  ::  LEVTYPE_3D_ML_K1   = 4  ! 3D model layers, apply kernel for column
+  integer, parameter  ::  LEVTYPE_3D_ML_K2   = 4  ! 3D model layers, apply kernel for column, trop
+  integer, parameter  ::  LEVTYPE_2D_ML_SFC  = 5  ! 2D lowest model layer, surface simulation (3m)
   integer, parameter  ::  LEVTYPE_2D_OBS_SFC = 6  ! 2D simulated observations, surface simulation (3m)
   ! counter:
   integer, parameter  ::  NLEVTYPE = 6
@@ -54,8 +55,8 @@ module DA_Obs_ml
                                         '3D_ML     ', &
                                         '3D_ML_SFC ', &
                                         '3D_ML_TC  ', &
+                                        '3D_ML_K2  ', &
                                         '2D_ML_SFC ', &
-                                        '2D_ML_SFCP', &
                                         '2D_OBS_SFC' /)
   
   
@@ -76,11 +77,12 @@ module DA_Obs_ml
   public    ::  LEVTYPE_3D_ML
   public    ::  LEVTYPE_3D_ML_SFC
   public    ::  LEVTYPE_3D_ML_TC
+  !public    ::  LEVTYPE_3D_ML_K1
+  public    ::  LEVTYPE_3D_ML_K2
   public    ::  LEVTYPE_2D_ML_SFC
-  public    ::  LEVTYPE_2D_ML_SFCP
   public    ::  LEVTYPE_2D_OBS_SFC
   
-!  public    ::  dbg_cell, dbg_i, dbg_j
+  !public    ::  dbg_cell, dbg_i, dbg_j
 
 
   ! --- types ----------------------------------------
@@ -103,38 +105,77 @@ module DA_Obs_ml
   
   ! *
   
-  ! observation data collection ;
-  ! elements defined in configuration namelist
+  ! potential storage for kernels:
+  type T_ObsKernels
+    ! dims:
+    integer                   ::  npixel
+    integer                   ::  nlayer
+    ! kernels and pressures, only allocated if necessary:
+    real, allocatable         ::  kernel(:,:)  ! (layer,pixel)
+    character(len=32)         ::  kernel_units
+    real, allocatable         ::  phlev(:,:)   ! (layer_interface,pixel)
+    character(len=32)         ::  phlev_units
+  contains
+    procedure   ::  Init         => ObsKernels_Init
+    procedure   ::  Done         => ObsKernels_Done
+    procedure   ::  Clear        => ObsKernels_Clear
+    procedure   ::  Fill         => ObsKernels_Fill
+  end type T_ObsKernels
+  
+  ! *
+  
+  ! observation data collection:
   type obs_data
-    integer                   :: iObsComp   = -999
-    integer                   :: iobs(0:1)  = -1
-    real                      :: min        = 0.0
-    real                      :: max        = 1e3
+    !
+    ! * elements defined in configuration namelist
+    !
+    ! file types:
+    !   'txt'  : text files used for operational processing
+    !   'omi'  : OMI netcdf files (converted from HDFEOS5)
+    character(len=32)         ::  ftype      = 'txt'
+    ! observation file (analyzed):
+    character(len=256)        ::  file       = ''
+    ! observation files for validation:
+    character(len=256)        ::  file_val   = ''
+    !
+    ! observed component:
+    character(len=LEN_LABEL)  ::  name       = ''    ! 'O3', 'NO2', 'PM10', ...
+    ! keyword for how to compute from 3D model fields:
+    character(len=LEN_LABEL)  ::  deriv      = ''
+    !
+    ! observation data units:
+    character(len=LEN_LABEL)  ::  unit       = ''
+    ! allowed range:
+    real                      ::  min        = 0.0
+    real                      ::  max        = 1e3
     !
     ! obs.repr. type: 'fraction' | 'estim'
-    character(len=LEN_LABEL)                :: error_type = ''
+    character(len=LEN_LABEL)  ::  error_type = ''
     !~ fraction and maximum:
-    real                                    :: error_rel  = -1.0e0
-    real                                    :: error_rep  = -1.0e0
+    real                      ::  error_rel  = -1.0e0
+    real                      ::  error_rep  = -1.0e0
     !~ estimated: files with obs.error and spatial error per station code:
-    character(len=1024)                     :: error_obs  = ''
-    character(len=1024)                     :: error_spat = ''
+    character(len=1024)       ::  error_obs  = ''
+    character(len=1024)       ::  error_spat = ''
     !
-    character(len=LEN_LABEL)  :: name       = ''    ! 'O3', 'NO2', 'PM10', ...
-    character(len=LEN_LABEL)  :: unit       = ''
-    character(len=LEN_LABEL)  :: deriv      = ''
     ! background covar:
-    character(len=1024)       :: Bfile      = ''
-    character(len=LEN_LABEL)  :: Bunit      = ''
-    character(len=256)        :: file       = ''
-    character(len=256)        :: file_val   = ''
-    character(len=256)        :: tag        = ''
+    character(len=1024)       ::  Bfile      = ''
+    character(len=LEN_LABEL)  ::  Bunit      = ''
     ! scaling factor for sigma:
-    real                      :: Bsigfac    = 1.0
+    real                      ::  Bsigfac    = 1.0
     ! feedback analysis to model?
-    logical                   :: feedback        = .true.
-    !~ feedback by fine/coarse ratio?
-    logical                   :: feedback_fico   = .false.
+    logical                   ::  feedback      = .true.
+    !~ how to feedback?
+    character(len=LEN_LABEL)  ::  feedback_type = ''
+    !
+    ! * auxilary
+    !
+    ! tag filled for output:
+    character(len=256)        ::  tag        = ''
+    ! used for mapping from model tracers:
+    integer                   ::  iObsComp   = -999
+    ! some index range in txt input:
+    integer                   ::  iobs(0:1)  = -1
   end type
 
   !-----------------------------------------------------------------------
@@ -172,6 +213,8 @@ module DA_Obs_ml
     real                        ::  innov    ! obs - forecast
     ! Jacobian dH/dx :
     real, allocatable           ::  H_jac(:)  ! (nlev)
+    ! TESTING: scale factor for profile
+    real                        ::  H_jac1
     ! grid cell:
     integer                     ::  i
     integer                     ::  j
@@ -219,19 +262,6 @@ module DA_Obs_ml
     procedure   ::  WriteToFile   => ObsOpers_WriteToFile
   end type T_ObsOpers
 
-
-  !--- local -------------------------------------------------------------
-
-  ! maximum number of data sets:
-  integer, parameter :: nObsDataMax = 6
-  ! storage for dataset definitions:
-  type(obs_data)     :: obsData(nObsDataMax)
-  ! actual number:
-  integer            :: nObsData=0
-
-  ! storage for error lists:
-  type(T_ObsError_List), allocatable    ::  ObsError_Lists(:)   ! (nObsData)
-
   ! *
 
   ! observed component is linear combination of advected species:
@@ -263,8 +293,8 @@ module DA_Obs_ml
     logical                          ::  with_pmwater
     ! feed back into model?
     logical                          ::  feedback
-    !~ feedback by fine/coarse ratio?
-    logical                          ::  feedback_fico
+    !~ how to feed back?
+    character(len=32)                ::  feedback_type = ''
   contains
     procedure :: Init                         => ObsCompInfo_Init
     procedure :: Done                         => ObsCompInfo_Done
@@ -273,19 +303,39 @@ module DA_Obs_ml
     procedure :: DistributeIncrement          => ObsCompInfo_DistributeIncrement_3d
     procedure :: DistributeIncrement1         => ObsCompInfo_DistributeIncrement1_3d
     procedure :: ChangeProfile                => ObsCompInfo_ChangeProfile
-    procedure :: ChangeProfileFineCoarseRatio => ObsCompInfo_ChangeProfile_FineCoarseRatio
+    !procedure :: ChangeProfileFineCoarseRatio => ObsCompInfo_ChangeProfile_FineCoarseRatio
+    procedure :: AdjustFineCoarseRatio        => ObsCompInfo_AdjustFineCoarseRatio
+    procedure :: ChangeML                     => ObsCompInfo_ChangeML
+    procedure :: ChangeVCD                    => ObsCompInfo_ChangeVCD
     !
   end type T_ObsCompInfo
+
+
+  !--- local -------------------------------------------------------------
+
+  ! maximum number of data sets:
+  integer, parameter :: nObsDataMax = 10
+  ! storage for dataset definitions:
+  type(obs_data)     :: obsData(nObsDataMax)
+  ! actual number:
+  integer            :: nObsData=0
+
+  ! storage for error lists:
+  type(T_ObsError_List), allocatable    ::  ObsError_Lists(:)   ! (nObsData)
+  
+  ! storage for kernels:
+  type(T_ObsKernels), allocatable       ::  ObsKernels(:)  ! (nObsData)
+
   
   ! number of observed components:
   integer                            ::  nObsComp
   ! info:
   type(T_ObsCompInfo), allocatable   ::  ObsCompInfo(:)  ! (nObsComp)
   
-!  ! testing ...
-!  logical            ::  dbg_cell = .false.
-!  integer            ::  dbg_i    = -999
-!  integer            ::  dbg_j    = -999
+  !! testing ...
+  !logical            ::  dbg_cell = .false.
+  !integer            ::  dbg_i    = -999
+  !integer            ::  dbg_j    = -999
   
 
 contains
@@ -299,11 +349,11 @@ contains
 
   
   subroutine ObsCompInfo_Init( self, name, units, deriv, Bfile, indices, status, &
-                                 with_no3c_frac, with_pmwater, feedback, feedback_fico, Bsigfac )
+                                 with_no3c_frac, with_pmwater, feedback, feedback_type, Bsigfac )
   
-    use Units_mod        , only : Units_Scale
-    use SmallUtils_mod   , only : find_index
-    use ChemSpecs_mod    , only : species_adv
+    use Units_mod       , only : Units_Scale
+    use SmallUtils_mod  , only : find_index
+    use ChemSpecs_mod   , only : species_adv
 
     ! --- in/out ----------------------------
     
@@ -315,11 +365,11 @@ contains
     integer, intent(in)                 ::  indices(:)
     integer, intent(out)                ::  status
     
-    logical, intent(in), optional       ::  with_no3c_frac
-    logical, intent(in), optional       ::  with_pmwater
-    logical, intent(in), optional       ::  feedback
-    logical, intent(in), optional       ::  feedback_fico
-    real, intent(in), optional          ::  Bsigfac
+    logical, intent(in), optional           ::  with_no3c_frac
+    logical, intent(in), optional           ::  with_pmwater
+    logical, intent(in), optional           ::  feedback
+    character(len=*), intent(in), optional  ::  feedback_type
+    real, intent(in), optional              ::  Bsigfac
     
     ! --- const ----------------------------
     
@@ -348,9 +398,9 @@ contains
     ! feed back into model?
     self%feedback = .true.
     if ( present(feedback) ) self%feedback = feedback
-    ! feed back by fine/coarse ratio?
-    self%feedback_fico = .false.
-    if ( present(feedback_fico) ) self%feedback_fico = feedback_fico
+    ! how to feed back:
+    self%feedback_type = ''
+    if ( present(feedback_type) ) self%feedback_type = feedback_type
     
     ! include fraction of coarse nitrate aerosol ? used for PM25:
     self%with_no3c_frac = .false.
@@ -500,7 +550,7 @@ contains
   !
   ! Simulate observed component from model species in "xn_adv"
   ! and return this in arguments:
-  !   xn_obs_sfc   : sfc field
+  !   xn_obs_sfc   : sfc field (or 2D field of columns)
   !   xn_obs_ml    : model level field
   !   xn_obs_units
   !
@@ -604,7 +654,8 @@ contains
       !  - eventually 'roa' (air density)
       !  - for surface: 'cfac' (due to deposition profile)
       !
-      case ( '3D-ML-SFC', '2D-ML-SFC', '2D-ML-SFCP' )!, '3D-ML-TC' )
+      !case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1', '3D-ML-K2' )
+      case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K2' )
       
         ! check ...
         if ( self%nspec /= 1 ) then
@@ -894,12 +945,12 @@ contains
   
   subroutine ObsCompInfo_ChangeProfile( self, xn_adv, xn_adv_units, &
                                        xn_obs, dx_obs, obs_units, status, &
-                                       maxratio, verbose )
+                                       maxratio, verbose, bl )
 
-    use MetFields_mod    , only : roa
-    use Chemfields_mod   , only : PM25_water         ! (i,j,k) model levels
-    use Chemfields_mod   , only : PM25_water_rh50    ! (i,j) surface
-    use ChemSpecs_mod    , only : species_adv
+    use MetFields_mod , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod , only : pzpbl    ! (nx,ny) boundary layer height
+    use Chemfields_mod, only : PM25_water         ! (i,j,k) model levels
+    use Chemfields_mod, only : PM25_water_rh50    ! (i,j) surface
 
     ! --- in/out ----------------------------
     
@@ -913,6 +964,7 @@ contains
     
     real, intent(in), optional            ::  maxratio
     logical, intent(in), optional         ::  verbose
+    logical, intent(in), optional         ::  bl
     
     ! --- const ----------------------------
     
@@ -922,15 +974,20 @@ contains
     
     logical               ::  verb
     integer               ::  nspec, lnx, lny, nz
-    integer               ::  i, ispec
-    integer               ::  k
+    integer               ::  ispec
+    integer               ::  i, j, k
     real, allocatable     ::  ratio(:,:,:)  ! (lnx,lny,nz)
+    logical               ::  only_bl
 
     ! --- begin -----------------------------
     
     ! verbose?
     verb = .false.
     if ( present(verbose) ) verb = verbose
+    
+    ! boundary layer only?
+    only_bl = .false.
+    if ( present(bl) ) only_bl = bl
     
     ! shape:
     nspec = size(xn_adv,1)
@@ -942,18 +999,50 @@ contains
     allocate( ratio(lnx,lny,nz), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! loop over levels (layer nz is equivalent to obs)
-    do k = 1, nz
-      ! fill ratio, or set to unity if undefined (zero tracer sum):
-      where( xn_obs > 0.0 )
-        !              (   "analyzed" wrt obs   ) /  fg
-        ratio(:,:,k) = ( xn_obs + dx_obs(:,:,k ) ) / xn_obs
-        !! TESTING: same ratio at all levels:
-        !ratio(:,:,k) = ( xn_obs + dx_obs(:,:,nz) ) / xn_obs
-      elsewhere
-        ratio(:,:,k) = 1.0
-      end where
-    end do  ! levels 
+    ! only bl, or decay with height?
+    if ( only_bl ) then
+    
+      ! init as no change:
+      ratio = 1.0
+    
+      ! loop over cells:
+      do i = 1, lnx
+        do j = 1, lny
+          ! loop over levels
+          do k = 1, nz
+            ! (partly) in boundary layer?
+            if ( z_bnd(i,j,k+1) < pzpbl(i,j) ) then
+              ! relative change at lowest layer:
+              if ( xn_obs(i,j) > 0.0 ) then
+                !              (   "analyzed" wrt obs        ) /  fg
+                ratio(i,j,k) = ( xn_obs(i,j) + dx_obs(i,j,nz ) ) / xn_obs(i,j)
+              end if
+            end if ! in bl
+          end do ! k
+        end do ! j
+      end do ! i
+    
+    else
+    
+      ! loop over levels (layer nz is equivalent to obs)
+      do k = 1, nz
+        ! fill ratio, or set to unity if undefined (zero tracer sum):
+        where( xn_obs > 0.0 )
+          !              (   "analyzed" wrt obs   ) /  fg
+          ratio(:,:,k) = ( xn_obs + dx_obs(:,:,k ) ) / xn_obs
+          !! TESTING: same ratio at all levels:
+          !ratio(:,:,k) = ( xn_obs + dx_obs(:,:,nz) ) / xn_obs
+        elsewhere
+          ratio(:,:,k) = 1.0
+        end where
+      end do  ! levels 
+
+      !! testing ...
+      !if ( dbg_cell ) then
+      !  write (gol,*) 'xxx ratio = ', ratio(dbg_i,dbg_j,:); call goPr
+      !end if
+
+    end if
 
     ! use minimum ratio to avoid that all aersols are removed,
     ! this would give errors from aerosol equilibrium routines:
@@ -966,24 +1055,34 @@ contains
     do i = 1, self%nspec
       ! global index:
       ispec = self%ispec(i)
+      ! check units ..
+      !if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+      !  write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+      ! TRACEBACK; status=1; return
+      !end if
       ! scale 3D:
       xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * ratio
+      !! testing ...
+      !if ( dbg_cell ) then
+      !  write (gol,*) 'xxx xn_adv(',ispec,')=',xn_adv(ispec,dbg_i,dbg_j,:); call goPr
+      !end if
     end do ! specs
 
     ! also apply to aerosol water?
+    !   Aero_water from AerosolCalls
+    !   PM25_water at model levels (ambient)
+    !   PM25_water_rh50 at surface (50% rh)
     if ( self%with_pmwater ) then
       ! apply same ratios:
       PM25_water      = PM25_water      * ratio          ! model levels
       PM25_water_rh50 = PM25_water_rh50 * ratio(:,:,nz)  ! surface
+      !! testing ...
+      !if ( dbg_cell ) then
+      !  write (gol,*) 'xxx PM25_water      = ', PM25_water(dbg_i,dbg_j,:); call goPr
+      !  write (gol,*) 'xxx PM25_water_rh50 = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+      !end if
     end if
     
-    !
-    ! Recompute water content:
-    !   Aero_water from AerosolCalls
-    !   PM25_water at model levels (ambient)
-    !   PM25_water_rh50 at surface (50% rh)
-    !
-
     ! clear:
     deallocate( ratio, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -997,31 +1096,633 @@ contains
   ! *
 
 
-  !
-  ! Input:
-  !   xn_adv    :  model traces (all)
-  !   xn_obs    :  2D simulated observation field
-  !   dx_obs    :  3D analysis increment, layer nz has the increment towards xn_obs,
-  !                other layers filled using vertical correlations in B
-  ! Change ratio of fine/coarse aerosol in 3D fields "xn_adv"
-  ! to reach at the surface (layer nz) the analysed total fine part:
-  !    xn_obs+dx_obs(:,:,nz)
-  ! The increment "dx_obs" decays to zero for higher levels (1,..,nz-1)
-  !
+!  !
+!  ! Input:
+!  !   xn_adv    :  model traces (all)
+!  !   xn_obs    :  2D simulated observation field
+!  !   dx_obs    :  3D analysis increment, layer nz has the increment towards xn_obs,
+!  !                other layers filled using vertical correlations in B
+!  !
+!  ! Change ratio of fine/coarse aerosol in 3D fields "xn_adv"
+!  ! to reach at the surface (layer nz) the analysed total fine part:
+!  !    xn_obs+dx_obs(:,:,nz)
+!  ! The increment "dx_obs" decays to zero for higher levels (1,..,nz-1)
+!  !
+!  ! If bl=.true. this decay is not used but fine/coarse ratio in boundary layer
+!  ! are scaled with the same factor as the surface field.
+!  !
+!  
+!  subroutine ObsCompInfo_ChangeProfile_FineCoarseRatio( self, xn_adv, xn_adv_units, &
+!                                                     xn_obs, dx_obs, obs_units, status, &
+!                                                     verbose, bl )
+!
+!    use ChemGroups_mod   , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+!    use ChemDims_mod     , only : NSPEC_SHL  ! number of short-lived tracers
+!    use ChemSpecs_mod    , only : species_adv
+!    use Units_mod        , only : Units_Scale
+!    use MetFields_mod    , only : roa
+!    use MetFields_mod    , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+!    use MetFields_mod    , only : pzpbl    ! (nx,ny) boundary layer height
+!    use Chemfields_mod   , only : cfac               ! (i,j) 50m -> 3m factor
+!    use Chemfields_mod   , only : PM25_water         ! (i,j,k) model levels
+!    use Chemfields_mod   , only : PM25_water_rh50    ! (i,j) surface
+!    use Config_module, only : lev3d, num_lev3d
+!
+!    ! --- in/out ----------------------------
+!    
+!    class(T_ObsCompInfo), intent(in)      ::  self
+!    real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+!    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
+!    real, intent(in)                      ::  xn_obs(:,:)      ! (lnx,lny)
+!    real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
+!    character(len=*), intent(in)          ::  obs_units
+!    integer, intent(out)                  ::  status
+!    
+!    logical, intent(in), optional         ::  verbose
+!    logical, intent(in), optional         ::  bl
+!    
+!    ! --- const ----------------------------
+!    
+!    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeProfile_FineCoarseRatio'
+!    
+!    ! fraction of NO3c assigned to PM2.5:
+!    real, parameter    ::  alfa = 0.27
+!    
+!    ! pm collections:
+!    integer, parameter        ::  npm = 3
+!    integer, parameter        ::  ipm_fine   = 1
+!    integer, parameter        ::  ipm_coarse = 2
+!    integer, parameter        ::  ipm_no3c   = 3
+!    
+!    ! --- local -----------------------------
+!    
+!    logical               ::  verb
+!    logical               ::  only_bl
+!    integer               ::  nspec, lnx, lny, nz
+!    real, allocatable     ::  tpm_sfc(:,:,  :)  ! (lnx,lny   ,npm)
+!    real, allocatable     ::  tpm_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
+!    real, allocatable     ::  xn_25(:,:)        ! (lnx,lny)
+!    real, allocatable     ::  xn_10(:,:)        ! (lnx,lny)
+!    real, allocatable     ::  factor_sfc(:,:  ,:)  ! (lnx,lny   ,npm)
+!    real, allocatable     ::  factor_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
+!    logical, allocatable  ::  ispm(:,:)            ! (nspec_adv,npm)
+!    integer               ::  ipm
+!    integer, pointer      ::  out_group(:)
+!    integer               ::  out_offset
+!    integer               ::  ispec
+!    integer               ::  ispec_no3c
+!    real                  ::  fscale
+!    logical               ::  needroa
+!    integer               ::  k
+!
+!      integer   :: i,j
+!
+!    ! --- begin -----------------------------
+!    
+!    ! verbose?
+!    verb = .false.
+!    if ( present(verbose) ) verb = verbose
+!    
+!    ! boundary layer only?
+!    only_bl = .false.
+!    if ( present(bl) ) only_bl = bl
+!    
+!    ! shape:
+!    nspec = size(xn_adv,1)
+!    lnx   = size(xn_adv,2)
+!    lny   = size(xn_adv,3)
+!    nz    = size(xn_adv,4)
+!    
+!    ! target obs:
+!    allocate( xn_25(lnx,lny), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    allocate( xn_10(lnx,lny), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    ! storage for current total fine/coarse aerosol:
+!    allocate( tpm_ml (lnx,lny,nz,npm), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    allocate( tpm_sfc(lnx,lny   ,npm), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    ! storage for factors:
+!    allocate( factor_sfc(lnx,lny   ,npm), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    allocate( factor_ml (lnx,lny,nz,npm), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    
+!    ! Coarse nitrate should be treated special ...
+!    ! Fraction alfa is assigned to "fine" and (1-alfa) to "coarse",
+!    ! thus fine/coarse ratio "within" no3c is fixed.
+!    ! This fixed ratio should not be changed by the assimilation;
+!    ! actually it is imposible to maintain the ratio while changing
+!    ! the total fine/coarse fractions.
+!    ! Therefore do not apply scale factors to coarse nitrate,
+!    ! only assimilation of pm10 will change its amount.
+!    ! Find index of coarse nitrate:
+!    ispec_no3c = find_index( 'NO3_C', species_adv(:)%name )
+!
+!    ! weights of tracers in fine and corase:
+!    allocate( ispm(nspec,npm), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    ! init with no contribution:
+!    ispm = .false.    
+!    ! loop over pm collections:
+!    do ipm = 1, npm
+!      ! use group defined in 'ChemGroups_mod':
+!      if ( ipm == ipm_fine ) then
+!        out_group => PMFINE_GROUP
+!      else
+!        out_group => PM10_GROUP
+!      end if
+!      ! offset:
+!      out_offset = NSPEC_SHL
+!      ! loop over group members:
+!      do k = 1, size(out_group)
+!        ! extract index of specie:
+!        ispec = out_group(k) - out_offset
+!        ! store relative weight in fine and coarse parts:
+!        if ( ipm == ipm_fine ) then
+!          ! contributes to fine part:
+!          ispm(ispec,ipm) = .true.
+!        !  
+!        else if ( ipm == ipm_coarse ) then
+!          ! only if exclusevely coarse and not coarse nitrate:
+!          ispm(ispec,ipm) = .not. ( ispm(ispec,ipm_fine) .or. (ispec == ispec_no3c) )
+!        !
+!        else if ( ipm == ipm_no3c ) then
+!          ! only if coarse nitrate:
+!          ispm(ispec,ipm) = ispec == ispec_no3c
+!        end if
+!        !
+!      end do ! group elements
+!    end do  ! total fine and coarse
+!    ! special:
+!    ispm(ispec_no3c,ipm_no3c) = .true.
+!    
+!    !! info ...
+!    !write (gol,*) 'rrr weights: '; call goPr
+!    !do ispec = 1, nspec
+!    !  if ( any( ispm(ispec,:) ) ) then
+!    !    write (gol,'("rrr ",3l2," ",a)') ispm(ispec,:), trim(species_adv(ispec)%name); call goPr
+!    !  end if
+!    !end do
+!
+!    ! init sums:
+!    tpm_ml  = 0.0
+!    tpm_sfc = 0.0
+!    ! loop over fine (=1) and coarse-without-no3c (=2):
+!    do ipm = 1, 3
+!      !! testing ...
+!      !if ( dbg_cell ) then
+!      !  write (gol,*) 'yyy ipm = ', ipm; call goPr
+!      !end if
+!      ! loop over species:
+!      do ispec = 1, nspec
+!        ! skip if no contribution:
+!        if ( .not. ispm(ispec,ipm) ) cycle
+!        ! info on conversion to target units:
+!#ifdef with_ajs
+!        call Units_Scale( obs_units, ispec, fscale, &
+!                                 needroa=needroa, status=status )
+!        IF_NOT_OK_RETURN(status=1)
+!#else
+!        call Units_Scale( obs_units, ispec, fscale, &
+!                                 needroa=needroa )
+!#endif
+!        !! testing ...
+!        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
+!        ! convert using air density?
+!        if ( needroa ) then
+!          ! add contribution, multiply with air density:
+!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
+!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+!                               * fscale &
+!                               * roa(:,:,lev3d(:num_lev3d),1)    ! density
+!          ! surface fraction:
+!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
+!                               xn_adv(ispec,:,:,nlev) &
+!                               * fscale &
+!                               * roa(:,:,nlev,1)    &  ! density
+!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
+!          !! testing ...
+!          !if ( dbg_cell ) then
+!          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,1) * cfac(ispec,dbg_i,dbg_j); call goPr
+!          !end if
+!                               
+!        else
+!          ! add contribution:
+!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
+!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+!                               * fscale
+!          ! surface fraction:
+!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
+!                               xn_adv(ispec,:,:,nlev) &
+!                               * fscale &
+!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
+!          !! testing ...
+!          !if ( dbg_cell ) then
+!          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!          !                                       * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
+!          !end if
+!        end if
+!      end do  ! spec
+!    end do  ! pm collections
+!    ! add 3D aersosol water to fine fraction:
+!    tpm_ml (:,:,:,ipm_fine) = tpm_ml (:,:,:,ipm_fine) + PM25_water
+!    tpm_sfc(:,:  ,ipm_fine) = tpm_sfc(:,:  ,ipm_fine) + PM25_water_rh50
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+!    !end if
+!    
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy before tpm fine,course   = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
+!    !  write (gol,*) 'yyy before tpm fine+coarse   = ', sum(tpm_sfc(dbg_i,dbg_j,:)); call goPr
+!    !  write (gol,*) 'yyy before tpm f + a*no3c    = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
+!    !  write (gol,*) 'yyy before tpm f + c + no3c  = ', sum(tpm_sfc(dbg_i,dbg_j,:)) + tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
+!    !end if
+!
+!    !! testing ..
+!    !write (gol,*) 'ppp0 tpm = ', tpm_sfc(1,1,:), sum(tpm_sfc(1,1,:)); call goPr
+!    
+!    ! analyzed total pm25 at the surcface:  xn_obs + dx_obs(:,:,nz)
+!    ! in theory this could not exceed total pm10,
+!    ! but total pm10 was analyzed independently,
+!    ! and sometimes observations are found with pm25 > pm10 ;
+!    ! limit the analyzed field to the current total 
+!    ! (which should remain unchanged in this update):
+!    xn_10 = sum( tpm_sfc, dim=3 )
+!    xn_25 = min( max( 0.0, xn_obs + dx_obs(:,:,nz) ), xn_10 )
+!    !! without the water part:
+!    !xn_ana = min( xn_obs + dx_obs - PM25_water, tpm(:,:,:,1)+tpm(:,:,:,ipm_coarse) )
+!    
+!    !! testing ..
+!    !write (gol,*) 'ppp0 xn_ana = ',xn_obs(1,1), dx_obs(1,1), xn_ana(1,1); call goPr
+!
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy xn_obs, dx_obs  = ', xn_obs(dbg_i,dbg_j), dx_obs(dbg_i,dbg_j,nz); call goPr
+!    !  write (gol,*) 'yyy xn_obs + dx_obs = ', xn_obs(dbg_i,dbg_j) + dx_obs(dbg_i,dbg_j,nz); call goPr
+!    !  write (gol,*) 'yyy xn_ana          = ', xn_ana(dbg_i,dbg_j); call goPr
+!    !end if
+!    
+!    !
+!    ! Determine scale factors for fine and coarse part such that:
+!    !
+!    !   total_fine * fine_factor +  alfa*no3c                 * coarse_factor = xn_25
+!    !   total_fine * fine_factor + (     no3c + total_coarse) * coarse_factor = xn_10
+!    !
+!    ! First solve coarse factor:
+!    !
+!    !   xn_25 - alfa*no3c * coarse_factor + ( no3c + total_coarse) * coarse_factor = xn_10
+!    !   ( (1-alfa)*no3c + total_coarse ) * coarse_factor = xn_10 - xn_25
+!    !     coarse_factor = (xn_10 - xn_25)/( (1-alfa)*no3c + total_coarse )
+!    !
+!    ! Thus, scale the coarse fraction to match with analyzed coarse fraction.
+!    !
+!    where ( xn_10 > xn_25 )
+!      ! scale factor for coarse fraction:
+!      factor_sfc(:,:,ipm_coarse) = (xn_10 - xn_25) / ( (1.0-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )
+!    elsewhere
+!      ! no coarse fraction in analysis present, dummy factor:
+!      factor_sfc(:,:,ipm_coarse) = 1.0
+!    end where
+!
+!        ! testing ...
+!        if ( dbg_cell ) then
+!          write (gol,*) 'xxx xn_10             = ', xn_10(dbg_i,dbg_j); call goPr
+!          write (gol,*) 'xxx xn_25             = ', xn_25(dbg_i,dbg_j); call goPr
+!          write (gol,*) 'xxx tpm_sfc coarse    = ', tpm_sfc(dbg_i,dbg_j,ipm_coarse); call goPr
+!          write (gol,*) 'xxx tpm_sfc no3c      = ', tpm_sfc(dbg_i,dbg_j,ipm_no3c); call goPr
+!          write (gol,*) 'xxx factor_sfc coarse = ', factor_sfc(dbg_i,dbg_j,ipm_coarse); call goPr
+!        end if
+!    
+!    ! scale factor to make fine fraction (incl part of no3c) equal to observations:
+!    !   total_fine * fine_factor + alfa*no3c * coarse_factor =  xn_25
+!    ! thus:
+!    !   fine_factor  =  (xn_25 - alfa*no3c * coarse_factor) / total_fine
+!    ! any fine pm?
+!    where ( tpm_sfc(:,:,ipm_fine) > 0.0 )
+!      ! fine pm present, obtain scale factor;
+!      ! might become negative which means that all fine pm shoulde be removed
+!      ! except the no3c fration that is also considered as part of the fine mode;
+!      ! keep minimum fraction to avoid that all fine aerosols are removed:
+!      factor_sfc(:,:,ipm_fine) =  max( 0.01, ( xn_25 - alfa*tpm_sfc(:,:,ipm_no3c) * factor_sfc(:,:,ipm_coarse) ) / tpm_sfc(:,:,ipm_fine) )
+!    elsewhere
+!      ! no fine pm present, dummy factor:
+!      factor_sfc(:,:,ipm_fine) = 1.0
+!    end where
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy fine_factor 1 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
+!    !end if
+!    ! use minimum factor to avoid that all aersols are removed,
+!    ! this would give errors from aerosol equilibrium routines:
+!    !factor_sfc(:,:,ipm_fine) = max( 0.01, factor_sfc(:,:,ipm_fine) )
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy fine_factor 2 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
+!    !end if
+!
+!        ! testing ...
+!        if ( dbg_cell ) then
+!          write (gol,*) 'xxx tpm_sfc fine   = ', tpm_sfc(dbg_i,dbg_j,ipm_fine); call goPr
+!          write (gol,*) 'xxx tpm_sfc coarse = ', tpm_sfc(dbg_i,dbg_j,ipm_coarse); call goPr
+!          write (gol,*) 'xxx tpm_sfc no3c   = ', tpm_sfc(dbg_i,dbg_j,ipm_no3c); call goPr
+!          write (gol,*) 'xxx factor_sfc fine = ', factor_sfc(dbg_i,dbg_j,ipm_fine); call goPr
+!        end if
+!    
+!    ! if for the fine factor the minimum value is used,
+!    ! then both the modelled pm25 and pm10 will exceed the analyzed pm25 and pm10 
+!    ! since pm25 has too much of the coarse nitrate fraction;
+!    ! remove the surplus of coarse nitrate:
+!    where ( ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )*factor_sfc(:,:,ipm_coarse) > xn_10 )
+!      ! special scale factor for coarse nitrate:
+!      !   total_fine * fine_factor + no3c * no3c_factor + total_coarse * coarse_factor = xn_10
+!      !   no3c_factor = ( xn_10 - total_fine * fine_factor - total_coarse * coarse_factor ) / no3c
+!      ! keep minimum ammount:
+!      factor_sfc(:,:,ipm_no3c) = ( xn_10 - tpm_sfc(:,:,ipm_fine)*factor_sfc(:,:,ipm_fine) - tpm_sfc(:,:,ipm_coarse)*factor_sfc(:,:,ipm_coarse) ) / ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) )
+!    elsewhere
+!      ! keep already computed coarse factor:
+!      factor_sfc(:,:,ipm_no3c) = factor_sfc(:,:,ipm_coarse)
+!    endwhere
+!
+!        ! testing ...
+!        if ( dbg_cell ) then
+!          write (gol,*) 'xxx factor_sfc no3c = ', factor_sfc(dbg_i,dbg_j,ipm_no3c); call goPr
+!        end if
+!
+!    ! expand to higher layers; same for all collections:
+!    do ipm = 1, npm
+!
+!      ! copy surface:
+!      factor_ml(:,:,nz,ipm) = factor_sfc(:,:,ipm)
+!
+!      ! only boundary layer, or decay with dx ?
+!      if ( only_bl ) then
+!    
+!        ! loop over cells:
+!        do i = 1, lnx
+!          do j = 1, lny
+!            ! loop over levels except surface:
+!            do k = 1, nz-1
+!              ! (partly) in boundary layer?
+!              if ( z_bnd(i,j,k+1) < pzpbl(i,j) ) then
+!                ! use surface ratio:
+!                factor_ml(i,j,k,ipm) = factor_ml(i,j,nz,ipm)
+!              else
+!                ! no change:
+!                factor_ml(i,j,k,ipm) = 1.0
+!              end if ! in bl
+!            end do ! k
+!          end do ! j
+!        end do ! i
+!
+!      else
+!
+!        ! other layers:
+!        do k = 1, nz-1
+!          ! use profile following ratio:
+!          !   dx(:,:,k)/dx(:,:,nz)
+!          ! which is 1 at the bottom layer (nz) and decays to zero with height;
+!          ! note that also values >1 might be present in the first layers above the surface,
+!          ! and tiny negative values at the top, therefore use abs values;
+!          ! also use minimum factor:
+!          where ( abs(dx_obs(:,:,nz)) > 0.0 )
+!            factor_ml(:,:,k,ipm) = max( 0.01, 1.0 + ( factor_ml(:,:,nz,ipm) - 1.0 ) * abs(dx_obs(:,:,k)/dx_obs(:,:,nz)) )
+!          elsewhere
+!            factor_ml(:,:,k,ipm) = 1.0
+!          end where
+!        end do ! levels
+!
+!        ! testing ...
+!        if ( dbg_cell ) then
+!          write (gol,*) 'xxx factor_ml(',ipm,')'; call goPr
+!          write (gol,*) 'xxx factor_ml at nz ', factor_ml(dbg_i,dbg_j,nz,ipm); call goPr
+!          do k = 1, nz-1
+!            write (gol,*) 'xxx  layer ',k, dx_obs(dbg_i,dbg_j,k), dx_obs(dbg_i,dbg_j,nz), &
+!                              abs(dx_obs(dbg_i,dbg_j,k)/dx_obs(dbg_i,dbg_j,nz)), &
+!                               factor_ml(dbg_i,dbg_j,k,ipm); call goPr
+!          end do
+!        end if
+!
+!      end if ! bl only or dx
+!
+!    end do ! ipm
+!    
+!    !! info ..
+!    !write (gol,*) 'ppp2 fine: ', xn_ana(1,ipm_fine), tpm_sfc(1,1,ipm_fine), xn_ana(1,ipm_fine) / tpm_sfc(1,1,ipm_fine); call goPr
+!    !write (gol,*) 'ppp2 fine   factor = ', fine_factor  (1,ipm_fine); call goPr
+!    !write (gol,*) 'ppp2 coarse factor = ', coarse_factor(1,ipm_fine); call goPr
+!
+!    ! loop over fine/coarse:
+!    do ipm = 1, npm
+!      ! loop over all species:
+!      do ispec = 1, nspec
+!        ! skip if no contribution to pm:
+!        if ( .not. ispm(ispec,ipm) ) cycle
+!        !! testing ...
+!        !if ( dbg_cell ) then
+!        !  write (gol,*) 'yyy ispec ', ispec; call goPr
+!        !  !write (gol,*) 'yyy   wf ml  ', w(ispec,ipm_fine) * factor_ml(:,:,ipm_fine)(dbg_i,dbg_j,nz), w(ispec,ipm_coarse) * factor_ml(:,:,ipm_coarse)(dbg_i,dbg_j,nz); call goPr
+!        !  write (gol,*) 'yyy   wf ml  ', w(ispec,ipm_fine) * factor_ml(:,:,ipm_fine)(dbg_i,dbg_j,nz) + w(ispec,ipm_coarse) * factor_ml(:,:,ipm_coarse)(dbg_i,dbg_j,nz); call goPr
+!        !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+!        !end if
+!        ! apply factor fields:
+!        xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * factor_ml(:,:,:,ipm)
+!        ! testing ...
+!        if ( dbg_cell ) then
+!          !write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+!          write (gol,*) 'xxx xn_adv(',ispec,')=',xn_adv(ispec,dbg_i,dbg_j,:); call goPr
+!        end if
+!      end do ! ispec
+!    end do ! ipm
+!    ! also apply (fine) factor to aersol water;
+!    ! better would be to recompute water content after changing the aerosol load ...
+!    PM25_water      = PM25_water      * factor_ml (:,:,:,ipm_fine)   ! model levels
+!    PM25_water_rh50 = PM25_water_rh50 * factor_sfc(:,:  ,ipm_fine)   ! sfc
+!    
+!      ! testing ...
+!      if ( dbg_cell ) then
+!        write (gol,*) 'xxx PM25_water      = ', PM25_water(dbg_i,dbg_j,:); call goPr
+!        write (gol,*) 'xxx PM25_water_rh50 = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+!      end if
+!
+!!    ! .... testing ........................
+!!
+!!    ! init sums:
+!!    tpm_ml  = 0.0
+!!    tpm_sfc = 0.0
+!!    ! loop over fine (=1) and coarse (=2):
+!!    do ipm = 1, 2
+!!      !! testing ...
+!!      !if ( dbg_cell ) then
+!!      !  write (gol,*) 'yyy ipm = ', ipm; call goPr
+!!      !end if
+!!      ! loop over species:
+!!      do ispec = 1, nspec
+!!        ! skip if no contribution:
+!!        if ( w(ispec,ipm) <= 0.0 ) cycle
+!!        ! info on conversion to target units:
+!!#ifdef with_ajs
+!!        call Units_Scale( obs_units, ispec, fscale, &
+!!                                 needroa=needroa, status=status )
+!!        IF_NOT_OK_RETURN(status=1)
+!!#else
+!!        call Units_Scale( obs_units, ispec, fscale, &
+!!                                 needroa=needroa )
+!!#endif
+!!        !! testing ...
+!!        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
+!!        ! convert using air density?
+!!        if ( needroa ) then
+!!          ! add contribution, multiply with air density:
+!!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
+!!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+!!                               * fscale &
+!!                               * roa(:,:,lev3d(:num_lev3d),ipm_fine)    ! density
+!!          ! surface fraction:
+!!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
+!!                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
+!!                               * fscale &
+!!                               * roa(:,:,nlev,ipm_fine)    &  ! density
+!!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
+!!          !! testing ...
+!!          !if ( dbg_cell ) then
+!!          !  write (gol,*) 'yyy   r ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,ipm_fine) * cfac(ispec,dbg_i,dbg_j); call goPr
+!!          !end if
+!!                               
+!!        else
+!!          ! add contribution:
+!!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
+!!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+!!                               * fscale
+!!          ! surface fraction:
+!!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
+!!                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
+!!                               * fscale &
+!!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
+!!          !! testing ...
+!!          !if ( dbg_cell ) then
+!!          !  write (gol,*) 'yyy   p ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!!          !                                       * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
+!!          !end if
+!!        end if
+!!      end do  ! spec
+!!      ! add 3D aersosol water to fine fraction:
+!!      if ( ipm == 1 ) then
+!!        tpm_ml (:,:,:,ipm) = tpm_ml (:,:,:,ipm) + PM25_water
+!!        tpm_sfc(:,:  ,ipm) = tpm_sfc(:,:  ,ipm) + PM25_water_rh50
+!!        !! testing ...
+!!        !if ( dbg_cell ) then
+!!        !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+!!        !end if
+!!      end if
+!!    end do  ! total fine and coarse
+!!    
+!!    ! coarse nitrate:
+!!    ispec = ispec_no3c
+!!    ! info on conversion to target units:
+!!#ifdef with_ajs
+!!    call Units_Scale( obs_units, ispec, fscale, &
+!!                             needroa=needroa, status=status )
+!!    IF_NOT_OK_RETURN(status=1)
+!!#else
+!!    call Units_Scale( obs_units, ispec, fscale, &
+!!                             needroa=needroa )
+!!#endif
+!!    !! testing ...
+!!    !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
+!!    ! convert using air density?
+!!    if ( needroa ) then
+!!      ! surface fraction:
+!!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
+!!                 * roa(:,:,nlev,ipm_fine)    &  ! density
+!!                 * cfac(ispec,:,:)       ! 50 m -> 3 m
+!!      !! testing ...
+!!      !if ( dbg_cell ) then
+!!      !  write (gol,*) 'yyy   r ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!!      !end if
+!!
+!!    else
+!!      ! surface fraction:
+!!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
+!!                 * cfac(ispec,:,:)       ! 50 m -> 3 m
+!!      !! testing ...
+!!      !if ( dbg_cell ) then
+!!      !  write (gol,*) 'yyy   p ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!!      !end if
+!!    end if
+!!
+!!    ! testing ...
+!!    if ( dbg_cell ) then
+!!      write (gol,*) 'yyy after tpm_sfc      = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
+!!      write (gol,*) 'yyy after tpm_sfc(:,:,ipm_no3c)     = ', tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!!      write (gol,*) 'yyy after f + a*no3c   = ', tpm_sfc(dbg_i,dbg_j,ipm_fine)+alfa*tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!!      write (gol,*) 'yyy after f + c + no3c = ', sum(tpm_sfc(dbg_i,dbg_j,:))+tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!!      do ispec = 1, nspec
+!!        !if ( any(w(ispec,:) > 0.0) .or. (ispec == ispec_no3c) ) then
+!!        !  write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name); call goPr
+!!        !  do k = 1, nz
+!!        !    write (gol,*) k, xn_adv(ispec,dbg_i,dbg_j,k); call goPr
+!!        !  end do
+!!        !end if
+!!        write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,nlev); call goPr
+!!      end do
+!!    end if
+!!    
+!!    ! ...............................
+!    
+!    !
+!    ! Recompute water content:
+!    !   Aero_water from AerosolCalls
+!    !   PM25_water at model levels (ambient)
+!    !   PM25_water_rh50 at surface (50% rh)
+!    !
+!    
+!    ! clear:
+!    deallocate( xn_25, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( xn_10, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( ispm, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( tpm_ml, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( tpm_sfc, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( factor_sfc, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    deallocate( factor_ml, stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!
+!    ! ok
+!    status = 0
+!    
+!  end subroutine ObsCompInfo_ChangeProfile_FineCoarseRatio
+
+
+
+  ! *
+
+
   
-  subroutine ObsCompInfo_ChangeProfile_FineCoarseRatio( self, xn_adv, xn_adv_units, &
+  subroutine ObsCompInfo_AdjustFineCoarseRatio( self, xn_adv, xn_adv_units, &
                                                      xn_obs, dx_obs, obs_units, status, &
-                                                     verbose )
+                                                     verbose, bl )
 
     use ChemGroups_mod   , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
     use ChemDims_mod     , only : NSPEC_SHL  ! number of short-lived tracers
     use ChemSpecs_mod    , only : species_adv
     use Units_mod        , only : Units_Scale
     use MetFields_mod    , only : roa
+    use MetFields_mod    , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod    , only : pzpbl    ! (nx,ny) boundary layer height
     use Chemfields_mod   , only : cfac               ! (i,j) 50m -> 3m factor
     use Chemfields_mod   , only : PM25_water         ! (i,j,k) model levels
     use Chemfields_mod   , only : PM25_water_rh50    ! (i,j) surface
-    use Config_module    , only : lev3d, num_lev3d
 
     ! --- in/out ----------------------------
     
@@ -1034,47 +1735,55 @@ contains
     integer, intent(out)                  ::  status
     
     logical, intent(in), optional         ::  verbose
+    logical, intent(in), optional         ::  bl
     
     ! --- const ----------------------------
     
-    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeProfile_FineCoarseRatio'
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_AdjustFineCoarseRatio'
     
     ! fraction of NO3c assigned to PM2.5:
     real, parameter    ::  alfa = 0.27
     
     ! pm collections:
-    integer, parameter        ::  npm = 3
+    integer, parameter        ::  npm = 2
     integer, parameter        ::  ipm_fine   = 1
     integer, parameter        ::  ipm_coarse = 2
-    integer, parameter        ::  ipm_no3c   = 3
     
     ! --- local -----------------------------
     
     logical               ::  verb
+    logical               ::  only_bl
     integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  no3(:,:,:)  ! (lnx,lny,nz)
     real, allocatable     ::  tpm_sfc(:,:,  :)  ! (lnx,lny   ,npm)
     real, allocatable     ::  tpm_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
     real, allocatable     ::  xn_25(:,:)        ! (lnx,lny)
     real, allocatable     ::  xn_10(:,:)        ! (lnx,lny)
-    real, allocatable     ::  factor_sfc(:,:  ,:)  ! (lnx,lny   ,npm)
+    real, allocatable     ::  q(:,:,:)  ! (lnx,lny,npm)
+    real, allocatable     ::  factor_sfc(:,:,  :)  ! (lnx,lny   ,npm)
     real, allocatable     ::  factor_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
     logical, allocatable  ::  ispm(:,:)            ! (nspec_adv,npm)
     integer               ::  ipm
     integer, pointer      ::  out_group(:)
     integer               ::  out_offset
     integer               ::  ispec
+    integer               ::  ispec_no3f
     integer               ::  ispec_no3c
     real                  ::  fscale
     logical               ::  needroa
     integer               ::  k
-
-      integer   :: i,j
+!
+!      integer   :: i,j
 
     ! --- begin -----------------------------
     
     ! verbose?
     verb = .false.
     if ( present(verbose) ) verb = verbose
+    
+    ! boundary layer only?
+    only_bl = .false.
+    if ( present(bl) ) only_bl = bl
     
     ! shape:
     nspec = size(xn_adv,1)
@@ -1087,13 +1796,18 @@ contains
     IF_NOT_OK_RETURN(status=1)
     allocate( xn_10(lnx,lny), stat=status )
     IF_NOT_OK_RETURN(status=1)
+    ! storage for no3 fraction:
+    allocate( no3(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
     ! storage for current total fine/coarse aerosol:
     allocate( tpm_ml (lnx,lny,nz,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( tpm_sfc(lnx,lny   ,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! storage for factors:
-    allocate( factor_sfc(lnx,lny   ,npm), stat=status )
+    allocate( q(lnx,lny,npm), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( factor_sfc(lnx,lny,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( factor_ml (lnx,lny,nz,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1101,15 +1815,18 @@ contains
     ! Coarse nitrate should be treated special ...
     ! Fraction alfa is assigned to "fine" and (1-alfa) to "coarse",
     ! thus fine/coarse ratio "within" no3c is fixed.
-    ! This fixed ratio should not be changed by the assimilation;
-    ! actually it is imposible to maintain the ratio while changing
-    ! the total fine/coarse fractions.
-    ! Therefore do not apply scale factors to coarse nitrate,
-    ! only assimilation of pm10 will change its amount.
-    ! Find index of coarse nitrate:
+    ! Here add fraction alfa from course to fine mode,
+    ! and at the end assign part of fine mode to coarse mode again.
+    ! Find indices of nitrate aerosols:
+    ispec_no3f = find_index( 'NO3_F', species_adv(:)%name )
     ispec_no3c = find_index( 'NO3_C', species_adv(:)%name )
+    ! fraction of coarse part assigned to fine:
+    no3 = alfa * xn_adv(ispec_no3c,:,:,:)
+    ! switch:
+    xn_adv(ispec_no3f,:,:,:) = xn_adv(ispec_no3f,:,:,:) + no3
+    xn_adv(ispec_no3c,:,:,:) = xn_adv(ispec_no3c,:,:,:) - no3
 
-    ! weights of tracers in fine and corase:
+    ! storage for flags to know if spec is fine or coarse:
     allocate( ispm(nspec,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! init with no contribution:
@@ -1135,31 +1852,25 @@ contains
         !  
         else if ( ipm == ipm_coarse ) then
           ! only if exclusevely coarse and not coarse nitrate:
-          ispm(ispec,ipm) = .not. ( ispm(ispec,ipm_fine) .or. (ispec == ispec_no3c) )
-        !
-        else if ( ipm == ipm_no3c ) then
-          ! only if coarse nitrate:
-          ispm(ispec,ipm) = ispec == ispec_no3c
+          ispm(ispec,ipm) = .not. ispm(ispec,ipm_fine)
         end if
         !
       end do ! group elements
     end do  ! total fine and coarse
-    ! special:
-    ispm(ispec_no3c,ipm_no3c) = .true.
     
-    ! info ...
-    write (gol,*) 'rrr weights: '; call goPr
-    do ispec = 1, nspec
-      if ( any( ispm(ispec,:) ) ) then
-        write (gol,'("rrr ",3l2," ",a)') ispm(ispec,:), trim(species_adv(ispec)%name); call goPr
-      end if
-    end do
+    !! info ...
+    !write (gol,*) 'rrr weights: '; call goPr
+    !do ispec = 1, nspec
+    !  if ( any( ispm(ispec,:) ) ) then
+    !    write (gol,'("rrr ",2l2," ",a)') ispm(ispec,:), trim(species_adv(ispec)%name); call goPr
+    !  end if
+    !end do
 
     ! init sums:
     tpm_ml  = 0.0
     tpm_sfc = 0.0
-    ! loop over fine (=1) and coarse-without-no3c (=2):
-    do ipm = 1, 3
+    ! loop over fine (=1), coarse-without-no3c (=2), and no3c (=3):
+    do ipm = 1, npm
       !! testing ...
       !if ( dbg_cell ) then
       !  write (gol,*) 'yyy ipm = ', ipm; call goPr
@@ -1183,34 +1894,34 @@ contains
         if ( needroa ) then
           ! add contribution, multiply with air density:
           tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+                               xn_adv(ispec,:,:,:) &
                                * fscale &
-                               * roa(:,:,lev3d(:num_lev3d),1)    ! density
+                               * roa(:,:,:,1)    ! density
           ! surface fraction:
           tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-                               xn_adv(ispec,:,:,nlev) &
+                               xn_adv(ispec,:,:,nz) &
                                * fscale &
-                               * roa(:,:,nlev,1)    &  ! density
+                               * roa(:,:,nz,1)    &  ! density
                                * cfac(ispec,:,:)       ! 50 m -> 3 m
           !! testing ...
           !if ( dbg_cell ) then
-          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-          !                                       * fscale * roa(dbg_i,dbg_j,nlev,1) * cfac(ispec,dbg_i,dbg_j); call goPr
+          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nz) * w(ispec,ipm) &
+          !                                       * fscale * roa(dbg_i,dbg_j,nz,1) * cfac(ispec,dbg_i,dbg_j); call goPr
           !end if
                                
         else
           ! add contribution:
           tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+                               xn_adv(ispec,:,:,:) &
                                * fscale
           ! surface fraction:
           tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-                               xn_adv(ispec,:,:,nlev) &
+                               xn_adv(ispec,:,:,nz) &
                                * fscale &
                                * cfac(ispec,:,:)       ! 50 m -> 3 m
           !! testing ...
           !if ( dbg_cell ) then
-          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+          !  write (gol,*) 'yyy   ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nz) * w(ispec,ipm) &
           !                                       * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
           !end if
         end if
@@ -1224,21 +1935,21 @@ contains
     !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
     !end if
     
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy before tpm fine,course   = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
-    !  write (gol,*) 'yyy before tpm fine+coarse   = ', sum(tpm_sfc(dbg_i,dbg_j,:)); call goPr
-    !  write (gol,*) 'yyy before tpm f + a*no3c    = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
-    !  write (gol,*) 'yyy before tpm f + c + no3c  = ', sum(tpm_sfc(dbg_i,dbg_j,:)) + tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
-    !end if
-
-    !! testing ..
-    !write (gol,*) 'ppp0 tpm = ', tpm_sfc(1,1,:), sum(tpm_sfc(1,1,:)); call goPr
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy before tpm fine,course   = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
+!    !  write (gol,*) 'yyy before tpm fine+coarse   = ', sum(tpm_sfc(dbg_i,dbg_j,:)); call goPr
+!    !  write (gol,*) 'yyy before tpm f + a*no3c    = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
+!    !  write (gol,*) 'yyy before tpm f + c + no3c  = ', sum(tpm_sfc(dbg_i,dbg_j,:)) + tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
+!    !end if
+!
+!    !! testing ..
+!    !write (gol,*) 'ppp0 tpm = ', tpm_sfc(1,1,:), sum(tpm_sfc(1,1,:)); call goPr
     
     ! analyzed total pm25 at the surcface:  xn_obs + dx_obs(:,:,nz)
     ! in theory this could not exceed total pm10,
-    ! but total pm10 was analyzed independently and sometimes
-    ! obserations are found with pm25 > pm10 ;
+    ! but total pm10 was analyzed independently,
+    ! and sometimes observations are found with pm25 > pm10 ;
     ! limit the analyzed field to the current total 
     ! (which should remain unchanged in this update):
     xn_10 = sum( tpm_sfc, dim=3 )
@@ -1246,105 +1957,108 @@ contains
     !! without the water part:
     !xn_ana = min( xn_obs + dx_obs - PM25_water, tpm(:,:,:,1)+tpm(:,:,:,ipm_coarse) )
     
-    !! testing ..
-    !write (gol,*) 'ppp0 xn_ana = ',xn_obs(1,1), dx_obs(1,1), xn_ana(1,1); call goPr
+!    !! testing ...
+!    !if ( dbg_cell ) then
+!    !  write (gol,*) 'yyy xn_obs, dx_obs  = ', xn_obs(dbg_i,dbg_j), dx_obs(dbg_i,dbg_j,nz); call goPr
+!    !  write (gol,*) 'yyy xn_obs + dx_obs = ', xn_obs(dbg_i,dbg_j) + dx_obs(dbg_i,dbg_j,nz); call goPr
+!    !  write (gol,*) 'yyy xn_ana          = ', xn_ana(dbg_i,dbg_j); call goPr
+!    !end if
 
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy xn_obs, dx_obs  = ', xn_obs(dbg_i,dbg_j), dx_obs(dbg_i,dbg_j,nz); call goPr
-    !  write (gol,*) 'yyy xn_obs + dx_obs = ', xn_obs(dbg_i,dbg_j) + dx_obs(dbg_i,dbg_j,nz); call goPr
-    !  write (gol,*) 'yyy xn_ana          = ', xn_ana(dbg_i,dbg_j); call goPr
-    !end if
+    ! pmf transformed into pmc or reverse?
+    where ( xn_25 < tpm_sfc(:,:,ipm_fine) )
     
-    !
-    ! Determine scale factors for fine and coarse part such that:
-    !
-    !   total_fine * fine_factor +  alfa*no3c                 * coarse_factor = xn_25
-    !   total_fine * fine_factor + (     no3c + total_coarse) * coarse_factor = xn_10
-    !
-    ! First solve coarse factor:
-    !
-    !   xn_25 - alfa*no3c * coarse_factor + ( no3c + total_coarse) * coarse_factor = xn_10
-    !   ( (1-alfa)*no3c + total_coarse ) * coarse_factor = xn_10 - xn_25
-    !     coarse_factor = (xn_10 - xn_25)/( (1-alfa)*no3c + total_coarse )
-    !
-    ! Thus, scale the coarse fraction to match with analyzed coarse fraction.
-    !
-    where ( xn_10 > xn_25 )
-      ! scale factor for coarse fraction:
-      factor_sfc(:,:,ipm_coarse) = (xn_10 - xn_25) / ( (1.0-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )
+      !
+      !   |
+      !   |  pmf | pmc |
+      !   |      |     |
+      !   +---*--o-----o---------
+      !      xn  
+      !
+      ! fraction of fine mode remaining fine:
+      !    qf = xn / pmf
+      !
+      ! new amounts:
+      !   pmf  :=     qf  pmf
+      !   pmc  :=  (1-qf) pmf + pmc
+      !
+      
+      ! fraction of fine mode remaining fine:
+      where ( tpm_sfc(:,:,ipm_fine) > 0.0 )
+        q(:,:,ipm_fine  ) = max( 0.01, xn_25 / tpm_sfc(:,:,ipm_fine) )
+      elsewhere
+        q(:,:,ipm_fine  ) = 0.01
+      endwhere
+      ! all coarse mode remains coarse:
+      q(:,:,ipm_coarse) = 1.0
+      
     elsewhere
-      ! no coarse fraction in analysis present, dummy factor:
-      factor_sfc(:,:,ipm_coarse) = 1.0
-    end where
-    
-    ! scale factor to make fine fraction (incl part of no3c) equal to observations:
-    !   total_fine * fine_factor + alfa*no3c * coarse_factor =  xn_25
-    ! thus:
-    !   fine_factor  =  (xn_25 - alfa*no3c * coarse_factor) / total_fine
-    ! any fine pm?
-    where ( tpm_sfc(:,:,ipm_fine) > 0.0 )
-      ! fine pm present, obtain scale factor;
-      ! might become negative which means that all fine pm shoulde be removed
-      ! except the no3c fration that is also considered as part of the fine mode;
-      ! keep minimum fraction to avoid that all fine aerosols are removed:
-      factor_sfc(:,:,ipm_fine) =  max( 0.01, ( xn_25 - alfa*tpm_sfc(:,:,ipm_no3c) * factor_sfc(:,:,ipm_coarse) ) / tpm_sfc(:,:,ipm_fine) )
-    elsewhere
-      ! no fine pm present, dummy factor:
-      factor_sfc(:,:,ipm_fine) = 1.0
-    end where
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy fine_factor 1 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
-    !end if
-    ! use minimum factor to avoid that all aersols are removed,
-    ! this would give errors from aerosol equilibrium routines:
-    !factor_sfc(:,:,ipm_fine) = max( 0.01, factor_sfc(:,:,ipm_fine) )
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy fine_factor 2 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
-    !end if
-    
-    ! if for the fine factor the minimum value is used,
-    ! then both the modelled pm25 and pm10 will exceed the analyzed pm25 and pm10 
-    ! since pm25 has too much of the coarse nitrate fraction;
-    ! remove the surplus of coarse nitrate:
-    where ( ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )*factor_sfc(:,:,ipm_coarse) > xn_10 )
-      ! special scale factor for coarse nitrate:
-      !   total_fine * fine_factor + no3c * no3c_factor + total_coarse * coarse_factor = xn_10
-      !   no3c_factor = ( xn_10 - total_fine * fine_factor - total_coarse * coarse_factor ) / no3c
-      ! keep minimum ammount:
-      factor_sfc(:,:,ipm_no3c) = ( xn_10 - tpm_sfc(:,:,ipm_fine)*factor_sfc(:,:,ipm_fine) - tpm_sfc(:,:,ipm_coarse)*factor_sfc(:,:,ipm_coarse) ) / ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) )
-    elsewhere
-      ! keep already computed coarse factor:
-      factor_sfc(:,:,ipm_no3c) = factor_sfc(:,:,ipm_coarse)
+
+      !
+      !   |
+      !   |  pmf | pmc |
+      !   |      |     |
+      !   +------o--*--o---------
+      !            xn  
+      !
+      ! fraction of coarse mode remaining coarse:
+      !    qf = (pmf+pmc-xn) / pmc
+      !
+      ! new amounts:
+      !   pmf  :=  pmf + (1-qc) pmc
+      !   pmc  :=           qc  pmc
+      !
+      
+      ! all fine aerosol remains fine:
+      q(:,:,ipm_fine  ) = 1.0
+      ! fraction of coarse mode remaining coarse:
+      where ( tpm_sfc(:,:,ipm_coarse) > 0.0 )
+        q(:,:,ipm_coarse) = max( 0.01, ( tpm_sfc(:,:,ipm_fine) + tpm_sfc(:,:,ipm_coarse) - xn_25 ) / tpm_sfc(:,:,ipm_coarse) )
+      elsewhere
+        q(:,:,ipm_coarse) = 0.01
+      endwhere
+      
     endwhere
 
-    ! expand to higher layers; same for all collections:
-    do ipm = 1, npm
-      ! copy surface:
-      factor_ml(:,:,nz,ipm) = factor_sfc(:,:,ipm)
-      ! other layers:
-      do k = 1, nz-1
-        ! use profile following ratio:
-        !   dx(:,:,k)/dx(:,:,nz)
-        ! which is 1 at the bottom layer (nz) and decays to zero with height;
-        ! note that also values >1 might be present in the first layers above the surface,
-        ! and tiny negative values at the top, therefore use abs values;
-        ! also use minimum factor:
-        where ( abs(dx_obs(:,:,nz)) > 0.0 )
-          factor_ml(:,:,k,ipm) = max( 0.01, 1.0 + ( factor_ml(:,:,nz,ipm) - 1.0 ) * abs(dx_obs(:,:,k)/dx_obs(:,:,nz)) )
-        elsewhere
-          factor_ml(:,:,k,ipm) = 1.0
-        end where
-      end do ! levels
-    end do ! ipm
-    
-    !! info ..
-    !write (gol,*) 'ppp2 fine: ', xn_ana(1,ipm_fine), tpm_sfc(1,1,ipm_fine), xn_ana(1,ipm_fine) / tpm_sfc(1,1,ipm_fine); call goPr
-    !write (gol,*) 'ppp2 fine   factor = ', fine_factor  (1,ipm_fine); call goPr
-    !write (gol,*) 'ppp2 coarse factor = ', coarse_factor(1,ipm_fine); call goPr
+    ! scale factors for fine mode at surface level:
+    where ( tpm_sfc(:,:,ipm_fine) > 0.0  )
+      factor_sfc(:,:,ipm_fine  ) = (    q(:,:,ipm_fine) *tpm_sfc(:,:,ipm_fine) + (1.0-q(:,:,ipm_coarse))*tpm_sfc(:,:,ipm_coarse) ) / tpm_sfc(:,:,ipm_fine  )
+    elsewhere
+      factor_sfc(:,:,ipm_fine  ) = 1.0
+    endwhere
+    ! scale factors for coarse mode at surface level:
+    where ( tpm_sfc(:,:,ipm_coarse) > 0.0 )
+      factor_sfc(:,:,ipm_coarse) = ( (1-q(:,:,ipm_fine))*tpm_sfc(:,:,ipm_fine) +      q(:,:,ipm_coarse) *tpm_sfc(:,:,ipm_coarse) ) / tpm_sfc(:,:,ipm_coarse)
+    elsewhere
+      factor_sfc(:,:,ipm_coarse) = 1.0
+    endwhere
 
+    ! loop over layers:
+    do k = 1, nz
+
+      ! scale factors for fine mode in this layer:
+      where ( tpm_ml(:,:,k,ipm_fine) > 0.0  )
+        factor_ml(:,:,k,ipm_fine  ) = (    q(:,:,ipm_fine) *tpm_ml(:,:,k,ipm_fine) + (1.0-q(:,:,ipm_coarse))*tpm_ml(:,:,k,ipm_coarse) ) / tpm_ml(:,:,k,ipm_fine  )
+      elsewhere
+        factor_ml(:,:,k,ipm_fine  ) = 1.0
+      endwhere
+      ! scale factors for coarse mode in this layer:
+      where ( tpm_ml(:,:,k,ipm_coarse) > 0.0 )
+        factor_ml(:,:,k,ipm_coarse) = ( (1-q(:,:,ipm_fine))*tpm_ml(:,:,k,ipm_fine) +      q(:,:,ipm_coarse) *tpm_ml(:,:,k,ipm_coarse) ) / tpm_ml(:,:,k,ipm_coarse)
+      elsewhere
+        factor_ml(:,:,k,ipm_coarse) = 1.0
+      endwhere
+      
+      ! boundary layer only?
+      if ( only_bl ) then
+        ! reset if bottom above blh:
+        where ( z_bnd(:,:,k+1) >= pzpbl )
+          factor_ml(:,:,k,ipm_fine  ) = 1.0
+          factor_ml(:,:,k,ipm_coarse) = 1.0
+        endwhere
+      end if
+      
+    end do ! levels
+   
     ! loop over fine/coarse:
     do ipm = 1, npm
       ! loop over all species:
@@ -1362,152 +2076,36 @@ contains
         xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * factor_ml(:,:,:,ipm)
         !! testing ...
         !if ( dbg_cell ) then
-        !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+        !  !write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+        !  write (gol,*) 'xxx xn_adv(',ispec,')=',xn_adv(ispec,dbg_i,dbg_j,:); call goPr
         !end if
       end do ! ispec
     end do ! ipm
+
     ! also apply (fine) factor to aersol water;
     ! better would be to recompute water content after changing the aerosol load ...
     PM25_water      = PM25_water      * factor_ml (:,:,:,ipm_fine)   ! model levels
     PM25_water_rh50 = PM25_water_rh50 * factor_sfc(:,:  ,ipm_fine)   ! sfc
     
-!    ! .... testing ........................
-!
-!    ! init sums:
-!    tpm_ml  = 0.0
-!    tpm_sfc = 0.0
-!    ! loop over fine (=1) and coarse (=2):
-!    do ipm = 1, 2
-!      !! testing ...
-!      !if ( dbg_cell ) then
-!      !  write (gol,*) 'yyy ipm = ', ipm; call goPr
-!      !end if
-!      ! loop over species:
-!      do ispec = 1, nspec
-!        ! skip if no contribution:
-!        if ( w(ispec,ipm) <= 0.0 ) cycle
-!        ! info on conversion to target units:
-!#ifdef with_ajs
-!        call Units_Scale( obs_units, ispec, fscale, &
-!                                 needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
-!        call Units_Scale( obs_units, ispec, fscale, &
-!                                 needroa=needroa )
-!#endif
-!        !! testing ...
-!        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
-!        ! convert using air density?
-!        if ( needroa ) then
-!          ! add contribution, multiply with air density:
-!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
-!                               * fscale &
-!                               * roa(:,:,lev3d(:num_lev3d),ipm_fine)    ! density
-!          ! surface fraction:
-!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-!                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
-!                               * fscale &
-!                               * roa(:,:,nlev,ipm_fine)    &  ! density
-!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
-!          !! testing ...
-!          !if ( dbg_cell ) then
-!          !  write (gol,*) 'yyy   r ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,ipm_fine) * cfac(ispec,dbg_i,dbg_j); call goPr
-!          !end if
-!                               
-!        else
-!          ! add contribution:
-!          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-!                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
-!                               * fscale
-!          ! surface fraction:
-!          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-!                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
-!                               * fscale &
-!                               * cfac(ispec,:,:)       ! 50 m -> 3 m
-!          !! testing ...
-!          !if ( dbg_cell ) then
-!          !  write (gol,*) 'yyy   p ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-!          !                                       * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
-!          !end if
-!        end if
-!      end do  ! spec
-!      ! add 3D aersosol water to fine fraction:
-!      if ( ipm == 1 ) then
-!        tpm_ml (:,:,:,ipm) = tpm_ml (:,:,:,ipm) + PM25_water
-!        tpm_sfc(:,:  ,ipm) = tpm_sfc(:,:  ,ipm) + PM25_water_rh50
-!        !! testing ...
-!        !if ( dbg_cell ) then
-!        !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
-!        !end if
+!      ! testing ...
+!      if ( dbg_cell ) then
+!        write (gol,*) 'xxx PM25_water      = ', PM25_water(dbg_i,dbg_j,:); call goPr
+!        write (gol,*) 'xxx PM25_water_rh50 = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
 !      end if
-!    end do  ! total fine and coarse
-!    
-!    ! coarse nitrate:
-!    ispec = ispec_no3c
-!    ! info on conversion to target units:
-!#ifdef with_ajs
-!    call Units_Scale( obs_units, ispec, fscale, &
-!                             needroa=needroa, status=status )
-!    IF_NOT_OK_RETURN(status=1)
-!#else
-!    call Units_Scale( obs_units, ispec, fscale, &
-!                             needroa=needroa )
-!#endif
-!    !! testing ...
-!    !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
-!    ! convert using air density?
-!    if ( needroa ) then
-!      ! surface fraction:
-!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
-!                 * roa(:,:,nlev,ipm_fine)    &  ! density
-!                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-!      !! testing ...
-!      !if ( dbg_cell ) then
-!      !  write (gol,*) 'yyy   r ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
-!      !end if
-!
-!    else
-!      ! surface fraction:
-!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
-!                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-!      !! testing ...
-!      !if ( dbg_cell ) then
-!      !  write (gol,*) 'yyy   p ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
-!      !end if
-!    end if
-!
-!    ! testing ...
-!    if ( dbg_cell ) then
-!      write (gol,*) 'yyy after tpm_sfc      = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
-!      write (gol,*) 'yyy after tpm_sfc(:,:,ipm_no3c)     = ', tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
-!      write (gol,*) 'yyy after f + a*no3c   = ', tpm_sfc(dbg_i,dbg_j,ipm_fine)+alfa*tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
-!      write (gol,*) 'yyy after f + c + no3c = ', sum(tpm_sfc(dbg_i,dbg_j,:))+tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
-!      do ispec = 1, nspec
-!        !if ( any(w(ispec,:) > 0.0) .or. (ispec == ispec_no3c) ) then
-!        !  write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name); call goPr
-!        !  do k = 1, nz
-!        !    write (gol,*) k, xn_adv(ispec,dbg_i,dbg_j,k); call goPr
-!        !  end do
-!        !end if
-!        write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,nlev); call goPr
-!      end do
-!    end if
-!    
-!    ! ...............................
-    
-    !
-    ! Recompute water content:
-    !   Aero_water from AerosolCalls
-    !   PM25_water at model levels (ambient)
-    !   PM25_water_rh50 at surface (50% rh)
-    !
+
+    ! part of fine mode that could be assigned to coarse mode,
+    ! remove max 99% of the fine mode:
+    no3 = min( alfa * xn_adv(ispec_no3c,:,:,:), 0.99 * xn_adv(ispec_no3f,:,:,:) )
+    ! switch:
+    xn_adv(ispec_no3f,:,:,:) = xn_adv(ispec_no3f,:,:,:) - no3
+    xn_adv(ispec_no3c,:,:,:) = xn_adv(ispec_no3c,:,:,:) + no3
     
     ! clear:
     deallocate( xn_25, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( xn_10, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( no3, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( ispm, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1515,16 +2113,333 @@ contains
     IF_NOT_OK_RETURN(status=1)
     deallocate( tpm_sfc, stat=status )
     IF_NOT_OK_RETURN(status=1)
+    deallocate( q, stat=status )
+    IF_NOT_OK_RETURN(status=1)
     deallocate( factor_sfc, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( factor_ml, stat=status )
     IF_NOT_OK_RETURN(status=1)
 
+    !! testing ...
+    !write (gol,'("break")'); call goErr
+    !TRACEBACK; status=1; return
+
     ! ok
     status = 0
     
-  end subroutine ObsCompInfo_ChangeProfile_FineCoarseRatio
+  end subroutine ObsCompInfo_AdjustFineCoarseRatio
 
+
+
+  ! *
+
+
+  !
+  ! Input:
+  !   xn_adv    :  model traces (all)
+  !   xn_obs    :  simulated observation field
+  !   dx_obs    :  analysis increments
+  !
+  ! Change tracers in "xn_adv" following ratio:
+  !    (xn_obs+dx_obs)/xn_obs
+  !
+  ! The 3D increment is used to ensure that factors applied
+  ! to the levels decrease to 1 at the top.
+  !
+  ! If bl=.true. layers are changed from bottom (nz) up to layer
+  ! including boundary layer top ("pzpbl" from "MetFields_ml")
+  !
+  
+  subroutine ObsCompInfo_ChangeML( self, xn_adv, xn_adv_units, &
+                                       xn_obs, dx_obs, obs_units, status, &
+                                       maxratio, verbose, bl )
+
+    use MetFields_mod, only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod, only : pzpbl    ! (nx,ny) boundary layer height
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
+    real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
+    real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
+    character(len=*), intent(in)          ::  obs_units
+    integer, intent(out)                  ::  status
+    
+    real, intent(in), optional            ::  maxratio
+    logical, intent(in), optional         ::  verbose
+    logical, intent(in), optional         ::  bl
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeML'
+    
+    ! --- local -----------------------------
+    
+    logical               ::  verb
+    logical               ::  only_bl
+    integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  ratio(:,:)  ! (lnx,lny)
+    integer               ::  k
+    integer               ::  is, ispec
+
+    ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
+    
+    ! boundary layer only?
+    only_bl = .false.
+    if ( present(bl) ) only_bl = bl
+    
+    ! shape:
+    nspec = size(xn_adv,1)
+    lnx   = size(xn_adv,2)
+    lny   = size(xn_adv,3)
+    nz    = size(xn_adv,4)
+    
+    !! testing ...
+    !i = 1
+    !j = 1
+    !write (gol,*) 'xxx testing pbl'; call goPr
+    !write (gol,*) 'xxx z_bnd ', lbound(z_bnd), ubound(z_bnd); call goPr
+    !do k = 1, nz
+    !  write (gol,*) 'xxx   layer top,bottom : ', z_bnd(i,j,k:k+1); call goPr
+    !end do
+    !write (gol,*) 'xxx pbl', pzpbl(i,j); call goPr
+    !TRACEBACK; status=1; return
+    
+    ! storage for relative change:
+    allocate( ratio(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! loop over levels, skip top layer (boundary conditions):
+    do k = 2, nz
+
+      ! fill ratio, or set to unity if undefined (zero tracer sum):
+      where( xn_obs(:,:,k) > 0.0 )
+        ratio = ( xn_obs(:,:,k) + dx_obs(:,:,k) ) / xn_obs(:,:,k)
+      elsewhere
+        ratio = 1.0
+      end where
+      
+      ! boundary layer only?
+      if ( only_bl ) then
+        ! reset if bottom is above boundary layer height:
+        where ( z_bnd(:,:,k+1) >= pzpbl )
+          ratio = 1.0
+        endwhere
+      end if
+
+      ! use minimum ratio to avoid that all tracers are removed,
+      ! this would give errors from aerosol equilibrium routines:
+      ratio = max( 0.01, ratio )
+      ! maximum?
+      if ( present(maxratio) ) ratio = min( ratio, maxratio )
+
+      ! loop over contributing species:
+      do is = 1, self%nspec
+        ! global index:
+        ispec = self%ispec(is)
+        ! check units ..
+        if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+          write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+        TRACEBACK; status=1; return
+        end if
+
+        ! apply:
+        xn_adv(ispec,:,:,k) = xn_adv(ispec,:,:,k) * ratio
+    
+      end do ! specs
+
+    end do ! levels
+
+    ! clear:
+    deallocate( ratio, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_ChangeML
+
+
+
+  ! *
+
+
+  !
+  ! Input:
+  !   xn_adv    :  model traces (all)
+  !   xn_obs    :  3D simulated observation field
+  !   dx_obs    :  2D analysis increments
+  !
+  ! Change tracers in "xn_adv" following vcd profile:
+  !    xn_obs(:) + vcd(:)/sum(vcd) dx_obs
+  !
+  ! No changes in layers above 200 hPa.
+  !
+  
+  subroutine ObsCompInfo_ChangeVCD( self, xn_adv, xn_adv_units, &
+                                       xn_obs, dx_obs, obs_units, status, &
+                                       verbose )
+
+
+    use PhysicalConstants_mod, only : Avog   ! 6.02e23 mlc/mole
+    use PhysicalConstants_mod, only : AtwAir ! 28.964 (g air)/mole
+    use GridValues_mod       , only : A_bnd, B_bnd
+    use MetFields_mod        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod        , only : roa
+    use MetFields_mod        , only : ps
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
+    real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
+    real, intent(in)                      ::  dx_obs(:,:)      ! (lnx,lny)
+    character(len=*), intent(in)          ::  obs_units
+    integer, intent(out)                  ::  status
+    
+    logical, intent(in), optional         ::  verbose
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeVCD'
+    
+    ! --- local -----------------------------
+    
+    logical               ::  verb
+    integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  vcd(:,:,:)        ! (lnx,lny,nz)
+    real, allocatable     ::  vc(:,:)           ! (lnx,lny)
+    real, allocatable     ::  fraction(:,:)     ! (lnx,lny)
+    real, allocatable     ::  ph(:,:,:)         ! (lnx,lny,nz)
+    integer               ::  ilev
+    integer               ::  i, j
+    integer               ::  is, ispec
+
+    ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
+    
+    ! shape:
+    nspec = size(xn_adv,1)
+    lnx   = size(xn_adv,2)
+    lny   = size(xn_adv,3)
+    nz    = size(xn_adv,4)
+    
+    !! testing ...
+    !i = 1
+    !j = 1
+    !write (gol,*) 'xxx testing pbl'; call goPr
+    !write (gol,*) 'xxx z_bnd ', lbound(z_bnd), ubound(z_bnd); call goPr
+    !do k = 1, nz
+    !  write (gol,*) 'xxx   layer top,bottom : ', z_bnd(i,j,k:k+1); call goPr
+    !end do
+    !write (gol,*) 'xxx pbl', pzpbl(i,j); call goPr
+    !TRACEBACK; status=1; return
+    
+    ! storage for column densities:
+    allocate( vcd(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! total:
+    allocate( vc(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! storage for fractions
+    allocate( fraction(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! half leel pressure:
+    allocate( ph(lnx,lny,0:nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! fill using hybride coeff;
+    ! first record of surface pressure is said to be the correct one ..
+    do j = 1, lny
+      do i = 1, lnx
+        ph(i,j,:) = A_bnd + B_bnd * ps(i,j,1)
+      end do
+    end do
+
+    ! [1e15 mlc/cm2]/m = 
+    !   (mole tracer)/(mole air)   ! input units (ppv)
+    !   * (kg air)/m3              ! applied later
+    !   * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
+    vcd = xn_obs * & ! ppv
+          roa(:,:,:,1) * & ! kg/m3
+          1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m
+
+    ! loop over levels:
+    do ilev = 1, nz
+      ! multiply with layer thickness:
+      !                 <units>/m    *                   m
+      vcd(:,:,ilev) = vcd(:,:,ilev)  * ( z_bnd(:,:,ilev) - z_bnd(:,:,ilev+1) )  ! <units>
+    end do
+    
+    ! skip above tropo:
+    where( ph(:,:,1:nz) < 200.0e2 )
+      vcd = 0.0  ! <units>
+    end where
+    
+    ! sum:
+    vc = sum(vcd,dim=3)  ! <units>
+    
+    !write (gol,*) 'vvv1 dx_obs = ', dx_obs(60,1); call goPr
+    !write (gol,*) 'vvv1 vc = ', vc(60,1); call goPr
+    
+    ! loop over levels, skip top layer (boundary conditions):
+    do ilev = 2, nz
+    
+      ! fractions:
+      where ( vc > 0.0 )
+        fraction = vcd(:,:,ilev) / vc
+      elsewhere
+        fraction = 1.0
+      end where
+
+      ! loop over contributing species:
+      do is = 1, self%nspec
+        ! global index:
+        ispec = self%ispec(is)
+        ! check units ..
+        if ( trim(xn_adv_units(ispec)) /= trim(obs_units) ) then
+          write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv_units(ispec)), trim(obs_units); call goErr
+          TRACEBACK; status=1; return
+        end if
+        
+        !write (gol,*) 'vvv1 lev ', ilev, fraction(60,1), xn_adv(ispec,60,1,ilev), &
+        !          xn_adv(ispec,60,1,ilev) + fraction(60,1) * dx_obs(60,1); call goPr
+
+        ! apply:
+        xn_adv(ispec,:,:,ilev) = max( 0.0, xn_adv(ispec,:,:,ilev) + fraction * dx_obs )
+    
+      end do ! specs
+
+    end do ! levels
+    
+    !print *, 'break'
+    !TRACEBACK; status=1; return
+
+    ! clear:
+    deallocate( vcd, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( vc, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( fraction, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( ph, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_ChangeVCD
 
 
 
@@ -1566,7 +2481,7 @@ contains
     character(len=1024) ::  ObsBfile(nObsDataMax)
     real                ::  Bsigfac(nObsDataMax)
     logical             ::  ObsFeedback(nObsDataMax)
-    logical             ::  ObsFeedbackFico(nObsDataMax)
+    character(len=32)   ::  ObsFeedbackType(nObsDataMax)
     integer             ::  iObsComp
     integer             ::  i
 
@@ -1593,6 +2508,18 @@ contains
     ! info ...
     write (gol,'(a,": number of observation data sets : ",i0)') rname, nObsData; call goPr
     
+    ! * kernels
+    
+    ! potential storage for kernels:
+    allocate( ObsKernels(nObsData), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! loop:
+    do iObsData = 1, nObsData
+      ! init:
+      call ObsKernels(iObsData)%Init( status )
+      IF_NOT_OK_RETURN(status=1)
+    end do
+    
     ! * flags, indices, ..
     
     ! loop over datasets:
@@ -1613,7 +2540,7 @@ contains
       select case ( trim(obsData(iObsData)%error_type) )
 
         !~ original:
-        case ( 'fraction' )
+        case ( 'fraction', 'retrieval' )
           ! no special tasks ...
 
         !~ values per site:
@@ -1666,27 +2593,28 @@ contains
       write (gol,'(a,":     type      : ",a)') rname, trim(obsData(iObsData)%deriv); call goPr
       ! compare with current:
       iObsComp = -999
-      do i = 1, nObsComp
-        ! match?
-        if ( trim(obsData(iObsData)%name) == trim(ObsComp(i)) ) then
-          ! store index:
-          iObsComp = i
-          ! check ...
-          if ( trim(ObsBUnit(iObsComp)) /= trim(obsData(iObsData)%Bunit) ) then
-            write (gol,'("could not handle observations of the same component with different Bunits yet")'); call goErr
-            write (gol,'("obsdata Bunit   : ",a)') trim(obsData(iObsData)%Bunit); call goErr
-            write (gol,'("collected Bunit : ",a)') trim(ObsBUnit(iObsComp)); call goErr
-            TRACEBACK; status=1; return
-          end if
-          ! check ...
-          if ( trim(ObsBfile(iObsComp)) /= trim(obsData(iObsData)%Bfile) ) then
-            write (gol,'("could not handle observations of the same component for different Bfiles yet")'); call goErr
-            TRACEBACK; status=1; return
-          end if
-          ! leave:
-          exit
-        end if
-      end do
+!TESTING: all individually
+!      do i = 1, nObsComp
+!        ! match?
+!        if ( trim(obsData(iObsData)%name) == trim(ObsComp(i)) ) then
+!          ! store index:
+!          iObsComp = i
+!          ! check ...
+!          if ( trim(ObsBUnit(iObsComp)) /= trim(obsData(iObsData)%Bunit) ) then
+!            write (gol,'("could not handle observations of the same component with different Bunits yet")'); call goErr
+!            write (gol,'("obsdata Bunit   : ",a)') trim(obsData(iObsData)%Bunit); call goErr
+!            write (gol,'("collected Bunit : ",a)') trim(ObsBUnit(iObsComp)); call goErr
+!            TRACEBACK; status=1; return
+!          end if
+!          ! check ...
+!          if ( trim(ObsBfile(iObsComp)) /= trim(obsData(iObsData)%Bfile) ) then
+!            write (gol,'("could not handle observations of the same component for different Bfiles yet")'); call goErr
+!            TRACEBACK; status=1; return
+!          end if
+!          ! leave:
+!          exit
+!        end if
+!      end do
       ! not defined yet?
       if ( iObsComp < 0 ) then
         ! increase counter:
@@ -1698,7 +2626,7 @@ contains
         ObsBUnit       (nObsComp) = trim(obsData(iObsData)%Bunit)
         Bsigfac        (nObsComp) = obsData(iObsData)%Bsigfac
         ObsFeedback    (nObsComp) = obsData(iObsData)%feedback
-        ObsFeedbackFiCo(nObsComp) = obsData(iObsData)%feedback_fico
+        ObsFeedbackType(nObsComp) = obsData(iObsData)%feedback_type
         ! set index:
         iObsComp = nObsComp
       end if
@@ -1731,7 +2659,7 @@ contains
     do iObsComp = 1, nObsComp
       ! info ...
       write (gol,'(a,":   species name      : ",a)') rname, trim(ObsComp(iObsComp)); call goPr
-      write (gol,'(a,":   target unit       : ",a)') rname, trim(ObsBUnit(iObsComp)); call goPr
+      write (gol,'(a,":   target unit (B)   : ",a)') rname, trim(ObsBUnit(iObsComp)); call goPr
       write (gol,'(a,":   observation type  : ",a)') rname, trim(ObsType(iObsComp)); call goPr
       ! switch:
       select case ( trim(ObsComp(iObsComp)) )
@@ -1767,7 +2695,7 @@ contains
                                            Bsigfac=Bsigfac(iObsComp), &
                                            with_no3c_frac=.true., with_pmwater=.true., &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ total coarse pm:
@@ -1781,7 +2709,7 @@ contains
                                            Bsigfac=Bsigfac(iObsComp), &
                                            with_pmwater=.true., &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ expected a single model species ...
@@ -1799,7 +2727,7 @@ contains
                                            (/ispec/), status, &
                                            Bsigfac=Bsigfac(iObsComp), &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
       end select
       ! info ...
@@ -1846,7 +2774,20 @@ contains
       deallocate( ObsError_Lists, stat=status )
       IF_NOT_OK_RETURN(status=1)
     end if
-
+    
+    ! kernels allocated?
+    if ( allocated(ObsKernels) ) then
+      ! loop:
+      do i = 1, size(ObsKernels)
+        ! clear:
+        call ObsKernels(i)%Done( status )
+        IF_NOT_OK_RETURN(status=1)
+      end do
+      ! clear:
+      deallocate( ObsKernels, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+    end if
+    
     ! ok
     status = 0
     
@@ -1855,7 +2796,7 @@ contains
 
   !=========================================================================
   !===
-  !=== observation operators
+  !=== observation errors
   !===
   !=========================================================================
 
@@ -2201,9 +3142,9 @@ contains
       do i = 1, self%n
         ! match?
         if ( trim(self%scode(i)) == trim(scode0) ) then
-          ! info ...
-          write (gol,'("WARNING - station code `",a,"` not found in obserr records, use default `",a,"`")') &
-                        trim(scode), trim(scode0); call goErr
+          !! info ...
+          !write (gol,'("WARNING - station code `",a,"` not found in obserr records, use default `",a,"`")') &
+          !              trim(scode), trim(scode0); call goPr
           ! store record:
           irec = i
           ! leave:
@@ -2235,6 +3176,151 @@ contains
     status = 0
     
   end subroutine ObsError_List_GetError
+
+
+  !=========================================================================
+  !===
+  !=== observation errors
+  !===
+  !=========================================================================
+
+
+  subroutine ObsKernels_Init( self, status )
+  
+    ! --- in/out -----------------------------
+    
+    class(T_ObsKernels), intent(out)   ::  self
+    integer, intent(out)               ::  status
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsKernels_Init'
+
+    ! --- local -----------------------------
+    
+    ! --- begin -----------------------------
+    
+    ! dummy:
+    self%npixel = 0
+    self%nlayer = 0
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsKernels_Init
+
+
+  ! ***
+
+
+  subroutine ObsKernels_Done( self, status )
+
+    ! --- in/out -----------------------------
+    
+    class(T_ObsKernels), intent(inout)   ::  self
+    integer, intent(out)                 ::  status
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsKernels_Done'
+
+    ! --- begin -----------------------------
+
+    ! clear storage:
+    call self%Clear( status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+
+  end subroutine ObsKernels_Done
+
+
+  ! ***
+
+
+  subroutine ObsKernels_Clear( self, status )
+
+    ! --- in/out -----------------------------
+    
+    class(T_ObsKernels), intent(inout)   ::  self
+    integer, intent(out)                 ::  status
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsKernels_Clear'
+
+    ! --- begin -----------------------------
+
+    ! storage allocated?
+    if ( allocated(self%kernel) ) then
+      ! clear:
+      deallocate( self%kernel, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      deallocate( self%phlev, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+    end if
+    ! dummy:
+    self%npixel = 0
+    self%nlayer = 0
+
+    ! ok
+    status = 0
+
+  end subroutine ObsKernels_Clear
+
+
+  ! ***
+
+
+  subroutine ObsKernels_Fill( self, kernel, kernel_units, phlev, phlev_units, status )
+
+    ! --- in/out -----------------------------
+    
+    class(T_ObsKernels), intent(inout)   ::  self
+    real, intent(in)                     ::  kernel(:,:)    ! (layer,pixels)
+    character(len=*), intent(in)         ::  kernel_units
+    real, intent(in)                     ::  phlev (:,:)    ! (0:layer,pixel)
+    character(len=*), intent(in)         ::  phlev_units
+    integer, intent(out)                 ::  status
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsKernels_Fill'
+
+    ! --- begin -----------------------------
+    
+    ! clear current storage if necessary:
+    call self%Clear( status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! new dimensions:
+    self%nlayer = size(kernel,1)
+    self%npixel = size(kernel,2)
+    
+    ! check ..
+    if ( any( shape(phlev) /= (/self%nlayer+1,self%npixel/) ) ) then
+      write (gol,'("kernels shaped (",i0,",",i0,") but phlev shaped (",i0,",",i0,")")') &
+               shape(kernel), shape(phlev); call goErr
+      TRACEBACK; status=1; return
+    end if
+
+    ! new storage:
+    allocate( self%kernel(self%nlayer,self%npixel), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( self%phlev(0:self%nlayer,self%npixel), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! copy:
+    self%kernel       = kernel
+    self%kernel_units = kernel_units
+    self%phlev        = phlev
+    self%phlev_units  = phlev_units
+
+    ! ok
+    status = 0
+
+  end subroutine ObsKernels_Fill
+
 
   !=========================================================================
   !===
@@ -2276,6 +3362,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! dummy values:
     self%H_jac     = -999.9
+    self%H_jac1    = -999.9
     self%l         = -999
     
     ! dummy values:
@@ -2349,6 +3436,7 @@ contains
     self%sf        = src%sf
     self%innov     = src%innov
     self%H_jac     = src%H_jac
+    self%H_jac1    = src%H_jac1
     self%i         = src%i
     self%j         = src%j
     self%levtype   = src%levtype
@@ -2416,8 +3504,11 @@ contains
     use PhysicalConstants_mod, only : Avog   ! 6.02e23 mlc/mole
     use PhysicalConstants_mod, only : AtwAir ! 28.964 (g air)/mole
     use GridValues_mod       , only : glon,glat,coord_in_domain
-    use MetFields_mod        , only : z_bnd
+    use GridValues_mod       , only : A_bnd, B_bnd
+    use MetFields_mod        , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface
+    use MetFields_mod        , only : pzpbl    ! (nx,ny) boundary layer height
     use MetFields_mod        , only : roa
+    use MetFields_mod        , only : ps
     use ChemFields_mod       , only : cfac
     use ChemFields_mod       , only : PM25_water
     use ChemFields_mod       , only : pm25_water_rh50
@@ -2443,15 +3534,21 @@ contains
 
     ! --- local -----------------------------
 
-    logical           ::  local_model_grid
-    integer           ::  i, j
-    integer           ::  k
-    integer           ::  ilev
-    integer           ::  itr
-    integer           ::  ispec
-    real              ::  xn, sf
-    real              ::  uconv
-    logical           ::  needroa
+    logical              ::  local_model_grid
+    integer              ::  i, j
+    integer              ::  k
+    integer              ::  ilev
+    integer              ::  itr
+    integer              ::  ispec
+    real                 ::  xn, sf
+    real                 ::  uconv
+    logical              ::  needroa
+    real, allocatable    ::  ph(:)  ! (0:nlev)
+    real, allocatable    ::  H0(:)  ! (1:nlev)
+    real, allocatable    ::  vcd(:)  ! (1:nlev)
+    real                 ::  Hi
+    real                 ::  xn1
+    real                 ::  yn_blh
 
     ! --- begin -----------------------------
     
@@ -2463,7 +3560,7 @@ contains
     ! default values, will be filled outside this routine:
     self%stncode = ''
     self%analyse = .true.
-    ! store index in 'obsData' array:
+    ! store index in 'obsData' (and 'ObsKernels') array:
     self%iObsData = ipar
 
     ! get local grid indices
@@ -2494,7 +3591,7 @@ contains
     
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! derive from 3D model levels (or 3D lowest layer) via surface (cfac)
-      case ( '3D-ML-SFC', '2D-ML-SFC', '2D-ML-SFCP' )
+      case ( '3D-ML-SFC', '2D-ML-SFC' )
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         ! cfac is for single species ...
@@ -2514,8 +3611,6 @@ contains
             self%levtype = LEVTYPE_3D_ML_SFC
           case ( '2D-ML-SFC' )
             self%levtype = LEVTYPE_2D_ML_SFC
-          case ( '2D-ML-SFCP' )
-            self%levtype = LEVTYPE_2D_ML_SFCP
           case default
             write (gol,'("deriv `",a,"` not supported")') trim(obsData(self%iObsData)%deriv); call goErr
             TRACEBACK; status=1; return
@@ -2534,6 +3629,9 @@ contains
         end if
         ! extra factor for 50m->3m conversion:
         self%H_jac(ilev) = self%H_jac(ilev) * cfac(ispec,i,j)   ! 50m->3m conversion
+        
+        ! not used ...
+        self%H_jac1 = -999.9
 
         ! check ...
         if ( trim(xn_obs_units(self%iObsComp)) /= 'mol mol^-1' ) then
@@ -2626,10 +3724,13 @@ contains
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
           case ( '1e15molec/cm2' )
-            ! [1e15 mlc/cm2]/m = (mol tracer)/(mole air)
-            !                    * 1e-15 mlc/(mole tracer) (mole air)/(kg air) m2/cm2 (kg air)/m3
-            uconv = 1e-15 * Avog / (AtwAir*1e-3) * 1e-4    ! <units>/m/(kg/m3)
-            needroa = .true.  ! multiply with air density 
+            ! [1e15 mlc/cm2]/m = 
+            !     (mol tracer)/(mole air)   ! input units
+            !     * (kg air)/m3             ! applied later
+            !     * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
+            uconv = 1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)
+            ! multiply with air density later:
+            needroa = .true.
           !~
           case default
             write (gol,'("unsupported obsdata units `",a,"`")') &
@@ -2650,6 +3751,9 @@ contains
           !                      <units>/m    *                   m
           self%H_jac(ilev) = self%H_jac(ilev) * ( z_bnd(i,j,ilev) - z_bnd(i,j,ilev+1) )  ! <units>
         end do ! ilev
+        
+        ! not used ...
+        self%H_jac1 = -999.9
 
         ! init simulation:
         yn = 0.0
@@ -2661,6 +3765,245 @@ contains
           yn = yn + self%H_jac(ilev) * xn
         end do  ! ilev
     
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ! derive from 3D model levels using kernels
+      !case ( '3D-ML-K1', '3D-ML-K2' )
+      case ( '3D-ML-K2' )
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        ! only for single species yet ..
+        if ( ObsCompInfo(self%iObsComp)%nspec /= 1 ) then
+          write (gol,'(a,": total column observation not implemented for accumulated tracer (",a,") yet ..")') &
+                   rname, trim(ObsCompInfo(self%iObsComp)%name); call goErr
+          TRACEBACK; status=1; return
+        end if
+        ! exctract from first (and only) index:
+        itr = 1
+        ! spec index in xn_adv array:
+        ispec = ObsCompInfo(self%iObsComp)%ispec(itr)
+
+        ! all levels are involved:
+        self%l = (/1,nlev/)
+
+        ! check ...
+        if ( trim(xn_obs_units(self%iObsComp)) /= 'mol mol^-1' ) then
+          write (gol,'("xn_obs_units is `",a,"` while expected `",a,"`")') &
+                  trim(xn_obs_units(self%iObsComp)), 'mol mol^-1'; call goErr
+          TRACEBACK; status=1; return
+        end if
+
+        ! conversion factor to <units>/m/(kg/m3),
+        ! integral over layer height is included per level:
+        select case ( trim(obsData(self%iObsData)%unit) )
+          !~
+          case ( '1e15molec/cm2' )
+            ! [1e15 mlc/cm2]/m = 
+            !     (mole tracer)/(mole air)   ! input units (ppv)
+            !     * (kg air)/m3              ! applied later
+            !     * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
+            uconv = 1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)/((mole tracer)/(mole air))
+            ! multiply with air density later:
+            needroa = .true.
+          !~
+          case default
+            write (gol,'("unsupported obsdata units `",a,"`")') &
+                             trim(obsData(self%iObsData)%unit); call goErr
+            TRACEBACK; status=1; return
+        end select
+        
+        !! testing ..
+        !write (gol,*) 'xxx ps    ', lbound(ps), ';', ubound(ps); call goPr
+        !write (gol,*) 'xxx A_bnd ', lbound(A_bnd), ';', ubound(A_bnd); call goPr
+        !write (gol,*) 'xxx B_bnd ', lbound(B_bnd), ';', ubound(B_bnd); call goPr
+        !write (gol,*) 'xxx cell  ', self%i, self%j; call goPr
+        
+        ! Limit change of model profile to OMI trop.column top at 200 hPa?
+        ! First 17 layers are below this top ..
+        
+        ! storage for model half level pressures:
+        allocate( ph(0:nlev), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        ! fill using hybride coeff;
+        ! first record of surface pressure is said to be the correct one ..
+        ph = A_bnd + B_bnd * ps(self%i,self%j,1)
+        
+        ! check ...
+        if ( trim(ObsKernels(self%iObsData)%phlev_units) /= 'Pa' ) then
+          write (gol,'("unsupported retrieval layer units `",a,"`")') trim(ObsKernels(self%iObsData)%phlev_units); call goErr
+          TRACEBACK; status=1; return
+        end if
+        
+        !! testing ...
+        !write (gol,'("ppp0 surface pressures: ",2f12.2)') ps(self%i,self%j,:); call goPr
+        !write (gol,'("ppp0 model layers: ",i0)') nlev; call goPr
+        !do ilev = 0, nlev
+        !  write (gol,'("ppp0 model half level ",i2,3f12.2)') ilev, A_bnd(ilev+1), B_bnd(ilev+1), ph(ilev); call goPr
+        !end do
+        !write (gol,'("ppp0 ")'); call goPr
+        
+        ! jacobian without kernel:
+        allocate( H0(1:nlev), stat=status, source=0.0 )
+        IF_NOT_OK_RETURN(status=1)
+        ! partial columns:
+        allocate( vcd(1:nlev), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        
+        ! loop over layers:
+        do ilev = self%l(0), self%l(1)
+          ! init with factor:
+          H0(ilev) = uconv   ! <units> / m / (kg/m3) / ppv
+          ! use density conversion?
+          if ( needroa ) then
+            !          <units>/m/(kg/m3)/ppv      (kg/m3)
+            H0(ilev) =        H0(ilev)        * roa(i,j,ilev,1)   ! <units> / m / ppv
+          end if
+          ! multiply with layer thickness:
+          !          <units>/m/ppv   *                   m
+          H0(ilev) =    H0(ilev)     * ( z_bnd(i,j,ilev) - z_bnd(i,j,ilev+1) )  ! <units> / ppv
+          
+          ! contribution of this layer in kernel-weighted column:
+          call PartialColumnContribution( ph(ilev-1), ph(ilev), ObsKernels(self%iObsData)%nlayer, &
+                                           ObsKernels(self%iObsData)%phlev (:,self%stnid), &
+                                           ObsKernels(self%iObsData)%kernel(:,self%stnid), &
+                                           Hi, status )
+          IF_NOT_OK_RETURN(status=1)
+          ! apply:
+          !                   <units>/m/ppv  * 1
+          self%H_jac(ilev) =      H0(ilev)   * Hi  ! <units> / ppv
+          
+          ! reset above 200 hPa:
+          if ( ph(ilev) < 200.0e2 ) H0(ilev) = 0.0
+        
+          !! testing ..
+          !if ( modulo(self%stnid-1,10) == 0 ) then
+          !  write (gol,'("ppp0 layer weight ",i2,f8.2)') ilev, Hi; call goPr
+          !end if
+
+        end do ! ilev
+        
+        !! testing ...
+        !write (gol,'("ppp1 model layers: ",i0)') nlev; call goPr
+        !do ilev = 1, nlev
+        !  write (gol,'("ppp1 layer ",i2,2f12.2,f16.2)') ilev, ph(ilev-1), ph(ilev), H0(ilev); call goPr
+        !end do
+        !write (gol,'("ppp1 ")'); call goPr
+        
+        !write (gol,*) 'xxx break'; call goPr
+        !TRACEBACK; status=1; return
+
+        ! init simulation:
+        yn = 0.0
+        yn_blh = 0.0
+        ! loop:
+        do ilev = self%l(0), self%l(1)
+          ! extract concentration:
+          xn = xn_obs(i,j,ilev,self%iObsComp)  ! ppv
+          ! add contribution to simulated observation:
+          yn = yn + self%H_jac(ilev) * xn      ! units
+          ! (partly) in boundary layer?
+          if ( z_bnd(i,j,ilev+1) < pzpbl(i,j) ) then
+            yn_blh = yn_blh + self%H_jac(ilev) * xn      ! units
+          end if
+        end do  ! ilev
+        
+        !! testing ..
+        !write (gol,*) 'www1f cell = ', i, j, self%l(0), self%l(1); call goPr
+        !write (gol,*) '  w1f xn   = ', xn_obs(i,j,self%l(0):self%l(1),self%iObsComp); call goPr
+        !write (gol,*) '  w1f Hj   = ', self%H_jac(self%l(0):self%l(1)); call goPr
+        !write (gol,*) '  w1f yn   = ', yn, 'xf'; call goPr
+
+        !! check ...
+        !if ( yn <= 1.0e-2 ) then
+        !  write (gol,'("unexpected small simulated OMI column ",e12.4)') yn; call goErr
+        !  do ilev = self%l(0), self%l(1)
+        !    write (gol,'("  layer ",i2," xn ",e12.4," H_jac ",e12.4)') &
+        !             ilev, xn_obs(i,j,ilev,self%iObsComp), self%H_jac(ilev); call goErr
+        !  end do
+        !  TRACEBACK; status=1; return
+        !end if
+        
+!        if ( trim(obsData(self%iObsData)%deriv) == '3D-ML-K1' ) then
+!
+!          ! analysis should scale concentration in boundary layer
+!          ! relative to change at lowest model layer
+!          ! (which is also used to simulate surface (at 3m) concentrations)
+!          !     vcd       [units]
+!          !     --- dx    -------  [ppv]
+!          !     xn1        [ppv]
+!          ! where both xn1 and dx are in model concentration units
+!          ! (observation operator H_jac converts to observations units, 
+!          ! for example ug/m3 or 1e15 mlc/cm2)   
+!          ! level from which surface is computed:
+!          ilev = nlev    ! bottom layer (top-down order!)
+!          ! conventration value for lowest layer (in model units):
+!          xn1 = xn_obs(i,j,ilev,self%iObsComp)  ! ppv
+!          !
+!          !! the "ObsCompInfo(self%iObsComp)%units" is the units of B (probably "ug/m3")
+!          !! and therefore the units of the analysis increment ;
+!          !! the "unitconv(itr)" factor and "unitroa(itr)" flag convert from model units (ppb?)
+!          !! to these "increment" units:
+!          !xn1 = xn1 * ObsCompInfo(self%iObsComp)%unitconv(itr)
+!          !if ( ObsCompInfo(self%iObsComp)%unitroa(itr) ) then
+!          !  xn1 = xn1 * roa(i,j,ilev,1)
+!          !end if
+!
+!          ! defined on 3D field:
+!          self%levtype = LEVTYPE_3D_ML_K1
+!          ! ratio between boundary layer column and surface value;
+!          ! skip values with very small concentrations in lowest layer (in ppv):
+!          if ( xn1 < 1.0e-12 ) then
+!            self%H_jac1 = 0.0
+!          else
+!            !! TESTING: blame boundary layer only:
+!            !self%H_jac1 = yn_blh / xn1   ! units/ppv
+!            ! blame entire profile:
+!            self%H_jac1 = yn / xn1   ! units/ppv
+!          end if
+!        
+!          !! testing ...
+!          !write (gol,*) 'xxx1 H_jac1 : ', yn_blh, xn1, self%H_jac1; call goPr
+!          
+!        else 
+        if ( trim(obsData(self%iObsData)%deriv) == '3D-ML-K2' ) then
+
+          ! defined on 3D field:
+          self%levtype = LEVTYPE_3D_ML_K2
+          
+          ! assume that increment dx is distrbuted relative to current vcd:
+          !   x(:) +  vcd(:)/sum(vcd(:)) dx
+          ! jacobian of observation operator w.r.t. dx:
+          !   H_jac^T vcd(:)/sum(vcd)
+          
+          ! current columns:
+          !     units/ppv             ppv
+          vcd =     H0    * xn_obs(i,j,:,self%iObsComp)  ! units
+          
+          ! jacobian for application of dx:
+          if ( sum(vcd) > 0.0 ) then
+            !                   units/ppv   units/units
+            self%H_jac1 = sum( self%H_jac * vcd )/sum(vcd)   ! units/ppv
+          else
+            ! no change:
+            self%H_jac1 = 0.0   ! units/ppv
+          end if
+        
+          !! testing ...
+          !write (gol,*) 'xxx1 H_jac1 : ', i,j, sum(vcd), self%H_jac1; call goPr
+          !TRACEBACK; status=1; return
+          
+        else
+          write (gol,'("unsupported deriv `",a,"`")') trim(obsData(self%iObsData)%deriv); call goErr
+          TRACEBACK; status=1; return
+        end if
+
+        ! clear:
+        deallocate( ph, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        deallocate( H0, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        deallocate( vcd, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+                         
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! 2D field of observation simulations
       case ( '2D-OBS-SFC' )
@@ -2707,6 +4050,9 @@ contains
         ! not that it will extract from the surface field:
         self%H_jac    = 0.0
         self%H_jac(k) = 1.0
+        
+        ! not used ...
+        self%H_jac1 = -999.9
 
         ! combine:
         yn = self%H_jac(k) * sf
@@ -2724,6 +4070,109 @@ contains
     status = 0
 
   end subroutine ObsOper_Fill
+  
+  
+  ! ***
+  
+  ! 
+  ! Contribution of pressure interval [p1,p2] to kernel weighted column.
+  !
+  ! Total column is:
+  !        nr
+  !    y = sum K(r) vcd(r)
+  !        r=1
+  ! with:
+  !    nr         : number of retrieval layers
+  !    K(1:nr)    : kernel
+  !    vcd(1:nr)  : partial columns, for example in units "1e15 mlc/cm2"
+  !                 valid for retrieval layers defined by boundaries phlev(0:nr)
+  !
+  ! The interval [p1,p2] is distributed over the retrieval layers:
+  !
+  !               4
+  !    phlev(3) --------
+  !               3   ------ p2
+  !    phlev(2) --------  |      25% to retrieval layer 3
+  !               2       |      50% to retrieval layer 2
+  !    phlev(1) --------  |      25% to retrieval layer 1
+  !               1   ------ p1
+  !    phlev(0) --------
+  !
+  ! The total column is then computed from:
+  !
+  !     y = K(1) * ( 0.25 * vcd([p1,p2]) + ... fractions from other vcd's ... )
+  !       + K(2) * ( 0.50 * vcd([p1,p2]) )
+  !       + K(3) * ( 0.25 * vcd([p1,p2]) + ... fractions from other vcd's ... )
+  !       + K(4) ...
+  !
+  ! The contribution of [p1,p2] to the total column is therefore:
+  !
+  !     y =  K(1) * 0.25  +  K(2) * 0.50  +  K(3) * 0.25
+  
+  subroutine PartialColumnContribution( p1, p2, nr, phlev, kernel, H, status )
+
+    ! --- in/out -----------------------------
+    
+    real, intent(in)                  ::  p1, p2
+    integer, intent(in)               ::  nr
+    real, intent(in)                  ::  phlev(0:nr)
+    real, intent(in)                  ::  kernel(1:nr)
+    real, intent(out)                 ::  H
+    integer, intent(out)              ::  status
+    
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/PartialColumnContribution'
+
+    ! --- local -----------------------------
+    
+    integer     ::  ir
+    real        ::  pmin, pmax
+    real        ::  rmin, rmax
+    real        ::  op1, op2
+    real        ::  fraction
+    
+    ! --- begin -----------------------------
+    
+    !! testing ...
+    !write (gol,'("ppp1 model interval: [",f9.2,",",f9.2,"]")') p1, p2; call goPr
+    !write (gol,'("ppp1 retrieval layers: ",i0)') nr; call goPr
+    
+    ! pressure range:
+    pmin = min( p1, p2 )
+    pmax = max( p1, p2 )
+    
+    ! init output:
+    H = 0
+    ! loop over retrieval layers:
+    do ir = 1, nr
+      ! retrieval layer pressure range:
+      rmin = min( phlev(ir-1),phlev(ir) )
+      rmax = max( phlev(ir-1),phlev(ir) )
+      ! no overlap?
+      if ( (pmax <= rmin) .or. (pmin >= rmax) ) then
+        ! no coverage:
+        fraction = 0.0
+      else
+        ! overlapping interval:
+        op1 = max( pmin, rmin )
+        op2 = min( pmax, rmax )
+        ! fraction of [p1,p2] that overlaps with retrieval layer:
+        fraction = (op2-op1)/(pmax-pmin)
+        ! add weighted 
+        H = H + kernel(ir) * fraction
+      end if
+      !! testing:
+      !write (gol,'("ppp1 retrieval layer ",i2," [",f9.2,",",f9.2,"] ",f12.6,f8.2)') &
+      !                ir, phlev(ir-1), phlev(ir), kernel(ir), fraction; call goPr
+    end do
+    !! testing ...
+    !write (gol,'("ppp1 ")'); call goPr
+  
+    ! ok
+    status = 0
+    
+  end subroutine PartialColumnContribution
 
 
   ! ***
@@ -2783,12 +4232,16 @@ contains
         !  TRACEBACK; status=1; return
         !end if
       !~ model levels:
-      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_ML_SFCP, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC )
+      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K2 )
         ! level range:
         l0 = self%l(0)
         l1 = self%l(1)
         ! extract simulation for this cell, sum over layers:
         yn = sum( self%H_jac(l0:l1) * xn_b(i,j,l0:l1,iObsComp) )
+        !write (gol,*) 'www1w cell = ', i, j, l0, l1; call goPr
+        !write (gol,*) '  w1w xn   = ', xn_b(i,j,l0:l1,iObsComp); call goPr
+        !write (gol,*) '  w1w Hj   = ', self%H_jac(l0:l1); call goPr
+        !write (gol,*) '  w1w yn   = ', yn, key; call goPr
       !~ unknown
       case default
         write (gol,'("unsupported levtype ",i0)') self%levtype; call goErr
@@ -2990,12 +4443,11 @@ contains
   !-----------------------------------------------------------------------
   
     use MPI   , only : MPI_INTEGER
-!   use MPI   , only : MPI_AllGather
     use MPIF90, only : MPIF90_Displacements
     
-    use MPI_Groups_mod    , only : MPI_COMM_CALC
-    use Config_module     , only : nproc
-    use Par_mod           , only : me
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Config_module    , only : nproc
+    use Par_mod          , only : me
 
     ! --- in/out -----------------------------
     
@@ -3128,7 +4580,7 @@ contains
     
     ! storage for sorted version that can be passed through MPI;
     ! decomposition over observation, so this should be last index:
-    nrr = 2
+    nrr = 3
     allocate( srt_rr(nrr,self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
     nii = 8
@@ -3162,6 +4614,7 @@ contains
           ! copy values, fill with global horizontal indices:
           srt_rr(1,iobs)   = self%obs(iobs_in)%innov
           srt_rr(2,iobs)   = self%obs(iobs_in)%obsstddev
+          srt_rr(3,iobs)   = self%obs(iobs_in)%H_jac1
           srt_Hj(:  ,iobs) = self%obs(iobs_in)%H_jac
           srt_ii(1  ,iobs) = doms%off(1,me) + self%obs(iobs_in)%i
           srt_ii(2  ,iobs) = doms%off(2,me) + self%obs(iobs_in)%j
@@ -3232,6 +4685,7 @@ contains
       ! copy values, convert from global to local horizontal indices:
       Hops_new%obs(iobs)%innov     = new_rr(1,iobs)
       Hops_new%obs(iobs)%obsstddev = new_rr(2,iobs)
+      Hops_new%obs(iobs)%H_jac1    = new_rr(3,iobs)
       Hops_new%obs(iobs)%H_jac     = new_Hj(:  ,iobs)
       Hops_new%obs(iobs)%i         = new_ii(  1,iobs) - doms_new%off(1,me)
       Hops_new%obs(iobs)%j         = new_ii(  2,iobs) - doms_new%off(2,me)
@@ -3386,8 +4840,8 @@ contains
         ! for logfile:
         if ( MasterProc ) then
           if ( tab_tot(iobscomp,ilevtype,1) > 0 ) then
-            write (gol,'("number of analyzed ",a6," ",a10," observations: ",i6)') &
-                              trim(ObsCompInfo(iobscomp)%name), &
+            write (gol,'(a,": number of analyzed ",a6," ",a10," observations: ",i6)') &
+                              rname, trim(ObsCompInfo(iobscomp)%name), &
                               trim(LEVTYPE_NAME(ilevtype)), tab_tot(iobscomp,ilevtype,1); call goPr
             !call PrintLog(gol)
           end if  ! any obs
@@ -3692,8 +5146,10 @@ contains
             if ( nchi < nchi_min ) then
               ! info ...
               write (gol,'("    found only ",i0," observations, at least ",i0," needed; keep default scaling")') nchi, nchi_min; call goPr
+              ! default:
+              fscale_opt = 1.0
               ! next component:
-              cycle
+              exit
             end if
             
             ! mean value:
@@ -4591,16 +6047,13 @@ contains
   !=========================================================================
 
 
+  !
+  ! Collected observations (location, values, errors) in 1D arrays.
+  !
+  
   subroutine read_obs( domain, maxobs, &
                         stnid, flat,flon,falt, y,stddev, scode, analyse, &
                         ipar, nobs, status )
-  !-----------------------------------------------------------------------
-  ! @description
-  ! Read in observations y in standard format
-  ! (Station-No flat flon falt obs-value stddev).
-  ! @author M.Kahnert
-  !-----------------------------------------------------------------------
-  
     use GridValues_mod, only : coord_in_domain
     use Io_mod        , only : IO_TMP
     use AOD_PM_mod    , only : AOD_init,wavelength
@@ -4637,18 +6090,15 @@ contains
     character(len=256)  ::  file
     logical             ::  exist
     integer             ::  no
-    character(len=1024) ::  line
-    real                ::  flon0, flat0, falt0, y0, stddev0
-    character(len=16)   ::  scode0
-    integer             ::  slen
+!    character(len=1024) ::  line
+!    real                ::  flon0, flat0, falt0, y0, stddev0
+!    character(len=16)   ::  scode0
+!    integer             ::  slen
                                             
     ! --- begin ----------------------------------
 
     ! init counter:
     nobs = 0
-    ! init index range:
-    obsData%iobs(0)=0
-    obsData%iobs(1)=0
 
     !-----------------------------------------------------------------------
     ! open observational data file in standard format, if applicable
@@ -4656,6 +6106,10 @@ contains
     ! loop over data sets:
     do nd = 1, nobsData
     
+      ! init index range:
+      obsData(nd)%iobs(0)=0
+      obsData(nd)%iobs(1)=0
+
       ! loop:
       do iav = 1, 2
       
@@ -4702,151 +6156,381 @@ contains
           write (gol,'("WARNING - observation file `",a,"` not found; continue ...")') trim(file); call goPr
           cycle
         end if
-
-        ! open:
-        open( IO_TMP, file=trim(file), form='formatted', status='old', iostat=status )
-        if ( status /= 0 ) then
-          write (gol,'("could not open obsdata file : ",a)') trim(file); call goErr
-          TRACEBACK; status=1; return
-        end if
-
-        ! info ...
-        write (gol,'("Obsdata opened ",a)') trim(file); call goPr
-
-        !-----------------------------------------------------------------------
-        ! read data
-        !-----------------------------------------------------------------------
-
-        ! init index to collected observation array:
-        obsData(nd)%iobs(0) = nobs+1
-
-        ! loop over lines:
-        do
-
-          ! expected format:
-          !     0    48.391670   13.671114      0.00       5.19      0.519 #AT0ENK1
-
-          ! read line:
-          read (IO_TMP,'(a)',iostat=status) line
-          if ( status < 0 ) then
-
-            ! eof reached
-            exit
-
-          elseif(status==0) then
-
-            ! extract parts:
-            read(line,*,iostat=status)no,flat0,flon0,falt0,y0,stddev0!,scode0
-            IF_NOT_OK_RETURN(status=1)         
-
-            ! read station code, starts with '#' .. (comment on line);
-            ! first search for hash:
-            no = index(line,'#')
-            ! present?
-            if ( no > 0 ) then
-              ! total lenth:
-              slen = len_trim(line)
-              ! station code after # to end:
-              scode0 = line(no+1:slen)
-            else
-              ! dummy:
-              write (scode0,'("xx",i5.5)') nobs+1
-            end if
-
-            ! if ouside domain/scope, next record:
-            if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
-
-            ! check if in range:
-            if ( (y0 < obsData(nd)%min) .or. &
-                 (y0 > obsData(nd)%max)      ) then
-              ! next record:
-              cycle
-            end if
-            ! accepted!
-            ! increse counter:
-            nobs = nobs + 1
-            ! check if storage is sufficient:
-            if ( nobs > maxobs ) then
-              write (gol,'("maxobs too small, cannot store all observations")'); call goErr
-              TRACEBACK; status=1; return
-            end if
-            ! store:
-            stnid (nobs) = no + 1  ! covert from 0-based to 1-based
-            flat  (nobs) = flat0
-            flon  (nobs) = flon0
-            falt  (nobs) = falt0
-            y     (nobs) = y0
-            ! copy station code, skip leading '#'
-            scode (nobs) = trim(scode0)
-            ! store data set number:
-            ipar(nobs) = nd
-            ! store analyse/validation flag:
-            analyse(nobs) = avflag
-
-            ! how is observation representation error set?
-            select case ( trim(obsData(nd)%error_type) )
-              !~ original:
-              case ( 'fraction' )
-                ! error estimate read from file (fraction of value?)
-                stddev(nobs) = stddev0
-                ! truncate std.dev. to relative or absolute maximum:
-                stddev(nobs) = max( stddev(nobs), &
-                                    obsData(nd)%error_rel * y(nobs), &
-                                    obsData(nd)%error_rep            )
-                ! check .. 
-                if ( stddev(nobs) <= 0e0 ) then
-                  print dafmt,'WARNING obs stddev <= 0'
-                  stddev(nobs) = 1e-9
-                end if
-              !~ values per site:
-              case ( 'estim' )
-                ! extract for current site:
-                call ObsError_Lists(nd)%GetError( trim(scode(nobs)), stddev(nobs), status )
-                IF_NOT_OK_RETURN(status=1)
-              !~
-              case default
-                write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsData(nd)%error_type); call goErr
-                TRACEBACK; status=1; return
-            end select
-
-            !! testing ...
-            !write (gol,'(a,": observation ",2i6,2f8.2)') rname, nd, nobs, flon(nobs), flat(nobs); call goPr
-
-          else
-            write (gol,'("while reading observations")'); call goErr
-            TRACEBACK; status=1; return
-          end if
-
-        end do  ! lines
-
-        ! store end number:
-        obsData(nd)%iobs(1) = nobs
-
-        ! close:
-        close( IO_TMP, iostat=status )
-        IF_NOT_OK_RETURN(status=1)
         
+        ! switch:
+        select case ( trim(obsData(nd)%ftype) )
+        
+          ! good old text files:
+          case ( 'txt' )
+         
+            ! read:
+            call read_obs_txt( obsData(nd), nd, avflag, trim(file), &
+                                domain, maxobs, &
+                                stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                                nobs, status )
+            IF_NOT_OK_RETURN(status=1)
+        
+          ! OMI extract:
+          case ( 'omi' )
+         
+            ! read:
+            call read_obs_omi( obsData(nd), nd, avflag, trim(file), &
+                                domain, maxobs, &
+                                stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                                nobs, status )
+            IF_NOT_OK_RETURN(status=1)
+            
+          ! unknown ...
+          case default
+            write (gol,'("unsupported file type `",a,"`")') trim(obsData(nd)%ftype); call goErr
+            TRACEBACK; status=1; return
+        end select ! file type
+
       end do  ! ana, val
 
     end do  ! data sets
 
-    ! Write #obs to log file
-    if ( MasterProc ) then
-      do nd = 1, nobsData
-        file = date2string(obsData(nd)%file,current_date)
-        no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
-        write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
-            nd, no, trim(obsData(nd)%name), &
-            trim(obsData(nd)%deriv), "observations"
-        write (damsg,dafmt) trim(damsg)
-        call PrintLog(damsg)
-        call PrintLog(file)
-      end do
-    end if
+    !! Write #obs to log file
+    !! NOT USEFUL! Only observations at local domain are present ...
+    !if ( MasterProc ) then
+    !  do nd = 1, nobsData
+    !    file = date2string(obsData(nd)%file,current_date)
+    !    no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
+    !    write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
+    !        nd, no, trim(obsData(nd)%name), &
+    !        trim(obsData(nd)%deriv), "observations"
+    !    write (damsg,dafmt) trim(damsg)
+    !    call PrintLog(damsg)
+    !    call PrintLog(file)
+    !  end do
+    !end if
     
     ! ok
     status = 0
 
   end subroutine read_obs
   
+  
+  ! *
+  
+  
+  subroutine read_obs_txt( obsd, nd, avflag, filename, &
+                            domain, maxobs, &
+                            stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                            nobs, status )
+
+    use GridValues_mod, only : coord_in_domain
+    use Io_mod        , only : IO_TMP
+  
+    ! --- in/out ---------------------------------
+
+    type(obs_data), intent(inout)     ::  obsd  ! data set info
+    integer, intent(in)               ::  nd    ! id of 'obsd' argument, stored in 'ipar' array
+    logical, intent(in)               ::  avflag  ! analysis or validation set? copied into 'analyse' array
+    character(len=*), intent(in)      ::  filename
+    character(len=*), intent(in)      ::  domain ! domain/scope for observations
+                                                 !    "full":      all obs in full model domain
+                                                 !    "processor": all obs in this processor sub-domain
+    integer, intent(in)               ::  maxobs
+    integer, intent(inout)            ::  stnid(maxobs)  ! 1-based station number
+    real, intent(inout)               ::  flat(maxobs)
+    real, intent(inout)               ::  flon(maxobs)
+    real, intent(inout)               ::  falt(maxobs)
+    real, intent(inout)               ::  y(maxobs)
+    real, intent(inout)               ::  stddev(maxobs)
+    character(len=*), intent(inout)   ::  scode(maxobs)
+    logical, intent(inout)            ::  analyse(maxobs)
+    integer, intent(inout)            ::  ipar(maxobs)
+    integer, intent(inout)            ::  nobs       ! number values filled in (maxobs) arrays on input and output
+    integer, intent(out)              ::  status
+
+    ! --- const --------------------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/read_obs_text'
+    
+    ! --- local ----------------------------------
+
+    character(len=1024) ::  line
+    integer             ::  no
+    real                ::  flon0, flat0, falt0, y0, stddev0
+    character(len=16)   ::  scode0
+    integer             ::  slen
+                                            
+    ! --- begin ----------------------------------
+  
+    ! open:
+    open( IO_TMP, file=trim(filename), form='formatted', status='old', iostat=status )
+    if ( status /= 0 ) then
+      write (gol,'("could not open obsdata file : ",a)') trim(filename); call goErr
+      TRACEBACK; status=1; return
+    end if
+
+    ! info ...
+    write (gol,'("Obsdata opened ",a)') trim(filename); call goPr
+
+    !-----------------------------------------------------------------------
+    ! read data
+    !-----------------------------------------------------------------------
+
+    ! init index to collected observation array:
+    obsd%iobs(0) = nobs+1
+
+    ! loop over lines:
+    do
+
+      ! expected format:
+      !     0    48.391670   13.671114      0.00       5.19      0.519 #AT0ENK1
+
+      ! read line:
+      read (IO_TMP,'(a)',iostat=status) line
+      if ( status < 0 ) then
+
+        ! eof reached
+        exit
+
+      elseif(status==0) then
+
+        ! extract parts:
+        read (line,*,iostat=status) no,flat0,flon0,falt0,y0,stddev0!,scode0
+        IF_NOT_OK_RETURN(status=1)         
+
+        ! read station code, starts with '#' .. (comment on line);
+        ! first search for hash:
+        no = index(line,'#')
+        ! present?
+        if ( no > 0 ) then
+          ! total lenth:
+          slen = len_trim(line)
+          ! station code after # to end:
+          scode0 = line(no+1:slen)
+        else
+          ! dummy:
+          write (scode0,'("xx",i5.5)') nobs+1
+        end if
+
+        ! if ouside domain/scope, next record:
+        if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
+
+        ! check if in range:
+        if ( (y0 < obsd%min) .or. (y0 > obsd%max) ) then
+          ! next record:
+          cycle
+        end if
+        ! accepted!
+        ! increse counter:
+        nobs = nobs + 1
+        ! check if storage is sufficient:
+        if ( nobs > maxobs ) then
+          write (gol,'("maxobs too small, cannot store all observations")'); call goErr
+          TRACEBACK; status=1; return
+        end if
+        ! store:
+        stnid (nobs) = no + 1  ! covert from 0-based to 1-based
+        flat  (nobs) = flat0
+        flon  (nobs) = flon0
+        falt  (nobs) = falt0
+        y     (nobs) = y0
+        ! copy station code, skip leading '#'
+        scode (nobs) = trim(scode0)
+        ! store data set number:
+        ipar(nobs) = nd
+        ! store analyse/validation flag:
+        analyse(nobs) = avflag
+
+        ! how is observation representation error set?
+        select case ( trim(obsd%error_type) )
+          !~ original:
+          case ( 'fraction' )
+            ! error estimate read from file (fraction of value?)
+            stddev(nobs) = stddev0
+            ! truncate std.dev. to relative or absolute maximum:
+            stddev(nobs) = max( stddev(nobs), &
+                                obsd%error_rel * y(nobs), &
+                                obsd%error_rep            )
+            ! check .. 
+            if ( stddev(nobs) <= 0e0 ) then
+              print dafmt,'WARNING obs stddev <= 0'
+              stddev(nobs) = 1e-9
+            end if
+          !~ values per site:
+          case ( 'estim' )
+            ! extract for current site:
+            call ObsError_Lists(nd)%GetError( trim(scode(nobs)), stddev(nobs), status )
+            IF_NOT_OK_RETURN(status=1)
+          !~
+          case default
+            write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsd%error_type); call goErr
+            TRACEBACK; status=1; return
+        end select
+
+        !! testing ...
+        !write (gol,'(a,": observation ",2i6,2f8.2)') rname, nd, nobs, flon(nobs), flat(nobs); call goPr
+
+      else
+        write (gol,'("while reading observations")'); call goErr
+        TRACEBACK; status=1; return
+      end if
+
+    end do  ! lines
+
+    ! store end number:
+    obsd%iobs(1) = nobs
+
+    ! close:
+    close( IO_TMP, iostat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ok
+    status = 0
+        
+  end subroutine read_obs_txt
+  
+  
+  ! *
+  
+  
+  subroutine read_obs_omi( obsd, nd, avflag, filename, &
+                            domain, maxobs, &
+                            stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                            nobs, status )
+
+    use GridValues_mod, only : coord_in_domain
+    use EMIP_OMI     , only : T_EMIP_OMI
+  
+    ! --- in/out ---------------------------------
+
+    type(obs_data), intent(inout)     ::  obsd  ! data set info
+    integer, intent(in)               ::  nd    ! id of 'obsd' argument, stored in 'ipar' array
+    logical, intent(in)               ::  avflag  ! analysis or validation set? copied into 'analyse' array
+    character(len=*), intent(in)      ::  filename
+    character(len=*), intent(in)      ::  domain ! domain/scope for observations
+                                                 !    "full":      all obs in full model domain
+                                                 !    "processor": all obs in this processor sub-domain
+    integer, intent(in)               ::  maxobs
+    integer, intent(inout)            ::  stnid(maxobs)  ! 1-based station number
+    real, intent(inout)               ::  flat(maxobs)
+    real, intent(inout)               ::  flon(maxobs)
+    real, intent(inout)               ::  falt(maxobs)
+    real, intent(inout)               ::  y(maxobs)
+    real, intent(inout)               ::  stddev(maxobs)
+    character(len=*), intent(inout)   ::  scode(maxobs)
+    logical, intent(inout)            ::  analyse(maxobs)
+    integer, intent(inout)            ::  ipar(maxobs)
+    integer, intent(inout)            ::  nobs       ! number values filled in (maxobs) arrays on input and output
+    integer, intent(out)              ::  status
+
+    ! --- const --------------------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/read_obs_omi'
+    
+    ! minimum allowed retrieval:
+    real, parameter   ::  y0_minval = -0.2
+
+    ! --- local ----------------------------------
+
+    type(T_EMIP_OMI)    ::  df
+    integer             ::  ipix
+    real                ::  flon0, flat0
+    real                ::  y0, stddev0
+                                            
+    ! --- begin ----------------------------------
+  
+    ! info ...
+    write (gol,'(a,": open ",a)') rname, trim(filename); call goPr
+    
+    ! init index to collected observation array:
+    obsd%iobs(0) = nobs+1
+
+    ! read file content:
+    call df%Init( filename, status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! copy kernels:
+    call ObsKernels(nd)%Fill( df%kernel, df%kernel_units, &
+                              df%phlev, df%phlev_units, status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! info ..
+    write (gol,'(a,":   number of pixels: ",i0)') rname, df%npixel; call goPr
+    write (gol,'(a,":   skip retrievals below ",f8.2)') rname, y0_minval; call goPr
+
+    ! loop over pixels:
+    do ipix = 1, df%npixel
+    
+      ! extract:
+      flon0   = df%longitude(ipix)
+      flat0   = df%latitude (ipix)
+      y0      = df%vcd_trop (ipix)
+      stddev0 = df%sigma_vcd_trop(ipix)
+
+      ! if ouside domain/scope, next record:
+      if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
+
+      ! OMI NO2 could be slightly negative, but some values are really strange ...
+      ! skip the values that are very negative:
+      if ( y0 < y0_minval ) then
+        ! next record:
+        cycle
+      end if
+
+      ! accepted!
+      ! increse counter:
+      nobs = nobs + 1
+      ! check if storage is sufficient:
+      if ( nobs > maxobs ) then
+        write (gol,'("maxobs too small, cannot store all observations")'); call goErr
+        TRACEBACK; status=1; return
+      end if
+      ! store:
+      stnid (nobs) = ipix  ! use pixel number as 'station' id
+      flat  (nobs) = flat0
+      flon  (nobs) = flon0
+      falt  (nobs) = 0.0   ! dummy
+      y     (nobs) = y0
+      ! use 'station' code with pixel number:
+      write (scode(nobs),'("p",i5.5)') ipix
+      ! store data set number:
+      ipar(nobs) = nd
+      ! store analyse/validation flag:
+      analyse(nobs) = avflag
+
+      ! how is observation representation error set?
+      select case ( trim(obsd%error_type) )
+        !~ as in product:
+        case ( 'retrieval' )
+          ! copy:
+          stddev(nobs) = stddev0
+        !~ relative to observed value:
+        case ( 'fraction' )
+          ! error estimate read from file (fraction of value?)
+          stddev(nobs) = stddev0
+          ! truncate std.dev. to relative or absolute maximum:
+          stddev(nobs) = max( stddev(nobs), &
+                              obsd%error_rel * y(nobs), &
+                              obsd%error_rep            )
+          ! check .. 
+          if ( stddev(nobs) <= 0e0 ) then
+            print dafmt,'WARNING obs stddev <= 0'
+            stddev(nobs) = 1e-9
+          end if
+        !~
+        case default
+          write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsd%error_type); call goErr
+          TRACEBACK; status=1; return
+      end select
+      
+    end do  ! pixels
+
+    ! store end number:
+    obsd%iobs(1) = nobs
+
+    ! clear:
+    call df%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ok
+    status = 0
+        
+  end subroutine read_obs_omi
+
 end module DA_Obs_ml

@@ -72,11 +72,10 @@ ZCM_Emergency/emergency_location.csv
 .depend
 Unimod
 Unimod_3DVar
-ZD_3DVar/fftpack5
-ZD_3DVar/m1qn3-3.3-distrib
-ZD_3DVar16/tools/PortGO.md
-ZD_3DVar16/Makefile.deps
-ZD_3DVar17/Makefile.deps
+ZD_3DVar*/fftpack5
+ZD_3DVar*/m1qn3-3.3-distrib
+ZD_3DVar*/tools/PortGO.md
+ZD_3DVar*/Makefile.deps
 
 # New binary names
 emepctm

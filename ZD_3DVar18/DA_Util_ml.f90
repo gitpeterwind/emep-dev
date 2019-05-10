@@ -21,8 +21,6 @@ module DA_Util_ml
   use Par_mod          , only : me
   use MPI              , only : MPI_SUCCESS
   use MPI              , only : MPI_INTEGER, MPI_DOUBLE_PRECISION
-! use MPI              , only : MPI_AllGather
-! use MPI              , only : MPI_AllToAllV
 #endif
 
 
@@ -135,8 +133,8 @@ contains
   
   subroutine DA_Util_Init( status )
 
-    use Config_module     , only : masterProc
-    use MPI_Groups_mod    , only : MPI_COMM_CALC
+    use Config_module    , only : masterProc
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
 
     ! --- in/out ----------------------------
     
