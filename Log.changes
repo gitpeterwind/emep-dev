@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Dave
+
+Derived_mod: SIA25 added, for 2d and 3d. 
+             plus small tidy-up
+
+config_emep.nml - added example SIA25 lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 May 2019, Peter
 
 Nest stops if Met_inner not found (was only a warning before)
