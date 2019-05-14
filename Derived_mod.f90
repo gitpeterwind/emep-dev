@@ -21,7 +21,7 @@ use AOD_PM_mod,        only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use AOTx_mod,          only: Calc_GridAOTx
 use Biogenics_mod,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
-use CheckStop_mod,     only: CheckStop
+use CheckStop_mod,     only: CheckStop, StopAll
 use Chemfields_mod,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             SurfArea_um2cm3, &
                             Fgas3d, & ! FSOA
@@ -153,6 +153,7 @@ integer, private, dimension(NSPEC_ADV), save :: &
 logical, private, save :: Is3D
 logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
+logical, private, save :: dbgP0  ! = DEBUG%DERIVED .and. debug_proc .and. first_call
 character(len=100), private :: errmsg
 
 integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
@@ -229,11 +230,11 @@ subroutine Init_Derived()
   select case(nint(DDdefs(iddefPMc)%umDpgV*10))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
+    case default
+      call StopAll(dtxt//' cannot set fracPM25')
   end select
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
     iddefPMc, fracPM25, nint(10* DDdefs(iddefPMc)%umDpgV )
-!S2018      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
-  call CheckStop( fracPM25 < 0.01, dtxt//"NEED TO SET FRACPM25")
 
 end subroutine Init_Derived
 !=========================================================================
@@ -343,24 +344,8 @@ subroutine Define_Derived()
   call AddNewDeriv( "PS","PSURF",  "SURF","-",   "hPa", &
           -99,  -99,  F,  1.0,  T,  'YMD'//trim(PS_needed) )
 
-  !Added for TFMM scale runs
-!A17  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
-!A17               -99,  -99, F, 1.0,  T,  'Y' )
-
-!A17  call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
-!A17               -99,  -99, F, 1.0,  T,  'Y' )
-
-! call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
-!               -99,  -99, F, 1.0,  T,  'YMD' )
-! call AddNewDeriv( "SoilWater_uppr","SoilWater_uppr",  "-","-",   "m", &
-!               -99,  -99, F, 1.0,  T,  'YMD' )
-
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YM' )
-!A17  call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
-!A17               -99,  -99, F, 1.0,  T,  'YM' )
-!A17  call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
-!A17               -99,  -99, F, 1.0,  T,  'YM' )
 
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
@@ -383,7 +368,7 @@ subroutine Define_Derived()
         unitscale=1.0
         unittxt="m"
         Is3D=.true.
-      case('PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
+      case('SIA25','PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
            'PM25water','PM25_wet','PM10_wet')
         iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
                   ! group_calc gets the unit conversion factor from Group_Units
@@ -512,7 +497,7 @@ subroutine Define_Derived()
         ! Units_Scale(iadv=-1) returns 1.0
         ! group_calc gets the unit conversion factor from Group_Units
         if( semivol ) subclass = 'FSOA'
-        if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
+        if( dbgP ) write(*,"(2a)") 'FSOA GRPOM:', &
           trims( outname // ':' // outunit // ':' // subclass )
       case default
         call CheckStop(dtxt//" Unsupported OutputFields%outtyp "//&
@@ -552,7 +537,7 @@ subroutine Define_Derived()
         call CheckStop(dtxt//" Unsupported OutputFields%outdim "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       end select
-!FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
+
       call AddNewDeriv(dname,class,subclass,"-",trim(unittxt),&
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
     end if
@@ -694,9 +679,6 @@ subroutine Define_Derived()
   if(find_index("SURF_PM25water",def_2d(:)%name,any_case=.true.)<1)&
   call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-","ug/m3", &
                        -99 , -99, F, 1.0,   T,  'YMD' )
-! call AddNewDeriv("SURF_PM25", "PM25", "-", "-", "-", &
-!                      -99 , -99, F, 1.0,   T,  'YMD' )
-
 
 ! As for GRIDAOT, we can use index for the threshold
   call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
@@ -805,7 +787,9 @@ Is3D = .true.
   if(VGtest_out_ix>0 .and. me==0)then
      write(*,*)'will output Vg Ratio'
   else
-     if(me==0)  write(*,*)'will NOT output Vg Ratio',find_index("VgRatio", f_2d(:)%subclass),find_index("logz0", f_2d(:)%subclass)
+     if(me==0)  write(*,*)'will NOT output Vg Ratio',&
+       find_index("VgRatio", f_2d(:)%subclass),&
+       find_index("logz0", f_2d(:)%subclass)
   endif
 
 
@@ -882,8 +866,7 @@ end subroutine Setups
 !=========================================================================
 subroutine Derived(dt,End_of_Day,ONLY_IOU)
 !*** DESCRIPTION
-!  Integration and averaging of chemical fields. Intended to be
-!  a more flexible version of the old chemint routine.
+!  Integration and averaging of chemical fields.
 !  Includes AOT40, AOT60 if present
 
   real, intent(in)    :: dt                   ! time-step used in intergrations
@@ -912,17 +895,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: igrp, ngrp   ! group methods
   logical :: needroa
   integer, save :: &      ! needed for PM25*,PM10*
+    ind2d_sia=-999 ,ind3d_sia=-999,   &
     ind2d_pmfine=-999 ,ind3d_pmfine=-999,   &
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
     ind2d_pm10=-999   ,ind3d_pm10=-999
 
-  integer :: imet_tmp, index
+  integer :: imet_tmp, index, ind_tmp
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem
   integer :: isec_poll,isec,iisec,ii,ipoll
   real :: default_frac,tot_frac,loc_frac_corr
+  character(len=*), parameter :: dtxt='Deriv:'
 
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
@@ -932,6 +917,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   daynumber=day_of_year(current_date%year,current_date%month,&
                         current_date%day)
 
+  dbgP0 = dbgP .and. first_call 
 
   ! Just calculate once, and use where needed
   forall(i=1:limax,j=1:ljmax) density(i,j) = roa(i,j,KMAX_MID,1)
@@ -945,10 +931,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     name  = f_2d(n)%name
     index = f_2d(n)%index
 
-    if( dbgP .and. first_call ) &
+    if( dbgP0 ) &
        write(*,"(a,i3,9a)") "Derive2d-name-class", n, " C:", trim(class), &
             " U:", trim(f_2d(n)%unit), " N:", trim(name), ":END"
-
 
 
     !*** user-defined time-averaging. Here we have defined TADV and TVOC
@@ -978,7 +963,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "MET2D")
 
-     !DS May 2015
      ! Meteo fields are available through their names and a pointer, either
      ! from the read-in NWP fields (met%) or the derived met fields
      ! (metderiv%), see MetFields_mod. We thus use the required name and see
@@ -1285,7 +1269,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       if ( dbgP ) write(*,'(a,f8.2,3es12.3)') &
           'SHLSHLppb'//trim( species(index)%name), thour, &
-           xn_shl(index,debug_li,debug_lj,KMAX_MID), density(debug_li,debug_lj), to_molec_cm3
+           xn_shl(index,debug_li,debug_lj,KMAX_MID), &
+            density(debug_li,debug_lj), to_molec_cm3
 
     case ( "PM25water" )      !water
       forall ( i=1:limax, j=1:ljmax ) &
@@ -1305,6 +1290,28 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
 
+    case ( "SIA25" )   ! Need to subtract some NO3_c from SIA
+      if(first_call)then
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind2d_sia <1,"Missing SIA output for "//trim(class))
+        call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
+      end if
+
+      forall(i=1:limax,j=1:ljmax) & ! SUBTRACT, CAREFUL!
+        d_2d(n,i,j,IOU_INST) = d_2d(ind2d_sia,i,j,IOU_INST) - &
+                               (1-fracPM25)  * &
+            ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
+            ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+      call CheckStop( minval(d_2d(n,:,:,IOU_INST)) < 0.0 , dtxt//'ERROR NEG SIA!')
+      if ( dbgP )  then
+        write(*,*) "FRACTION SIA25 2d", n, ind2d_sia
+        i= debug_li; j=debug_lj
+        write(*,"(a,9es12.3)") "Adding SIA25 FRACTIONS:", &
+          d_2d([ind2d_sia,n],i,j,IOU_INST), &
+          (1-fracPM25) * xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
+                   * cfac(iadv_NO3_C,i,j) * density(i,j)
+      end if
+
     case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
@@ -1321,7 +1328,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
       end forall
 
-      if(DEBUG%DERIVED .and. debug_proc )  then
+      if( dbgP )  then
         write(*,*) "FRACTION PM25 2d", n, ind2d_pmfine, ind2d_pmwater
         i= debug_li; j=debug_lj
         write(*,"(a,4es12.3)") "Adding PM25 FRACTIONS:", &
@@ -1515,7 +1522,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
        xn_adv(iadv_o3,:,:,KMAX_MID)*cfac(iadv_o3,:,:)*PPBINV
 
       if(dayfrac<0)then !only at midnight: write on d_2d
-        call somo_calc( n, f_2d(n)%index, DEBUG%DERIVED .and. debug_proc )
+        call somo_calc( n, f_2d(n)%index, dbgP )
         d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
         ! if(current_date%month>=4.and.current_date%month<=9)then
@@ -1688,20 +1695,28 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_2d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
+      ind_tmp = -999
 
       if(chemgroups(igrp)%name == "PMFINE" .and. ind2d_pmfine<0) then
         ind2d_pmfine = n
-        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE FRACTION ",&
-          n, ind2d_pmfine, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
-      end if
-      if(chemgroups(igrp)%name == "PM10" .and. ind2d_pm10<0) then
+        ind_tmp = n
+
+      else if(chemgroups(igrp)%name == "SIA" .and. ind2d_sia<0) then
+        ind2d_sia = n
+        ind_tmp = n
+
+      else if(chemgroups(igrp)%name == "PM10" .and. ind2d_pm10<0) then
         ind2d_pm10 = n
-        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
-          n, ind2d_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
+        ind_tmp = n
       end if
+
+      if(MasterProc.and.first_call) write(*,"(a,4i4,2a15)") &
+         dtxt//"CASEGRP - 2DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
+           trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
-        write(*,"(a,3i5,2(1x,a))")"CASEGRP:"//trim(f_2d(n)%name), n, igrp,&
-             ngrp, trim(class), trim(subclass) ! FSOA igrp=109, ngrp=10
+        write(*,"(a,4i5,3(1x,a))")dtxt//"CASEGRP:"//trim(f_2d(n)%name), &
+          n, igrp, ngrp, ind_tmp, trim(class), trim(subclass), &
+            trim(chemgroups(igrp)%name)
         write(*,"(a,88i4)") "CASEGRP:", chemgroups(igrp)%specs
         write(*,*) "CASEGRPunit ", trim(f_2d(n)%unit)
       end if
@@ -1772,7 +1787,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          enddo
          enddo
       endif
-      if(DEBUG%DERIVED.and.debug_proc)then
+      if( dbgP )then
         i= debug_li; j=debug_lj
         if(n==ind2d_pmfine ) &
           write(*,"(a,i4,es12.3)") "PMFINE FRACTION:"   ,n,d_2d(n,i,j,IOU_INST)
@@ -1877,7 +1892,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
            if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
            d_3d(n,:,:,:,IOU_INST)=0.0
         end select
-	if( MasterProc.and.first_call)write(*,*) "MET3D "//trim(f_3d(n)%name)//' '//f_3d(n)%subclass, d_3d(n,2,2,num_lev3d,IOU_INST)
+        if( MasterProc.and.first_call)write(*,*) "MET3D "//trim(f_3d(n)%name)//' '//f_3d(n)%subclass, d_3d(n,2,2,num_lev3d,IOU_INST)
       end if
 
     ! Simple advected species:
@@ -1922,13 +1937,26 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             ( xn_adv(iadv_NO3_C,i,j,lev3d(k)) * ug_NO3_C &
             ) * roa(i,j,lev3d(k),1)
 
-      if(DEBUG%DERIVED .and. debug_proc )  then
+      if( dbgP )  then
         write(*,*) "FRACTION PM25 3d", n, ind3d_pmfine, ind3d_pmwater
         i= debug_li; j=debug_lj; k=1; l=lev3d(k)
         write(*,"(a,4es12.3)") "Adding PM25FRACTIONS:", &
           d_3d([ind3d_pmwater,ind3d_pmfine,n],i,j,k,IOU_INST), &
           ug_NO3_C * xn_adv(iadv_NO3_C,i,j,l) * roa(i,j,l,1)
       end if
+
+    case ( "SIA25" )      ! Need to subtract some NO3_c from SIA
+      if(first_call)then
+        call CheckStop(f_3d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind3d_sia <1,"Missing 3D-SIA output for "//trim(class))
+        call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
+      end if
+
+      forall (i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+        d_3d(n,i,j,k,IOU_INST) = d_3d(ind3d_sia,i,j,k,IOU_INST) - &
+                                 (1-fracPM25) * &
+            ( xn_adv(iadv_NO3_C,i,j,lev3d(k)) * ug_NO3_C &
+            ) * roa(i,j,lev3d(k),1)
 
     case("PM10_wet")      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
@@ -2006,16 +2034,30 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_3d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
+      ind_tmp = -333
+
       if(chemgroups(igrp)%name == "PMFINE" .and. ind3d_pmfine<0) then
         ind3d_pmfine = n
+        ind_tmp = n
         if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE 3d FRACTION ",&
           n, ind3d_pmfine, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
       end if
+      if(chemgroups(igrp)%name == "SIA" .and. ind3d_sia<0) then
+        ind3d_sia = n
+        ind_tmp = n
+        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND SIA 3d FRACTION ",&
+          n, ind3d_sia, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
+      end if
+
       if(chemgroups(igrp)%name == "PM10" .and. ind3d_pm10<0) then
         ind3d_pm10 = n
         if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 3d FRACTION ",&
           n, ind3d_pm10, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
       end if
+
+      if(MasterProc.and.first_call ) write(*,"(a,4i4,2a15)") &
+         dtxt//"CASEGRP - 3DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
+           trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
         write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(class)
         write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
@@ -2027,7 +2069,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                         f_3d(n)%unit,lev3d(k),igrp)
       end do
 
-      if(DEBUG%DERIVED.and.debug_proc)then
+      if( dbgP )then
         i= debug_li; j=debug_lj; k=1; l=lev3d(k)
         if(n==ind3d_pmfine ) &
           write(*,"(a,i4,es12.3)") "PMFINE 3d FRACTION:",n,d_3d(n,i,j,k,IOU_INST)
@@ -2261,12 +2303,11 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
   semivol_wanted=.false.
   if(present(semivol)) semivol_wanted = semivol
 
-  if(DEBUG%DERIVED .and.debug_proc) &
+  if( dbgP ) &
     write(*,"(a,L1,3i4,2a16,L2)") "DEBUG GROUP-PM-N",debug_proc,me,ik, kk, &
       trim(chemgroups(igrp)%name), trim(unit), semivol_wanted
 
-  call Group_Units(igrp,unit,gspec,gunit_conv,&
-    debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
+  call Group_Units(igrp,unit,gspec,gunit_conv, debug=dbgP,needroa=needroa)
 
   if(semivol_wanted.and.debug_proc) then
 !    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-FSOA",debug_proc,me,ik, &
