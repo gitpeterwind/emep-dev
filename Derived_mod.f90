@@ -1714,7 +1714,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         ind_tmp = n
       end if
 
-      if(MasterProc) write(*,"(a,4i4,2a15)") &
+      if(MasterProc.and.first_call) write(*,"(a,4i4,2a15)") &
          dtxt//"CASEGRP - 2DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
            trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
@@ -2058,9 +2058,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 3d FRACTION ",&
           n, ind3d_pm10, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
       end if
-!      if(MasterProc) write(*,"(a,2i4,2a15)") dtxt//"FOUND FINE 3d FRACTION ",&
-!          n, ind3d_pmfine, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
-      if(MasterProc) write(*,"(a,4i4,2a15)") &
+
+      if(MasterProc.and.first_call ) write(*,"(a,4i4,2a15)") &
          dtxt//"CASEGRP - 3DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
            trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
