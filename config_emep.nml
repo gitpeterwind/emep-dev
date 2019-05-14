@@ -476,12 +476,18 @@ OutputConcs=
       'FFIRE_BC'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_REMPPM25'   ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_OM'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!SPECIAL SIA25 will only include NO3_c < 2.5 um
+      'SURF_ug_SIA25'        ,'ug' ,'2d','SIA25'    ,'MISC','YMD',
 !SPECIAL PM25 will be sum of fine + fraction coarse
       'SURF_ug_PM25'        ,'ug' ,'2d','PM25'      ,'MISC','YMD',
       'SURF_ug_PM25X'       ,'ug' ,'2d','PM25X'     ,'MISC','YMD',
       'SURF_ug_PM25X_rh50'  ,'ug' ,'2d','PM25X_rh50','MISC','YMD',
       'SURF_ug_PM25_rh50'   ,'ug' ,'2d','PM25_rh50' ,'MISC','YMD',
       'SURF_ug_PM10_rh50'   ,'ug' ,'2d','PM10_rh50' ,'MISC','YMD',
+!TEST SPECIAL SIA25 will only include NO3_c < 2.5 um
+!      'SIA'                 ,'ug' ,'3d','AIR_CONCS'    ,'GROUP','YMD', ! needed by SIA25
+!      'D3_SIA25'               ,'ug' ,'3d','SIA25'    ,'MISC','YMD',
+  'PMFINE'        ,'ug'  ,'3d' ,'AIR_CONCS','GROUP','',! needed by PM25_wet
 !---------------------------------------------
 !      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
