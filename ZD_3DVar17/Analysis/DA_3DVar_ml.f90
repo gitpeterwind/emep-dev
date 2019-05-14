@@ -13,16 +13,19 @@
 !
 !*****************************************************************************!
 
-module DA_3DVar_ml
+module DA_3DVar_mod
 
 #ifdef with_ajs
   use GO, only : gol, goPr, goErr
   use GO, only : GO_Print_Set
   !use GO, only : goMem
+  !use Par_mod, only : me
+  !use ChemSpecs_mod , only : species_adv
+  !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
 #else
   use DA_Util_ml     , only : gol, goPr, goErr
 #endif
-  use TimeDate_ml    , only : date
+  use TimeDate_mod   , only : date
   use EMEP_BCovarSqrt, only : T_BCovarSqrt
   use DA_Util_ml     , only : T_Domains
 
@@ -42,7 +45,7 @@ module DA_3DVar_ml
 
   ! --- const -----------------------------------------
 
-  character(len=*), parameter  ::  mname = 'DA_3DVar_ml'
+  character(len=*), parameter  ::  mname = 'DA_3DVar_mod'
 
   ! timing parameters:
   integer, parameter  ::  NTIMING_3DVAR = 0
@@ -61,7 +64,9 @@ module DA_3DVar_ml
   integer, allocatable  ::  iObsData(:)
 
   ! Limit dx,du to 500%
-  real, parameter       ::  ANALYSIS_RELINC_MAX = 5.0
+  !real, parameter       ::  ANALYSIS_RELINC_MAX = 5.0
+  ! unlimitted change:
+  real, parameter       ::  ANALYSIS_RELINC_MAX = 1000.0
 
   ! Solver (m1qn3) settings
   integer, save :: &
@@ -143,10 +148,10 @@ contains
     use DA_Util_ml       , only : GO_Print_Set
 #endif
     use DA_Util_ml       , only : goGetFU
-    use ModelConstants_ml, only : masterProc
-    use ModelConstants_ml, only : KMAX_MID
-    use MPI_Groups_ml    , only : MPI_COMM_CALC
-    use Io_Nums_ml       , only : IO_NML
+    use Config_module    , only : masterProc
+    use Config_module    , only : KMAX_MID
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Io_Nums_mod      , only : IO_NML
     use DA_ml            , only : nlev
     use DA_Obs_ml        , only : DA_Obs_Init
 
@@ -181,13 +186,13 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
 #ifdef with_ajs
-    ! info as error message to have it in the log file ..
-    write (gol,'(a,": enable GO logging from this routine if necessary ...")') rname; call goPr
-    !! log from all:
-    !call GO_Print_Set( status, apply=.true. )
-    !IF_NOT_OK_RETURN(status=1)
-    !! info ..
-    !write (gol,'(a,": enabled GO logging on all processes ...")') rname; call goPr
+    !! info as error message to have it in the log file ..
+    !write (gol,'(a,": INFO - enable GO logging from this routine if necessary ...")') rname; call goErr
+    ! log from all:
+    call GO_Print_Set( status, apply=.true. )
+    IF_NOT_OK_RETURN(status=1)
+    ! info ..
+    write (gol,'(a,": enabled GO logging on all processes ...")') rname; call goPr
 
     ! define timers:
     call GO_Timer_Def( itim_read_obs , 'read observations', status )
@@ -267,7 +272,7 @@ contains
   subroutine DA_3DVar_Done( status )
 
     use DA_Util_ml       , only : DA_Util_Done
-    use ModelConstants_ml, only : MasterProc
+    use Config_module    , only : MasterProc
     use DA_Obs_ml        , only : DA_Obs_Done
 
     ! --- in/out ----------------------------
@@ -351,10 +356,10 @@ contains
   ! @author M.Kahnert & AMVB
   !-----------------------------------------------------------------------
 
-    use ModelConstants_ml    , only : ANALYSIS
-    use ModelConstants_ml    , only : MasterProc
-    use TimeDate_ml          , only : current_date
-    use TimeDate_ExtraUtil_ml, only : date2string,compare_date
+    use Config_module        , only : ANALYSIS
+    use Config_module        , only : MasterProc
+    use TimeDate_mod         , only : current_date
+    use TimeDate_ExtraUtil_mod,only : date2string,compare_date
     use DA_ml                , only : dafmt     => da_fmt_msg
     use DA_ml                , only : DAFMT_DEF => DA_FMT_DEF
     use DA_ml                , only : debug => DEBUG_DA
@@ -420,19 +425,19 @@ contains
   !-----------------------------------------------------------------------
 
     use MPIF90               , only : MPIF90_BCast
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use ModelConstants_ml    , only : MasterProc, nproc
-    use ModelConstants_ml    , only : RUNDOMAIN
-    use ModelConstants_ml    , only : KMAX_MID
-    use ModelConstants_ml    , only : KMAX_BND, KCHEMTOP
-    use MPI_Groups_ml        , only : MasterPE
-    use Par_ml               , only : me
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
-    use ChemGroups_ml        , only : chemgroups       ! group  names
-    use ChemSpecs_adv_ml     , only : NSPEC_ADV
-    use ChemSpecs_shl_ml     , only : NSPEC_SHL        ! Maps indices
-    use SmallUtils_ml        , only : find_index
-    use Io_Nums_ml           , only : IO_NML
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use Config_module        , only : MasterProc, nproc
+    use Config_module        , only : RUNDOMAIN
+    use Config_module        , only : KMAX_MID
+    use Config_module        , only : KMAX_BND, KCHEMTOP
+    use MPI_Groups_mod       , only : MasterPE
+    use Par_mod              , only : me
+    use Par_mod              , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use ChemGroups_mod       , only : chemgroups       ! group  names
+    use ChemDims_mod         , only : NSPEC_ADV
+    use ChemDims_mod         , only : NSPEC_SHL        ! Maps indices
+    use SmallUtils_mod       , only : find_index
+    use Io_Nums_mod          , only : IO_NML
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : nObsComp, ObsCompInfo
@@ -517,7 +522,7 @@ contains
         ! use B with model levels?
         select case ( trim(ObsCompInfo(iObsComp)%deriv) )
           !~ 2D operators:
-          case ( '2D-ML-SFC', '2D-OBS-SFC' )
+          case ( '2D-ML-SFC', '2D-ML-SFCP', '2D-OBS-SFC' )
             Bml(nBmat) = .false.
           !~ 3D operators:
           case ( '3D-ML', '3D-ML-SFC', '3D-ML-TC' )
@@ -697,6 +702,13 @@ contains
                           (/ nspec_adv, tgi1(me), tgj1(me), kmax_mid /), status )
     IF_NOT_OK_RETURN(status=1)
 
+!#ifdef with_ajs
+!    ! debug ...
+!    dbg_i = 6
+!    dbg_j = 74
+!    dbg_cell = (dbg_i <= doms_adv_m%shp(2,me)) .and. (dbg_j <= doms_adv_m%shp(3,me))
+!#endif
+
     ! analyis tracers and order;
     ! original model decomposition on standard domain:
     !                         lon       lat      lev
@@ -745,23 +757,23 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use ModelConstants_ml    , only : RUNDOMAIN
-    use ModelConstants_ml    , only : KMAX_MID
-    use MPI_Groups_ml        , only : MasterPE
-    use My_Timing_ml         , only : Code_timer, Add_2timing
-    use TimeDate_ml          , only : date  ! date/time structure
-    use Par_ml               , only : me
-    use Par_ml               , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
-    use Par_ml               , only : limax, ljmax
-    use GridValues_ml        , only : glon, glat
-    use ChemSpecs_adv_ml     , only : NSPEC_ADV
-    use MetFields_ml         , only : z_bnd
-    use ChemFields_ml        , only : xn_adv
-    use Chemfields_ml        , only : PM25_water
-    use Chemfields_ml        , only : PM25_water_rh50
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use Config_module        , only : MasterProc, NPROC
+    use Config_module        , only : RUNDOMAIN
+    use Config_module        , only : KMAX_MID
+    use MPI_Groups_mod       , only : MasterPE
+    use My_Timing_mod        , only : Code_timer, Add_2timing
+    use TimeDate_mod         , only : date  ! date/time structure
+    use Par_mod              , only : me
+    use Par_mod              , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
+    use Par_mod              , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use Par_mod              , only : limax, ljmax
+    use GridValues_mod       , only : glon, glat
+    use ChemDims_mod         , only : NSPEC_ADV
+    use MetFields_mod        , only : z_bnd
+    use ChemFields_mod       , only : xn_adv
+    use Chemfields_mod       , only : PM25_water
+    use Chemfields_mod       , only : PM25_water_rh50
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : damsg => da_msg
@@ -1021,7 +1033,7 @@ contains
         !!     x,y,z,s                     s     ,    x  ,   y   ,          z
         !xn_an(:,:,:,iObsComp) = xn_adv(varSpec(iObsComp),1:limax,1:ljmax,KMAX_MID-nlev+1:KMAX_MID)
         ! weighted sum:
-        call ObsCompInfo(iObsComp)%FillFields( xn_adv, &
+        call ObsCompInfo(iObsComp)%FillFields( xn_adv, xn_adv_units, &
                     sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
                     status )
         IF_NOT_OK_RETURN(status=1)
@@ -1085,7 +1097,7 @@ contains
       ! fill innovations and Jacobian of observation operator ;
       ! use full concentration arrays on model decomposition:
       call get_innovations( Hops_m, nobs, &
-                              xn_adv, xn_adv_units, &
+                              !xn_adv, xn_adv_units, &
                               sf_an, xn_an, xn_obs_units, &
                               maxobs, stnid, flat,flon,falt, obs, obsstddev1, stncodes, obsanalyse, &
                               'xf', status )
@@ -1368,56 +1380,133 @@ contains
 
       ! loop over variables involved in analysis:
       do iObsComp = 1, nObsComp
-      
-        ! NOTE: need routine that distributes dx over sf and xn
-        !  given the obsdata type (2D-OBS, 2D-ML, or 3D-ML)
 
-        ! store if needed ;
-        ! corrected fields are original plus delta,
-        ! for surface just use the lowest level
-        call Fill_Output_sf_xn( '3DVAR_OBS_AN', trim(ObsCompInfo(iObsComp)%name), &
-                                   sf_an(:,:,iObsComp)+dx_an(:,:,size(dx_an,3),iObsComp), &
-                                   xn_an(:,:,:,iObsComp)+dx_an(:,:,:,iObsComp), &
+        ! (create neew routine "AnalysedFields" for this?)
+        ! store analyzed fields (sfc,ml,tc) to output buffers if requested;
+        ! switch between how simulations are derived:
+        select case ( trim(ObsCompInfo(iObsComp)%deriv) )
+
+          ! accumulated fields:
+          case ( '2D-OBS-SFC', '2D-ML-SFCP' )
+
+            ! index of surface layer:
+            ilev = size(dx_an,3)
+            ! copy 'observation analysis' fields into output buffers ;
+            ! lowest layer of dx_an contains analysis increment
+            ! w.r.t. surface field ; set model levels to zero:
+            call Fill_Output_sf_xn( '3DVAR_OBS_AN', trim(ObsCompInfo(iObsComp)%name), &
+                                   sf_an(:,:  ,iObsComp) + dx_an(:,:,ilev,iObsComp), &
+                                   xn_an(:,:,:,iObsComp) * 0.0, &
                                    trim(ObsCompInfo(iObsComp)%units), status )
-        IF_NOT_OK_RETURN(status=1)
+            IF_NOT_OK_RETURN(status=1)
+            
+            ! apply feedback? 
+            if ( ObsCompInfo(iObsComp)%feedback ) then
+              ! info ...
+              write (gol,'(a,":   feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
+              ! change fine/coarse ratio's?
+              if ( ObsCompInfo(iObsComp)%feedback_fico ) then
+                ! info ..
+                write (gol,'(a,"     change fine/coarse ratios ...")') rname; call goPr
+                ! analyzed total fine-pm is "xn_an+dx_an" ;
+                ! change fine/coarse ratio in "xn_adv" towards to this total,
+                ! but do not change the total fine+coarse:
+                call ObsCompInfo(iObsComp)%ChangeProfileFineCoarseRatio( xn_adv, xn_adv_units, &
+                              sf_an(:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                              status, verbose=.true. )
+                IF_NOT_OK_RETURN(status=1)
+              else
+                ! info ..
+                write (gol,'(a,"     scale profile ...")') rname; call goPr
+                ! change original species following (sf+dx)/sf ratio:
+                call ObsCompInfo(iObsComp)%ChangeProfile( xn_adv, xn_adv_units, &
+                              sf_an(:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                              status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true. )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+            else
+              ! info ...
+              write (gol,'(a,":   do not feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
+            end if
 
-        ! simulate observed components (surface and 3D)
-        ! from xn_adv (first guess) plus increments (and also xn_an if relative change is needed):
-        call ObsCompInfo(iObsComp)%FillFields( xn_adv, &
-                    sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), status, &
-                    dx_obs=dx_an(:,:,:,iObsComp) )
-        IF_NOT_OK_RETURN(status=1)
+            !! testing ...
+            !if ( dbg_cell ) then
+            !  write (gol,*) 'yyy after feedback:'; call goPr
+            !  write (gol,*) 'yyy   xn_an = ', xn_an(dbg_i,dbg_j,nlev,iObsComp); call goPr
+            !  write (gol,*) 'yyy   dx_an = ', dx_an(dbg_i,dbg_j,nlev,iObsComp); call goPr
+            !end if
 
-        ! apply feedback? 
-        if ( ObsCompInfo(iObsComp)%feedback ) then
-          ! info ...
-          write (gol,'(a,":   feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
-          ! distribute increment over original species:
-          call ObsCompInfo(iObsComp)%DistributeIncrement( xn_adv, &
-                        xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), status, &
-                        maxratio=ANALYSIS_RELINC_MAX )
-          IF_NOT_OK_RETURN(status=1)
-        else
-          ! info ...
-          write (gol,'(a,":   do not feedback ",a," (yet) ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
-        end if
+          ! dx contains 3D update
+          case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC' )
 
-      end do
+            ! copy 'observation analysis' fields into output buffers ;
+            ! update 3D field, set surface to zero:
+            call Fill_Output_sf_xn( '3DVAR_OBS_AN', trim(ObsCompInfo(iObsComp)%name), &
+                                   sf_an(:,:  ,iObsComp) * 0.0, &
+                                   xn_an(:,:,:,iObsComp) + dx_an(:,:,:,iObsComp), &
+                                   trim(ObsCompInfo(iObsComp)%units), status )
+            IF_NOT_OK_RETURN(status=1)
 
+            ! apply feedback? 
+            if ( ObsCompInfo(iObsComp)%feedback ) then
+              ! info ...
+              write (gol,'(a,":   feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
+              ! distribute increment over original species:
+              call ObsCompInfo(iObsComp)%DistributeIncrement( xn_adv, xn_adv_units, &
+                            xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                            status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true. )
+              IF_NOT_OK_RETURN(status=1)
+            else
+              ! info ...
+              write (gol,'(a,":   do not feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
+            end if
 
-      ! analysed output
-      ! - surface and 3D fields
-      ! - might not have been feeded back to the model)
+          ! not yet
+          case default
+            write (gol,'("unsupported observation deriv key : ",a)') trim(ObsCompInfo(iObsComp)%deriv); call goErr
+            TRACEBACK; status=1; return
+        end select
+
+      end do  ! analyzed components
+
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv1 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
+
+!      ! all advected tracers now analysed ;
+!      ! fill 'simulated observation' fields 'xn_an' and 'sf_an',
+!      ! and copy these into output buffers if requested;
+!      ! loop over variables involved in analysis:
+!      do iObsComp = 1, nObsComp
+!        ! info ...
+!        write (gol,'(a,": copy xn_adv species into xn_an var ",i0)') rname, iObsComp; call goPr
+!        ! weighted sum:
+!        call ObsCompInfo(iObsComp)%FillFields( xn_adv, xn_adv_units, &
+!                    sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+!                    status )
+!        IF_NOT_OK_RETURN(status=1)
+!        ! store if needed:
+!        call Fill_Output_sf_xn( '3DVAR_OBS_AN', trim(ObsCompInfo(iObsComp)%name), &
+!                                   sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), &
+!                                   trim(ObsCompInfo(iObsComp)%units), status )
+!        IF_NOT_OK_RETURN(status=1)
+!      end do
 
       ! fill arrays for requested subclass using analysed concentrations:
       call Fill_Output_xn_adv( '3DVAR_AN', xn_adv, status )
       IF_NOT_OK_RETURN(status=1)
 
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 6c   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv2 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
 
 
       !-----------------------------------------------------------------------
@@ -1547,6 +1636,17 @@ contains
     !  TRACEBACK; status=1; return
     !end if
 
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv3 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
+
+    ! info ...
+    write (gol,'(a,": end")') rname; call goPr
+
     ! ok
     status = 0
 
@@ -1559,18 +1659,20 @@ contains
 
   subroutine Fill_Output_xn_adv( subclass, xn_adv, status )
 
-    use DerivedFields_ml     , only : d_2d, f_2d, d_3d, f_3d
-    use ModelConstants_ml    , only : IOU_INST, num_lev3d, lev3d
-    use ModelConstants_ml    , only : KMAX_MID
-    use ChemGroups_ml        , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
-    use ChemSpecs_shl_ml     , only : NSPEC_SHL  ! number of short-lived tracers
-    use ChemChemicals_ml     , only : species_adv
-    use Chemfields_ml        , only : cfac
-    use Chemfields_ml        , only : PM25_water_rh50  ! (i,j) surface
-    use Chemfields_ml        , only : PM25_water       ! (i,j,k) model levels
-    use MetFields_ml         , only : roa
-    use Units_ml             , only : Units_Scale
-    use SmallUtils_ml        , only : find_index
+    use DerivedFields_mod    , only : d_2d, f_2d, d_3d, f_3d
+    use Config_module        , only : IOU_INST, num_lev3d, lev3d
+    use Config_module        , only : KMAX_MID
+    use ChemGroups_mod       , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+    use ChemDims_mod         , only : NSPEC_SHL  ! number of short-lived tracers
+    use ChemSpecs_mod        , only : species_adv
+    use Chemfields_mod       , only : cfac
+    use Chemfields_mod       , only : PM25_water_rh50  ! (i,j) surface
+    use Chemfields_mod       , only : PM25_water       ! (i,j,k) model levels
+    use MetFields_mod        , only : roa
+    use Units_mod            , only : Units_Scale
+    use SmallUtils_mod       , only : find_index
+    
+    !use da_obs_mod, only : dbg_cell, dbg_i, dbg_j
 
     ! --- in/out ----------------------------
     
@@ -1592,6 +1694,7 @@ contains
     real                  ::  fscale
     logical               ::  needroa
     logical               ::  addwater
+    logical               ::  addno3c
     integer               ::  k
     integer               ::  ilev
 
@@ -1606,20 +1709,24 @@ contains
       select case ( trim(f_2d(iout)%txt) )
         !~ total fine pm:
         case ( 'PM25' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PMFINE_GROUP
           ! offset:
           out_offset = NSPEC_SHL
           ! include aerosol water:
           addwater = .true.
+          ! include part of coarse nitrate:
+          addno3c = .true.
         !~ total coarse pm:
         case ( 'PM10' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PM10_GROUP
           ! offset:
           out_offset = NSPEC_SHL
           ! include aerosol water:
           addwater = .true.
+          ! coarse nitrate already included ..
+          addno3c = .false.
         !~ expected a single model species ...
         case default
           ! find index:
@@ -1630,6 +1737,8 @@ contains
           out_offset = 0
           ! no aerosol water:
           addwater = .false.
+          ! no coarse nitrate ...
+          addno3c = .false.
       end select
       ! no bulk unit conversion, apply scalings below:
       f_2d(iout)%scale = 1.0
@@ -1650,6 +1759,12 @@ contains
 #endif
         ! extract from bottom level:
         ilev = KMAX_MID
+          !! testing ...
+          !if ( trim(f_2d(iout)%txt) == 'PM10' ) then
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy output  xn_adv = ', xn_adv(ispec,dbg_i,dbg_j,ilev); call goPr
+          !end if
+          !end if
         ! convert using air density?
         if ( needroa ) then
           ! add contribution, multiply with air density:
@@ -1666,11 +1781,54 @@ contains
                                       * cfac(ispec,:,:)
         end if
       end do  ! spec
+      ! add fraction of coarse nitrate ?
+      if ( addno3c ) then
+        ! find index of coarse nitrate:
+        ispec = find_index( 'NO3_C', species_adv(:)%name )
+        ! info on conversion to target units:
+#ifdef with_ajs
+        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
+                                 needroa=needroa, status=status )
+        IF_NOT_OK_RETURN(status=1)
+#else
+        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
+                                 needroa=needroa )
+#endif
+        ! only partly ..
+        fscale = fscale * 0.27
+        ! extract from bottom level:
+        ilev = KMAX_MID
+          !! testing ...
+          !if ( trim(f_2d(iout)%txt) == 'PM10' ) then
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy output  xn_adv = ', xn_adv(ispec,dbg_i,dbg_j,ilev); call goPr
+          !end if
+          !end if
+        ! convert using air density?
+        if ( needroa ) then
+          ! add contribution, multiply with air density:
+          d_2d(iout,:,:,IOU_INST) = d_2d(iout,:,:,IOU_INST) + &
+                                      xn_adv(ispec,:,:,ilev) &
+                                      * fscale &
+                                      * roa(:,:,ilev,1) &
+                                      * cfac(ispec,:,:)
+        else
+          ! add contribution:
+          d_2d(iout,:,:,IOU_INST) = d_2d(iout,:,:,IOU_INST) + &
+                                      xn_adv(ispec,:,:,ilev) &
+                                      * fscale &
+                                      * cfac(ispec,:,:)
+        end if
+      end if  ! add no3c frac
       ! add aerosol water?
       if ( addwater ) then
         ! add surface aersosol water:
         d_2d(iout,:,:,IOU_INST) = d_2d(iout,:,:,IOU_INST) + PM25_water_rh50
       end if ! add water
+          !! testing ...
+          !if ( dbg_cell ) then
+          !  write (gol,*) 'yyy put2d ', trim(f_2d(iout)%txt), d_2d(iout,dbg_i,dbg_j,IOU_INST); call goPr
+          !endif
     end do  ! 2D output fields
 
     ! loop over 3D output fields:
@@ -1679,42 +1837,88 @@ contains
       if ( trim(f_3d(iout)%class   ) /= 'USET'         ) cycle
       if ( trim(f_3d(iout)%subclass) /= trim(subclass) ) cycle
       ! set list of contributing species:
-      select case ( trim(f_2d(iout)%txt) )
+      select case ( trim(f_3d(iout)%txt) )
         !~ total fine pm:
         case ( 'PM25' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PMFINE_GROUP
           ! offset:
           out_offset = NSPEC_SHL
           ! include aerosol water:
           addwater = .true.
+          ! include part of coarse nitrate:
+          addno3c = .true.
         !~ total coarse pm:
         case ( 'PM10' )
-          ! use group defined in 'ChemGroups_ml':
+          ! use group defined in 'ChemGroups_mod':
           out_group => PM10_GROUP
           ! offset:
           out_offset = NSPEC_SHL
           ! include aerosol water:
           addwater = .true.
+          ! coarse nitrate already included ..
+          addno3c = .false.
+        !~ aerosol water 
+        case ( 'PMW' )
+          ! dummy, the 'addwater' flag will do the work ..
+          nullify( out_group )
+          ! no offset:
+          out_offset = 0
+          ! include aerosol water:
+          addwater = .true.
+          ! no coarse nitrate ...
+          addno3c = .false.
         !~ expected a single model species ...
         case default
           ! find index:
-          out_group1(1) = find_index( trim(f_2d(iout)%txt), species_adv(:)%name )
+          out_group1(1) = find_index( trim(f_3d(iout)%txt), species_adv(:)%name )
           ! assign:
           out_group => out_group1
           ! no offset:
           out_offset = 0
           ! no aerosol water:
           addwater = .false.
+          ! no coarse nitrate ...
+          addno3c = .false.
       end select
       ! no bulk unit conversion, apply scalings below:
       f_3d(iout)%scale = 1.0
       ! init sum:
       d_3d(iout,:,:,:,IOU_INST) = 0.0
-      ! loop over group members:
-      do k = 1, size(out_group)
-        ! extract index of specie:
-        ispec = out_group(k) - out_offset
+      ! any group ?
+      if ( associated(out_group) ) then
+        ! loop over group members:
+        do k = 1, size(out_group)
+          ! extract index of specie:
+          ispec = out_group(k) - out_offset
+          ! info on conversion to target units:
+#ifdef with_ajs
+          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
+                                  needroa=needroa, status=status )
+          IF_NOT_OK_RETURN(status=1)
+#else
+          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
+                                  needroa=needroa )
+#endif
+          ! convert using air density?
+          if ( needroa ) then
+            ! add contribution, multiply with air density:
+            d_3d(iout,:,:,:,IOU_INST) = d_3d(iout,:,:,:,IOU_INST) + &
+                                          xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+                                          * fscale &
+                                          * roa(:,:,lev3d(:num_lev3d),1)
+          else
+            ! add contribution:
+            d_3d(iout,:,:,:,IOU_INST) = d_3d(iout,:,:,:,IOU_INST) + &
+                                          xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
+                                          * fscale
+          end if
+        end do  ! spec
+      end if ! group
+      ! add fraction of coarse nitrate ?
+      if ( addno3c ) then
+        ! find index of coarse nitrate:
+        ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
 #ifdef with_ajs
         call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
@@ -1724,6 +1928,8 @@ contains
         call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
                                 needroa=needroa )
 #endif
+        ! only partly ..
+        fscale = fscale * 0.27
         ! convert using air density?
         if ( needroa ) then
           ! add contribution, multiply with air density:
@@ -1737,10 +1943,10 @@ contains
                                         xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
                                         * fscale
         end if
-      end do  ! spec
+      end if  ! add no3c frac
       ! add aerosol water?
       if ( addwater ) then
-        ! add surface aersosol water:
+        ! add 3D aersosol water:
         d_3d(iout,:,:,:,IOU_INST) = d_3d(iout,:,:,:,IOU_INST) + PM25_water
       end if ! add water
     end do  ! 3D output fields
@@ -1757,8 +1963,8 @@ contains
 
   subroutine Fill_Output_sf_xn( subclass, txt, sf, xn, units, status )
 
-    use DerivedFields_ml     , only : d_2d, f_2d, d_3d, f_3d
-    use ModelConstants_ml    , only : IOU_INST, num_lev3d, lev3d
+    use DerivedFields_mod    , only : d_2d, f_2d, d_3d, f_3d
+    use Config_module        , only : IOU_INST, num_lev3d, lev3d
 
     ! --- in/out ----------------------------
     
@@ -1842,14 +2048,14 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use MPI_Groups_ml        , only : MasterPE
-    use My_Timing_ml         , only : Code_timer, Add_2timing
+    use Config_module        , only : MasterProc, NPROC
+    use MPI_Groups_mod       , only : MasterPE
+    use My_Timing_mod        , only : Code_timer, Add_2timing
     use DA_Util_ml           , only : norm
-    use Io_ml                , only : m1qn3_io=>IO_TMP  ! write unit for m1qn3 printouts
-    use TimeDate_ml          , only : date,current_date ! date/time structure
-    use TimeDate_ExtraUtil_ml, only : date2string
-    use Par_ml               , only : me
+    use Io_mod               , only : m1qn3_io=>IO_TMP  ! write unit for m1qn3 printouts
+    use TimeDate_mod         , only : date,current_date ! date/time structure
+    use TimeDate_ExtraUtil_mod,only : date2string
+    use Par_mod              , only : me
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
@@ -2301,8 +2507,7 @@ contains
 
     ! info ...
     if ( MasterProc ) then
-      write (damsg,*) Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100
-      print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
+      write (gol,*) 'Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
     end if
 
 #ifdef with_ajs
@@ -2356,7 +2561,7 @@ contains
   subroutine euclid_hcr( n, x, y, ps, izs, rzs, dzs )
 
     use MPIF90       , only : MPIF90_AllReduce, MPI_SUM
-    use MPI_Groups_ml, only : MPI_COMM_CALC
+    use MPI_Groups_mod,only : MPI_COMM_CALC
 
     ! --- in/out ---------------------------------
 
@@ -2401,7 +2606,7 @@ contains
 
 
   subroutine get_innovations( Hops, nobs, &
-                                xn_adv_b, xn_adv_units, &
+                                !xn_adv_b, xn_adv_units, &
                                 sf_b, xn_b, xn_obs_units, &
                                 maxobs, stnid, flat,flon,falt, &
                                 obs, obs_stddev, stncodes, obs_analyse, &
@@ -2415,9 +2620,9 @@ contains
   ! On output, innov contains the innovations.
   ! @author M.Kahnert
   !-----------------------------------------------------------------------
-    use Par_ml               , only : me
-    use ModelConstants_ml    , only : MasterProc
-    use GridValues_ml        , only : coord_in_processor
+    use Par_mod              , only : me
+    use Config_module        , only : MasterProc
+    use GridValues_mod       , only : coord_in_processor
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : obsData
@@ -2426,12 +2631,14 @@ contains
     use DA_ml                , only : nlev
     !use DA_ml                , only : nChemObs
 
+    !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
+    
     ! --- in/out ----------------------------
 
     type(T_ObsOpers), intent(inout)     ::  Hops
     integer, intent(in)                 ::  nobs
-    real, intent(in)                    ::  xn_adv_b(:,:,:,:)  ! (nspec_adv,lnx,lny,kmax_mid)
-    character(len=*), intent(in)        ::  xn_adv_units(:)    ! (nspec_adv)
+    !real, intent(in)                    ::  xn_adv_b(:,:,:,:)  ! (nspec_adv,lnx,lny,kmax_mid)
+    !character(len=*), intent(in)        ::  xn_adv_units(:)    ! (nspec_adv)
     real, intent(in)                    ::  sf_b(:,:  ,:)      ! (lnx,lny     ,nObsComp)
     real, intent(in)                    ::  xn_b(:,:,:,:)      ! (lnx,lny,nlev,nObsComp)
     character(len=*), intent(in)        ::  xn_obs_units(:)    ! (nObsComp)
@@ -2489,12 +2696,12 @@ contains
         ! mapping from model to obs-space:
         !-----------------------------------------------------------------------
 
-        ! testing ...
-        write (gol,'(a,":   fill ",i0)') rname, n; call goPr
+        !! testing ...
+        !write (gol,'(a,":   fill ",i0)') rname, n; call goPr
 
         ! only local field:
-        call Hops%obs(n)%Fill( xn_adv_b, xn_adv_units, &
-                               sf_b, xn_b, xn_obs_units, &
+        !call Hops%obs(n)%Fill( xn_adv_b, xn_adv_units, &
+        call Hops%obs(n)%Fill( sf_b, xn_b, xn_obs_units, &
                                iObsData(n), stnid(n), flat(n),flon(n),falt(n), &
                                yn, status )
         IF_NOT_OK_RETURN(status=1)
@@ -2522,15 +2729,23 @@ contains
         ! store station code:
         Hops%obs(n)%stncode = trim(stncodes(n))
 
-        ! testing ...
-        write (gol,*) rname//':     flag1 ', size(obs_analyse), n
-        write (gol,*) rname//':     flag2 ', obs_analyse(n)
+        !! testing ...
+        !write (gol,*) rname//':     flag1 ', size(obs_analyse), n
+        !write (gol,*) rname//':     flag2 ', obs_analyse(n)
+        !if ( trim(Hops%obs(n)%stncode) == 'BETR811' ) then
+        !  dbg_cell = .true.
+        !  dbg_i    = Hops%obs(n)%i
+        !  dbg_j    = Hops%obs(n)%j
+        !  write (gol,*) 'yyy selected code ', trim(Hops%obs(n)%stncode), ' cell ', dbg_i, dbg_j; call goPr
+        !else          
+        !  write (gol,*) 'yyy skipped  code ', trim(Hops%obs(n)%stncode); call goPr
+        !end if
         
         ! store analysis/validation flag:
         Hops%obs(n)%analyse = obs_analyse(n)
         
-        ! testing ...
-        write (gol,*) rname//':     flag3 '
+        !! testing ...
+        !write (gol,*) rname//':     flag3 '
 
         ! info ..
         if ( debug .and. MasterProc ) then
@@ -2572,19 +2787,19 @@ contains
 #ifdef with_ajs
     use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End
 #endif
-    use MPI_Groups_ml        , only : MPI_COMM_CALC
-    use MPI_Groups_ml        , only : MasterPE
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use Par_ml               , only : me
-    use Par_ml               , only : limax, ljmax
-    use Par_ml               , only : tgi0, tgi1, tgj0, tgj1
-    use My_Timing_ml         , only : Add_2timing
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use MPI_Groups_mod       , only : MasterPE
+    use Config_module        , only : MasterProc, NPROC
+    use Par_mod              , only : me
+    use Par_mod              , only : limax, ljmax
+    use Par_mod              , only : tgi0, tgi1, tgj0, tgj1
+    use My_Timing_mod        , only : Add_2timing
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC
-    use DA_Obs_ml            , only : LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC
+    use DA_Obs_ml            , only : LEVTYPE_2D_ML_SFC, LEVTYPE_2D_ML_SFCP, LEVTYPE_2D_OBS_SFC
 
     !-----------------------------------------------------------------------
     ! Formal parameters
@@ -2849,13 +3064,31 @@ contains
             yn(n) = sum( Hops%obs(n)%H_jac(l0:l1) * dx_loc(i,j,l0:l1,itracer) )
 
           ! surface
-          case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC )
+          case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_ML_SFCP )
             ! check ...
             if ( Bmat%nlev /= 1 ) then
               write (gol,'("expected 2D fields for levtype sfc")'); call goErr
               TRACEBACK; status=1; return
             end if
-            ! simulation for this cell:
+            ! level range:
+            l0 = Hops%obs(n)%l(0)
+            l1 = Hops%obs(n)%l(1)
+            ! check ...
+            if ( l0 /= l1 ) then
+              write (gol,'("level range ",i0,":",i0," in H_jac should be one level only")') l0, l1; call goErr
+              TRACEBACK; status=1; return
+            end if
+            ! simulation for this cell, use just one level index to avoid errors on wrong shape ...
+            yn(n) = Hops%obs(n)%H_jac(l0) * dx_loc(i,j,1,itracer)
+
+          ! observation field
+          case ( LEVTYPE_2D_OBS_SFC )
+            ! check ...
+            if ( Bmat%nlev /= 1 ) then
+              write (gol,'("expected 2D fields for levtype sfc")'); call goErr
+              TRACEBACK; status=1; return
+            end if
+            ! simulation for this cell, H_jac has only one element:
             yn(n) = Hops%obs(n)%H_jac(1) * dx_loc(i,j,1,itracer)
 
           ! unknown ...
@@ -2864,9 +3097,6 @@ contains
             TRACEBACK; status=1; return
         end select
         
-        !! testing ...
-        !write (gol,*) rname//':    yyy1 H_jac*dx ', n, yn(n); call goPr
-
       end do  ! n (obs index)
 
     end if  ! nobs > 0
@@ -2889,21 +3119,27 @@ contains
       do n = 1, Hops%nobs
         ! to be analysed?
         if ( Hops%obs(n)%analyse ) then
+
           ! departures:
           !  dep =  [h(xb) + H_jac*dx] - obs
           !      =        h(xb) - obs      +   H_jac*dx
           dep(n) =     Hops%obs(n)%innov   +    yn(n)
+
+          ! O^{-1} * [ H(xb)+H_jac*dx - obs ]
+          !          = [ H(xb)+H_jac*dx - obs ] /       sigma_obs**2
+          OinvDep(n) =         dep(n)           / (Hops%obs(n)%obsstddev**2)
+
+          !! testing ...
+          !write (gol,*) rname//':    yyy1 innov  ', n, Hops%obs(n)%innov; call goPr
+          !write (gol,*) rname//':    yyy1 dep    ', n, dep(n); call goPr
+          !write (gol,*) rname//':    yyy1 OinvDep', n, OinvDep(n); call goPr
+
         else
           ! set to zero, then no impact in J_obs and grad_J_obs:
-          dep(n) = 0.0
+          dep(n)     = 0.0
+          OinvDep(n) = 0.0
         end if
-        ! O^{-1} * [ H(xb)+H_jac*dx - obs ]
-        !          = [ H(xb)+H_jac*dx - obs ] /       sigma_obs**2
-        OinvDep(n) =         dep(n)           / (Hops%obs(n)%obsstddev**2)
         
-        !! testing ...
-        !write (gol,*) rname//':    yyy1 dep ', n, dep(n), OinvDep(n); call goPr
-
       end do  ! n (obs)
 
     end if
@@ -2967,13 +3203,32 @@ contains
           !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
 
         ! surface
-        case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC )
+        case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_ML_SFCP )
           ! check ...
           if ( Bmat%nlev /= 1 ) then
             write (gol,'("expected 2D fields for levtype sfc")'); call goErr
             TRACEBACK; status=1; return
           end if
-          ! fill departure:
+          ! level range:
+          l0 = Hops%obs(n)%l(0)
+          l1 = Hops%obs(n)%l(1)
+          ! check ...
+          if ( l0 /= l1 ) then
+            write (gol,'("level range ",i0,":",i0," in H_jac should be one level only")') l0, l1; call goErr
+            TRACEBACK; status=1; return
+          end if
+          ! fill departure in level range (array has only 1 level);
+          ! use only one level from H_jac too to avoid errors on shape:
+          HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(l0) * OinvDep(n)
+
+        ! observation field
+        case ( LEVTYPE_2D_OBS_SFC )
+          ! check ...
+          if ( Bmat%nlev /= 1 ) then
+            write (gol,'("expected 2D fields for levtype sfc")'); call goErr
+            TRACEBACK; status=1; return
+          end if
+          ! fill departure; both HT_OinvDep_loc and H_jac have only one level:
           HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(1) * OinvDep(n)
 
         ! unknown ...
@@ -3181,7 +3436,9 @@ contains
     subroutine my_deallocate(verb,msg)
       logical, intent(in)           ::  verb
       character(len=*), intent(in)  ::  msg
-      if (verb) print dafmt,msg
+      if (verb) then
+        write (gol,'(a)') trim(msg); call goPr
+      end if
       if ( allocated(chi_hc        ) ) deallocate( chi_hc         )
       if ( allocated(hcn_local     ) ) deallocate( hcn_local      )
       if ( allocated(yn            ) ) deallocate( yn             )
@@ -3192,4 +3449,4 @@ contains
 
   end subroutine costFunction
 
-end module DA_3DVar_ml
+end module DA_3DVar_mod

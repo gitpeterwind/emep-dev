@@ -541,11 +541,14 @@ contains
              else if(Emis_source(is)%units == 'g/s' .or. Emis_source(is)%units == 'g/m2/s')then
                 fac = fac /(1000.0)
              else if(Emis_source(is)%units == 'mg/s' .or. Emis_source(is)%units == 'mg/m2/s')then
-                fac = fac /(1000.0)
+                fac = fac /(1000*1000.0)
              else  
                 !depends on periodicity
                 if(EmisFiles(n)%periodicity == 'yearly')then
-                   if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
+                   if(Emis_source(is)%units == 'kt/m2' .or. Emis_source(is)%units == 'kt/m2/year'&
+                        .or. Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/year')then
+                      fac = fac * 1000 *1000/(3600*24*nydays)
+                   else if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
                         .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
                       fac = fac * 1000/(3600*24*nydays)
                    else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
@@ -561,7 +564,10 @@ contains
                       call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))                 
                    endif
                 else if(EmisFiles(n)%periodicity == 'monthly')then
-                   if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
+                   if(Emis_source(is)%units == 'kt/m2' .or. Emis_source(is)%units == 'kt/m2/month'&
+                        .or. Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/month')then
+                      fac = fac *1000*1000/(3600*24*nmdays(coming_date%month))
+                   else if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
                         .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
                       fac = fac *1000/(3600*24*nmdays(coming_date%month))
                    else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
@@ -599,7 +605,9 @@ contains
                 endif
              endif
              
-             if(Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/s' &
+             if(Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/s' &
+                  .or.Emis_source(is)%units == 'kt/month' .or. Emis_source(is)%units == 'kt/year'  &
+                  .or.Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/s' &
                   .or.Emis_source(is)%units == 'tonnes/month' .or. Emis_source(is)%units == 'tonnes/year' &
                   .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/s' &
                   .or. Emis_source(is)%units == 'kg/month' .or. Emis_source(is)%units == 'kg/year' &
