@@ -96,8 +96,7 @@ use Io_Nums_mod,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_mod,      only: ios, open_file, datewrite, PrintLog
 use MetFields_mod,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_mod,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
-use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
-                            ,MPI_LOGICAL, MPI_SUM,MPI_COMM_CALC, IERROR
+use MPI_Groups_mod  
 use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
                              GetCDF_modelgrid,PrintCDF,ReadSectorName,check,&
                              create_country_emission_file, output_country_emissions
@@ -311,7 +310,7 @@ contains
           Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
           
           isource = Emis_source(ii)%ix_in
-          if(dbg) write(*,'(a,4i4,1x,a20)') 'wrting config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
+          if(dbg) write(*,'(a,4i4,1x,a20)') 'writing config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
           if(isource>0)then
              !source defined in config file
              if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii
@@ -510,14 +509,26 @@ contains
 !***********************************************************************
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
-    integer :: n, i, j, ix, is, date_limit(5)
+    integer :: n, i, j, ix, is, date_limit(5), iem, ic, icc, iqrc
+    integer :: itot,isec,iland
     type(date) :: coming_date
-    real :: fac
+    real :: fac, gridyear, ccsum,emsum(NEMIS_FILE)
+    character(len=TXTLEN_NAME) :: fmt
     TYPE(timestamp)   :: ts1,ts2
+    logical, save ::first_call=.true.
+    real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
 
     ts1=make_timestamp(current_date)
     coming_date = current_date
     coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
+    gridyear = GRIDWIDTH_M * GRIDWIDTH_M * 3600*24*nydays*1.0E-6!kg/m2/s -> kt/year
+
+    if(first_call)then
+       ! sum emissions per countries
+       allocate(sumemis(NLAND,NEMIS_FILE))
+       sumemis=0.0
+    endif
+
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
@@ -525,6 +536,7 @@ contains
                write(*,*)'Emis: update date is reached ',&
                EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
           !values are no more valid, fetch new one
+          if(first_call)sumemis=0.0
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
                 ix = ix3Dmap(is)
@@ -655,6 +667,30 @@ contains
                    enddo
                 enddo
              endif
+             if(first_call)then
+                ! sum emissions per countries (in ktonnes?)
+                itot = Emis_source(is)%species_ix
+                isec = Emis_source(is)%sector
+                iland = Emis_source(is)%country_ix
+                if(itot>0)then
+                   iqrc = itot2iqrc(itot)
+                   if(isec>0 .and. iqrc>0)then
+                      iem = iqrc2iem(iqrc)
+                   else
+                      iem=-1
+                   endif
+                else
+                   iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
+                endif
+                if(iem>0)then
+                   do j = 1,ljmax
+                      do i = 1,limax
+                         
+                         sumemis(iland,iem) = sumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
+                      enddo
+                   enddo
+                endif
+             endif
 
           enddo
           !update date of valitdity
@@ -674,9 +710,35 @@ contains
           endif          
 
        endif
-! sum emissions per countries
+       if(first_call)then
+           CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
+               NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
+           if(me==0)then
+              write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
+              write(*     ,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)
+              fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
+              do ic = 1, NLAND
+                 ccsum = sum( sumemis(ic,:) )
+                 icc=Country(ic)%icode
+                 if ( ccsum > 0.0 )then
+                    write(*,     fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
+                 end if
+              end do
+           end if
 
+           !total of emissions from all countries and files into emsum
+           do iem = 1, NEMIS_FILE
+              emsum(iem)= emsum(iem)+sum(sumemis(:,iem))
+           end do
+        endif
     enddo
+    if(first_call)then
+       if(me==0)write(*     ,fmt)'EMTAB', 999,'TOTAL',emsum(:)
+       deallocate(sumemis)   
+       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
+    endif
+
+    first_call=.false.
  
   end subroutine EmisUpdate
 
@@ -1750,8 +1812,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
                         SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
                    ! Add up emissions in ktonne 
-                   totemadd(itot) = totemadd(itot) &
-                        + s * dtgrid * xmd(i,j)
+                   totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
+
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID
                       gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
