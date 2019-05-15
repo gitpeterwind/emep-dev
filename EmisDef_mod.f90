@@ -148,8 +148,8 @@ private
    real, public, parameter    ::  ROADDUST_FINE_FRAC = 0.1 ! PM2.5 fraction of PM10-road dust emission  
 
    !Pollen
-   integer, public, parameter ::  NPOL  = 1 &   ! number of dust size modes
-                                 ,QPOL  = 1 
+!  integer, public, parameter ::  NPOL  = 1 &   ! number of dust size modes
+!                                ,QPOL  = 1 
 
    !Volcanos. 
    logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes 
