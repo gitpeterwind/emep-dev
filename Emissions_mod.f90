@@ -229,10 +229,16 @@ contains
     Emisfile_defaults%projection = 'lon lat'
     Emisfile_defaults%factor = 1.0
 
+    EmisFiles(:)%units = Emis_sources_defaults%units
+    EmisFiles(:)%sector = Emis_sources_defaults%sector
+    EmisFiles(:)%country_ISO = Emis_sources_defaults%country_ISO
+
     !2) read from global attributes in file
     !3) read from variable attributes in file
     !Emis_sourceFiles is read from config and then not modified
     !EmisFiles collect all valid data and sources
+    !Emis_source() contains the metadata of the emissions surces finally used
+    !Emis_source_2D() contains the 2D values for each source used
     NEmis_sources = 0 !total number of valid emis (also 3D) variables across all files
     NEmis_3Dsources = 0 !total number of valid 3D emis variables across all files
     max_levels3D = 1
@@ -668,6 +674,8 @@ contains
           endif          
 
        endif
+! sum emissions per countries
+
     enddo
  
   end subroutine EmisUpdate

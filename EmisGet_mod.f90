@@ -132,7 +132,7 @@ contains
 
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
 
-    if(EmisFile%periodicity == 'yearly')then
+    if(EmisFile%periodicity == 'yearly' .or. EmisFile%periodicity == 'once')then
        !assumes only one record to read
        record = 1
     else if(EmisFile%periodicity == 'monthly')then
@@ -509,7 +509,6 @@ contains
    !-------------
     if ( debugm0 ) write(*,*) dtxt//'Start File:',trim(fname)
     
-
     if(EmisFile_in%projection /= 'native')then
        default_projection = 'Unknown'
        status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
@@ -531,7 +530,18 @@ contains
     if(status==nf90_noerr)then
        default_factor = factor
     endif
-
+    
+!default values for sources
+!species cannot be set global attribute, because it is used to recognize valid variables (sources)
+!    status = nf90_get_att(ncFileID,nf90_global,"species",cdfspecies)
+!    if(status==nf90_noerr)EmisFile%species = trim(cdfspecies)
+    status = nf90_get_att(ncFileID,nf90_global,"units", name)
+    if(status==nf90_noerr)EmisFile%units = trim(name)
+    status = nf90_get_att(ncFileID,nf90_global,"sector", sector)
+    if(status==nf90_noerr)EmisFile%sector = sector
+    status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
+    if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
+    
     nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
@@ -560,8 +570,10 @@ contains
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
              if ( debugm0 ) write(*,*) dtxt//'source add:',&
               trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis
+             Emis_source(NEmis_sources)%units = EmisFile%units !default
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
+             Emis_source(NEmis_sources)%sector = EmisFile%sector !default
              status = nf90_get_att(ncFileID,varid,"sector", sector)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
              status = nf90_get_att(ncFileID,varid,"factor", x)
@@ -579,13 +591,14 @@ contains
                    if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(name)
                 endif
              else
+                Emis_source(NEmis_sources)%country_ISO = EmisFile%country_ISO !default
                 status = nf90_get_att(ncFileID,varid,"country_ISO", name)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%country_ISO = trim(name)
-                ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+                ix = find_index(Emis_source(NEmis_sources)%country_ISO ,Country(:)%code, first_only=.true.)
                 if(ix<0)then
                    if(me==0)write(*,*)dtxt//'WARNING: country_ISO '//trim(name)//&
-                     ' not defined. file'//trim(fname)//&
-                     ' variable '//trim(cdfvarname)
+                        ' not defined. file'//trim(fname)//&
+                        ' variable '//trim(cdfvarname)
                 else
                    Emis_source(NEmis_sources)%country_ix = ix
                    if ( debugm0 ) write(*,*) dtxt//'country_ISO add: ',ix,trim(name)
@@ -606,15 +619,6 @@ contains
            trim(EmisFile_in%filename),trim(default_projection), default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
-!default values for sources
-       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
-       if(status==nf90_noerr)EmisFile%species = trim(cdfspecies)
-       status = nf90_get_att(ncFileID,nf90_global,"units", name)
-       if(status==nf90_noerr)EmisFile%units = trim(name)
-       status = nf90_get_att(ncFileID,nf90_global,"sector", sector)
-       if(status==nf90_noerr)EmisFile%sector = sector
-       status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
-       if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
 
     endif
         
