@@ -161,7 +161,7 @@ subroutine Config_Pollen()
     end select
     call CheckStop(n<0,"DDdefs misses: "//POLLEN_GROUP(g))
     call CheckStop(DDdefs(n)%umDpgV,D_POLL(g),"Wrong DDdefs%umDpgV: "//POLLEN_GROUP(g))
-    call CheckStop(DDdefs(n)%sigma ,0.01     ,"Wrong DDdefs%sigma: "//POLLEN_GROUP(g))
+!   call CheckStop(DDdefs(n)%sigma ,0.01     ,"Wrong DDdefs%sigma: "//POLLEN_GROUP(g))
     call CheckStop(DDdefs(n)%rho_p ,POLL_DENS*1e-3,"Wrong DDdefs%rho_p: "//POLLEN_GROUP(g))
   end do
   if(MasterProc)write(*,"(A,10(' adv#',I3,'=',A,1X,es10.3,:))") &
@@ -867,7 +867,7 @@ subroutine pollen_read()
   character(len=len(template_read)) :: filename
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
-  if(MODE_READ/='START' .and. MODE_READ/='RESTART') return
+  if(MODE_READ=='NONE') return
   if(.not.checkdates(daynumber,"pollen")) return
   if(.not.first_call) return
   first_call=.false.
