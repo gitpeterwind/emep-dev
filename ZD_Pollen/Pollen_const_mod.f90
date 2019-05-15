@@ -7,7 +7,7 @@ module Pollen_const_mod
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density.
 !-----------------------------------------------------------------------!
 use PhysicalConstants_mod, only: PI,ATWAIR,AVOG
-use Config_module,         only: USES
+use Config_module,         only: USES,MasterProc
 use Debug_module,          only: DEBUG
 use CheckStop_mod,         only: CheckStop
 use ChemDims_mod,          only: NSPEC_ADV,NSPEC_SHL
@@ -149,8 +149,11 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
     end select
   end do
-  if(present(uconv_adv))&
+  if(present(uconv_adv))then
     uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)=&
       uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)/grain_wt
+    if(DEBUG%POLLEN.and.MasterProc) &
+      write(*,*)'POLLEN uconv_adv',uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)
+  end if
 end subroutine pollen_check
 end module Pollen_const_mod

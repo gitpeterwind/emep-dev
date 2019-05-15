@@ -273,13 +273,14 @@ subroutine Fire_Emis(daynumber)
   integer :: loc_maxemis(2) ! debug
 
   character(len=TXTLEN_FILE), save :: fname='new'
-  logical :: debug_ff=.false.,debug_nc=.false., newFFrecord=.false.
+  logical :: debug_me=.false., debug_ff=.false.,debug_nc=.false., newFFrecord=.false.
   real :: xrdemis(LIMAX,LJMAX) ! MODE=*_AVG
   integer :: dn1, dn2, ndn          ! MODE=*_AVG
   integer :: yyyy, mm, dd, hh
   character(len=*), parameter :: dtxt='BB:Fire_Emis:'
 
   if(first_call) call Config_Fire()
+  debug_me=DEBUG%FORESTFIRE .and. debug_proc
   debug_ff=debug_level(BBverbose)
   debug_nc=debug_level(BBverbose-1)
 
@@ -288,10 +289,10 @@ subroutine Fire_Emis(daynumber)
   dd   = current_date%day
   hh   = current_date%hour
   if(fire_year>1) yyyy=fire_year
-  
-  if(debug_proc) write(*,'(a,7i5)') "current date and time BB-"//trim(BBMODE),&
+  if(debug_me)then
+    write(*,'(a,7i5)') "current date and time BB-"//trim(BBMODE),&
       yyyy,mm,dd,fire_year, nn_old, mm
-  if ( debug_proc .and. allocated(BiomassBurningEmis) )  then
+    if(allocated(BiomassBurningEmis)) &
       write(*,'(a,es12.3)') dtxt//'BBsum', sum(BiomassBurningEmis(1,:,:))
   end if
   select case(BBMODE)
@@ -325,23 +326,23 @@ subroutine Fire_Emis(daynumber)
       call CheckStop("Unknown ForestFire MODE="//trim(BBMODE))
   end select
 
-  if(debug_proc) write(*,'(a,5i5)') dtxt// "newFFrec checks ",&
+  if(debug_me) write(*,'(a,5i5)') dtxt// "newFFrec checks ",&
       yyyy,mm,dd, dn1, dn2
   if(dn1<dn2)then
     nstart=daynumber    ! for debug info
-    if(debug_proc) write(*,'(a,5i5)') dtxt// "FFalloc nstart= ", nstart
+    if(debug_me) write(*,'(a,5i5)') dtxt// "FFalloc nstart= ", nstart
   else
     ! newFFrecord: has pollutant|fname|record changed since last call?
     call checkNewFFrecord([yyyy,mm,dd,hh], ncFileID, fname, newFFrecord, nstart)
-    if(debug_proc) write(*,'(a,L2,5i5)') dtxt// "FFchecked nstart= ",newFFrecord, nstart
+    if(debug_me) write(*,'(a,L2,5i5)') dtxt// "FFchecked nstart= ",newFFrecord, nstart
     FF_poll=""
     if(.not.newFFrecord) then 
-       if(debug_proc) write(*,'(a,5i5)') dtxt//" newFFrec not set ",yyyy,mm,dd,hh
+       if(debug_me) write(*,'(a,5i5)') dtxt//" newFFrec not set ",yyyy,mm,dd,hh
        return                        ! Continue if new record||file  
     end if
   end if
 
-  if(debug_proc) then
+  if(debug_me) then
     write(*,'(a,5i5)') dtxt// "newFFrec WAS set ", yyyy,mm,dd, dn1, dn2
     write(*,*) dtxt//'Starting MODE=',trim(BBMODE),&
       date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call,debug_ff,debug_nc
@@ -357,7 +358,7 @@ subroutine Fire_Emis(daynumber)
     iemep   = FF_defs_BB(iBB)%emep  ! 
     ind     = find_index( iemep, emep_used ) !Finds 1st emep in BiomassBurning
 
-    if( debug_proc ) then
+    if(debug_me)then
       write(*,"( a,3i5, a8,i3)") dtxt//" SETUP: ", iBB,iemep,ind, &
         trim(FF_poll), len_trim(FF_poll)
       !DS if(debug_ff) &
@@ -390,7 +391,7 @@ subroutine Fire_Emis(daynumber)
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol=bbinterp,&
           needed=BBneed_poll,UnDef=0.0,debug_flag=debug_nc,&
           ncFileID_given=ncFileID)
-        if( debug_proc.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
+        if(debug_me.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
            dtxt//" CO READ: ", nstart, trim(FF_poll), maxval(rdemis)
     end if
 !-------- Aug 2017
@@ -425,8 +426,7 @@ subroutine Fire_Emis(daynumber)
     forall(j=1:ljmax,i=1:limax) &
       BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
 
-    !if(debug_ff.and. debug_proc) &
-    if( debug_proc) &
+    if(debug_me) &
        write(*,"(3a10,2i4,f8.3,es12.3)") dtxt//" SUMS:", &
         trim(FF_poll), trim( species(iemep)%name), me, ind, &
         species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
@@ -434,7 +434,7 @@ subroutine Fire_Emis(daynumber)
     call PrintLog(dtxt//":: Assigns "//trim(FF_poll),&
       first_call.and.MasterProc)
 
-    if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+&
+    if(debug_me) sum_emis(ind)=sum_emis(ind)+&
           sum(BiomassBurningEmis(ind,:,:))
   end do ! BB_DEFS
 
@@ -457,7 +457,7 @@ subroutine Fire_Emis(daynumber)
   ! Some databases (e.g. FINN, GFED) have both total PM25 and EC, OC. The
   ! difference, REMPPM25, is created by the BiomasBurning mapping procedure,
   ! but we just check here
-  if(DEBUG%FORESTFIRE.and.debug_proc) then
+  if(debug_me) then
     n = ieCO
     loc_maxemis = maxloc(BiomassBurningEmis(n,:,: ) )
 
@@ -472,7 +472,7 @@ subroutine Fire_Emis(daynumber)
       (/  sum_emis(n), maxval(BiomassBurningEmis(n,:,: ) ), &
           BiomassBurningEmis(n,debug_li,debug_lj) /) )
     end associate ! idbg, jdbg
-  end if ! debug_proc
+  end if ! debug_me
   !end associate ACDATES
 
 end subroutine Fire_Emis
@@ -491,6 +491,9 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
   logical :: fexist=.false.
   real :: ncday(0:1)
   character(len=*),parameter:: dtxt='BB:newFFrecord:'
+  logical :: debug_me
+
+  debug_me=DEBUG%FORESTFIRE .and. debug_proc
 
   ! Check: New file
   select case(BBMAP)
@@ -501,9 +504,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
   end select
   fname=key2str(fname,'DataDir',DataDir) ! expand DataDir keysword
 
-  !if(debug_proc .and. BBverbose >2 ) then
-  if(debug_proc ) then
-
+  if(debug_me) then
     write(*,*)  dtxt//trim(fname), me, ymdh ! TMP
     write(*,*)  dtxt//" Old:", trim(file_old)
     write(*,*)  dtxt//" IDs ", ncFileID, closedID ! TMP
@@ -533,7 +534,7 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
     fdays(:)=-1.0                       
     call ReadTimeCDF(fname,fdays,nread) 
     if ( nread == 12 ) monthlyEmis = .true.
-    if(debug_proc) write( *,'(a,3f8.1,a,2i6,L2)')  dtxt//" fdays ", &
+    if(debug_me) write( *,'(a,3f8.1,a,2i6,L2)')  dtxt//" fdays ", &
         fdays(1:3), '... n=', count(fdays>0), nread, monthlyEmis
     record_old=-1                       
   end if

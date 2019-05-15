@@ -20,7 +20,6 @@ use Config_module, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
 use PhysicalConstants_mod, only: ATWAIR
 use OwnDataTypes_mod,   only: Asc2D
 use Par_mod,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
-use Pollen_const_mod,   only: pollen_check
 use SmallUtils_mod,     only: find_index
 use TimeDate_mod,       only: date
 use Units_mod,          only: Init_Units,&

@@ -512,6 +512,10 @@ subroutine Define_Derived()
         dname = "SURF_"//trim(outunit)//"_"//trim(outname)
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           dtxt//"OutputFields already defined output "//trim(dname))
+
+        if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
+          ind, iout, trim(dname),";", trim(class), outind,unitscale
+
       case("Local_Correct")
         Is3D = .false.
         class = "SURF_"//trim(class)  //"_"//trim(outtyp)
