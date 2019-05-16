@@ -132,7 +132,7 @@ contains
 
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
 
-    if(EmisFile%periodicity == 'yearly')then
+    if(EmisFile%periodicity == 'yearly' .or. EmisFile%periodicity == 'once')then
        !assumes only one record to read
        record = 1
     else if(EmisFile%periodicity == 'monthly')then
@@ -165,7 +165,8 @@ contains
     else
        if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
             write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
-       if(Emis_source%units(1:9) == 'tonnes/m2'  &
+       if(Emis_source%units(1:5) == 'kt/m2'  &
+            .or. Emis_source%units(1:9) == 'tonnes/m2'  &
             .or. Emis_source%units(1:5) == 'kg/m2' &
             .or. Emis_source%units(1:4) == 'g/m2'  &
             .or. Emis_source%units(1:5) == 'mg/m2')then
@@ -176,8 +177,10 @@ contains
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
                debug_flag=.false.)
-       else  if(Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
-            .or.Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
+       else  if(Emis_source%units == 'kt' .or. Emis_source%units == 'kt/s' &
+            .or. Emis_source%units == 'kt/month' .or. Emis_source%units == 'kt/year' &
+            .or. Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
+            .or. Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
             .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
             .or. Emis_source%units == 'kg/month' .or. Emis_source%units == 'kg/year' &
             .or. Emis_source%units == 'g' .or. Emis_source%units == 'g/s' &
@@ -204,7 +207,7 @@ contains
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
        Emis, EmisCodes, nEmisCodes, nstart,&
        incl, nin, excl, nex, use_lonlat_femis, &
-       set_mask,use_mask, fractionformat, type)
+       set_mask,use_mask,pollName, fractionformat, type)
 
     !read in emissions in fraction format and add results into
     !Emis, nEmisCodes and nEmisCodes
@@ -212,7 +215,7 @@ contains
 
     implicit none
     integer, intent(in) ::iem, nin, nex,nstart
-    character(len=*),intent(in) :: fname, incl(*),excl(*),type
+    character(len=*),intent(in) :: fname, incl(*),excl(*),pollName(*),type
     real,intent(inout) ::Emis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
     integer,intent(inout) ::nEmisCodes(LIMAX,LJMAX)
     integer,intent(inout) ::EmisCodes(LIMAX,LJMAX,NCMAX)
@@ -266,6 +269,7 @@ contains
        foundEmis_id = .false.
        if(.not. fractionformat)then
           call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
+          if(me==0)write(*,*)'reading ',trim(cdfvarname)
           ewords=''
           if( index(cdfvarname, "Emis:") >0 )then
              ! Emission terms look like, e.g. Emis:FR:snap:7
@@ -311,6 +315,10 @@ contains
              endif
 
              cdfemis = 0.0 ! safety, shouldn't be needed though
+             if(pollName(1)/='NOTSET')then
+                if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
+                if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
+             end if             
              call ReadField_CDF(fname,cdfvarname,cdfemis,nstart=nstart,&
                   interpol='mass_conservative',&
                   needed=.false.,UnDef=0.0,&
@@ -337,6 +345,11 @@ contains
              write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
           endif
           
+          if(pollName(1)/='NOTSET')then
+             cdfemis = 0.0 ! safety, shouldn't be needed though
+             if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
+             if(Masterproc.and.isec==1)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
+          end if
           Reduc=e_fact(isec,:,iem_used)          
           call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=nstart,&
                interpol='mass_conservative',fractions_out=fractions,&
@@ -496,7 +509,6 @@ contains
    !-------------
     if ( debugm0 ) write(*,*) dtxt//'Start File:',trim(fname)
     
-
     if(EmisFile_in%projection /= 'native')then
        default_projection = 'Unknown'
        status = nf90_get_att(ncFileID, nf90_global,"projection", projection)
@@ -518,7 +530,18 @@ contains
     if(status==nf90_noerr)then
        default_factor = factor
     endif
-
+    
+!default values for sources
+!species cannot be set global attribute, because it is used to recognize valid variables (sources)
+!    status = nf90_get_att(ncFileID,nf90_global,"species",cdfspecies)
+!    if(status==nf90_noerr)EmisFile%species = trim(cdfspecies)
+    status = nf90_get_att(ncFileID,nf90_global,"units", name)
+    if(status==nf90_noerr)EmisFile%units = trim(name)
+    status = nf90_get_att(ncFileID,nf90_global,"sector", sector)
+    if(status==nf90_noerr)EmisFile%sector = sector
+    status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
+    if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
+    
     nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
@@ -547,8 +570,10 @@ contains
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
              if ( debugm0 ) write(*,*) dtxt//'source add:',&
               trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis
+             Emis_source(NEmis_sources)%units = EmisFile%units !default
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
+             Emis_source(NEmis_sources)%sector = EmisFile%sector !default
              status = nf90_get_att(ncFileID,varid,"sector", sector)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
              status = nf90_get_att(ncFileID,varid,"factor", x)
@@ -566,13 +591,14 @@ contains
                    if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(name)
                 endif
              else
+                Emis_source(NEmis_sources)%country_ISO = EmisFile%country_ISO !default
                 status = nf90_get_att(ncFileID,varid,"country_ISO", name)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%country_ISO = trim(name)
-                ix = find_index(trim(name) ,Country(:)%code, first_only=.true.)
+                ix = find_index(Emis_source(NEmis_sources)%country_ISO ,Country(:)%code, first_only=.true.)
                 if(ix<0)then
                    if(me==0)write(*,*)dtxt//'WARNING: country_ISO '//trim(name)//&
-                     ' not defined. file'//trim(fname)//&
-                     ' variable '//trim(cdfvarname)
+                        ' not defined. file'//trim(fname)//&
+                        ' variable '//trim(cdfvarname)
                 else
                    Emis_source(NEmis_sources)%country_ix = ix
                    if ( debugm0 ) write(*,*) dtxt//'country_ISO add: ',ix,trim(name)
@@ -593,15 +619,6 @@ contains
            trim(EmisFile_in%filename),trim(default_projection), default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
-!default values for sources
-       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
-       if(status==nf90_noerr)EmisFile%species = trim(cdfspecies)
-       status = nf90_get_att(ncFileID,nf90_global,"units", name)
-       if(status==nf90_noerr)EmisFile%units = trim(name)
-       status = nf90_get_att(ncFileID,nf90_global,"sector", sector)
-       if(status==nf90_noerr)EmisFile%sector = sector
-       status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
-       if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
 
     endif
         

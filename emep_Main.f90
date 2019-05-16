@@ -35,7 +35,7 @@ program emep_Main
        HOURLYFILE_ending, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
        ANALYSIS, & ! forecast in ANALYSIS mode
-       Config_ModelConstants, startdate, enddate
+       Config_Constants, startdate, enddate
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use Debug_module,      only: DEBUG   ! -> DEBUG%MAINCODE
@@ -122,7 +122,7 @@ program emep_Main
   if(MasterProc) open(IO_LOG,file='RunLog.out')
 !TEST
   call define_chemicals()    ! sets up species details
-  call Config_ModelConstants(IO_LOG)
+  call Config_Constants(IO_LOG)
 
   call assign_startandenddate()
  

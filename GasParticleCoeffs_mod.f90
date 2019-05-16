@@ -57,7 +57,7 @@ module GasParticleCoeffs_mod
 
   integer, public, parameter ::&
         NDRYDEP_GASES = 14+47  &! no. of gases in Wesely tables, DDdefs below
-       ,NDRYDEP_AERO  = 11     &! no. of particles in DDdefs below
+       ,NDRYDEP_AERO  = 14     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
 
@@ -199,10 +199,13 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'DUf'   ,UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33, 1.8, 2600, -1)& ! NEW?? CHECK
 ! QUERY
  ,DD_t( 'PMc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 2200,  1)& ! as PM QUERY 20
- ! SSc, DUc and POLLd have dummy values, CHECK!!
+ ! SSc, DUc have dummy values, CHECK!!
  ,DD_t( 'SSc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 4.80,  2.0, 2200,  2)& ! 
  ,DD_t( 'DUc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 5.00,  2.2, 2600, -1)& 
- ,DD_t( 'POLLd',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 1400, -1)& 
+ ,DD_t( 'POLLb',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,22.00,  2.0,  800, -1)& ! birch
+ ,DD_t( 'POLLo',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,28.00,  2.0,  800, -1)& ! olive
+ ,DD_t( 'POLLr',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,18.00,  2.0,  800, -1)& ! ragweed
+ ,DD_t( 'POLLg',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,32.00,  2.0,  800, -1)& ! grass
  ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008, 2.0, 1400, -1)&
  ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06,  2.0, 1200, -1)&
 ]

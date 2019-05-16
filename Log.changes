@@ -21,6 +21,132 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 May 2019, Peter
+
+Emissions by countries in new format are printed out.
+(Only first call, and only species which are one of the splitted standard emissions)
+Country and sector as global attribute also enabled.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Dave
+Setup_1d_mod - small tidy up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Peter
+
+INDI_BIHA had a value for the timefac_code_hourly of -289(!) must be 289 and
+timezone=100 instead of -100.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Dave
+
+Derived_mod: SIA25 added, for 2d and 3d. 
+             plus small tidy-up
+
+config_emep.nml - added example SIA25 lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 May 2019, Peter
+
+Nest stops if Met_inner not found (was only a warning before)
+
+uEMEP: local fraction "completeness" diagnostic. Outputs a value for each 
+gridcell that sums all the local fractions. 1.0-> all sources have been found.
+
+new format emissions: accept unit kt (and kt/year, kt/m2, kt/m2/year/).
+and corrected bug when units where mg/s or mg/m2/s (were factor 1000 too small)
+
+number of vertical levels in meteo file are checked each time a new meteofile 
+is read. If it has changed (happens in CAMS?), the vertical interpolations coefficients are recalculated. 
+Maybe a bug when not starting the run at hour=0 corrected (nrec was set to 1 at first call in meteoread)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7-9 May 2019, Alvaro
+
+Add CheckStop_real2 to compare reals to machine precision
+
+Support IC/BCs from older model versions
+Nest_mod will try upper case variables name when the variable is not found
+
+Update pollen mopules
+- add EmChem09cwf (EmChem09 w/pollen)
+- update pollen modules from cams50
+- fix pollen dependency on Config_module (previously Nest_mod)
+- fix pollen dependency on GasParticleCoeffs_mod
+- add pollen spcs to DD_t
+- add pollen spcs to EMIS_BioNat
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7-8 May 2019, Peter
+
+Renamed ModelConstants_config -> Model_config
+
+Merged nest and external_bic config into ModelConstants_config.
+Most nest config variables renamed with a "NEST_" in front of variable.
+Some cleaning for consistency.
+Did *not* merge ExternalBICs_bc config
+
+Also OutputConcs_config, OutputDep_config and OutputSize_config are now 
+part of  Model_config
+
+Removed OutputMisc_config from config_emep.nml, as I could not see it was used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 May 2019, Peter
+
+Merged Columns and ForestFire config namelists into ModelConstants_config
+NB: some BB variables have changed name: 
+MODE->BBMODE
+need_file->BBneed_file
+need_date->BBneed_date
+need_poll->BBneed_poll
+verbose->BBverbose
+
+Allow to include additonal namelist files. Example:
+ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
+ExtraConfigFile(2)='OwnInputDir/MyVerySpecialConfig.nml',
+
+The definition of the last namelist is used if variables are set several times.
+
+Also replaced k20 with kmax in config, since we do not necessarily use 20 
+levels.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 May 2019, Peter
+
+Merged INPUT_PARA and Machine_config namelists into ModelConstants_config
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 May 2019, Peter
+
+Topography is read from HGT in case WRF meteo. It will automatically redefine
+Topofile (cannot be defined from config then!)
+Also more robust GetCDF_modelgrid when dimensions are incompatible (will now 
+stop only if the file is "needed")
+
+The emis_inputlist%PollName functionality was broken (since May 2018?). Repaired.
+
+USES%AOD removed. Instead AOD_WANTED is set to true if any AOD or EXT variable 
+are requested in outputs
+
+Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
+config file treatments (i.e. DataDir and OwnInputDir are replaced).
+
+Met_inner for nesting tries to replace datadir and dates if not found 
+(but not GRID, as it should be another grid usually) (not tested)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 May 2019, Peter
+
+Small bug in interpolation from Polar stereo to Polar stereo.
+In the case when all these conditions are met:
+1) interpolation from Polar stereo to Polar stereo
+2) Conservative or mass conservative
+3) Resolution of in grid is at coarser than met resolution/3
+
+There is a small shift in the diagonal direction (1/3 gridcell).
+This does not affect landuse PS to EECCA (exception 3))
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Apr 2019, Robert
 
 Added dry deposition parameters for MPAN

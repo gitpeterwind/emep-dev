@@ -59,7 +59,7 @@ use InterpolationRoutines_mod,  only : grid2grid_coeff
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                                MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
 use netcdf
-use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME
+use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME, TXTLEN_FILE
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
                               IRUNBEG,JRUNBEG,limax,ljmax, &
                               gi0,gj0,tgi0,tgi1,tgj0,tgj1,tlimax,tljmax
@@ -70,10 +70,7 @@ use SmallUtils_mod,      only: wordsplit, find_index
 
 implicit none
 
-integer, public, parameter :: &
-  max_filename_length=200 ! large enough to include paths, eg Nest_config namelist
-
-character(len=max_filename_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   fileName      = 'NotSet',&
   fileName_iou(IOU_INST:IOU_HOUR_EXTRA)=&
     ['out_inst.nc    ','out_year.nc    ','out_month.nc   ','out_day.nc     ',&
@@ -2030,6 +2027,13 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   i0=0;j0=0!origin, i.e. (i=0,j=0) coordinate
   if(present(i_start))i0=i_start-1
   if(present(j_start))j0=j_start-1
+  if(i0>imax .or. j0>jmax)then
+     if(.not.needed)then
+        if(me==0)write(*,*)'WARNING: '//trim(fileName)//'has incompatible grid. Cannot read '//trim(varname)
+        found=.false.
+        return
+     endif
+  endif
   call CheckStop(i0>imax, "NetCDF_mod i: subdomain not compatible. cannot handle this")
   call CheckStop(j0>jmax, "NetCDF_mod j: subdomain not compatible. cannot handle this")
   if(MasterProc.and.DEBUG_NETCDF)&
@@ -3607,8 +3611,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         Grid_resolution_div=Grid_resolution/Ndiv
-        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
-        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        xp_ext_div=(xp_ext-0.5)*Ndiv+0.5
+        yp_ext_div=(yp_ext-0.5)*Ndiv+0.5
         an_ext_div=an_ext*Ndiv
 
         if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical'.and.projection/='lambert')then
@@ -3638,6 +3642,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
+
 !                    if(abs(lat-57.0)<0.01 .and. abs(lon-1.3)<0.01)write(*,*)'fullij ',lat,lon,me,i,j
 !                    if(abs(lon-15)<0.02 .and. abs(lat-63)<0.02)write(*,*)jg,ig,lon,lat,i,j,me
                     !convert from fulldomain to local domain
@@ -3724,8 +3729,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         Ndiv=1
         Grid_resolution_div=Grid_resolution/Ndiv
-        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
-        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        xp_ext_div=(xp_ext-0.5)*Ndiv+0.5
+        yp_ext_div=(yp_ext-0.5)*Ndiv+0.5
         an_ext_div=an_ext*Ndiv
         if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
 
