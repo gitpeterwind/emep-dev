@@ -12,6 +12,7 @@
 !
 ! (EMEP/ESX do not use the Wesely methodology, but makes some use of the H*,
 !   f0 ideas.)
+! May2019 version - adapted from RB emep-mscw-devCRI_R5R1A
 !..............................................................................
 
 module GasParticleCoeffs_mod
@@ -164,8 +165,8 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'OCATEC1OOH',DH2O/3.88 , 3.88, 3.1E+06, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
  ,DD_t( 'HOCH2CO2H',DH2O/2.49 , 2.49, 4.2E+07, 9999, 1.0E+04, 0.05, 0.,-1,-1,-1,-1)& 
  ,DD_t( 'OXYCATECH',DH2O/3.76, 3.76, 1.1E+07, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
- ,DD_t( 'C3PAN1 ',DH2O/3.3 , 3.3, 1.8E+05, 9999, 1.0E+04, 0.3, 0., -1,-1,-1,-1)&
- ,DD_t( 'C5PAN18 ',DH2O/4.1, 4.1, 2.4E+03, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)&
+ ,DD_t( 'C3PAN1',DH2O/3.3, 3.3, 1.8E+05, 9999, 1.0E+04, 0.3, 0., -1,-1,-1,-1)&
+ ,DD_t( 'C5PAN18',DH2O/4.1, 4.1, 2.4E+03, 9999, 1.0E+04, 0.5, 0., -1,-1,-1,-1)&
  ,DD_t( 'MPAN',DH2O/3.4, 3.4, 3.0E+0, 9999, 1.0E+04, 0.2, 0., -1,-1,-1,-1)&
  ,DD_t( 'NOXYOL1OOH',DH2O/4.1, 4.1, 8.3E+04, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
  ,DD_t( 'NOXYOLOOH',DH2O/4.57, 4.57, 4.5E+10, 9999, 1.0E+04, 0.3, 0.,-1,-1,-1,-1)& ! perhaps even higher f?
