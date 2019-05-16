@@ -208,8 +208,6 @@ type, public :: Emis_id_type
    character(len=TXTLEN_NAME) :: units = 'NOTSET'!units AFTER netcdf values are multiplied by factor
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   integer :: SNAPsector = -1 !sector defined as SNAP 
-   integer :: GNFRsector = -1 !sector defined as GNFR, not defined yet
    integer :: sector = -1 !sector as defined in current model, according to USE_SECTORS_NAME  
    integer :: species_ix = -1 ! internal index for species
    integer :: injection_k = -1 !which model k level to put emissions into. Only for individual species 
@@ -243,6 +241,7 @@ type, public :: Emis_sourceFile_id_type
    character(len=TXTLEN_NAME) :: species = 'NOTSET' !default emep species
    character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
+   character(len=TXTLEN_NAME) :: sectorsName = 'NOTSET' !
    integer :: sector = -1 !default sector 
    logical :: apply_femis = .true. !whether the general femis.dat should be applied to sources from this file
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
@@ -267,10 +266,11 @@ type, public :: EmisFile_id_type
    integer :: Nsources = 0 !number of valid sources (i.e variables in the netcdf file)
    integer :: source_start = 0
    integer :: source_end = 0
-   character(len=TXTLEN_NAME) :: species = 'NOTSET' !default emep species
+   character(len=TXTLEN_NAME) :: species = 'NOTSET' !default emep species. NB: not read from attributes
    character(len=TXTLEN_NAME) :: units = 'NOTSET'! default units 
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' ! default country name
-   integer :: sector = -1 !default sector .NB: not read from attributes
+   character(len=TXTLEN_NAME) :: sectorsName ='NOTSET' !SNAPsectors or GNFRsectors
+   integer :: sector = -1 !default sector 
    character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file .NB: not read from attributes
    character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file .NB: not read from attributes
 end type EmisFile_id_type

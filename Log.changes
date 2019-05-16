@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2019, Peter
+
+New format emissions: automatic GNFR/SNAP sectors mapping.
+SNAP is default. If sectors in an emission file are defined as GNFR (values 
+from 1 to 13), it should have an attribute sectorsName= 'GNFRsectors' 
+(or it can be set in config file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 May 2019, Peter
 
 Emissions by countries in new format are printed out.

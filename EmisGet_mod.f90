@@ -531,6 +531,9 @@ contains
        default_factor = factor
     endif
     
+    status = nf90_get_att(ncFileID,nf90_global,"sectorsName", name) !SNAPsectors or GNFRsectors
+    if(status==nf90_noerr)EmisFile%sectorsName = trim(name)
+
 !default values for sources
 !species cannot be set global attribute, because it is used to recognize valid variables (sources)
 !    status = nf90_get_att(ncFileID,nf90_global,"species",cdfspecies)
@@ -542,6 +545,7 @@ contains
     status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
     if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
     
+
     nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))

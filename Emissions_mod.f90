@@ -227,10 +227,12 @@ contains
     Emisfile_defaults%periodicity = 'time'
     Emisfile_defaults%projection = 'lon lat'
     Emisfile_defaults%factor = 1.0
-
-    EmisFiles(:)%units = Emis_sources_defaults%units
-    EmisFiles(:)%sector = Emis_sources_defaults%sector
-    EmisFiles(:)%country_ISO = Emis_sources_defaults%country_ISO
+    Emisfile_defaults%sectorsName = 'SNAPsectors'
+    Emisfile_defaults%units = Emis_sources_defaults%units
+    EmisFile_defaults%sector = Emis_sources_defaults%sector
+    EmisFile_defaults%country_ISO = Emis_sources_defaults%country_ISO
+    
+    EmisFiles(:) = EmisFile_defaults
 
     !2) read from global attributes in file
     !3) read from variable attributes in file
@@ -290,6 +292,7 @@ contains
           if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) EmisFiles(i)%units = Emis_sourceFiles(n)%units 
           if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) EmisFiles(i)%country_ISO = Emis_sourceFiles(n)%country_ISO
           if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) EmisFiles(i)%sector = Emis_sourceFiles(n)%sector
+          if(Emis_sourceFiles(n)%sectorsName /= Emisfile_undefined%sectorsName) EmisFiles(i)%sectorsName = Emis_sourceFiles(n)%sectorsName
        endif
     enddo
 
@@ -355,6 +358,16 @@ contains
           else ! ix<=0 
              if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
               trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
+          endif
+          if(EmisFiles(i)%sectorsName == 'SNAPsectors' .and. SECTORS_NAME == 'GNFR' .and. Emis_source(ii)%sector>0)then
+             !map to GNFR sectors
+             if(me==0)write(*,*)'mapping SNAP ',Emis_source(ii)%sector,' onto GNFR ',snap2gnfr(Emis_source(ii)%sector,1),' for '//trim(Emis_source(ii)%varname)
+             Emis_source(ii)%sector = snap2gnfr(Emis_source(ii)%sector,1) !for now we map onto only one sector
+          endif
+          if(EmisFiles(i)%sectorsName == 'GNFRsectors' .and. SECTORS_NAME == 'SNAP' .and. Emis_source(ii)%sector>0)then
+             !map to SNAP sectors
+              if(me==0)write(*,*)'mapping GNFR ',Emis_source(ii)%sector,' onto SNAP ',gnfr2snap(Emis_source(ii)%sector),' for '//trim(Emis_source(ii)%varname)
+            Emis_source(ii)%sector = gnfr2snap(Emis_source(ii)%sector)
           endif
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
