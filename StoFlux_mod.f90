@@ -49,13 +49,14 @@ contains
 
      if ( my_first_call ) then
        idepO3 = find_index('O3',DDspec(:)%name)
-       allocate(SumVPD(LIMAX,LJMAX,nSumVPD),stat=istat)
-       allocate(old_gsun(LIMAX,LJMAX,nSumVPD),stat=istat)
+       allocate(SumVPD(LIMAX,LJMAX,nSumVPD))
+       allocate(old_gsun(LIMAX,LJMAX,nSumVPD))
        do iL = 1, NLANDUSEMAX
          if ( do3se(iL)%VPDcrit > 0.0  ) then
            mapSumVPD(iL) = find_index( iL, SumVPD_LC )
          end if
        end do
+       my_first_call =.false.
      end if
 
      Sub(:)%FstO3 = 0.0

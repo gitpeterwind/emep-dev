@@ -745,7 +745,8 @@ contains
         endif
     enddo
     if(first_call)then
-       if(me==0)write(*     ,fmt)'EMTAB', 999,'TOTAL',emsum(:)
+       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
+       if(me==0 .and. NEmisFile_sources>0)write(*     ,fmt)'EMTAB', 999,'TOTAL    ',emsum(:)
        deallocate(sumemis)   
        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
     endif
