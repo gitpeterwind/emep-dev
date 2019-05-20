@@ -291,14 +291,15 @@ integer, public, save :: NEST_NHOURSAVE=3,NEST_NHOURREAD=1 ! write/read frequenc
 character(len=TXTLEN_FILE),public, target, save ::  &
   NEST_template_read_3D = 'EMEP_IN.nc',&       ! Different paths can be set here
   NEST_template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
-  NEST_template_write   = 'EMEP_OUT.nc'        ! on namelist, if needed.
+  NEST_template_write   = 'EMEP_OUT.nc',&      ! on namelist, if needed.
+  NEST_template_dump    = 'EMEP_Dump.nc'       ! on namelist, if needed.
 
 integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
               ! 0 means "do not look for old files"
 
 ! Nested input/output on OUTDATE mode
 integer,public,parameter  :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
-integer, public, save     :: NEST_OUTDATE_NDUMP     = 1  ! Read by emepctm.f90
+integer, public, save     :: NEST_OUTDATE_NDUMP     = 0  ! Read by emepctm.f90
 ! on forecast run (1: start next forecast; 2-4: NMC statistics)
 type(date), public :: NEST_outdate(OUTDATE_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
@@ -738,7 +739,8 @@ subroutine Config_Constants(iolog)
    ,DataPath&
    ,ExtraConfigFile&
    ,NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE &
-   ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write,BC_DAYS&
+   ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write&
+   ,NEST_template_dump,BC_DAYS&
    ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
    ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
    ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&

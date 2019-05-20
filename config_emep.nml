@@ -253,16 +253,19 @@
   NEST_MODE_SAVE = 'NONE',         ! do nothing
 ! NEST_MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! NEST_MODE_SAVE = 'END',          ! at end of run
-! NEST_MODE_SAVE = 'OUTDATE',      ! every OUTDATE(1:OUTDATE_NDUMP)
 ! NEST_NHOURREAD = 1,              ! hours between reads. Fraction of 24
-! NEST_NHOURSAVE = 3,              ! hours between saves. Fraction of 24
+!  NEST_NHOURSAVE = 3,              ! hours between saves. Fraction of 24
+!  NEST_OUTDATE_NDUMP = 2,          ! dump (save) 2 dates (max 4)
+!  NEST_outdate(1)= 2016,1,1,1,0    ! first date to save
+!  NEST_outdate(2)= 2016,1,1,7,0    ! second date to save
+
 !-------- File name templates for Nest I/O
   NEST_template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
   NEST_template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
-  NEST_template_write   = 'EMEP_OUT.nc',           ! if needed.
+  NEST_template_write   = 'EMEP_OUT.nc',  ! if needed.
+  NEST_template_dump   =  'EMEP_Dump.nc',          ! used at NEST_outdate
 ! NEST_template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
 ! NEST_template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
-! NEST_template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 
 !---- To save disk space, you can also indicate the domain of the inner (small) grid,
 !-----and the model will only save the BC data for that grid:

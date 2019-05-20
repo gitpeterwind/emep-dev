@@ -21,6 +21,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 May 2019, Peter
+
+Nest options have changed. The "OUTDATE_NDUMP" is now decoupled from the "MODE" 
+options and both can be used simultaneously.
+
+The "NEST_outdate" option (dump at given dates) is now chosen by:
+1) Setting NEST_OUTDATE_NDUMP to the number of dates wanted (max 4).
+2) Setting the firsts NEST_outdate accordingly
+For example:
+  NEST_OUTDATE_NDUMP = 2,          ! dump (save) 2 dates (max 4)
+  NEST_outdate(1)= 2016,1,1,3,0    ! first date to save
+  NEST_outdate(2)= 2016,1,1,7,0    ! second date to save
+
+The filename for the dumps can be defined in NEST_template_dump.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 May 2019, Peter
 
 Small bug in emis printout.
