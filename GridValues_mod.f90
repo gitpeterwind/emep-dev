@@ -337,7 +337,7 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,projection)
      status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
      if(status/=nf90_noerr) then
         print *,'not found',trim(filename)
-        call StopAll("GridValues: File not found")
+        call StopAll("GridValues: File not found:"//trim(filename))
      end if
 
      projection=''
