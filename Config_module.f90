@@ -337,6 +337,25 @@ integer, public, parameter ::       &
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
 
+! Site/Sondes (under construction. DO NOT USE!)
+integer, parameter :: MAX_NEXTRA_SITED2D=100
+type, private :: sites_t
+  integer :: freq_site = 1
+  integer :: nmax = 99
+  integer :: nadv = 0
+  integer :: nshl = 0
+  integer :: nd2d = 0
+  integer :: nmisc = 0
+  integer, allocatable, dimension(:) :: adv 
+  integer, allocatable, dimension(:) :: shl
+  integer, allocatable, dimension(:) :: d2d
+  integer, allocatable, dimension(:) :: misc
+end type sites_t
+type(sites_t) :: site_outputs, sonde_outputs
+!character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
+!   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
+
+
 type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
 type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: &
   OutputConcs = typ_s5ind("-","-","-","-","-","-")
@@ -658,6 +677,7 @@ subroutine Config_Constants(iolog)
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
+  character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -774,6 +794,11 @@ subroutine Config_Constants(iolog)
   enddo
 
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
+  if(MasterProc) then
+    write(logtxt,'(a,L2)') dtxt//'USE_SOILNOX ', USE_SOILNOX
+    write(*,*) trim(logtxt), IOLOG
+    write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
+  end if
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
