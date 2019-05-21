@@ -41,6 +41,10 @@ LocalVariables_mod - added units to PAR
 
 Rsurface_mod       - tidy up
 
+Sites_mod          - tidy up and init of site_gindex, sonde_gindex
+                     PLUS - added comma in asci output between date and hh
+                     (more libreoffice calc friendly)
+
 SmallUtils_mod     - added find_duplicates routine
 
 Solver_mod         - tidy up
