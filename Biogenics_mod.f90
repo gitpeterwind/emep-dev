@@ -590,9 +590,8 @@ module Biogenics_mod
   !ASSUME C5H8 FOR NOW if ( ibn_C5H8 > 0 ) then
     if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
-     ! Light effects from Guenther G93
+     ! Light effects from Guenther G93. Need uE:
 
-!WN      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
       par = ( PARdbh(i,j) + PARdif(i,j)  ) * Wm2_uE
 
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
