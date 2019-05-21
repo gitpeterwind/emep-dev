@@ -25,8 +25,8 @@ use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
 use Debug_module,       only: DEBUG   ! -> DEBUG%SITES
 use DerivedFields_mod,  only: f_2d, d_2d  ! not used:, d_3d
 use Functions_mod,      only: Tpot_2_T    ! Conversion function
-use GridValues_mod,     only: lb2ij, i_fdom, j_fdom &
-                              , i_local, j_local, A_mid, B_mid
+use GridValues_mod,     only: lb2ij, i_fdom, j_fdom ,debug_proc &
+                              ,i_local, j_local, A_mid, B_mid
 use Io_mod,             only: check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
@@ -132,6 +132,8 @@ subroutine sitesdef()
 
   allocate(site_gindex(0:NPROC-1,NSITES_MAX))
   allocate(sonde_gindex(0:NPROC-1,NSONDES_MAX))
+  site_gindex = -1
+  sonde_gindex= -1
 
   call Init_sites(SitesFile,IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &
@@ -214,7 +216,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   character(len=30) :: comment ! comment on site location
   character(len=40) :: errmsg
   real              :: lat,lon
-  character(len=*),parameter :: sub='SitesInit:'
+  character(len=*),parameter :: dtxt='SitesInit:'
 
   character(len=20), dimension(4) :: Headers
   type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
@@ -237,7 +239,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
   if(ios/=0)return
 
-  call CheckStop(NMAX,size(s_name), sub//"Error : sitesdefNMAX problem")
+  call CheckStop(NMAX,size(s_name), dtxt//"Error : sitesdefNMAX problem")
 
   call Read_Headers(io_num,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
@@ -261,7 +263,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     end if
 
     if (ioerr < 0) then
-      write(6,*) sub//" end of file after ", nin-1, trim(fname)
+      write(6,*) dtxt//" end of file after ", nin-1, trim(fname)
       exit SITELOOP
     end if ! ioerr
 
@@ -292,7 +294,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       end if
 
       s_name(n)  = s !!! remove comments// comment
-      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") sub//" s_name : ",&
+      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") dtxt//" s_name : ",&
             n, trim(s_name(n))
     end if
 
@@ -302,7 +304,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
 
   ! NSITES/SONDES_MAX must be _greater_ than the number used, for safety
 
-  call CheckStop(n >= NMAX, sub//"Error : increase NGLOBAL_SITES_MAX!")
+  call CheckStop(n >= NMAX, dtxt//"Error : increase NGLOBAL_SITES_MAX!")
 
   if(MasterProc) close(unit=io_num)
 
@@ -323,10 +325,10 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       s_n(nlocal) = n
 
       if (DEBUG%SITES) &
-        write(6,"(a,i3,a,2i3,3i4,a,3i4)") sub//" Site on me : ", me, &
+        write(6,"(a,i3,a,2i3,3i4,a,3i4)") dtxt//" Site on me : ", me, &
          " Nos. ", n, nlocal, s_gx(n), s_gy(n) , s_gz(n), " =>  ", &
           s_x(nlocal), s_y(nlocal), s_z(nlocal)
-        write(6,"(a,i3,a,2i3,4a)") Sub// trim(fname), me, &
+        write(6,"(a,i3,a,2i3,4a)") dtxt// trim(fname), me, &
          " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(s_n(nlocal)))
 
      end if
@@ -334,7 +336,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   end do ! nglobal
 
   ! inform me=0 of local array indices:
-  if(DEBUG%SITES) write(6,*) sub//trim(fname), " before gc NLOCAL_SITES", &
+  if(DEBUG%SITES) write(6,*) dtxt//trim(fname), " before gc NLOCAL_SITES", &
                            me, nlocal
 
   if ( .not.MasterProc ) then
@@ -342,7 +344,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     if(nlocal>0) call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, &
                                MPI_COMM_CALC, IERROR)
   else
-    if(DEBUG%SITES) write(6,*) sub//" for me =0 LOCAL_SITES", me, nlocal
+    if(DEBUG%SITES) write(6,*) dtxt//" for me =0 LOCAL_SITES", me, nlocal
     do n = 1, nlocal
       s_gindex(me,n) = s_n(n)
     end do
@@ -350,17 +352,17 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_CALC,MPISTATUS, IERROR)
       if(nloc>0) call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, 334, &
                                MPI_COMM_CALC,MPISTATUS, IERROR)
-      if(DEBUG%SITES) write(6,*) sub//" recv d ", fname, d,  &
+      if(DEBUG%SITES) write(6,*) dtxt//" recv d ", fname, d,  &
                   " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
       do n = 1, nloc
         s_gindex(d,n) = s_n_recv(n)
-        if(DEBUG%SITES) write(6,*) sub//" for d =", fname, d, &
+        if(DEBUG%SITES) write(6,*) dtxt//" for d =", fname, d, &
           " nloc = ", nloc, " n: ",  n,  " gives nglob ", s_gindex(d,n)
       end do ! n
     end do ! d
   end if ! MasterProc
 
-  if ( DEBUG%SITES ) write(6,*) sub//' on me', me, ' = ', nlocal
+  if ( DEBUG%SITES ) write(6,*) dtxt//' on me', me, ' = ', nlocal
 
 end subroutine Init_sites
 !==================================================================== >
@@ -382,22 +384,22 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
   logical, save :: my_first_call = .true.      ! for debugging
   integer                           :: d2index ! index for d_2d field access
   character(len=len(SITE_XTRA_D2D)) :: d2code  ! parameter code -- # --
-  character(len=*),parameter :: dtxt = 'siteswrt:'
+  character(len=*),parameter :: dtxt = 'siteswrt_surf:'
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out  ! for output, local node
 
   if ( DEBUG%SITES ) then
-    write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me
+    write(6,*) dtxt//"nlocal ", nlocal_sites, " on me ", me
     do i = 1, nlocal_sites
-      write(6,*) "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
+      write(6,*) dtxt//"x,y ",site_x(i),site_y(i),&
                   site_z(i)," me ", me
     end do
 
     if ( MasterProc ) then
       write(6,*) "======= site_gindex ======== sitesdef ============"
       do n = 1, nglobal_sites
-        !write(6,'(a12,i4,2x,80(i4,:))') "sitesdef ", n, &
-        write(6,'(a12,i4,2x,200i4)') "sitesdef ", n, &
+        write(6,*) dtxt//"def ", n, NPROC, (site_gindex(d,n),d=0,4)
+        write(6,'(a12,i4,2x,200i4)') dtxt//"def ", n, &
                 (site_gindex(d,n),d=0,NPROC-1)
       end do
       write(6,*) "======= site_end    ======== sitesdef ============"
@@ -412,7 +414,6 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
     ix = site_x(i)
     iy = site_y(i)
     iz = site_z(i)
-    !if( iz == 0 ) iz = 20   ! If ZERO'd, skip surface correction
     if( iz == 0 ) iz = KMAX_MID  ! If ZERO'd, skip surface correction
 
     i_Att=0
@@ -466,7 +467,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         !call CheckStop(d2index<1,"SITES D2D NOT FOUND"//trim(d2code))
         if(d2index<1) then
           if(MasterProc.and.my_first_call) &
-            write(*,*) "WARNING: SITES D2D NOT FOUND"//trim(d2code)
+            write(*,*) dtxt//"WARNING: D2D NOT FOUND"//trim(d2code)
           !cycle
           out(nn,i) = NF90_FILL_DOUBLE
           i_Att=i_Att+1
@@ -478,10 +479,10 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         end if
 
         if( DEBUG%SITES ) &
-          write(6,"(a,3i4,a15,i4,es10.3)") dtxt//"DEBUG ", me, nn, i,&
+          write(6,"(a,3i4,a15,i4,es12.3)") dtxt//"D2DEBUG ", me, nn, i,&
             " "//trim(d2code), d2index, out(nn,i)
         call CheckStop( abs(out(nn,i))>1.0e99, &
-          "ABS(SITES OUT: '"//trim(SITE_XTRA_D2D(ispec))//"') TOO BIG" )
+          dtxt//"ABS(SITES OUT: '"//trim(SITE_XTRA_D2D(ispec))//"') TOO BIG" )
       end do
     end if
   end do
@@ -758,7 +759,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
       write(io_num,'(i3,a)') size(s_species), " Variables units: ppb"
       !MV write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
-      write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
+      !MAY2019 write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
+      write(io_num,'(9999a)')"site,date,hh", (",", (trim(s_species(i)) ),i=1,size(s_species))
 
       !defintions of file for NetCDF output
       select case(fname)
@@ -912,7 +914,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       !! Oct 2012 Formatting changed (DS,AMV) for gfortran compliance
       !! and compactness. 
       write (io_num,'(a,9999(:,",",es10.3))') & 
-           trim(s_name(n)) // date2string(", DD/MM/YYYY hh:00",current_date),& 
+           !MAY2019 trim(s_name(n)) // date2string(", DD/MM/YYYY hh:00",current_date),& 
+           trim(s_name(n)) // date2string(", DD/MM/YYYY,hh:00",current_date),& 
            ( g_out(ii,n), ii =1, nout ) 
       ! (The ':' format control item will stop processing once the g_out
       !  is done, avoiding runtime warnings.)
