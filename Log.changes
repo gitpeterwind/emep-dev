@@ -25,17 +25,29 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Smal tidy-ups and helper code
 
-Biogenics_mod - tidy up
+Biogenics_mod      - tidy up
 
-Config_module - added logtxt to write out USE_SOILNOx settings
+Config_module      - added logtxt to write out USE_SOILNOx settings
 
-DO3SE_mod - added BUGGY to highlight current bug. FIX before release (->rv4.33)
-            plus tidy up
+DO3SE_mod          - added BUGGY to highlight current bug. 
+                     *** FIX before release (->rv4.33)
+                     plus tidy up
 
-GridValues_mod - added fname to error message (it helps!)
+DryDep_mod         - tidy up
 
-StoFlux_mod - tidy up (Massimo's query inspired). FOUND BUG - for global
+GridValues_mod     - added fname to error message (it helps!)
+
+LocalVariables_mod - added units to PAR 
+
+Rsurface_mod       - tidy up
+
+SmallUtils_mod     - added find_duplicates routine
+
+Solver_mod         - tidy up
+
+StoFlux_mod        - tidy up (Massimo's query inspired). FOUND BUG - for global
   runs - should change reset to reflect local time, not jd.
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 May 2019, Peter
