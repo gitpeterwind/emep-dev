@@ -33,6 +33,11 @@ Config_module:
       (Very useful if also debugging use of ExtraConfig)
    - added associate_File usage for NEST_MET_inner, to allow DataDir
 
+PhyChem_mod - added units to PAR
+
+My_Outputs_mod: added use of find_duplicates
+                started correction of met outputs (Bosco-inspired)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 May 2019, Dave
 
