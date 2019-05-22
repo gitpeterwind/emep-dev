@@ -37,7 +37,7 @@ use Gravset_mod,       only: gravset
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
-                            PARdbh, PARdif, fCloud, & !WN17
+                            PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
                             zen,coszen,Idirect,Idiffuse
 use My_Outputs_mod ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
