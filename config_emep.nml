@@ -595,7 +595,7 @@ OutputVegO3=
     'FstO3'
   MET_LCS = 
     'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
-  Mosaic_timefmt = 'YMD'
+  Mosaic_timefmt = 'YMD',
 
 !restrict size of output files. (Sizes defined with respect to fulldomain)
 !    fullrun_DOMAIN = 1,100,1,100 ,
@@ -611,6 +611,7 @@ OutputVegO3=
 ! num_lev3d=8,lev3d_from_surface=T,lev3d=1,2,3,4,6,9,10,12, ! CAMS50 levels
 !spinup_enddate = 2016,01,02,00,!example spinup period
 
+  LAST_CONFIG_LINE = 'End of standard nml'
 &end
 
 !----------------------------------------

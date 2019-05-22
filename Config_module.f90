@@ -47,6 +47,11 @@ public :: Config_Constants
 CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
 CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
 
+! It is quite easy to end config files accidently through e.g. an extra
+! & from a fortran comment. We place a marker at the end of the (first-called)
+! config file, and test for this.
+CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE="NOTSET"
+
 ! EMEP daily measurements end at 6am, hence we typically adjust
 ! for that. For global though, zero would be more normal
   integer, save, public :: END_OF_EMEPDAY = 6 ! 
@@ -770,28 +775,18 @@ subroutine Config_Constants(iolog)
    ,NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt&
    ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN&
    ,hour_DOMAIN, out_startdate, spinup_enddate&
-   ,num_lev3d,lev3d,lev3d_from_surface
+   ,num_lev3d,lev3d,lev3d_from_surface&
+   ,LAST_CONFIG_LINE 
 
   DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
+  if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
+
   
-!before any conversion, read the additional namelists
-  do i = 1, size(ExtraConfigFile)
-     if(ExtraConfigFile(i)/="NOTSET")then
-        !NB: replacements have not been made yet
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
-        if(MasterProc)&
-         write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
-        open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
-        read(IO_tmp,NML=Model_config)
-        close(IO_tmp)
-     endif
-  enddo
+!DS EXTRA CONFIG STUFF MOVED from here !EEEEEEEEEEEEEEEEEEEEEEEEE
 
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
@@ -814,6 +809,7 @@ subroutine Config_Constants(iolog)
 
   if(MasterProc)then
     write(*, * ) dtxt//"NAMELIST START "
+    write(*,*)   dtxt//"LAST LINE after 1st config:"//trim(LAST_CONFIG_LINE)
     write(iolog,*) dtxt//"NAMELIST IS "
     write(iolog, NML=Model_config)
   end if
@@ -838,6 +834,28 @@ subroutine Config_Constants(iolog)
       exit
     end if
   end do
+
+!DS moved ExtraConfig here to make use of DataDir EEEEEEEEEEEEEEEEEEEEEEEEE
+!before any conversion, read the additional namelists
+  do i = 1, size(ExtraConfigFile)
+     if(ExtraConfigFile(i)/="NOTSET")then
+        !NB: replacements have not been made yet
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
+        if(MasterProc) then
+         write(*,*) dtxt//'Also reading namelist ',i,trim(ExtraConfigFile(i))
+         write(*,*) dtxt//"LAST LINE:"//trim(LAST_CONFIG_LINE) ! for debugs
+         write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
+        end if
+        open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
+        read(IO_tmp,NML=Model_config)
+        if(MasterProc) write(*,*) dtxt//'DataPath ExtraConf:', i, trim(DataPath(1))
+        close(IO_tmp)
+     endif
+  enddo
+  if(MasterProc) write(*,*) dtxt//"LAST LINE final:"//trim(LAST_CONFIG_LINE)
+!EEEEEEEEEEEEEEEEEEEEEEEEE
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
@@ -894,6 +912,7 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_read_3D)
   call associate_File(NEST_template_read_BC)
   call associate_File(NEST_template_write)
+  call associate_File(NEST_MET_inner) !DSMAY21
   call associate_File(filename_eta)
 
   do i = 1, size(Emis_sourceFiles)

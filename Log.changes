@@ -21,6 +21,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 May 2019, Dave
+
+Config_module:
+
+   - moved ExtraConfig replacements (key2str) later in Config, so that
+      DataDir is set correctly. (See EEEEEE bits)
+   - added LAST_CONFIG_LINE - a variable which can be added to the end of
+      configs (or actually anywhere), to allow the user to check that
+      the full config was actually read. 
+      (Very useful if also debugging use of ExtraConfig)
+   - added associate_File usage for NEST_MET_inner, to allow DataDir
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 May 2019, Dave
 
 Smal tidy-ups and helper code
