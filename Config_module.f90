@@ -349,6 +349,32 @@ end type sites_t
 type(sites_t) :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
+integer, public, parameter :: &
+   NSITES_MAX =        99     & ! Max. no surface sites allowed
+  ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
+  ,NADV_SITE  = NSPEC_ADV     & ! No. advected species (1 up to NSPEC_ADV)
+  ,NSHL_SITE  =        1      & ! Bosco OH NSPEC_SHL     & ! No. short-lived species
+  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
+!Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+
+!These variables must have been set in My_Derived for them to be used.
+character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
+  SITE_XTRA_D2D=[character(len=24):: &
+    "HMIX","PSURF", & ! Bosco skip: "ws_10m","rh2m",&
+    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
+    "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
+    'WDEP_PREC',&!''SNratio',&
+    'met2d_uref','met2d_u10', 'met2d_v10','met2d_rh2m', &
+    !'met2d_SMI1', 'met2d_SMI3',&
+    'met2d_SMI_uppr', 'met2d_SMI_deep',&
+    'met2d_ustar_nwp', 'met2d_LH_Wm2', 'met2d_SH_Wm2',&
+    !BB 'SMI_deep','met2d_SMI_d','SMI_uppr','met2d_SMI_s',&
+!Boscso Extra: +5
+    !BB'USTAR_NWP', 
+    'USTAR_DF','INVL_DF', &
+    'met2d_PARdbh', 'met2d_PARdif' &
+]
 
 
 type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()

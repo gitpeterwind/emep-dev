@@ -5,23 +5,26 @@ use Config_module,     only: num_lev3d, MasterProc, runlabel1,&
                              FREQ_HOURLY, END_OF_EMEPDAY, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, &
                              IOU_HOUR_INST, IOU_MAX_MAX, HOURLYFILE_ending, &
-                             startdate, enddate, out_startdate, USE_uEMEP, USES
+                             startdate, enddate, out_startdate, USE_uEMEP, USES&
+                             ,SITE_XTRA_D2D
 use Debug_module,       only: DEBUG => DEBUG_OUTPUTCHEM
 use Derived_mod,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
                             ,wanted_iou, ResetDerived
 use DerivedFields_mod,  only: f_2d, d_2d, f_3d, d_3d
 use GridValues_mod,     only: debug_proc ,debug_li, debug_lj
-use My_Outputs_mod,     only: NBDATES, wanted_dates_inst,            &
+use My_Outputs_mod,     only:    &
                              Ascii3D_WANTED
 use Io_mod,             only: IO_WRTCHEM, IO_TMP, datewrite
 use NetCDF_mod,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
 use OwnDataTypes_mod,   only: Deriv, print_deriv_type, TXTLEN_FILE
 use Par_mod,            only: LIMAX, LJMAX, me
+use SmallUtils_mod,     only: find_duplicates
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
-                             ,daynumber,add2current_date
+                             ,daynumber,add2current_date,date
 use TimeDate_ExtraUtil_mod,only: date2string, date_is_reached
 use uEMEP_mod,          only: out_uEMEP
+use Units_mod,          only: Init_Units
 
 implicit none
 
@@ -30,6 +33,12 @@ public :: Wrtchem
 public :: Output_fields   ! (iotyp)
 public :: Output_f2d      ! (iotyp, dim, nav, def, dat)
 public :: Output_f3d      ! (iotyp, dim, nav, def, dat)
+public :: set_output_defs
+
+!*** wanted binary dates... specify days for which full binary
+!    output is wanted. Replaces the hard-coding which was in wrtchem:
+integer, public, parameter :: NBDATES = 3
+type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
 
 contains
 
@@ -280,5 +289,27 @@ subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
   end do       ! component loop
 
 end subroutine Output_f3d
+
+
+
+subroutine set_output_defs
+  implicit none
+  character(len=144) :: errmsg   ! Local error message
+  character(len=*), parameter :: dtxt = 'OutputChem:set:' ! debug txt
+
+  call Init_Units()
+  
+  ! Safety checks for common mistakes:
+  errmsg = find_duplicates(SITE_XTRA_D2D)
+  call CheckStop ( errmsg /= 'no', dtxt//' Duplicate SITE_XTRA_D2D'//errmsg)
+
+  !*** Wanted dates for instantaneous values output:
+  !    specify months,days,hours for which full output is wanted.
+  wanted_dates_inst(1) = date(-1,1,1,0,0)
+  wanted_dates_inst(2) = date(-1,1,1,3,0)
+  wanted_dates_inst(3) = date(-1,1,1,6,0)
+
+endsubroutine set_output_defs
+
 
 endmodule OutputChem_mod

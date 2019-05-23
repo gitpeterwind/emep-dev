@@ -8,13 +8,9 @@ module  My_Outputs_mod
 ! Hourly - ascii output of selected species, selcted domain
 ! -----------------------------------------------------------------------
 
-use CheckStop_mod,      only: CheckStop
 use ChemDims_mod,       only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod
-use Debug_module,       only: DEBUG   ! -> DEBUG%COLSRC and POLLEN
-use SmallUtils_mod,     only: find_duplicates
-use TimeDate_mod,       only: date
-use Units_mod,          only: Init_Units
+
 
 implicit none
 
@@ -126,36 +122,7 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
   SONDE_XTRA= [character(len=10):: &
    "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
 
-!   can access d_3d fields through index here, by
-!   setting "D3D" above and say D3_XKSIG12 here:
-
-!*** wanted binary dates... specify days for which full binary
-!    output is wanted. Replaces the hard-coding which was in wrtchem:
-integer, public, parameter :: NBDATES = 3
-type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
-
-!================================================================
-
-public :: set_output_defs
 
 contains
 
-subroutine set_output_defs
-  implicit none
-  character(len=144) :: errmsg   ! Local error message
-  character(len=*), parameter :: dtxt = 'My_Out:set:' ! debug txt
-
-  call Init_Units()
-  
-  ! Safety checks for common mistakes:
-  errmsg = find_duplicates(SITE_XTRA_D2D)
-  call CheckStop ( errmsg /= 'no', dtxt//' Duplicate SITE_XTRA_D2D'//errmsg)
-
-  !*** Wanted dates for instantaneous values output:
-  !    specify months,days,hours for which full output is wanted.
-  wanted_dates_inst(1) = date(-1,1,1,0,0)
-  wanted_dates_inst(2) = date(-1,1,1,3,0)
-  wanted_dates_inst(3) = date(-1,1,1,6,0)
-
-endsubroutine set_output_defs
 endmodule My_Outputs_mod
