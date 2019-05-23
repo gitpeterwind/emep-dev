@@ -553,11 +553,11 @@ subroutine checkNewFFrecord(ymdh, ncFileID,fname,new,nstart)
   if ( monthlyEmis ) nstart = ymdh(2) !AUG
   if(nstart/=record_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) then
-      write(*,'(a,3f8.1,2i5,f8.1)') dtxt//" ncday???    ",&
+      write(*,'(a,2f8.1,3i5,f8.1)') dtxt//" ncday???    ",&
           ncday(0), ncday(1), persistence, nstart,record_old, fdays(nstart)
-      write(*,'(a,2i6,a,2f8.1)') dtxt//" new record: ",&
-        nstart,record_old,nctime2string("(YYYY-MM-DD hh:mm)",&
-          fdays(nstart)), fdays(nstart), persistence
+      write(*,'(a,2i6,a,f8.1,i4)') dtxt//" new record: ", nstart,&
+        record_old, nctime2string("(YYYY-MM-DD hh:mm)",fdays(nstart)), &
+         fdays(nstart), persistence
     end if
     if((fdays(nstart)<ncday(0)).or.(fdays(nstart)>=(ncday(1)+1.0)))then
       if(MasterProc)then
