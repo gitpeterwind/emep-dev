@@ -64,7 +64,7 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D=[character(len=24):: &
     "HMIX","PSURF", & ! Bosco skip: "ws_10m","rh2m",&
-    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatBIOTERP",&
+    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
     "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
     'WDEP_PREC',&!''SNratio',&
     'met2d_uref','met2d_u10', 'met2d_v10','met2d_rh2m', &

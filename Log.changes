@@ -21,6 +21,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2019, Dave
+
+CellMet_mod - adding dtxt and tidy-up
+
+Debug_mod - made DEBUG%SUBMET as integer, allowing eg dbg for iL==2
+            (deleted DEBUG_SUBMET)
+
+GridValulues - more dtxt and output. Replace me==0 by MasterProc: ie emep-style ;-)
+
+SubMet_mod - use DEBUG%SUBMET and tidy-up
+
+ZD_OZONE/My_Outputs - corrected BIOTERP to TERP
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2019, Alvaro
 
 remove old style hourly output (My_Outputs_mod), see #142
