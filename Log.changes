@@ -21,6 +21,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2019, Dave
+
+ForestFire_mod - fixed some output formats wehn debug activated
+
+utils/Rd_csvsites.f90 - re-coded to cope with comma in new date, hh format
+ (Should update python version too!)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 May 2019, Dave
 
 Config_module:
