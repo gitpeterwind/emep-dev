@@ -13,7 +13,8 @@ use My_Outputs_mod, only : &  ! for sitesout
       FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
       NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, & 
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, & 
-      FREQ_SONDE, to_ug_ADV
+      FREQ_SONDE
+use Units_mod,          only: to_ug_ADV
 
 use CheckStop_mod,      only: CheckStop, StopAll
 use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV

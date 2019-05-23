@@ -6,7 +6,6 @@
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
@@ -52,7 +51,6 @@
   EmisDir               ='DataDir/Emis_TNO7_MACCIII',
   emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = T,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = T,          ! Used for forecasts usually

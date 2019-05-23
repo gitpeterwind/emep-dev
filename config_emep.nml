@@ -13,14 +13,12 @@
 
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 !NB: set the path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
   EXP_NAME              = 'EMEPSTD',
-  MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 
 !additional config (will overwrite config from config_emep.nml)
@@ -137,7 +135,6 @@
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)

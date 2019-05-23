@@ -1,6 +1,5 @@
 &OutputConcs_config
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
-!--MY_OUTPUTS=="MACC_POL": hourly D2D output
 OutputConcs= 
   'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
 ! 'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',

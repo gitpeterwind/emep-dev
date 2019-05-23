@@ -12,10 +12,6 @@ module NetCDF_mod
 !for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will
 !be wrong
 !
-use My_Outputs_mod,     only : NHOURLY_OUT, &        ! No. outputs
-                              Asc2D, hr_out, &      ! Required outputs
-                              LEVELS_HOURLY, NLEVELS_HOURLY
-                              !NML SELECT_LEVELS_HOURLY
 use Chemfields_mod,     only : xn_shl,xn_adv
 use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
 use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
@@ -24,12 +20,11 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              ,MasterProc, NETCDF_DEFLATE_LEVEL &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
                              ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
-                             ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
+                             ,IOU_HOUR,IOU_HOUR_INST &
                              ,PT,Pref,NLANDUSEMAX, model&
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
                              ,SurfacePressureFile &
-                             ,SELECT_LEVELS_HOURLY&  ! NML
                              , num_lev3d,lev3d&      ! 3D levels on 3D output
                              , startdate, step_main
 use Country_mod,        only : NLAND, Country
@@ -72,16 +67,16 @@ implicit none
 
 character(len=TXTLEN_FILE), save :: &
   fileName      = 'NotSet',&
-  fileName_iou(IOU_INST:IOU_HOUR_EXTRA)=&
+  fileName_iou(IOU_INST:IOU_HOUR_INST)=&
     ['out_inst.nc    ','out_year.nc    ','out_month.nc   ','out_day.nc     ',&
-     'out_hour.nc    ','out_hourInst.nc','out_3Dhour.nc  ']
+     'out_hour.nc    ','out_hourInst.nc']
 character(len=125) :: period_type !TESTHH
 
 integer,parameter ::closedID=-999     !flag for showing that a file is closed
 integer      :: ncFileID_new=closedID  !don't save because should always be
                 !redefined (in case several routines are using ncFileID_new
                 !with different filename_given)
-integer,save :: ncFileID_iou(IOU_INST:IOU_HOUR_EXTRA)=closedID
+integer,save :: ncFileID_iou(IOU_INST:IOU_HOUR_INST)=closedID
 integer,save :: outCDFtag=0
 !CDF types for output:
 integer, public, parameter  :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5
@@ -531,13 +526,6 @@ case(IOU_HOUR_INST)
   i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
-case(IOU_HOUR_EXTRA)
-  fileName_iou(iotyp) = trim(fileName)
-  period_type = 'hourly'
-  i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
-  IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
-  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
-  KMAXcdf =min(maxval(hr_out(1:NHOURLY_OUT)%nk),NLEVELS_HOURLY)
 case(IOU_INST)
   fileName_iou(iotyp) = trim(fileName)
   period_type = 'instant'
@@ -547,15 +535,8 @@ end select
 
 if(MasterProc.and.DEBUG_NETCDF)&
   write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
-if(iotyp/=IOU_HOUR_EXTRA)then
-  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                        num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
-elseif(SELECT_LEVELS_HOURLY)then     ! Output selected model levels
-  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                        KMAXcdf,KLEVcdf=LEVELS_HOURLY)
-else
-  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf)
-end if
+call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
+                      num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
 
 if(MasterProc.and.DEBUG_NETCDF)&
   write(*,*) "Finished Init_new_netCDF", trim(fileName),' ',trim(period_type)
@@ -1161,7 +1142,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
     domain = month_DOMAIN
   case(IOU_DAY)
     domain = day_DOMAIN
-  case(IOU_HOUR:IOU_HOUR_EXTRA)
+  case(IOU_HOUR:IOU_HOUR_INST)
     domain = hour_DOMAIN
   end select
   if(present(out_DOMAIN)) domain = out_DOMAIN
@@ -1313,7 +1294,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   case(IOU_GIVEN)
     fileName = trim(fileName_given)
     ncFileID = ncFileID_new
-  case(IOU_INST:IOU_HOUR_EXTRA)
+  case(IOU_INST:IOU_HOUR_INST)
     fileName = trim(fileName_iou(iotyp_new))
     ncFileID = ncFileID_iou(iotyp_new)
   case default
@@ -1343,7 +1324,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
       select case(iotyp_new)      ! needed in case iotyp is defined
       case(IOU_GIVEN)
         ncFileID_new  = ncFileID  ! not really needed
-      case(IOU_INST:IOU_HOUR_EXTRA)
+      case(IOU_INST:IOU_HOUR_INST)
         ncFileID_iou(iotyp_new)=ncFileID
       end select
     end if
@@ -1849,7 +1830,7 @@ subroutine CloseNetCDF
   integer :: i,ncFileID
 
   if(MasterProc)then
-    do i=IOU_INST,IOU_HOUR_EXTRA
+    do i=IOU_INST,IOU_HOUR_INST
       ncFileID=ncFileID_iou(i)
       if(ncFileID/=closedID)then
         call check(nf90_close(ncFileID))

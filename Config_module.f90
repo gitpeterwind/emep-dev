@@ -33,19 +33,12 @@ public :: Config_Constants
 !  FORECAST    Forecast run, MACC-ENS hourly output & BC
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
-!
-! We separate the concept of exp_name and the
-! variable used to set the type of output in My_outputs_mod.
-! The longer term solution puts the outputs into namelists
-! but for now we use the MY_OUTPUTS flag. EXP_NAME can
-! now be anything descriptive.
 
 !integer, public, parameter :: &
 !  TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
 !  TXTLEN_FILE = 200    ! large enough for paths from namelists
 
 CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
-CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
 
 ! It is quite easy to end config files accidently through e.g. an extra
 ! & from a fortran comment. We place a marker at the end of the (first-called)
@@ -215,10 +208,7 @@ logical, public, save ::             &
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
-!
-! Output flags
- ,SELECT_LEVELS_HOURLY  = .false.    & ! for 3DPROFILES
- ,ZERO_ORDER_ADVEC  = .false.        & ! force zero order horizontal and vertical advection
+ ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
@@ -607,9 +597,7 @@ real, public :: Pref   = 101325.0  ! Reference pressure in Pa used to define ver
 !                         refer to output variables defined in My_Outputs_mod.
 integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
-  IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
-  IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
-  !IOU_MAX_MAX hardcoded in OwnDataTypes: please modify consistently!
+  IOU_MAX_MAX=6                             ! Max values for of IOU (for array declarations)
 
 character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
@@ -694,12 +682,11 @@ subroutine Config_Constants(iolog)
    ,YieldModifications &  ! Allows dynamic change of chemical yields
    ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,DEBUG  & !
-   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, TFMM
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. 3DPROFILES
+   ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values

@@ -14,7 +14,6 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
 &end
 !------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
@@ -30,8 +29,6 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
   EMEP_EuroBVOCFile     = 'DataDir/EMEP_EuroBVOC.nc',
 !------------------------------
   EXP_NAME              = 'EMERGENCY',
-  MY_OUTPUTS            = '', ! defined in config_Outputs
-! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
   EmBio%GlobBvocMethod  = 'GLC-CLM', ! default for GLOBAL runs, not used for Europe
   EmBio%CLF             =  0.59,     ! 1/1.7 for CLM
@@ -73,7 +70,6 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
 !------------------------------
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   USES%PreADV            = T,          ! Distribute point-source before advection
   USES%NOCHEM            = T,          ! Turns off chemistry

@@ -39,7 +39,7 @@ use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
                             zen,coszen,Idirect,Idiffuse
-use My_Outputs_mod ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
+use My_Outputs_mod ,   only: FREQ_SITE, FREQ_SONDE
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
                              tim_before, tim_before0, tim_after
 use NetCDF_mod,        only: ReadField_CDF,Real4

@@ -6,7 +6,6 @@
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
@@ -61,7 +60,6 @@
   emis_inputlist(2)%type= 'DMS',
   SecEmisOutPoll(1:)    = 'pm25','nox',
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH              = F,          ! Used for forecasts and Status 2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD              = F,          ! Used for forecasts usually
