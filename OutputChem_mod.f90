@@ -13,8 +13,6 @@ use Derived_mod,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,wanted_iou, ResetDerived
 use DerivedFields_mod,  only: f_2d, d_2d, f_3d, d_3d
 use GridValues_mod,     only: debug_proc ,debug_li, debug_lj
-use My_Outputs_mod,     only:    &
-                             Ascii3D_WANTED
 use Io_mod,             only: IO_WRTCHEM, IO_TMP, datewrite
 use NetCDF_mod,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
 use OwnDataTypes_mod,   only: Deriv, print_deriv_type, TXTLEN_FILE
@@ -252,7 +250,6 @@ subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
             call datewrite("SnapEmis-Output_f2d Emis", iotyp, (/ dat(icmp,debug_li,debug_lj,my_iotyp) /) )
           end if
         end if
-
       call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,my_iotyp),scale,&
                       create_var_only=Init_Only)
     end if     ! wanted

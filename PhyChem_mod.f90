@@ -23,7 +23,7 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_EtaCOORDINATES,JUMPOVER29FEB&
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
-                           ,fileName_O3_Top
+                           ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
 use Debug_module,      only: DEBUG   ! -> DEBUG%GRIDVALUES
@@ -39,7 +39,6 @@ use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
                             zen,coszen,Idirect,Idiffuse
-use My_Outputs_mod ,   only: FREQ_SITE, FREQ_SONDE
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
                              tim_before, tim_before0, tim_after
 use NetCDF_mod,        only: ReadField_CDF,Real4

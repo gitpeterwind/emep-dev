@@ -594,6 +594,12 @@ OutputVegO3=
     'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
   Mosaic_timefmt = 'YMD',
 
+!sites sondes:
+  SITE_SHL_names(1:) = 'OH',
+  SONDE_SHL_names(1:) = 'OH',
+  SONDE_ADV_names(1:) = 'O3','NO2','NO','PAN','NO3_c','NO3_f','SO4','NH4_f','NH3',
+
+
 !restrict size of output files. (Sizes defined with respect to fulldomain)
 !    fullrun_DOMAIN = 1,100,1,100 ,
 !    month_DOMAIN =   100,300,1,100 ,
@@ -610,39 +616,3 @@ OutputVegO3=
 
   LAST_CONFIG_LINE = 'End of standard nml'
 &end
-
-!----------------------------------------
-!Older DDEP_WANTED stuff.
-   !'SO2      ','SPEC ','mgS',
-!   'SO4      ','SPEC ','mgS',
-!   'SS       ','GROUP','mg ',
-!   'HONO     ','SPEC ','mgN',
-!   'NO3_F    ','SPEC ','mgN',
-!   'NO3_C    ','SPEC ','mgN',
-!   'NH4_F    ','SPEC ','mgN',
-!   'NH3      ','SPEC ','mgN',
-!   'SEASALT_F','SPEC ','mg ',
-!   'SEASALT_C','SPEC ','mg ',
-!-- Emergency: Nuclear accident (5 entries)
-   !'CS137    ','SPEC ','mBq',
-   !'I131     ','SPEC ','mBq',
-   !'SR90     ','SPEC ','mBq',
-   !'KR85     ','SPEC ','mBq',
-   !'NUCRACT  ','GROUP','mBq',
-   !'XE131    ','SPEC ','mBq',
-   !'NUC      ','GROUP','mBq',
-!-- EnsClim extra
-!   'SO2      ','SPEC' ,'mgS',
-!   'SO4      ','SPEC' ,'mgS',
-!   'NH3      ','SPEC' ,'mgN',
-!   'NH4_F    ','SPEC' ,'mgN',
-!   'NO2      ','SPEC' ,'mgN',
-!   'HNO3     ','SPEC' ,'mgN',
-!   'HONO     ','SPEC' ,'mgN',
-!   'PAN      ','SPEC' ,'mgN',
-!   'MPAN     ','SPEC' ,'mgN',
-!   'NO3_F    ','SPEC' ,'mgN',
-!   'NO3_C    ','SPEC' ,'mgN',
-!   'SEASALT_F','SPEC' ,'mg ',
-!   'SEASALT_C','SPEC' ,'mg ',
-!----------------------------------------

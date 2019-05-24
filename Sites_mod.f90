@@ -6,23 +6,23 @@ module Sites_mod
 ! files "sites.dat" and "sondes.dat"
 !
 ! -----------------------------------------------------------------------
-use My_Outputs_mod, only : &  ! for sitesout
-      NSITES_MAX, &
-      NADV_SITE, NSHL_SITE, NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
-      SITE_ADV, SITE_SHL, SITE_XTRA_MISC, SITE_XTRA_D2D, &
-      FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
-      NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, & 
-      SONDE_ADV, SONDE_SHL, SONDE_XTRA, & 
-      FREQ_SONDE
 use Units_mod,          only: to_ug_ADV
 
 use CheckStop_mod,      only: CheckStop, StopAll
 use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
+use ChemFunctions_mod,  only: Chem2Index_adv, Chem2Index
 use ChemSpecs_mod
 use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
                               ,RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
-                              ,SitesFile,SondesFile,KMAX_BND,PT, NPROC
+                              ,SitesFile,SondesFile,KMAX_BND,PT, NPROC,&  ! for sitesout
+                              SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names,&
+      NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
+      SITE_XTRA_MISC, SITE_XTRA_D2D, &
+      FREQ_SITE, &
+      NXTRA_SONDE, & 
+       SONDE_XTRA, & 
+      FREQ_SONDE
 use Debug_module,       only: DEBUG   ! -> DEBUG%SITES
 use DerivedFields_mod,  only: f_2d, d_2d  ! not used:, d_3d
 use Functions_mod,      only: Tpot_2_T    ! Conversion function
@@ -64,7 +64,8 @@ private :: set_species      ! Sets species/variable names for output
 private :: siteswrt_out     ! Collects output from all nodes and prints
 
 
-! some variables used in following subroutines
+integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
+integer, public, parameter ::  NSITES_MAX = 99 ! Max. no surface sites allowed
 
 integer, public, save :: nglobal_sites, nlocal_sites
 integer,private, save :: nglobal_sondes, nlocal_sondes
@@ -90,28 +91,32 @@ integer, private, save, dimension (NSONDES_MAX) ::  &
 real, public, save, dimension (NSONDES_MAX) :: &
   Sondes_lon= -999, Sondes_lat= -999, ps_sonde=0.0
 
-! Values from My_Outputs_mod gives ... =>
-integer, private, parameter :: & ! Total No., without counting levels
-   NSPC_SITE  = NADV_SITE + NSHL_SITE + NXTRA_SITE_MISC + NXTRA_SITE_D2D &
-  ,NSPC_SONDE = NADV_SONDE + NSHL_SONDE + NXTRA_SONDE
-integer, public, parameter :: & ! Total No., levels included
-   NOUT_SITE  = NSPC_SITE * 1 &
-  ,NOUT_SONDE = NSPC_SONDE* NLEVELS_SONDE
+integer, private :: NSPC_SITE, NOUT_SITE, NOUT_SONDE, NSPC_SONDE
 
 character(len=TXTLEN_NAME), public, save, dimension(NSITES_MAX) :: site_name
 character(len=TXTLEN_NAME), private, save, dimension(NSONDES_MAX):: sonde_name
-character(len=20), private, save, dimension(NSPC_SITE)  :: site_species
-character(len=20), private, save, dimension(NSPC_SONDE) :: sonde_species
+character(len=20), private, save, allocatable, dimension(:)  :: site_species
+character(len=20), private, save, allocatable, dimension(:)  :: sonde_species
 
 character(len=70), private :: errmsg ! Message text
 integer, private :: d                 ! processor index
 integer, private :: i, n, nloc, ioerr ! general integers
-integer, parameter, private :: &
-  Spec_Att_Size=40,N_Spec_Att_MAX=5,NSPECMAX=max(NSPC_SITE,NSPC_SONDE)
-character(len=Spec_Att_Size)  :: Spec_Att(NSPECMAX,N_Spec_Att_MAX)
+integer, parameter, private :: Spec_Att_Size=40,N_Spec_Att_MAX=5
+integer, save, private :: NSPECMAX
+character(len=Spec_Att_Size), allocatable, save  :: Spec_Att(:,:)
 integer, private :: i_Att !Spec attribute index
 integer :: NSpec_Att !number of Spec attributes defined
 
+integer, public, parameter ::  NADV_SITE  = NSPEC_ADV   ! No. advected species (1 up to NSPEC_ADV)
+integer ::isite
+integer, public, parameter, dimension(NADV_SITE) :: &
+  SITE_ADV = [(isite, isite=1,NADV_SITE)]  ! Everything
+
+integer, public :: NSHL_SITE, NADV_SONDE, NSHL_SONDE !number of requested species found
+!indices of requested and found species
+integer, public, dimension(NSPEC_SHL) :: SITE_SHL
+integer, public, dimension(NSPEC_SHL) :: SONDE_SHL
+integer, public, dimension(NSPEC_ADV) :: SONDE_ADV 
 
 contains
 
@@ -136,6 +141,31 @@ subroutine sitesdef()
   site_gindex = -1
   sonde_gindex= -1
 
+  !find indices of species
+  call Chem2Index(SITE_SHL_names,SITE_SHL,NSHL_SITE)
+  call Chem2Index(SONDE_SHL_names,SONDE_SHL,NSHL_SONDE)
+  call Chem2Index_adv(SONDE_ADV_names,SONDE_ADV,NADV_SONDE)
+  NSPC_SITE  = NADV_SITE + NSHL_SITE + NXTRA_SITE_MISC + NXTRA_SITE_D2D 
+  NOUT_SITE  = NSPC_SITE * 1 
+  NSPC_SONDE = NADV_SONDE + NSHL_SONDE + NXTRA_SONDE
+  NOUT_SONDE = NSPC_SONDE* KMAX_MID
+  NSPECMAX=max(NSPC_SITE,NSPC_SONDE)
+  if(.not.allocated(site_species))allocate(site_species(NSPC_SITE))
+  if(.not.allocated(sonde_species))allocate(sonde_species(NSPC_SONDE))
+  if(.not.allocated(Spec_Att))allocate(Spec_Att(NSPECMAX,N_Spec_Att_MAX))
+
+!could use XXX_names, instead of site_species
+  site_species(1:NADV_SITE) = species_adv(SITE_ADV(1:NADV_SITE))%name
+  site_species(NADV_SITE+1:NADV_SITE+NSHL_SITE) = &
+            species(SITE_SHL(1:NSHL_SITE))%name
+  site_species(NADV_SITE+NSHL_SITE+1:NSPC_SITE) = &
+            SITE_XTRA(1:NXTRA_SITE_MISC+NXTRA_SITE_D2D)
+  sonde_species(1:NADV_SONDE) = species_adv(SONDE_ADV(1:NADV_SONDE))%name
+  sonde_species(NADV_SONDE+1:NADV_SONDE+NSHL_SONDE) = &
+            species(SONDE_SHL(1:NSHL_SONDE))%name
+  sonde_species(NADV_SONDE+NSHL_SONDE+1:NSPC_SONDE) = &
+            SONDE_XTRA(1:NXTRA_SONDE)
+
   call Init_sites(SitesFile,IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &
         site_gindex, site_gx, site_gy, site_gz, &
@@ -148,8 +178,8 @@ subroutine sitesdef()
         sonde_x, sonde_y, sonde_z, sonde_gn, &
         sonde_name)
 
-  call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
-  call set_species(SONDE_ADV,SONDE_SHL,SONDE_XTRA,sonde_species)
+!  call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
+!  call set_species(SONDE_ADV,SONDE_SHL,SONDE_XTRA,sonde_species)
 
   if ( DEBUG%SITES ) then
      write(6,*) "sitesdef After nlocal ", nlocal_sites, " on me ", me
@@ -178,7 +208,7 @@ subroutine set_species(adv,shl,xtra,s)
   nout = size(s)                   ! Size of array to be returned
 
   s(1:nadv)    = species( NSPEC_SHL + adv(:) )%name
-  s(nadv+1:n2) = species( shl(:) )%name
+  s(nadv+1:n2) = species( shl(1:) )%name
   s(n2+1:nout) = xtra(:)
 end subroutine set_species
 !==================================================================== >
@@ -224,6 +254,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   integer                         :: NHeaders, NKeys
   character(len=80)               :: txtinput  ! Big enough to contain
                                                ! one full input record
+
 
   ios = 0                      ! zero indicates no errors
   errmsg = ''
@@ -510,13 +541,13 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
   ! Local variables
   integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
   integer ::  KTOP_SONDE 
-  integer, dimension(NLEVELS_SONDE)      :: itemp
+  integer, dimension(KMAX_MID)      :: itemp
   real, dimension(KMAX_MID)              :: pp, temp, qsat, rh, sum_PM, sum_NOy
   real, dimension(NOUT_SONDE,NSONDES_MAX):: out
 
   out=0.0
   ! Consistency check
-  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
+  KTOP_SONDE = KMAX_MID - KMAX_MID + 1
   do ispec=1,NXTRA_SONDE
     select case(SONDE_XTRA(ispec))
     case("PM25","PMco","NOy","SH","RH","roa","dz","z_mid","p_mid","Kz_m2s","th","U","V")
@@ -545,17 +576,17 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
     ! first the advected and short-lived species
     i_Att=0
     do ispec = 1, NADV_SONDE    !/ xn_adv in ppb
-      out(nn+1:nn+NLEVELS_SONDE,i) = PPBINV *  &
+      out(nn+1:nn+KMAX_MID,i) = PPBINV *  &
           xn_adv( SONDE_ADV(ispec) , ix,iy,KMAX_MID:KTOP_SONDE:-1)
-      nn = nn + NLEVELS_SONDE
+      nn = nn + KMAX_MID
       i_Att=i_Att+1
       Spec_Att(i_Att,1)='units:C:ppb'
     end do
 
     do ispec = 1, NSHL_SONDE    !/ xn_shl  in molecules/cm3
-      out(nn+1:nn+NLEVELS_SONDE,i) = xn_shl( SONDE_SHL(ispec) , &
+      out(nn+1:nn+KMAX_MID,i) = xn_shl( SONDE_SHL(ispec) , &
           ix,iy,KMAX_MID:KTOP_SONDE:-1)
-      nn = nn + NLEVELS_SONDE
+      nn = nn + KMAX_MID
       i_Att=i_Att+1
       Spec_Att(i_Att,1)='units:C:molecules/cm3'
     end do
@@ -576,7 +607,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
                         ) * roa(ix,iy,k,1)
           end do !k
 !bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
-          out(nn+1:nn+NLEVELS_SONDE,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:ug/m3'
 
@@ -588,7 +619,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
                       * roa(ix,iy,k,1)
           end do !k
 !bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
-          out(nn+1:nn+NLEVELS_SONDE,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:ug/m3'
 
@@ -598,12 +629,12 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
             sum_NOy(k) = sum(xn_adv(OXN_GROUP-NSPEC_SHL,ix,iy,k))
           end do
 !bug?          out(nn+1:nn+KMAX_MID,i) = PPBINV * sum_NOy(KMAX_MID:1:-1)
-          out(nn+1:nn+NLEVELS_SONDE,i) = PPBINV * sum_NOy(KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) = PPBINV * sum_NOy(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:mix_ratio'
 
         case("SH")   ! Specific Humidity
-          out(nn+1:nn+NLEVELS_SONDE,i) =  q(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
+          out(nn+1:nn+KMAX_MID,i) =  q(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:kg kg-1' 
 
@@ -615,56 +646,56 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
             qsat(k) = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
             rh(k) = min(q(ix,iy,k,1)/qsat(k),1.0)
           end do
-          out(nn+1:nn+NLEVELS_SONDE,i) = rh(KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) = rh(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:fraction'
 
         case("roa")
-          out(nn+1:nn+NLEVELS_SONDE,i)=roa(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)  
+          out(nn+1:nn+KMAX_MID,i)=roa(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)  
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:kg/m3'
 
         case("dz")  ! level thickness
-          out(nn+1:nn+NLEVELS_SONDE,i)=z_bnd(ix,iy,KMAX_MID+0:KTOP_SONDE+0:-1)& 
+          out(nn+1:nn+KMAX_MID,i)=z_bnd(ix,iy,KMAX_MID+0:KTOP_SONDE+0:-1)& 
                                       -z_bnd(ix,iy,KMAX_MID+1:KTOP_SONDE+1:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:m'
 
         case("z_mid")
-          out(nn+1:nn+NLEVELS_SONDE,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:m'
 
         case("p_mid")
-          out(nn+1:nn+NLEVELS_SONDE,i) = A_mid(KMAX_MID:KTOP_SONDE:-1) + &
+          out(nn+1:nn+KMAX_MID,i) = A_mid(KMAX_MID:KTOP_SONDE:-1) + &
                                     B_mid(KMAX_MID:KTOP_SONDE:-1)*ps(ix,iy,1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:Pa'
 
         case("Kz_m2s")
-          out(nn+1:nn+NLEVELS_SONDE,i) =  Kz_m2s(ix,iy,KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) =  Kz_m2s(ix,iy,KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:?/m2/s'
 
         case("th")
-          out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
+          out(nn+1:nn+KMAX_MID,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:K'
 
         case("T")
-          out(nn+1:nn+NLEVELS_SONDE,i) =  temp(KMAX_MID:KTOP_SONDE:-1)
+          out(nn+1:nn+KMAX_MID,i) =  temp(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:K'
 
         case("U")
-          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5 &
+          out(nn+1:nn+KMAX_MID,i) = 0.5 &
              *( u_xmj(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
              +u_xmj(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:m/s'
 
         case("V")
-          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5 &
+          out(nn+1:nn+KMAX_MID,i) = 0.5 &
              *( v_xmi(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
              +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
           i_Att=i_Att+1
@@ -674,7 +705,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
           call StopAll("D3D Sites out not defined")
       end select
 
-      nn=nn+NLEVELS_SONDE
+      nn=nn+KMAX_MID
     end do ! ispec (NXTRA_SONDE)
     
     ps_sonde(i)=ps(ix,iy,1)!surface pressure always needed to define the vertical levels
@@ -766,7 +797,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       !defintions of file for NetCDF output
       select case(fname)
       case("sondes")
-        NLevels=NLEVELS_SONDE !number of vertical levels (counting from surface)
+        NLevels=KMAX_MID !number of vertical levels (counting from surface)
         NSPEC=NSPC_SONDE  !number of species defined for sondes
       case("sites")
         NLevels=1
@@ -924,7 +955,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     end do
 
     if(trim(fname)=="sondes")then
-      NLevels = NLEVELS_SONDE !number of vertical levels (counting from surface)
+      NLevels = KMAX_MID !number of vertical levels (counting from surface)
       NSPEC=NSPC_SONDE!number of species defined for sondes
     else
       NLevels=1

@@ -6,7 +6,7 @@ module Config_module
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop
-use ChemDims_mod,          only: NSPEC_ADV
+use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
@@ -332,31 +332,45 @@ integer, public, parameter ::       &
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
 
-! Site/Sondes (under construction. DO NOT USE!)
-integer, parameter :: MAX_NEXTRA_SITED2D=100
-type, private :: sites_t
-  integer :: freq_site = 1
-  integer :: nmax = 99
-  integer :: nadv = 0
-  integer :: nshl = 0
-  integer :: nd2d = 0
-  integer :: nmisc = 0
-  integer, allocatable, dimension(:) :: adv 
-  integer, allocatable, dimension(:) :: shl
-  integer, allocatable, dimension(:) :: d2d
-  integer, allocatable, dimension(:) :: misc
-end type sites_t
-type(sites_t) :: site_outputs, sonde_outputs
-!character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
-!   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
+
 integer, public, parameter :: &
    NSITES_MAX =        99     & ! Max. no surface sites allowed
   ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
-  ,NADV_SITE  = NSPEC_ADV     & ! No. advected species (1 up to NSPEC_ADV)
-  ,NSHL_SITE  =        1      & ! Bosco OH NSPEC_SHL     & ! No. short-lived species
+  ,NSHL_SITE_MAX  =    10     & ! Bosco OH NSPEC_SHL     & ! No. short-lived species
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
   ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
 !Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+
+integer, private :: isite              ! To assign arrays, if needed
+
+!**** Sonde outputs   (used in Sites_mod)
+!==============================================================
+!     Specify the species to be output to the sondes.out file
+!  We typically deal with fewer species for sonde output than
+!  surface sites, so we use a different method to specify.
+! For met params we have no simple index, so we use characters.
+! These must be defined in Sites_mod.f90.
+
+integer, public, parameter :: &
+    FREQ_SONDE  =     1        &   ! Interval (hrs) between outputs
+   ,NXTRA_SONDE =    4             ! No. Misc. met. params
+
+
+! Extra parameters - need to be coded in Sites_mod also. So far
+! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.
+!  d_2d fields can be accessed from Derived_mod by setting common index
+!  "D2D" in SITE_XTRA and the actual field name (as defined in Derived_mod)
+!  in SITE_XTRA_CODE (e.g. "D2_PM25 " or "D2_SIA") :
+
+!** IMPORTANT!! Make sure the correspondence between selected for output
+!** fields in SITE_XTRA and their names in SITE_XTRA_CODE
+
+character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+  SITE_XTRA_MISC=[character(len=18):: "th","T2"]
+
+character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SONDE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
 
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
@@ -375,6 +389,29 @@ character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
     'USTAR_DF','INVL_DF', &
     'met2d_PARdbh', 'met2d_PARdif' &
 ]
+character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
+  SONDE_XTRA= [character(len=10):: &
+   "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
+
+
+
+! Site/Sondes (under construction. DO NOT USE!)
+integer, parameter :: MAX_NEXTRA_SITED2D=100
+type, private :: sites_t
+  integer :: freq_site = 1
+  integer :: nmax = 99
+  integer :: nadv = 0
+  integer :: nshl = 0
+  integer :: nd2d = 0
+  integer :: nmisc = 0
+  integer, allocatable, dimension(:) :: adv 
+  integer, allocatable, dimension(:) :: shl
+  integer, allocatable, dimension(:) :: d2d
+  integer, allocatable, dimension(:) :: misc
+end type sites_t
+type(sites_t) :: site_outputs, sonde_outputs
+!character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
+!   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
 
 type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
@@ -789,7 +826,9 @@ subroutine Config_Constants(iolog)
    ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN&
    ,hour_DOMAIN, out_startdate, spinup_enddate&
    ,num_lev3d,lev3d,lev3d_from_surface&
-   ,LAST_CONFIG_LINE 
+   ,LAST_CONFIG_LINE &
+   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names
+
 
   DataPath(1) = '.'!default
 

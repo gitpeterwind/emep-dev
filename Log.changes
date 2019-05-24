@@ -21,6 +21,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 May 2019, Peter
+
+Removed ZD_OZONE/My_Ouputs
+Content moved to Sites_mod and Config_module.f90
+Sondes and sites species can be defined in config_emep.nml
+(see example)
+It should be compatible with different Chemical schemes in the sense
+that unexisting species are accepted, but not outputted.
+All the "extras" are still hardcoded in Config_module.
+It was heavy to refactorize, because arrays are "merged" and everything was 
+hardcoded.
+It would be good to simplify the multitude of arrays 
+(SITE_SHL,SITE_ADV, XTRA_SITE_MISC, XTRA_SITE_D2D, etc..)
+Also merge with normal outputs would simplify (could simply have a new flag in our output).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2019, Dave
 
 CellMet_mod - adding dtxt and tidy-up
