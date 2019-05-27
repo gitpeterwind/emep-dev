@@ -44,6 +44,7 @@ CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
 ! & from a fortran comment. We place a marker at the end of the (first-called)
 ! config file, and test for this.
 CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE="NOTSET"
+CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 
 ! EMEP daily measurements end at 6am, hence we typically adjust
 ! for that. For global though, zero would be more normal
@@ -732,7 +733,7 @@ subroutine Config_Constants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
-  character(len=*), parameter ::  dtxt='Config_MC:'
+  character(len=*), parameter ::  dtxt='Config_MC: '
   character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
@@ -829,7 +830,7 @@ subroutine Config_Constants(iolog)
    ,LAST_CONFIG_LINE &
    ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names
 
-
+  LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
@@ -906,7 +907,12 @@ subroutine Config_Constants(iolog)
         close(IO_tmp)
      endif
   enddo
-  if(MasterProc) write(*,*) dtxt//"LAST LINE final:"//trim(LAST_CONFIG_LINE)
+  if(LAST_CONFIG_LINE==LAST_CONFIG_LINE_DEFAULT)then
+     if(MasterProc) write(*,*) dtxt//"WARNING: LAST_CONFIG_LINE not modified"
+     if(MasterProc) write(*,*) dtxt//"Probable syntax error in namelist!!!"
+  else
+     if(MasterProc) write(*,*) dtxt//"LAST LINE final:"//trim(LAST_CONFIG_LINE)
+  endif
 !EEEEEEEEEEEEEEEEEEEEEEEEE
 
   meteo = key2str(meteo,'DataDir',DataDir)
