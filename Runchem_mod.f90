@@ -270,12 +270,13 @@ subroutine runchem()
       !!  and for filter equlibration conditions (2D at surface) 
       !  T=20C and Rh=50% for comparability with gravimetric PM
 
-!      call Aero_water_MARS(i,j, debug_flag)
-
-!.. Water from EQSAM .......
-     call Aero_water     (i,j, debug_flag)  !  For real conditions (3D) 
-     call Aero_water_rh50(i,j, debug_flag)  !  Rh=50% T=20C                     
-
+      if(AERO%EQUILIB_WATER=='EQSAM')then
+         !.. Water from EQSAM .......
+         call Aero_water     (i,j, debug_flag)  !  For real conditions (3D) 
+         call Aero_water_rh50(i,j, debug_flag)  !  Rh=50% T=20C                     
+      else
+         call Aero_water_MARS(i,j, debug_flag)         
+      endif
                    
       call check_negs(i,j,'END')
       if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) then

@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 May 2019, Svetlana, (Peter)
+
+EQSAM equlibrium for PM water can be chose by config:
+AERO%EQUILIB_WATER    = 'EQSAM'
+AERO%EQUILIB          = 'EQSAM'
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 May 2019, Peter
 
 Removed ZD_OZONE/My_Ouputs

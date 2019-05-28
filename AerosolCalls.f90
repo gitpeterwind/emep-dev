@@ -52,6 +52,7 @@ contains
     
     if( my_first_call .and. MasterProc ) then
        write(*,*) 'AerosolEquilib: chosen: ',AERO%EQUILIB 
+       write(*,*) 'AerosolEquilib water: chosen: ',AERO%EQUILIB_WATER
     end if
     select case ( AERO%EQUILIB )
       case ( 'EMEP' )
@@ -422,7 +423,7 @@ contains
              gCLout(KCHEMTOP:KMAX_MID),  &
              gSO4out(KCHEMTOP:KMAX_MID), &
 
-             rlhum(KMAX_MID:KMAX_MID),tmpr(KMAX_MID:KMAX_MID)
+             rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
 
  !-----------------------------------
 
@@ -448,7 +449,7 @@ contains
  
     call EQSAM4clim (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rlhum, tmpr,  & !aH2Oin, &
                      aSO4out, aNO3out, aNH4out, aNAout, aCLout,            &
-                     gSO4out, gNH3out, gNO3out, gClout, aH2Oout, KMAX_MID, KMAX_MID)     
+                     gSO4out, gNH3out, gNO3out, gClout, aH2Oout, KCHEMTOP, KMAX_MID)     
 
  !--------------------------------------------------------------------------
 

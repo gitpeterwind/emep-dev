@@ -15,7 +15,8 @@ module AeroConstants_mod
 
    type, public :: aero_t
      ! EMEP only
-     character(len=15) :: EQUILIB  ='EQSAM'  !'MARS ' !aerosol themodynamics 
+     character(len=15) :: EQUILIB  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics 
+     character(len=15) :: EQUILIB_WATER  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics for PM water
      logical          :: DYNAMICS = .false.
      integer          :: NSIZE    = 7
      integer :: PM_F=1,SS_F=2,DU_F=3,SS_C=4,DU_C=5,PM=6  ! Will be set in GasParticleCoeffs_mod

@@ -5,6 +5,7 @@ module Config_module
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
+use AeroConstants_mod,     only: AERO
 use CheckStop_mod,         only: CheckStop
 use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
@@ -135,8 +136,6 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = .false.     &!
     ,PFT_MAPS         = .false.  &! 
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
-
-
 
  ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
@@ -741,6 +740,7 @@ subroutine Config_Constants(iolog)
    ,END_OF_EMEPDAY &
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
+   ,AERO   & ! for aerosol equilibrium scheme
    ,PBL    & ! Mar2017 testing
    ,EmBio  & ! Mar2017 testing
    ,YieldModifications &  ! Allows dynamic change of chemical yields
