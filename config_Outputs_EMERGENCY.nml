@@ -1,13 +1,15 @@
 &OutputConcs_config
-OutputMisc =
- 'PS',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'HI',
-! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,av,iotype,
+!OutputMisc=
+! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,avg,period,
 !--DEBUG gravset
 ! 'gravset_ash_1','USET','gravset_3D','ASH_1','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_4','USET','gravset_3D','ASH_4','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_7','USET','gravset_3D','ASH_7','',-99,-99,F,-99.9,T,'I',
 ! 'gravset_ash_9','USET','gravset_3D','ASH_9','',-99,-99,F,-99.9,T,'I',
-OutputConcs =
+! 'PS',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'HI',
+
+
+OutputConcs=
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I', HOUR_AVG='A'
 !SPECIAL PM25 will be sum of fine + fraction coarse
 ! 'PMFINE'            ,'ug','2d','AIR_CONCS','GROUP','I',
@@ -20,15 +22,12 @@ OutputConcs =
 ! 'ASH_F'             ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'ASH_C'             ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'ASH_G'             ,'ug','2d','AIR_CONCS','GROUP','I',
-!  'ASH'               ,'ug','3d','AIR_CONCS','GROUP','I',
-  'ASH'               ,'ug','3d','AIR_CONCS','GROUP','HA',
+! 'ASH'               ,'ug','3d','AIR_CONCS','GROUP','I',
+  'ASH'               ,'ug','3d','AIR_CONCS','GROUP','HA', ! needed for VAAC 6h average, max-level definition, generated in postprocessing
   'ASH'         ,'ugm2','kmax','COLUMN:GROUP','MISC','HI',
-! 6h max between surface and 20.000 feet
-  'ASH'    ,'ug','fl000-200','FLYmax6h:GROUP','MISC','I', 
-! 6h max between 20.000  and 35.000 feet
-  'ASH'    ,'ug','fl200-350','FLYmax6h:GROUP','MISC','I',
-! 6h max between 25.000  and 55.000 feet
-  'ASH'    ,'ug','fl350-550','FLYmax6h:GROUP','MISC','I',
+! 'ASH'    ,'ug','fl000-200','FLYmax6h:GROUP','MISC','I', ! 6h max between surface and 20.000 feet,  old definition
+! 'ASH'    ,'ug','fl200-350','FLYmax6h:GROUP','MISC','I', ! 6h max between 20.000  and 35.000 feet,  old definition
+! 'ASH'    ,'ug','fl350-550','FLYmax6h:GROUP','MISC','I', ! 6h max between 25.000  and 55.000 feet,  old definition
 ! Do we need the fl000-200 also as FLYmean6h:GROUP? (not in Derived_ml.f90 yet)
 !-- Emergency: Nuclear accident (5 entries). Skipp groups if not found
 ! 'CS137'            ,'mBq','2d','AIR_CONCS','SPEC' ,'I',
@@ -80,8 +79,10 @@ OutputConcs =
 ! 'ASH_L18'        ,'','550nm','AOD:GROUP','MISC','I',
 ! 'ASH_L19'        ,'','550nm','AOD:GROUP','MISC','I',
 &end
+
+! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+
 &OutputDep_config
-! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
   DDEP_ECOS =
     'Grid     ', 'Y',
     'Conif    ', 'Y',

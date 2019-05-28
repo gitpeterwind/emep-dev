@@ -110,8 +110,8 @@ module AeroFunctions_mod
      !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
       C7 =  (/ 1.17, 1.28, 1.83, 1.97 /) &
      ,C8 =  (/ 1.87, 2.41, 5.13, 5.83 /)
-     !A2018 BUG C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
-     !A2018 BUG ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
+     ! BUG C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
+     ! BUG ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
    real, parameter :: THIRD = 1.0/3.0
    real :: f
    integer :: ind  
@@ -611,7 +611,7 @@ module AeroFunctions_mod
    real :: DpgN, DpgV, frh, t
    integer :: ind, iRH, iTK, i
    real, dimension(10) :: ugPM, S_m2m3, Kn2o5
-   integer, parameter :: io1=20,io2=22 ! TMP A2018 stallo gfortran doesn't handle newunit :-(
+   integer, parameter :: io1=20,io2=22 ! TMP stallo gfortran doesn't handle newunit :-(
 
    cn2o5 = cMolSpeed( 298.0, 108.0)
    print *, "Speed N2O5 ", cn2o5

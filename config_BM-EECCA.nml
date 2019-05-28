@@ -15,13 +15,11 @@
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
   meteo                 = '$MetDir/meteoYYYYMMDD.nc',
   EXP_NAME              = 'BM-EECCA',
-  MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 !USES/DEBUG system started June 2013
   USES%testname         = 'EMEPSTD',
@@ -58,7 +56,6 @@
 !------------------------------
   emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = T,          ! Used for forecasts usually

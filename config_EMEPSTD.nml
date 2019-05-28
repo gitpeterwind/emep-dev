@@ -10,7 +10,6 @@
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
@@ -18,7 +17,6 @@
 !sure to run with a constant version of the meteo!
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPSTD',
-  MY_OUTPUTS            = 'EMEPSTD',
 !EUROPEAN_settings = 'YES',   ! Should now be automatic
 !GLOBAL_settings   = 'NO',
 !------------------------------
@@ -124,7 +122,6 @@
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = F,          ! Used for forecasts usually
@@ -223,8 +220,7 @@
 !------------------------------
   flocdef="DataDir/volcano_location.csv_20160610",
   femsdef="DataDir/volcano_emission.csv_20160610",
-!OLD  topo_nc="DataDir/GRID/topography.nc",
-  need_topo=F, ! stop simulation if topo_nc not found
+  need_topo=F, ! stop simulation if TopoFile not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end

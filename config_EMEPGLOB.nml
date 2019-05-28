@@ -10,13 +10,11 @@
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPGLOB',
-  MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 ! changes March-April 2017
  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL
@@ -111,7 +109,6 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
  ! emis_inputlist(2)%incl(1:) = 'INTSHIPS', 
 
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = F,          ! Used for forecasts usually
@@ -189,8 +186,7 @@ emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.
 !------------------------------
   flocdef="DataDir/volcano_location.csv_20160610",
   femsdef="DataDir/volcano_emission.csv_20160610",
-  topo_nc="DataDir/GRID/topography.nc",
-  need_topo=F, ! continue simulation if topo_nc not found
+  need_topo=F, ! continue simulation if TopoFile not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end

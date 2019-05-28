@@ -1,25 +1,25 @@
 ! <MosaicOutputs_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
 module MosaicOutputs_mod
-use AOTx_mod,          only: Calc_AOTx, Calc_POD, O3cl_t, VEGO3_OUTPUTS,&
-                                nOutputVegO3, OutputVegO3
+use AOTx_mod,          only: Calc_AOTx, Calc_POD, VEGO3_OUTPUTS,&
+                                nOutputVegO3
 use CheckStop_mod,     only: CheckStop
 use ChemDims_mod,      only: NSPEC_ADV,NSPEC_SHL
 use ChemGroups_mod,    only: chemgroups
 use ChemSpecs_mod,     only: species_adv
-use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY
+use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY,OutputVegO3
 use Debug_module,      only: DEBUG   ! -> DEBUG%MOSAICS
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
-use GasParticleCoeffs_mod,  only:  DDspec !DS A2018 CDDEP_O3
+use GasParticleCoeffs_mod,  only:  DDspec
 use Io_Progs_mod,      only: datewrite
 use LandDefs_mod,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_mod,       only: LandCover ! for POD
 use LocalVariables_mod,only: Grid,SubDat, L
 use MetFields_mod
 use OwnDataTypes_mod,  only: Deriv, print_deriv_type, typ_s5ind, typ_s1ind, typ_s3,&
-                            TXTLEN_DERIV, TXTLEN_SHORT
+                            TXTLEN_DERIV, TXTLEN_SHORT,O3cl_t
 use SmallUtils_mod,    only: find_index, trims
 use SubMet_mod,        only: Sub
 use TimeDate_mod,      only: current_date, effectivdaynumber, print_date
@@ -461,7 +461,6 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
 
     case("VG","Rs","Rns","Gns") ! could we use RG_LABELS? 
       cdep = itot2Calc(nadv+NSPEC_SHL)  ! e.g. IXADV_O3 to calc index
-!A2018 test if ( cdep < 1 ) print *, 'CDEP', nadv, 'AAARGH' // species_adv(nadv)%name ! 24 hno3
       Gs   = Sub(iLC)%Gsur(cdep)
       Gns  = Sub(iLC)%Gns(cdep)
 
@@ -470,9 +469,6 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
         write(*,*) "ERROR: OutVgR name", MosaicOutput(imc)%name
         write(*,*) "ERROR: Negative cdep", cdep, imc, MosaicOutput(imc)%Index
         write(*,*) "ERROR: itot2CALC had size", size(itot2Calc)
-!A2018        do n = 1, size( itot2Calc)
-!A2018          write(*,*) "DEPADVLIST ", n, itot2Calc(n)
-!A2018        end do
         call CheckStop(cdep<1,dtxt//"ERROR: Negative cdep")
       end if
 

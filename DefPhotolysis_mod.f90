@@ -36,14 +36,11 @@
 
    integer, public, parameter :: &
              NRCPHOT          = 17  &! Number of photolytic reactions
-            ,NRCPHOTextended  = 18   !A2018 added HONO, will scale with NO2
+            ,NRCPHOTextended  = 18
    
    integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
    real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
    real, save, public :: P_PHODIS(NzPHODIS) !heights of the input files, in Pa
-
-!A2018   real, allocatable,save,public, dimension(:,:) &
-!A2018         :: rcphot       ! photolysis rates    -   main output
 
    real, public, save :: sum_rcphot     !  for debug only
    logical, public, parameter :: DEBUG_DJ = .false.
@@ -93,7 +90,7 @@
 ! IDACETON = 17 = MCM_J21
 
     integer, public, parameter ::&
-        IDHONO = 18  & !A2018 added as extended
+        IDHONO = 18  & ! added as extended
        ,IDMEK     = IDCH3COX & ! just name change CHECK
 !       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
 !       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
@@ -101,9 +98,6 @@
        ,IDRCOCHO  = IDHCOHCO & ! Just name change CHECK
        ,IDCHOCHO  = IDHCOHCO   ! Just name change CHECK
 
-!A2018 - moving to newer system
-!A2018 CHECK/FIX - these are MCM???
-   
 ! In EMEP code, we use IDBO3 for O1D production and IDAO3 for OP production
 ! MCM indices:
 
@@ -402,7 +396,7 @@
                       sum ( rcphot(1:NRCPHOT, KCHEMTOP:KMAX_MID) )
             end if
 
-           !A2018 adding HONO
+           ! adding HONO
             rcphot(IDHONO,:)  =  0.22* rcphot(IDNO2,:)
 
 

@@ -23,7 +23,7 @@
     use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
     use CheckStop_mod,      only: CheckStop, StopAll
     use ChemFunctions_mod,  only: VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
-    use ChemGroups_mod !A2018,     only: RO2_POOL, RO2_GROUP
+    use ChemGroups_mod !,     only: RO2_POOL, RO2_GROUP
     use ChemDims_mod               ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_mod              ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]
@@ -164,10 +164,11 @@ contains
 
           do n=1,NSPEC_TOT
 
-if ( x(n) < 0.0  .or. xnew(n) < 0.0 ) then
-   print '(a,3i4,a10,3es12.3)', 'NCHEM', me,  n, ichem, species(n)%name, x(n), xnew(n), Dchem(n,k,i,j)
-   call StopAll('NCHEM')
-end if
+             if ( x(n) < 0.0  .or. xnew(n) < 0.0 ) then
+               print '(a,3i4,a10,3es12.3)', 'NCHEM', me,  n, ichem, species(n)%name, x(n), xnew(n), Dchem(n,k,i,j)
+               call StopAll('NCHEM')
+             end if
+
              xextrapol = xnew(n) + (xnew(n)-x(n)) *cc(ichem)
              xold(n) = coeff1(ichem)*xnew(n) - coeff2(ichem)*x(n)
              xold(n) = max( xold(n), 0.0 )

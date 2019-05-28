@@ -17,7 +17,6 @@
 ! 'ustar_nwp','MET2D','ustar_nwp','-','m/s',-99,-99,F,1.0,T,'D',
 OutputConcs=
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
-!--MY_OUTPUTS=="MACC_EVA": hourly 2D output
   'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','',! needed by PM25_rh50
@@ -25,7 +24,6 @@ OutputConcs=
   'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,'',! needed by    *_rh50
   'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,'DI',
   'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,'DI',
-!--MY_OUTPUTS=="MACC_ENS": hourly 2D output
   'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'SO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'CO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
@@ -36,7 +34,6 @@ OutputConcs=
   'POLLEN_OLIVE'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'POLLEN_GRASS'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
 !!'POLLEN_RWEED'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
-!--MY_OUTPUTS=="MACC_ENS": hourly 3D output
   'O3'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
   'NO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
   'PMFINE'        ,'ug'  ,'3d' ,'AIR_CONCS','GROUP','',! needed by PM25_wet
@@ -54,16 +51,13 @@ OutputConcs=
 ! 'POLLEN_OLIVE'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
 ! 'POLLEN_GRASS'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
 !!'POLLEN_RWEED'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
-!--MY_OUTPUTS=="MACC_ENS": additional output
 ! 'RN222'         ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
   'NO2'           ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'O3'            ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'CO'            ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'HCHO'          ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'AOD'           ,' ' ,'550nm','AOD:GROUP','MISC' ,'I',
-!--MY_OUTPUTS=="MACC_NMC": 6 hourly D3 output (set lev3d to all levels)
 ! 'EXT'           ,'1/m','550nm','EXT:GROUP','MISC','I',
-!--DEBUG_PBL: hourly D2 output
 ! 'HMIX'          ,'m'   ,'2d' ,'HMIX'     ,'MISC' ,'I',
 ! 'Kz_m2s'        ,'m2/s','2d' ,'Kz_m2s'   ,'MISC' ,'I',
 !--DEBUG_PM10: hourly D2 output

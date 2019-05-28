@@ -23,7 +23,6 @@
   SondesFile            = 'DataDir/sondes.dat',
 !------------------------------
   EXP_NAME              = 'EMEPSTD',
-  MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
   EmBio%GlobBvocMethod  = 'GLC-CLM', ! default for GLOBAL runs, not used for Europe
   EmBio%CLF             =  0.59,     ! 1/1.7 for CLM
@@ -71,7 +70,6 @@
   emis_inputlist(3)%type= 'Special_ShipEmis',
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = F,          ! Used for forcasts usually
@@ -87,7 +85,7 @@
 !------------------------------
   flocdef='DataDir/columnsource_location.csv',
   femsdef='DataDir/columnsource_emission.csv',
-  need_topo=T, ! do not use column emissions if topo_nc not found
+  need_topo=T, ! do not use column emissions if TopoFile not found
   NMAX_LOC=-1, ! estimate from lines in flocdef
   NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end

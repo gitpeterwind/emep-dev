@@ -20,6 +20,7 @@ module SmallUtils_mod
   public :: WriteArray   !! Writes out char array, one element per line
   public :: find_index   !! Finds index of item in list 
   public :: find_indices !< Finds indices of arrays of items in list 
+  public :: find_duplicates !< checks if an array of strings contains duplicates
   public :: trims        !> removes all blanks from string
   public :: key2str      ! replace keyword occurence(s) on a string by given value
   private :: skey2str    !
@@ -101,6 +102,11 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
     c = text(i:i)
     if( all(c/=s) ) then
       is = is + 1
+      if ( is> len(wordarray) ) then !DSJJ
+         errcode = 2
+         print *, "ERROR in WORDSPLIT IS: ", trim(text(:i))
+         exit
+      end if
       wordarray(iw)(is:is) = c
       wasinword = .true.
     elseif ( wasinword ) then
@@ -296,6 +302,35 @@ end function find_index_i
   end do
 end function find_indices
 !=======================================================================
+ function find_duplicates( list, debug)  result(dup_found)
+  character(len=*), dimension(:), intent(in) :: list
+  logical, intent(in), optional :: debug
+!  Output:
+  character(len=30) :: dup_found
+
+  character(len=*), parameter :: dtxt='find_dup:'
+  logical :: debug_print
+  !integer, dimension(size(list)) :: num
+  integer :: nw, nl, ndup
+
+  dup_found = 'no'
+  debug_print=.false.;if(present(debug))debug_print=debug
+
+  !num(:) = 0
+  do nw = 1, size(list)
+    do nl = 1, size(list)
+      if ( nw == nl ) cycle
+      if ( trim(list(nw)) == trim(list(nl)) ) then
+        if(debug_print) print *, dtxt//'DUPLICATED '//trim( list(nw)), &
+          nl, nw, 'in:', list
+        dup_found =list(nw)
+        return
+      end if
+    end do !nl
+  end do !nw
+        
+end function find_duplicates
+!=======================================================================
  function trims(str)  result(trimmed)
   character(len=*), intent(in) :: str
   character(len=len(str)) :: trimmed
@@ -315,7 +350,7 @@ end function find_indices
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
 !> Simpler to understand than use of iachar etc. (see same web side).
 
-!A2018 Pure Function to_upper (str) Result (string)
+! Pure Function to_upper (str) Result (string)
 elemental Function to_upper (str) Result (string)
 
 !   ==============================
@@ -522,6 +557,9 @@ subroutine Self_test()
   print *, key2str('1.23 w/f10.2  fmt: "FFF".        ','FFF',1.23,'(f10.2)')
 
   print *, 'TESTING num2str', trim(num2str(23)), ' ',trim(num2str(34.0))
+
+  print *, 'TESTING find_duplicates', &
+      find_duplicates(['AAA', 'BB ', 'AA ', 'CC ', 'DD ', 'AA ' ],debug=.true. )
 end subroutine Self_test
 
 end module SmallUtils_mod

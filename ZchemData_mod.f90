@@ -12,13 +12,10 @@
   use AeroConstants_mod, only: AERO ! for %NSAREA = No types surface area
   use AllocInits,        only: AllocInit
   use ChemDims_mod,      only: NCHEMRATES, nspec => NSPEC_TOT, &
-      NPHOTOLRATES !A2018 QUERY new usage
+      NPHOTOLRATES
   use Config_module,     only: KCHEMTOP, KMAX_MID
   implicit none
   private
-
-!ESX  public :: Alloc1Dchem       !> Sets up arrays of dimension nspec x nz
-!ESX  public :: SetChemMet
 
   !/ variables to keep track of which call
 
@@ -34,9 +31,6 @@
       rct               & !< chemical rate coeffs.  molec/cm3/s
      ,rcemis            & !< Emissions rate coeff.  molec/cm3/s
      ,rcbio             & !< Emissions rate coeff.  molec/cm3/s (BVOC, soil-NO, etc.)
-!ESX     ,esxemis           & !< Emissions rate coeff.  molec/cm3/s !INTERIM -saves rcemis
-!ESX     ,bcemis            & !<  rcemis provided by boundary conditions or tests
-!ESX     ,DChem             & !< chemical tendency, molec/cm3/s
      ,rcphot              !< Photolysis rates
 
   real, public, allocatable, dimension(:,:), save :: &
@@ -45,7 +39,7 @@
 ! For semivolatiles we track the farction as gas and particle- used for SOA
 ! We use NSPEC_TOT to allow us to write Fpart for FFUEL and WOOD also -
 ! these may be semivol one day.
-   !real, public, dimension(FIRST_SOA:LAST_SOA,KCHEMTOP:KMAX_MID), save :: &
+
    real, public, allocatable, dimension(:,:), save :: &
        Fgas       &! Fraction as gas-phase
       ,Fpart      ! Fraction as gas-phase
@@ -82,32 +76,5 @@
    integer, public, allocatable, dimension(:), save :: &
        itemp                  ! int of temperature
 
-
-!ESX  contains
-!ESX  !--------------------------------------------------------------------------!
-!ESX   subroutine Alloc1Dchem(nz, nrct, nrcbio, debug_level)
-!ESX    integer, intent(in) :: nz, nrct, nrcbio, debug_level
-!ESX
-!ESX    !> We need to re-allocate if changes in array size, e.g. moving from
-!ESX    !! EMEP to ESX
-!ESX
-!ESX      if( debug_level > 0 ) print *, "ALLOCATE xCHEM?? ", nspec, nz, size(xn_2d, 1)
-!ESX
-!ESX      !ESX if ( .not. allocated( xn_2d) ) then
-!ESX      !ESX     if( debug_level > 0 ) print *, "ALLOCATES xCHEM ", nspec, nz
-!ESX      !ESX end if
-!ESX
-!ESX      call AllocInit( xn_2d,  0.0, nspec, nz, "set1D:xn_2d")
-!ESX      call AllocInit( rcemis, 0.0, nspec, nz, "set1D:rcemis",dbg=.true.)
-!ESX      call AllocInit( Fgas,  1.0, nspec, nz, "set1D:Fgas")
-!ESX      call AllocInit( Fpart, 0.0, nspec, nz, "set1D:Fpart")
-!ESX
-!ESX      call AllocInit( rcbio,  0.0, nrcbio, nz, "set1D:rcbio")
-!ESX      call AllocInit( rct,    0.0, nrct, nz, "set1D:rct")
-!ESX      call AllocInit( rcphot, 0.0, MAXRCPHOT, nz, "set1D:rcphot")
-!ESX
-!ESX     !A2018 Need to check bounds, if it matters...
-!ESX
-!ESX
  
  end module ZchemData_mod

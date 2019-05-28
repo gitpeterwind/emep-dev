@@ -85,25 +85,16 @@ module Biogenics_mod
   character(len=4),public, save, dimension(NBVOC) :: &
      BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
 
-  !A2018 - allows rcbio in CM_Reactions, but we access elements with
+  ! - allows rcbio in CM_Reactions, but we access elements with
   ! the natbio indices here. These much match the indices used in rcbio
   ! We only use rcbio for isoprene and terpenes so far,  since
   ! soil NO, NH3 emissions etc are dealt with through rcemis.
 
-!  type, private :: natbio_t
-!    integer :: C5H8 = 1
-!    integer :: TERP = 2
-!!    integer :: NO   = 3
-!!    integer :: NH3  = 4
-!    integer :: Nrcbio = 4  ! Number of rcbio defined below
-!  end type natbio_t
-!! type(natbio_t), public, parameter :: NATBIO = natbio_t()
-
-  !We hard-code these indices, but only calculate emissions if needed
+  ! We hard-code these indices, but only calculate emissions if needed
   ! Must match order of NATBIO to start with 
-  integer, parameter, public ::  NEMIS_BioNat  = 13
-  character(len=11), save, dimension(NEMIS_BioNat), public:: &
-      EMIS_BioNat =  (/ &
+  integer, parameter, public ::  NEMIS_BioNat  = 17
+  character(len=13), save, dimension(NEMIS_BioNat), public:: &
+      EMIS_BioNat = [character(len=13):: &
              "C5H8       " &
            , "TERP       " &
            , "NO         " &
@@ -116,7 +107,11 @@ module Biogenics_mod
            , "Dust_WB_c  " &
            , "Dust_ROAD_f" &
            , "Dust_ROAD_c" &
-           , "RN222      "  /)
+           , "POLLEN_BIRCH"&
+           , "POLLEN_OLIVE"&
+           , "POLLEN_RWEED"&
+           , "POLLEN_GRASS"&
+           , "RN222      " ]
 
   integer, public, parameter :: &
       N_ECF=2, ECF_ISOP=1, ECF_TERP=2   &! canopy factors, BVOC
@@ -209,9 +204,6 @@ module Biogenics_mod
       !call CheckStop( USES%GLOBAL_SOILNOX .and. ibn_NO < 1 , "BiogencERROR NO")
       !if( MasterProc ) write(*,*) "SOILNOX ibn ", ibn_NO
 
-!A2018 - we let rcbio in CM_Reactions take care of this
-!A2018      itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
-!A2018      itot_TERP = find_index( "TERP", species(:)%name )
       itot_NO   = find_index( "NO", species(:)%name      )
       itot_NH3  = find_index( "NH3", species(:)%name      )
 
@@ -598,9 +590,8 @@ module Biogenics_mod
   !ASSUME C5H8 FOR NOW if ( ibn_C5H8 > 0 ) then
     if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
-     ! Light effects from Guenther G93
+     ! Light effects from Guenther G93. Need uE:
 
-!WN      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
       par = ( PARdbh(i,j) + PARdif(i,j)  ) * Wm2_uE
 
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)

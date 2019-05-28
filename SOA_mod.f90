@@ -144,7 +144,7 @@ module OrganicAerosol_mod
    if( .not. ORGANIC_AEROSOLS  ) RETURN
 
    if ( first_call ) then ! =========================================
-      itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
+      itot_bgnd = find_index( 'OM25_bgnd', species(:)%name , any_case=.true.) 
       itot_om25 = find_index( 'OM25_p',    species(:)%name )  !NOTE CASE!
       igrp_om25 = find_index( 'OM25',   chemgroups(:)%name ) 
    

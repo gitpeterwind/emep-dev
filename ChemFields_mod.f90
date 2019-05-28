@@ -8,7 +8,7 @@ use ChemSpecs_mod,  only: FIRST_SEMIVOL, LAST_SEMIVOL    ! -999 unless SOA used
 use Config_module,  only: KMAX_MID, KCHEMTOP &           ! =>  z dimension
                          ,MasterProc &
                          ,NATBIO                         ! for Nrcbio
-use DefPhotolysis_mod, only: NRCPHOTextended ! A2018 cludge
+use DefPhotolysis_mod, only: NRCPHOTextended ! cludge
 use NumberConstants,only: UNDEF_R
 use Par_mod,        only: LIMAX,LJMAX                    ! => x, y dimensions
 use ZchemData_mod    ! rct, h2o, ..
@@ -100,8 +100,7 @@ contains
     allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
     rcphot = 0.0
 
-    !TMPA2018 allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
-    allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
+    allocate(rcbio(NATBIO%Nrcbio,KCHEMTOP:KMAX_MID))
     rcbio = 0.0
 
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))
