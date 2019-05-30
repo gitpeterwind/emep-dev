@@ -23,6 +23,33 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 May 2019, Dave
 
+rv4_33beta tag started ... results will change over coming days...
+
+
+Derived_mod - calls Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
+              Fixes problem found by Hilde that OM25_p >= ugPM_OM25, by
+              more conistent cfac usage, and now produces mixed-phase
+              outputs if ug_PM not specified.
+              All very messy though, and old semivol usage not working so
+              well. Should consider getting rid of OM25_p.
+              
+              Also more dtxt, changed 'index' to 'ind' (index is a fortran
+              function, so good to avoid).
+
+              Thus, PM results CHANGE (not drastically though)
+
+              (Could do with a little more testing.)
+
+SOA_mod.f90 - added Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
+              before Derived outouts are calculated. 
+              Also tidy up and more dtxt
+
+Units_mod.f90 - some dtxt added
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 May 2019, Dave
+
 rv4_32 tag added
 
 Results will start to change after this ...

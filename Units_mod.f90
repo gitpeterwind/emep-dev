@@ -161,11 +161,12 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   character(len=TXTLEN_DERIV), intent(out),optional :: name  ! For output file, species names
   logical,intent(out),optional :: volunit,needroa
   character(len=TXTLEN_DERIV)  :: dname
+  character(len=*), parameter :: dtxt = 'GrpUniAsc:' ! debug text
   integer :: i
 
   if(Initialize_Units) call Init_Units
   call CheckStop((hr_out%spec<1).or.(hr_out%spec>size(chemgroups)),&
-    "Group_Units Error: Unknown group id, "//&
+    dtxt//"Group_Units Error: Unknown group id, "//&
     "variable "//trim(hr_out%name)//" type "//trim(hr_out%type))
 
   dname=trim(chemgroups(hr_out%spec)%name)//"_"//trim(hr_out%unit)
@@ -175,7 +176,7 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   allocate(gspec(size(chemgroups(hr_out%spec)%specs)))
   gspec=chemgroups(hr_out%spec)%specs-NSPEC_SHL
   if(debug) write(*,"(A,'=',30(A,':',I0,:,'+'))") &
-    trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
+    dtxt//trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 
   i=find_index(hr_out%unit,unit_map(:)%utxt)
 !!if(i>0)hr_out%unit=unit_map(i)%units
