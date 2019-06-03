@@ -305,6 +305,7 @@ type, public :: uEMEP_type
   type(poll_type) :: poll(Npoll_uemep_max) !pollutants to include
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
+  character(len=40)::  MONTH_ENDING = "NOTSET"
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
   logical     :: HOUR_INST =.false.

@@ -247,6 +247,7 @@ subroutine out_uEMEP(iotyp)
   type(date) :: onesecond = date(0,0,0,0,1)
   character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
+  character(len=TXTLEN_FILE),save :: oldmonthlyname
   real :: fracsum(LIMAX,LJMAX)
 
   call Code_timer(tim_before)
@@ -267,7 +268,15 @@ subroutine out_uEMEP(iotyp)
   else if(iotyp==IOU_DAY .and. uEMEP%DAY)then
      fileName=trim(runlabel1)//'_uEMEP_day.nc'
   else if(iotyp==IOU_MON .and. uEMEP%MONTH)then
-     fileName=trim(runlabel1)//'_uEMEP_month.nc'
+     if(uEMEP%MONTH_ENDING /= "NOTSET")then
+        fileName=trim(runlabel1)//'_uEMEP_month'//date2string(trim(uEMEP%MONTH_ENDING),current_date,-1.0)
+        if(oldmonthlyname/=fileName)then
+           first_call(iotyp) = .true.
+           oldmonthlyname = fileName
+        endif
+     else
+        fileName=trim(runlabel1)//'_uEMEP_month.nc'
+     endif
   else if(iotyp==IOU_YEAR .and. uEMEP%YEAR)then
      fileName=trim(runlabel1)//'_uEMEP_full.nc'
   else
