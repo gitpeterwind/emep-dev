@@ -157,7 +157,7 @@ logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 logical, private, save :: dbgP0  ! = DEBUG%DERIVED .and. debug_proc .and. first_call
 character(len=100), private :: errmsg
 ! horizontal line for printouts
-character(len=*), private, parameter :: HORIZ_LINE =repeat('=',78)//new_line('a') 
+character(len=*), private, parameter :: HORIZ_LINE =repeat('=',78) !f2003://new_line('a') 
 
 integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
 
@@ -466,7 +466,7 @@ subroutine Define_Derived()
          unittxt=trim(outunit)
       end select
 
-      if(MasterProc)write(*,"(4a)") HORIZ_LINE, &
+      if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE, &
         dtxt//":MISC "//trim(outname),outind,trim(class)
 
       call AddNewDeriv(outname,class,subclass,"-",trim(unittxt),&
@@ -525,7 +525,7 @@ subroutine Define_Derived()
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           dtxt//"OutputFields already defined output "//trim(dname))
 
-        if(dbg0) write(*,"(2a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
+        if(dbg0) write(*,"(a,/,a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
 
       case("Local_Correct")
