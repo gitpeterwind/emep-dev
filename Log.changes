@@ -42,6 +42,7 @@ SITES related:
               - can specify by species or ask for 'ALL'
               Added units to sites csv file
 
+  OutputChem - no need for SITE_XTRA_D2D, etc
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
