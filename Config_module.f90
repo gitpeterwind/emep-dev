@@ -337,9 +337,7 @@ integer, public, parameter :: &
    NSITES_MAX =        99     & ! Max. no surface sites allowed
   ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
   ,NSHL_SITE_MAX  =    10     & ! Bosco OH NSPEC_SHL     & ! No. short-lived species
-  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-  ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
-!Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_MISC =    2     !& ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, private :: isite              ! To assign arrays, if needed
 
@@ -353,7 +351,8 @@ integer, private :: isite              ! To assign arrays, if needed
 
 integer, public, parameter :: &
     FREQ_SONDE  =     1        &   ! Interval (hrs) between outputs
-   ,NXTRA_SONDE =    4             ! No. Misc. met. params
+   ,NXTRA_SONDE =    4         &   ! No. Misc. met. params
+   ,NMAX_SITE_D2D =   40           ! Max No. d2d params
 
 
 ! Extra parameters - need to be coded in Sites_mod also. So far
@@ -365,30 +364,38 @@ integer, public, parameter :: &
 !** IMPORTANT!! Make sure the correspondence between selected for output
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
-character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
-  SITE_XTRA_MISC=[character(len=18):: "th","T2"]
+character(len=TXTLEN_SHORT), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+  SITE_XTRA_MISC=[character(len=TXTLEN_SHORT):: "th","T2"]
 
+character(len=TXTLEN_SHORT), public, save :: SITE_ADV_names(NSPEC_ADV) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_SHL_names(NSPEC_SHL) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
 
 !These variables must have been set in My_Derived for them to be used.
-character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
-  SITE_XTRA_D2D=[character(len=24):: &
-    "HMIX","PSURF", & ! Bosco skip: "ws_10m","rh2m",&
-    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
-    "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
-    'WDEP_PREC',&!''SNratio',&
-    'met2d_uref','met2d_u10', 'met2d_v10','met2d_rh2m', &
-    !'met2d_SMI1', 'met2d_SMI3',&
-    'met2d_SMI_uppr', 'met2d_SMI_deep',&
-    'met2d_ustar_nwp', 'met2d_LH_Wm2', 'met2d_SH_Wm2',&
-    !BB 'SMI_deep','met2d_SMI_d','SMI_uppr','met2d_SMI_s',&
-!Boscso Extra: +5
-    !BB'USTAR_NWP', 
-    'USTAR_DF','INVL_DF', &
-    'met2d_PARdbh', 'met2d_PARdif' &
-]
+!character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
+character(len=TXTLEN_SHORT), public, save, dimension(NMAX_SITE_D2D) :: &
+  site_extra_d2d_names =  'NOTSET'  
+
+! values will be set after config, for use in Sites_mod:
+!integer, save, public :: nsite_extra_d2d, nsite_extra_misc, nsite_extra
+
+! [character(len=24):: &
+!    "HMIX","PSURF" & ! Bosco skip: "ws_10m","rh2m",&
+!]
+!   ,"Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
+!    "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
+!    'WDEP_PREC',&!''SNratio',&
+!    'met2d_uref','met2d_u10', 'met2d_v10','met2d_rh2m', &
+!    !'met2d_SMI1', 'met2d_SMI3',&
+!    'met2d_SMI_uppr', 'met2d_SMI_deep',&
+!    'met2d_ustar_nwp', 'met2d_LH_Wm2', 'met2d_SH_Wm2',&
+!    !BB 'SMI_deep','met2d_SMI_d','SMI_uppr','met2d_SMI_s',&
+!!Boscso Extra: +5
+!    !BB'USTAR_NWP', 
+!    'USTAR_DF','INVL_DF', &
+!    'met2d_PARdbh', 'met2d_PARdif' &
+!]
 character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
   SONDE_XTRA= [character(len=10):: &
    "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
@@ -828,6 +835,8 @@ subroutine Config_Constants(iolog)
    ,hour_DOMAIN, out_startdate, spinup_enddate&
    ,num_lev3d,lev3d,lev3d_from_surface&
    ,LAST_CONFIG_LINE &
+   ,site_extra_d2d_names & ! e.g. "th","T2"
+   ,SITE_ADV_names &
    ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
