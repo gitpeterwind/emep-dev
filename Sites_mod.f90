@@ -16,9 +16,11 @@ use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
                               ,RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
                               ,SitesFile,SondesFile,KMAX_BND,PT, NPROC,&  ! for sitesout
+                              SITE_ADV_names, & 
                               SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names,&
-      NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
-      SITE_XTRA_MISC, SITE_XTRA_D2D, &
+      MasterProc, & 
+      NXTRA_SITE_MISC,& 
+      SITE_XTRA_MISC, SITE_EXTRA_D2D_names, & !DSSITE_XTRA_D2D, &
       FREQ_SITE, &
       NXTRA_SONDE, & 
        SONDE_XTRA, & 
@@ -45,7 +47,7 @@ use OwnDataTypes_mod,    only: TXTLEN_NAME
 use Par_mod,            only : li0,lj0,li1,lj1 &
                                 ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&
                                 ,GI0,GI1,GJ0,GJ1,me,LIMAX,LJMAX
-use SmallUtils_mod,     only : find_index
+use SmallUtils_mod,     only : find_index, find_duplicates, str_replace
 use Tabulations_mod,    only : tab_esat_Pa
 use TimeDate_mod,       only : current_date
 use TimeDate_ExtraUtil_mod,   only : date2string
@@ -60,8 +62,9 @@ public :: sitesdef          ! Calls Init_sites for sites and sondes
 public :: siteswrt_surf     ! Gets site  data ready for siteswrt_out
 public :: siteswrt_sondes   ! Gets sonde data ready for siteswrt_out
 private :: Init_sites       ! reads locations, species
-private :: set_species      ! Sets species/variable names for output
+!private :: set_species      ! Sets species/variable names for output
 private :: siteswrt_out     ! Collects output from all nodes and prints
+private :: setValidNames
 
 
 integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
@@ -95,31 +98,108 @@ integer, private :: NSPC_SITE, NOUT_SITE, NOUT_SONDE, NSPC_SONDE
 
 character(len=TXTLEN_NAME), public, save, dimension(NSITES_MAX) :: site_name
 character(len=TXTLEN_NAME), private, save, dimension(NSONDES_MAX):: sonde_name
-character(len=20), private, save, allocatable, dimension(:)  :: site_species
-character(len=20), private, save, allocatable, dimension(:)  :: sonde_species
+character(len=20), private, save, allocatable, dimension(:) :: &
+   site_outputs     & !  species+extras
+  ,site_species_adv & 
+  ,site_species_shl & 
+  ,sonde_species
 
 character(len=70), private :: errmsg ! Message text
 integer, private :: d                 ! processor index
 integer, private :: i, n, nloc, ioerr ! general integers
 integer, parameter, private :: Spec_Att_Size=40,N_Spec_Att_MAX=5
 integer, save, private :: NSPECMAX
-character(len=Spec_Att_Size), allocatable, save  :: Spec_Att(:,:)
+character(len=Spec_Att_Size), allocatable, private, save  :: Spec_Att(:,:)
 integer, private :: i_Att !Spec attribute index
 integer :: NSpec_Att !number of Spec attributes defined
 
-integer, public, parameter ::  NADV_SITE  = NSPEC_ADV   ! No. advected species (1 up to NSPEC_ADV)
-integer ::isite
-integer, public, parameter, dimension(NADV_SITE) :: &
-  SITE_ADV = [(isite, isite=1,NADV_SITE)]  ! Everything
+integer, allocatable, dimension(:), private, save :: &
+  site_adv_ind, site_shl_ind, site_d2d_ind ! was SITE_ADV, SITE_SHL
 
 integer, public :: NSHL_SITE, NADV_SONDE, NSHL_SONDE !number of requested species found
 !indices of requested and found species
-integer, public, dimension(NSPEC_SHL) :: SITE_SHL
+!integer, public, dimension(NSPEC_SHL) :: SITE_SHL
 integer, public, dimension(NSPEC_SHL) :: SONDE_SHL
-integer, public, dimension(NSPEC_ADV) :: SONDE_ADV 
+integer, public, dimension(NSPEC_ADV) :: SONDE_ADV
+
+
+character(len=len(SITE_XTRA_MISC)), allocatable, dimension(:), &
+  private, save :: site_extra_d2d, site_extra_misc, site_extra 
+integer, private, save:: &
+      nsite_extra_d2d, nsite_extra_misc, nsite_extra, nsite_adv, nsite_shl
 
 contains
 
+!==================================================================== >
+
+! We need to check the names asked for in config_emep against those
+! available from f_2d, species, etc.  Issue warnings if not available
+! Allocate validNames for variables passing tests
+! IMPORTANT. If 'ALL' found, then wantedNames = all allowedNames
+
+subroutine setValidNames(txt,wantedNames,allowedNames, &
+                                             validNames,nValid,validIndices)
+  character(len=*), intent(in) :: txt
+  character(len=*), dimension(:), intent(in) :: wantedNames
+  character(len=*), dimension(:), intent(in) :: allowedNames
+  character(len=*), allocatable, dimension(:), intent(out) :: validNames
+  integer, allocatable, dimension(:), intent(out), optional :: validIndices
+
+  character(len=len(allowedNames)), dimension(size(allowedNames)) :: tmpNames
+  integer,  dimension(size(allowedNames)) :: tmpIndices
+  character(len=len(wantedNames)) :: wanted
+  integer, intent(out) :: nValid
+  integer :: icmp, ind, nWanted
+  logical :: indicesWanted, dbg
+  character(len=*), parameter :: dtxt='SitesSetValid:'
+
+  indicesWanted = .false.
+  if( present(validIndices) ) indicesWanted = .true.
+
+  dbg = DEBUG%SITES .and. MasterProc
+
+  if ( wantedNames(1) == 'ALL' ) then
+     nWanted = size(allowedNames)
+     tmpNames(1:nWanted) = allowedNames(:)
+     if( dbg ) write(*,'(a,i5,2(1x,a))') dtxt//txt//":SETALL ", nWanted, &
+        trim(tmpNames(1)), trim(tmpNames(nWanted))
+   else
+     nWanted = size(wantedNames) ! tmp for copy
+     tmpNames(1:nWanted) =  wantedNames(:)
+   end if
+
+  ! we check if name exists. If 'ALL' triggered, then some of this is redundant
+  ! but we sometimes need indices anyway, so we waste a little CPU.
+
+  nValid = 0
+  do icmp = 1, nWanted
+     wanted  = tmpNames(icmp)
+     if( dbg ) write(*,*) dtxt//txt//":TEST ", icmp, trim(wanted)
+     if ( wanted == 'NOTSET' ) exit
+
+     ind = find_index(wanted, allowedNames(:))
+
+     if ( ind < 1 ) then
+      if(MasterProc) write(*,*) dtxt//txt//":WARNING: NOT FOUND"//trim(wanted)
+      cycle
+     end if
+     nValid = nValid + 1
+     tmpNames(nValid) = tmpNames(icmp)  ! overwrite start of array
+     if( indicesWanted ) tmpIndices(nValid) = ind
+     if( dbg ) write(*,*) dtxt//txt//"SET ",icmp,nValid,trim(tmpNames(nValid))
+  end do
+  if ( nValid > 0 ) then
+   allocate(validNames(nValid))
+   validNames(:) = tmpNames(1:nValid)
+   if( indicesWanted ) then
+      allocate(validIndices(nValid))
+      validIndices(:) = tmpIndices(1:nValid)
+      if( dbg ) write(*,*) dtxt//txt//"VALID ", &
+        nValid, trim( validNames(nValid) ), trim(tmpNames(nValid))
+   end if
+  end if
+
+end subroutine setValidNames
 !==================================================================== >
 subroutine sitesdef()
   ! -------------------------------------------------------------------------
@@ -128,10 +208,39 @@ subroutine sitesdef()
   ! -------------------------------------------------------------------------
 
   ! Dummy arrays
-  integer, save, dimension (NSONDES_MAX) ::  &
-    sonde_gz, sonde_z ! global coordinates
-  character(len=*), parameter :: &
-    SITE_XTRA(NXTRA_SITE_MISC+NXTRA_SITE_D2D)=(/SITE_XTRA_MISC,SITE_XTRA_D2D/)
+  integer, save, dimension (NSONDES_MAX) :: sonde_gz, sonde_z ! glob coordse
+  character(len=144) :: errmsg   ! Local error message
+  character(len=len(SITE_EXTRA_D2D_names)) :: d2code  ! parameter code -- # --
+  character(len=*), parameter :: dtxt='sitesdef:' ! debug txt
+ 
+  integer :: icmp, n, d2index
+
+ ! check if requested variables are possible, and build list from those we have
+
+  call setValidNames('adv',SITE_ADV_names,species_adv(:)%name,&
+       site_species_adv,nsite_adv,validIndices=site_adv_ind)
+
+  call setValidNames('shl',SITE_SHL_names,species_shl(:)%name,&
+       site_species_shl,nsite_shl,validIndices=site_shl_ind)
+
+  call setValidNames('d2d',SITE_EXTRA_D2D_names,f_2d(:)%name,&
+       site_extra_d2d,nsite_extra_d2d,validIndices=site_d2d_ind)
+
+  nsite_extra_misc = NXTRA_SITE_MISC ! find_index('NOTSET',SITE_XTRA_2D)
+  nsite_extra= max(nsite_extra_d2d,0)+max(nsite_extra_misc,0)
+
+  if ( nsite_extra > 0 ) then
+   allocate(site_extra_misc(nsite_extra_misc))
+   allocate(site_extra(nsite_extra))
+   site_extra_misc = SITE_XTRA_MISC(1:NXTRA_SITE_MISC) ! will re-code in next iteration
+   site_extra = [ site_extra_misc,  site_extra_d2d ]   ! same order as siteswrt
+  end if
+  if(MasterProc) write(*,*) dtxt//'ALLOC', nsite_extra_d2d, nsite_extra_misc, nsite_extra
+
+  ! Safety checks for common mistakes:
+  errmsg = find_duplicates(site_extra_d2d(:) )
+  call CheckStop ( errmsg /= 'no', dtxt//' Duplicate site_extra_d2d'//errmsg)
+
 
   sonde_gz(:) = 0
   sonde_z(:)  = 0
@@ -142,24 +251,32 @@ subroutine sitesdef()
   sonde_gindex= -1
 
   !find indices of species
-  call Chem2Index(SITE_SHL_names,SITE_SHL,NSHL_SITE)
+  !call Chem2Index(SITE_SHL_names,SITE_SHL,NSHL_SITE)
   call Chem2Index(SONDE_SHL_names,SONDE_SHL,NSHL_SONDE)
   call Chem2Index_adv(SONDE_ADV_names,SONDE_ADV,NADV_SONDE)
-  NSPC_SITE  = NADV_SITE + NSHL_SITE + NXTRA_SITE_MISC + NXTRA_SITE_D2D 
+
+  NSPC_SITE  = nsite_adv + nsite_shl + nsite_extra
+
   NOUT_SITE  = NSPC_SITE * 1 
   NSPC_SONDE = NADV_SONDE + NSHL_SONDE + NXTRA_SONDE
   NOUT_SONDE = NSPC_SONDE* KMAX_MID
   NSPECMAX=max(NSPC_SITE,NSPC_SONDE)
-  if(.not.allocated(site_species))allocate(site_species(NSPC_SITE))
-  if(.not.allocated(sonde_species))allocate(sonde_species(NSPC_SONDE))
-  if(.not.allocated(Spec_Att))allocate(Spec_Att(NSPECMAX,N_Spec_Att_MAX))
 
-!could use XXX_names, instead of site_species
-  site_species(1:NADV_SITE) = species_adv(SITE_ADV(1:NADV_SITE))%name
-  site_species(NADV_SITE+1:NADV_SITE+NSHL_SITE) = &
-            species(SITE_SHL(1:NSHL_SITE))%name
-  site_species(NADV_SITE+NSHL_SITE+1:NSPC_SITE) = &
-            SITE_XTRA(1:NXTRA_SITE_MISC+NXTRA_SITE_D2D)
+  allocate( site_outputs(nsite_adv+nsite_shl+nsite_extra) )
+
+  allocate(sonde_species(NSPC_SONDE))
+  allocate(Spec_Att(NSPECMAX,N_Spec_Att_MAX))
+  Spec_Att = 'dbg'
+
+  site_outputs = [ site_species_adv, site_species_shl, site_extra ]
+
+  if(DEBUG%SITES .and. MasterProc) then
+   write(*,'(a,i4,9(1x,a))') dtxt//'INP:' , nsite_extra, site_extra(1:nsite_extra)
+    do icmp = 1, NSPC_SITE
+      write(*,'(a,i4,1x,a)') dtxt, icmp, site_outputs(icmp)
+    end do
+  end if
+
   sonde_species(1:NADV_SONDE) = species_adv(SONDE_ADV(1:NADV_SONDE))%name
   sonde_species(NADV_SONDE+1:NADV_SONDE+NSHL_SONDE) = &
             species(SONDE_SHL(1:NSHL_SONDE))%name
@@ -184,33 +301,33 @@ subroutine sitesdef()
   if ( DEBUG%SITES ) then
      write(6,*) "sitesdef After nlocal ", nlocal_sites, " on me ", me
      do i = 1, nlocal_sites
-       write(6,*) "sitesdef After set_species x,y ", &
+       write(6,'(a,3i6,a,i4)') dtxt//" After set_species x,y ", &
                      site_x(i), site_y(i),site_z(i), " on me ", me
      end do
   end if ! DEBUG
 
 end subroutine sitesdef
 !==================================================================== >
-subroutine set_species(adv,shl,xtra,s)
-  ! ---------------------------------------------------------------------
-  ! Makes a character array "s" containg the names of the species or
-  ! meteorological parameters to be output. Called for sites and sondes.
-  ! ---------------------------------------------------------------------
-
-  integer, intent(in), dimension(:) :: adv, shl ! Arrays of indices wanted
-  character(len=*), intent(in), dimension(:) :: xtra  !Names of extra params
-  character(len=*),intent(out), dimension(:) :: s
-
-  integer :: nadv, nshl, n2, nout  ! local sizes
-  nadv = size(adv)
-  nshl = size(shl)
-  n2 = nadv + nshl
-  nout = size(s)                   ! Size of array to be returned
-
-  s(1:nadv)    = species( NSPEC_SHL + adv(:) )%name
-  s(nadv+1:n2) = species( shl(1:) )%name
-  s(n2+1:nout) = xtra(:)
-end subroutine set_species
+!subroutine set_species(adv,shl,xtra,s)
+!  ! ---------------------------------------------------------------------
+!  ! Makes a character array "s" containg the names of the species or
+!  ! meteorological parameters to be output. Called for sites and sondes.
+!  ! ---------------------------------------------------------------------
+!
+!  integer, intent(in), dimension(:) :: adv, shl ! Arrays of indices wanted
+!  character(len=*), intent(in), dimension(:) :: xtra  !Names of extra params
+!  character(len=*),intent(out), dimension(:) :: s
+!
+!  integer :: nadv, nshl, n2, nout  ! local sizes
+!  nadv = size(adv)
+!  nshl = size(shl)
+!  n2 = nadv + nshl
+!  nout = size(s)                   ! Size of array to be returned
+!
+!  s(1:nadv)    = species( NSPEC_SHL + adv(:) )%name
+!  s(nadv+1:n2) = species( shl(1:) )%name
+!  s(n2+1:nout) = xtra(:)
+!end subroutine set_species
 !==================================================================== >
 subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
         s_gindex, s_gx, s_gy, s_gz, s_x, s_y, s_z, s_n, s_name)
@@ -303,7 +420,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     if ( ix<RUNDOMAIN(1) .or. ix>RUNDOMAIN(2) .or. &
          iy<RUNDOMAIN(3) .or. iy>RUNDOMAIN(4) ) then
       if(MasterProc) write(6,"(A,': ',A,2(A,1X,I0),A)") &
-        " site", trim(s), ', i =',ix, ', j =',iy, ", outside computational domain"
+        " site",trim(s),', i =',ix,', j =',iy, ",outside computational domain"
     elseif ( ix==RUNDOMAIN(1) .or. ix==RUNDOMAIN(2) .or. &
              iy==RUNDOMAIN(3) .or. iy==RUNDOMAIN(4) ) then
       if(MasterProc) write(6,"(A,': ',A,2(A,1X,I0),A)") &
@@ -368,15 +485,15 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   end do ! nglobal
 
   ! inform me=0 of local array indices:
-  if(DEBUG%SITES) write(6,*) dtxt//trim(fname), " before gc NLOCAL_SITES", &
-                           me, nlocal
+  if(DEBUG%SITES) write(6,'(a,2i5)') dtxt//trim(fname)// &
+     " before gc NLOCAL_SITES", me, nlocal
 
   if ( .not.MasterProc ) then
     call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_CALC, IERROR)
     if(nlocal>0) call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, &
                                MPI_COMM_CALC, IERROR)
   else
-    if(DEBUG%SITES) write(6,*) dtxt//" for me =0 LOCAL_SITES", me, nlocal
+    if(DEBUG%SITES) write(6,'(a,3i5)') dtxt//" for me =0 LOCAL_SITES", me, nlocal
     do n = 1, nlocal
       s_gindex(me,n) = s_n(n)
     end do
@@ -384,11 +501,11 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_CALC,MPISTATUS, IERROR)
       if(nloc>0) call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, 334, &
                                MPI_COMM_CALC,MPISTATUS, IERROR)
-      if(DEBUG%SITES) write(6,*) dtxt//" recv d ", fname, d,  &
+      if(DEBUG%SITES) write(6,'(a,9(1x,a,i5))') dtxt//" recv d ", fname, d,  &
                   " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
       do n = 1, nloc
         s_gindex(d,n) = s_n_recv(n)
-        if(DEBUG%SITES) write(6,*) dtxt//" for d =", fname, d, &
+        if(DEBUG%SITES) write(6,'(a,9(1x,a,i5))') dtxt//" for d =", fname, d, &
           " nloc = ", nloc, " n: ",  n,  " gives nglob ", s_gindex(d,n)
       end do ! n
     end do ! d
@@ -411,20 +528,21 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
   real, dimension(NSPEC_SHL,LIMAX,LJMAX,KMAX_MID), intent(in) :: xn_shl
 
   ! Local
-  integer :: ix, iy,iz, ispec                  ! Site indices
+  integer :: ix, iy,iz, ii, ispec              ! Site indices
   integer :: nn                                ! species index
   logical, save :: my_first_call = .true.      ! for debugging
   integer                           :: d2index ! index for d_2d field access
-  character(len=len(SITE_XTRA_D2D)) :: d2code  ! parameter code -- # --
+  character(len=len(site_extra_d2d_names)) :: d2code  ! parameter code -- # --
   character(len=*),parameter :: dtxt = 'siteswrt_surf:'
+  logical :: dbg ! shorthand
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out  ! for output, local node
 
-  if ( DEBUG%SITES ) then
+  dbg =  DEBUG%SITES !.and. MasterProc
+  if ( dbg ) then
     write(6,*) dtxt//"nlocal ", nlocal_sites, " on me ", me
     do i = 1, nlocal_sites
-      write(6,*) dtxt//"x,y ",site_x(i),site_y(i),&
-                  site_z(i)," me ", me
+      write(6,*) dtxt//"x,y ",site_x(i),site_y(i), site_z(i)," me ", me
     end do
 
     if ( MasterProc ) then
@@ -449,31 +567,40 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
     if( iz == 0 ) iz = KMAX_MID  ! If ZERO'd, skip surface correction
 
     i_Att=0
-    do ispec = 1, NADV_SITE
-      !if (iz == KMAX_MID ) then ! corrected to surface
+    nn = 0
+    do ii = 1, nsite_adv ! NADV_SITE
+      ispec = site_adv_ind(ii)
+      nn = nn + 1
       if (site_z(i) == KMAX_MID ) then ! corrected to surface
-        out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
-                       cfac( SITE_ADV(ispec),ix,iy) * PPBINV
+        out(nn,i) = xn_adv( ispec,ix,iy,KMAX_MID ) * &
+                      cfac( ispec,ix,iy) * PPBINV
       else                      ! Mountain sites not corrected to surface
-        out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
+        out(nn,i)  = xn_adv( ispec,ix,iy,iz ) * PPBINV
       end if
       i_Att=i_Att+1
       Spec_Att(i_Att,1)='units:C:ppb'
+      if(dbg) write(*, '(a,4i6,2(1x,a))') dtxt//'CCCADV', me, nn, ispec, &
+                      i_Att, species_adv(ispec)%name, trim(Spec_Att(i_Att,1))
     end do
 
-
-    do ispec = 1, NSHL_SITE
-      out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
+    do ii = 1, nsite_shl  ! NSHL_SITE
+      nn = nn + 1
+      ispec = site_shl_ind(ii)
+      !out(nsite_adv+ispec,i)  = xn_shl( site_shl_ind(ispec) ,ix,iy,iz )
+      out(nn,i)  = xn_shl( ispec,ix,iy,iz )
       i_Att=i_Att+1
       Spec_Att(i_Att,1)='units:C:molecules/cm3'
+      if(dbg) write(*,'(a,3i6,2(1x,a))') dtxt//'CCCSHL', nn, ispec,  &
+                      i_Att,species_shl(ispec)%name, trim(Spec_Att(i_Att,1))
     end do
 
     ! XTRA parameters, usually the temmp or pressure
     if (.not. SOURCE_RECEPTOR) then
-      nn = NADV_SITE + NSHL_SITE
-      do ispec = 1, NXTRA_SITE_MISC
+      if(dbg) write(*,*) dtxt//'NOTSR', nn, i_Att, nsite_adv + nsite_shl
+!      nn = nsite_adv + nsite_shl
+      do ii = 1, NXTRA_SITE_MISC
         nn=nn+1
-        select case(SITE_XTRA_MISC(ispec))
+        select case(SITE_XTRA_MISC(ii))
         case("T2")
           out(nn,i)   = t2_nwp(ix,iy,1) - 273.15
           i_Att=i_Att+1
@@ -486,17 +613,19 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
 !         out(nn,i)   = pzpbl(ix,iy)
         case default
           call CheckStop("Error, Sites_mod/siteswrt_surf: SITE_XTRA_MISC:"&
-                               // trim(SITE_XTRA_MISC(ispec)))
+                               // trim(SITE_XTRA_MISC(ii)))
         end select
         call CheckStop( abs(out(nn,i))>1.0e99, &
-          "ABS(SITES OUT: '"//trim(SITE_XTRA_MISC(ispec))//"') TOO BIG" )
-      end do
-      do ispec = 1, NXTRA_SITE_D2D
-        d2code  = SITE_XTRA_D2D(ispec)
-        d2index = find_index(d2code, f_2d(:)%name)
+          "ABS(SITES OUT: '"//trim(SITE_XTRA_MISC(ii))//"') TOO BIG" )
+      end do ! ispec
+      if(dbg) write(*,*) dtxt//'D2DEBUGTOP', nsite_extra_d2d
+
+      do ii = 1, nsite_extra_d2d !DS NXTRA_SITE_D2D
+        d2code  = site_extra_d2d(ii)
+        d2index = site_d2d_ind(ii)
         nn=nn+1
 
-        !call CheckStop(d2index<1,"SITES D2D NOT FOUND"//trim(d2code))
+        call CheckStop(d2index<1,"SITES D2D NOT FOUND"//trim(d2code))
         if(d2index<1) then
           if(MasterProc.and.my_first_call) &
             write(*,*) dtxt//"WARNING: D2D NOT FOUND"//trim(d2code)
@@ -510,21 +639,22 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
           Spec_Att(i_Att,1)='units:C:'//trim(f_2d(d2index)%unit)
         end if
 
-        if( DEBUG%SITES ) &
-          write(6,"(a,3i4,a15,i4,es12.3)") dtxt//"D2DEBUG ", me, nn, i,&
+        if( MasterProc .and. DEBUG%SITES ) &
+          write(6,"(a,3i4,a15,i4,es12.3)") dtxt//"D2DEBUG ", ii, nn, i,&
             " "//trim(d2code), d2index, out(nn,i)
         call CheckStop( abs(out(nn,i))>1.0e99, &
-          dtxt//"ABS(SITES OUT: '"//trim(SITE_XTRA_D2D(ispec))//"') TOO BIG" )
+          dtxt//"ABS(SITES OUT: '"//trim(site_extra_d2d(ii))//"') TOO BIG" )
       end do
     end if
   end do
 
+  !if(dbg) print *, dtxt//' INTO OUTAAA',me, i_Att, trim(Spec_Att(1,1)), trim(Spec_Att(2,1))
   my_first_call = .false.
   ! collect data into gout on me=0 t
   call siteswrt_out("sites",IO_SITES,NOUT_SITE, FREQ_SITE, &
                      nglobal_sites,nlocal_sites, &
                      site_gindex,site_name,site_gx,site_gy,site_gz,&
-                     site_species,out,ps_sonde)
+                     site_outputs,out,ps_sonde)
 end subroutine siteswrt_surf
 !==================================================================== >
 subroutine siteswrt_sondes(xn_adv,xn_shl)
@@ -741,6 +871,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   real,dimension(nout,nglobal) :: g_out ! for output, collected
   real,dimension(nglobal) :: g_ps ! for ps, collected
   integer :: nglob, nloc         ! Site indices
+  character(len=len(s_species)),  dimension (size(s_species)) :: s_units !for csv
   character(len=40)  :: outfile
   character(len=4)   :: suffix
   integer, parameter :: NTYPES = 2      ! No. types, now 2 (sites, sondes)
@@ -754,6 +885,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   integer  :: Nlevels,ispec,NSPEC,NStations,NMetaData
   integer ::i_Att_MPI
   logical :: debug_1d=.false.
+  character(len=*),parameter :: dtxt='SitesOut:' ! debug text
 
   select case (fname)
   case("sites") ;type=1
@@ -772,11 +904,51 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
        ) then
     prev_year(type) = current_date%year
     write(suffix,fmt="(i4)") current_date%year
-    fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
+   !Name of the NetCDF file. Will overwrite any preexisting file
+    fileName = fname // "_" // suffix // ".nc"
+
+    !take Spec_Attributes from any processor with at least one site/sonde
+    ! Jun 2019  moved here
+     if(MasterProc) then
+      !defintions of file for NetCDF output
+      select case(fname)
+      case("sondes")
+        NLevels=KMAX_MID !number of vertical levels (counting from surface)
+        NSPEC=NSPC_SONDE  !number of species defined for sondes
+      case("sites")
+        NLevels=1
+        NSPEC=NSPC_SITE !number of species defined for sites
+      end select
+      NStations = nglobal !number of sondes or sites defined
+
+      if(DEBUG%SITES) write(*, *)'ATT-TEST ', me, i_Att, Spec_Att(2,1)
+
+      if(i_Att>0.and.i_Att/=NSPEC)then
+        write(*,*)'MISSING species attribute? ',i_Att,NSPEC
+      end if
+      do d = 1, NPROC-1
+        call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_CALC,MPISTATUS, IERROR)
+        if(i_Att_MPI>0)then
+          if(i_Att_MPI/=NSPEC)then
+             write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
+          end if
+          call MPI_RECV(Spec_Att,Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
+               MPI_BYTE, d, 747, MPI_COMM_CALC,MPISTATUS, IERROR)
+        end if
+     end do
+    else !not MasterProc
+      i_Att_MPI=i_Att
+      call MPI_SEND(i_Att_MPI, 4*1, MPI_BYTE, 0, 746, MPI_COMM_CALC, IERROR)
+      if(i_Att>0)then
+        call MPI_SEND(Spec_Att, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 747, MPI_COMM_CALC, IERROR)
+      end if
+    end if
+   !  END TESTING MOVE HERE
 
     if(MasterProc) then
       if(prev_year(type)>0) close(io_num)  ! Close last-year file
       prev_year(type) = current_date%year
+
 
       ! Open new file for write-out
       write(suffix,fmt="(i4)") current_date%year
@@ -789,21 +961,26 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         write(io_num,'(a50,3(",",i4))') s_name(n), s_gx(n), s_gy(n),s_gz(n)
       end do ! nglobal
 
-      write(io_num,'(i3,a)') size(s_species), " Variables units: ppb"
-      !MV write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
-      !MAY2019 write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
+      write(io_num,'(i3,a)') size(s_species), " Variables units: mixed"
       write(io_num,'(9999a)')"site,date,hh", (",", (trim(s_species(i)) ),i=1,size(s_species))
+      if ( fname == 'sites' ) then
+        do i=1, size(s_species)
+          s_units(i) = str_replace(Spec_Att(i,1), "units:C:",'')
+         end do
+        write(io_num,'(9999a)')"site,date,hh", (",", (trim(s_units(i)) ),i=1,size(s_species))
+      end if
 
-      !defintions of file for NetCDF output
-      select case(fname)
-      case("sondes")
-        NLevels=KMAX_MID !number of vertical levels (counting from surface)
-        NSPEC=NSPC_SONDE  !number of species defined for sondes
-      case("sites")
-        NLevels=1
-        NSPEC=NSPC_SITE !number of species defined for sites
-      end select
-      NStations = nglobal !number of sondes or sites defined
+      !MOVED up
+      !!defintions of file for NetCDF output
+      !select case(fname)
+      !case("sondes")
+      !  NLevels=KMAX_MID !number of vertical levels (counting from surface)
+      !  NSPEC=NSPC_SONDE  !number of species defined for sondes
+      !case("sites")
+      !  NLevels=1
+      !  NSPEC=NSPC_SITE !number of species defined for sites
+      !end select
+      !NStations = nglobal !number of sondes or sites defined
 
       allocate(SpecDef(NSPEC,0:NattributesMAX),MetaData(0:NStations,NattributesMAX))
       SpecDef=""
@@ -857,20 +1034,21 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         end select
       end do
       
+      !MOVED up
       !take Spec_Attributes from any processor with at least one site/sonde
-      if(i_Att>0.and.i_Att/=NSPEC)then
-        write(*,*)'MISSING species attribute? ',i_Att,NSPEC
-      end if
-      do d = 1, NPROC-1
-        call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_CALC,MPISTATUS, IERROR)
-        if(i_Att_MPI>0)then
-          if(i_Att_MPI/=NSPEC)then
-             write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
-          end if
-          call MPI_RECV(Spec_Att,Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
-               MPI_BYTE, d, 747, MPI_COMM_CALC,MPISTATUS, IERROR)
-        end if
-      end do
+      !if(i_Att>0.and.i_Att/=NSPEC)then
+      !  write(*,*)'MISSING species attribute? ',i_Att,NSPEC
+      !end if
+      !do d = 1, NPROC-1
+      !  call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_CALC,MPISTATUS, IERROR)
+      !  if(i_Att_MPI>0)then
+      !    if(i_Att_MPI/=NSPEC)then
+      !       write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
+      !    end if
+      !    call MPI_RECV(Spec_Att,Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
+      !         MPI_BYTE, d, 747, MPI_COMM_CALC,MPISTATUS, IERROR)
+      !  end if
+      !end do
 
       call CheckStop(NattributesMAX<NSpec_Att+3,'Coords: NattributesMAX too small')
       do i=1,NSPEC
@@ -961,9 +1139,11 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       NLevels=1
       NSPEC=NSPC_SITE!number of species defined for sites
     end if
+print *, 'SPECNAME', trim(fname), NSPEC
     allocate(SpecName(NSPEC))
     do ispec=1,NSPEC
       SpecName(ispec)=trim(s_species(ispec))!name of the variable for one sites/sonde and species          
+      print *, 'SPECNAME', trim(fname), ispec, trim(SpecName(ispec))
     end do ! n
     if(nglobal>0)then
        call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=debug_1d)
