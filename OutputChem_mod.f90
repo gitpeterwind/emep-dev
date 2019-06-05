@@ -5,8 +5,9 @@ use Config_module,     only: num_lev3d, MasterProc, runlabel1,&
                              FREQ_HOURLY, END_OF_EMEPDAY, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, &
                              IOU_HOUR_INST, IOU_MAX_MAX, HOURLYFILE_ending, &
-                             startdate, enddate, out_startdate, USE_uEMEP, USES&
-                             ,SITE_XTRA_D2D
+                             startdate, enddate, out_startdate, USE_uEMEP, USES!&
+                             !,nsite_extra_d2d, nsite_extra_misc, nsite_extra &
+                             !,SITE_XTRA_D2D
 use Debug_module,       only: DEBUG => DEBUG_OUTPUTCHEM
 use Derived_mod,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
@@ -17,7 +18,6 @@ use Io_mod,             only: IO_WRTCHEM, IO_TMP, datewrite
 use NetCDF_mod,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
 use OwnDataTypes_mod,   only: Deriv, print_deriv_type, TXTLEN_FILE
 use Par_mod,            only: LIMAX, LJMAX, me
-use SmallUtils_mod,     only: find_duplicates
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
                              ,daynumber,add2current_date,date
 use TimeDate_ExtraUtil_mod,only: date2string, date_is_reached
@@ -296,10 +296,6 @@ subroutine set_output_defs
 
   call Init_Units()
   
-  ! Safety checks for common mistakes:
-  errmsg = find_duplicates(SITE_XTRA_D2D)
-  call CheckStop ( errmsg /= 'no', dtxt//' Duplicate SITE_XTRA_D2D'//errmsg)
-
   !*** Wanted dates for instantaneous values output:
   !    specify months,days,hours for which full output is wanted.
   wanted_dates_inst(1) = date(-1,1,1,0,0)
