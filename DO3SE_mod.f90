@@ -161,7 +161,7 @@ contains
     logical, intent(in) :: debug_flag
     character(len=20) :: txtdate
     character(len=*), parameter:: dtxt='gsDO3SE:'
-    logical, parameter :: OLDBUG = .false.
+    logical, parameter :: BUGGY = .true. ! TMP2019
 
 ! Outputs:
 !    L%g_sto, L%g_sun       ! stomatal conductance for canopy and sun-leaves
@@ -188,7 +188,7 @@ contains
 !    al. (1998), eqns. 31-35, based upon sun/shade method of  
 !    Norman (1979,1982)
 
-  if ( OLDBUG) then
+  if ( BUGGY) then
     L%f_sun   = (1.0 - exp (-do3se(iLC)%f_light*L%PARsun  ) ) 
     L%f_shade = (1.0 - exp (-do3se(iLC)%f_light*L%PARshade) ) 
   else

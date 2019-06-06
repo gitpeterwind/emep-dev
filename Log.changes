@@ -21,31 +21,6 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-05 June 2019, Dave
-
-
-IMPORTANT (for PODs):
-
-  DO3SE_mod - bug fix on PAR enabled (keep OLDBUG fflag for comprisons)
-
-Convenience:
-  Derived_mod - changed HORIZ_LINE to avoid f2003 new_line
-  SmallUtils_mod - added (back) str_replace.  I find it more intuitive than key2str.
-
-SITES related:
-
-  Config_module - adjusted for new Sites_mod
-
-  config_emep.nml adjusted to cope with new sites stuff
-
-  Sites_mod - more flexible settings for ADV and SHL in sites output
-              - can specify by species or ask for 'ALL'
-              Added units to sites csv file
-
-  OutputChem - no need for SITE_XTRA_D2D, etc
-
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 May 2019, Dave
 
 rv4_33beta tag started ... results will change over coming days...

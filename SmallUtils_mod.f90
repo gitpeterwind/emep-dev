@@ -22,7 +22,6 @@ module SmallUtils_mod
   public :: find_indices !< Finds indices of arrays of items in list 
   public :: find_duplicates !< checks if an array of strings contains duplicates
   public :: trims        !> removes all blanks from string
-  public :: str_replace  !> replaces string
   public :: key2str      ! replace keyword occurence(s) on a string by given value
   private :: skey2str    !
   private :: ikey2str
@@ -241,28 +240,26 @@ function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
 end function find_index_c
 
 !============================================================================
-function find_index_i(wanted, list, first_only, debug)  result(Index)
+function find_index_i(wanted, list, debug)  result(Index)
   integer, intent(in) :: wanted
   integer, dimension(:), intent(in) :: list
-  logical, intent(in), optional :: first_only
   logical, intent(in), optional :: debug
 !  Output:
   integer ::   Index       !
+
   character(len=*), parameter :: &
              debug_fmt="('debug find_index ',I0,':',I0,A2,I0)"
-  logical :: debug_print, OnlyFirst
+  logical :: debug_print
   integer :: n_match ! Count for safety
   integer :: n
 
   n_match  = 0
   Index =  NOT_FOUND
   debug_print=.false.;if(present(debug))debug_print=debug
-  OnlyFirst=.false.;if(present(first_only))OnlyFirst=first_only
 
   do n = 1, size(list)
     if ( wanted == list(n)  ) then
       Index = n
-      if( OnlyFirst) return  ! Just 1st match
       n_match = n_match + 1
       if(debug_print) &
       print debug_fmt,n,list(n),"==",wanted
@@ -349,25 +346,6 @@ end function find_duplicates
 
  end function trims
 !============================================================================
-! Adapted from D. Frank code, string_functions
-! Replaces 'text' in string s with 'rep'
-function str_replace (s,text,rep)  result(outs)
-  character(len=*)          :: s,text,rep
-  character(len=len(s)+100) :: outs     ! provide outs with extra 100 char len
-  integer             :: i, nt, nr
-
-  outs = s
-  nt = len_trim(text)
-  nr = len_trim(rep)
-
-  do
-     i = index(outs,text(:nt))
-     if (i == 0) exit
-     outs = outs(:i-1) // rep(:nr) // outs(i+nt:)
-  end do
-end function str_replace
-!============================================================================
-
 !> Function posted by SethMMorton at: 
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
 !> Simpler to understand than use of iachar etc. (see same web side).
