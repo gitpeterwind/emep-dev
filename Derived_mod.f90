@@ -381,7 +381,7 @@ subroutine Define_Derived()
         unittxt="m"
         Is3D=.true.
       case('SIA25','PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
-           'PM25water','PM25_wet','PM10_wet')
+           'PM25water','PM25_wet','PM10_wet','PM_coarse')
         iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
                   ! group_calc gets the unit conversion factor from Group_Units
         call Units_Scale(outunit,iadv,unitscale,unittxt)
@@ -466,7 +466,7 @@ subroutine Define_Derived()
          unittxt=trim(outunit)
       end select
 
-      if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE, &
+      if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE,&
         dtxt//":MISC "//trim(outname),outind,trim(class)
 
       call AddNewDeriv(outname,class,subclass,"-",trim(unittxt),&
@@ -525,7 +525,7 @@ subroutine Define_Derived()
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           dtxt//"OutputFields already defined output "//trim(dname))
 
-        if(dbg0) write(*,"(a,/,a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
+        if(dbg0) write(*,"(2a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
 
       case("Local_Correct")
@@ -912,7 +912,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_sia=-999 ,ind3d_sia=-999,   &
     ind2d_pmfine=-999 ,ind3d_pmfine=-999,   &
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
-    ind2d_pm10=-999   ,ind3d_pm10=-999
+    ind2d_pm10=-999   ,ind3d_pm10=-999,     &
+    ind2d_pm25=-999 
 
   integer :: imet_tmp, ind, ind_tmp, iadvDep
   real, pointer, dimension(:,:,:) :: met_p => null()
@@ -1326,6 +1327,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                                fracPM25 * &
             ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+        ind2d_pm25 = n
+
+    case ( "PM_coarse" )      !
+      if(first_call)then
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind2d_pm25 <1,"Missing PM25 output for "//trim(class))
+        call CheckStop(ind2d_pm10 <1,"Missing PM10 output for "//trim(class))
+     end if
+
+      forall(i=1:limax,j=1:ljmax) &
+        d_2d(n,i,j,IOU_INST) = d_2d(ind2d_pm10,i,j,IOU_INST) - &
+                               d_2d(ind2d_pm25,i,j,IOU_INST) 
 
     case ( "SIA25" )   ! Need to subtract some NO3_c from SIA
       if(first_call)then

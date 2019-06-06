@@ -21,6 +21,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Svetlana (Peter)
+
+"PM_coarse" in Derived_mod and
+'SURF_ug_PM_coarse'   ,'ug' ,'2d','PM_coarse' ,'MISC','YMD',
+in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 06 June 2019, Anna (Peter)
 
 Mace Head correction for 2017

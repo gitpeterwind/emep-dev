@@ -413,7 +413,7 @@ OutputConcs=
       'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'SS'                  ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
@@ -481,6 +481,7 @@ OutputConcs=
       'SURF_ug_SIA25'        ,'ug' ,'2d','SIA25'    ,'MISC','YMD',
 !SPECIAL PM25 will be sum of fine + fraction coarse
       'SURF_ug_PM25'        ,'ug' ,'2d','PM25'      ,'MISC','YMD',
+      'SURF_ug_PM_coarse'   ,'ug' ,'2d','PM_coarse' ,'MISC','YMD',
       'SURF_ug_PM25X'       ,'ug' ,'2d','PM25X'     ,'MISC','YMD',
       'SURF_ug_PM25X_rh50'  ,'ug' ,'2d','PM25X_rh50','MISC','YMD',
       'SURF_ug_PM25_rh50'   ,'ug' ,'2d','PM25_rh50' ,'MISC','YMD',
