@@ -367,7 +367,7 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def2,ndim,kmax,loc_frac_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.true.,chunksizes=chunksizes)  
            endif
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               if(me==0)write(*,*)'making '//def1%name//' with dimsizes ',(dimSizes_tot(i),i=1,ndim_tot)
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
@@ -387,7 +387,7 @@ subroutine out_uEMEP(iotyp)
         do iisec=1,uEMEP%poll(ipoll)%Nsectors
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)
-           if(iisec==0)fracsum=0.0
+           if(iisec==1)fracsum=0.0
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -402,7 +402,7 @@ subroutine out_uEMEP(iotyp)
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           loc_frac_hour_inst(dx,dy,i,j,k,isec_poll)=loc_frac(isec_poll,dx,dy,i,j,k)
-                          if(iisec==0.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_hour_inst(dx,dy,i,j,k,isec_poll)
+                          if(iisec==1.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_hour_inst(dx,dy,i,j,k,isec_poll)
                        enddo
                     enddo
                  enddo
@@ -414,7 +414,7 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_hour_inst(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
 
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
@@ -466,7 +466,7 @@ subroutine out_uEMEP(iotyp)
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)
 
-           if(iisec==0)fracsum=0.0
+           if(iisec==1)fracsum=0.0
            !copy before dividing by loc_tot_hour
            if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_hour(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
 
@@ -477,7 +477,7 @@ subroutine out_uEMEP(iotyp)
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           loc_frac_hour(dx,dy,i,j,k,isec_poll)=loc_frac_hour(dx,dy,i,j,k,isec_poll)*invtot
-                          if(iisec==0.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_hour(dx,dy,i,j,k,isec_poll)
+                          if(iisec==1.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_hour(dx,dy,i,j,k,isec_poll)
                        enddo
                     enddo
                  enddo
@@ -490,7 +490,7 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_hour(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
 
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
@@ -538,7 +538,7 @@ subroutine out_uEMEP(iotyp)
            isec=uEMEP%poll(ipoll)%sector(iisec)
            !copy before dividing by loc_tot
            if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_day(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
-           if(iisec==0)fracsum=0.0
+           if(iisec==1)fracsum=0.0
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -546,7 +546,7 @@ subroutine out_uEMEP(iotyp)
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           loc_frac_day(dx,dy,i,j,k,isec_poll)=loc_frac_day(dx,dy,i,j,k,isec_poll)*invtot
-                          if(iisec==0.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_day(dx,dy,i,j,k,isec_poll)
+                          if(iisec==1.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_day(dx,dy,i,j,k,isec_poll)
                        enddo
                     enddo
                  enddo
@@ -560,7 +560,7 @@ subroutine out_uEMEP(iotyp)
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
 
 
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
@@ -607,7 +607,7 @@ subroutine out_uEMEP(iotyp)
            isec=uEMEP%poll(ipoll)%sector(iisec)
            !copy before dividing by loc_tot
            if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_month(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEPNvertout)
-           if(iisec==0)fracsum=0.0
+           if(iisec==1)fracsum=0.0
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -615,7 +615,7 @@ subroutine out_uEMEP(iotyp)
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           loc_frac_month(dx,dy,i,j,k,isec_poll)=loc_frac_month(dx,dy,i,j,k,isec_poll)*invtot
-                          if(iisec==0.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_month(dx,dy,i,j,k,isec_poll)
+                          if(iisec==1.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_month(dx,dy,i,j,k,isec_poll)
                        enddo
                     enddo
                  enddo
@@ -628,7 +628,7 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_month(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)   
 
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
@@ -680,7 +680,7 @@ subroutine out_uEMEP(iotyp)
               t2 = MPI_WTIME()
               if(me==0)write(*,*)'transport extendarea ',t2-t1,' seconds'
            endif
-           if(iisec==0)fracsum=0.0
+           if(iisec==1)fracsum=0.0
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -688,7 +688,7 @@ subroutine out_uEMEP(iotyp)
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           loc_frac_full(dx,dy,i,j,k,isec_poll)=loc_frac_full(dx,dy,i,j,k,isec_poll)*invtot
-                         if(iisec==0.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_full(dx,dy,i,j,k,isec_poll)
+                         if(iisec==1.and.k==KMAX_MID)fracsum(i,j)=fracsum(i,j)+loc_frac_full(dx,dy,i,j,k,isec_poll)
                        enddo
                     enddo
                  enddo
@@ -701,7 +701,7 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_full(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEPNvertout+1,isec_poll),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
 
-           if(iisec==0)then
+           if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
