@@ -21,6 +21,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Dave
+
+IMPORTANT (for PODs):
+
+  DO3SE_mod - bug fix on PAR enabled (keep OLDBUG fflag for comprisons)
+
+Convenience:
+  Derived_mod - changed HORIZ_LINE to avoid f2003 new_line
+  SmallUtils_mod - added (back) str_replace.  I find it more intuitive than key2str.
+
+
+REVERTED HERE
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 May 2019, Dave
 
 rv4_33beta tag started ... results will change over coming days...
