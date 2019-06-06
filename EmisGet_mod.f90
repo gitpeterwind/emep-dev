@@ -795,7 +795,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 !-------------------------------------------------------------------------
 
   !*** local variables ***
-  integer            :: ie, iq, ic, iland1, iland2 & ! loop variables
+  integer            :: ix, ie, iq, ic, iland1, iland2 & ! loop variables
                        ,inland                     & ! Country read from femis
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
                        ,nwords,ncols, n, oldn       ! No. cols. in "femis" 
@@ -806,6 +806,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   character(len=200) :: txt                    ! For read-in 
   character(len=30), dimension(NCOLS_MAX)::  txtinwords ! to read lines
   character(len=*), parameter :: dtxt = 'femis:' !DS
+  character(len=30) :: country_ISO, word30
 
  !--------------------------------------------------------
 
@@ -957,12 +958,22 @@ end if
           call CheckStop(femis_lonmin(N_femis_lonlat)>femis_lonmax(N_femis_lonlat),&
                "femislonlat: crossing 180 degrees longitude not allowed")
        else
-!      read(unit=IO_EMIS,fmt=*,iostat=ios) inland, isec, (e_f(ic),ic=1,ncols)
-!      if ( ios <  0 ) exit READFILE                   ! End of file
-!      call CheckStop( ios > 0 , "EmisGet: read error in femis" )
 
-          read(txt,fmt=*,iostat=ios) inland, isec, (e_f(ic),ic=1,ncols)
-          
+          if(txtinwords(1)=='Country' .or. txtinwords(1)=='country'  .or. txtinwords(1)=='Country_ISO' )then
+             read(txt,fmt=*,iostat=ios) word30, country_ISO, isec, (e_f(ic),ic=1,ncols)
+             ix = find_index(trim(country_ISO),Country(:)%code)!find country array index from ISO
+             if(ix<0)then
+                if(MasterProc)write(*,*)'femis: Country ',trim(country_ISO),' not recognized'
+                CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+                CALL MPI_FINALIZE(IERROR)
+                stop
+             else
+                if(MasterProc)write(*,*)'femis: reducing Country ',trim(Country(ix)%name)
+             endif
+             inland =  Country(ix)%icode
+          else
+             read(txt,fmt=*,iostat=ios) inland, isec, (e_f(ic),ic=1,ncols)
+          endif
           n = n + 1
           if(debugm0) then
              !DSwrite(unit=6,fmt=*) dtxt//"FEMIS READ", inland, &

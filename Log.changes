@@ -21,6 +21,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Peter
+
+femis: allow country_ISO instead of code in femis, with keyword 'Country'
+(or 'country' or 'Country_ISO').
+Example of femis:
+
+Name       sec     sox   nox   voc   nh3  co   pm25 pmco
+Country  DE 0      0.0   1.0   1.0   1.0  1.0   1.0  1.0
+
+Will stop cleanly if the country is not recognized.
+(Can be combined with lines in other formats)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 06 June 2019, Dave
 
 IMPORTANT (for PODs):
