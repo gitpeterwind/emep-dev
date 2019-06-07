@@ -1805,27 +1805,20 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_2d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
-      ind_tmp = -999
-
-      if(chemgroups(igrp)%name == "PMFINE" .and. ind2d_pmfine<0) then
-        ind2d_pmfine = n
-        ind_tmp = n
-
-      else if(chemgroups(igrp)%name == "SIA" .and. ind2d_sia<0) then
-        ind2d_sia = n
-        ind_tmp = n
-
-      else if(chemgroups(igrp)%name == "PM10" .and. ind2d_pm10<0) then
-        ind2d_pm10 = n
-        ind_tmp = n
+      if(first_call)then
+        select case(chemgroups(igrp)%name)
+          case("PMFINE"); ind2d_pmfine = n
+          case("SIA");    ind2d_sia = n
+          case("PM10");   ind2d_pm10 = n
+        end select
+        if(dbgP) write(*,"(a,3i4,2a15)") &
+          "Deriv: CASEGRP - 2DFOUND "//trim(class), n, igrp, ngrp,&
+          trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       end if
 
-      if(dbgP.and.first_call) write(*,"(a,4i4,2a15)") &
-         dtxt//"CASEGRP - 2DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
-           trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
-        write(*,"(a,4i5,3(1x,a))")dtxt//"CASEGRP:"//trim(f_2d(n)%name), &
-          n, igrp, ngrp, ind_tmp, trim(class), trim(subclass), &
+        write(*,"(a,3i5,3(1x,a))")dtxt//"CASEGRP:"//trim(f_2d(n)%name), &
+          n, igrp, ngrp, trim(class), trim(subclass), &
             trim(chemgroups(igrp)%name)
         write(*,"(a,88i4)") "CASEGRP:", chemgroups(igrp)%specs
         write(*,*) "CASEGRPunit ", trim(f_2d(n)%unit)
@@ -2156,30 +2149,17 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_3d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
-      ind_tmp = -333
-
-      if(chemgroups(igrp)%name == "PMFINE" .and. ind3d_pmfine<0) then
-        ind3d_pmfine = n
-        ind_tmp = n
-        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE 3d FRACTION ",&
-          n, ind3d_pmfine, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
-      end if
-      if(chemgroups(igrp)%name == "SIA" .and. ind3d_sia<0) then
-        ind3d_sia = n
-        ind_tmp = n
-        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND SIA 3d FRACTION ",&
-          n, ind3d_sia, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
+      if(first_call)then
+        select case (chemgroups(igrp)%name)
+          case("PMFINE"); ind3d_pmfine = n
+          case("SIA");    ind3d_sia = n
+          case("PM10");   ind3d_pm10 = n
+        end select
+        if(MasterProc) write(*,"(a,3i4,2a15)") &
+          "Deriv: CASEGRP - 3DFOUND "//trim(class), n, igrp, ngrp,&
+          trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
       end if
 
-      if(chemgroups(igrp)%name == "PM10" .and. ind3d_pm10<0) then
-        ind3d_pm10 = n
-        if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 3d FRACTION ",&
-          n, ind3d_pm10, trim(chemgroups(igrp)%name), trim(f_3d(n)%name)
-      end if
-
-      if(MasterProc.and.first_call ) write(*,"(a,4i4,2a15)") &
-         dtxt//"CASEGRP - 3DFOUND "//trim(class), n, ind_tmp, igrp, ngrp,&
-           trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       if(dbg0) then
         write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(class)
         write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
