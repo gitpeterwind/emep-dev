@@ -1,17 +1,19 @@
 =============================================================================
 IMPORTANT NOTE:
 
-April 2018 (A2018 changes)
+After checking out new code from dev, one has to copy the appropriate
+chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
+chemistry, run:
 
-CM files have to prepared first and placed in the ZCM_ directories. This preparation
-should be done from the new ecosx/box/src directory - see the README_emep_setup.md
-there.
+    mk.ChemFiles EmChem19
 
-Then, to get e.g. EmChem16x chemistry, run:
+  [This will copy pre-made files from ZCM_EmChem19. The files in that directory
+    are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
+    ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
-    mk.ChemFiles EmChem16x
-
-ToDo?? - GenChem makes femis.defaults in the ZCM_... directory
+MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
+the appropriate place, usually DataDir/ZCM_EmChem16x or
+(latest) DataDir/ZCM_EmChem19.
 
 =============================================================================
 !----------------------------------------------------------
