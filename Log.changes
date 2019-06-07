@@ -20,6 +20,28 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 JUne 2019, Dave/Robert
+
+ZCM_EmChem19 introduced. (EmChem16ziVBS2012 in RB's testing system)
+This scheme has been thoroughly tested against MCM and performs better
+in box model tests than EmChem16. (Differences will be smaller in emepctm.)
+
+To use:
+
+1. Compile:
+   mk.ChemFiles EmChem19
+   make clean
+   make
+
+2. Make sure that DataDir has an emissplit directory ZCM_EmChem19 on DataDir (exists
+   on vilje and stallo 7th June).
+
+3. Edit config_emep.nml - uncomment the "Split" lines to point to that directory
+
+4. Run, and check ;-)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 06 June 2019, Svetlana (Peter)
 

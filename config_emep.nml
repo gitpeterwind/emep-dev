@@ -74,6 +74,12 @@
 !----------------------------------------------------------------------
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
+! SplitDefaultFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
+! SplitSpecialsFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
+! EmChem19 needs this to be uncommented:
+!SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
+!SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
+
 !
 !only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
 !  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
