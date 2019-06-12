@@ -24,6 +24,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 June 2019, Peter, Dave
+
+USES%MonthlyNH3 set to 'LOTOS' automatically when european and not global grid 
+is detected.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 07 JUne 2019, Dave/Robert
 
 ZCM_EmChem19 introduced. (EmChem16ziVBS2012 in RB's testing system)
