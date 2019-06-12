@@ -3125,7 +3125,11 @@ subroutine set_EuropeanAndGlobal_Config()
         USES%EURO_SOILNOX = .false. 
         if(MasterProc)write(*,*)dtxt//'Not using EURO_SOILNOX because GLOBAL grid'
      endif
-     
+
+     if(USES%MonthlyNH3  == 'LOTOS')then
+        if(MasterProc)write(*,*)dtxt//'WARNING: MonthlyNH3=LOTOS is not advised outside Europe'
+     endif
+
   endif
   if(MasterProc)write(*,'(a,3(a,L))')dtxt//'Final settings, EUR = '//trim(EUROPEAN_settings)&
        //', GLOB = '//trim(GLOBAL_settings)&
