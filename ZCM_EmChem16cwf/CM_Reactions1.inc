@@ -130,12 +130,12 @@
     + rct(81,k) * xnew(C2H4)  &
     + rct(82,k) * xnew(C3H6)  &
     + rct(83,k) * xnew(NO)  &
-    + rct(79,k) * xnew(SHIPNOX)  &
     + rct(84,k) * xnew(APINENE)  &
     + rct(85,k) * xnew(BPINENE)  &
     + rct(86,k) * xnew(XTERP)  &
     + rct(88,k) * xnew(TERPOOH)  &
-    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(SO2)
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(SO2)  &
+    + rct(79,k) * xnew(SHIPNOX)
   
   xnew(OH) = (xold(OH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -640,10 +640,10 @@
 
   P = rct(32,k) * xnew(NO3) * xnew(HCHO)  &
     + rct(79,k) * xnew(NO2) * xnew(OH)  &
-    + rct(79,k) * xnew(SHIPNOX) * xnew(OH)  &
-    + 3.2e-5 * xnew(SHIPNOX)  &
     + 2* rct(94,k) * xnew(N2O5)  &
-    + rct(95,k) * xnew(NO3)
+    + rct(95,k) * xnew(NO3)  &
+    + rct(79,k) * xnew(SHIPNOX) * xnew(OH)  &
+    + 3.2e-5 * xnew(SHIPNOX)
   
   L = rct(16,k) * xnew(OH)  &
     + rcphot(IDHNO3,k)  &
@@ -1197,16 +1197,6 @@
   xnew(SO2) = (xold(SO2) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> SHIPNOX
-
-  P = rcemis(SHIPNOX,k)
-  
-  L = rct(79,k) * xnew(OH)  &
-    + 3.2e-5
-  
-  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
-
-
 !-> MVK
 
   P = rct(45,k) * xnew(TERPO2) * xnew(NO)
@@ -1272,6 +1262,16 @@
   ! L = 0.0
   
   ! Nothing to do for VBS_TEST! xnew(VBS_TEST) = max(0.0, xold(VBS_TEST))
+
+
+!-> SHIPNOX
+
+  P = rcemis(SHIPNOX,k)
+  
+  L = rct(79,k) * xnew(OH)  &
+    + 3.2e-5
+  
+  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> Dust_ROAD_f

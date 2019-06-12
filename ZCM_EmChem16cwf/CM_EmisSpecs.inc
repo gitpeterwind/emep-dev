@@ -18,7 +18,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "GLYOX         " &
 , "MGLYOX        " &
 , "C5H8          " &
-, "SHIPNOX       " &
 , "POM_F_FFUEL   " &
 , "POM_C_FFUEL   " &
 , "EC_F_FFUEL_NEW" &
@@ -29,6 +28,9 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "EC_F_WOOD_AGE " &
 , "REMPPM25      " &
 , "REMPPM_C      " &
+, "ASH_F         " &
+, "ASH_C         " &
+, "SHIPNOX       " &
 , "FFIRE_CO      " &
 , "FFIRE_OM      " &
 , "FFIRE_BC      " &
@@ -41,8 +43,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "DUST_ROAD_C   " &
 , "DUST_SAH_F    " &
 , "DUST_SAH_C    " &
-, "ASH_F         " &
-, "ASH_C         " &
 , "POLLEN_BIRCH  " &
 , "POLLEN_OLIVE  " &
 , "POLLEN_RWEED  " &
