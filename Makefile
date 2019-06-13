@@ -143,7 +143,7 @@ MACC-EVAan: MACC-EVA-3DVar16  # 3DVar run, with EVA nest/dump output
 Pollen:     MACC-Pollen
 
 # Pollen for MACC FC runs
-MACC MACC-Pollen 3DVar%: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
+MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
 MACC MACC-Pollen: ./ZD_Pollen/Pollen_mod.f90 ./ZD_Pollen/Pollen_const_mod.f90
 
 # Test
