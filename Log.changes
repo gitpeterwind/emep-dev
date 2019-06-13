@@ -24,12 +24,13 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-13 June 2019, Peter
+13 June 2019, Peter & Alvaro
 
-find_icbc from Nest_mod is now case insensitive
-
- adv_bc%found and adv_ic%found computed independently, also when no extrenal 
- bc are used
+Case insensitive Nest variable mappings for IC/BC files
+- find_icbc (Nest_mod) is now case insensitive
+- set_extbic_id (ExternalBICs_mod) is now case insensitive
+- adv_bc%found and adv_ic%found computed independently,
+  also when no extrenal bc are used
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June 2019, Peter, Dave
