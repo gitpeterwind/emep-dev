@@ -63,7 +63,7 @@ use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
 use Debug_module,           only: DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_mod  
 use netcdf,                 only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
-                                  nf90_inquire_dimension,nf90_inq_varid,&
+                                  nf90_inquire,nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
                                   nf90_put_att,nf90_noerr,nf90_nowrite,nf90_global
 use netcdf_mod,              only: Out_netCDF,&
@@ -703,6 +703,8 @@ function find_icbc(filename_read,varname) result(found)
   character(len=*), dimension(:), intent(inout) :: varname
   logical, dimension(size(varname))          :: found
   integer :: ncFileID,varID,status,n
+  character(len=100), allocatable :: cdfname(:)
+  integer :: xtype,ndims,nDimensions,nVariables,nAttributes
 
   found(:)=.false.
   if(MasterProc)then
@@ -711,16 +713,32 @@ function find_icbc(filename_read,varname) result(found)
       print *,'icbc: not found ',trim(filename_read)
     else
       print *,'icbc: reading ',trim(filename_read)
+      !1) make list of variables in the file
+      call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
+      allocate(cdfname(nVariables))
+      do varid=1,nVariables
+         !could use ndims and possibly xtype to exclude some variables
+         call check(nf90_Inquire_Variable(ncFileID,varid,cdfname(varid),xtype,ndims))
+      enddo
       do n=1,size(varname)
-        if(varname(n)=="") cycle
-        status=nf90_inq_varid(ncFileID,trim(varname(n)),varID)
-        ! try again with upper case
-        if(status/=nf90_noerr)then
-          varname(n)=to_upper(varname(n))
-          status=nf90_inq_varid(ncFileID,trim(varname(n)),varID)
-        end if
-        found(n)=(status==nf90_noerr)
+         if(varname(n)=="") cycle
+         !2) first check if the exact same name is found
+         varid=find_index(trim(varname(n)),cdfname(:))
+         found(n)=.false.
+         if(varid<0)then
+            !3) check if a name with any lower/upper case characters is found:
+            varid=find_index(trim(varname(n)),cdfname(:),first_only=.true.,any_case=.true.)
+            if(varid>0)then
+               print *,'icbc: WARNING, reading '//trim(cdfname(varid))//' instead of '//trim(varname(n))
+               !4)replace the requested name with the cdf name (NB: only master has the correct name!)
+               varname(n) = trim(cdfname(varid))
+               found(n)=.true.
+            endif
+         else
+            found(n)=.true.
+         endif
       end do
+      deallocate(cdfname)
       call check(nf90_close(ncFileID))
     end if
   end if
@@ -1541,7 +1559,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
         unitscale=adv_bc(bc)%frac
       end if
       if(unitscale/=1.0) data=data*unitscale
-    end if
+   end if
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
 

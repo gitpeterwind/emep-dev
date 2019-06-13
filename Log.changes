@@ -24,6 +24,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 June 2019, Peter
+
+find_icbc from Nest_mod is now case insensitive
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June 2019, Peter, Dave
 
 USES%MonthlyNH3 set to 'LOTOS' automatically when european and not global grid 
