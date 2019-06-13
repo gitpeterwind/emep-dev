@@ -664,7 +664,12 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
     adv_bc=>EXTERNAL_BC
     adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
   else
-    adv_bc=>adv_ic
+     adv_bc(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
+     adv_bc(:)%spcname=species_adv(:)%name
+     adv_bc(:)%varname=species_adv(:)%name
+     adv_bc(:)%frac=1.0
+     adv_bc(:)%wanted=.true.
+     adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
   end if
 
   if(MasterProc)then
