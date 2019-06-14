@@ -14,7 +14,6 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
 &end
 !------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
-!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
@@ -30,8 +29,6 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
   EMEP_EuroBVOCFile     = 'DataDir/EMEP_EuroBVOC.nc',
 !------------------------------
   EXP_NAME              = 'EMERGENCY',
-  MY_OUTPUTS            = '', ! defined in config_Outputs
-! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
   EmBio%GlobBvocMethod  = 'GLC-CLM', ! default for GLOBAL runs, not used for Europe
   EmBio%CLF             =  0.59,     ! 1/1.7 for CLM
@@ -71,11 +68,8 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = 'Mixed', ! 'emislist' or 'CdfFractions'
-  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap'
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for 3DPROFILES
   USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   USES%PreADV            = T,          ! Distribute point-source before advection
   USES%NOCHEM            = T,          ! Turns off chemistry
@@ -94,7 +88,7 @@ MEP_MSC-W_model.rv4.17.OpenSource/input',
 ! flocdef="DataDir/volcano_location.csv",
 ! femsdef="DataDir/volcano_emission.csv",
   need_topo=T, ! stop simulation if topo_nc not found
-  NMAX_LOC=1, ! number of locations (-1 for autodetect)
+  NMAX_LOC=20, ! number of locations (-1 for autodetect)
   NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)
 &end
 &Nest_config

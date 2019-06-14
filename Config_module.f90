@@ -5,8 +5,9 @@ module Config_module
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
+use AeroConstants_mod,     only: AERO
 use CheckStop_mod,         only: CheckStop
-use ChemDims_mod,          only: NSPEC_ADV
+use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
@@ -33,19 +34,18 @@ public :: Config_Constants
 !  FORECAST    Forecast run, MACC-ENS hourly output & BC
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
-!
-! We separate the concept of exp_name and the
-! variable used to set the type of output in My_outputs_mod.
-! The longer term solution puts the outputs into namelists
-! but for now we use the MY_OUTPUTS flag. EXP_NAME can
-! now be anything descriptive.
 
 !integer, public, parameter :: &
 !  TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
 !  TXTLEN_FILE = 200    ! large enough for paths from namelists
 
 CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
-CHARACTER(LEN=TXTLEN_NAME), public, save :: MY_OUTPUTS="EMEPSTD"
+
+! It is quite easy to end config files accidently through e.g. an extra
+! & from a fortran comment. We place a marker at the end of the (first-called)
+! config file, and test for this.
+CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE="NOTSET"
+CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 
 ! EMEP daily measurements end at 6am, hence we typically adjust
 ! for that. For global though, zero would be more normal
@@ -210,10 +210,7 @@ logical, public, save ::             &
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
-!
-! Output flags
- ,SELECT_LEVELS_HOURLY  = .false.    & ! for 3DPROFILES
- ,ZERO_ORDER_ADVEC  = .false.        & ! force zero order horizontal and vertical advection
+ ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
@@ -291,14 +288,15 @@ integer, public, save :: NEST_NHOURSAVE=3,NEST_NHOURREAD=1 ! write/read frequenc
 character(len=TXTLEN_FILE),public, target, save ::  &
   NEST_template_read_3D = 'EMEP_IN.nc',&       ! Different paths can be set here
   NEST_template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
-  NEST_template_write   = 'EMEP_OUT.nc'        ! on namelist, if needed.
+  NEST_template_write   = 'EMEP_OUT.nc',&      ! on namelist, if needed.
+  NEST_template_dump    = 'EMEP_Dump.nc'       ! on namelist, if needed.
 
 integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
               ! 0 means "do not look for old files"
 
 ! Nested input/output on OUTDATE mode
 integer,public,parameter  :: OUTDATE_NDUMP_MAX = 4  ! Number of nested output
-integer, public, save     :: NEST_OUTDATE_NDUMP     = 1  ! Read by emepctm.f90
+integer, public, save     :: NEST_OUTDATE_NDUMP     = 0  ! Read by emepctm.f90
 ! on forecast run (1: start next forecast; 2-4: NMC statistics)
 type(date), public :: NEST_outdate(OUTDATE_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
@@ -335,6 +333,88 @@ integer, public, parameter ::       &
   MAX_NUM_MOSLCS    = 10,           & !careful here, we multiply by prev:
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
+
+
+integer, public, parameter :: &
+   NSITES_MAX =        99     & ! Max. no surface sites allowed
+  ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
+  ,NSHL_SITE_MAX  =    10     & ! Bosco OH NSPEC_SHL     & ! No. short-lived species
+  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
+!Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+
+integer, private :: isite              ! To assign arrays, if needed
+
+!**** Sonde outputs   (used in Sites_mod)
+!==============================================================
+!     Specify the species to be output to the sondes.out file
+!  We typically deal with fewer species for sonde output than
+!  surface sites, so we use a different method to specify.
+! For met params we have no simple index, so we use characters.
+! These must be defined in Sites_mod.f90.
+
+integer, public, parameter :: &
+    FREQ_SONDE  =     1        &   ! Interval (hrs) between outputs
+   ,NXTRA_SONDE =    4             ! No. Misc. met. params
+
+
+! Extra parameters - need to be coded in Sites_mod also. So far
+! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.
+!  d_2d fields can be accessed from Derived_mod by setting common index
+!  "D2D" in SITE_XTRA and the actual field name (as defined in Derived_mod)
+!  in SITE_XTRA_CODE (e.g. "D2_PM25 " or "D2_SIA") :
+
+!** IMPORTANT!! Make sure the correspondence between selected for output
+!** fields in SITE_XTRA and their names in SITE_XTRA_CODE
+
+character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+  SITE_XTRA_MISC=[character(len=18):: "th","T2"]
+
+character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SONDE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
+
+!These variables must have been set in My_Derived for them to be used.
+character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
+  SITE_XTRA_D2D=[character(len=24):: &
+    "HMIX","PSURF", & ! Bosco skip: "ws_10m","rh2m",&
+    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
+    "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
+    'WDEP_PREC',&!''SNratio',&
+    'met2d_uref','met2d_u10', 'met2d_v10','met2d_rh2m', &
+    !'met2d_SMI1', 'met2d_SMI3',&
+    'met2d_SMI_uppr', 'met2d_SMI_deep',&
+    'met2d_ustar_nwp', 'met2d_LH_Wm2', 'met2d_SH_Wm2',&
+    !BB 'SMI_deep','met2d_SMI_d','SMI_uppr','met2d_SMI_s',&
+!Boscso Extra: +5
+    !BB'USTAR_NWP', 
+    'USTAR_DF','INVL_DF', &
+    'met2d_PARdbh', 'met2d_PARdif' &
+]
+character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
+  SONDE_XTRA= [character(len=10):: &
+   "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
+
+
+
+! Site/Sondes (under construction. DO NOT USE!)
+integer, parameter :: MAX_NEXTRA_SITED2D=100
+type, private :: sites_t
+  integer :: freq_site = 1
+  integer :: nmax = 99
+  integer :: nadv = 0
+  integer :: nshl = 0
+  integer :: nd2d = 0
+  integer :: nmisc = 0
+  integer, allocatable, dimension(:) :: adv 
+  integer, allocatable, dimension(:) :: shl
+  integer, allocatable, dimension(:) :: d2d
+  integer, allocatable, dimension(:) :: misc
+end type sites_t
+type(sites_t) :: site_outputs, sonde_outputs
+!character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
+!   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
+
 
 type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
 type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: &
@@ -582,9 +662,7 @@ real, public :: Pref   = 101325.0  ! Reference pressure in Pa used to define ver
 !                         refer to output variables defined in My_Outputs_mod.
 integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
-  IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
-  IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
-  !IOU_MAX_MAX hardcoded in OwnDataTypes: please modify consistently!
+  IOU_MAX_MAX=6                             ! Max values for of IOU (for array declarations)
 
 character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
@@ -656,24 +734,25 @@ subroutine Config_Constants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
-  character(len=*), parameter ::  dtxt='Config_MC:'
+  character(len=*), parameter ::  dtxt='Config_MC: '
+  character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
+   ,AERO   & ! for aerosol equilibrium scheme
    ,PBL    & ! Mar2017 testing
    ,EmBio  & ! Mar2017 testing
    ,YieldModifications &  ! Allows dynamic change of chemical yields
    ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,DEBUG  & !
-   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, TFMM
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. 3DPROFILES
+   ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
@@ -738,7 +817,8 @@ subroutine Config_Constants(iolog)
    ,DataPath&
    ,ExtraConfigFile&
    ,NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE &
-   ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write,BC_DAYS&
+   ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write&
+   ,NEST_template_dump,BC_DAYS&
    ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
    ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
    ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&
@@ -748,30 +828,27 @@ subroutine Config_Constants(iolog)
    ,NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt&
    ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN&
    ,hour_DOMAIN, out_startdate, spinup_enddate&
-   ,num_lev3d,lev3d,lev3d_from_surface
+   ,num_lev3d,lev3d,lev3d_from_surface&
+   ,LAST_CONFIG_LINE &
+   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names
 
+  LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
+  if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
+
   
-!before any conversion, read the additional namelists
-  do i = 1, size(ExtraConfigFile)
-     if(ExtraConfigFile(i)/="NOTSET")then
-        !NB: replacements have not been made yet
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
-        if(MasterProc)&
-         write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
-        open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
-        read(IO_tmp,NML=Model_config)
-        close(IO_tmp)
-     endif
-  enddo
+!DS EXTRA CONFIG STUFF MOVED from here !EEEEEEEEEEEEEEEEEEEEEEEEE
 
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
+  if(MasterProc) then
+    write(logtxt,'(a,L2)') dtxt//'USE_SOILNOX ', USE_SOILNOX
+    write(*,*) trim(logtxt), IOLOG
+    write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
+  end if
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
@@ -787,6 +864,7 @@ subroutine Config_Constants(iolog)
 
   if(MasterProc)then
     write(*, * ) dtxt//"NAMELIST START "
+    write(*,*)   dtxt//"LAST LINE after 1st config:"//trim(LAST_CONFIG_LINE)
     write(iolog,*) dtxt//"NAMELIST IS "
     write(iolog, NML=Model_config)
   end if
@@ -811,6 +889,33 @@ subroutine Config_Constants(iolog)
       exit
     end if
   end do
+
+!DS moved ExtraConfig here to make use of DataDir EEEEEEEEEEEEEEEEEEEEEEEEE
+!before any conversion, read the additional namelists
+  do i = 1, size(ExtraConfigFile)
+     if(ExtraConfigFile(i)/="NOTSET")then
+        !NB: replacements have not been made yet
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
+        if(MasterProc) then
+         write(*,*) dtxt//'Also reading namelist ',i,trim(ExtraConfigFile(i))
+         write(*,*) dtxt//"LAST LINE:"//trim(LAST_CONFIG_LINE) ! for debugs
+         write(iolog,*)'Also reading namelist ',i,trim(ExtraConfigFile(i))
+        end if
+        open(IO_tmp,file=trim(ExtraConfigFile(i)),delim='APOSTROPHE')
+        read(IO_tmp,NML=Model_config)
+        if(MasterProc) write(*,*) dtxt//'DataPath ExtraConf:', i, trim(DataPath(1))
+        close(IO_tmp)
+     endif
+  enddo
+  if(LAST_CONFIG_LINE==LAST_CONFIG_LINE_DEFAULT)then
+     if(MasterProc) write(*,*) dtxt//"WARNING: LAST_CONFIG_LINE not modified"
+     if(MasterProc) write(*,*) dtxt//"Probable syntax error in namelist!!!"
+  else
+     if(MasterProc) write(*,*) dtxt//"LAST LINE final:"//trim(LAST_CONFIG_LINE)
+  endif
+!EEEEEEEEEEEEEEEEEEEEEEEEE
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
@@ -867,6 +972,7 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_read_3D)
   call associate_File(NEST_template_read_BC)
   call associate_File(NEST_template_write)
+  call associate_File(NEST_MET_inner) !DSMAY21
   call associate_File(filename_eta)
 
   do i = 1, size(Emis_sourceFiles)

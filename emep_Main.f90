@@ -9,7 +9,6 @@ program emep_Main
   !
   !-----------------------------------------------------------------------!
 
-  use My_Outputs_mod,    only: set_output_defs
   use My_Timing_mod,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before1, tim_before2, &
@@ -58,7 +57,7 @@ program emep_Main
                     !          MasterPE,IERROR, MPI_world_init
   use Nest_mod,          only: wrtxn     ! write nested output (IC/BC)
   use NetCDF_mod,        only: Init_new_netCDF
-  use OutputChem_mod,    only: WrtChem, wanted_iou
+  use OutputChem_mod,    only: WrtChem, wanted_iou, set_output_defs 
   use Par_mod,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
   use PhyChem_mod,       only: phyche    ! Calls phys/chem routines each dt_advec
   use Sites_mod,         only: sitesdef  ! to get output sites

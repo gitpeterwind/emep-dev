@@ -23,7 +23,7 @@ use Config_module,      only: &
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile,&
-     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
+     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE, USE_SOILNOx
 use Debug_module, only:  DEBUG   ! -> DEBUG%GRIDVALUES
 
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &
@@ -337,7 +337,7 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,projection)
      status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
      if(status/=nf90_noerr) then
         print *,'not found',trim(filename)
-        call StopAll("GridValues: File not found")
+        call StopAll("GridValues: File not found:"//trim(filename))
      end if
 
      projection=''
@@ -1245,12 +1245,12 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
   Poles=0
   if(North_pole==1)then
     Poles(1)=1
-    if(me==0 .or. me==NPROC-1)write(*,*)me,'Found North Pole'
+    if(MasterProc .or. me==NPROC-1)write(*,*)me,'Found North Pole'
   end if
   
   if(South_pole==1)then
     Poles(2)=1
-    if(me==0 .or. me==NPROC-1)write(*,*)me,'Found South Pole'
+    if(MasterProc .or. me==NPROC-1)write(*,*)me,'Found South Pole'
   end if
   do j=1,LJMAX
     do i=1,LIMAX
@@ -2084,7 +2084,7 @@ subroutine remake_vertical_levels_interpolation_coeff(filename)
        P0=Pref
        open(IO_TMP,file=trim(Vertical_levelsFile),action="read",iostat=ios)
        read(IO_TMP,*)k
-       if(k/=KMAX_MID .and. me==0)write(*,*)k,kmax_mid,&
+       if(k/=KMAX_MID .and. MasterProc)write(*,*)k,kmax_mid,&
             'WARNING: unexpected number of levels for '//trim(Vertical_levelsFile)
        do k=1,KMAX_MID+1
           read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
@@ -3026,6 +3026,7 @@ subroutine set_EuropeanAndGlobal_Config()
   
   implicit none
   real:: x1,x2,x3,x4,y1,y2,y3,y4,lon,lat,ir,jr
+  character(len=*), parameter :: dtxt='EurGlobSettings:'
 
   if(EUROPEAN_settings == 'NOTSET')then
      !No value set in config input, use grid to see if it covers Europe
@@ -3035,7 +3036,7 @@ subroutine set_EuropeanAndGlobal_Config()
 
      if(gbacmax>35 .and. glacmin<40 .and. glacmax>-32)then
         
-        if(me==0)write(*,*)'assuming EUROPEAN_settings'
+        if(MasterProc)write(*,*) dtxt//'assuming EUROPEAN_settings'
 
      else
         
@@ -3051,16 +3052,16 @@ subroutine set_EuropeanAndGlobal_Config()
 18      format(A,2F6.1,A)
         if(inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat))then
            EUROPEAN_settings = 'YES' 
-           if(me==0)write(*,18)'assuming EUROPEAN_settings: lon,lat ',lon,lat,' within Europe'
+           if(MasterProc)write(*,18) dtxt//'assuming EUROPEAN_settings: lon,lat ',lon,lat,' within Europe'
         else
            EUROPEAN_settings = 'NO' !default
-           if(me==0)write(*,18)'Not assuming EUROPEAN_settings: lon,lat ',lon,lat,' outside Europe'
+           if(MasterProc)write(*,18) dtxt//'Not assuming EUROPEAN_settings: lon,lat ',lon,lat,' outside Europe'
         endif
 
      endif 
- else  !DS J2018 added:
-    if(me==0) write(*,*)'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
- endif
+  else
+    if(MasterProc) write(*,*) dtxt//'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
+  endif
 
   if(GLOBAL_settings == 'NOTSET')then
      !No value set in config input, use grid to see if it covers regions outside Extended Europe
@@ -3070,21 +3071,21 @@ subroutine set_EuropeanAndGlobal_Config()
      !find if lat < 19 are included within the domain
      if(gbacmin<19.0)then
         GLOBAL_settings = 'YES' !default
-        if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
+        if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
      else
         !find if the point with lon = -40 and lat = 45 is within the domain
         call lb2ij(-40.0,45.0,ir,jr)
         if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
            GLOBAL_settings = 'YES' !default
-           if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
+           if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
         else 
            !find if the point with lon = 92 and lat = 45 is within the domain
            call lb2ij(92.0,45.0,ir,jr)
            if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
               GLOBAL_settings = 'YES' !default
-              if(me==0)write(*,*)'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
+              if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
            else
-              if(me==0)write(*,*)'Not assuming GLOBAL_settings'
+              if(MasterProc)write(*,*)dtxt//'Not assuming GLOBAL_settings'
            endif           
         endif
      endif
@@ -3093,32 +3094,35 @@ subroutine set_EuropeanAndGlobal_Config()
 
   if(GLOBAL_settings == 'YES') then
      if(FORCE_PFT_MAPS_FALSE)then
-        if(me==0)write(*,*)'WARNING: NOT USING PFT_MAPS in a GLOBAL grid'
+        if(MasterProc)write(*,*)dtxt//'WARNING: NOT USING PFT_MAPS in a GLOBAL grid'
         USES%PFT_MAPS = .false. 
      else
         if(USES%PFT_MAPS)then        
            !nothing to change
         else
-           if(me==0)write(*,*)'Using PFT_MAPS because GLOBAL grid'
+           if(MasterProc)write(*,*)dtxt//'Using PFT_MAPS because GLOBAL grid'
            USES%PFT_MAPS = .true. 
         endif
      endif
      if(USES%DEGREEDAY_FACTORS)then        
-        if(me==0)write(*,*)'WARNING: not using DEGREEDAY_FACTORS because GLOBAL grid'
+        if(MasterProc)write(*,*)dtxt//'WARNING: not using DEGREEDAY_FACTORS because GLOBAL grid'
         USES%DEGREEDAY_FACTORS = .false.
      endif
 
      if(.not. USES%GLOBAL_SOILNOX)then
-        if(me==0)write(*,*)'WARNING: setting GLOBAL_SOILNOX because GLOBAL grid'
+        if(MasterProc)write(*,*)dtxt//'WARNING: setting GLOBAL_SOILNOX because GLOBAL grid'
         USES%GLOBAL_SOILNOX = .true.
      endif
 
      if(USES%EURO_SOILNOX)then        
         USES%EURO_SOILNOX = .false. 
-        if(me==0)write(*,*)'Not using EURO_SOILNOX because GLOBAL grid'
+        if(MasterProc)write(*,*)dtxt//'Not using EURO_SOILNOX because GLOBAL grid'
      endif
      
   endif
+  if(MasterProc)write(*,'(a,3L2)')dtxt//'Final settings, EUR? GLOB? E-SNOx G-SNOx USE_SOILNOx: '//&
+       trim(EUROPEAN_settings)//':'//&
+       trim(GLOBAL_settings), USES%EURO_SOILNOX, USES%GLOBAL_SOILNOX, USE_SOILNOX
 
 end subroutine set_EuropeanAndGlobal_Config
 
