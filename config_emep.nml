@@ -45,7 +45,6 @@
   USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
   USES%n2o5HydrolysisMethod = "Smix" ! "SmixTen" "Gamma:0.002" NOT:"OrigRiemer"
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
-!  USES%MonthlyNH3       = 'LOTOS',      !  Better monthly profile, for Europe only!
 !------------------------------
   USES%SOILWATER         = T,            ! Uses SMI from meteo data
   USES%CONVECTION        = F,
