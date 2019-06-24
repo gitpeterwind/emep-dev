@@ -142,7 +142,7 @@ subroutine set_extbic_id(idate)
     trim(EXTERNAL_BIC_NAME)//"/"//trim(EXTERNAL_BIC_VERSION)
 
   do n = 1,size(EXTERNAL_BC%ixadv)
-    EXTERNAL_BC(n)%ixadv=find_index(EXTERNAL_BC(n)%spcname,species_adv(:)%name)
+    EXTERNAL_BC(n)%ixadv=find_index(EXTERNAL_BC(n)%spcname,species_adv(:)%name,any_case=.true.)
     if(EXTERNAL_BC(n)%ixadv<1)then
       EXTERNAL_BC(n)%wanted=.false.
       if(MasterProc) write(*,DEBUG_FMT) "set_extbic","unknow variable",&

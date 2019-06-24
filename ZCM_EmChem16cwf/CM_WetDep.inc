@@ -62,6 +62,8 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("NON_C_BSOA_ug1e3", "PMf       ", -999.0 ) &
 , dep_t("FFFUEL_ng10", "PMf       ", -999.0 ) &
 , dep_t("WOODOA_ng10", "PMf       ", -999.0 ) &
+, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
+, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("FFIRE_OM  ", "PMf       ", -999.0 ) &
 , dep_t("FFIRE_BC  ", "PMf       ", -999.0 ) &
 , dep_t("FFIRE_REMPPM25", "PMf       ", -999.0 ) &
@@ -73,8 +75,6 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("Dust_WB_c ", "PMc       ", -999.0 ) &
 , dep_t("Dust_SAH_f", "PMf       ", -999.0 ) &
 , dep_t("Dust_SAH_c", "PMc       ", -999.0 ) &
-, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
-, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("POLLEN_BIRCH", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_OLIVE", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_RWEED", "POLLw     ", -999.0 ) &

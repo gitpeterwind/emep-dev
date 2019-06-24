@@ -109,7 +109,7 @@
     + rct(69,k) * xnew(C2H4)  &
     + rct(70,k) * xnew(C3H6)  &
     + rct(71,k) * xnew(NO)  &
-    + rct(72,k) * xnew(SHIPNOX)
+    + rct(93,k) * xnew(SHIPNOX)
   
   xnew(OH) = (xold(OH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -510,7 +510,7 @@
 
   P = rct(28,k) * xnew(NO3) * xnew(HCHO)  &
     + rct(66,k) * xnew(NO2) * xnew(OH)  &
-    + rct(72,k) * xnew(SHIPNOX) * xnew(OH)  &
+    + rct(93,k) * xnew(SHIPNOX) * xnew(OH)  &
     + 3.2e-5 * xnew(SHIPNOX)
   
   L = rct(15,k) * xnew(OH)  &
@@ -783,9 +783,9 @@
 
   ! P = 0.0
   
-  L = rct(73,k) * xnew(O3)  &
-    + rct(74,k) * xnew(OH)  &
-    + rct(75,k) * xnew(NO3)
+  L = rct(72,k) * xnew(O3)  &
+    + rct(73,k) * xnew(OH)  &
+    + rct(74,k) * xnew(NO3)
   
   xnew(APINENE) = xold(APINENE) / (1.0 + dt2 * L)
 
@@ -1074,24 +1074,14 @@
   ! Nothing to do for NO3_c! xnew(NO3_c) = max(0.0, xold(NO3_c))
 
 
-!-> SHIPNOX
-
-  P = rcemis(SHIPNOX,k)
-  
-  L = rct(72,k) * xnew(OH)  &
-    + 3.2e-5
-  
-  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
-
-
 !-> TERPPeroxy
 
-  P = rct(73,k) * xnew(O3) * xnew(APINENE)  &
-    + rct(74,k) * xnew(OH) * xnew(APINENE)  &
-    + rct(75,k) * xnew(NO3) * xnew(APINENE)
+  P = rct(72,k) * xnew(O3) * xnew(APINENE)  &
+    + rct(73,k) * xnew(OH) * xnew(APINENE)  &
+    + rct(74,k) * xnew(NO3) * xnew(APINENE)
   
   L = rct(41,k) * xnew(NO)  &
-    + rct(76,k) * xnew(HO2)
+    + rct(75,k) * xnew(HO2)
   
   xnew(TERPPeroxy) = (xold(TERPPeroxy) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1103,6 +1093,16 @@
   ! L = 0.0
   
   ! Nothing to do for VBS_TEST! xnew(VBS_TEST) = max(0.0, xold(VBS_TEST))
+
+
+!-> SHIPNOX
+
+  P = rcemis(SHIPNOX,k)
+  
+  L = rct(93,k) * xnew(OH)  &
+    + 3.2e-5
+  
+  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> Dust_ROAD_f

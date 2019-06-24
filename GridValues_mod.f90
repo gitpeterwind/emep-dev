@@ -23,7 +23,8 @@ use Config_module,      only: &
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile,&
-     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE, USE_SOILNOx
+     EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE,&
+     USE_SOILNOx
 use Debug_module, only:  DEBUG   ! -> DEBUG%GRIDVALUES
 
 use MPI_Groups_mod!, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_LOGICAL, &
@@ -3037,7 +3038,7 @@ subroutine set_EuropeanAndGlobal_Config()
      if(gbacmax>35 .and. glacmin<40 .and. glacmax>-32)then
         
         if(MasterProc)write(*,*) dtxt//'assuming EUROPEAN_settings'
-
+        EUROPEAN_settings = 'YES' 
      else
         
         ! define middle point of middle subdomain
@@ -3091,6 +3092,12 @@ subroutine set_EuropeanAndGlobal_Config()
      endif
   endif
 
+  if(EUROPEAN_settings == 'YES') then
+     if(USES%MonthlyNH3  == 'NOTSET' .and. GLOBAL_settings /= 'YES')then
+        USES%MonthlyNH3  = 'LOTOS'
+        if(MasterProc)write(*,*)dtxt//' MonthlyNH3 set to '//trim(USES%MonthlyNH3)
+     endif
+  endif
 
   if(GLOBAL_settings == 'YES') then
      if(FORCE_PFT_MAPS_FALSE)then
@@ -3118,11 +3125,21 @@ subroutine set_EuropeanAndGlobal_Config()
         USES%EURO_SOILNOX = .false. 
         if(MasterProc)write(*,*)dtxt//'Not using EURO_SOILNOX because GLOBAL grid'
      endif
-     
+
+     if(USES%MonthlyNH3  == 'LOTOS')then
+        if(MasterProc)write(*,*)dtxt//'WARNING: MonthlyNH3=LOTOS is not advised outside Europe'
+     endif
+
   endif
-  if(MasterProc)write(*,'(a,3L2)')dtxt//'Final settings, EUR? GLOB? E-SNOx G-SNOx USE_SOILNOx: '//&
-       trim(EUROPEAN_settings)//':'//&
-       trim(GLOBAL_settings), USES%EURO_SOILNOX, USES%GLOBAL_SOILNOX, USE_SOILNOX
+  if(MasterProc)write(*,'(a,3(a,L))')dtxt//'Final settings, EUR = '//trim(EUROPEAN_settings)&
+       //', GLOB = '//trim(GLOBAL_settings)&
+       //', MonthlyNH3 = '//trim(USES%MonthlyNH3)&
+       ,', E-SNOx = ',USES%EURO_SOILNOX&
+       ,', G-SNOx = ',USES%GLOBAL_SOILNOX&
+       ,', USE_SOILNOx= ',USE_SOILNOX
+
+!  trim(EUROPEAN_settings)//','//&
+!       trim(GLOBAL_settings), USES%EURO_SOILNOX, USES%GLOBAL_SOILNOX, USE_SOILNOX
 
 end subroutine set_EuropeanAndGlobal_Config
 

@@ -10,6 +10,8 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "C2H4          " &
 , "C3H6          " &
 , "OXYL          " &
+, "BENZENE       " &
+, "TOLUENE       " &
 , "HCHO          " &
 , "CH3CHO        " &
 , "MEK           " &
@@ -28,6 +30,10 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "EC_F_WOOD_AGE " &
 , "REMPPM25      " &
 , "REMPPM_C      " &
+, "PSO4F         " &
+, "PSO4C         " &
+, "ASH_F         " &
+, "ASH_C         " &
 , "SHIPNOX       " &
 , "FFIRE_CO      " &
 , "FFIRE_OM      " &
