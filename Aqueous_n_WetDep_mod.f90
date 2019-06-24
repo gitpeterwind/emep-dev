@@ -29,7 +29,6 @@ module Aqueous_mod
 !    model. Atm.  Env. Vol. 33, pp.2853-2879.
 !-----------------------------------------------------------------------
 
-use My_Derived_mod,    only: WDEP_WANTED ! Which outputs wanted!
 use My_Derived_mod,    only: nOutputWdep ! number WDEP used
 use CheckStop_mod,     only: CheckStop, StopAll
 use ChemDims_mod             
@@ -42,7 +41,8 @@ use Config_module,only: &
    ,KUPPER                  &       ! -> top of cloud-chemistry, k=6
    ,KCHEMTOP                &       ! -> top of chemistry, now k=2
    ,dt => dt_advec          &       ! -> model timestep
-   ,IOU_INST                        ! Index: instantaneous values
+   ,IOU_INST                &       ! Index: instantaneous values
+   ,WDEP_WANTED ! Which outputs wanted!
 use Debug_module,      only: DEBUG  !  => DEBUG%AQUEOUS, DEBUG%MY_WETDEP, DEBUG%pH
 use DerivedFields_mod, only: f_2d, d_2d     ! Contains Wet deposition fields
 use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep

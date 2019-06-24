@@ -87,6 +87,12 @@ else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
+else ifeg ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
+  MAKEDEPF90=makedepf90
+  OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))

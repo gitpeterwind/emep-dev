@@ -5,7 +5,6 @@
 !  TFMM        EMEPSTD, but with INERIS_SNAP & TFMM hourly output
 !------------------------------
   EXP_NAME              = 'IMPACT2C',
-  MY_OUTPUTS            = 'IMPACT2C',
 !------------------------------
 !USES system started June 2013
   USES%testname          = "IMPACT2C",
@@ -26,7 +25,6 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for *IMPACT2C*
   USES%ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USES%AOD               = F,          ! Used for forecasts usually

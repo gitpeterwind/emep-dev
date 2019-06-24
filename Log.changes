@@ -20,6 +20,436 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 JUne 2019, Dave/Robert
+
+ZCM_EmChem19 introduced. (EmChem16ziVBS2012 in RB's testing system)
+This scheme has been thoroughly tested against MCM and performs better
+in box model tests than EmChem16. (Differences will be smaller in emepctm.)
+
+To use:
+
+1. Compile:
+   mk.ChemFiles EmChem19
+   make clean
+   make
+
+2. Make sure that DataDir has an emissplit directory ZCM_EmChem19 on DataDir (exists
+   on vilje and stallo 7th June).
+
+3. Edit config_emep.nml - uncomment the "Split" lines to point to that directory
+
+4. Run, and check ;-)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Svetlana (Peter)
+
+"PM_coarse" in Derived_mod and
+'SURF_ug_PM_coarse'   ,'ug' ,'2d','PM_coarse' ,'MISC','YMD',
+in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Anna (Peter)
+
+Mace Head correction for 2017
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Peter
+
+femis: allow country_ISO instead of code in femis, with keyword 'Country'
+(or 'country' or 'Country_ISO').
+Example of femis:
+
+Name       sec     sox   nox   voc   nh3  co   pm25 pmco
+Country  DE 0      0.0   1.0   1.0   1.0  1.0   1.0  1.0
+
+Will stop cleanly if the country is not recognized.
+(Can be combined with lines in other formats)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 June 2019, Dave
+
+IMPORTANT (for PODs):
+
+  DO3SE_mod - bug fix on PAR enabled (keep OLDBUG fflag for comprisons)
+
+Convenience:
+  Derived_mod - changed HORIZ_LINE to avoid f2003 new_line
+  SmallUtils_mod - added (back) str_replace.  I find it more intuitive than key2str.
+
+
+REVERTED HERE
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 May 2019, Dave
+
+rv4_33beta tag started ... results will change over coming days...
+
+
+Derived_mod - calls Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
+              Fixes problem found by Hilde that OM25_p >= ugPM_OM25, by
+              more conistent cfac usage, and now produces mixed-phase
+              outputs if ug_PM not specified.
+              All very messy though, and old semivol usage not working so
+              well. Should consider getting rid of OM25_p.
+              
+              Also more dtxt, changed 'index' to 'ind' (index is a fortran
+              function, so good to avoid).
+
+              Thus, PM results CHANGE (not drastically though)
+
+              (Could do with a little more testing.)
+
+SOA_mod.f90 - added Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
+              before Derived outouts are calculated. 
+              Also tidy up and more dtxt
+
+Units_mod.f90 - some dtxt added
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 May 2019, Dave
+
+rv4_32 tag added
+
+Results will start to change after this ...
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 May 2019, Svetlana, (Peter)
+
+EQSAM equlibrium for PM water can be chose by config:
+AERO%EQUILIB_WATER    = 'EQSAM'
+AERO%EQUILIB          = 'EQSAM'
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 May 2019, Peter
+
+Removed ZD_OZONE/My_Ouputs
+Content moved to Sites_mod and Config_module.f90
+Sondes and sites species can be defined in config_emep.nml
+(see example)
+It should be compatible with different Chemical schemes in the sense
+that unexisting species are accepted, but not outputted.
+All the "extras" are still hardcoded in Config_module.
+It was heavy to refactorize, because arrays are "merged" and everything was 
+hardcoded.
+It would be good to simplify the multitude of arrays 
+(SITE_SHL,SITE_ADV, XTRA_SITE_MISC, XTRA_SITE_D2D, etc..)
+Also merge with normal outputs would simplify (could simply have a new flag in our output).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2019, Dave
+
+CellMet_mod - adding dtxt and tidy-up
+
+Debug_mod - made DEBUG%SUBMET as integer, allowing eg dbg for iL==2
+            (deleted DEBUG_SUBMET)
+
+GridValulues - more dtxt and output. Replace me==0 by MasterProc: ie emep-style ;-)
+
+SubMet_mod - use DEBUG%SUBMET and tidy-up
+
+ZD_OZONE/My_Outputs - corrected BIOTERP to TERP
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2019, Alvaro
+
+remove old style hourly output (My_Outputs_mod), see #142
+
+Config_module, NetCDF_mod, PhyChem_mod, Sites_mod, TimeDate_ExtraUtil_mod, config_*.nml:
+- remove IOU_HOUR_EXTRA and IOU_HOUR_EXTRA_MEAN
+- remove MY_OUTPUTS and SELECT_LEVELS_HOURLY
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2019, Dave
+
+ForestFire_mod - fixed some output formats wehn debug activated
+
+utils/Rd_csvsites.f90 - re-coded to cope with comma in new date, hh format
+ (Should update python version too!)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 May 2019, Dave
+
+Config_module:
+
+   - moved ExtraConfig replacements (key2str) later in Config, so that
+      DataDir is set correctly. (See EEEEEE bits)
+   - added LAST_CONFIG_LINE - a variable which can be added to the end of
+      configs (or actually anywhere), to allow the user to check that
+      the full config was actually read. 
+      (Very useful if also debugging use of ExtraConfig)
+   - added associate_File usage for NEST_MET_inner, to allow DataDir
+
+PhyChem_mod - added units to PAR
+
+My_Outputs_mod: added use of find_duplicates
+                started correction of met outputs (Bosco-inspired)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 May 2019, Dave
+
+Smal tidy-ups and helper code
+
+Biogenics_mod      - tidy up
+
+Config_module      - added logtxt to write out USE_SOILNOx settings
+
+DO3SE_mod          - added BUGGY to highlight current bug. 
+                     *** FIX before release (->rv4.33)
+                     plus tidy up
+
+DryDep_mod         - tidy up
+
+GridValues_mod     - added fname to error message (it helps!)
+
+LocalVariables_mod - added units to PAR 
+
+Rsurface_mod       - tidy up
+
+Sites_mod          - tidy up and init of site_gindex, sonde_gindex
+                     PLUS - added comma in asci output between date and hh
+                     (more libreoffice calc friendly)
+
+SmallUtils_mod     - added find_duplicates routine
+
+Solver_mod         - tidy up
+
+StoFlux_mod        - tidy up (Massimo's query inspired). FOUND BUG - for global
+  runs - should change reset to reflect local time, not jd.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 May 2019, Peter
+
+Nest options have changed. The "OUTDATE_NDUMP" is now decoupled from the "MODE" 
+options and both can be used simultaneously.
+
+The "NEST_outdate" option (dump at given dates) is now chosen by:
+1) Setting NEST_OUTDATE_NDUMP to the number of dates wanted (max 4).
+2) Setting the firsts NEST_outdate accordingly
+For example:
+  NEST_OUTDATE_NDUMP = 2,          ! dump (save) 2 dates (max 4)
+  NEST_outdate(1)= 2016,1,1,3,0    ! first date to save
+  NEST_outdate(2)= 2016,1,1,7,0    ! second date to save
+
+The filename for the dumps can be defined in NEST_template_dump.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 May 2019, Peter
+
+Small bug in emis printout.
+StoFlux_mod first_call set to false after first call.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2019, Peter
+
+New format emissions: automatic GNFR/SNAP sectors mapping.
+SNAP is default. If sectors in an emission file are defined as GNFR (values 
+from 1 to 13), it should have an attribute sectorsName= 'GNFRsectors' 
+(or it can be set in config file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2019, Robert/Dave
+
+GasParticleCoeffs_mod:
+  Added more surrogates, based upon R151A
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 May 2019, Peter
+
+Emissions by countries in new format are printed out.
+(Only first call, and only species which are one of the splitted standard emissions)
+Country and sector as global attribute also enabled.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Dave
+Setup_1d_mod - small tidy up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Peter
+
+INDI_BIHA had a value for the timefac_code_hourly of -289(!) must be 289 and
+timezone=100 instead of -100.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 May 2019, Dave
+
+Derived_mod: SIA25 added, for 2d and 3d. 
+             plus small tidy-up
+
+config_emep.nml - added example SIA25 lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 May 2019, Peter
+
+Nest stops if Met_inner not found (was only a warning before)
+
+uEMEP: local fraction "completeness" diagnostic. Outputs a value for each 
+gridcell that sums all the local fractions. 1.0-> all sources have been found.
+
+new format emissions: accept unit kt (and kt/year, kt/m2, kt/m2/year/).
+and corrected bug when units where mg/s or mg/m2/s (were factor 1000 too small)
+
+number of vertical levels in meteo file are checked each time a new meteofile 
+is read. If it has changed (happens in CAMS?), the vertical interpolations coefficients are recalculated. 
+Maybe a bug when not starting the run at hour=0 corrected (nrec was set to 1 at first call in meteoread)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7-9 May 2019, Alvaro
+
+Add CheckStop_real2 to compare reals to machine precision
+
+Support IC/BCs from older model versions
+Nest_mod will try upper case variables name when the variable is not found
+
+Update pollen mopules
+- add EmChem09cwf (EmChem09 w/pollen)
+- update pollen modules from cams50
+- fix pollen dependency on Config_module (previously Nest_mod)
+- fix pollen dependency on GasParticleCoeffs_mod
+- add pollen spcs to DD_t
+- add pollen spcs to EMIS_BioNat
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7-8 May 2019, Peter
+
+Renamed ModelConstants_config -> Model_config
+
+Merged nest and external_bic config into ModelConstants_config.
+Most nest config variables renamed with a "NEST_" in front of variable.
+Some cleaning for consistency.
+Did *not* merge ExternalBICs_bc config
+
+Also OutputConcs_config, OutputDep_config and OutputSize_config are now 
+part of  Model_config
+
+Removed OutputMisc_config from config_emep.nml, as I could not see it was used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 May 2019, Peter
+
+Merged Columns and ForestFire config namelists into ModelConstants_config
+NB: some BB variables have changed name: 
+MODE->BBMODE
+need_file->BBneed_file
+need_date->BBneed_date
+need_poll->BBneed_poll
+verbose->BBverbose
+
+Allow to include additonal namelist files. Example:
+ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
+ExtraConfigFile(2)='OwnInputDir/MyVerySpecialConfig.nml',
+
+The definition of the last namelist is used if variables are set several times.
+
+Also replaced k20 with kmax in config, since we do not necessarily use 20 
+levels.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 May 2019, Peter
+
+Merged INPUT_PARA and Machine_config namelists into ModelConstants_config
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 May 2019, Peter
+
+Topography is read from HGT in case WRF meteo. It will automatically redefine
+Topofile (cannot be defined from config then!)
+Also more robust GetCDF_modelgrid when dimensions are incompatible (will now 
+stop only if the file is "needed")
+
+The emis_inputlist%PollName functionality was broken (since May 2018?). Repaired.
+
+USES%AOD removed. Instead AOD_WANTED is set to true if any AOD or EXT variable 
+are requested in outputs
+
+Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
+config file treatments (i.e. DataDir and OwnInputDir are replaced).
+
+Met_inner for nesting tries to replace datadir and dates if not found 
+(but not GRID, as it should be another grid usually) (not tested)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 May 2019, Peter
+
+Small bug in interpolation from Polar stereo to Polar stereo.
+In the case when all these conditions are met:
+1) interpolation from Polar stereo to Polar stereo
+2) Conservative or mass conservative
+3) Resolution of in grid is at coarser than met resolution/3
+
+There is a small shift in the diagonal direction (1/3 gridcell).
+This does not affect landuse PS to EECCA (exception 3))
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Apr 2019, Robert
+
+Added dry deposition parameters for MPAN
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 Apr 2019, Peter
+
+mapping factor not allowed to be 0.0 at poles (lon lat only). (wrf problems otherwise).
+
+DryDep: added a "if(dbg)" for  'DBGXNO2 WRONG' . Please check: is this just a 
+warning or not allowed? (it is triggered when USES%EURO_SOILNOX=F and USES%GLOBAL_SOILNOx=F).
+Note also that the "first_ddep" never gets .false. (it is not saved).
+
+Put -O2 for intel optimization: test show that it is not slower and faster to compile.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Apr 2019, Robert
+
+* Added ZCM_EmChem16z directory -- for updated chemistry scheme
+
+* Some find_index changed to case insensitive (to avoid problems with some old 
+model versions using capital F instead of f for "fine" particle components etc.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Apr 2019, Peter
+
+The model will output also part of monthes if startdate or enddateare not at 
+start/end of the month. 
+The timestamps should always point to the middle of the period.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Apr 2019, Peter
+
+NetCDF_mod: added debug1 to get 'interpolating from' printouts only on first
+  step_main unless debug specified
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Apr 2019, Peter
+
+Reduced size of arrays that can be used for new format emissions.
+Because the entire arrays are outputted into RunLog.out, even if not used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Apr 2019, Peter
+
+Replaced nstep by step_main. It is slightly different, now it always increase.
+The results can be slightly different, because mod(nstep,2) which is used to alternate 
+in the timesplitting, is not alternating every nmax, if nmax is odd. 
+(Now it does always alternating). 
+You choose nmax by setting dt_advec in config. For example dt_advec=900.0 will 
+give nmax=12 and identical results. 
+
+Reduced the writings of 'dividing each gridcell...' and some new emission comments. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 Apr 2019, Dave
+
+Small problem-fixes:
+
+
+Config_module: OwnInputDir enabled for EmisMask 
+
+Emissions_mod: Added filename to error message from EmisMask
+
+Landuse_mod:  Allow longer and more ewords to cope with complex fName
+
+SmallUtils_mod:  Extra error message if eword too long 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Apr 2019, Peter
 

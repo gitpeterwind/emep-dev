@@ -1,29 +1,5 @@
 ! <CellMet_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2012 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module CellMet_mod
 !=============================================================================
 !+
@@ -58,7 +34,6 @@ private
 public :: Get_CellMet   ! sets Grid-average (e.g. NWP) near-surface met, and
                         ! calls Get_Submet routines
 
-logical, private, parameter ::  MY_DEBUG = .false.
 integer, save, public :: z0_out_ix = -1, invL_out_ix = -1
 
 contains
@@ -66,9 +41,10 @@ contains
 
 subroutine Get_CellMet(i,j,debug_flag)
   integer, intent(in) :: i,j
-  logical, intent(in) :: debug_flag   ! set true for wanted grid square
+  logical, intent(in) :: debug_flag  ! DEBUG%RUNCHEM + wanted i,j
   integer :: lu, ilu, nlu
   real :: land_frac
+  character(len=*), parameter :: dtxt='GetCell:'
 !---------------------------------------------------------------
 
      if(z0_out_ix>0) d_2d(z0_out_ix,i,j,IOU_INST) = 0.0
@@ -111,8 +87,9 @@ subroutine Get_CellMet(i,j,debug_flag)
     Grid%z_ref    = z_mid(i,j,KMAX_MID)    ! within or top of SL
   end if
 
-  ! The biggest trees in the new CLM ssytem are 35m high, giving displacement
-  ! hts of 24.5m. We ensure that z_ref -d > z0
+ ! The biggest trees in the new CLM ssytem are 35m high, giving displacement
+ ! hts of 24.5m. We ensure that z_ref -d > z0
+
   Grid%z_ref    = max(30.0, Grid%z_ref ) ! for trees d=14m,
 
   ! More exact for thickness of bottom layer, since used for emissions
@@ -130,6 +107,8 @@ subroutine Get_CellMet(i,j,debug_flag)
 
   !**  prefer micromet signs and terminology here:
   Grid%Hd    = -fh(i,j,1)       ! Heat flux, *away from* surface
+if( debug_flag ) write(*,"(a,3es12.3)") 'CellHd', Grid%Hd, &
+   maxval(fh(:,:,1)), minval(fh(:,:,1))
   Grid%LE    = -fl(i,j,1)       ! Heat flux, *away from* surface
   Grid%ustar = ustar_nwp(i,j)   !  u*
   Grid%t2    = t2_nwp(i,j,1)    ! t2 , K
@@ -223,10 +202,11 @@ subroutine Get_CellMet(i,j,debug_flag)
            if(invL_out_ix>0)  d_2d(invL_out_ix,i,j,IOU_INST) = &
                 d_2d(invL_out_ix,i,j,IOU_INST)/land_frac
         else
-           write(*,*)'WARNING: found grid with no sea and no land',i,j,nlu,land_frac
+           write(*,*) dtxt//'WARNING: found grid with no sea and no land',&
+                     i,j,nlu,land_frac
            do ilu= 1, nlu  
               lu = LandCover(i,j)%codes(ilu)
-              write(*,*)lu,LandCover(i,j)%fraction(ilu),LandType(lu)%is_water
+              write(*,*)dtxt, lu,LandCover(i,j)%fraction(ilu),LandType(lu)%is_water
           enddo
        endif
     endif

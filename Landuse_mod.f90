@@ -275,7 +275,7 @@ contains
     character(len=200) :: fName, msg
     integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid
     integer :: nwords, err, xtype,ndims, status
-    character(len=20) :: ewords(7)    ! LC:CF:EMEP
+    character(len=90) :: ewords(20)    ! LC:CF:EMEP, or /globa.../xxx/yyy
     logical :: fexist=.false.!file exist flag
   
     real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data

@@ -12,23 +12,27 @@ character(len=20), dimension(MAXDIM) :: specname
 real             , dimension(MAXDIM) :: xin
 real             , dimension(366,0:23) :: data
 integer          , dimension(366) :: cmonth, cday, nhours = 0
-character(len=20) :: wpoll, wsite, date, txt1, txt2, dbg_flag
+character(len=20) :: wpoll, wsite, date, txt1, txt2, txthh, dbg_flag
 integer :: i, yy, mm, dd, hh, isite, nsites, n, ispec, nspec, freq
 integer :: wanted_site, wanted_spec, last_day, jd, old_dd, wanted_year
 integer :: io_in, io_dmax, io_dmean, io_vals, io_hrly, io_dates
 integer :: comma, comma2
-logical :: first=.true., dbg = .false.
+logical :: first=.true., dbg = .false., force_output=.false.
 
    if ( iargc() > 0 ) then
      call getarg(1,infile)
      call getarg(2,wsite)
      call getarg(3,wpoll)
-     call getarg(4,dbg_flag)
+     call getarg(4,dbg_flag)  ! -d or -f
      print *, "Input argument: ", infile
      if ( len_trim(wsite)>0 ) print *, "Site wanted ", wsite
      if ( len_trim(wpoll)>0 ) print *, "Poll wanted ", wpoll
      if ( len_trim(dbg_flag)>0 ) then
        if ( dbg_flag == '-d' ) dbg = .true.
+       if ( dbg_flag == '-f' ) then
+          dbg = .true.
+          force_output = .true.
+       end if
        print *, "Debug wanted? ", trim(dbg_flag),  dbg
      end if
    end if
@@ -76,7 +80,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
    wanted_spec = -1
    read(unit=io_in,fmt=*) nspec
   !new read(unit=io_in,fmt=*) n, specname(n)
-   read(unit=io_in,fmt=*) txt1, txt2, (specname(ispec), ispec=1, nspec)
+   read(unit=io_in,fmt=*) txt1, txt2, txthh, (specname(ispec), ispec=1, nspec)
    do n = 1, nspec
      if ( len_trim(wpoll)>0 ) then
        if ( trim(wpoll)==trim( specname(n))) wanted_spec = n
@@ -122,12 +126,17 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
          wsite=longline(1:comma-1)      ! site name
          longline=longline(comma+1:)    !
          comma2=index(longline, ",")     ! end of date section
-         date= longline(1:comma2-1)      ! date
+         date= longline(1:comma2-1)      ! date  eg 20/03/16
+         longline=longline(comma2+1:)    !
+         comma2=index(longline, ",")     ! end of date section
+         txthh = longline(1:comma2-1)      ! hour
          read(unit=date(2:3),fmt="(i2)")  dd
          read(unit=date(5:6),fmt="(i2)")  mm
          read(unit=date(8:11),fmt="(i4)")  yy
-         read(unit=date(13:14),fmt="(i2)")  hh
+         read(unit=txthh,fmt="(i2)")  hh
+!print *, "TMPA ", comma, wsite, date, txthh, yy, mm, dd, hh
          if ( dd /= old_dd ) then
+!print *, "TMPB ", first, nspec, longline(1:20)
            if ( first ) then
              wanted_year = yy
              first = .false.
@@ -140,7 +149,11 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
          end if
          nhours(jd) = nhours(jd)  + 1 
          longline=longline(comma2+1:)
+         read(longline,*) xin(1:3)
+!print *, "TMPC ", xin(1:3)
          read(longline,*) xin(1:nspec)
+!print *, "TMP ", comma, wsite, date, txthh, yy, mm, dd, hh
+!stop 'TMP'
 
      ! ----------------------------------
      !OLD  if (isite == wanted_site ) then
@@ -159,7 +172,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
     !write(unit=io_snam,fmt="(a20)") sitename(wanted_site)
     if ( nhours(last_day) < 24 ) then
        if ( dbg ) print *, "Incomplete last day ", last_day, nhours(last_day)
-       last_day = last_day  - 1
+       if ( .not. force_output ) last_day = last_day  - 1
     end if
     do jd = 1, last_day
 
@@ -176,7 +189,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
         end if
 
        ! Max, Mean
-        print *, jd, nhours(jd), maxval(data(jd,:))
+        print *, 'MaxDay', jd, nhours(jd), maxval(data(jd,:))
         write(unit=io_dmax,fmt="(g14.4)") maxval(data(jd,:))
         write(unit=io_dmean,fmt="(g14.4)") sum(data(jd,:))/24.0
         write(unit=io_dates,fmt="(4i4)") yy, cmonth(jd), cday(jd), jd
