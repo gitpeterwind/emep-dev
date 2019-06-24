@@ -601,7 +601,7 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! Soil NOx
-  if(USES%GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
+  if(USES%GLOBAL_SOILNOX)then
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   end if
 

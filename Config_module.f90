@@ -756,7 +756,7 @@ subroutine Config_Constants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
-   ,EmisSplit_OUT         & ! Output of species emissions !DSHK
+   ,EmisSplit_OUT         & ! Output of species emissions
    ,OwnInputDir           &  !
    ,Emis_sourceFiles      & ! new format
    ,EmisMask              & ! new format
@@ -839,8 +839,6 @@ subroutine Config_Constants(iolog)
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
   
-!DS EXTRA CONFIG STUFF MOVED from here !EEEEEEEEEEEEEEEEEEEEEEEEE
-
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
     write(logtxt,'(a,L2)') dtxt//'USE_SOILNOX ', USE_SOILNOX
@@ -888,7 +886,6 @@ subroutine Config_Constants(iolog)
     end if
   end do
 
-!DS moved ExtraConfig here to make use of DataDir EEEEEEEEEEEEEEEEEEEEEEEEE
 !before any conversion, read the additional namelists
   do i = 1, size(ExtraConfigFile)
      if(ExtraConfigFile(i)/="NOTSET")then
@@ -970,7 +967,7 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_read_3D)
   call associate_File(NEST_template_read_BC)
   call associate_File(NEST_template_write)
-  call associate_File(NEST_MET_inner) !DSMAY21
+  call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
 
   do i = 1, size(Emis_sourceFiles)

@@ -343,12 +343,8 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! Cloud above KUPPER are likely thin
      ! cirrus clouds, and if included may
      ! need special treatment...
-     ! ==> assume no cloud   DSJ18: leaves kcloudtop = -1
-    !DSJ18 first thought of:
-    !   if(kcloudtop<1) kcloudtop = KUPPER ! for safety ! DS J18
-    ! but now use:
-      kcloudtop = -999 ! used as label for no cloud ! DS J18
-    !DSJ18 and  added below RETURN if kcloudtop < 1. END DSJ18
+     ! ==> assume no cloud
+      kcloudtop = -999 ! used as label for no cloud 
   endif
   
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
@@ -657,24 +653,16 @@ subroutine WetDeposition(i,j,debug_flag)
   real, dimension(KUPPER:KMAX_MID) :: lossfac ! EGU
   real, dimension(KUPPER:KMAX_MID) :: lossfacPMf ! for particle fraction of semi-volatile (VBS) species
 
-!DSJ18 simplified for kcloudtop<1
   wdeploss(:) = 0.0
-  !lossfac(:) = 0.0
-  !lossfacPMf(:) = 0.0
-  !DSJ18 MOVED WDEP_PREC here:
   if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
-  if ( kcloudtop < 1 ) RETURN ! DSJ18 skip wetdep calcs if no cloud
+  if ( kcloudtop < 1 ) RETURN !  skip wetdep calcs if no cloud
 
   invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
   f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
 ! Loop starting from above:
-  !DSJ18 original code crashed here with k=0 in dA
-  !DSJ18test if(kcloudtop<1)  print *, "XXDSJ18 ", kcloudtop, KUPPER ! for safety ! DS J18
   do k=kcloudtop, KMAX_MID           ! No need to go above cloudtop
     rho(k) = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ M(k)
   end do
-
-!DS MOVED  wdeploss(:) = 0.0
 
 ! calculate concentration after wet deposition and sum up the vertical
 ! column of the depositions for the fully soluble species.

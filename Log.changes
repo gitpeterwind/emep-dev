@@ -24,6 +24,10 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 June 2019, Dave
+
+Just removed some DS comments. Left some too for the future: reminder of to-do
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 June 2019, Peter & Alvaro
 
 Case insensitive Nest variable mappings for IC/BC files
