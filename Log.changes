@@ -24,6 +24,13 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 June 2019, Peter
+
+Bug in Emission new formats. Periodicity not read correctly from file 
+Effect is that no timefactor is applied for those emissions.
+(Note that it will be correct if periodicity is read form config).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 June 2019, Dave
 
 Just removed some DS comments. Left some too for the future: reminder of to-do
