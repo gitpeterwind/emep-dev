@@ -362,6 +362,8 @@ subroutine Define_Derived()
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
 
+  if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE, dtxt//": Start OutputFields"
+
   do ind = 1, nOutputFields
     outname= trim(OutputFields(ind)%txt1)
     outunit= trim(OutputFields(ind)%txt2)   ! eg ugN, which gives unitstxt ugN/m3
@@ -466,7 +468,8 @@ subroutine Define_Derived()
          unittxt=trim(outunit)
       end select
 
-      if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE,&
+      !if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE,&
+      if(MasterProc)write(*,"(4a)") &
         dtxt//":MISC "//trim(outname),outind,trim(class)
 
       call AddNewDeriv(outname,class,subclass,"-",trim(unittxt),&
@@ -525,7 +528,8 @@ subroutine Define_Derived()
         call CheckStop(find_index(dname,def_2d(:)%name, any_case=.true.)>0,&
           dtxt//"OutputFields already defined output "//trim(dname))
 
-        if(dbg0) write(*,"(2a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
+        !if(dbg0) write(*,"(2a,2i4,4(1x,a),es10.2)") HORIZ_LINE, dtxt//"ADD",&
+        if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)") dtxt//"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
 
       case("Local_Correct")
@@ -558,25 +562,26 @@ subroutine Define_Derived()
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
     end if
   end do ! OutputFields
+  if(MasterProc)write(*,"(a,/,4a)") HORIZ_LINE, dtxt//": End OutputFields"
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   do n = 1, nOutputMisc
     Is3D=(OutputMisc(n)%class=="MET3D").or.(OutputMisc(n)%name(1:2)=='D3')&
          .or.(OutputMisc(n)%subclass(1:2)=='D3')
     if(MasterProc) write(*,"(3(A,1X),L1)") &
-      'ADDMISC',trim(OutputMisc(n)%name),'Is3D',Is3D
+      dtxt//'ADDMISC',trim(OutputMisc(n)%name),'Is3D',Is3D
     call AddDeriv(OutputMisc(n),Is3D=Is3D)
   end do
 
 !-------------------------------------------------------------------------------
   do n = 1, nMosaic
-    if ( dbg0 ) write(*,*) "DEBUG MOSAIC AddDeriv ", n, MosaicOutput(n)
+    if ( dbg0 ) write(*,*) dtxt//"DEBUG MOSAIC AddDeriv ", n, MosaicOutput(n)
     call AddDeriv( MosaicOutput(n) )
   end do
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
-     if(dbg0) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
+     if(dbg0) write(*,*) dtxt//"ECODEF ",n, trim( DepEcoSystem(n)%name )
      call AddDeriv( DepEcoSystem(n) )
   end do
 !!-------------------------------------------------------------------------------
@@ -608,7 +613,8 @@ subroutine Define_Derived()
     case default
       call CheckStop("Unknown WDEP_WANTED type " // trim(WDEP_WANTED(ind)%txt2) )
     end select
-    if(MasterProc) write(*,*)"Wet deposition output: ",trim(dname)," ",trim(unittxt)
+    if(MasterProc) write(*,*)dtxt//"Wet deposition output: ",&
+       trim(dname)," ",trim(unittxt)
   end do
 
 !Emissions:
@@ -661,7 +667,7 @@ subroutine Define_Derived()
   do isec=1,NSECTORS
      if(SecEmisOutWanted(isec))then
         do  i = 1, NEMIS_File
-           write(dname,"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           write(dname,"(A,I0,A)")dtxt//"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
            isec_poll = (isec-1)*NEMIS_File + i
            if(HourlyEmisOut)then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
@@ -742,33 +748,35 @@ Is3D = .true.
 
   ! Get indices of wanted fields in larger def_xx arrays:
   do i = 1, num_deriv2d
-    if(dbg0) print *,"CHECK 2d", num_deriv2d, i, trim(wanted_deriv2d(i))
+    if(dbg0) write(*,*)dtxt//"CHECK2d",num_deriv2d,i,trim(wanted_deriv2d(i))
     if(MasterProc) call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
         dtxt//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name,any_case=.true. )
     if(ind>0)then
       f_2d(i) = def_2d(ind)
-      if(dbg0) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
-        " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
+      if(dbg0) write(*,"(2(a,i4),3(1x,a))") "Index f_2d ",i,  &
+        " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),&
+        trim(def_2d(ind)%class)
     elseif(MasterProc)then
-      print *,"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
-      print *,"OOOPS N,N :", num_deriv2d, Nadded2d
-      print "(a,i4,a)",("Had def_2d: ",idebug,&
+      print *,dtxt//"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
+      print *,dtxt//"OOOPS N,N :", num_deriv2d, Nadded2d
+      print "(a,i4,a)",(dtxt//"Had def_2d: ",idebug,&
         trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
       call CheckStop(dtxt//"OOPS1 STOPPED" // trim( wanted_deriv2d(i) ) )
     end if
   end do
 
   do i = 1, num_deriv3d
-    if(dbg0) print *,"CHECK 3d", num_deriv3d, i, trim(wanted_deriv3d(i))
+    if(dbg0) write(*,*) dtxt//"CHECK3d",num_deriv3d,i,trim(wanted_deriv3d(i))
     if(MasterProc)&
-      call CheckStop(count(f_3d(:i)%name==wanted_deriv3d(i))>0,&
-        dtxt//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
+     call CheckStop(count(f_3d(:i)%name==wanted_deriv3d(i))>0,&
+      dtxt//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name,any_case=.true. )
     if(ind>0)then
       f_3d(i) = def_3d(ind)
       if(dbg0) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
-        " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
+        " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),&
+        trim(def_3d(ind)%class)
     elseif(MasterProc)then
       print *,"D3IND OOOPS wanted_deriv3d not found: ", wanted_deriv3d(i)
       print *,"OOOPS N,N :", num_deriv3d, Nadded3d

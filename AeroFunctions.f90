@@ -511,7 +511,6 @@ module AeroFunctions_mod
   elemental function kaero(rh) result(rate) 
      real, intent(in) :: rh  ! fractional RH
     ! Former rate for HNO3 -> NO3_c, not now used
-     !DS real, dimension(size(rh)) :: rate
      real :: rate
      
       if ( rh  > 0.9)  then
