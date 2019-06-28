@@ -36,7 +36,7 @@ for i in *.f90 *.inc gpl.txt modrun.sh CITATION.txt; do
         sed -i "s:%filename%:$i:;s:%vers%:$vers:;s://VERSION://'$vers':;s:%year%:$year:;" $cdir/$i
       fi
     fi;;
-  *)cp -u $i $cdir;;
+  *)cp -f $i $cdir;;
   esac
 done
 
