@@ -333,8 +333,6 @@ subroutine wrtxn(indate,WriteNow)
   select case(NEST_MODE_SAVE)
   case('END')
     if(.not.WriteNow)return
-  case('OUTDATE')
-    if(MasterProc) write(*,*)" WARNING THIS OPTION IS NOT USED ANYMORE"
   case('MONTH')
     if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
   case default
@@ -631,6 +629,9 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(.not.first_call)return
   first_call=.false.
 
+  if(NEST_MODE_READ=='NONE'.and.NEST_MODE_SAVE=='NONE'.and.NEST_OUTDATE_NDUMP==0)&
+    return ! No nesting
+
 ! One of the date formats needs to be provided
   call CheckStop(count([present(idate),present(cdate),present(ndays),&
                         present(nsecs)]),1,"init_icbc: wrong date option")
@@ -642,16 +643,13 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(nsecs)) call nctime2date(dat,nsecs)
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
-  if(.not.EXTERNAL_BIC_SET.and.NEST_MODE_READ=='NONE'.and.NEST_MODE_SAVE=='NONE'.and.&
-       NEST_OUTDATE_NDUMP==0)return !No nesting
-
   filename_read_3D=date2string(NEST_template_read_3D,dat,&
                                mode='YMDH',debug=mydebug)
   filename_read_BC=date2file  (NEST_template_read_BC,dat,BC_DAYS,"days",&
                                mode='YMDH',debug=mydebug)
   filename_write  =date2string(NEST_template_write  ,dat,&
                                mode='YMDH',debug=mydebug)
-  filename_dump  =date2string(NEST_template_dump  ,dat,&
+  filename_dump   =date2string(NEST_template_dump  ,dat,&
                                mode='YMDH',debug=mydebug)
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
