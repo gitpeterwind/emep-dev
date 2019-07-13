@@ -2423,7 +2423,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
           iadvDep= iadv_PMf   ! Gives SO4 dep for OMp
           if ( dbgPt  ) write(*,'(a,3i4)')dtxt//'IOM_semid '//trim(f_2d(n)%name)
 
-          if ( index(f_2d(n)%name, 'ug_PM' )>0 ) then ! particle phase wanted
+          if ( (index(f_2d(n)%name, 'ug_PM' )>0) .or. (index(f_2d(n)%name, 'ugC_PM')>0) ) then ! particle phase wanted
             if(ik==0) fac = (1 - Fgas ) * cfac(iadvDep,i,j)
             if ( dbgPt  ) write(*,*)dtxt//'IOM_PM ', fac, Fgas, trim(species(itot)%name )
           else ! mixture of gas and PM with  different gradients

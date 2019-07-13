@@ -24,6 +24,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 July 2019, Robert
+
+Bug fix -- Derived_mod.f90
+
+           Earlier version (from 30 May?) store erroneous concentrations when 
+           using the unit ugC_PM (e.g. for storing total OC-concentrations or
+           BSOA (BSOC) in ug C / m3). Total OM should be ok (if stored using ug_PM).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 June 2019, Dave
 
 Just cleaning:
