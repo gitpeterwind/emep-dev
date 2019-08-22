@@ -55,7 +55,7 @@ use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
      IOU_INST,RUNDOMAIN,USES,&
      NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE, &
      NEST_template_read_3D,NEST_template_read_BC,NEST_template_write,&
-     NEST_template_dump,BC_DAYS,&
+     NEST_template_dump,BC_DAYS,NEST_save_append,NEST_save_overwrite,&
      NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN,&
      NEST_MET_inner,NEST_RUNDOMAIN_inner,&
      NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate,OUTDATE_NDUMP_MAX,&
@@ -305,7 +305,6 @@ subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
   real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
-  logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,i,j,k,iotyp,ndim,kmax,ncfileID
@@ -320,13 +319,13 @@ subroutine wrtxn(indate,WriteNow)
   if(NEST_MODE_SAVE=='NONE')return
 
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
-! If you know what you are doing you can set paramter APPEND=.true.,
-! and the new data will be appended to the file
-  overwrite=first_call.and..not.APPEND
-  if(overwrite.and.MasterProc)then
+! If you know what you are doing you can set configuration variable NEST_save_append=T,
+! and the new data will be appended to the file, or set NEST_save_overwrite=T to skip the check
+  overwrite=MasterProc.and.first_call.and..not.NEST_save_append
+  if(overwrite.and..not.NEST_save_overwrite)then
     filename_write=date2string(NEST_template_write,indate,mode='YMDH',debug=mydebug)
-    inquire(file=fileName_write,exist=overwrite)
-    call CheckStop(overwrite.and.NEST_MODE_SAVE/='OUTDATE',&
+    inquire(file=fileName_write,exist=fexist)
+    call CheckStop(fexist,&
       "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))
   end if
 
@@ -359,7 +358,7 @@ subroutine wrtxn(indate,WriteNow)
     write(*,*)'Nest:write data ',trim(fileName_write)
   end if
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
-  overwrite=fexist.and.first_call.and..not.APPEND
+  overwrite=fexist.and.first_call.and.(NEST_save_overwrite.or..not.NEST_save_append)
 
 ! Limit output, e.g. for NMC statistics (3DVar and restriction to inner grid BC)
   if(first_call)then
@@ -484,7 +483,6 @@ end subroutine wrtxn
 subroutine Dump(indate)
   type(date), intent(in) :: indate
   real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
-  logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,i,j,k,iotyp,ndim,kmax,ncfileID

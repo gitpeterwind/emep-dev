@@ -288,6 +288,10 @@ character(len=TXTLEN_FILE),public, target, save ::  &
   NEST_template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
   NEST_template_write   = 'EMEP_OUT.nc',&      ! on namelist, if needed.
   NEST_template_dump    = 'EMEP_Dump.nc'       ! on namelist, if needed.
+logical, public, save ::  &
+  NEST_save_append = .false., & ! Append to an exixting NEST_template_write or stop the simulation.
+  NEST_save_overwrite = .false. ! Overwrite an exixting NEST_template_write or stop the simulation.
+! The run will stop if the file already exists, unless NEST_save_append=T or NEST_save_overwrite=T
 
 integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
               ! 0 means "do not look for old files"
@@ -816,7 +820,7 @@ subroutine Config_Constants(iolog)
    ,ExtraConfigFile&
    ,NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE &
    ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write&
-   ,NEST_template_dump,BC_DAYS&
+   ,NEST_template_dump,BC_DAYS,NEST_save_append,NEST_save_overwrite&
    ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
    ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
    ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&
