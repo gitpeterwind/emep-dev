@@ -84,3 +84,5 @@ meteoproc
 
 # Old modules
 *_ml.f90
+ZCM_EmChem09soa/
+ZCM_EmChem16a/
