@@ -24,6 +24,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Sep 2019, Dave
+
+Config_module - enabled use of DataDir  as part of OwnInputDir 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 July 2019, Robert
 
 Bug fix -- Derived_mod.f90

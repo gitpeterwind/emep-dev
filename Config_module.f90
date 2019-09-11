@@ -970,6 +970,8 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
 
+  OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)
+
   do i = 1, size(Emis_sourceFiles)
      !part of a class cannot be a target (?) must therefore do this separately
      if(Emis_sourceFiles(i)%filename/='NOTSET')then
