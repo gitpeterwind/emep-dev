@@ -32,6 +32,7 @@ use ChemGroups_mod          ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_mod           ! IXADV_ indices etc
 use Config_module,     only: &
    KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
+  ,KCHEMTOP           & ! limit of Fgas3d
   ,NPROC              & ! No. processors
   ,dt_advec           &
   ,PPBINV             & ! 1.0e9, for conversion of units
@@ -59,7 +60,7 @@ use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
 use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
-                            met, derivmet,  & !TEST of targets
+                            met, derivmet,  pressure, & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
@@ -159,6 +160,7 @@ character(len=100), private :: errmsg
 ! horizontal line for printouts
 character(len=*), private, parameter :: HORIZ_LINE =repeat('=',78) !f2003://new_line('a') 
 
+! NB global use of these common variables is dangerous!
 integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
 
 ! Avoid hard codded IXADV_SPCS
@@ -2049,6 +2051,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             *exp(KAPPA*log((A_mid(lev3d(k)) &
                           + B_mid(lev3d(k))*ps(i,j,1))*1.e-5))
 
+   case ("pressure" ) !
+      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+        d_3d(n,i,j,k,IOU_INST) = pressure(i,j,lev3d(k))
+
     case ( "MAX3DSHL" ) ! Daily maxima - short-lived
       call CheckStop(f_3d(n)%unit=="ppb","Asked for MAX3DSHL ppb ")
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
@@ -2362,7 +2368,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
   real :: fac, Fgas                       ! FSOA
   logical ::  semivol_wanted, dbgPt       ! FSOA
   logical ::  first_call    = .true.  ! FSOA
-  logical ::  first_semivol_call = .true.  ! FSOA
+  logical ::  first_semivol_call = .true., ParticlePhaseOutputs   ! FSOA
   character(len=*), parameter :: dtxt = 'DrvGrpCalc:'
 
 !OM25: To solve complications with OM, we need:
@@ -2379,6 +2385,9 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
   semivol_wanted=.false.
   if(present(semivol)) semivol_wanted = semivol
+  ! NB global use of n is dangerous!
+  ParticlePhaseOutputs = ( (index(f_2d(n)%name, 'ug_PM' )>0) .or. &
+                           (index(f_2d(n)%name, 'ugC_PM')>0) )
 
   if( dbgP ) &
     write(*,"(a,L1,3i4,2a16,L2,i4)") dtxt//"SGROUP:",debug_proc,me,ik, kk, &
@@ -2417,24 +2426,28 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
         !if(all([semivol_wanted,itot>=FIRST_SEMIVOL,itot<=LAST_SEMIVOL])) then
         if ( dbgPt  ) write(*,'(a,3i4)')dtxt//'IOM_choice '//trim((f_2d(n)%name))//&
              ':'//trim(species(itot)%name), index(f_2d(n)%name, 'ug_PM' ), nspec, size(gspec)
-        !if(all([itot>=FIRST_SEMIVOL,itot<=LAST_SEMIVOL])) then
-        if(itot>=FIRST_SEMIVOL .and. itot<=LAST_SEMIVOL) then
-          Fgas = Fgas3d(itot,i,j,kk)
-          iadvDep= iadv_PMf   ! Gives SO4 dep for OMp
-          if ( dbgPt  ) write(*,'(a,3i4)')dtxt//'IOM_semid '//trim(f_2d(n)%name)
 
-          if ( (index(f_2d(n)%name, 'ug_PM' )>0) .or. (index(f_2d(n)%name, 'ugC_PM')>0) ) then ! particle phase wanted
-            if(ik==0) fac = (1 - Fgas ) * cfac(iadvDep,i,j)
-            if ( dbgPt  ) write(*,*)dtxt//'IOM_PM ', fac, Fgas, trim(species(itot)%name )
-          else ! mixture of gas and PM with  different gradients
-            if(ik==0) fac = &
-             (1 - Fgas ) * cfac(iadvDep,i,j) + & !  PM term
-                  Fgas   * cfac(iadv,i,j)       ! gas-term
-            if ( dbgPt  ) write(*,'(a,i4,2f8.4,a)')dtxt//'IOM_mix',itot, &
+        if(itot>=FIRST_SEMIVOL .and. itot<=LAST_SEMIVOL) then
+
+          ! Fgas3d only defined for KCHEMTOP down
+           Fgas = Fgas3d(itot,i,j, max(kk,KCHEMTOP) )
+
+           if ( ParticlePhaseOutputs ) then ! particle phase wanted
+             fac = 1 - Fgas
+             !iadvDep= iadv_PMf   ! Gives SO4 dep for OMp
+             if ( ik == 0 ) fac = (1 - Fgas ) * cfac(iadv_PMf,i,j)
+           else  ! keeps fac=1.0, need to consider dry dep of gas vs particle
+              if(ik==0) fac = (1 - Fgas ) * cfac(iadv_PMf,i,j) + & !  PM term
+                                   Fgas   * cfac(iadv,i,j)         ! gas-term
+           end if
+
+           if ( dbgPt  ) write(*,'(a,i4,2f8.4,a)')dtxt//'IOM_mix',itot, &
                 fac, Fgas, trim(species(itot)%name )
-          end if 
-        else
-          if(ik==0) fac = fac * cfac(iadvDep,i,j)
+
+        else ! Simple gas or particle.
+
+            if(ik==0) fac = fac * cfac(iadvDep,i,j)
+        
         end if
 
 
