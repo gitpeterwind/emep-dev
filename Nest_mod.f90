@@ -55,7 +55,7 @@ use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
      IOU_INST,RUNDOMAIN,USES,&
      NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE, &
      NEST_template_read_3D,NEST_template_read_BC,NEST_template_write,&
-     NEST_template_dump,BC_DAYS,&
+     NEST_template_dump,BC_DAYS,NEST_save_append,NEST_save_overwrite,&
      NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN,&
      NEST_MET_inner,NEST_RUNDOMAIN_inner,&
      NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate,OUTDATE_NDUMP_MAX,&
@@ -305,7 +305,6 @@ subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
   real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
-  logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,i,j,k,iotyp,ndim,kmax,ncfileID
@@ -320,21 +319,19 @@ subroutine wrtxn(indate,WriteNow)
   if(NEST_MODE_SAVE=='NONE')return
 
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
-! If you know what you are doing you can set paramter APPEND=.true.,
-! and the new data will be appended to the file
-  overwrite=first_call.and..not.APPEND
-  if(overwrite.and.MasterProc)then
+! If you know what you are doing you can set configuration variable NEST_save_append=T,
+! and the new data will be appended to the file, or set NEST_save_overwrite=T to skip the check
+  overwrite=MasterProc.and.first_call.and..not.NEST_save_append
+  if(overwrite.and..not.NEST_save_overwrite)then
     filename_write=date2string(NEST_template_write,indate,mode='YMDH',debug=mydebug)
-    inquire(file=fileName_write,exist=overwrite)
-    call CheckStop(overwrite.and.NEST_MODE_SAVE/='OUTDATE',&
+    inquire(file=fileName_write,exist=fexist)
+    call CheckStop(fexist,&
       "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))
   end if
 
   select case(NEST_MODE_SAVE)
   case('END')
     if(.not.WriteNow)return
-  case('OUTDATE')
-    if(MasterProc) write(*,*)" WARNING THIS OPTION IS NOT USED ANYMORE"
   case('MONTH')
     if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
   case default
@@ -361,7 +358,7 @@ subroutine wrtxn(indate,WriteNow)
     write(*,*)'Nest:write data ',trim(fileName_write)
   end if
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
-  overwrite=fexist.and.first_call.and..not.APPEND
+  overwrite=fexist.and.first_call.and.(NEST_save_overwrite.or..not.NEST_save_append)
 
 ! Limit output, e.g. for NMC statistics (3DVar and restriction to inner grid BC)
   if(first_call)then
@@ -486,7 +483,6 @@ end subroutine wrtxn
 subroutine Dump(indate)
   type(date), intent(in) :: indate
   real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
-  logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,i,j,k,iotyp,ndim,kmax,ncfileID
@@ -619,7 +615,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 ! adv_bc            BC detailed description relevant adv species
 ! EXTERNAL_BC       External (non emepctm) BC detailed description/setup
 ! EXTERNAL_BIC_SET  EXTERNAL_BC has been set (adv_bc=>EXTERNAL_BC)
-!        otherwise  Assume emepctm BCs        (adv_bc=>adv_ic)
+!        otherwise  Assume emepctm BCs       (adv_bc:=adv_ic)
 !----------------------------------------------------------------------------!
   integer,   intent(in), optional :: idate(4)
   type(date),intent(in), optional :: cdate
@@ -630,6 +626,9 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 
   if(.not.first_call)return
   first_call=.false.
+
+  if(NEST_MODE_READ=='NONE'.and.NEST_MODE_SAVE=='NONE'.and.NEST_OUTDATE_NDUMP==0)&
+    return ! No nesting
 
 ! One of the date formats needs to be provided
   call CheckStop(count([present(idate),present(cdate),present(ndays),&
@@ -642,16 +641,13 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(nsecs)) call nctime2date(dat,nsecs)
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
-  if(.not.EXTERNAL_BIC_SET.and.NEST_MODE_READ=='NONE'.and.NEST_MODE_SAVE=='NONE'.and.&
-       NEST_OUTDATE_NDUMP==0)return !No nesting
-
   filename_read_3D=date2string(NEST_template_read_3D,dat,&
                                mode='YMDH',debug=mydebug)
   filename_read_BC=date2file  (NEST_template_read_BC,dat,BC_DAYS,"days",&
                                mode='YMDH',debug=mydebug)
   filename_write  =date2string(NEST_template_write  ,dat,&
                                mode='YMDH',debug=mydebug)
-  filename_dump  =date2string(NEST_template_dump  ,dat,&
+  filename_dump   =date2string(NEST_template_dump  ,dat,&
                                mode='YMDH',debug=mydebug)
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
@@ -662,15 +658,11 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
   if(EXTERNAL_BIC_SET) then
     adv_bc=>EXTERNAL_BC
-    adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
   else
-     adv_bc(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
-     adv_bc(:)%spcname=species_adv(:)%name
-     adv_bc(:)%varname=species_adv(:)%name
-     adv_bc(:)%frac=1.0
-     adv_bc(:)%wanted=.true.
-     adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
+    allocate(adv_bc(NSPEC_ADV))
+    adv_bc(:)=adv_ic(:)
   end if
+  adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
 
   if(MasterProc)then
     do n = 1,size(adv_ic%varname)

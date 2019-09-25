@@ -601,7 +601,7 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! Soil NOx
-  if(USES%GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
+  if(USES%GLOBAL_SOILNOX)then
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   end if
 
@@ -687,7 +687,7 @@ subroutine setup_rcemis(i,j)
 
     if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj) then
        write(*,"(a,i3,9es12.4)") "1DCHEM DZ",  k, deltaZcm(k), &
-        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*roa(i,j,k,1))! , &
+        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*roa(i,j,k,1)) , z_bnd(i,j,k) ! all match at surface
 !        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)!, &
 !        M(k)*ATWAIR/roa(i,j,k,1)
 !       M(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3

@@ -292,7 +292,7 @@ subroutine MeteoRead()
        ,"deep_soil_water_content" /)
    ! Hmix ditto:
   character(len=*),  parameter :: &
-    possible_HmixNames(2) =  [ "pblh", &
+    possible_HmixNames(2) =  [ "PBLH",&
       "blh " ] ! GLOBAL05
 
   logical :: write_now
