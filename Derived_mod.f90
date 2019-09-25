@@ -60,7 +60,7 @@ use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
 use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
-                            met, derivmet,  pressure, & !TEST of targets
+                            met, derivmet,&!  pressure, & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
@@ -2051,9 +2051,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             *exp(KAPPA*log((A_mid(lev3d(k)) &
                           + B_mid(lev3d(k))*ps(i,j,1))*1.e-5))
 
-   case ("pressure" ) !
-      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
-        d_3d(n,i,j,k,IOU_INST) = pressure(i,j,lev3d(k))
+!   case ("pressure" ) !
+!      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+!        d_3d(n,i,j,k,IOU_INST) = pressure(i,j,lev3d(k))
 
     case ( "MAX3DSHL" ) ! Daily maxima - short-lived
       call CheckStop(f_3d(n)%unit=="ppb","Asked for MAX3DSHL ppb ")
