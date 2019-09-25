@@ -1104,9 +1104,12 @@ contains
           emis_inputlist_NEMIS_FILE = 1!all pollutants are in same file
           if(index(emis_inputlist(iemislist)%name,"POLL")>0)emis_inputlist_NEMIS_FILE = NEMIS_FILE !one file per pollutant
           do iem = 1, emis_inputlist_NEMIS_FILE
-             if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-                if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
-                if(Masterproc)write(*,"(A)")'using PollNames restrictions '
+             if(index(emis_inputlist(iemislist)%name,"POLL")>0)then
+                !in this case we apply PollName restrictions here, otherwise it is applied in EmisGetCdf
+                if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+                   if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+                   if(Masterproc)write(*,"(A)")'using PollNames restrictions '
+                end if
              end if
              fname = key2str(trim(emis_inputlist(iemislist)%name),'POLL',EMIS_FILE(iem))
 

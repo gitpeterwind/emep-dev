@@ -288,6 +288,12 @@ contains
                       cycle
                    else
                       if(MasterProc)write(*,*)'found '//species(iem_used)%name//' for '//trim(ewords(6))
+                      if(pollName(1)/='NOTSET')then
+                         if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))then
+                            if(Masterproc)write(*,"(A)")'NOT reading '//species(iem_used)%name//' from '//trim(fname)
+                            cycle      
+                         endif
+                      end if
                       !see if case has been found before
                       !should search only among NEmis_id first!
                       ix_Emis = find_index(ewords(6),Emis_id%species(:))
@@ -315,10 +321,6 @@ contains
              endif
 
              cdfemis = 0.0 ! safety, shouldn't be needed though
-             if(pollName(1)/='NOTSET')then
-                if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
-                if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
-             end if             
              call ReadField_CDF(fname,cdfvarname,cdfemis,nstart=nstart,&
                   interpol='mass_conservative',&
                   needed=.false.,UnDef=0.0,&
