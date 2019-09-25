@@ -23,6 +23,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Sep 2019, Peter, Agnes
+
+The pollName restrictions for emission was not working correctly (worked only 
+if "sox" was among pollNames!).
+
+The bugfix had implications for the "non fraction" cases, and it has not been 
+tested for that cases. 
+(The hope is that this all get deleted once the new formats take over :) )
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14 Sep 2019, Dave
