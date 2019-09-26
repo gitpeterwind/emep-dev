@@ -24,6 +24,20 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Sep 2019, Peter, Svetlana
+
+When a new variable 'ps' is defined by user, it can mess with the 'PS' already defined, 
+see Issue #160. Now the variable is first looked for with case sensitive search, 
+then case insensitive if not found.
+
+Bug in find_index: any_case=.true. and any_case=.false. had same effect, since 
+only presence was tested.
+
+New output: pressure_3D. for 3D pressure output set for instance in config:
+      'pressure'      ,'hPa', '3d','pressure_3D' ,'MISC' ,'YMD',
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 Sep 2019, Peter, Agnes
 
 The pollName restrictions for emission was not working correctly (worked only 

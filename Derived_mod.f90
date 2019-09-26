@@ -60,7 +60,7 @@ use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
 use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
-                            met, derivmet,&!  pressure, & !TEST of targets
+                            met, derivmet,  &
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
@@ -753,11 +753,15 @@ Is3D = .true.
     if(dbg0) write(*,*)dtxt//"CHECK2d",num_deriv2d,i,trim(wanted_deriv2d(i))
     if(MasterProc) call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
         dtxt//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
+    ind = find_index( wanted_deriv2d(i), def_2d(:)%name,any_case=.false. )
+    if(ind<=0)then
+       !try with case insensitive
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name,any_case=.true. )
+    endif
     if(ind>0)then
       f_2d(i) = def_2d(ind)
       if(dbg0) write(*,"(2(a,i4),3(1x,a))") "Index f_2d ",i,  &
-        " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),&
+        " = def "//trim(wanted_deriv2d(i)),ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),&
         trim(def_2d(ind)%class)
     elseif(MasterProc)then
       print *,dtxt//"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
@@ -2048,12 +2052,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ("T" ) ! Absolute Temperature
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=th(i,j,lev3d(k),1)&
-            *exp(KAPPA*log((A_mid(lev3d(k)) &
-                          + B_mid(lev3d(k))*ps(i,j,1))*1.e-5))
+            *exp(KAPPA*log((A_mid(lev3d(k))+ B_mid(lev3d(k))*ps(i,j,1))*1.e-5))
 
-!   case ("pressure" ) !
-!      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
-!        d_3d(n,i,j,k,IOU_INST) = pressure(i,j,lev3d(k))
+    case ("pressure_3D" ) !
+      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+        d_3d(n,i,j,k,IOU_INST) = &
+                     (A_mid(lev3d(k)) + B_mid(lev3d(k))*ps(i,j,1))*1.e-2 ! hPa
 
     case ( "MAX3DSHL" ) ! Daily maxima - short-lived
       call CheckStop(f_3d(n)%unit=="ppb","Asked for MAX3DSHL ppb ")
