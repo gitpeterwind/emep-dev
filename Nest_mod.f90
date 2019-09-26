@@ -301,9 +301,9 @@ subroutine readxn(indate)
 end subroutine readxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-subroutine wrtxn(indate,WriteNow)
+subroutine wrtxn(indate, End_of_run)
   type(date), intent(in) :: indate
-  logical, intent(in) :: WriteNow !Do not check indate value
+  logical, intent(in) :: End_of_run! Only output if NEST_MODE_SAVE = 'END'
   real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
 
   type(Deriv) :: def1 ! definition of fields
@@ -329,14 +329,16 @@ subroutine wrtxn(indate,WriteNow)
       "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))
   end if
 
-  select case(NEST_MODE_SAVE)
-  case('END')
-    if(.not.WriteNow)return
-  case('MONTH')
-    if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
-  case default
-    if(mod(indate%hour,NEST_NHOURSAVE)/=0.or.indate%seconds/=0)return
-  end select
+  if(End_of_run)then
+     if(NEST_MODE_SAVE /= 'END') return
+  else
+     select case(NEST_MODE_SAVE)
+     case('MONTH')
+        if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
+     case default
+        if(mod(indate%hour,NEST_NHOURSAVE)/=0.or.indate%seconds/=0)return
+     end select
+  endif
 
   iotyp=IOU_INST
   ndim=3 !3-dimensional
