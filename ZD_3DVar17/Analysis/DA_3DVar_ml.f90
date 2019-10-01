@@ -152,6 +152,7 @@ contains
     use Config_module    , only : KMAX_MID
     use MPI_Groups_mod   , only : MPI_COMM_CALC
     use Io_Nums_mod      , only : IO_NML
+    use DA_ml            , only : DA_Version
     use DA_ml            , only : nlev
     use DA_Obs_ml        , only : DA_Obs_Init
 
@@ -174,7 +175,7 @@ contains
     character(len=1024)     ::  fname
 
     ! --- begin ----------------------------------
-
+    
     ! check ...
 #ifndef _MPI
     write (gol,'("MPI code should be enabled, define _MPI macro!")'); call goErr
@@ -193,6 +194,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! info ..
     write (gol,'(a,": enabled GO logging on all processes ...")') rname; call goPr
+
+    ! version info ...
+    write (gol,'(a,": DA VERSION: ",a)') rname, trim(DA_VERSION); call goPr
 
     ! define timers:
     call GO_Timer_Def( itim_read_obs , 'read observations', status )
@@ -2145,6 +2149,8 @@ contains
     real(kind=8)              ::  dzs(1) = 0.0
 
     integer                   ::  n,p,l,k
+    
+    logical                   ::  skip
 
     !-----------------------------------------------------------------------
     ! storage
@@ -2451,6 +2457,8 @@ contains
 
     !! info ...
     !write (gol,'(a,":     returned omode   : ",i4)') rname, omode; call goPr
+    ! init flag ...
+    skip = .false.
     ! check ...
     select case ( omode )
       case ( 0 )
@@ -2459,8 +2467,10 @@ contains
       case ( 1 )
         write (gol,'("omode==1: Normal m1qn3 exit: successfull gradient test")'); call goPr
       case ( 2 )
-        write (gol,'("omode==2: One of the input arguments is not well initialized")'); call goErr
-        TRACEBACK; status=1; return
+        write (gol,'(a,": omode==2: One of the input arguments is not well initialized")') rname; call goErr
+        !TRACEBACK; status=1; return
+        write (gol,'(a,": probably gradient is too small, set increments to zero ...")') rname; call goPr
+        skip = .true.
       case ( 3 )
         write (gol,'("omode==3: Line-search blocked on tmax = 10**20")'); call goErr
         TRACEBACK; status=1; return
@@ -2497,17 +2507,28 @@ contains
     IF_NOT_OK_RETURN(status=1)
 #endif
 
-    ! postprocessing evaluation,
-    ! computes final dx and evaluates du :
-    call costFunction( itime, nv_hcr, chi_hcr, Hops, Bmat, &
-                        Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
-                        dx_loc, .true., status, &
-                        du_loc=du_loc )
-    IF_NOT_OK_RETURN(status=1)
+    ! skip?
+    if ( skip ) then
 
-    ! info ...
-    if ( MasterProc ) then
-      write (gol,*) 'Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
+      ! no increments:
+      dx_loc = 0.0
+      if ( present(du_loc) ) du_loc = 0.0
+
+    else
+
+      ! postprocessing evaluation,
+      ! computes final dx and evaluates du :
+      call costFunction( itime, nv_hcr, chi_hcr, Hops, Bmat, &
+                          Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
+                          dx_loc, .true., status, &
+                          du_loc=du_loc )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! info ...
+      if ( MasterProc ) then
+        write (gol,*) 'Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
+      end if
+      
     end if
 
 #ifdef with_ajs
