@@ -18,6 +18,9 @@ module DA_ml
   
   ! --- const -----------------------------------------
 
+  ! version string:
+  character(len=*), parameter   ::  DA_VERSION = '3DVar17 (patch 2019-09-30)'
+
   ! print debug messages ?
   logical, parameter            ::  DEBUG_DA     = .false.  ! general purpose debug messages
   logical, parameter            ::  DEBUG_DA_OBS = .false.  ! observation info
