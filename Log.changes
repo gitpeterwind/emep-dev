@@ -24,6 +24,10 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+03 Oct 2019, Dave
+
+Landuse_mod - quick bug fix on yesterdays versions
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 02 Oct 2019, Dave
 
 Landuse_mod - now OK to specify just one LandCoverInputs%Mapfile

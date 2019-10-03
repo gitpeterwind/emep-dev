@@ -296,6 +296,7 @@ contains
     logical :: dbgij
 
     nFiles = find_index("NOTSET", LandCoverInputs%MapFile(:) ) - 1
+    if ( nFiles < 1 ) nFiles = size( LandCoverInputs%MapFile(:) )
 
     if( MasterProc )  then
        ncalls = ncalls + 1
