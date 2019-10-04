@@ -75,7 +75,7 @@
                   NPROCX,NPROCY,NPROC, &
                   USES,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
-  use Convection_mod,     only: convection_pstar,convection_Eta
+  use Convection_mod,     only: convection_Eta
   use EmisDef_mod,        only: NSECTORS, Nneighbors, loc_frac, loc_frac_1d
   use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
@@ -706,29 +706,8 @@
 
        call CheckStop(ADVEC_TYPE/=1, "ADVEC_TYPE no longer supported")
 
-       do k=1,KMAX_MID
-          do j = lj0,lj1
-             do i = li0,li1
-                dpdeta(i,j,k) = (dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
-                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*dpdeta(i,j,k)
-             end do
-          end do
-       end do
-
-       call convection_Eta(dpdeta,dt_advec)
-       do k=1,KMAX_MID
-          do j = lj0,lj1
-             do i = li0,li1
-                psi = 1.0/max(dpdeta(i,j,k),1.0)
-                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-             end do
-          end do
-          mindpdeta = minval( dpdeta(li0:li1, lj0:lj1, k) )
-          if ( nWarnings < MAX_WARNINGS  .and.mindpdeta<1.0) then
-             call datewrite("WARNING:C dpdeta < 1",k,  (/ mindpdeta /) )
-             nWarnings = nWarnings + 1
-          end if
-       end do
+!convection uses mixing ratio units
+       call convection_Eta(dt_advec)
 
     end if
 
