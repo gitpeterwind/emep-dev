@@ -24,6 +24,18 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+04 Oct 2019, Peter
+
+Complete deep revision of convection.
+The method is now mostly rewritten and base on mixing ratios.
+It does not try to keep the sigma coordinate formalism.
+There were probably bugs in the old version. (subsidence counted twice? and 
+wrong flux limitations)
+
+It should be stable and safe now, however the CONVECTION_FACTOR should be 
+redefined.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 Oct 2019, Dave
 
 Landuse_mod - quick bug fix on yesterdays versions
