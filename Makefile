@@ -156,7 +156,7 @@ TEST:
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem19 CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 #DSA2018# GenChem config
