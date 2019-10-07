@@ -24,6 +24,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 Oct 2019, Peter
+
+Small fixes in Makefile and uncomment EmChem19 Split in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 04 Oct 2019, Peter
 
 Complete deep revision of convection.

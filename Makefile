@@ -87,7 +87,7 @@ else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
-else ifeg ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
+else ifeq ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=makedepf90
