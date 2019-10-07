@@ -138,8 +138,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC: \
-	  ./ZD_OZONE/My_Outputs_mod.f90 \
+EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 EmChem19 CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90
 
 SR-EMEP:    EMEP              # SR is only a different config_emep.nml
