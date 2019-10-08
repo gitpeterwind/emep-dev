@@ -132,9 +132,6 @@ touchdepend:
 ###
 # Model/Config specific targets
 ###
-# Pollen for MACC FC runs
-Pollen: MACC-Pollen
-MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
 
 # Test
 TEST:
