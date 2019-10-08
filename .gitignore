@@ -67,8 +67,6 @@ ZCM_Emergency/emergency_emission.csv
 ZCM_Emergency/emergency_location.csv
 
 # Makefile output
-/My_*.f90
-/Pollen*.f90
 .depend
 Unimod
 Unimod_3DVar
