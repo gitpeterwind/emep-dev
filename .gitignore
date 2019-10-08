@@ -77,7 +77,7 @@ ZD_3DVar*/Makefile.deps
 
 # New binary names
 emepctm
-emepctm_3DVar
+emepctm_3DVar*
 meteoproc
 
 # Old modules
