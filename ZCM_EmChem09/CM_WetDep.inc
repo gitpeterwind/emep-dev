@@ -54,4 +54,8 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("Dust_WB_c ", "PMc       ", -999.0 ) &
 , dep_t("Dust_SAH_f", "PMf       ", -999.0 ) &
 , dep_t("Dust_SAH_c", "PMc       ", -999.0 ) &
+, dep_t("POLLEN_BIRCH", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_OLIVE", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_RWEED", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_GRASS", "POLLw     ", -999.0 ) &
 /)
