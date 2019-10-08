@@ -1417,3 +1417,39 @@
   xnew(Dust_sah_c) = xold(Dust_sah_c) + dt2 * P
 
 
+!-> POLLEN_BIRCH
+
+  P = rcemis(POLLEN_BIRCH,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_BIRCH) = xold(POLLEN_BIRCH) + dt2 * P
+
+
+!-> POLLEN_OLIVE
+
+  P = rcemis(POLLEN_OLIVE,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_OLIVE) = xold(POLLEN_OLIVE) + dt2 * P
+
+
+!-> POLLEN_RWEED
+
+  P = rcemis(POLLEN_RWEED,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_RWEED) = xold(POLLEN_RWEED) + dt2 * P
+
+
+!-> POLLEN_GRASS
+
+  P = rcemis(POLLEN_GRASS,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_GRASS) = xold(POLLEN_GRASS) + dt2 * P
+
+

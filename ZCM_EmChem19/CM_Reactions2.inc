@@ -360,7 +360,7 @@
 
 !-> EC_f_wood_new
 
-  P = rcemis(EC_F_WOOD_new,k)
+  P = rcemis(EC_F_WOOD_NEW,k)
   
   L = rct(94,k)
   
@@ -369,7 +369,7 @@
 
 !-> EC_f_wood_age
 
-  P = rcemis(EC_F_WOOD_age,k)  &
+  P = rcemis(EC_F_WOOD_AGE,k)  &
     + rct(94,k) * xnew(EC_f_wood_new)
   
   ! L = 0.0
@@ -388,7 +388,7 @@
 
 !-> EC_f_ffuel_new
 
-  P = rcemis(EC_F_FFUEL_new,k)
+  P = rcemis(EC_F_FFUEL_NEW,k)
   
   L = rct(94,k)
   
@@ -397,7 +397,7 @@
 
 !-> EC_f_ffuel_age
 
-  P = rcemis(EC_F_FFUEL_age,k)  &
+  P = rcemis(EC_F_FFUEL_AGE,k)  &
     + rct(94,k) * xnew(EC_f_ffuel_new)
   
   ! L = 0.0
