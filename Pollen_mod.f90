@@ -13,6 +13,7 @@ use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemDims_mod,          only: NSPEC_SHL
 use ChemSpecs_mod,         only: species_adv
 use Chemfields_mod,        only: xn_adv    ! emep model concs.
+use Debug_module,             only: DEBUG
 use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
 use GasParticleCoeffs_mod, only: DDdefs
 use Functions_mod,         only: heaviside
@@ -24,7 +25,7 @@ use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
 use MicroMet_mod,          only: Wind_at_h
 use Config_module,         only: KMAX_MID, DataDir, &
                                  METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                 dt=>dt_advec, DEBUG,&
+                                 dt=>dt_advec, &
                                  outdate=>NEST_OUTDATE,OUTDATE_NDUMP=>NEST_OUTDATE_NDUMP,&
                                  out_DOMAIN=>NEST_out_DOMAIN,&
                                  MODE_READ=>NEST_MODE_READ,MODE_SAVE=>NEST_MODE_SAVE,&

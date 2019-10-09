@@ -17,7 +17,15 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 export MACHINE ?= stallo
 export DEBUG ?= no
 export ARCHIVE ?= no
-ifeq ($(MACHINE),stallo)
+ifeq ($(MACHINE),fram)
+  MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
+  MAKEDEPF90=makedepf90
+  OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=mpiifort
+else ifeq ($(MACHINE),stallo)
   MODULES = netCDF-Fortran/4.4.4-intel-2016b
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
