@@ -390,7 +390,7 @@ subroutine Init_My_Deriv()
       select case(outtyp)
       case('FLYmax6h','FLYmax6h:SPEC','FLYmax6h:GROUP')
         tag_name(1)= "MAX6h_" //trim(outname)//"_"//trim(outdim)
-      case('COLUMN','COLUMN:SPEC','COLUMN:GROUP')
+      case('COLUMN','COLUMN:ADV','COLUMN:SPEC','COLUMN:SHL','COLUMN:GROUP')
         tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')

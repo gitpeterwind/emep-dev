@@ -736,14 +736,8 @@ end subroutine setup_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine reset_3d(i,j)
   integer, intent(in) :: i,j
-  integer :: k, n, ispec, id    ! loop variables
- !! XNCOL testing -- sets d_2d for column data from molec/cm3 concs.
- ! if variables are wanted for d_2d output (via USET), we use these indices:
+  integer :: k, n, ispec    ! loop variables
   character(len=*),parameter :: dtxt='reset3dxncol:'
-  character(len=20) :: specname
-  integer, dimension(20), save :: d2index, id2col
-  logical, save :: first_call = .true.
-  integer, save :: nd2d
 
 
   do k = KCHEMTOP, KMAX_MID
@@ -758,46 +752,6 @@ subroutine reset_3d(i,j)
       xn_adv(n,i,j,k) = xn_2d(ispec,k)/M(k)
     end do ! ispec
   end do ! k
-
-!!======================================================================
-!! If column totals are wanted, we can do those here also since xn_2d are
-!! in molec/cm3, and we want molec/cm2:
-
-   if ( first_call ) then
-
-     nd2d = 0
-     do id = 1, size(f_2d)
-
-           if ( f_2d(id)%subclass == 'xncol' ) then
-             nd2d =  nd2d  + 1
-             call CheckStop( nd2d > size(id2col), &
-                 dtxt//"Need bigger id2col array" )
-             specname = trim(f_2d(id)%name(7:))  ! Strip XNCOL_
-             ispec = find_index( specname, species(:)%name )
-             call CheckStop(ispec < 1, dtxt//"XNCOL not found"//specname )
-             d2index(nd2d)= id
-             id2col(nd2d) = ispec
-             if(MasterProc) write(*,*) 'USET XNCOL FOUND', id, ispec, &
-                 trim(specname),nd2d, id2col(nd2d)
-           end if
-     end do
-     first_call = .false.
-   end if
-
-   do id = 1, nd2d
-      ispec = id2col(id)
-      d_2d(d2index(id),i,j,IOU_INST) = dot_product(xn_2d(ispec,:),deltaZcm(:))
-      if(DEBUG%SETUP_1DCHEM.and.debug_proc.and. &
-          i==debug_li.and.j==debug_lj) then
-
-        write(*,"(a,6i5,a,9es12.3)") dtxt//"OUTXNCOL "//&
-          trim(f_2d(d2index(id))%name), me, i,j,id,d2index(id),ispec, &
-          trim(species(ispec)%name), xn_2d(ispec,20), deltaZcm(20), &
-           d_2d(d2index(id),i,j,IOU_INST)
-    end if
-   end do
-
-
 end subroutine reset_3d
 !---------------------------------------------------------------------------
 endmodule Setup_1d_mod

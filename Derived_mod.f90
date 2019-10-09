@@ -419,13 +419,25 @@ subroutine Define_Derived()
         outtyp = "FLYmax6h:GROUP"
         subclass = outdim   ! flxxx-yyy: xxx to yyy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
-      case('COLUMN','COLUMN:SPEC')
-     !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
+      case('COLUMN','COLUMN:ADV','COLUMN:SPEC')
+        !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
         iout=find_index(outname, species_adv(:)%name, any_case=.true. )
         call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         call Units_Scale(outunit,iout,unitscale,unittxt)
         outtyp = "COLUMN:SPEC"
+        subclass = outdim   ! k20, k16...
+        outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
+      case('COLUMN:SHL')
+        !COL   'OH',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
+        iout=find_index(outname, species_shl(:)%name, any_case=.true. )
+        call CheckStop(iout<0,dtxt//"OutputFields "//trim(outtyp)//&
+                              " not found "//trim(outname))
+        call CheckStop(outunit, 'molec/cm2',dtxt//"OutputFields "//trim(outtyp)//&
+                              " unsupported unit "//trim(outunit))
+        unitscale = 1e2 ! dZ[m] to dZ[cm]
+        unittxt   = trim(outunit)
+        outtyp = "COLUMN:SHL"
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('COLUMN:GROUP')
@@ -1628,7 +1640,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         forall(i=1:limax,j=1:ljmax,mask2d(i,j))&  ! use IOU_YEAR as a buffer
           d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
       end do
-    case ("COLUMN","COLUMN:SPEC") ! unit conversion factor stored in f_2d(n)%scale
+
+    case ("COLUMN",'COLUMN:ADV',"COLUMN:SPEC") ! unit conversion factor stored in f_2d(n)%scale
       klow = KMAX_MID + 1 ! initialize too large
       if (f_2d(n)%subclass == "kmax") then
         klow = KMAX_MID
@@ -1658,8 +1671,37 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       end do !j
       if(dbgP) write(*,"(a18,es12.3)") &
         "COLUMN:SPEC d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
+      case ("COLUMN:SHL") ! unit conversion factor stored in f_2d(n)%scale
+        klow = KMAX_MID + 1 ! initialize too large
+        if (f_2d(n)%subclass == "kmax") then
+          klow = KMAX_MID
+        else
+          read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+        end if
+        call CheckStop(klow>KMAX_MID, "column definition too large: "// f_2d(n)%subclass)
+        do j = 1, ljmax
+          do i = 1, limax
+            k = 1
+            tmpwork(i,j) =  &
+              xn_shl(ind,i,j,k)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
+            do k = 2, klow   !!! KMAX_MID
+              tmpwork(i,j) = tmpwork(i,j) + &
+                xn_shl(ind,i,j,k)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
-    case("COLUMN:GROUP")
+              if(DEBUG%COLUMN.and.dbgP.and.&
+                i==debug_li.and.j==debug_lj) &
+                write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
+                  trim(f_2d(n)%name), n, ind, k, " => ", &
+                    f_2d(n)%scale, z_bnd(i,j,k)-z_bnd(i,j,k+1), &
+                    xn_shl(ind,i,j,k),tmpwork(i,j)
+            end do ! k
+            d_2d(n,i,j,IOU_INST) = tmpwork(i,j) ! unit conversion
+                     ! is completed elsewere by *f_2d(n)%scale
+          end do !i
+        end do !j
+        if(dbgP) write(*,"(a18,es12.3)") &
+          "COLUMN:SHL d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
+      case("COLUMN:GROUP")
       igrp = f_2d(n)%index
       call CheckStop(igrp<1,"NEG GRP "//trim(f_2d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
