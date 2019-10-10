@@ -1,10 +1,10 @@
 &Model_config
   GRID      = 'EMEP0302',
-  iyr_trend = 2018,
+  iyr_trend = 2017,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_33',
-  startdate = 2018,01,01,00,
-  enddate   = 2018,01,01,03,
+  startdate = 2017,01,01,00,
+  enddate   = 2017,01,01,03,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
