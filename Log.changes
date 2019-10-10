@@ -23,6 +23,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 Oct 2019, Peter
+
+Bug in setup_1d: aero_fss, aero_fdust, aero_fbc, aero_fom could be 0/0, giving 
+Nan in reaction rates.
+
+kg/m2 added in Units_mod
+
+Removed PSURF, as we already have PS which is the same.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Oct 2019, Alvaro
 
 Consolidate column outputs, see #164

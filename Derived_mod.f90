@@ -350,11 +350,6 @@ subroutine Define_Derived()
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
-! NOT YET: Scale pressure by 0.01 to get hPa
-  call AddNewDeriv( "PSURF","PSURF",  "SURF","-",   "hPa", &
-          -99,  -99,  F,  1.0,  T,  'YM' )
-
-!NB: do not remove or change name. PS is part of vertical coordinates definition!!
   call AddNewDeriv( "PS","PSURF",  "SURF","-",   "hPa", &
           -99,  -99,  F,  1.0,  T,  'YMD'//trim(PS_needed) )
 

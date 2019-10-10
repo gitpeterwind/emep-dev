@@ -332,10 +332,10 @@ contains
 
           ugRemF = ugRemF  -ugBCf  ! kHet BC added 24/10/2015
 
-          aero_fss(k)     = ugSSaltF/ugpmF
-          aero_fdust(k)   = ugDustF/ugpmF
-          aero_fbc(k)     = ugBCf/ugpmF
-          aero_fom(k)     = max(0.0, ugRemF)/ugpmF
+          aero_fss(k)     = ugSSaltF/(ugpmF+1.E-30)
+          aero_fdust(k)   = ugDustF/(ugpmF+1.E-30)
+          aero_fbc(k)     = ugBCf/(ugpmF+1.E-30)
+          aero_fom(k)     = max(0.0, ugRemF)/(ugpmF+1.E-30)
 
           ! GERBER equations for wet radius
           ! New approach to Gerber. We use masses above. 
