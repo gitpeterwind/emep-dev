@@ -22,6 +22,16 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 Oct 2019, Alvaro
+
+Consolidate column outputs, see #164
+- Add COLUMN:SHL (MISC) output for short lived species. Only molec/cm2
+- Remove xncol (USET) otputs.
+
+Commits:
+- 9a463da9: COLUMN:SHL output replaces USET/xncol, close #164
+- 6e79ee8b: update XNCOL/COLUMN comments, see #164
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 07 Oct 2019, Peter
