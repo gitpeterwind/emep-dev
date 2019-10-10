@@ -258,7 +258,7 @@ contains
                 endif
              endif
           end do
-
+          
           if(masstest)then
              !check that all mass is distributed into xn_buff. xn_air_grid and xn_adv should be empty
              if(abs(xn_air_grid(k_fill))>1.0E-12.or.k_fill/=KMAX_MID )then
@@ -271,9 +271,14 @@ contains
                    stop
                 end if
              end do
-             do k=1,KMAX_MID
-                xn_adv(:,i,j,k)=xn_buff(:,k)
-             end do
+          endif
+          
+!copy the end results in xn_adv          
+          do k=1,KMAX_MID
+             xn_adv(:,i,j,k)=xn_buff(:,k)
+          end do
+          
+          if(masstest)then
              total = 0.0
              do k=1,KMAX_MID
                 total = total + xn_adv(n,i,j,k)*dp(k)
@@ -283,7 +288,7 @@ contains
                 stop
              endif
           end if
-
+          
        end do
     end do
 
