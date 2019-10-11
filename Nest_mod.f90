@@ -333,6 +333,8 @@ subroutine wrtxn(indate, End_of_run)
      if(NEST_MODE_SAVE /= 'END') return
   else
      select case(NEST_MODE_SAVE)
+     case('END')
+        return
      case('MONTH')
         if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
      case default
