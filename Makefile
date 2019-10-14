@@ -21,7 +21,7 @@ ifeq ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
-  MAKEDEPF90=makedepf90
+  MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpiifort
