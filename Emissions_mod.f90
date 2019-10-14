@@ -371,7 +371,9 @@ contains
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
           if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
-          
+          if(MasterProc) write(*,'(a,i2,a)')'including '//trim(Emis_source(ii)%varname)//' as '//&
+               trim(Emis_source(ii)%species)//' sector ',Emis_source(ii)%sector,' country '//trim(Emis_source(ii)%country_ISO)
+         
        enddo
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
 !            //trim(Emis_sourceFiles(n)%filename)

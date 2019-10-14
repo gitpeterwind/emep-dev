@@ -494,6 +494,7 @@ contains
     character(len=*), parameter :: dtxt='Em_inicdf:'
     integer :: countrycode
     logical :: apply_femis
+    integer :: source_found(NEmis_sourcesMAX)
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -544,7 +545,14 @@ contains
     if(status==nf90_noerr)EmisFile%sector = sector
     status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
     if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
-    
+
+    !init accounting of requested sources
+    do i = 1,NEmis_sourcesMAX     
+       source_found(i)=0
+    end do
+    do i = 1,min(size(EmisFile_in%source), NEmis_sourcesMAX)  
+       if(EmisFile_in%source(i)%varname /= 'NOTSET')source_found(i)=1
+    end do
 
     nemis_old = NEmis_sources
     !loop over all variables
@@ -558,6 +566,7 @@ contains
           !if ( debugm0 ) write(*,*) dtxt//'source:',trim(EmisFile_in%source(i)%varname)
           if(EmisFile_in%source(i)%varname == cdfvarname)then
              nn = nn + 1
+             source_found(i) = 0 !mark as found
              call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"NEmis_sourcesMAX exceeded (A)")
              Emis_source(NEmis_sources+nn)%ix_in=i
              if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
@@ -612,6 +621,11 @@ contains
        endif
         
     enddo
+    do i = 1,min(size(EmisFile_in%source), NEmis_sourcesMAX)  
+       if(MasterProc .and. source_found(i)==1)then
+          write(*,*)'WARNING: did not find any variable with name '//trim(EmisFile_in%source(i)%varname)//' in '//trim(fname)
+       endif
+    end do
     if(nemis_old /= NEmis_sources)then
        !at least one valid source found in the file       
        NEmisFile_sources = NEmisFile_sources + 1
