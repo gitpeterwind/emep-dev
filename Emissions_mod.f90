@@ -347,14 +347,22 @@ contains
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
-          if(ix>0)then
+          if(ix<=0)then
+             !try case insensitive too
+             ix = find_index(Emis_source(ii)%species, species(:)%name, any_case=.true.)
+             if(ix>0)then
+                if(me==0)write(*,*)'WARNING: '//trim(Emis_source(ii)%species)//' not found, replacing with '//trim(species(ix)%name)                
+                Emis_source(ii)%species = trim(species(ix)%name)
+             end if
+          end if
+          if(ix>0)then          
              Emis_source(ii)%species_ix = ix
              if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
-                trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
+                  trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
              if(Emis_source(ii)%include_in_local_fractions .and. USE_uEMEP )then
                 if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
              endif
-          else ! ix<=0 
+          else ! ix<=0
              if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
               trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
           endif
