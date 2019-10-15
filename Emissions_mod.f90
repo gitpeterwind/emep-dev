@@ -347,7 +347,7 @@ contains
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
-          if(ix<=0)then
+          if(ix<=0 .and. find_index(Emis_source(ii)%species, EMIS_FILE(:))<=0)then
              !try case insensitive too
              ix = find_index(Emis_source(ii)%species, species(:)%name, any_case=.true.)
              if(ix>0)then
