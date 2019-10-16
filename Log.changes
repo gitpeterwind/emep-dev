@@ -12,7 +12,7 @@ chemistry, run:
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
-the appropriate place, usually DataDir/ZCM_EmChem16x or
+the appropriate place, DataDir/ZCM_EmChem16x for old Chemistry or
 (latest) DataDir/ZCM_EmChem19.
 
 =============================================================================
@@ -21,6 +21,16 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15-16 Oct 2019, Peter
+
+New format emissions: if species in not found, it will also look for species with
+other lower/upper cases
+New format emissions: implemented femis in lonlat format.
+
+Now longitudes from femislonlat can go around the entire globe (but still
+cannot cross -180, if not the entire globe is included).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Oct 2019, Peter

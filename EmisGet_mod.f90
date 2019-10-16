@@ -188,7 +188,7 @@ contains
             .or. Emis_source%units == 'mg/month' .or. Emis_source%units == 'mg/year' &
             .or. Emis_source%units == 'g/h' .or. Emis_source%units == 'mg/h')then
           !per gridcell unit
-          if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
+          if(me==0 .and. DEBUG%EMISSIONS)&
                write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
          call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
@@ -956,20 +956,26 @@ end if
 
 !It is rather easy to get coordinates which are equals. 
 !In order to avoid random decisions when this happens, we increase slightly the bounds:
-          femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)-1.0E-10
-          femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)+1.0E-10
           femis_latmin(N_femis_lonlat)=femis_latmin(N_femis_lonlat)-1.0E-10
           femis_latmax(N_femis_lonlat)=femis_latmax(N_femis_lonlat)+1.0E-10
-
+          if(femis_lonmax(N_femis_lonlat)-femis_lonmin(N_femis_lonlat)>=360.0)then
+             !covers the entire globe
+             femis_lonmax(N_femis_lonlat)=361.0
+             femis_lonmin(N_femis_lonlat)=-361.0
+          else
+             femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)-1.0E-10
+             femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)+1.0E-10
+             
 !"normalize" longitudes to the interval -180,180
-          if(femis_lonmin(N_femis_lonlat)>180.0)femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)-360.0
-          if(femis_lonmin(N_femis_lonlat)<-180.0)femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)+360.0
-          if(femis_lonmax(N_femis_lonlat)>180.0)femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)-360.0
-          if(femis_lonmax(N_femis_lonlat)<-180.0)femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)+360.0
-
+             if(femis_lonmin(N_femis_lonlat)>180.0)femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)-360.0
+             if(femis_lonmin(N_femis_lonlat)<-180.0)femis_lonmin(N_femis_lonlat)=femis_lonmin(N_femis_lonlat)+360.0
+             if(femis_lonmax(N_femis_lonlat)>180.0)femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)-360.0
+             if(femis_lonmax(N_femis_lonlat)<-180.0)femis_lonmax(N_femis_lonlat)=femis_lonmax(N_femis_lonlat)+360.0
 !There will still be problem when trying to "cross" the 180 degree longitude, therefore we put a test here:
-          call CheckStop(femis_lonmin(N_femis_lonlat)>femis_lonmax(N_femis_lonlat),&
-               "femislonlat: crossing 180 degrees longitude not allowed")
+             call CheckStop(femis_lonmin(N_femis_lonlat)>femis_lonmax(N_femis_lonlat),&
+                  "femislonlat: crossing 180 degrees longitude not allowed")
+          endif
+
        else
 
           if(txtinwords(1)=='Country' .or. txtinwords(1)=='country'  .or. txtinwords(1)=='Country_ISO' )then
