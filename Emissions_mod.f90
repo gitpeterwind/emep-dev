@@ -262,6 +262,9 @@ contains
           if(MasterProc)write(*,*)dtxt//"Initializing Emissions from ",&
              trim(Emis_sourceFiles(n)%filename)
           call Emis_init_GetCdf(Emis_sourceFiles(n), EmisFiles(NEmisFile_sources+1), names_in, i)
+       else
+          !filename/='NOTSET'
+          cycle
        endif
        startsource(n) = nemis_old + 1
        endsource(n) = NEmis_sources
