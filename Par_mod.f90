@@ -191,11 +191,37 @@ integer :: ime, imex, imey, rest,i
     NPROCY=2
   case default
     call CheckStop('parinit: Unknown DOMAIN_DECOM_MODE')
-  end select
+ end select
+
+ if(GIMAX/NPROCX<min_grids .and. Pole_singular == 2)then
+    !try first to decrease NPROCX
+    if(mod(NPROCX,2)==0)then
+       NPROCX = NPROCX/2
+       NPROCY = NPROCY*2
+    else if(mod(NPROCX,3)==0)then
+       NPROCX = NPROCX/3
+       NPROCY = NPROCY*3
+    endif
+    if(GIMAX/NPROCX<min_grids)then
+       ! and once again
+       if(mod(NPROCX,2)==0)then
+          NPROCX = NPROCX/2
+          NPROCY = NPROCY*2
+       else if(mod(NPROCX,3)==0)then
+          NPROCX = NPROCX/3
+          NPROCY = NPROCY*3
+       endif
+    endif
+    if(GIMAX/NPROCX>=min_grids)then
+       !we fixed it
+       if(MasterProc) write(*,*)'WARNING: load balancing will not be optimal'
+    endif
+ endif
+ 
  call CheckStop(NPROCX*NPROCY,NPROC,'parinit: X*Y /= NPROC')
  
 ! Check if the subdomain is large enough
-  if(GJMAX/NPROCY<min_grids.or.GIMAX/NPROCX<min_grids)then
+ if(GJMAX/NPROCY<min_grids.or.GIMAX/NPROCX<min_grids)then
     if(MasterProc) write(*,*)'change number of processors, or rundomain ',min_grids
     call CheckStop(GJMAX/NPROCY<min_grids,'subdomains are too small in Y direction')
     call CheckStop(GIMAX/NPROCX<min_grids,'subdomains are too small in X direction')
