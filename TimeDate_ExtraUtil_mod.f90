@@ -679,12 +679,16 @@ subroutine self_test()
 end subroutine self_test
 
 subroutine assign_startandenddate()
+  TYPE(timestamp)   :: ts1,ts2
   ! ensure that a valid day of the month,
   ! e.g. Feb 31=>Feb 28/29 depending the year
   startdate(3)=min(startdate(3),max_day(startdate(2),startdate(1)))
   enddate  (3)=min(enddate  (3),max_day(enddate  (2),enddate  (1)))
 
-  if(startdate(1)/=enddate  (1))then
+  !have to calculate timestamp, to identify 1Jan 00:00 yyyy+1 as 31Dec 24:00 yyyy
+  ts1 = make_timestamp(date(startdate(1),12,31,24,0)) !very end of year
+  ts2 = make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
+  if( ((ts2%jdate-ts1%jdate)*3600.0*24.0+(ts2%secs-ts1%secs)>0.0) .and. MasterProc)then
      write(*,*)'WARNING: start and end dates in different years. Model not testet for that!'
   endif
 

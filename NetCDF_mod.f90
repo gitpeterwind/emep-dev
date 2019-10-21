@@ -1924,8 +1924,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   end if
 
   if(ndims>3.and.dims(3)>varKMAX)then
-    if(me==0)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
-!   Call StopAll('GetCDF not reading all levels')
+    if(MasterProc.and.DEBUG_NETCDF)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
   end if
 
   if(nstart+nfetch-1>dims(ndims))then
