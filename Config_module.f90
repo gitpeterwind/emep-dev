@@ -629,8 +629,10 @@ real, public, parameter :: &
 !
 !  additional parameters
 !
-integer, public, save   :: nterm, nmax, step_main &
-                         , iyr_trend ! Year specified for say BC changes
+integer, public, save   :: &
+     nmax,  & ! Number of dt_advec steps in one METSTEP
+     step_main, & ! Main time loop count
+     iyr_trend ! Year specified for say BC changes
 
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
