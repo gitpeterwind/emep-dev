@@ -443,8 +443,8 @@ subroutine Define_Derived()
         outtyp = "COLUMN:GROUP"
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
-      case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
-           'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
+      case('AOD','AOD:TOTAL','AOD:SPEC','AOD:GROUP',&
+           'EXT','EXT:TOTAL','EXT:SPEC','EXT:GROUP')
         if(.not.AOD_WANTED)cycle
         select case(class)
         case('AOD:GROUP','EXT:GROUP')
