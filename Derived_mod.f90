@@ -446,18 +446,20 @@ subroutine Define_Derived()
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:GROUP')
         if(.not.AOD_WANTED)cycle
+        ! treat 'AOD:GROUP'/'EXT:GROUP' as 'AOD'/'EXT'
+        if((outname=='AOD'.and.class=='AOD:GROUP').or.&
+           (outname=='EXT'.and.class=='EXT:GROUP'))&
+          class=trim(outname)
         select case(class)
-        case('AOD:GROUP','EXT:GROUP')
-          select case(outname)
-          case('AOD','EXT')  ! take the full aod_group
-            iout=find_index('EXTINC',chemgroups_maps(:)%name, any_case=.true.)
-          case default       ! cherry pick from aod_group
-            iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
-          end select
+        case('AOD','EXT')             ! take the full aod_group
+          iout=find_index('EXTINC',chemgroups_maps(:)%name, any_case=.true.)
+        case('AOD:GROUP','EXT:GROUP') ! cherry pick from aod_group
+          iout=find_index(outname,chemgroups(:)%name, any_case=.true.)
         case('AOD:SPEC','EXT:SPEC' )
-          iout=find_index(outname,species_adv(:)%name, any_case=.true.)
+          iout=find_index(outname,species(:)%name, any_case=.true.)
         case default
-          call CheckStop(dtxt//"OutputFields%class  Unsupported "//&
+          ! should never reach this clause
+          call CheckStop(dtxt//" Unsupported output for "//&
             trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
         end select
         call CheckStop(iout<0,dtxt//"OutputFields%class "//trim(class)//&
@@ -465,9 +467,18 @@ subroutine Define_Derived()
         unitscale = 1.0
         unittxt   = trim(outunit)
         subclass  = outdim   ! 330nm .. 1020nm
-        if(outname(1:3)/=class(1:3))&
-          outname = class(1:3)//"_"//trim(outname)
-        outname   = trim(outname)//"_"//trim(subclass)
+        select case(class)
+        case('AOD','EXT')
+          outname = trim(outname)//"_"//trim(subclass)
+        case('AOD:SPEC','AOD:GROUP' )
+          outname = "AOD_"//trim(outname)//"_"//trim(subclass)
+        case('EXT:SPEC','EXT:GROUP' )
+          outname = "EXT_"//trim(outname)//"_"//trim(subclass)
+        case default
+          ! should never reach this clause
+          call CheckStop(dtxt//" Undefined namaming for "//&
+            trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
+        end select
         Is3D      = (class(1:3)=="EXT")
         call AOD_init("Derived:"//trim(class),wlen=trim(subclass),out3d=Is3D)
       case default
@@ -1464,7 +1475,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d(n,i,j,IOU_INST) = d_2d(ind2d_pm10   ,i,j,IOU_INST) &
                              + d_2d(ind2d_pmwater,i,j,IOU_INST)
 
-    case("AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
+    case("AOD","AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
       if(first_call)call AOD_init("Derived:"//trim(class))
       wlen=find_index(f_2d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
@@ -1477,18 +1488,16 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       ngrp = size(aod_grp)
       allocate(ingrp(ngrp))
       select case(class)
+      case("AOD")
+        ingrp(:)=.true.        ! take the full aod_grp
       case("AOD:GROUP")
-        if(name(1:3)=='AOD')then ! take the full aod_grp
-          ingrp(:)=.true.
-        else                     ! cherry pick from aod_grp
-          igrp = f_2d(n)%index
-          do i=1,ngrp
-            ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
-          end do
-        end if
+        igrp = f_2d(n)%index
+        do i=1,ngrp
+          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
+        end do
       case("AOD:SPEC")
         ispc = f_2d(n)%index
-        ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))
+        ingrp(:)=(aod_grp(:)==ispc)
       end select
       forall ( i=1:limax, j=1:ljmax )&
         d_2d( n, i,j,IOU_INST) = SUM(AOD(:,i,j,wlen),MASK=ingrp)
@@ -2207,7 +2216,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=z_bnd(i,j,lev3d(k))-z_bnd(i,j,lev3d(k)+1)
 
-    case("EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
+    case("EXT","EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
       if(first_call)call AOD_init("Derived:"//trim(class))
       wlen=find_index(f_3d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
@@ -2220,18 +2229,16 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       ngrp = size(aod_grp)
       allocate(ingrp(ngrp))
       select case(class)
-      case("EXT:GROUP")
-        if(name(1:3)=='EXT')then  ! take the full aod_grp
-          ingrp(:) = .true.
-        else                      ! cherry pick from aod_grp
-          igrp = f_3d(n)%index
-          do i=1,ngrp
-            ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
-          end do
-        end if
+      case("EXT")       ! take the full aod_grp
+        ingrp(:) = .true.
+      case("EXT:GROUP") ! cherry pick from aod_grp
+        igrp = f_3d(n)%index
+        do i=1,ngrp
+          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
+        end do
       case("EXT:SPEC")
         ispc = f_3d(n)%index
-        ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))
+        ingrp(:)=(aod_grp(:)==ispc)
       end select
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=SUM(Extin_coeff(:,i,j,lev3d(k),wlen),MASK=ingrp)

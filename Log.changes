@@ -23,6 +23,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Oct 2019, Alvaro
+
+Fix AOD:GROUP output, see #113
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21-22 Oct 2019, Peter
 
 Bug in ReadField_CDF. In case of emissions defined on a limited are (like TNOIII),
