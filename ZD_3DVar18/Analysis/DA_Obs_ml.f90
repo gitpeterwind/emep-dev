@@ -84,6 +84,20 @@ module DA_Obs_ml
   
   !public    ::  dbg_cell, dbg_i, dbg_j
 
+  public    ::  ANSTAT_NONE, ANSTAT_ANALYZED, ANSTAT_VALIDATION, ANSTAT_SCREENED, ANSTAT_OBSCURE
+
+
+  ! --- const ----------------------------------------
+  
+  ! analysis status numbers:
+  integer, parameter            ::  ANSTAT_NONE       = 0
+  integer, parameter            ::  ANSTAT_ANALYZED   = 1
+  integer, parameter            ::  ANSTAT_VALIDATION = 2
+  integer, parameter            ::  ANSTAT_SCREENED   = 3
+  integer, parameter            ::  ANSTAT_OBSCURE    = 4
+  ! description:
+  character(len=*), parameter   ::  ANSTAT_DESCRIPTION = '0=None, 1=analysed, 2=validation, 3=screened, 4=obscure'
+
 
   ! --- types ----------------------------------------
   
@@ -232,13 +246,16 @@ module DA_Obs_ml
     real                        ::  lon, lat
     real                        ::  alt
     character(len=LEN_SCODE)    ::  stncode
-    logical                     ::  analyse
+    ! flag for analysis/validation/screened/obscure
+    integer                     ::  anstat
+    !
   contains
     procedure   ::  Init         => ObsOper_Init
     procedure   ::  Done         => ObsOper_Done
     procedure   ::  Copy         => ObsOper_Copy
     procedure   ::  Fill         => ObsOper_Fill
     procedure   ::  Evaluate     => ObsOper_Evaluate
+    procedure   ::  Screening    => ObsOper_Screening
   end type T_ObsOper
 
   ! observation operators:
@@ -258,6 +275,7 @@ module DA_Obs_ml
     procedure   ::  Swap          => ObsOpers_Swap
     procedure   ::  SelectTracers => ObsOpers_SelectTracers
     procedure   ::  Evaluate      => ObsOpers_Evaluate
+    procedure   ::  Screening     => ObsOpers_Screening
     procedure   ::  SetBScale     => ObsOpers_SetBScale
     procedure   ::  WriteToFile   => ObsOpers_WriteToFile
   end type T_ObsOpers
@@ -440,14 +458,14 @@ contains
     ! loop over input species:
     do i = 1, self%nspec
       ! obtain unit conv factor to convert from ispec units to "units":
-#ifdef with_ajs
-      call Units_Scale( units, self%ispec(i), self%unitconv(i), &
-                           needroa=self%unitroa(i), status=status )
-      IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!      call Units_Scale( units, self%ispec(i), self%unitconv(i), &
+!                           needroa=self%unitroa(i), status=status )
+!      IF_NOT_OK_RETURN(status=1)
+!#else
       call Units_Scale( units, self%ispec(i), self%unitconv(i), &
                            needroa=self%unitroa(i) )
-#endif
+!#endif
     end do
     
     ! ok
@@ -1880,14 +1898,14 @@ contains
         ! skip if no contribution:
         if ( .not. ispm(ispec,ipm) ) cycle
         ! info on conversion to target units:
-#ifdef with_ajs
-        call Units_Scale( obs_units, ispec, fscale, &
-                                 needroa=needroa, status=status )
-        IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!        call Units_Scale( obs_units, ispec, fscale, &
+!                                 needroa=needroa, status=status )
+!        IF_NOT_OK_RETURN(status=1)
+!#else
         call Units_Scale( obs_units, ispec, fscale, &
                                  needroa=needroa )
-#endif
+!#endif
         !! testing ...
         !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
         ! convert using air density?
@@ -3373,7 +3391,7 @@ contains
     self%lat       = -999.9
     self%alt       = -999.9
     self%stncode   = '-'
-    self%analyse   = .true.
+    self%anstat    = ANSTAT_NONE
 
     ! ok
     status = 0
@@ -3448,8 +3466,8 @@ contains
     self%lon       = src%lon
     self%lat       = src%lat
     self%alt       = src%alt
-    self%stncode   = src%stncode
-    self%analyse   = src%analyse
+    self%stncode   = trim(src%stncode)
+    self%anstat    = src%anstat
 
     ! ok
     status = 0
@@ -3559,7 +3577,7 @@ contains
     self%alt   = alt
     ! default values, will be filled outside this routine:
     self%stncode = ''
-    self%analyse = .true.
+    self%anstat  = ANSTAT_NONE   ! actual value will be set in "get_innovations"
     ! store index in 'obsData' (and 'ObsKernels') array:
     self%iObsData = ipar
 
@@ -4269,6 +4287,73 @@ contains
   end subroutine ObsOper_Evaluate
 
 
+  ! ***
+
+
+  subroutine ObsOper_Screening( self, status, debug )
+
+    ! --- in/out -----------------------------
+    
+    class(T_ObsOper), intent(inout)   ::  self
+    integer, intent(out)              ::  status
+    
+    logical, intent(in), optional     ::  debug
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsOper_Screening'
+
+    ! testing: max res/sigma ratio:
+    real, parameter     ::  alfa = 3.0
+
+    ! --- local -----------------------------
+
+    logical         ::  dbg
+
+    real            ::  residue
+    real            ::  sigma
+    real            ::  chi
+    
+    ! --- begin -----------------------------
+    
+    ! debug?
+    dbg = .false.
+    if ( present(debug) ) dbg = debug
+    
+    ! residue: |obs-sim|
+    residue = abs( self%obs - self%xf )
+    ! std.dev.:
+    sigma = sqrt( self%sf**2 + self%obsstddev**2 )
+    ! ratio:
+    chi = residue / sigma
+    ! check ...
+    if ( chi > alfa ) then
+      ! info ...
+      write (gol,'(a,": WARNING - screened ",a," ",a,f8.2," [",a,"]; simulation ",f8.2,"; chi ",f5.1)') &
+                          rname, trim(self%stncode), &
+                          trim(ObsCompInfo(self%iObsComp)%name), self%obs, trim(ObsCompInfo(self%iObsComp)%units), &
+                          self%xf, chi; call goPr
+      ! reset flag:
+      self%anstat = ANSTAT_SCREENED
+    end if
+
+    !! testing ...
+    !if ( trim(self%stncode) == 'HR0015A' ) then
+    !  write (gol,*) rname//': sss1 stncode : ', trim(self%stncode); call goPr
+    !  write (gol,*) rname//':   s1 tracer  : ', trim(ObsCompInfo(self%iObsComp)%name)//' ['//trim(ObsCompInfo(self%iObsComp)%units)//']'; call goPr
+    !  write (gol,*) rname//':   s1 anstat  : ', self%anstat; call goPr
+    !  write (gol,*) rname//':   s1 obs     : ', self%obs, self%obsstddev; call goPr
+    !  write (gol,*) rname//':   s1 xf      : ', self%xf, self%sf; call goPr
+    !  write (gol,*) rname//':   s1 res,sig : ', abs(self%obs-self%xf), sqrt(self%sf**2 + self%obsstddev**2); call goPr
+    !  write (gol,*) rname//':   s1 alfa    : ', abs(self%obs-self%xf)/sqrt(self%sf**2 + self%obsstddev**2); call goPr
+    !end if
+
+    ! ok
+    status = 0
+    
+  end subroutine ObsOper_Screening
+
+
   !=========================================================================
   !===
   !=== observation operators
@@ -4546,25 +4631,31 @@ contains
 
     ! --- local -----------------------------
     
-    integer                         ::  iobs, iobs_in
-    integer                         ::  iproc, iproc_in
-    integer                         ::  ind(4)
-    !integer                         ::  nrr, sHj(2), nii
-    integer                         ::  nrr, nii
-    real, allocatable               ::  srt_rr(:,:)
-    !real, allocatable               ::  srt_Hj(:,:,:)  ! (nlev,nchemobs,nobs)
-    real, allocatable               ::  srt_Hj(:,:)     ! (nlev,nobs)
-    real, allocatable               ::  srt_ii(:,:)
-    real, allocatable               ::  new_rr(:,:)
-    !real, allocatable               ::  new_Hj(:,:,:)  ! (nlev,nchemobs,nobs)
-    real, allocatable               ::  new_Hj(:,:)     ! (nlev,nobs)
-    real, allocatable               ::  new_ii(:,:)
-    integer, allocatable            ::  sendcounts(:)  ! (0:nproc-1)
-    integer, allocatable            ::  sdispls(:)     ! (0:nproc-1)
-    integer, allocatable            ::  recvcounts(:)  ! (0:nproc-1)
-    integer, allocatable            ::  rdispls(:)     ! (0:nproc-1)
-    integer                         ::  nobs_new
-    integer                         ::  nval
+    integer                                 ::  iobs, iobs_in
+    integer                                 ::  iproc, iproc_in
+    integer                                 ::  ind(4)
+
+    !integer                                 ::  nrr, sHj(2), nii
+    integer                                 ::  nrr, nii
+
+    real, allocatable                       ::  srt_rr(:,:)
+    !real, allocatable                       ::  srt_Hj(:,:,:)  ! (nlev,nchemobs,nobs)
+    real, allocatable                       ::  srt_Hj(:,:)     ! (nlev,nobs)
+    real, allocatable                       ::  srt_ii(:,:)
+    character(len=LEN_SCODE), allocatable   ::  srt_cc(  :)     ! (:,nobs)
+
+    real, allocatable                       ::  new_rr(:,:)
+    !real, allocatable                       ::  new_Hj(:,:,:)  ! (nlev,nchemobs,nobs)
+    real, allocatable                       ::  new_Hj(:,:)     ! (nlev,nobs)
+    real, allocatable                       ::  new_ii(:,:)
+    character(len=LEN_SCODE), allocatable   ::  new_cc(  :)     ! (:,nobs)
+
+    integer, allocatable                    ::  sendcounts(:)  ! (0:nproc-1)
+    integer, allocatable                    ::  sdispls(:)     ! (0:nproc-1)
+    integer, allocatable                    ::  recvcounts(:)  ! (0:nproc-1)
+    integer, allocatable                    ::  rdispls(:)     ! (0:nproc-1)
+    integer                                 ::  nobs_new
+    integer                                 ::  nval
     
     ! --- begin -----------------------------
     
@@ -4580,7 +4671,7 @@ contains
     
     ! storage for sorted version that can be passed through MPI;
     ! decomposition over observation, so this should be last index:
-    nrr = 3
+    nrr = 4
     allocate( srt_rr(nrr,self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
     nii = 8
@@ -4588,6 +4679,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! Hj
     allocate( srt_Hj(nlev,self%nobs), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! stncodes
+    allocate( srt_cc(self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
     ! init counter for sorted obs on this proc:
@@ -4615,6 +4709,7 @@ contains
           srt_rr(1,iobs)   = self%obs(iobs_in)%innov
           srt_rr(2,iobs)   = self%obs(iobs_in)%obsstddev
           srt_rr(3,iobs)   = self%obs(iobs_in)%H_jac1
+          srt_rr(4,iobs)   = self%obs(iobs_in)%sf
           srt_Hj(:  ,iobs) = self%obs(iobs_in)%H_jac
           srt_ii(1  ,iobs) = doms%off(1,me) + self%obs(iobs_in)%i
           srt_ii(2  ,iobs) = doms%off(2,me) + self%obs(iobs_in)%j
@@ -4622,11 +4717,8 @@ contains
           srt_ii(4:5,iobs) = self%obs(iobs_in)%l
           srt_ii(6  ,iobs) = self%obs(iobs_in)%id
           srt_ii(7  ,iobs) = self%obs(iobs_in)%iObsComp
-          if ( self%obs(iobs_in)%analyse ) then
-            srt_ii(8  ,iobs) = 1
-          else
-            srt_ii(8  ,iobs) = 0
-          end if
+          srt_ii(8  ,iobs) = self%obs(iobs_in)%anstat
+          srt_cc(    iobs) = self%obs(iobs_in)%stncode
         end if
       end do  ! input obs
     end do  ! target procs
@@ -4657,6 +4749,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
     allocate( new_ii(nii,nval), stat=status )
     IF_NOT_OK_RETURN(status=1)
+    allocate( new_cc(    nval), stat=status )
+    IF_NOT_OK_RETURN(status=1)
     
     ! swap real values:
     nval = nrr
@@ -4676,6 +4770,12 @@ contains
                            new_ii, nval*recvcounts, nval*rdispls, &
                            MPI_COMM_CALC, status )
     IF_MPI_NOT_OK_RETURN(status=1)
+    ! swap station codes:
+    nval = LEN_SCODE
+    call MPIF90_AllToAllV( srt_cc, nval*sendcounts, nval*sdispls, &
+                           new_cc, nval*recvcounts, nval*rdispls, &
+                           MPI_COMM_CALC, status )
+    IF_MPI_NOT_OK_RETURN(status=1)
     
     ! storage for structures:
     call Hops_new%Alloc( nobs_new, status )
@@ -4686,6 +4786,7 @@ contains
       Hops_new%obs(iobs)%innov     = new_rr(1,iobs)
       Hops_new%obs(iobs)%obsstddev = new_rr(2,iobs)
       Hops_new%obs(iobs)%H_jac1    = new_rr(3,iobs)
+      Hops_new%obs(iobs)%sf        = new_rr(4,iobs)
       Hops_new%obs(iobs)%H_jac     = new_Hj(:  ,iobs)
       Hops_new%obs(iobs)%i         = new_ii(  1,iobs) - doms_new%off(1,me)
       Hops_new%obs(iobs)%j         = new_ii(  2,iobs) - doms_new%off(2,me)
@@ -4693,7 +4794,8 @@ contains
       Hops_new%obs(iobs)%l         = new_ii(4:5,iobs)
       Hops_new%obs(iobs)%id        = new_ii(  6,iobs)
       Hops_new%obs(iobs)%iObsComp  = new_ii(  7,iobs)
-      Hops_new%obs(iobs)%analyse   = new_ii(  8,iobs) == 1
+      Hops_new%obs(iobs)%anstat    = new_ii(  8,iobs)
+      Hops_new%obs(iobs)%stncode   = new_cc(    iobs)
     end do
     
     ! clear:
@@ -4703,6 +4805,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
     deallocate( new_ii, stat=status )
     IF_NOT_OK_RETURN(status=1)
+    deallocate( new_cc, stat=status )
+    IF_NOT_OK_RETURN(status=1)
     
     ! clear:
     deallocate( srt_rr, stat=status )
@@ -4710,6 +4814,8 @@ contains
     deallocate( srt_Hj, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( srt_ii, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( srt_cc, stat=status )
     IF_NOT_OK_RETURN(status=1)
     
     ! clear:
@@ -4791,13 +4897,13 @@ contains
         nobs = nobs + 1
         ! increase specific counter?
         if ( present(nana) ) then
-          if ( H%obs(k)%analyse ) nana = nana + 1
+          if ( H%obs(k)%anstat == ANSTAT_ANALYZED ) nana = nana + 1
         end if ! nana
         ! increase stat:
         iobscomp = H%obs(k)%iObsComp
         ilevtype = H%obs(k)%levtype
         iav = 2
-        if ( H%obs(k)%analyse ) iav = 1
+        if ( H%obs(k)%anstat == ANSTAT_ANALYZED ) iav = 1
         tab_loc(iobscomp,ilevtype,iav) = tab_loc(iobscomp,ilevtype,iav) + 1
       end if ! match comp
     end do ! obs
@@ -4908,6 +5014,49 @@ contains
     status = 0
     
   end subroutine ObsOpers_Evaluate
+
+
+  ! ***
+
+
+  subroutine ObsOpers_Screening( self, status, debug )
+
+    ! --- in/out -----------------------------
+    
+    class(T_ObsOpers), intent(inout)  ::  self
+    integer, intent(out)              ::  status
+    
+    logical, intent(in), optional     ::  debug
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/ObsOpers_Screening'
+
+    ! --- local -----------------------------
+
+    logical         ::  dbg
+    integer         ::  n
+
+    ! --- begin -----------------------------
+    
+    ! debug?
+    dbg = .false.
+    if ( present(debug) ) dbg = debug
+
+    ! any local observations?
+    if ( self%nobs > 0 ) then
+      ! loop over observations:
+      do n = 1, self%nobs
+        ! apply screening:
+        call self%obs(n)%Screening( status, debug=dbg )
+        IF_NOT_OK_RETURN(status=1)
+      end do ! n
+    end if  ! nobs > 0
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsOpers_Screening
 
 
   ! ***
@@ -5044,7 +5193,7 @@ contains
 
       ! fill local values:
       do iobs = 1, self%nobs
-        if ( self%obs(iobs)%analyse ) then
+        if ( self%obs(iobs)%anstat == ANSTAT_ANALYZED ) then
           ivalues(iobs) = 1
         else
           ivalues(iobs) = 0
@@ -5262,7 +5411,7 @@ contains
     integer                   ::  varid_iobsdata
     integer                   ::  varid_stnid
     integer                   ::  varid_scode
-    integer                   ::  varid_analyse
+    integer                   ::  varid_anstat
     integer                   ::  varid_lon, varid_lat, varid_alt
     integer                   ::  varid_y, varid_r
     integer                   ::  varid_xf, varid_xa, varid_sb, varid_sf
@@ -5454,17 +5603,17 @@ contains
         varid_scode = varid
 
         ! define new variable:
-        status = NF90_Def_Var( F%ncid, 'analyse', NF90_INT, (/obs_coor%dimid/), varid )
+        status = NF90_Def_Var( F%ncid, 'anstat', NF90_INT, (/obs_coor%dimid/), varid )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! extra attributes:
-        status = NF90_Put_Att( F%ncid, varid, 'long_name', 'analysis flag' )
+        status = NF90_Put_Att( F%ncid, varid, 'long_name', 'analysis status' )
         IF_NF90_NOT_OK_RETURN(status=1)
         status = NF90_Put_Att( F%ncid, varid, 'units', '1' )
         IF_NF90_NOT_OK_RETURN(status=1)
-        status = NF90_Put_Att( F%ncid, varid, 'description', '1 : include in analysis, 0 : for validation only' )
+        status = NF90_Put_Att( F%ncid, varid, 'description', trim(ANSTAT_DESCRIPTION) )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! store:
-        varid_analyse = varid
+        varid_anstat = varid
 
         ! define new variable:
         status = NF90_Def_Var( F%ncid, 'longitude', NF90_FLOAT, (/obs_coor%dimid/), varid )
@@ -5694,14 +5843,10 @@ contains
       
       ! fill local values:
       do iobs = 1, self%nobs
-        if ( self%obs(iobs)%analyse ) then
-          ivalues(iobs) = 1
-        else
-          ivalues(iobs) = 0
-        end if
+        ivalues(iobs) = self%obs(iobs)%anstat
       end do
       ! write:
-      call ObsOpers_Write_i( F%ncid, varid_analyse, ivalues, self%nobs, &
+      call ObsOpers_Write_i( F%ncid, varid_anstat, ivalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
       IF_NOT_OK_RETURN(status=1)
@@ -6465,6 +6610,9 @@ contains
 
       ! if ouside domain/scope, next record:
       if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
+      
+      !! TESTING: only pixels around selected location ...
+      !if ( (abs(flon0-4.5) >= 0.5) .or. (abs(flat0-52.0) >= 0.5) ) cycle
 
       ! OMI NO2 could be slightly negative, but some values are really strange ...
       ! skip the values that are very negative:

@@ -147,6 +147,7 @@ contains
 
     use DA_Util_ml       , only : DA_Util_Init
 #ifdef with_ajs
+    use AJS              , only : AJS_Init
     use DA_Util_ml       , only : GO_Timer_Def
     use DA_Util_ml       , only : GO_Print_Set
 #endif
@@ -189,6 +190,10 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
 #ifdef with_ajs
+    ! initialize AJS tools:
+    call AJS_Init( status )
+    IF_NOT_OK_RETURN(status=1)
+  
     !! info as error message to have it in the log file ..
     !write (gol,'(a,": INFO - enable GO logging from this routine if necessary ...")') rname; call goErr
     ! log from all:
@@ -277,6 +282,9 @@ contains
     use DA_Util_ml       , only : DA_Util_Done
     use Config_module    , only : MasterProc
     use DA_Obs_ml        , only : DA_Obs_Done
+#ifdef with_ajs
+    use AJS              , only : AJS_Done
+#endif
 
     ! --- in/out ----------------------------
 
@@ -341,6 +349,12 @@ contains
     ! done with utilities:
     call DA_Util_Done( status )
     IF_NOT_OK_RETURN(status=1)
+
+#ifdef with_ajs
+    ! done with AJS tools:
+    call AJS_Done( status )
+    IF_NOT_OK_RETURN(status=1)
+#endif
 
     ! ok
     status = 0
@@ -1254,6 +1268,16 @@ contains
 
       ! ...................................
 
+      ! info ..
+      write (gol,'(a,": apply screening ...")') rname; call goPr
+      
+      ! apply screening ;
+      ! reset analysis flag if obs-forecast is too large:
+      call Hops_m%Screening( status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! ...................................
+
 #ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 5a   ', status )
@@ -1592,8 +1616,8 @@ contains
                                 rname, trim(ObsCompInfo(iObsComp)%name); call goPr
                   ! index of surface layer:
                   ilev = size(dx_an,3)
-                  ! change original species following (sf+dx)/sf ratio for lowest layer,
-                  ! same factor in boundary layer and zero above:
+                  ! change original species relative to vertical-column-densidity,
+                  ! no changes above 200 hPa:
                   call ObsCompInfo(iObsComp)%ChangeVCD( xn_adv, xn_adv_units, &
                                 xn_an(:,:,:,iObsComp), dx_an(:,:,ilev,iObsComp), xn_obs_units(iObsComp), &
                                 status, verbose=.true. )
@@ -1902,14 +1926,14 @@ contains
         ! extract index of specie:
         ispec = out_group(k) - out_offset
         ! info on conversion to target units:
-#ifdef with_ajs
-        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa, status=status )
-        IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
+!                                 needroa=needroa, status=status )
+!        IF_NOT_OK_RETURN(status=1)
+!#else
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
                                  needroa=needroa )
-#endif
+!#endif
         ! extract from bottom level:
         ilev = KMAX_MID
           !! testing ...
@@ -1939,14 +1963,14 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-#ifdef with_ajs
-        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa, status=status )
-        IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
+!                                 needroa=needroa, status=status )
+!        IF_NOT_OK_RETURN(status=1)
+!#else
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
                                  needroa=needroa )
-#endif
+!#endif
         ! only partly ..
         fscale = fscale * 0.27
         ! extract from bottom level:
@@ -2045,14 +2069,14 @@ contains
           ! extract index of specie:
           ispec = out_group(k) - out_offset
           ! info on conversion to target units:
-#ifdef with_ajs
-          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                  needroa=needroa, status=status )
-          IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
+!                                  needroa=needroa, status=status )
+!          IF_NOT_OK_RETURN(status=1)
+!#else
           call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
                                   needroa=needroa )
-#endif
+!#endif
           ! convert using air density?
           if ( needroa ) then
             ! add contribution, multiply with air density:
@@ -2078,14 +2102,14 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-#ifdef with_ajs
-        call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                needroa=needroa, status=status )
-        IF_NOT_OK_RETURN(status=1)
-#else
+!#ifdef with_ajs
+!        call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
+!                                needroa=needroa, status=status )
+!        IF_NOT_OK_RETURN(status=1)
+!#else
         call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
                                 needroa=needroa )
-#endif
+!#endif
         ! only partly ..
         fscale = fscale * 0.27
         ! convert using air density?
@@ -2819,6 +2843,7 @@ contains
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : obsData
+    use DA_Obs_ml            , only : ANSTAT_ANALYZED, ANSTAT_VALIDATION, ANSTAT_OBSCURE
     !use DA_ml                , only : FGSCALE, FGSCALE_INV
     !use DA_ml                , only : nx, ny
     use DA_ml                , only : nlev
@@ -2843,7 +2868,7 @@ contains
     real, intent(in)                    ::  obs(maxobs)
     real, intent(in)                    ::  obs_stddev(maxobs)
     character(len=*), intent(in)        ::  stncodes(maxobs)
-    logical, intent(in)                 ::  obs_analyse(maxobs)
+    logical, intent(in)                 ::  obs_analyse(maxobs)  ! .true. for ana, .false. for val
     character(len=*), intent(in)        ::  state     ! xf (forecast), xa (analysis)
     integer, intent(out)                ::  status
 
@@ -2932,17 +2957,25 @@ contains
         !  write (gol,*) 'yyy skipped  code ', trim(Hops%obs(n)%stncode); call goPr
         !end if
         
-        ! check range ...
-        if ( (obs(n) < obsData(ipar)%min) .or. &
-             (obs(n) > obsData(ipar)%max)     ) then
-          ! info ...
-          write (gol,'("WARNING - observation ",i6," from ",i6," has value ",e16.6," outside accepted value range ",2e16.6)') &
-                   n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goErr
-          ! do not analyse:
-          Hops%obs(n)%analyse = .false.
+        ! expected to be analyzed?
+        if ( obs_analyse(n) ) then
+          ! initialize flag:
+          Hops%obs(n)%anstat = ANSTAT_ANALYZED
+          ! check range ...
+          if ( (obs(n) < obsData(ipar)%min) .or. &
+               (obs(n) > obsData(ipar)%max)     ) then
+            ! info ...
+            write (gol,'("WARNING - observation ",i6," from ",i6," has value ",e16.6," outside accepted value range ",2e16.6)') &
+                     n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goErr
+            ! do not analyse:
+            !Hops%obs(n)%analyse = .false.
+            Hops%obs(n)%anstat = ANSTAT_OBSCURE
+          end if
         else
-          ! copy analysis/validation flag:
-          Hops%obs(n)%analyse = obs_analyse(n)
+          !! copy analysis/validation flag:
+          !Hops%obs(n)%analyse = obs_analyse(n)
+          ! mark as validation data:
+          Hops%obs(n)%anstat = ANSTAT_VALIDATION
         end if
         
         !! testing ...
@@ -3005,6 +3038,7 @@ contains
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC, LEVTYPE_3D_ML_K2
     use DA_Obs_ml            , only : LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC
+    use DA_Obs_ml            , only : ANSTAT_ANALYZED, ANSTAT_SCREENED
 
     !-----------------------------------------------------------------------
     ! Formal parameters
@@ -3349,7 +3383,7 @@ contains
       ! loop over observations:
       do n = 1, Hops%nobs
         ! to be analysed?
-        if ( Hops%obs(n)%analyse ) then
+        if ( Hops%obs(n)%anstat == ANSTAT_ANALYZED ) then
 
           ! departures:
           !  dep =  [h(xb) + H_jac*dx] - obs
@@ -3361,11 +3395,21 @@ contains
           OinvDep(n) =         dep(n)           / (Hops%obs(n)%obsstddev**2)
 
           !! testing ...
-          !write (gol,*) rname//':    yyy1 innov  ', n, Hops%obs(n)%innov; call goPr
-          !write (gol,*) rname//':      y1 dep    ', n, dep(n); call goPr
-          !write (gol,*) rname//':      y1 OinvDep', n, OinvDep(n); call goPr
+          !if ( trim(Hops%obs(n)%stncode) == 'HR0015A' ) then
+          !  write (gol,*) rname//':    yyy1 stn     ', n, trim(Hops%obs(n)%stncode); call goPr
+          !  write (gol,*) rname//':      y1 tracer  ', trim(Bmat%tracers(1)); call goPr
+          !  write (gol,*) rname//':      y1 innov   ', Hops%obs(n)%innov; call goPr
+          !  write (gol,*) rname//':      y1 dep     ', dep(n); call goPr
+          !  write (gol,*) rname//':      y1 sigmas  ', Hops%obs(n)%sf, Hops%obs(n)%obsstddev, sqrt(Hops%obs(n)%sf**2 + Hops%obs(n)%obsstddev**2); call goPr
+          !  write (gol,*) rname//':      y1 alfa    ', abs(dep(n)) / sqrt(Hops%obs(n)%sf**2 + Hops%obs(n)%obsstddev**2); call goPr
+          !  write (gol,*) rname//':      y1 OinvDep ', OinvDep(n); call goPr
+          !end if
 
         else
+          !! testing ...
+          !if ( Hops%obs(n)%anstat == ANSTAT_SCREENED ) then
+          !  write (gol,*) rname//':     sss1 screened ', trim(Hops%obs(n)%stncode), ' ', trim(Bmat%tracers(1)); call goPr
+          !end if
           ! set to zero, then no impact in J_obs and grad_J_obs:
           dep(n)     = 0.0
           OinvDep(n) = 0.0

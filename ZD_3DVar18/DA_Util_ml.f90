@@ -47,7 +47,8 @@ module DA_Util_ml
   integer, parameter    ::  goFuRange(2) = (/200,999/)
 
   ! go_print
-  logical, parameter  :: GO_QUIET = .true.
+  !logical, parameter  :: GO_QUIET = .true.
+  logical, parameter  :: GO_QUIET = .false.
 #endif
 
 
@@ -252,12 +253,12 @@ contains
   !+------------------------------------------------------------------
 
   subroutine goPr()
-    if(pr_apply)write(*,*)trim(gol)
+    if ( pr_apply ) write (*,'(a)') trim(gol)
     gol=''
   end subroutine
 
   subroutine goErr()
-    write(*,'("ERROR - ",a)')trim(gol)
+    write (*,'("ERROR - ",a)') trim(gol)
     gol=''
   end subroutine
 

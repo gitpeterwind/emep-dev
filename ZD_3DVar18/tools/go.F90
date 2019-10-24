@@ -1042,10 +1042,10 @@ module GO
   use GO_Par
   use GO_FU
 
-#ifdef with_ajs
-  use GO_Rc
-  use GO_System
-#endif
+!#ifdef with_ajs
+!  use GO_Rc
+!  use GO_System
+!#endif
 
 !  use GO_File
 !  use goRestart
