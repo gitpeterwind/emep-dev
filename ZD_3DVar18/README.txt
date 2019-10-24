@@ -21,20 +21,11 @@ Make the following changes to enable this:
     Check settings.
 
 
-Commit new version
-------------------
 
-# for colors:
-git config --global color.ui auto
+Configuration
+-------------
 
-cd emep-mscw
+Template for CAMS50 NRT analysis settings:
+  ./config_ANALYSIS.nml
 
-git status
-
-# to replace files with unnecesary changes, 
-# use "checkout" with the filename, this will discard all changes:
-git checkout ZD_3DVar18/DA_Util_ml.f90
-
-# introduce new version:
-git add ZD_3DVar19
 
