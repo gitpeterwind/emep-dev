@@ -57,7 +57,7 @@ OutputConcs=
 ! 'ASH_L17'        ,'ug','k20','COLUMN:GROUP','MISC','I',
 ! 'ASH_L18'        ,'ug','k20','COLUMN:GROUP','MISC','I',
 ! 'ASH_L19'        ,'ug','k20','COLUMN:GROUP','MISC','I',
-!-- New AOD(2d)/EXT(3d) system
+!-- AOD(2d)/EXT(3d) system
 ! 'AOD'            ,'','550nm','AOD:GROUP','MISC','I',
 ! 'ASH_L01'        ,'','550nm','AOD:GROUP','MISC','I',
 ! 'ASH_L02'        ,'','550nm','AOD:GROUP','MISC','I',
