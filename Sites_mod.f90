@@ -19,7 +19,7 @@ use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
                               SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names,&
       NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
       SITE_XTRA_MISC, SITE_XTRA_D2D, &
-      FREQ_SITE, &
+      NSITES_MAX, NSONDES_MAX, FREQ_SITE, NSHL_SITE_MAX, &
       NXTRA_SONDE, & 
        SONDE_XTRA, & 
       FREQ_SONDE
@@ -63,9 +63,6 @@ private :: Init_sites       ! reads locations, species
 private :: set_species      ! Sets species/variable names for output
 private :: siteswrt_out     ! Collects output from all nodes and prints
 
-
-integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
-integer, public, parameter ::  NSITES_MAX = 99 ! Max. no surface sites allowed
 
 integer, public, save :: nglobal_sites, nlocal_sites
 integer,private, save :: nglobal_sondes, nlocal_sondes
