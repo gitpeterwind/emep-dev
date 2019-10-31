@@ -23,6 +23,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Oct 2019, Robert
+
+Bug (sort of) in YieldModifications_mod.f90 fixed. 
+
+The SOA yields for benzene and toluene were inconsistent with the SOA yields 
+for other VOCs (including OXYL) when using YieldModifications = 'VBS-T10'. 
+
+The yields for benzene and toluene were too large (based on Hodzic et al., 2016) 
+when including SOA aging (which is included in the "standard" model version).
+
+If anyone for some reason want to use the old (erroneous/inconsistent) SOA yields 
+it can still be done by setting
+YieldModifications = 'VBS-T10old'
+in the config file
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Oct 2019, Alvaro
 
 Fix AOD:GROUP output, see #113
