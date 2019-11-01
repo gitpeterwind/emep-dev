@@ -23,6 +23,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Nov 2019, Robert
+
+Added EmChem19a chemistry scheme -- a slightly revised version of EmChem19
+
+Main difference: MACR is used to represent both methacrolein (MACR) and methyl 
+vinyl ketone (MVK).
+[The first EmChem19 had both, but the treatment was a bit inconsistent]
+
+Minor updates of reaction rates for APINENE+O3 and APINENE+OH (the second rate 
+was inconsistent in the previous version).
+
+Bug fix for wet deposition parameters for gas phase fraction of VBS-species.
+[previous version had WD-parameter set to PMf, which gave much more efficient 
+in-cloud scavenging]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Oct 2019, Robert
 
 Bug (sort of) in YieldModifications_mod.f90 fixed. 
