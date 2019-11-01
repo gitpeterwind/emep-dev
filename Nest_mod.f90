@@ -89,7 +89,7 @@ private
 logical, private, save :: mydebug =  .false.
 
 character(len=TXTLEN_SHORT),private, parameter :: &
-  READ_MODES(5)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','START','MONTH'],&
+  READ_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','START','MONTH'],&
   SAVE_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','END','MONTH']
 character(len=TXTLEN_FILE),private, save ::  &
   filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.
