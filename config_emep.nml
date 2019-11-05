@@ -431,10 +431,13 @@ OutputConcs=
     ! 'AER_BSOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     ! 'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'PPM10_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ============================================================
 ! SOA additions (26 entries)
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'woodECfine'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'ffuelECfine'         ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
     ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD'
     ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
