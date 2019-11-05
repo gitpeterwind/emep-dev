@@ -7,7 +7,7 @@
     BiomassBurningMapping = "GFASv1toEmChem16z"
   integer,  parameter :: &
     NBB_DEFS   = 25,   & ! No mapping lines below
-    NEMEPSPECS = 20-1    ! No EMEP chemical mech specs used
+    NEMEPSPECS = 20      ! No EMEP chemical mech specs used
 
 !-----------------------------------------------------------------------!
 ! Column-1 gives GFASv1 species,
