@@ -23,6 +23,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4-5 Nov 2019, Alvaro
+
+New outputs for CAMS_50 U2 upgrade, see #168
+- add ffuelECfine, woodECfine and PPM10_fire groups
+- add ffire_c tracer
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 Nov 2019, Robert
 
 Added EmChem19a chemistry scheme -- a slightly revised version of EmChem19
