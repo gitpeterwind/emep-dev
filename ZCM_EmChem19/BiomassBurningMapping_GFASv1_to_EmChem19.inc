@@ -6,7 +6,7 @@
   character(len=*),  parameter :: &
     BiomassBurningMapping = "GFASv1toEmChem16z"
   integer,  parameter :: &
-    NBB_DEFS   = 25-2, & ! No mapping lines below
+    NBB_DEFS   = 25,   & ! No mapping lines below
     NEMEPSPECS = 20-1    ! No EMEP chemical mech specs used
 
 !-----------------------------------------------------------------------!
@@ -21,8 +21,8 @@
     bbtype("ch4fire      ", 1.000, 1.000, CH4           ), & ! 082.210 | Methane
     bbtype("h2fire       ", 1.000, 1.000, H2            ), & ! 084.210 | Hydrogen
     bbtype("noxfire      ", 1.000, 1.000, NO            ), & ! 085.210 | Nitrogen Oxide. Use as NO
-!   bbtype("pm10fire     ", 1.000, 1.000, ffire_rempPMco), & ! 087.210 | PM 10
-!   bbtype("pm2p5fire    ", 1.000,-1.000, ffire_rempPMco), & ! 087.210 | PM 10 - PM 2.5
+    bbtype("tpmfire      ", 1.000, 1.000, ffire_c       ), & ! 087.210 | PM 10
+    bbtype("pm2p5fire    ", 1.000,-1.000, ffire_c       ), & ! 087.210 | PM 10 - PM 2.5
     bbtype("pm2p5fire    ", 1.000, 1.000, ffire_rempPM25), & ! 087.210 | PM 2.5
     bbtype("ocfire       ", 1.700,-1.000, ffire_rempPM25), & ! 090.210 | PM 2.5 - Organic Matter
     bbtype("bcfire       ", 1.000,-1.000, ffire_rempPM25), & ! 091.210 | PM 2.5 - Black Carbon

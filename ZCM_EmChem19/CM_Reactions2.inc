@@ -522,6 +522,15 @@
   xnew(ffire_remPPM25) = xold(ffire_remPPM25) + dt2 * P
 
 
+!-> ffire_c
+
+  ! P = 0.0
+  
+  ! L = 0.0
+  
+  ! Nothing to do for ffire_c! xnew(ffire_c) = max(0.0, xold(ffire_c))
+
+
 !-> SeaSalt_f
 
   P = rcemis(SEASALT_F,K)

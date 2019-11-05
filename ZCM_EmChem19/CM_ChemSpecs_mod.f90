@@ -174,12 +174,15 @@ module ChemSpecs_mod
     , ffire_OM    = 136  &
     , ffire_BC    = 137  &
     , ffire_remPPM25= 138  &
-    , SeaSalt_f   = 139  &
-    , SeaSalt_c   = 140
+    , ffire_c     = 139  &
+    , SeaSalt_f   = 140
+  
+  integer, public, parameter :: &
+      SeaSalt_c   = 141
   
   !+ Defines indices for ADV : Advected species
   integer, public, parameter :: FIRST_ADV=18, &
-                                 LAST_ADV=140
+                                 LAST_ADV=141
   
   integer, public, parameter :: &
       IXADV_RO2POOL     =   1  &
@@ -327,8 +330,9 @@ module ChemSpecs_mod
   
   integer, public, parameter :: &
       IXADV_ffire_remPPM25= 121  &
-    , IXADV_SeaSalt_f   = 122  &
-    , IXADV_SeaSalt_c   = 123
+    , IXADV_ffire_c     = 122  &
+    , IXADV_SeaSalt_f   = 123  &
+    , IXADV_SeaSalt_c   = 124
   
   !+ Defines indices for SHL : Short-lived (non-advected) species
   integer, public, parameter :: FIRST_SHL=1, &
@@ -572,6 +576,7 @@ contains
     species(ffire_OM    ) = Chemical("ffire_OM    ",  20.4000,  0,   1.0000,   0.0000,   0.0000 )
     species(ffire_BC    ) = Chemical("ffire_BC    ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ffire_remPPM25) = Chemical("ffire_remPPM25",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(ffire_c     ) = Chemical("ffire_c     ",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(SeaSalt_f   ) = Chemical("SeaSalt_f   ",  58.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(SeaSalt_c   ) = Chemical("SeaSalt_c   ",  58.0000,  0,   0.0000,   0.0000,   0.0000 )
   end subroutine define_chemicals
