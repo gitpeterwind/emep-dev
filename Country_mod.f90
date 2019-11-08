@@ -275,7 +275,8 @@ integer, public :: IC_OCEC  ! Oceania
     IC_MAR,   &    ! Moroccoa 115
     IC_PSE,   &    ! Palestine, State of 116
     IC_SYR,   &    ! Syrian Arab republic, 117
-    IC_TUN         ! Tunisia, 118
+    IC_TUN,   &    ! Tunisia, 118
+    IC_DZA         ! Algeria, 119
 
   ! Ship emissions when sea areas are not divided
   ! Eg. TNO emissions (added on 25th March 2009)
@@ -537,7 +538,7 @@ IC_DK=ix
 Country( IC_DK ) = cc(  "DK ",'DENM', 6 ,F,  6,  6,  1  , "Denmark                       " )
 ix=ix+1 
 IC_GL=ix
-Country( IC_GL ) = cc(  "GL ",'-' , 601 ,F,  6,  6, -2  , "Greenland                     " )
+Country( IC_GL ) = cc(  "GL ",'GRL' , 601 ,F,  6,  6, -2  , "Greenland                     " )
 ix=ix+1 
 IC_FI=ix
 Country( IC_FI ) = cc(  "FI ",'FINL', 7 ,F,  7,   7,  2  , "Finland                       " )
@@ -888,7 +889,7 @@ IC_INDO=ix
 Country(IC_INDO) = cc( "INDO",'-', 213, F,213, 213, -100, "Indonesia") 
 ix=ix+1 
 IC_ISRA=ix
-Country(IC_ISRA) = cc( "ISRA",'-', 214, F,214, 214, -100, "Israel") 
+Country(IC_ISRA) = cc( "ISRA",'ISR', 214, F,214, 214, -100, "Israel") 
 ix=ix+1 
 IC_JAPA=ix
 Country(IC_JAPA) = cc( "JAPA",'-', 215, F,215, 215, -100, "Japan") 
@@ -996,7 +997,7 @@ IC_VENE=ix
 Country(IC_VENE) = cc( "VENE",'-', 249, F, 249,249, -100, " Venezuela")
 ix=ix+1
 IC_IRAN=ix
-Country(IC_IRAN) = cc( "IRAN",'-', 250, F, 250, 250,-100, "Iran")
+Country(IC_IRAN) = cc( "IRAN",'IRN', 250, F, 250, 250,-100, "Iran")
 ix=ix+1
 IC_SAAR=ix
 Country(IC_SAAR) = cc( "SAAR",'-', 251, F, 251,251, -100, "Saudi Arabia")
@@ -1603,6 +1604,7 @@ Country(IC_GENEVA) = cc( "GENEVA", '-',  417 , F,   24, 417 , 1, "CH:GENEVA")
  call add_Country(ix,IC_PSE,'PSE','PSE',116,F,224,224,-100, "Palestine, State of" )! use NAFR
  call add_Country(ix,IC_SYR,'SYR','SYR',117,F,219,219,-100, "Syrian Arab Rep." )! use MIDE
  call add_Country(ix,IC_TUN,'TUN','TUN',118,F,224,224,-100, "Tunisia" )! use NAFR
+ call add_Country(ix,IC_DZA,'DZA','DZA',119,F,224,224,-100, "Algeria" )! use NAFR
 
 ! CAMS-TNO sea regions
 ix=ix+1 
