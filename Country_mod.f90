@@ -25,6 +25,7 @@ module Country_mod
   implicit none
 
   public :: init_Country     ! sets country details
+  private :: add_Country     ! adds country details
   public :: self_test        ! just to test numbering
 
   integer, parameter, public  :: MAXNLAND = 601  ! max number of countries 
@@ -264,6 +265,18 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_PSG  !Persian Gulf
   integer,  public :: IC_KAR  !Kara Sea 
 
+  !Extra cc for CAMS (fills 110 onward), Added Nov 2019
+  integer, public :: &
+    IC_IRQ,   &    ! Iraq 110
+    IC_JOR,   &    ! Jordan 111
+    IC_KWT,   &    ! Kuwait 112
+    IC_LBN,   &    ! Lebanon 113
+    IC_LBY,   &    ! Libya 114
+    IC_MAR,   &    ! Moroccoa 115
+    IC_PSE,   &    ! Palestine, State of 116
+    IC_SYR,   &    ! Syrian Arab republic, 117
+    IC_TUN         ! Tunisia, 118
+
   ! Ship emissions when sea areas are not divided
   ! Eg. TNO emissions (added on 25th March 2009)
   integer,  public :: IC_INTSHIPS
@@ -470,6 +483,20 @@ integer, public :: IC_OCEC  ! Oceania
 
  contains
   
+  subroutine add_Country(ix,ic,code,gains,icode,is_sea,timezone,timezone_h,timefac,cname)
+   ! fills eg. Country( IC_FI ) = cc(  "FI ",'FINL', 7 ,F,  7,   7,  2  , "Finland " )
+    integer, intent(inout) :: ix
+    integer, intent(out)   :: ic  ! eg IC_FINL
+    character(len=*), intent(in) :: code, gains
+    integer, intent(in)    :: icode  ! emep number in emissions
+    logical, intent(in)    :: is_sea
+    integer, intent(in)    :: timezone,timezone_h,timefac
+    character(len=*), intent(in) :: cname !country name
+    ix = ix + 1
+    ic = ix
+    Country( ic ) = cc( code,gains, icode ,is_sea, timezone,timezone_h,timefac,cname)
+  end subroutine add_Country
+
   subroutine init_Country()
 
   ! Set the country details. Note that time-zones for some areas are either
@@ -1564,6 +1591,19 @@ ix=ix+1
 IC_GENEVA = ix
 Country(IC_GENEVA) = cc( "GENEVA", '-',  417 , F,   24, 417 , 1, "CH:GENEVA")
 
+! CAMS- extra land regions, Nov 2019:
+
+!     add_Country(ix,ic,code,gains,icode,is_sea,timezone,timezone_h,timefac,cname)
+ call add_Country(ix,IC_IRQ,'IRQ','IRQ',110,F,219,219,-100, "Iraq" ) ! use Middle East factors
+ call add_Country(ix,IC_JOR,'JOR','JOR',111,F,219,219,-100, "Jordan" ) ! use Middle East factors
+ call add_Country(ix,IC_KWT,'KWT','KWT',112,F,251,251,-100, "Kuwait" ) ! use Saudi
+ call add_Country(ix,IC_LBN,'LBN','LBN',113,F,219,219,-100, "Lebanon" )! use ME
+ call add_Country(ix,IC_LBY,'LBY','LBY',114,F,224,224,-100, "Libya" )! use NAFR
+ call add_Country(ix,IC_MAR,'MAR','MAR',115,F,224,224,-100, "Morocco" )! use NAFR
+ call add_Country(ix,IC_PSE,'PSE','PSE',116,F,224,224,-100, "Palestine, State of" )! use NAFR
+ call add_Country(ix,IC_SYR,'SYR','SYR',117,F,219,219,-100, "Syrian Arab Rep." )! use MIDE
+ call add_Country(ix,IC_TUN,'TUN','TUN',118,F,224,224,-100, "Tunisia" )! use NAFR
+
 ! CAMS-TNO sea regions
 ix=ix+1 
 IC_GRS=ix
@@ -1594,13 +1634,31 @@ NLAND=ix !actual number of countries defined
   end subroutine init_Country
 
   subroutine self_test()
-    integer :: ic
+    integer :: ic, ie
+    character(len=10), dimension(2000) :: emepcc = '-'
+    integer, dimension(2000) :: nsorted = 0
     print *, "COUNTRY TEST ==================================="
     call init_Country()
     print *, "COUNTRY TEST NLAND = ", NLAND
+
     do  ic = 1, NLAND
       print '(a,i3,2x,a,i5,2x,a)', "IC ", ic, Country(ic)%code, &
            Country(ic)%icode, Country(ic)%gains
+      ! eg IC   1  AL            1  ALBA
+      !    IC   5  FCS           5  -   
+      ie = Country(ic)%icode  ! code in emep number system
+      emepcc( ie ) = Country(ic)%code
+      nsorted(ie) = nsorted(ie) + 1
+      if ( ie == 344 ) print *, 'IE344:', ic,  Country(ic)%code, ie
+      if ( nsorted(ie) > 1 ) then
+        print *, 'NSORTED ERROR'//Country(ic)%code, ic, ie
+        stop
+      end if
+    end do
+    do ic = 1, size(emepcc)
+      if ( emepcc(ic) /= '-' ) then
+        print *, 'EMEP ', ic, emepcc(ic)
+      end if
     end do
   end subroutine self_test
 

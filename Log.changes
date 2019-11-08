@@ -23,6 +23,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Nov 2019, Dave
+
+Country_mod
+  - new routine add_Country to simplify country inputs
+  - expanded self_test to write out which EMEP codes are in-use
+    (use 'mk.testX Country_mod.f90' to see the results!)
+  - added extra CAMS country codes (JOR etc)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4-5 Nov 2019, Alvaro
 
 New outputs for CAMS_50 U2 upgrade, see #168
