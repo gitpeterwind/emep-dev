@@ -22,7 +22,6 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("C2H5OOH   ", "MEOOH     ", -999.0 ) &
 , dep_t("BURO2H    ", "C3H7OOH   ", -999.0 ) &
 , dep_t("ETRO2H    ", "SHISOLOOH ", -999.0 ) &
-, dep_t("PRRO2H    ", "SHISOLOOH ", -999.0 ) &
 , dep_t("MEKO2H    ", "MDSOLOOH  ", -999.0 ) &
 , dep_t("ISRO2H    ", "SHISOLOOH ", -999.0 ) &
 , dep_t("C5DICAROOH", "VHISOLNO3 ", -999.0 ) &
@@ -85,6 +84,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("ffire_OM  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_BC  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_remPPM25", "PMf       ", -999.0 ) &
+, dep_t("ffire_c   ", "PMc       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
 , dep_t("Dust_road_f", "DUf       ", -999.0 ) &

@@ -13,7 +13,7 @@ module ChemGroups_mod
   ! Assignment of groups from GenIn_Species.csv
   public :: Init_ChemGroups
   
-  type(typ_sp), dimension(295), public, save :: chemgroups
+  type(typ_sp), dimension(298), public, save :: chemgroups
   type(typ_factors), dimension(2), public, save :: chemgroups_factors
   type(typ_maps), dimension(1), public, save :: chemgroups_maps
   
@@ -319,16 +319,16 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_DRx_3p1_GROUP = (/ C5DICARB, MEKO2H /)
   
-  integer, public, target, save, dimension (12) :: &
+  integer, public, target, save, dimension (11) :: &
     ROOH_GROUP = (/  &
-      CH3OOH, C2H5OOH, BURO2H, ETRO2H, PRRO2H, MEKO2H, ISRO2H,  &
-      C5DICAROOH, HPALD, MACROOH, OXYO2H, TERPOOH  &
+      CH3OOH, C2H5OOH, BURO2H, ETRO2H, MEKO2H, ISRO2H, C5DICAROOH,  &
+      HPALD, MACROOH, OXYO2H, TERPOOH  &
     /)
   
-  integer, public, target, save, dimension (12) :: &
+  integer, public, target, save, dimension (11) :: &
     DDEP_ROOH_GROUP = (/  &
-      CH3OOH, C2H5OOH, BURO2H, ETRO2H, PRRO2H, MEKO2H, ISRO2H,  &
-      C5DICAROOH, HPALD, MACROOH, OXYO2H, TERPOOH  &
+      CH3OOH, C2H5OOH, BURO2H, ETRO2H, MEKO2H, ISRO2H, C5DICAROOH,  &
+      HPALD, MACROOH, OXYO2H, TERPOOH  &
     /)
   
   integer, public, target, save, dimension (1) :: &
@@ -367,10 +367,10 @@ module ChemGroups_mod
   integer, public, target, save, dimension (1) :: &
     DDEP_DRx_3p0_GROUP = (/ BURO2H /)
   
-  integer, public, target, save, dimension (9) :: &
+  integer, public, target, save, dimension (8) :: &
     WDEP_ROOH_GROUP = (/  &
-      ETRO2H, PRRO2H, MEKO2H, ISRO2H, C5DICAROOH, HPALD, MACROOH,  &
-      OXYO2H, TERPOOH  &
+      ETRO2H, MEKO2H, ISRO2H, C5DICAROOH, HPALD, MACROOH, OXYO2H,  &
+      TERPOOH  &
     /)
   
   integer, public, target, save, dimension (1) :: &
@@ -583,32 +583,32 @@ module ChemGroups_mod
   integer, public, target, save, dimension (4) :: &
     DDEP_SOx_GROUP = (/ SO2, SO4, pSO4f, pSO4c /)
   
-  integer, public, target, save, dimension (30) :: &
+  integer, public, target, save, dimension (31) :: &
     PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, POM_c_wood, POM_c_ffuel,  &
       EC_f_wood_new, EC_f_wood_age, EC_c_wood, EC_f_ffuel_new,  &
       EC_f_ffuel_age, EC_c_ffuel, pSO4f, pSO4c, remPPM25,  &
       remPPM_c, OM25_p, VBS_TEST, Ash_f, Ash_c, ffire_BC,  &
-      ffire_remPPM25, SeaSalt_f, SeaSalt_c, Dust_road_f,  &
+      ffire_remPPM25, ffire_c, SeaSalt_f, SeaSalt_c, Dust_road_f,  &
       Dust_road_c, Dust_wb_f, Dust_wb_c, Dust_sah_f, Dust_sah_c  &
     /)
   
-  integer, public, target, save, dimension (28) :: &
+  integer, public, target, save, dimension (29) :: &
     WDEP_PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, POM_c_wood, POM_c_ffuel,  &
       EC_f_wood_new, EC_f_wood_age, EC_c_wood, EC_f_ffuel_new,  &
       EC_f_ffuel_age, EC_c_ffuel, pSO4f, pSO4c, remPPM25,  &
-      remPPM_c, Ash_f, Ash_c, ffire_BC, ffire_remPPM25,  &
+      remPPM_c, Ash_f, Ash_c, ffire_BC, ffire_remPPM25, ffire_c,  &
       SeaSalt_f, SeaSalt_c, Dust_road_f, Dust_road_c, Dust_wb_f,  &
       Dust_wb_c, Dust_sah_f, Dust_sah_c  &
     /)
   
-  integer, public, target, save, dimension (28) :: &
+  integer, public, target, save, dimension (29) :: &
     DDEP_PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, POM_c_wood, POM_c_ffuel,  &
       EC_f_wood_new, EC_f_wood_age, EC_c_wood, EC_f_ffuel_new,  &
       EC_f_ffuel_age, EC_c_ffuel, pSO4f, pSO4c, remPPM25,  &
-      remPPM_c, Ash_f, Ash_c, ffire_BC, ffire_remPPM25,  &
+      remPPM_c, Ash_f, Ash_c, ffire_BC, ffire_remPPM25, ffire_c,  &
       SeaSalt_f, SeaSalt_c, Dust_road_f, Dust_road_c, Dust_wb_f,  &
       Dust_wb_c, Dust_sah_f, Dust_sah_c  &
     /)
@@ -664,22 +664,22 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_TNO3_GROUP = (/ NO3_f, NO3_c /)
   
-  integer, public, target, save, dimension (10) :: &
+  integer, public, target, save, dimension (11) :: &
     PMCO_GROUP = (/  &
       NO3_c, POM_c_wood, POM_c_ffuel, pSO4c, remPPM_c, Ash_c,  &
-      SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
+      ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
     /)
   
-  integer, public, target, save, dimension (10) :: &
+  integer, public, target, save, dimension (11) :: &
     WDEP_PMco_GROUP = (/  &
       NO3_c, POM_c_wood, POM_c_ffuel, pSO4c, remPPM_c, Ash_c,  &
-      SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
+      ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
     /)
   
-  integer, public, target, save, dimension (10) :: &
+  integer, public, target, save, dimension (11) :: &
     DDEP_PMco_GROUP = (/  &
       NO3_c, POM_c_wood, POM_c_ffuel, pSO4c, remPPM_c, Ash_c,  &
-      SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
+      ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c, Dust_sah_c  &
     /)
   
   integer, public, target, save, dimension (25) :: &
@@ -1047,6 +1047,15 @@ module ChemGroups_mod
   integer, public, target, save, dimension (3) :: &
     DDEP_PPM25_fire_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25 /)
   
+  integer, public, target, save, dimension (4) :: &
+    PPM10_FIRE_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
+  
+  integer, public, target, save, dimension (4) :: &
+    WDEP_PPM10_fire_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
+  
+  integer, public, target, save, dimension (4) :: &
+    DDEP_PPM10_fire_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
+  
   integer, public, target, save, dimension (1) :: &
     FBBPOA25_GROUP = (/ ffire_OM /)
   
@@ -1169,20 +1178,21 @@ module ChemGroups_mod
       30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0  &
     /)
   
-  integer, public, target, save, dimension (25) :: &
+  integer, public, target, save, dimension (26) :: &
     EXTINC_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, EC_f_wood_new, EC_f_wood_age,  &
       EC_c_wood, EC_f_ffuel_new, EC_f_ffuel_age, EC_c_ffuel,  &
       pSO4f, pSO4c, remPPM25, remPPM_c, OM25_p, ffire_BC,  &
-      ffire_remPPM25, SeaSalt_f, SeaSalt_c, Dust_road_f,  &
+      ffire_remPPM25, ffire_c, SeaSalt_f, SeaSalt_c, Dust_road_f,  &
       Dust_road_c, Dust_wb_f, Dust_wb_c, Dust_sah_f, Dust_sah_c  &
     /)
   
-  character(len=TXTLEN_SHORT), public, target, save, dimension (25) :: &
+  character(len=TXTLEN_SHORT), public, target, save, dimension (26) :: &
     EXTINC_GROUP_MAPBACK = [ character(len=TXTLEN_SHORT) :: &
     "SO4", "NO3f", "NO3c", "NH4f", "ECn", "ECa", "EC", "ECn",  &
       "ECa", "EC", "SO4", "SO4", "DDf", "DDc", "OC", "EC", "DDf",  &
-      "SSf", "SSc", "DDf", "DDc", "DDf", "DDc", "DDf", "DDc"  &
+      "DDc", "SSf", "SSc", "DDf", "DDc", "DDf", "DDc", "DDf",  &
+      "DDc"  &
     ]
 
 contains
@@ -1993,86 +2003,95 @@ contains
     chemgroups(268)%name="DDEP_PPM25_fire"
     chemgroups(268)%specs=>DDEP_PPM25_fire_GROUP
     
-    chemgroups(269)%name="FBBPOA25"
-    chemgroups(269)%specs=>FBBPOA25_GROUP
+    chemgroups(269)%name="PPM10_FIRE"
+    chemgroups(269)%specs=>PPM10_FIRE_GROUP
     
-    chemgroups(270)%name="WDEP_FBBPOA25"
-    chemgroups(270)%specs=>WDEP_FBBPOA25_GROUP
+    chemgroups(270)%name="WDEP_PPM10_fire"
+    chemgroups(270)%specs=>WDEP_PPM10_fire_GROUP
     
-    chemgroups(271)%name="DDEP_FBBPOA25"
-    chemgroups(271)%specs=>DDEP_FBBPOA25_GROUP
+    chemgroups(271)%name="DDEP_PPM10_fire"
+    chemgroups(271)%specs=>DDEP_PPM10_fire_GROUP
     
-    chemgroups(272)%name="FFIREBC"
-    chemgroups(272)%specs=>FFIREBC_GROUP
+    chemgroups(272)%name="FBBPOA25"
+    chemgroups(272)%specs=>FBBPOA25_GROUP
     
-    chemgroups(273)%name="WDEP_ffireBC"
-    chemgroups(273)%specs=>WDEP_ffireBC_GROUP
+    chemgroups(273)%name="WDEP_FBBPOA25"
+    chemgroups(273)%specs=>WDEP_FBBPOA25_GROUP
     
-    chemgroups(274)%name="DDEP_ffireBC"
-    chemgroups(274)%specs=>DDEP_ffireBC_GROUP
+    chemgroups(274)%name="DDEP_FBBPOA25"
+    chemgroups(274)%specs=>DDEP_FBBPOA25_GROUP
     
-    chemgroups(275)%name="SS"
-    chemgroups(275)%specs=>SS_GROUP
+    chemgroups(275)%name="FFIREBC"
+    chemgroups(275)%specs=>FFIREBC_GROUP
     
-    chemgroups(276)%name="WDEP_SS"
-    chemgroups(276)%specs=>WDEP_SS_GROUP
+    chemgroups(276)%name="WDEP_ffireBC"
+    chemgroups(276)%specs=>WDEP_ffireBC_GROUP
     
-    chemgroups(277)%name="DDEP_SS"
-    chemgroups(277)%specs=>DDEP_SS_GROUP
+    chemgroups(277)%name="DDEP_ffireBC"
+    chemgroups(277)%specs=>DDEP_ffireBC_GROUP
     
-    chemgroups(278)%name="DUST"
-    chemgroups(278)%specs=>DUST_GROUP
+    chemgroups(278)%name="SS"
+    chemgroups(278)%specs=>SS_GROUP
     
-    chemgroups(279)%name="WDEP_dust"
-    chemgroups(279)%specs=>WDEP_dust_GROUP
+    chemgroups(279)%name="WDEP_SS"
+    chemgroups(279)%specs=>WDEP_SS_GROUP
     
-    chemgroups(280)%name="DDEP_dust"
-    chemgroups(280)%specs=>DDEP_dust_GROUP
+    chemgroups(280)%name="DDEP_SS"
+    chemgroups(280)%specs=>DDEP_SS_GROUP
     
-    chemgroups(281)%name="DUST_ANT_F"
-    chemgroups(281)%specs=>DUST_ANT_F_GROUP
+    chemgroups(281)%name="DUST"
+    chemgroups(281)%specs=>DUST_GROUP
     
-    chemgroups(282)%name="WDEP_dust_ant_f"
-    chemgroups(282)%specs=>WDEP_dust_ant_f_GROUP
+    chemgroups(282)%name="WDEP_dust"
+    chemgroups(282)%specs=>WDEP_dust_GROUP
     
-    chemgroups(283)%name="DDEP_dust_ant_f"
-    chemgroups(283)%specs=>DDEP_dust_ant_f_GROUP
+    chemgroups(283)%name="DDEP_dust"
+    chemgroups(283)%specs=>DDEP_dust_GROUP
     
-    chemgroups(284)%name="DUST_ANT_C"
-    chemgroups(284)%specs=>DUST_ANT_C_GROUP
+    chemgroups(284)%name="DUST_ANT_F"
+    chemgroups(284)%specs=>DUST_ANT_F_GROUP
     
-    chemgroups(285)%name="WDEP_dust_ant_c"
-    chemgroups(285)%specs=>WDEP_dust_ant_c_GROUP
+    chemgroups(285)%name="WDEP_dust_ant_f"
+    chemgroups(285)%specs=>WDEP_dust_ant_f_GROUP
     
-    chemgroups(286)%name="DDEP_dust_ant_c"
-    chemgroups(286)%specs=>DDEP_dust_ant_c_GROUP
+    chemgroups(286)%name="DDEP_dust_ant_f"
+    chemgroups(286)%specs=>DDEP_dust_ant_f_GROUP
     
-    chemgroups(287)%name="DUST_NAT_F"
-    chemgroups(287)%specs=>DUST_NAT_F_GROUP
+    chemgroups(287)%name="DUST_ANT_C"
+    chemgroups(287)%specs=>DUST_ANT_C_GROUP
     
-    chemgroups(288)%name="WDEP_dust_nat_f"
-    chemgroups(288)%specs=>WDEP_dust_nat_f_GROUP
+    chemgroups(288)%name="WDEP_dust_ant_c"
+    chemgroups(288)%specs=>WDEP_dust_ant_c_GROUP
     
-    chemgroups(289)%name="DDEP_dust_nat_f"
-    chemgroups(289)%specs=>DDEP_dust_nat_f_GROUP
+    chemgroups(289)%name="DDEP_dust_ant_c"
+    chemgroups(289)%specs=>DDEP_dust_ant_c_GROUP
     
-    chemgroups(290)%name="DUST_NAT_C"
-    chemgroups(290)%specs=>DUST_NAT_C_GROUP
+    chemgroups(290)%name="DUST_NAT_F"
+    chemgroups(290)%specs=>DUST_NAT_F_GROUP
     
-    chemgroups(291)%name="WDEP_dust_nat_c"
-    chemgroups(291)%specs=>WDEP_dust_nat_c_GROUP
+    chemgroups(291)%name="WDEP_dust_nat_f"
+    chemgroups(291)%specs=>WDEP_dust_nat_f_GROUP
     
-    chemgroups(292)%name="DDEP_dust_nat_c"
-    chemgroups(292)%specs=>DDEP_dust_nat_c_GROUP
+    chemgroups(292)%name="DDEP_dust_nat_f"
+    chemgroups(292)%specs=>DDEP_dust_nat_f_GROUP
     
-    chemgroups(293)%name="POLLEN"
-    chemgroups(293)%specs=>POLLEN_GROUP
+    chemgroups(293)%name="DUST_NAT_C"
+    chemgroups(293)%specs=>DUST_NAT_C_GROUP
     
-    chemgroups(294)%name="WDEP_POLLEN"
-    chemgroups(294)%specs=>WDEP_POLLEN_GROUP
+    chemgroups(294)%name="WDEP_dust_nat_c"
+    chemgroups(294)%specs=>WDEP_dust_nat_c_GROUP
     
-    chemgroups(295)%name="DDEP_POLLEN"
-    chemgroups(295)%specs=>DDEP_POLLEN_GROUP
+    chemgroups(295)%name="DDEP_dust_nat_c"
+    chemgroups(295)%specs=>DDEP_dust_nat_c_GROUP
+    
+    chemgroups(296)%name="POLLEN"
+    chemgroups(296)%specs=>POLLEN_GROUP
+    
+    chemgroups(297)%name="WDEP_POLLEN"
+    chemgroups(297)%specs=>WDEP_POLLEN_GROUP
+    
+    chemgroups(298)%name="DDEP_POLLEN"
+    chemgroups(298)%specs=>DDEP_POLLEN_GROUP
     
     chemgroups_factors(1)%name="CSTAR"
     chemgroups_factors(1)%species=>CSTAR_GROUP

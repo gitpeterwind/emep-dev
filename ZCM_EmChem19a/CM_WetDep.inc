@@ -13,7 +13,6 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("C5134CO2OH", "H2O2      ", -999.0 ) &
 , dep_t("C54CO     ", "H2O2      ", -999.0 ) &
 , dep_t("ETRO2H    ", "H2O2      ", -999.0 ) &
-, dep_t("PRRO2H    ", "H2O2      ", -999.0 ) &
 , dep_t("MEKO2H    ", "1p3       ", -999.0 ) &
 , dep_t("ISRO2H    ", "H2O2      ", -999.0 ) &
 , dep_t("C5DICAROOH", "H2O2      ", -999.0 ) &
@@ -71,6 +70,7 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("ffire_OM  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_BC  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_remPPM25", "PMf       ", -999.0 ) &
+, dep_t("ffire_c   ", "PMc       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
 , dep_t("Dust_road_f", "PMf       ", -999.0 ) &
