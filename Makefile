@@ -164,7 +164,7 @@ AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: Bnmc / 3DVar
-3DVar16 3DVar17 3DVar18: MACC
+3DVar16 3DVar17 3DVar18:
 	$(MAKE) -C ZD_$@/ PROG=$(PROG)_$@ $(PROG)_$@
 
 # Always re-make this targets
