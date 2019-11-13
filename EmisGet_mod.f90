@@ -104,7 +104,7 @@ real, public,allocatable, dimension(:,:), save :: emis_hprofile
 
 ! some common variables
 character(len=TXTLEN_FILE), private :: fname             ! File name
-character(len=80), private :: errmsg
+character(len=180), private :: errmsg
 
 ! Import list of the emitted species we need to find in the 
 ! emissplit files.
