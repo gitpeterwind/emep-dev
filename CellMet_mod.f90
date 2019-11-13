@@ -107,8 +107,8 @@ subroutine Get_CellMet(i,j,debug_flag)
 
   !**  prefer micromet signs and terminology here:
   Grid%Hd    = -fh(i,j,1)       ! Heat flux, *away from* surface
-if( debug_flag ) write(*,"(a,3es12.3)") 'CellHd', Grid%Hd, &
-   maxval(fh(:,:,1)), minval(fh(:,:,1))
+if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
+   maxval(fh(:,:,1)), minval(fh(:,:,1)), Grid%z_mid
   Grid%LE    = -fl(i,j,1)       ! Heat flux, *away from* surface
   Grid%ustar = ustar_nwp(i,j)   !  u*
   Grid%t2    = t2_nwp(i,j,1)    ! t2 , K

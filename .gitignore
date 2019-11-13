@@ -67,8 +67,6 @@ ZCM_Emergency/emergency_emission.csv
 ZCM_Emergency/emergency_location.csv
 
 # Makefile output
-/My_*.f90
-/Pollen*.f90
 .depend
 Unimod
 Unimod_3DVar*
@@ -84,3 +82,13 @@ meteoproc
 
 # Old modules
 *_ml.f90
+ZCM_EmChem09soa/
+ZCM_EmChem16a/
+ZCM_EmChem16mt/
+ZCM_Emergency/*_*bin*lev.*
+ZCM_Emergency/CM_chempackages.txt
+ZCM_Emergency/femis.defaults
+
+# IDE/editor
+.vscode/
+.mypy_cache/

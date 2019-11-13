@@ -1,16 +1,16 @@
 &Model_config
-  GRID      = 'EECCA',
-  iyr_trend = 2016,
+  GRID      = 'EMEP0302',
+  iyr_trend = 2017,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_33',
-  startdate = 2016,01,01,00,
-  enddate   = 2016,01,01,03,
+  startdate = 2017,01,01,00,
+  enddate   = 2017,01,01,03,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
   DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
   DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis, Nebula
-
+  DataPath(4) = '/cluster/projects/nn2890k/Data',!Fram
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
@@ -48,7 +48,7 @@
 !------------------------------
   USES%SOILWATER         = T,            ! Uses SMI from meteo data
   USES%CONVECTION        = F,
-!  fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
+!  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012 and 2015-2017
 !  fileName_CH4_ibcs   = 'DataDir/BoundaryConditions/ch4_fromRCP85.txt'  ! Uses CH4 from RCP for iyr_trend
   USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
@@ -73,13 +73,13 @@
 !----------------------------------------------------------------------
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
-! SplitDefaultFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
-! SplitSpecialsFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
-! EmChem19 needs this to be uncommented:
-!SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
-!SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
+! EmChem16 needs this to be uncommented:
+!SplitDefaultFile ='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
+!SplitSpecialsFile='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
+! EmChem19 (dafault):
+!SplitDefaultFile ='DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
+!SplitSpecialsFile='DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
 
-!
 !only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
 !  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
 
@@ -318,12 +318,6 @@ OutputMisc=
  ! For EmChem09soa, rc75 is GammaN2O5, but we hide the name to make the user check:
  'rc75',          'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 'YM',
  !------------------------------------------------------------------------------------
- !
- 'XNCOL_OH',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! New Column system
- 'XNCOL_CO',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- 'XNCOL_NO2',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- 'XNCOL_CH4',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- !
  ! For meteo fields defined in "met%". Set subclass as met%name defined in MetFields_ml:
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
@@ -356,13 +350,17 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,'YM', !!
-     ! Column data. Note that these data are compiled just after the chemistry step,
-     ! and are probably best used for short-lived species. REMEMBER that boundary
-     ! cells are not calculated, hence expect zeros on edges.
-     ! NOTE SURE  how this compares with COLUMNDAT below
-      'NO2',          'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CH4',          'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CO',           'molec/cm2' ,'kmax','COLUMN'   ,'MISC' ,'YMD', !! New Column system
+     ! Column data:
+     ! - COLUMN        advected species.
+     ! - COLUMN:GROUP  group of advected species.
+     ! - COLUMN:SHL    short-lived species, only molec/cm2 units.
+     ! NOTE:
+     ! - these data are compiled just after the chemistry step.
+     ! - boundary cells are not calculated, hence expect zeros on edges.
+      'NO2',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'CH4',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'CO',           'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'OH',           'molec/cm2','kmax','COLUMN:SHL','MISC','YMD',
      !----------------------------------------------------------------
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
@@ -433,10 +431,13 @@ OutputConcs=
     ! 'AER_BSOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     ! 'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'PPM10_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ============================================================
 ! SOA additions (26 entries)
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'woodECfine'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'ffuelECfine'         ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
     ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD'
     ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -510,7 +511,7 @@ OutputConcs=
     ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
     !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
-!-- New AOD(2d)/EXT(3d) system
+!-- AOD(2d)/EXT(3d) system
     !!'AOD'                ,' '  ,'350nm','AOD:GROUP','MISC','YMD',
     ! 'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'AOD'                ,' '  ,'870nm','AOD:GROUP','MISC','YMD',
@@ -523,7 +524,7 @@ OutputConcs=
     !!'PPM10'              ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     !!'PPM25_FIRE'         ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'EXT'                ,'1/m','350nm','EXT:GROUP','MISC','YM',
-    !  'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
+    ! 'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
 ! ============================================================
 !
 ! o3 metrics --------------- SEP 2015 added here -----------------------------

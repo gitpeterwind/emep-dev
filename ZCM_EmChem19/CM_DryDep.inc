@@ -34,7 +34,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("NALD      ", "PAN       ", -999.0 ) &
 , dep_t("ISON      ", "MDNO3OH   ", -999.0 ) &
 , dep_t("PAN       ", "PAN       ", -999.0 ) &
-, dep_t("MPAN      ", "PAN       ", -999.0 ) &
+, dep_t("MPAN      ", "MPAN      ", -999.0 ) &
 , dep_t("SO2       ", "SO2       ", -999.0 ) &
 , dep_t("SO4       ", "PMf       ", -999.0 ) &
 , dep_t("NH3       ", "NH3       ", -999.0 ) &
@@ -84,6 +84,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("ffire_OM  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_BC  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_remPPM25", "PMf       ", -999.0 ) &
+, dep_t("ffire_c   ", "PMc       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
 , dep_t("Dust_road_f", "DUf       ", -999.0 ) &
@@ -92,4 +93,8 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("Dust_wb_c ", "DUc       ", -999.0 ) &
 , dep_t("Dust_sah_f", "DUf       ", -999.0 ) &
 , dep_t("Dust_sah_c", "DUc       ", -999.0 ) &
+, dep_t("POLLEN_BIRCH", "POLLb     ", -999.0 ) &
+, dep_t("POLLEN_OLIVE", "POLLo     ", -999.0 ) &
+, dep_t("POLLEN_RWEED", "POLLr     ", -999.0 ) &
+, dep_t("POLLEN_GRASS", "POLLg     ", -999.0 ) &
 /)

@@ -140,14 +140,14 @@ contains
       character(len=*), parameter :: dtxt='Ini-LandDefs:'
       integer :: n, nn, NHeaders, NKeys
       logical :: dbg
+      logical, dimension(ncodes) :: wanted_found
 
       dbg = ( DEBUG%LANDDEFS .and. MasterProc ) 
 
-      if ( dbg ) then
-         do n = 1, size(wanted_codes)
-            write(*,*) dtxt//' WANTED ', n, wanted_codes(n)
-         end do
-      end if
+      do n = 1, size(wanted_codes)
+         if(dbg) write(*,*) dtxt//' WANTED ', n, wanted_codes(n)
+         wanted_found(n) = .false.
+      end do
 
       ! Quick safety check (see Landuse_mod for explanation)
        call CheckStop(&
@@ -155,9 +155,7 @@ contains
           dtxt//" increase size of character array" )
 
       ! Read data
-
-
-      !fname = "Inputs_LandDefs.csv"
+      ! fname = "Inputs_LandDefs.csv"
       if ( MasterProc ) then
          write(*,*) dtxt//" for Ncodes= ", ncodes
          do n = 1, ncodes
@@ -178,18 +176,17 @@ contains
        nn = 0     
        do
             call read_line(IO_TMP,txtinput,ios)
-            if ( ios /= 0 ) then
-                 exit   ! likely end of file
-            end if
+
+            if ( ios /= 0 ) exit   ! likely end of file
             if ( dbg ) write(*,*) dtxt//' READLINE: ------ '// trim(txtinput)
-            if ( txtinput(1:1) == "#" ) then
-                 cycle
-            end if
+            if ( txtinput(1:1) == "#" ) cycle
             if ( txtinput(1:2) == '"#' ) then!Common problem after saving .csv!
                  call StopAll(trim(fname)//&
                  ': Quotation mark at start of "# line:'//trim(txtinput) )
             end if
+
             read(unit=txtinput,fmt=*,iostat=ios) LandInput
+
             call CheckStop ( ios, fname // " txt error:" // trim(txtinput) )
             n = find_index( LandInput%code, wanted_codes )!index in map data?
             if ( n < 1 ) then
@@ -199,6 +196,7 @@ contains
             end if
            !############################
             LandDefs(n) = LandInput
+            wanted_found(n) = .true.
             nn = nn + 1
            !############################
 
@@ -257,7 +255,14 @@ contains
              write(*,*) dtxt//"DONE NN,NCODES = ", nn, ncodes
        end if
 
-       call CheckStop( nn /= ncodes, dtxt//" didn't find all codes")
+       if ( nn /= ncodes ) then
+          print *, dtxt//" ERROR didn't find all codes"
+          do n = 1,  ncodes
+            if ( .not. wanted_found(n) ) &
+               print *, dtxt//' ERROR misses:', n, ':'//trim(wanted_codes(n))
+          end do
+          call StopAll( dtxt//" didn't find all codes")
+       end if
 
   end subroutine Init_LandDefs
  !=========================================================================

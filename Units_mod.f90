@@ -75,7 +75,7 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 end type group_umap
 
-type(umap), public, save :: unit_map(24)=(/&
+type(umap), public, save :: unit_map(25)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",T,F,1.0),&  ! Internal model unit
   umap("mass_ratio","kg/kg" ,T,F,1.0/ATWAIR), &  ! mass mixing ratio
@@ -104,7 +104,8 @@ type(umap), public, save :: unit_map(24)=(/&
 ! Aerosol optical properties
 ! umap("ext" ,"ext550nm",F,T,extX),&! ext* units need to be further multiplied...
 ! Column output
-  umap("ugm2"   ,"ug/m2"        ,F,T,ugXm3),&  ! ug* units need to be further multiplied
+  umap("ugm2"   ,"ug/m2"        ,F,T,ugXm3),&  ! ug* units need to be further multiplied  to_ug_ADV,
+  umap("kgm2"   ,"kg/m2"        ,F,T,ugXm3*1e-9),& 
   umap("mcm2"   ,"molec/cm2"    ,F,T,to_molec_cm2),&
   umap("e15mcm2","1e15molec/cm2",F,T,to_molec_cm2*1e-15)/)
 

@@ -86,7 +86,7 @@ private
          !DSHK N_HFAC  = 12  ! Number of height distribution classes defined
    integer, save, pointer, dimension(:), public :: sec2hfac_map => null()! mapping of sector to height distribution class
    integer, save, public :: & !must be compatible with: emisfrac
-          N_SPLIT  = 11  ! Number of speciation classes defined
+          N_SPLIT  = 19  ! Number of speciation classes defined
    integer, save, pointer, dimension(:), public :: sec2split_map => null()! mapping of sector to speciation class
 
 !SNAP specific definitions
@@ -115,6 +115,18 @@ private
         GNFR_sec2split_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_SPECIATION
 
    integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
+
+
+!GNFR_CAMS  specific definitions (used with CAMS v2.2.1 and  v3.1 emissions from November 2019)
+!GNFR A_PublicPower and F_RoadTransport are splitted into sub-sectors (14-15 and 16-19, respectively)
+   integer, public, parameter :: &
+          NSECTORS_GNFR_CAMS  = 19    ! Number of sectors defined in CAMS v2.2.1 and v3.1 emissions
+   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to time factor class
+        GNFR_CAMS_sec2tfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5,1,1,7,7,7,7] !values must be <= N_TFAC
+   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to height distribution class
+        GNFR_CAMS_sec2hfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5,1,3,7,7,7,7] !values must be <= N_HFAC
+   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to emission split class
+        GNFR_CAMS_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11,12,13,1,1,16,17,18,19] !values must be <= N_SPECIATION
 
 !TEST to try own defintions
    integer, public, parameter:: &

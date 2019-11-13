@@ -290,6 +290,10 @@ character(len=TXTLEN_FILE),public, target, save ::  &
   NEST_template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
   NEST_template_write   = 'EMEP_OUT.nc',&      ! on namelist, if needed.
   NEST_template_dump    = 'EMEP_Dump.nc'       ! on namelist, if needed.
+logical, public, save ::  &
+  NEST_save_append = .false., & ! Append to an exixting NEST_template_write or stop the simulation.
+  NEST_save_overwrite = .false. ! Overwrite an exixting NEST_template_write or stop the simulation.
+! The run will stop if the file already exists, unless NEST_save_append=T or NEST_save_overwrite=T
 
 integer,save, public ::   BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
               ! 0 means "do not look for old files"
@@ -304,7 +308,7 @@ character(len=TXTLEN_FILE),public, save :: NEST_MET_inner ='NOTSET' !path to met
 integer, save, public :: NEST_RUNDOMAIN_inner(4)=-1 ! RUNDOMAIN used for run in inner grid
 ! Limit output, e.g. for NMC statistics (3DVar)
 character(len=TXTLEN_SHORT), public, save :: &
-  NEST_WRITE_SPC(NSPEC_ADV), NEST_WRITE_GRP(size(chemgroups))
+  NEST_WRITE_SPC(NSPEC_ADV)="", NEST_WRITE_GRP(size(chemgroups))=""
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
 integer, public, save :: NEST_out_DOMAIN(4)=-1 ! =[istart,iend,jstart,jend]
@@ -342,6 +346,7 @@ integer, public, parameter :: &
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
   ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
 !Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
 integer, private :: isite              ! To assign arrays, if needed
 
@@ -367,7 +372,7 @@ integer, public, parameter :: &
 !** IMPORTANT!! Make sure the correspondence between selected for output
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
-character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+character(len=24), public, parameter, dimension(NXTRA_SITE_MISC) :: &
   SITE_XTRA_MISC=[character(len=18):: "th","T2"]
 
 character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
@@ -411,7 +416,7 @@ type, private :: sites_t
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
 end type sites_t
-type(sites_t) :: site_outputs, sonde_outputs
+type(sites_t),save :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
@@ -627,8 +632,10 @@ real, public, parameter :: &
 !
 !  additional parameters
 !
-integer, public, save   :: nterm, nmax, step_main &
-                         , iyr_trend ! Year specified for say BC changes
+integer, public, save   :: &
+     nmax,  & ! Number of dt_advec steps in one METSTEP
+     step_main, & ! Main time loop count
+     iyr_trend ! Year specified for say BC changes
 
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
@@ -701,9 +708,9 @@ character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inpu
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
 !POLL replaced by name of pollutant in EmisSplit
-character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
+character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
 !POLL replaced by name of pollutant in EmisSplit
-character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
+character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
 character(len=TXTLEN_FILE), target, save, public :: RoadMapFile = 'DataDir/RoadMap.nc'
 character(len=TXTLEN_FILE), target, save, public :: AVG_SMI_2005_2010File = 'DataDir/AVG_SMI_2005_2010.nc'
 character(len=TXTLEN_FILE), target, save, public :: Soil_TegenFile = 'DataDir/Soil_Tegen.nc'
@@ -758,7 +765,7 @@ subroutine Config_Constants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
-   ,EmisSplit_OUT         & ! Output of species emissions !DSHK
+   ,EmisSplit_OUT         & ! Output of species emissions
    ,OwnInputDir           &  !
    ,Emis_sourceFiles      & ! new format
    ,EmisMask              & ! new format
@@ -818,7 +825,7 @@ subroutine Config_Constants(iolog)
    ,ExtraConfigFile&
    ,NEST_MODE_READ,NEST_MODE_SAVE,NEST_NHOURREAD,NEST_NHOURSAVE &
    ,NEST_template_read_3D,NEST_template_read_BC,NEST_template_write&
-   ,NEST_template_dump,BC_DAYS&
+   ,NEST_template_dump,BC_DAYS,NEST_save_append,NEST_save_overwrite&
    ,NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN&
    ,NEST_MET_inner,NEST_RUNDOMAIN_inner&
    ,NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate&
@@ -841,8 +848,6 @@ subroutine Config_Constants(iolog)
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
   
-!DS EXTRA CONFIG STUFF MOVED from here !EEEEEEEEEEEEEEEEEEEEEEEEE
-
   USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
     write(logtxt,'(a,L2)') dtxt//'USE_SOILNOX ', USE_SOILNOX
@@ -890,7 +895,6 @@ subroutine Config_Constants(iolog)
     end if
   end do
 
-!DS moved ExtraConfig here to make use of DataDir EEEEEEEEEEEEEEEEEEEEEEEEE
 !before any conversion, read the additional namelists
   do i = 1, size(ExtraConfigFile)
      if(ExtraConfigFile(i)/="NOTSET")then
@@ -972,8 +976,10 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_read_3D)
   call associate_File(NEST_template_read_BC)
   call associate_File(NEST_template_write)
-  call associate_File(NEST_MET_inner) !DSMAY21
+  call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
+
+  OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)
 
   do i = 1, size(Emis_sourceFiles)
      !part of a class cannot be a target (?) must therefore do this separately

@@ -217,8 +217,10 @@ function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
   wanted_copy = wanted
   list_copy   = list
   if ( present(any_case) ) then
-    wanted_copy = to_upper(wanted)
-    list_copy   = to_upper(list)
+     if(any_case)then
+        wanted_copy = to_upper(wanted)
+        list_copy   = to_upper(list)
+     endif
   end if
 
   do n = 1, size(list)

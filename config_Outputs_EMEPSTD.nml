@@ -29,12 +29,6 @@ OutputMisc=
  ! For EmChem09soa, rc75 is GammaN2O5, but we hide the name to make the user check:
  'rc75',          'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 'YM',
  !------------------------------------------------------------------------------------
- !
- 'XNCOL_OH',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! New Column system
- 'XNCOL_CO',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- 'XNCOL_NO2',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- 'XNCOL_CH4',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 'YMD',!! 
- !
  ! For meteo fields defined in "met%". Set subclass as met%name defined in MetFields_ml:
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
@@ -67,13 +61,17 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,'YM', !!
-     ! Column data. Note that these data are compiled just after the chemistry step,
-     ! and are probably best used for short-lived species. REMEMBER that boundary
-     ! cells are not calculated, hence expect zeros on edges.
-     ! NOTE SURE  how this compares with COLUMNDAT below
-      'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CH4',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
-      'CO',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
+     ! Column data:
+     ! - COLUMN        advected species.
+     ! - COLUMN:GROUP  group of advected species.
+     ! - COLUMN:SHL    short-lived species, only molec/cm2 units.
+     ! NOTE:
+     ! - these data are compiled just after the chemistry step.
+     ! - boundary cells are not calculated, hence expect zeros on edges.
+      'NO2',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'CH4',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'CO',           'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'OH',           'molec/cm2','kmax','COLUMN:SHL','MISC','YMD',
      !----------------------------------------------------------------
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
