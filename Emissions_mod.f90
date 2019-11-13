@@ -61,6 +61,7 @@ use EmisDef_mod,       only: &
      ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
+     ,NSECTORS_GNFR_CAMS, GNFR_CAMS_sec2tfac_map, GNFR_CAMS_sec2hfac_map, GNFR_CAMS_sec2split_map&!GNFR_CAMS specific mapping
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,gnfr2snap,snap2gnfr&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
@@ -1013,6 +1014,13 @@ contains
        sec2tfac_map => GNFR_sec2tfac_map
        sec2hfac_map => GNFR_sec2hfac_map
        sec2split_map => GNFR_sec2split_map
+    else  if(SECTORS_NAME=='GNFR_CAMS')then
+       !19 sectors defined in emissions
+       NSECTORS = NSECTORS_GNFR_CAMS
+       !map timefactors onto GNFR map
+       sec2tfac_map => GNFR_CAMS_sec2tfac_map
+       sec2hfac_map => GNFR_CAMS_sec2hfac_map
+       sec2split_map => GNFR_CAMS_sec2split_map
     else  if(SECTORS_NAME=='TEST')then
        !11 sectors defined in emissions
        NSECTORS = NSECTORS_TEST
