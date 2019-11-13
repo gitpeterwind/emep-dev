@@ -86,7 +86,7 @@ private
          !DSHK N_HFAC  = 12  ! Number of height distribution classes defined
    integer, save, pointer, dimension(:), public :: sec2hfac_map => null()! mapping of sector to height distribution class
    integer, save, public :: & !must be compatible with: emisfrac
-          N_SPLIT  = 11  ! Number of speciation classes defined
+          N_SPLIT  = 19  ! Number of speciation classes defined
    integer, save, pointer, dimension(:), public :: sec2split_map => null()! mapping of sector to speciation class
 
 !SNAP specific definitions
