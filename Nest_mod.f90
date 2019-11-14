@@ -4,9 +4,8 @@ module Nest_mod
 ! The Nesting modes and related setings read from config nml:
 !  NEST_MODE_READ
 !    'NONE':      do not read (default)
-!    'NHOUR':     read every NEST_NHOURREAD
+!    'NHOUR':     read every NEST_NHOURREAD, if the files are found
 !    'START':     read at the start of run
-!    'RESTART:    read at the start of run, if the files are found
 !  NEST_MODE_SAVE
 !    'NONE':      do not write (default)
 !    'NHOUR':     write every NEST_NHOURSAVE
@@ -90,7 +89,7 @@ private
 logical, private, save :: mydebug =  .false.
 
 character(len=TXTLEN_SHORT),private, parameter :: &
-  READ_MODES(5)=[character(len=TXTLEN_SHORT)::'NONE','RESTART','NHOUR','START','MONTH'],&
+  READ_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','START','MONTH'],&
   SAVE_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','END','MONTH']
 character(len=TXTLEN_FILE),private, save ::  &
   filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.

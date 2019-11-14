@@ -16,11 +16,12 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("MGLYOX    ", "MGLYOX    ", -999.0 ) &
 , dep_t("BIACET    ", "MEK       ", -999.0 ) &
 , dep_t("C5DICARB  ", "C5DICARB  ", -999.0 ) &
+, dep_t("C5134CO2OH", "MDSOLOOH  ", -999.0 ) &
+, dep_t("C54CO     ", "VHISOLOOH ", -999.0 ) &
 , dep_t("CH3OOH    ", "MEOOH     ", -999.0 ) &
 , dep_t("C2H5OOH   ", "MEOOH     ", -999.0 ) &
 , dep_t("BURO2H    ", "C3H7OOH   ", -999.0 ) &
 , dep_t("ETRO2H    ", "SHISOLOOH ", -999.0 ) &
-, dep_t("PRRO2H    ", "SHISOLOOH ", -999.0 ) &
 , dep_t("MEKO2H    ", "MDSOLOOH  ", -999.0 ) &
 , dep_t("ISRO2H    ", "SHISOLOOH ", -999.0 ) &
 , dep_t("C5DICAROOH", "VHISOLNO3 ", -999.0 ) &
@@ -77,7 +78,6 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("non_C_BSOA_ug1e3", "ALD       ", -999.0 ) &
 , dep_t("SQT_SOA_nv", "PMf       ", -999.0 ) &
 , dep_t("TERPOOH   ", "LHISOLOOH ", -999.0 ) &
-, dep_t("MVK       ", "MEK       ", -999.0 ) &
 , dep_t("Ash_f     ", "PMf       ", -999.0 ) &
 , dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("shipNOx   ", "NO2       ", -999.0 ) &

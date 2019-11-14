@@ -244,7 +244,7 @@ OutputConcs=
     ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
     !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
-!-- New AOD(2d)/EXT(3d) system
+!-- AOD(2d)/EXT(3d) system
       'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
       'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
 ! ============================================================

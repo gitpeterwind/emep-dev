@@ -2919,7 +2919,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            imin=1!cover everything available
            imax=dims(1)!cover everything available
         else
-          imin=max(1,floor((minlon-Rlon(1))*dRloni-0.001))+1
+          imin=max(0,floor((minlon-Rlon(1))*dRloni-0.001))+1
           imax=min(dims(1),ceiling((maxlon-Rlon(1))*dRloni+1.001))
         endif
      else if(dRloni>0)then

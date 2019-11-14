@@ -392,8 +392,8 @@ subroutine Init_My_Deriv()
         tag_name(1)= "MAX6h_" //trim(outname)//"_"//trim(outdim)
       case('COLUMN','COLUMN:ADV','COLUMN:SPEC','COLUMN:SHL','COLUMN:GROUP')
         tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
-      case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
-           'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
+      case('AOD','AOD:TOTAL','AOD:SPEC','AOD:GROUP',&
+           'EXT','EXT:TOTAL','EXT:SPEC','EXT:GROUP')
         AOD_WANTED = .true.
         if(outname(1:3)/=outtyp(1:3))&
           outname  = outtyp(1:3)//"_"//trim(outname)

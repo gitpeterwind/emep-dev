@@ -23,6 +23,77 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th Nov 2019, Alvaro
+
+Config_module, config_emep.nml:
+  - EmChem19 split files by default (SplitDefaultFile/SplitDefaultFile)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Nov 2019, Dave
+
+Country_mod
+  - new routine add_Country to simplify country inputs
+  - expanded self_test to write out which EMEP codes are in-use
+    (use 'mk.testX Country_mod.f90' to see the results!)
+  - added extra CAMS country codes (JOR etc)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4-5 Nov 2019, Alvaro
+
+New outputs for CAMS_50 U2 upgrade, see #168
+- add ffuelECfine, woodECfine and PPM10_fire groups
+- add ffire_c tracer
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Nov 2019, Robert
+
+Added EmChem19a chemistry scheme -- a slightly revised version of EmChem19
+
+Main difference: MACR is used to represent both methacrolein (MACR) and methyl 
+vinyl ketone (MVK).
+[The first EmChem19 had both, but the treatment was a bit inconsistent]
+
+Minor updates of reaction rates for APINENE+O3 and APINENE+OH (the second rate 
+was inconsistent in the previous version).
+
+Bug fix for wet deposition parameters for gas phase fraction of VBS-species.
+[previous version had WD-parameter set to PMf, which gave much more efficient 
+in-cloud scavenging]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Oct 2019, Robert
+
+Bug (sort of) in YieldModifications_mod.f90 fixed. 
+
+The SOA yields for benzene and toluene were inconsistent with the SOA yields 
+for other VOCs (including OXYL) when using YieldModifications = 'VBS-T10'. 
+
+The yields for benzene and toluene were too large (based on Hodzic et al., 2016) 
+when including SOA aging (which is included in the "standard" model version).
+
+If anyone for some reason want to use the old (erroneous/inconsistent) SOA yields 
+it can still be done by setting
+YieldModifications = 'VBS-T10old'
+in the config file
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Oct 2019, Alvaro
+
+Fix AOD:GROUP output, see #113
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21-22 Oct 2019, Peter
+
+Bug in ReadField_CDF. In case of emissions defined on a limited are (like TNOIII),
+the left most gridcells of the emissions would not always be included.
+
+Small cleanups:
+Timestep for chemistry was buggy (crash) if dt_advec=150.
+In a global run, if there are too many MPI, so that the domain cannot be cutted 
+in small enough pieces in the lon direction, then the lat dimension is cut in 
+more than two parts (which was imposed until now).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15-16 Oct 2019, Peter
 
 New format emissions: if species in not found, it will also look for species with

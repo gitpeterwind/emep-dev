@@ -91,3 +91,4 @@ ZCM_Emergency/femis.defaults
 
 # IDE/editor
 .vscode/
+.mypy_cache/

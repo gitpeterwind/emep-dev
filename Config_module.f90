@@ -306,7 +306,7 @@ character(len=TXTLEN_FILE),public, save :: NEST_MET_inner ='NOTSET' !path to met
 integer, save, public :: NEST_RUNDOMAIN_inner(4)=-1 ! RUNDOMAIN used for run in inner grid
 ! Limit output, e.g. for NMC statistics (3DVar)
 character(len=TXTLEN_SHORT), public, save :: &
-  NEST_WRITE_SPC(NSPEC_ADV), NEST_WRITE_GRP(size(chemgroups))
+  NEST_WRITE_SPC(NSPEC_ADV)="", NEST_WRITE_GRP(size(chemgroups))=""
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
 integer, public, save :: NEST_out_DOMAIN(4)=-1 ! =[istart,iend,jstart,jend]
@@ -344,6 +344,7 @@ integer, public, parameter :: &
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
   ,NXTRA_SITE_D2D  =   20       ! Bosco = +5-4 No. Misc. met. params  ( e.g. T2, d_2d)
 !Bosco  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
+integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
 integer, private :: isite              ! To assign arrays, if needed
 
@@ -369,7 +370,7 @@ integer, public, parameter :: &
 !** IMPORTANT!! Make sure the correspondence between selected for output
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
-character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+character(len=24), public, parameter, dimension(NXTRA_SITE_MISC) :: &
   SITE_XTRA_MISC=[character(len=18):: "th","T2"]
 
 character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
@@ -413,7 +414,7 @@ type, private :: sites_t
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
 end type sites_t
-type(sites_t) :: site_outputs, sonde_outputs
+type(sites_t),save :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
@@ -705,9 +706,9 @@ character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inpu
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
 !POLL replaced by name of pollutant in EmisSplit
-character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
+character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
 !POLL replaced by name of pollutant in EmisSplit
-character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
+character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
 character(len=TXTLEN_FILE), target, save, public :: RoadMapFile = 'DataDir/RoadMap.nc'
 character(len=TXTLEN_FILE), target, save, public :: AVG_SMI_2005_2010File = 'DataDir/AVG_SMI_2005_2010.nc'
 character(len=TXTLEN_FILE), target, save, public :: Soil_TegenFile = 'DataDir/Soil_Tegen.nc'

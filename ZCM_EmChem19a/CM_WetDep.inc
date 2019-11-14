@@ -10,8 +10,9 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("GLYOX     ", "H2O2      ", -999.0 ) &
 , dep_t("MGLYOX    ", "0p3       ", -999.0 ) &
 , dep_t("C5DICARB  ", "H2O2      ", -999.0 ) &
+, dep_t("C5134CO2OH", "H2O2      ", -999.0 ) &
+, dep_t("C54CO     ", "H2O2      ", -999.0 ) &
 , dep_t("ETRO2H    ", "H2O2      ", -999.0 ) &
-, dep_t("PRRO2H    ", "H2O2      ", -999.0 ) &
 , dep_t("MEKO2H    ", "1p3       ", -999.0 ) &
 , dep_t("ISRO2H    ", "H2O2      ", -999.0 ) &
 , dep_t("C5DICAROOH", "H2O2      ", -999.0 ) &
@@ -42,28 +43,26 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("pSO4c     ", "PMc       ", -999.0 ) &
 , dep_t("remPPM25  ", "PMf       ", -999.0 ) &
 , dep_t("remPPM_c  ", "PMc       ", -999.0 ) &
-, dep_t("ASOC_ng1e2", "PMf       ", -999.0 ) &
-, dep_t("ASOC_ug1  ", "PMf       ", -999.0 ) &
-, dep_t("ASOC_ug10 ", "PMf       ", -999.0 ) &
-, dep_t("ASOC_ug1e2", "PMf       ", -999.0 ) &
-, dep_t("ASOC_ug1e3", "PMf       ", -999.0 ) &
-, dep_t("non_C_ASOA_ng1e2", "PMf       ", -999.0 ) &
-, dep_t("non_C_ASOA_ug1", "PMf       ", -999.0 ) &
-, dep_t("non_C_ASOA_ug10", "PMf       ", -999.0 ) &
-, dep_t("non_C_ASOA_ug1e2", "PMf       ", -999.0 ) &
-, dep_t("non_C_ASOA_ug1e3", "PMf       ", -999.0 ) &
-, dep_t("BSOC_ng1e2", "PMf       ", -999.0 ) &
-, dep_t("BSOC_ug1  ", "PMf       ", -999.0 ) &
-, dep_t("BSOC_ug10 ", "PMf       ", -999.0 ) &
-, dep_t("BSOC_ug1e2", "PMf       ", -999.0 ) &
-, dep_t("BSOC_ug1e3", "PMf       ", -999.0 ) &
-, dep_t("non_C_BSOA_ng1e2", "PMf       ", -999.0 ) &
-, dep_t("non_C_BSOA_ug1", "PMf       ", -999.0 ) &
-, dep_t("non_C_BSOA_ug10", "PMf       ", -999.0 ) &
-, dep_t("non_C_BSOA_ug1e2", "PMf       ", -999.0 ) &
-, dep_t("non_C_BSOA_ug1e3", "PMf       ", -999.0 ) &
-, dep_t("ffuel_ng10", "PMf       ", -999.0 ) &
-, dep_t("woodOA_ng10", "PMf       ", -999.0 ) &
+, dep_t("ASOC_ng1e2", "ROOH      ", -999.0 ) &
+, dep_t("ASOC_ug1  ", "ROOH      ", -999.0 ) &
+, dep_t("ASOC_ug10 ", "ROOH      ", -999.0 ) &
+, dep_t("ASOC_ug1e2", "ROOH      ", -999.0 ) &
+, dep_t("ASOC_ug1e3", "ROOH      ", -999.0 ) &
+, dep_t("non_C_ASOA_ng1e2", "ROOH      ", -999.0 ) &
+, dep_t("non_C_ASOA_ug1", "ROOH      ", -999.0 ) &
+, dep_t("non_C_ASOA_ug10", "ROOH      ", -999.0 ) &
+, dep_t("non_C_ASOA_ug1e2", "ROOH      ", -999.0 ) &
+, dep_t("non_C_ASOA_ug1e3", "ROOH      ", -999.0 ) &
+, dep_t("BSOC_ng1e2", "ROOH      ", -999.0 ) &
+, dep_t("BSOC_ug1  ", "ROOH      ", -999.0 ) &
+, dep_t("BSOC_ug10 ", "ROOH      ", -999.0 ) &
+, dep_t("BSOC_ug1e2", "ROOH      ", -999.0 ) &
+, dep_t("BSOC_ug1e3", "ROOH      ", -999.0 ) &
+, dep_t("non_C_BSOA_ng1e2", "ROOH      ", -999.0 ) &
+, dep_t("non_C_BSOA_ug1", "ROOH      ", -999.0 ) &
+, dep_t("non_C_BSOA_ug10", "ROOH      ", -999.0 ) &
+, dep_t("non_C_BSOA_ug1e2", "ROOH      ", -999.0 ) &
+, dep_t("non_C_BSOA_ug1e3", "ROOH      ", -999.0 ) &
 , dep_t("SQT_SOA_nv", "PMf       ", -999.0 ) &
 , dep_t("TERPOOH   ", "H2O2      ", -999.0 ) &
 , dep_t("Ash_f     ", "PMf       ", -999.0 ) &

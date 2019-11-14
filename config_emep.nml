@@ -73,13 +73,13 @@
 !----------------------------------------------------------------------
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
-! SplitDefaultFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
-! SplitSpecialsFile = 'OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
-! EmChem19 needs this to be uncommented:
-SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
-SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
+! EmChem16 needs this to be uncommented:
+!SplitDefaultFile ='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
+!SplitSpecialsFile='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
+! EmChem19 (dafault):
+!SplitDefaultFile ='DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
+!SplitSpecialsFile='DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
 
-!
 !only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
 !  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
 
@@ -431,10 +431,13 @@ OutputConcs=
     ! 'AER_BSOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     ! 'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'PPM10_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ============================================================
 ! SOA additions (26 entries)
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'woodECfine'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'ffuelECfine'         ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
     ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD'
     ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -508,7 +511,7 @@ OutputConcs=
     ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
     !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
     !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
-!-- New AOD(2d)/EXT(3d) system
+!-- AOD(2d)/EXT(3d) system
     !!'AOD'                ,' '  ,'350nm','AOD:GROUP','MISC','YMD',
     ! 'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'AOD'                ,' '  ,'870nm','AOD:GROUP','MISC','YMD',
@@ -521,7 +524,7 @@ OutputConcs=
     !!'PPM10'              ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     !!'PPM25_FIRE'         ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
     ! 'EXT'                ,'1/m','350nm','EXT:GROUP','MISC','YM',
-    !  'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
+    ! 'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
 ! ============================================================
 !
 ! o3 metrics --------------- SEP 2015 added here -----------------------------

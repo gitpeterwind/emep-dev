@@ -254,24 +254,6 @@
   xnew(non_C_BSOA_ug1e3) = (xold(non_C_BSOA_ug1e3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> ffuel_ng10
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for ffuel_ng10! xnew(ffuel_ng10) = max(0.0, xold(ffuel_ng10))
-
-
-!-> woodOA_ng10
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for woodOA_ng10! xnew(woodOA_ng10) = max(0.0, xold(woodOA_ng10))
-
-
 !-> SO4
 
   P = rcemis(SO4,k)  &
@@ -305,8 +287,8 @@
 
 !-> NO3_c
 
-  P = rct(102,k) * xnew(HNO3)  &
-    + rct(103,k) * xnew(HNO3)
+  P = rct(99,k) * xnew(HNO3)  &
+    + rct(100,k) * xnew(HNO3)
   
   ! L = 0.0
   
@@ -490,7 +472,7 @@
 
   P = rcemis(FFIRE_CO,k)
   
-  L = rct(105,k) * xnew(OH)
+  L = rct(102,k) * xnew(OH)
   
   xnew(ffire_CO) = (xold(ffire_CO) + dt2 * P) / (1.0 + dt2 * L)
 
