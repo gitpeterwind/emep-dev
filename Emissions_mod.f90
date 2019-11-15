@@ -61,6 +61,7 @@ use EmisDef_mod,       only: &
      ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
+     ,NSECTORS_GNFR_CAMS, GNFR_CAMS_sec2tfac_map, GNFR_CAMS_sec2hfac_map, GNFR_CAMS_sec2split_map&!GNFR_CAMS specific mapping
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,gnfr2snap,snap2gnfr&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
@@ -936,6 +937,7 @@ contains
                write(*,*)"Switching sector categories to ",trim(SECTORS_NAME)
           if(Masterproc .and. USE_SECTORS_NAME =='NOTSET')&
                write(IO_LOG,*)"Switching sector categories to ",trim(SECTORS_NAME)
+          if(cdf_sector_name == 'GNFR_CAMS')emis_inputlist(iemislist)%type = "GNFR_CAMSsectors"
           if(cdf_sector_name == 'GNFR')emis_inputlist(iemislist)%type = "GNFRsectors"
           if(cdf_sector_name == 'SNAP')emis_inputlist(iemislist)%type = "SNAPsectors"
        end if
@@ -993,8 +995,8 @@ contains
     ! init_sectors
     if(USE_SECTORS_NAME /='NOTSET')then
        SECTORS_NAME = trim(USE_SECTORS_NAME)
-       call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'SNAP' .and. SECTORS_NAME /= 'TEST'), &
-            'Only SNAP and GNFR (and TEST) can be defined as sector names, not '//trim(SECTORS_NAME))
+       call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'GNFR_CAMS' .and. SECTORS_NAME /= 'SNAP' .and. SECTORS_NAME /= 'TEST'), &
+            'Only SNAP and GNFR and GNFR_CAMS (and TEST) can be defined as sector names, not '//trim(SECTORS_NAME))
        if(Masterproc)write(*,*)"Forcing sector categories to ",trim(SECTORS_NAME)          
        if(Masterproc .and. SECTORS_NAME == 'TEST')write(*,*)"WARNING: TEST sectors, requires to define sectors consistently yourself"
     endif
@@ -1013,6 +1015,13 @@ contains
        sec2tfac_map => GNFR_sec2tfac_map
        sec2hfac_map => GNFR_sec2hfac_map
        sec2split_map => GNFR_sec2split_map
+    else  if(SECTORS_NAME=='GNFR_CAMS')then
+       !19 sectors defined in emissions
+       NSECTORS = NSECTORS_GNFR_CAMS
+       !map timefactors onto GNFR map
+       sec2tfac_map => GNFR_CAMS_sec2tfac_map
+       sec2hfac_map => GNFR_CAMS_sec2hfac_map
+       sec2split_map => GNFR_CAMS_sec2split_map  
     else  if(SECTORS_NAME=='TEST')then
        !11 sectors defined in emissions
        NSECTORS = NSECTORS_TEST
@@ -1175,6 +1184,7 @@ contains
 
        if((emis_inputlist(iemislist)%type == "sectors".or.&
             emis_inputlist(iemislist)%type == "GNFRsectors".or.&
+            emis_inputlist(iemislist)%type == "GNFR_CAMSsectors".or.&
             emis_inputlist(iemislist)%type == "SNAPsectors") .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
 
           foundYearlySectorEmissions = .true.

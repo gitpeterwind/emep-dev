@@ -23,6 +23,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Nov 2019, Agnes, Peter
+
+19 sector defintions for GNFR_CAMS.
+Indicate SECTORS_NAME = "GNFR_CAMS" in the emission file or in the config file.
+
+Note that the mixing of GNFR_CAMS sectors with other sectors defintions in the
+same run will not work at present.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th Nov 2019, Alvaro
 
 Config_module, config_emep.nml:

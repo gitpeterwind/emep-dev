@@ -14,7 +14,7 @@ use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              IC_NMR,IC_DUMMY 
 use Debug_module,      only: DEBUG
 use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
-                            N_HFAC,N_SPLIT, EMIS_FILE, & 
+                            N_HFAC,N_SPLIT, N_SPLITMAX, EMIS_FILE, & 
                             VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
@@ -1327,7 +1327,7 @@ end if
 ! zero to just use species()%molwt.:
   type(KeyVal), dimension(1)  :: MassValue ! set for e.f. NOx as NO2, SOx as SO2
   integer :: NKeys
-  real, dimension(NSPEC_ADV,N_SPLIT,NLAND) :: tmp_emisfrac
+  real, dimension(NSPEC_ADV,N_SPLITMAX,NLAND) :: tmp_emisfrac
   real, dimension(NSPEC_ADV) :: tmp_emis_masscorr
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2itot !maps from iqrc 
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2iem !maps from iqrc 
@@ -1555,9 +1555,12 @@ end if
        end do READ_DATA 
        close(IO_EMIS)
 
-       call CheckStop(  defaults .and. n  /=  N_SPLIT, &
+       call CheckStop(  defaults .and. n  >  N_SPLITMAX, &
+                        "ERROR: EmisGet: defaults .and. n  >  N_SPLITMAX" )
+       if(ie==1 .and. defaults) N_SPLIT=n
+       if(ie>1 .and. defaults) &
+            call CheckStop(  defaults .and. n  /=  N_SPLIT, &
                         "ERROR: EmisGet: defaults .and. n  /=  N_SPLIT" )
-
        if (debugm ) write(*,*) "Read ", n, " records from ",fname
 
     end do IDEF_LOOP 
@@ -1591,7 +1594,7 @@ end if
   call CheckStop(allocerr, "Allocation error for iqrc2itot")
   allocate(emis_masscorr(nrcemis),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for emis_masscorr")
-  emisfrac(:,:,:)     = tmp_emisfrac(1:nrcemis,:,:)
+  emisfrac(:,:,:)     = tmp_emisfrac(1:nrcemis,1:N_SPLIT,:)
   iqrc2itot(:)        = tmp_iqrc2itot(1:nrcemis)
   iqrc2iem(:)        = tmp_iqrc2iem(1:nrcemis)
   emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
