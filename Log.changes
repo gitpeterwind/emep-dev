@@ -23,6 +23,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Nov 2019, Peter
+
+Bug in loop for Gridded monhly factor. No consequences in pratice now, but could 
+be prpblematic in other configurations.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Nov 2019, Agnes, Peter
 
 19 sector defintions for GNFR_CAMS.

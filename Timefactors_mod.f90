@@ -647,6 +647,7 @@ contains
 
            if(sector_map(isec,iemis)=='default')then
               GridTfac(:,:,isec,iemis)=dble(nmdays(month))/nydays!default, multiplied by inverse later!!
+              name=sector_map(isec,iemis)
               cycle
            end if
            if(sector_map(isec,iemis)==name.and.iemis>1)then
