@@ -37,18 +37,17 @@
     + 0.79* 1.7475e-11 * xnew(ETRO2H) * xnew(OH)  &
     + 0.17* rct(43,k) * xnew(C2H4) * xnew(O3)  &
     + 0.3646* rct(44,k) * xnew(O3) * xnew(C3H6)  &
-    + 0.87* 2.81e-11 * xnew(PRRO2H) * xnew(OH)  &
     + 0.97* 1.25e-10 * xnew(C5DICAROOH) * xnew(OH)  &
     + 0.584* rct(53,k) * xnew(OH) * xnew(GLYOX)  &
     + 0.25* rct(56,k) * xnew(O3) * xnew(C5H8)  &
     + 8.94e-11 * xnew(OH) * xnew(ISRO2H)  &
     + 0.67* 9.20e-17 * xnew(O3) * xnew(ISON)  &
     + 0.19* rct(60,k) * xnew(O3) * xnew(MACR)  &
-    + 0.19* rct(61,k) * xnew(O3) * xnew(MACR)
+    + 0.19* rct(61,k) * xnew(O3) * xnew(MACR)  &
+    + 3.00e-11 * xnew(OH) * xnew(MACROOH)
   
   !-> OH cont.
-    P = P +   3.00e-11 * xnew(OH) * xnew(MACROOH)  &
-    + rcphot(IDCH3O2H,k) * xnew(ISRO2H)  &
+    P = P +   rcphot(IDCH3O2H,k) * xnew(ISRO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(MACROOH)  &
     + rct(66,k) * xnew(ISRO2)  &
     + rcphot(IDHCHO_H2,k) *12. * xnew(HPALD)  &
@@ -66,10 +65,8 @@
     + rcphot(IDMEK,k) * xnew(MEKO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(CH3CO3H)  &
     + rcphot(IDCH3O2H,k) * xnew(OXYO2H)  &
-    + rcphot(IDHCHO_H,k) *0.9 * xnew(C5DICAROOH)
-  
-  !-> OH cont.
-    P = P +   0.7* rct(76,k) * xnew(APINENE) * xnew(O3)
+    + rcphot(IDHCHO_H,k) *0.9 * xnew(C5DICAROOH)  &
+    + 0.7* rct(76,k) * xnew(APINENE) * xnew(O3)
   
   L = rct(7,k) * xnew(O3)  &
     + rct(12,k) * xnew(HO2)  &
@@ -98,7 +95,6 @@
     + 2.1e-11 * xnew(MEKO2H)  &
     + 2.3e-13 * xnew(BIACET)  &
     + 1.7475e-11 * xnew(ETRO2H)  &
-    + 2.81e-11 * xnew(PRRO2H)  &
     + rct(47,k) * xnew(BENZENE)  &
     + rct(48,k) * xnew(TOLUENE)  &
     + 1.36e-11 * xnew(OXYL)  &
@@ -112,11 +108,11 @@
     + rct(55,k) * xnew(C5H8)  &
     + 8.94e-11 * xnew(ISRO2H)  &
     + 9.13e-12 * xnew(IEPOX)  &
-    + 3.34e-11 * xnew(ISON)
+    + 3.34e-11 * xnew(ISON)  &
+    + rct(58,k) * xnew(MACR)
   
   !-> OH cont.
-    L = L +   rct(58,k) * xnew(MACR)  &
-    + rct(59,k) * xnew(MACR)  &
+    L = L +   rct(59,k) * xnew(MACR)  &
     + 2.90e-11 * xnew(MPAN)  &
     + 3.00e-11 * xnew(MACROOH)  &
     + rct(62,k) * xnew(ACETOL)  &
@@ -199,11 +195,10 @@
     + rcphot(IDCH3O2H,k) * xnew(C2H5OOH)  &
     + rcphot(IDCH3O2H,k) * xnew(ETRO2H)  &
     + 0.716* rcphot(IDCH3O2H,k) * xnew(BURO2H)  &
-    + rcphot(IDCH3O2H,k) * xnew(PRRO2H)
+    + rcphot(IDCH3O2H,k) * xnew(OXYO2H)
   
   !-> HO2 cont.
-    P = P +   rcphot(IDCH3O2H,k) * xnew(OXYO2H)  &
-    + rcphot(IDHCHO_H,k) *0.9 * xnew(C5DICAROOH)  &
+    P = P +   rcphot(IDHCHO_H,k) *0.9 * xnew(C5DICAROOH)  &
     + rct(41,k) * xnew(TERPO2) * xnew(NO)  &
     + 2.3e-12 * xnew(TERPO2) * xnew(NO3)  &
     + rct(76,k) * xnew(APINENE) * xnew(O3)  &
@@ -317,8 +312,7 @@
 
 !-> PRRO2
 
-  P = 0.13* 2.81e-11 * xnew(PRRO2H) * xnew(OH)  &
-    + rct(73,k) * xnew(OH) * xnew(C3H6)
+  P = rct(73,k) * xnew(OH) * xnew(C3H6)
   
   L = rct(41,k) * xnew(NO)  &
     + 2.3e-12 * xnew(NO3)  &
@@ -871,7 +865,6 @@
     + 0.1* rcphot(IDCHOCHO,k) * xnew(GLYOX)  &
     + rcphot(IDCH3O2H,k) * xnew(CH3OOH)  &
     + 1.56* rcphot(IDCH3O2H,k) * xnew(ETRO2H)  &
-    + rcphot(IDCH3O2H,k) * xnew(PRRO2H)  &
     + rcemis(HCHO,k)
   
   L = rct(30,k) * xnew(OH)  &
@@ -901,12 +894,9 @@
     + rcphot(IDCH3O2H,k) * xnew(C2H5OOH)  &
     + 0.22* rcphot(IDCH3O2H,k) * xnew(ETRO2H)  &
     + 0.284* rcphot(IDCH3O2H,k) * xnew(BURO2H)  &
-    + rcphot(IDCH3O2H,k) * xnew(PRRO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(MEKO2H)  &
-    + rcphot(IDMEK,k) * xnew(MEKO2H)
-  
-  !-> CH3CHO cont.
-    P = P +   rcemis(CH3CHO,k)
+    + rcphot(IDMEK,k) * xnew(MEKO2H)  &
+    + rcemis(CH3CHO,k)
   
   L = rct(35,k) * xnew(OH)  &
     + rct(36,k) * xnew(NO3)  &
@@ -957,7 +947,7 @@
 
 !-> ACETOL
 
-  P = 0.87* 2.81e-11 * xnew(PRRO2H) * xnew(OH)  &
+  P = rct(45,k) * xnew(PRRO2) * xnew(HO2)  &
     + 0.78* 3.34e-11 * xnew(OH) * xnew(ISON)  &
     + 0.25* rct(41,k) * xnew(NO) * xnew(MACRO2)  &
     + 2.90e-11 * xnew(OH) * xnew(MPAN)  &
@@ -1091,16 +1081,6 @@
     + rcphot(IDCH3O2H,k)
   
   xnew(ETRO2H) = (xold(ETRO2H) + dt2 * P) / (1.0 + dt2 * L)
-
-
-!-> PRRO2H
-
-  P = rct(45,k) * xnew(PRRO2) * xnew(HO2)
-  
-  L = 2.81e-11 * xnew(OH)  &
-    + rcphot(IDCH3O2H,k)
-  
-  xnew(PRRO2H) = (xold(PRRO2H) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> MEKO2H
