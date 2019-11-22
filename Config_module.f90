@@ -69,7 +69,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
 
-  ! - allows rcbio in CM_Reactions, but we access elements with
+ ! NATBIO allows rcbio in CM_Reactions, but we access elements with
   ! the natbio indices here. These much match the indices used in rcbio
   ! We only use rcbio for isoprene and terpenes so far,  since
   ! soil NO, NH3 emissions etc are dealt with through rcemis.
@@ -102,7 +102,6 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 ! Namelist controlled:
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
-! USES system introduced June 2013--------------------------
 
 logical, private, parameter :: F = .false.
 type, public :: emep_useconfig
@@ -136,10 +135,6 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = .false.     &!
     ,PFT_MAPS         = .false.  &! 
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
-
- ! Mar 2017. Allow new MEGAN-like VOC
- ! Moved to emep_Config
- ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
@@ -536,16 +531,16 @@ CHARACTER(LEN=3), public, save :: &
 
 ! We have one variable, to say if we are on master-processor
 ! or not: (kept here to avoid too many dependencies for box-model
-! codes which don't need Par_mod
+! codes which don't need Par_mod. 
+! See also DebugCell from Debug_mod
 
 logical, public, save ::  MasterProc = .true.
-!MOVED logical, public, save ::  DebugCell  = .false.
 
 !=============================================================================
 ! Some flags for model setup
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
-logical, public, parameter :: PALEO_TEST = .false. 
+! logical, public, parameter :: PALEO_TEST = .false. 
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -737,19 +732,19 @@ subroutine Config_Constants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
-  character(len=*), parameter ::  dtxt='Config_MC: '
+  character(len=*), parameter ::  dtxt='Config_MC:'
   character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
-   ,USES   & ! just testname so far
+   ,USES   & ! 
    ,AERO   & ! for aerosol equilibrium scheme
-   ,PBL    & ! Mar2017 testing
-   ,EmBio  & ! Mar2017 testing
+   ,PBL    & ! 
+   ,EmBio  & ! 
    ,YieldModifications &  ! Allows dynamic change of chemical yields
-   ,LandCoverInputs  & ! Apr2017 for CLM, etc
+   ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
