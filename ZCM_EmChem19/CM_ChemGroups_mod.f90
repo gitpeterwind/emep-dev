@@ -1105,14 +1105,14 @@ module ChemGroups_mod
   integer, public, target, save, dimension (1) :: &
     DDEP_nvffireOC25_GROUP = (/ ffire_OM /)
   
-  integer, public, target, save, dimension (3) :: &
-    PPM10_FIRE_GROUP = (/ ffire_BC, ffire_remPPM25, ffire_c /)
+  integer, public, target, save, dimension (4) :: &
+    PPM10_FIRE_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
   
-  integer, public, target, save, dimension (3) :: &
-    WDEP_PPM10_fire_GROUP = (/ ffire_BC, ffire_remPPM25, ffire_c /)
+  integer, public, target, save, dimension (4) :: &
+    WDEP_PPM10_fire_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
   
-  integer, public, target, save, dimension (3) :: &
-    DDEP_PPM10_fire_GROUP = (/ ffire_BC, ffire_remPPM25, ffire_c /)
+  integer, public, target, save, dimension (4) :: &
+    DDEP_PPM10_fire_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
   
   integer, public, target, save, dimension (1) :: &
     FFIREBC_GROUP = (/ ffire_BC /)
