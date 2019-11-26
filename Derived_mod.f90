@@ -687,7 +687,7 @@ subroutine Define_Derived()
   do isec=1,NSECTORS
      if(SecEmisOutWanted(isec))then
         do  i = 1, NEMIS_File
-           write(dname,"(A,I0,A)")dtxt//"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           write(dname,"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
            isec_poll = (isec-1)*NEMIS_File + i
            if(HourlyEmisOut)then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
