@@ -43,7 +43,7 @@ use Config_module,     only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
-  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
+  ,USES, uEMEP, startdate,enddate,&
   HourlyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
 
 use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
@@ -183,7 +183,7 @@ subroutine Init_Derived()
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
-  if(USE_uEMEP .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
+  if(USES%uEMEP .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
 
   if(dbg0) write(*,*) dtxt//"INIT STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
@@ -700,12 +700,12 @@ subroutine Define_Derived()
      endif
   end do
 
-  if(USE_OCEAN_DMS)then
+  if(USES%OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0,  F,  'YM' )
   end if
-  if(USE_OCEAN_NH3)then
+  if(USES%OCEAN_NH3)then
      dname = "Emis_mgm2_Ocean_NH3"
     call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0,  F,  'YM' )
@@ -2303,7 +2303,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   end do
 
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
-  if(USE_uEMEP .and. .not. present(ONLY_IOU))then
+  if(USES%uEMEP .and. .not. present(ONLY_IOU))then
     call av_uEMEP(dt,End_of_Day)
   endif
 

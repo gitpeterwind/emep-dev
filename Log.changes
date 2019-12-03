@@ -23,6 +23,27 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Dec 2019, Dave
+
+USES treatment expanded to almost all USE_ variables.
+
+Config_module:
+
+  WriteConfig_to_RunLog routine added -
+     called at end of run.  Writes out the USES settings as they
+      were actually used.
+
+  Output of full ModelConfig namelist to RunLog.out commented out.
+  Could be sent elsewhere (config.out maybe?), but a RunLog of 35000 lines
+  was not readable, and this did not show if USES varuables had been 
+  changed. 
+
+  I would prefer that we build up a tidy output of the ModelConfig, but
+  it isn't obvious how to do it yet. Might just need hard-coded lines to
+  print out the important information, skipping all unused or unset values.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Nov 2019, Peter
 
 Bug in loop for Gridded monhly factor. No consequences in pratice now, but could 

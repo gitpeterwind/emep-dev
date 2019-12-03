@@ -51,7 +51,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
      ,TEGEN_DATA, USES &
-     ,step_main,USE_EtaCOORDINATES,USE_FASTJ &
+     ,step_main&
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
@@ -1315,7 +1315,7 @@ subroutine MeteoRead()
   end if
 
   if(met(ix_Etadot)%found)then
-    call CheckStop(.not.USE_EtaCOORDINATES,&
+    call CheckStop(.not.USES%EtaCOORDINATES,&
         "Conflict: requested etadot, but does not use eta coordinates")
     !convert from mid values to boundary values
     if(write_now)write(*,*)'interpolating etadot from mid to boundary levels'
@@ -1416,7 +1416,7 @@ subroutine MeteoRead()
     CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
   end if
 
-  if(USE_FASTJ)then
+  if(USES%FASTJ)then
     !compute photolysis rates from FastJ
     if(nr==2)rcphot_3D(:,:,:,:,1)=rcphot_3D(:,:,:,:,2)
     do j = 1,ljmax

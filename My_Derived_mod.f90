@@ -34,7 +34,7 @@ use ChemGroups_mod        ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemSpecs_mod         ! Use IXADV_ indices...
 use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
-                            USES, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
+                            USES,  &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
@@ -279,7 +279,7 @@ subroutine Init_My_Deriv()
      end do
   end do ! 
 
-  if(USE_SOILNOX) then
+  if(USES%SOILNOX) then
     tag_name(1) = "Emis_mgm2_BioNatNO"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
@@ -293,11 +293,11 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_BioNatNH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
-  if(USE_OCEAN_DMS)then
+  if(USES%OCEAN_DMS)then
     tag_name(1) = "Emis_mgm2_DMS"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
-  if(USE_OCEAN_NH3)then
+  if(USES%OCEAN_NH3)then
     tag_name(1) = "Emis_mgm2_Ocean_NH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if

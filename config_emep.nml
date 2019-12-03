@@ -154,7 +154,7 @@
 
 
 !-------uEMEP setup example
-  USE_uEMEP             = F, ! T for computing uEMEP 
+  USES%uEMEP             = F, ! T for computing uEMEP 
   !uEMEP pollutants and sectors to include:
   uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors

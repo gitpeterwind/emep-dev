@@ -67,7 +67,7 @@
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
                             HourlyFacFile,HourlyFacSpecialsFile,&
-                            USE_WRF_MET_NAMES
+                            USES
   use Debug_module,  only:   DEBUG => DEBUG_EMISTIMEFACS
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use OwnDataTypes_mod, only: TXTLEN_FILE
@@ -550,7 +550,7 @@ contains
 
    !/ See if we have a file to work with....
     if ( daynumber == 0 ) then
-       if(USE_WRF_MET_NAMES)then
+       if(USES%WRF_MET_NAMES)then
           !we do not require that HDD file has been calculated
           call check_file(trim(DegreeDayFactorsFile), Gridded_SNAP2_Factors,&
                needed=.false., errmsg=errmsg ) ! do not use if file not found

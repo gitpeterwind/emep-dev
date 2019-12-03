@@ -11,7 +11,7 @@ use Config_module,    only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d field
                               MasterProc,       & ! Master processor
                               dt_advec,         & ! time-step
                               PT,               & ! Pressure at top
-                              USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
+                              USES, FOUND_OCEAN_DMS,&
                               EXTENDEDMASSBUDGET
 use Debug_module,     only: DEBUG_MASS
 use EmisDef_mod,      only: O_NH3, O_DMS
@@ -404,7 +404,7 @@ subroutine massbudget()
      end if
   end if
   if(MasterProc)then
-     if(USE_OCEAN_NH3)then
+     if(USES%OCEAN_NH3)then
         write(*,59)'NH3 emisions from ocean cdf file (Gg)',O_NH3%sum_year
      end if
   end if

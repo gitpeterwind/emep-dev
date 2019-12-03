@@ -24,8 +24,8 @@ use Config_module,only: &
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
-    USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,USE_SECTORS_NAME,&
+    FOUND_OCEAN_DMS,&
+    NPROC, EmisSplit_OUT,uEMEP,SECTORS_NAME,&
     SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
@@ -365,7 +365,7 @@ contains
              Emis_source(ii)%species_ix = ix
              if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
                   trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
-             if(Emis_source(ii)%include_in_local_fractions .and. USE_uEMEP )then
+             if(Emis_source(ii)%include_in_local_fractions .and. USES%uEMEP )then
                 if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
              endif
           else ! ix<=0
@@ -933,9 +933,9 @@ contains
        call ReadSectorname(fname,cdf_sector_name)
        if(trim(cdf_sector_name)/='NOTSET')then
           SECTORS_NAME=trim(cdf_sector_name)
-          if(Masterproc .and. USE_SECTORS_NAME =='NOTSET')&
+          if(Masterproc .and. USES%SECTORS_NAME =='NOTSET')&
                write(*,*)"Switching sector categories to ",trim(SECTORS_NAME)
-          if(Masterproc .and. USE_SECTORS_NAME =='NOTSET')&
+          if(Masterproc .and. USES%SECTORS_NAME =='NOTSET')&
                write(IO_LOG,*)"Switching sector categories to ",trim(SECTORS_NAME)
           if(cdf_sector_name == 'GNFR_CAMS')emis_inputlist(iemislist)%type = "GNFR_CAMSsectors"
           if(cdf_sector_name == 'GNFR')emis_inputlist(iemislist)%type = "GNFRsectors"
@@ -955,7 +955,7 @@ contains
        endif
        if(emis_inputlist(iemislist)%type == "OceanNH3")then
           if(MasterProc)write(*,*)' using  OceanNH3'    
-          USE_OCEAN_NH3=.true.
+          USES%OCEAN_NH3=.true.
           O_NH3%index=find_index("NH3",species(:)%name)
           call CheckStop(O_NH3%index<0,'NH3 not found. Needed for OceanNH3 emissions')
           allocate(O_NH3%emis(LIMAX,LJMAX))
@@ -967,7 +967,7 @@ contains
        end if
        if (emis_inputlist(iemislist)%type == "DMS")then
           if(MasterProc)write(*,*)'using DMS'    
-          USE_OCEAN_DMS=.true.
+          USES%OCEAN_DMS=.true.
           O_DMS%index=find_index("SO2",species(:)%name)
           call CheckStop(O_DMS%index<0,'SO2 not found. Needed for DMS emissions')
           allocate(O_DMS%emis(LIMAX,LJMAX))
@@ -993,8 +993,8 @@ contains
     endif
 
     ! init_sectors
-    if(USE_SECTORS_NAME /='NOTSET')then
-       SECTORS_NAME = trim(USE_SECTORS_NAME)
+    if(USES%SECTORS_NAME /='NOTSET')then
+       SECTORS_NAME = trim(USES%SECTORS_NAME)
        call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'GNFR_CAMS' .and. SECTORS_NAME /= 'SNAP' .and. SECTORS_NAME /= 'TEST'), &
             'Only SNAP and GNFR and GNFR_CAMS (and TEST) can be defined as sector names, not '//trim(SECTORS_NAME))
        if(Masterproc)write(*,*)"Forcing sector categories to ",trim(SECTORS_NAME)          
@@ -2264,7 +2264,7 @@ subroutine newmonth
        O_NH3%sum_month = mpi_out
        O_NH3%sum_month=O_NH3%sum_month*1e-6 !kg->Gg
        
-       USE_OCEAN_NH3=.true.
+       USES%OCEAN_NH3=.true.
        if(MasterProc)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',O_NH3%sum_month
        O_NH3%sum_year=O_NH3%sum_year+O_NH3%sum_month!total for all month
        
@@ -2274,7 +2274,7 @@ subroutine newmonth
             nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
             needed=.true.,debug_flag=.false.,UnDef=0.0)
        
-       USE_OCEAN_DMS=.true.
+       USES%OCEAN_DMS=.true.
        FOUND_OCEAN_DMS=.true.
       
        !from nanomol/l -> mol/cm3

@@ -21,8 +21,8 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,SOURCE_RECEPTOR&
                            ,USES&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
-                           ,USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
+                           ,JUMPOVER29FEB&
+                           ,IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
                            ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
@@ -173,7 +173,7 @@ subroutine phyche()
 
   call Code_timer(tim_before0)
 
-  if(USE_EtaCOORDINATES)then
+  if(USES%EtaCOORDINATES)then
     call advecdiff_Eta
   else
     call advecdiff_poles
@@ -204,7 +204,7 @@ subroutine phyche()
 
   call Code_timer(tim_before0)
   !must be placed just before emissions are used
-  if(USE_uEMEP)call uemep_emis(current_date)
+  if(USES%uEMEP)call uemep_emis(current_date)
 
   !=========================================================!
   call debug_concs("PhyChe pre-chem ")

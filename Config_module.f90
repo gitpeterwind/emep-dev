@@ -25,6 +25,7 @@ implicit none
 private
 
 public :: Config_Constants
+public :: WriteConfig_to_RunLog
 
 !=============================================================================
 ! Experiment name:
@@ -106,9 +107,13 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 logical, private, parameter :: F = .false.
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
-  logical :: &                   ! Forest fire options
-     FOREST_FIRES     = .true.  &!
-    ,SOILWATER        = .false. &!
+  logical :: &                   !
+   ! emissions 
+     FOREST_FIRES     = .true.  &!  Forest fire options
+    ,EMIS             = .false. &! Uses ESX
+    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
+    ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
+    ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
     ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
@@ -118,6 +123,10 @@ type, public :: emep_useconfig
     ,DUST             = .false. &! Experimental
     ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
     ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
+    ,SOILNOX          = .true.  & ! DO NOT ALTER: Set after config
+    ,OCEAN_DMS        = .false. &!set automatically true if found.
+    ,OCEAN_NH3        = .false. &!set automatically true if found
+    ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
     ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
@@ -128,16 +137,21 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,ESX              = .false. &! Uses ESX
-    ,EMIS             = .false. &! Uses ESX
-    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
-    ,DEGREEDAY_FACTORS = .true.    &! will not be used if not found or global grid
-    ,EMISSTACKS       = .false.     &!
-    ,PFT_MAPS         = .false.  &! 
+    ,FASTJ            = .false. & ! use FastJ_mod for computing rcphot
+    ,AMINEAQ          = .false. & ! MKPS
+!    ,ESX              = .false. &! Uses ESX
+    ,PFT_MAPS         = .false. &! 
+    ,uEMEP            = .false. &! make local fraction of pollutants
+    ! meteo related
+    ,SOILWATER        = .false. &!
+    ,EtaCOORDINATES   = .true.  &! default since October 2014
+    ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
+    ,ZREF             = .false. &! testing
     ,EFFECTIVE_RESISTANCE = .false. ! Drydep method designed for shallow layer
 
  ! If USES%EMISTACKS, need to set:
-  character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
+  character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"
+  character(len=40) :: SECTORS_NAME = 'NOTSET' ! eg 
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
@@ -173,7 +187,6 @@ logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD req
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
-character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 
 !Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
 character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
@@ -197,18 +210,15 @@ integer, public, save :: spinup_enddate(4)=(/-1,-1,-1,-1/) ! end of spinup. Does
 real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
-  TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
+  TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USES%DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
- ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
- ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
-logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
 type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
-integer, public, save :: NTIMING_uEMEP = 5 !reset to zero if USE_uEMEP = F 
+integer, public, save :: NTIMING_uEMEP = 5 !reset to zero if USES%uEMEP = F 
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -225,16 +235,10 @@ integer, public, save :: &
 !  some area (EMEP, or EU) in year YYYY divided by year 2005 values.
 ! Remember, soil-NO emissions are *very* uncertain.
 
-  logical, public, save ::             &
-!    USE_EURO_SOILNOX      = .true.     & ! ok, but diff for global + Euro runs
-!   ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
-   USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
   real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
-  logical, public, save ::  USE_OCEAN_DMS = .false. !set automatically true if found.
   logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
-  logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
 ! Methane background:
 !  -1 gives defaults in BoundaryConditions_mod
@@ -243,7 +247,6 @@ integer, public, save :: &
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
-  logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 
 !ColumnsSource config
 integer,  public, save ::  &
@@ -465,13 +468,9 @@ character(len=10), public, save ::  Mosaic_timefmt='YM'  ! eg 'YMD'
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
-  USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
-  USE_ZREF           = .false.,       & ! testing
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.
 
-logical, public :: &
-  USE_EtaCOORDINATES=.true. ! default since October 2014
 
 ! Boundary layer profiles. IN-TESTING
 character(len=4), parameter, public :: &
@@ -748,7 +747,7 @@ subroutine Config_Constants(iolog)
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
-   ,USE_uEMEP, uEMEP &
+   ,uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
@@ -760,7 +759,6 @@ subroutine Config_Constants(iolog)
    ,OwnInputDir           &  !
    ,Emis_sourceFiles      & ! new format
    ,EmisMask              & ! new format
-   ,USE_SECTORS_NAME      & ! to force a specific sector (SNAP or GNFR)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,HourlyEmisOut         & ! to output emissions hourly
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
@@ -769,8 +767,8 @@ subroutine Config_Constants(iolog)
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-   ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
-   ,dt_advec & ! can be set to override dt_advec
+   ,JUMPOVER29FEB, HOURLYFILE_ending  &
+   ,dt_advec              & ! can be set to override dt_advec
    ,METSTEP &
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
    ,EUROPEAN_settings & ! The domain covers Europe -> 
@@ -839,9 +837,9 @@ subroutine Config_Constants(iolog)
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
   
-  USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
+  USES%SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
-    write(logtxt,'(a,L2)') dtxt//'USE_SOILNOX ', USE_SOILNOX
+    write(logtxt,'(a,L2)') dtxt//'USES%SOILNOX ', USES%SOILNOX
     write(*,*) trim(logtxt), IOLOG
     write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
   end if
@@ -861,8 +859,8 @@ subroutine Config_Constants(iolog)
   if(MasterProc)then
     write(*, * ) dtxt//"NAMELIST START "
     write(*,*)   dtxt//"LAST LINE after 1st config:"//trim(LAST_CONFIG_LINE)
-    write(iolog,*) dtxt//"NAMELIST IS "
-    write(iolog, NML=Model_config)
+!    write(iolog,*) dtxt//"NAMELIST IS "
+!    write(iolog, NML=Model_config)
   end if
 
   do i=1,size(DataPath)
@@ -1008,9 +1006,17 @@ subroutine Config_Constants(iolog)
      write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
   endif
 
-  if(.not. USE_uEMEP)NTIMING_uEMEP = 0
+  if(.not. USES%uEMEP)NTIMING_uEMEP = 0
 
 end subroutine Config_Constants
+
+! PRELIM. Just writes out USES so far. 
+subroutine WriteConfig_to_RunLog(iolog)
+  integer, intent(in) :: iolog ! for Log file
+  NAMELIST /OutUSES/ USES
+  write(iolog,*) ' USES after 1st time-step'
+  write(iolog,nml=OutUSES)
+end subroutine WriteConfig_to_RunLog
 
 subroutine associate_File(FileName)
   integer, save::ix=0
