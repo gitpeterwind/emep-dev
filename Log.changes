@@ -23,6 +23,36 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Dec 2019, Dave
+
+GenChem upgrade :-)
+
+The code has been modified in various places to cope with the new GenChem
+system. The largest changes are:
+
+mk.ChemFiles uses the new system.
+
+CMX_BoundaryConditions.txt now replaces CM_BoundaryConditions.inc, and uses
+a simple mapping table of strings, e.g.
+
+  # globBC     emep             fac  wanted
+  #
+    'O3      ','O3      '   ,   1.0, T
+    'HNO3    ','HNO3    '   ,   1.0, T
+
+  (This file should be placed in the ZCM_EmChem19 directory for EmChem19a usage.
+   Done on stallo only so far.)
+
+BoundaryConditions_mod - now uses strings from CMX_BoundaryConditions
+together with defBICs definitions for mapping.  Removed IBC_NO etc.
+
+SmallUtils - added xcindex funtion to return index of substr in string
+   regardless of case. (e.g. matches DUST in Dust_road.)
+
+ZCM_EmChem19a - updated species settings also (from Robert/ecosx).
+ZCM_EmChem19  - updated species names etc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Dec 2019, Dave
 
 USES treatment expanded to almost all USE_ variables.

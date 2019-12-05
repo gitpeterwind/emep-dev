@@ -15,15 +15,17 @@ echo CHEM $chem
 if [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
   echo "Processing $chem"
   cp ZCM_$chem/CM* .
-  cp ZCM_$chem/BoundaryConditions_$chem.inc                BoundaryConditions_CM.inc
-  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc > BiomassBurningMapping_FINN.inc
-  sed "s/private,//; s/public,//" ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc > BiomassBurningMapping_GFAS.inc
+  # .inc now replaced by CMX_BoundaryConditions.txt
+  #cp ZCM_$chem/BoundaryConditions_$chem.inc                 BoundaryConditions_CM.inc
+  cp ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc  BiomassBurningMapping_FINN.inc
+  cp ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc    BiomassBurningMapping_GFAS.inc
 else
   echo "Not found $chem"
 fi
 
 # ZCM_$chem has:
-# BoundaryConditions_$chem.inc BiomassBurningMapping_FINNv1.5_to_$chem.inc
+# BiomassBurningMapping_FINNv1.5_to_$chem.inc
+# CMX_BoundaryConditions.txt
 # CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 #
 # CM_ChemSpecs_mod.f90 CM_DryDep.inc CM_EmisFile.inc CM_emislist.csv
 # CM_EmisSpecs.inc CM_Reactions1.inc CM_Reactions2.inc CM_Reactions.log

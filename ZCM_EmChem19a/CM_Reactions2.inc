@@ -10,10 +10,10 @@
 !-> ASOC_ug1
 
   P = YCOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(0)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(0)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(0)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(0)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YCBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + rct(79,k) * xnew(OH) * xnew(ASOC_ug10)
   
   L = rct(78,k) * xnew(OH)
@@ -24,10 +24,10 @@
 !-> ASOC_ug10
 
   P = YCOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(1)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(1)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(1)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(1)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YCBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + rct(80,k) * xnew(OH) * xnew(ASOC_ug1e2)
   
   L = rct(79,k) * xnew(OH)
@@ -38,10 +38,10 @@
 !-> ASOC_ug1e2
 
   P = YCOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(2)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(2)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(2)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(2)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YCBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + rct(81,k) * xnew(OH) * xnew(ASOC_ug1e3)
   
   L = rct(80,k) * xnew(OH)
@@ -52,10 +52,10 @@
 !-> ASOC_ug1e3
 
   P = YCOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(3)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(3)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(3)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(3)* rct(73,k) * xnew(OH) * xnew(C3H6)
+    + YCBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
   
   L = rct(81,k) * xnew(OH)
   
@@ -75,10 +75,10 @@
 !-> non_C_ASOA_ug1
 
   P = YNOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(0)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(0)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(0)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(0)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YNBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + 0.9* rct(79,k) * xnew(OH) * xnew(ASOC_ug10)  &
     + 1.075* rct(83,k) * xnew(OH) * xnew(non_C_ASOA_ug10)
   
@@ -90,10 +90,10 @@
 !-> non_C_ASOA_ug10
 
   P = YNOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(1)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(1)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(1)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(1)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YNBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + 0.9* rct(80,k) * xnew(OH) * xnew(ASOC_ug1e2)  &
     + 1.075* rct(84,k) * xnew(OH) * xnew(non_C_ASOA_ug1e2)
   
@@ -105,10 +105,10 @@
 !-> non_C_ASOA_ug1e2
 
   P = YNOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(2)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(2)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(2)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(2)* rct(73,k) * xnew(OH) * xnew(C3H6)  &
+    + YNBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
     + 0.9* rct(81,k) * xnew(OH) * xnew(ASOC_ug1e3)  &
     + 1.075* rct(85,k) * xnew(OH) * xnew(non_C_ASOA_ug1e3)
   
@@ -120,10 +120,10 @@
 !-> non_C_ASOA_ug1e3
 
   P = YNOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(3)* rct(47,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(3)* rct(48,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(3)* rct(39,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(3)* rct(73,k) * xnew(OH) * xnew(C3H6)
+    + YNBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
   
   L = rct(85,k) * xnew(OH)
   
@@ -141,7 +141,7 @@
 
 !-> BSOC_ug1
 
-  P = YCISOP(0)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YCISOP(0)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YCTERP(0)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YCTERP(0)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YCTERP(0)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -154,7 +154,7 @@
 
 !-> BSOC_ug10
 
-  P = YCISOP(1)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YCISOP(1)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YCTERP(1)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YCTERP(1)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YCTERP(1)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -167,7 +167,7 @@
 
 !-> BSOC_ug1e2
 
-  P = YCISOP(2)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YCISOP(2)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YCTERP(2)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YCTERP(2)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YCTERP(2)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -180,7 +180,7 @@
 
 !-> BSOC_ug1e3
 
-  P = YCISOP(3)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YCISOP(3)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YCTERP(3)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YCTERP(3)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YCTERP(3)* rct(77,k) * xnew(NO3) * xnew(APINENE)
@@ -202,7 +202,7 @@
 
 !-> non_C_BSOA_ug1
 
-  P = YNISOP(0)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YNISOP(0)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YNTERP(0)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YNTERP(0)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YNTERP(0)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -216,7 +216,7 @@
 
 !-> non_C_BSOA_ug10
 
-  P = YNISOP(1)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YNISOP(1)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YNTERP(1)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YNTERP(1)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YNTERP(1)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -230,7 +230,7 @@
 
 !-> non_C_BSOA_ug1e2
 
-  P = YNISOP(2)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YNISOP(2)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YNTERP(2)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YNTERP(2)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YNTERP(2)* rct(77,k) * xnew(NO3) * xnew(APINENE)  &
@@ -244,7 +244,7 @@
 
 !-> non_C_BSOA_ug1e3
 
-  P = YNISOP(3)* rct(55,k) * xnew(OH) * xnew(C5H8)  &
+  P = YNISOP(3)* rct(64,k) * xnew(OH) * xnew(C5H8)  &
     + YNTERP(3)* rct(75,k) * xnew(OH) * xnew(APINENE)  &
     + YNTERP(3)* rct(76,k) * xnew(O3) * xnew(APINENE)  &
     + YNTERP(3)* rct(77,k) * xnew(NO3) * xnew(APINENE)
@@ -452,20 +452,20 @@
 
 !-> Ash_f
 
-  P = rcemis(ASH_F,K)
+  ! P = 0.0
   
   ! L = 0.0
   
-  xnew(Ash_f) = xold(Ash_f) + dt2 * P
+  ! Nothing to do for Ash_f! xnew(Ash_f) = max(0.0, xold(Ash_f))
 
 
 !-> Ash_c
 
-  P = rcemis(ASH_C,K)
+  ! P = 0.0
   
   ! L = 0.0
   
-  xnew(Ash_c) = xold(Ash_c) + dt2 * P
+  ! Nothing to do for Ash_c! xnew(Ash_c) = max(0.0, xold(Ash_c))
 
 
 !-> ffire_CO

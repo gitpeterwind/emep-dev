@@ -77,7 +77,6 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("non_C_BSOA_ug1e3", "ALD       ", -999.0 ) &
 , dep_t("SQT_SOA_nv", "PMf       ", -999.0 ) &
 , dep_t("TERPOOH   ", "LHISOLOOH ", -999.0 ) &
-, dep_t("MVK       ", "MEK       ", -999.0 ) &
 , dep_t("Ash_f     ", "PMf       ", -999.0 ) &
 , dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("shipNOx   ", "NO2       ", -999.0 ) &
