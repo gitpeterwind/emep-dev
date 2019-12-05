@@ -1607,7 +1607,16 @@ end if
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
      itot_RDF = find_index( "Dust_ROAD_f", species(:)%name ,any_case=.true. )
-     call CheckStop(itot_RDF<=0, "Asked for road dust but did not find Dust_ROAD_f")
+     if ( itot_RDF <=0 ) then ! No explicit road dust. Assign to "dust"
+       itot_RDF = find_index( "Dust_f", species(:)%name ,any_case=.true. )
+       if ( itot_RDF>0) then
+         if ( MasterProc) &
+           call PrintLog(dtxt//"WARNING: No road_dust species. Assign to dust." )
+       else
+         call StopAll(dtxt//"did not find Dust_ROAD_f or Dust_f" )
+       end if
+ 
+     end if
      do ie=1,NROADDUST
         roaddust_masscorr(ie)=1.0/species(itot_RDF)%molwt
      end do
