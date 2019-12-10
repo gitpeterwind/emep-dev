@@ -52,17 +52,6 @@ integer, public, parameter :: &
     real :: num  = UNDEF_R
   end type typ_ssf
 
-!/ - 2019 update for genChem
- !/ generic group for two (short) strings, float and boolean
-  !  currently for CMX boundary conditions
-  type, public :: typ_i2fb
-    integer :: ind1 = UNDEF_I  !  typically for BIC species
-    integer :: ind2 = UNDEF_I  !  typically for emep species
-    real    :: num  = UNDEF_R
-    logical :: bool = .true.
-  end type typ_i2fb
-
-
  !/ generic group for name and pointer to arrays
   type, public :: typ_sp
     character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
