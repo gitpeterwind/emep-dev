@@ -23,14 +23,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th Dec 2019, Dave
+5-10th Dec 2019, Dave
 
-GenChem upgrade :-)
+*** GenChem upgrade :-)
 
 The code has been modified in various places to cope with the new GenChem
 system. The largest changes are:
 
-mk.ChemFiles uses the new system.
+*** NEW ** 
+Use of text (not .inc) files for boundary and BiomassBurning now
+replaces older .inc files. Main advantage is that one can simply
+append series of files from different mechanisms, eg adding
+basic gas-phase, sea-salt, dust, PM, as requested by the user
+(via GenChem)
 
 CMX_BoundaryConditions.txt now replaces CM_BoundaryConditions.inc, and uses
 a simple mapping table of strings, e.g.
@@ -40,17 +45,35 @@ a simple mapping table of strings, e.g.
     'O3      ','O3      '   ,   1.0, T
     'HNO3    ','HNO3    '   ,   1.0, T
 
-  (This file should be placed in the ZCM_EmChem19 directory for EmChem19a usage.
-   Done on stallo only so far.)
 
-BoundaryConditions_mod - now uses strings from CMX_BoundaryConditions
+BoundaryConditions_mod - now reads table  from CMX_BoundaryConditions
 together with defBICs definitions for mapping.  Removed IBC_NO etc.
+
+ForestFire_mod - now reads tables  from CMX_BiomassBurning files.
+Some harmonisation of mapping routines for FINN and GFAS.
+
+CMX_BiomassBurning_FINNv1p5.txt and CMX_BiomassBurning_GFASv1.txt
+(stored in GenChem system) now replace older .inc files.
+
+EmisGet - uses any_case when reading emissplit
+
+mk.ChemFiles uses the new system.
+
+ZCMDIR now added in config_emep.nml, Config_module.f90
+(eg ZCMDIR="ZCM_EmChem19a")
+
+
+ZCM_EmChem19a - updated species settings also (from Robert/ecosx).
+ZCM_EmChem19  - updated species names etc
+ZCM_EmChem09  - updated to CMX (for FINNv1p5 and GFASv1 anyway)
 
 SmallUtils - added xcindex funtion to return index of substr in string
    regardless of case. (e.g. matches DUST in Dust_road.)
 
-ZCM_EmChem19a - updated species settings also (from Robert/ecosx).
-ZCM_EmChem19  - updated species names etc
+Biogenics_mod - small debug change
+
+NOTE: The CMX files should be placed in the appropriate ZCMDIR (probably
+on DataDir, e.g. ZCM_EmChem19). Done on stallo only so far.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Dec 2019, Dave
