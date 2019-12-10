@@ -1,13 +1,16 @@
 #
 # Usage: 
-#  mk.Chem EmChem16x
+#  e.g. mk.ChemFiles EmChem19a
 #
 # Copies files from ZCM_XXXX to current directory. These files are 
 # mainly produce by the ecosx/GenChem through the following steps:
-# 1. cd ecosx/box/src
-# 2. ../scripts/emep_setup.sh EmChem16  (for example)
-# 3. Send ZCM_EmChem16 to stallo/vilje
-# 4. Sort out BiomassBurningMapping and BoundaryConditions
+# 1. cd ecosx/box
+# 2. scripts/box_setup  tmp_work  (if needed)
+# 3. cd tmp_work
+# 4. emep_setup.sh EmChem19a  (for example)
+# 5. Send ZCM_EmChem19a to stallo/vilje
+# 6. Copy ZCM_EmChem19a/CMX_ files to some appropriate place on DataDir, e.g. DataDir/ZCM_EmChem19a
+# 7. Set ZDMDIR in config_emep.nml to point to that location
 
 chem=$1
 echo CHEM $chem
@@ -15,18 +18,14 @@ echo CHEM $chem
 if [[ -f ZCM_$chem/CM_ChemSpecs_mod.f90 ]] ; then
   echo "Processing $chem"
   cp ZCM_$chem/CM* .
-  # .inc now replaced by CMX_BoundaryConditions.txt
-  #cp ZCM_$chem/BoundaryConditions_$chem.inc                 BoundaryConditions_CM.inc
-  cp ZCM_$chem/BiomassBurningMapping_FINNv1.5_to_$chem.inc  BiomassBurningMapping_FINN.inc
-  cp ZCM_$chem/BiomassBurningMapping_GFASv1_to_$chem.inc    BiomassBurningMapping_GFAS.inc
 else
   echo "Not found $chem"
 fi
 
 # ZCM_$chem has:
-# BiomassBurningMapping_FINNv1.5_to_$chem.inc
-# CMX_BoundaryConditions.txt
-# CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 #
-# CM_ChemSpecs_mod.f90 CM_DryDep.inc CM_EmisFile.inc CM_emislist.csv
-# CM_EmisSpecs.inc CM_Reactions1.inc CM_Reactions2.inc CM_Reactions.log
-# CM_WetDep.inc emissplit_run
+# CM_ChemDims_mod.f90    CM_emislist.csv    CMX_BiomassBurning_FINNv1p5.txt
+# CM_ChemGroups_mod.f90  CM_EmisSpecs.inc   CMX_BiomassBurning_GFASv1.txt
+# CM_ChemRates_mod.f90   CM_Reactions1.inc  CMX_BoundaryConditions.txt
+# CM_ChemSpecs_mod.f90   CM_Reactions2.inc  emissplit_run
+# CM_DryDep.inc          CM_Reactions.log
+# CM_EmisFile.inc        CM_WetDep.inc
