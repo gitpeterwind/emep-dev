@@ -195,6 +195,7 @@ character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domai
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
   DataDir = '.',  &
+  ZCMDIR = 'DataDir/ZCM_EmChem19',  & ! default EmChem19 - also used for EmChem19a etc
   OwnInputDir = '.',  &  ! user-defined location
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
@@ -698,10 +699,15 @@ character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/in
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
-character(len=TXTLEN_FILE), target, save, public :: cmxbicDefaultFile = 'DataDir/ZCM_EmChem19/CMX_BoundaryConditions.txt'
-character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
+! Chemical schemes have specific files:
+!character(len=*), parameter :: ZCMDIR= 'DataDir/ZCM_CRI-R5-emep/'
+character(len=TXTLEN_FILE), target, save, public :: &
+  cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
+ ,cmxBiomassBurning_FINNv1p5 = 'ZCMDIR/CMX_BiomassBurning_FINNv1p5.txt' &
+ ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt' &
 !POLL replaced by name of pollutant in EmisSplit
-character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
+ ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
+ ,SplitSpecialsFile          = 'ZCMDIR/emissplit_run/emissplit.specials.POLL'
 character(len=TXTLEN_FILE), target, save, public :: RoadMapFile = 'DataDir/RoadMap.nc'
 character(len=TXTLEN_FILE), target, save, public :: AVG_SMI_2005_2010File = 'DataDir/AVG_SMI_2005_2010.nc'
 character(len=TXTLEN_FILE), target, save, public :: Soil_TegenFile = 'DataDir/Soil_Tegen.nc'
@@ -757,6 +763,7 @@ subroutine Config_Constants(iolog)
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_OUT, emis_inputlist, EmisDir&
    ,EmisSplit_OUT         & ! Output of species emissions
+   ,ZCMDIR                & ! location of emissplit and CMXfiles
    ,OwnInputDir           &  !
    ,Emis_sourceFiles      & ! new format
    ,EmisMask              & ! new format
@@ -788,6 +795,8 @@ subroutine Config_Constants(iolog)
    ,HourlyFacFile&
    ,HourlyFacSpecialsFile&
    ,cmxbicDefaultFile&
+   ,cmxBiomassBurning_FINNv1p5&
+   ,cmxBiomassBurning_GFASv1&
    ,SplitDefaultFile&
    ,SplitSpecialsFile&
    ,RoadMapFile&
@@ -944,6 +953,8 @@ subroutine Config_Constants(iolog)
   call associate_File(HourlyFacFile)
   call associate_File(HourlyFacSpecialsFile)
   call associate_File(cmxbicDefaultFile)
+  call associate_File(cmxBiomassBurning_FINNv1p5)
+  call associate_File(cmxBiomassBurning_GFASv1)
   call associate_File(SplitDefaultFile)
   call associate_File(SplitSpecialsFile)
   call associate_File(RoadMapFile)
@@ -992,6 +1003,7 @@ subroutine Config_Constants(iolog)
   enddo
   do i = 1,size(InputFiles)
     if(associated(InputFiles(i)%filename))then
+     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'ZCMDIR',ZCMDIR)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'DataDir',DataDir)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
      InputFiles(i)%filename = &
