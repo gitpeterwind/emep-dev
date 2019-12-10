@@ -54,7 +54,8 @@
     + rcphot(IDCH3O2H,k) * xnew(CH3COO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(OXYO2H)  &
     + rcphot(IDCH3O2H,k) * xnew(MALO2H)  &
-    + rcphot(IDNO2,k) *0.222 * xnew(HONO)
+    + rcphot(IDNO2,k) *0.222 * xnew(HONO)  &
+    + 0.7* rct(96,k) * xnew(APINENE) * xnew(O3)
   
   L = rct(7,k) * xnew(O3)  &
     + rct(12,k) * xnew(HO2)  &
@@ -109,7 +110,10 @@
     + rct(69,k) * xnew(C2H4)  &
     + rct(70,k) * xnew(C3H6)  &
     + rct(71,k) * xnew(NO)  &
-    + rct(93,k) * xnew(SHIPNOX)
+    + rct(93,k) * xnew(APINENE)  &
+    + rct(95,k) * xnew(TERPOOH)  &
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(SO2)  &
+    + rct(102,k) * xnew(shipNOx)
   
   xnew(OH) = (xold(OH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -160,7 +164,11 @@
     + rcphot(IDCH3O2H,k) * xnew(OXYO2H)
   
   !-> HO2 cont.
-    P = P +   rcphot(IDCH3O2H,k) * xnew(MALO2H)
+    P = P +   rcphot(IDCH3O2H,k) * xnew(MALO2H)  &
+    + rct(41,k) * xnew(TERPO2) * xnew(NO)  &
+    + 2.3e-12 * xnew(TERPO2) * xnew(NO3)  &
+    + rct(96,k) * xnew(APINENE) * xnew(O3)  &
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH) * xnew(SO2)
   
   L = rct(8,k) * xnew(O3)  &
     + rct(10,k) * xnew(NO)  &
@@ -185,7 +193,9 @@
   
   !-> HO2 cont.
     L = L +   rct(62,k) * xnew(MACO3)  &
-    + rct(48,k) * xnew(ISNIR)
+    + rct(48,k) * xnew(ISNIR)  &
+    + rct(94,k) * xnew(TERPO2)  &
+    + rct(101,k)
   
   xnew(HO2) = (xold(HO2) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -343,13 +353,17 @@
   xnew(MACO3) = (xold(MACO3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> NMVOC
+!-> TERPO2
 
-  ! P = 0.0
+  P = rct(93,k) * xnew(APINENE) * xnew(OH)  &
+    + rct(95,k) * xnew(TERPOOH) * xnew(OH)  &
+    + rct(74,k) * xnew(APINENE) * xnew(NO3)
   
-  ! L = 0.0
+  L = rct(41,k) * xnew(NO)  &
+    + 2.3e-12 * xnew(NO3)  &
+    + rct(94,k) * xnew(HO2)
   
-  ! Nothing to do for NMVOC! xnew(NMVOC) = max(0.0, xold(NMVOC))
+  xnew(TERPO2) = (xold(TERPO2) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> O3
@@ -368,7 +382,9 @@
     + rct(54,k) * xnew(MACR)  &
     + rct(60,k) * xnew(MVK)  &
     + rcphot(IDO3_O3P,k)  &
-    + rcphot(IDO3_O1D,k)
+    + rcphot(IDO3_O1D,k)  &
+    + rct(96,k) * xnew(APINENE)  &
+    + AQRCK(ICLRC2,K) * xnew(SO2)
   
   xnew(O3) = (xold(O3) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -400,6 +416,9 @@
     + rct(41,k) * xnew(ISONO3)  &
     + rct(63,k) * xnew(OP)  &
     + rct(71,k) * xnew(OH)
+  
+  !-> NO cont.
+    L = L +   rct(41,k) * xnew(TERPO2)
   
   xnew(NO) = (xold(NO) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -437,7 +456,10 @@
     + rct(68,k) * xnew(MPAN)  &
     + rcphot(IDHNO3,k) * xnew(HNO3)  &
     + rcphot(IDNO3_NO2,k) * xnew(NO3)  &
-    + rcemis(NO2,k)
+    + rcemis(NO2,k)  &
+    + rct(41,k) * xnew(TERPO2) * xnew(NO)  &
+    + 2.3e-12 * xnew(TERPO2) * xnew(NO3)  &
+    + rct(74,k) * xnew(APINENE) * xnew(NO3)
   
   L = rct(6,k) * xnew(O3)  &
     + rct(11,k) * xnew(NO3)  &
@@ -481,7 +503,10 @@
     + rct(57,k) * xnew(MACRO2)  &
     + rct(61,k) * xnew(C5H8)  &
     + rct(64,k) * xnew(NO2)  &
-    + rcphot(IDNO3_NO2,k)
+    + rcphot(IDNO3_NO2,k)  &
+    + 2.3e-12 * xnew(TERPO2)  &
+    + rct(74,k) * xnew(APINENE)  &
+    + rct(98,k)
   
   xnew(NO3) = (xold(NO3) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -490,7 +515,8 @@
 
   P = rct(64,k) * xnew(NO2) * xnew(NO3)
   
-  L = rct(65,k)
+  L = rct(65,k)  &
+    + rct(97,k)
   
   xnew(N2O5) = (xold(N2O5) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -510,11 +536,15 @@
 
   P = rct(28,k) * xnew(NO3) * xnew(HCHO)  &
     + rct(66,k) * xnew(NO2) * xnew(OH)  &
-    + rct(93,k) * xnew(SHIPNOX) * xnew(OH)  &
-    + 3.2e-5 * xnew(SHIPNOX)
+    + 2* rct(97,k) * xnew(N2O5)  &
+    + rct(98,k) * xnew(NO3)  &
+    + rct(102,k) * xnew(shipNOx) * xnew(OH)  &
+    + 3.2e-5 * xnew(shipNOx)
   
   L = rct(15,k) * xnew(OH)  &
-    + rcphot(IDHNO3,k)
+    + rcphot(IDHNO3,k)  &
+    + rct(99,k)  &
+    + rct(100,k)
   
   xnew(HNO3) = (xold(HNO3) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -558,7 +588,10 @@
 
   P = 0.67* rct(51,k) * xnew(C5H8) * xnew(O3)  &
     + 0.32* rct(41,k) * xnew(ISRO2) * xnew(NO)  &
-    + 0.1* rct(41,k) * xnew(ISONO3) * xnew(NO)
+    + 0.1* rct(41,k) * xnew(ISONO3) * xnew(NO)  &
+    + 2* rct(41,k) * xnew(TERPO2) * xnew(NO)  &
+    + 2* 2.3e-12 * xnew(TERPO2) * xnew(NO3)  &
+    + 2* rct(96,k) * xnew(APINENE) * xnew(O3)
   
   L = rct(54,k) * xnew(O3)  &
     + rct(55,k) * xnew(OH)
@@ -721,7 +754,9 @@
 
 !-> C2H6
 
-  P = rcemis(C2H6,k)
+  P = rcemis(C2H6,k)  &
+    + 0.19* rct(41,k) * xnew(TERPO2) * xnew(NO)  &
+    + 0.19* 2.3e-12 * xnew(TERPO2) * xnew(NO3)
   
   L = rct(29,k) * xnew(OH)
   
@@ -779,23 +814,13 @@
   xnew(C5H8) = (xold(C5H8) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> APINENE
-
-  ! P = 0.0
-  
-  L = rct(72,k) * xnew(O3)  &
-    + rct(73,k) * xnew(OH)  &
-    + rct(74,k) * xnew(NO3)
-  
-  xnew(APINENE) = xold(APINENE) / (1.0 + dt2 * L)
-
-
 !-> CH3OOH
 
   P = 0.9* rct(25,k) * xnew(HO2) * xnew(CH3O2)
   
   L = rct(26,k) * xnew(OH)  &
-    + rcphot(IDCH3O2H,k)
+    + rcphot(IDCH3O2H,k)  &
+    + 1.0e-5
   
   xnew(CH3OOH) = (xold(CH3OOH) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -925,10 +950,13 @@
     + rct(17,k) * xnew(HO2) * xnew(HO2)  &
     + 0.14* rct(44,k) * xnew(C2H4) * xnew(O3)  &
     + 0.09* rct(45,k) * xnew(O3) * xnew(C3H6)  &
-    + 0.124* rct(54,k) * xnew(MACR) * xnew(O3)
+    + 0.124* rct(54,k) * xnew(MACR) * xnew(O3)  &
+    + 0.5* rct(101,k) * xnew(HO2)
   
   L = rct(13,k) * xnew(OH)  &
-    + rcphot(IDH2O2,k)
+    + rcphot(IDH2O2,k)  &
+    + AQRCK(ICLRC1,K) * xnew(SO2)  &
+    + 1.0e-5
   
   xnew(H2O2) = (xold(H2O2) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1024,14 +1052,21 @@
 
   P = rcemis(SO2,k)
   
-  ! L = 0.0
+  L = AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH)  &
+    + AQRCK(ICLRC1,K) * xnew(H2O2)  &
+    + AQRCK(ICLRC2,K) * xnew(O3)  &
+    + AQRCK(ICLRC3,K)
   
-  xnew(SO2) = xold(SO2) + dt2 * P
+  xnew(SO2) = (xold(SO2) + dt2 * P) / (1.0 + dt2 * L)
 
 
 !-> SO4
 
-  P = rcemis(SO4,k)
+  P = rcemis(SO4,k)  &
+    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH) * xnew(SO2)  &
+    + AQRCK(ICLRC1,K) * xnew(SO2) * xnew(H2O2)  &
+    + AQRCK(ICLRC2,K) * xnew(SO2) * xnew(O3)  &
+    + AQRCK(ICLRC3,K) * xnew(SO2)
   
   ! L = 0.0
   
@@ -1067,11 +1102,12 @@
 
 !-> NO3_c
 
-  ! P = 0.0
+  P = rct(99,k) * xnew(HNO3)  &
+    + rct(100,k) * xnew(HNO3)
   
   ! L = 0.0
   
-  ! Nothing to do for NO3_c! xnew(NO3_c) = max(0.0, xold(NO3_c))
+  xnew(NO3_c) = xold(NO3_c) + dt2 * P
 
 
 !-> TERPPeroxy
@@ -1095,68 +1131,100 @@
   ! Nothing to do for VBS_TEST! xnew(VBS_TEST) = max(0.0, xold(VBS_TEST))
 
 
-!-> SHIPNOX
+!-> APINENE
+
+  P = RCBIO(2,K)
+  
+  L = rct(72,k) * xnew(O3)  &
+    + rct(73,k) * xnew(OH)  &
+    + rct(74,k) * xnew(NO3)  &
+    + rct(93,k) * xnew(OH)  &
+    + rct(96,k) * xnew(O3)  &
+    + rct(74,k) * xnew(NO3)
+  
+  xnew(APINENE) = (xold(APINENE) + dt2 * P) / (1.0 + dt2 * L)
+
+
+!-> SQT_SOA_nv
+
+  P = 0.00383* RCBIO(2,K)
+  
+  ! L = 0.0
+  
+  xnew(SQT_SOA_nv) = xold(SQT_SOA_nv) + dt2 * P
+
+
+!-> TERPOOH
+
+  P = rct(94,k) * xnew(TERPO2) * xnew(HO2)
+  
+  L = rct(95,k) * xnew(OH)
+  
+  xnew(TERPOOH) = (xold(TERPOOH) + dt2 * P) / (1.0 + dt2 * L)
+
+
+!-> shipNOx
 
   P = rcemis(SHIPNOX,k)
   
-  L = rct(93,k) * xnew(OH)  &
+  L = rct(102,k) * xnew(OH)  &
     + 3.2e-5
   
-  xnew(SHIPNOX) = (xold(SHIPNOX) + dt2 * P) / (1.0 + dt2 * L)
+  xnew(shipNOx) = (xold(shipNOx) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> Dust_ROAD_f
+!-> Dust_road_f
 
   P = rcemis(DUST_ROAD_F,K)
   
   ! L = 0.0
   
-  xnew(Dust_ROAD_f) = xold(Dust_ROAD_f) + dt2 * P
+  xnew(Dust_road_f) = xold(Dust_road_f) + dt2 * P
 
 
-!-> Dust_ROAD_c
+!-> Dust_road_c
 
   P = rcemis(DUST_ROAD_C,K)
   
   ! L = 0.0
   
-  xnew(Dust_ROAD_c) = xold(Dust_ROAD_c) + dt2 * P
+  xnew(Dust_road_c) = xold(Dust_road_c) + dt2 * P
 
 
-!-> Dust_WB_f
+!-> Dust_wb_f
 
   P = rcemis(DUST_WB_F,K)
   
   ! L = 0.0
   
-  xnew(Dust_WB_f) = xold(Dust_WB_f) + dt2 * P
+  xnew(Dust_wb_f) = xold(Dust_wb_f) + dt2 * P
 
 
-!-> Dust_WB_c
+!-> Dust_wb_c
 
   P = rcemis(DUST_WB_C,K)
   
   ! L = 0.0
   
-  xnew(Dust_WB_c) = xold(Dust_WB_c) + dt2 * P
+  xnew(Dust_wb_c) = xold(Dust_wb_c) + dt2 * P
 
 
-!-> Dust_SAH_f
+!-> Dust_sah_f
 
   P = rcemis(DUST_SAH_F,K)
   
   ! L = 0.0
   
-  xnew(Dust_SAH_f) = xold(Dust_SAH_f) + dt2 * P
+  xnew(Dust_sah_f) = xold(Dust_sah_f) + dt2 * P
 
 
-!-> Dust_SAH_c
+!-> Dust_sah_c
 
   P = rcemis(DUST_SAH_C,K)
   
   ! L = 0.0
   
-  xnew(Dust_SAH_c) = xold(Dust_SAH_c) + dt2 * P
+  xnew(Dust_sah_c) = xold(Dust_sah_c) + dt2 * P
 
 
 !-> POLLEN_BIRCH

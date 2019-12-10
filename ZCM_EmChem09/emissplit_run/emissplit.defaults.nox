@@ -3,7 +3,7 @@
 # Key-word, MASS_ASSUMED= 0 by default, 
 # change when emissions have artificial mass, e.g. 46 for NOx as NO2
 : MASS_ASSUMED 46
-99 99     NO    NO2  SHIPNOX        #HEADERS
+99 99     NO    NO2  shipNOX        #HEADERS
 #DATA
 0   1    95.00 5.00   0.0
 0   2    95.00 5.00   0.0

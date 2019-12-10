@@ -246,22 +246,22 @@
   xnew(NON_C_BSOA_ug1e3) = (xold(NON_C_BSOA_ug1e3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> FFFUEL_ng10
+!-> Fffuel_ng10
 
   ! P = 0.0
   
   ! L = 0.0
   
-  ! Nothing to do for FFFUEL_ng10! xnew(FFFUEL_ng10) = max(0.0, xold(FFFUEL_ng10))
+  ! Nothing to do for Fffuel_ng10! xnew(Fffuel_ng10) = max(0.0, xold(Fffuel_ng10))
 
 
-!-> WOODOA_ng10
+!-> woodOA_ng10
 
   ! P = 0.0
   
   ! L = 0.0
   
-  ! Nothing to do for WOODOA_ng10! xnew(WOODOA_ng10) = max(0.0, xold(WOODOA_ng10))
+  ! Nothing to do for woodOA_ng10! xnew(woodOA_ng10) = max(0.0, xold(woodOA_ng10))
 
 
 !-> H2
@@ -282,87 +282,87 @@
   xnew(CH4) = (xold(CH4) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> POM_f_WOOD
+!-> POM_f_wood
 
   P = rcemis(POM_F_WOOD,k)
   
   ! L = 0.0
   
-  xnew(POM_f_WOOD) = xold(POM_f_WOOD) + dt2 * P
+  xnew(POM_f_wood) = xold(POM_f_wood) + dt2 * P
 
 
-!-> POM_f_FFUEL
+!-> POM_f_ffuel
 
   P = rcemis(POM_F_FFUEL,k)
   
   ! L = 0.0
   
-  xnew(POM_f_FFUEL) = xold(POM_f_FFUEL) + dt2 * P
+  xnew(POM_f_ffuel) = xold(POM_f_ffuel) + dt2 * P
 
 
-!-> POM_c_FFUEL
+!-> POM_c_ffuel
 
   P = rcemis(POM_C_FFUEL,k)
   
   ! L = 0.0
   
-  xnew(POM_c_FFUEL) = xold(POM_c_FFUEL) + dt2 * P
+  xnew(POM_c_ffuel) = xold(POM_c_ffuel) + dt2 * P
 
 
-!-> EC_f_WOOD_new
+!-> EC_f_wood_new
 
   P = rcemis(EC_F_WOOD_NEW,k)
   
   L = rct(92,k)
   
-  xnew(EC_f_WOOD_new) = (xold(EC_f_WOOD_new) + dt2 * P) / (1.0 + dt2 * L)
+  xnew(EC_f_wood_new) = (xold(EC_f_wood_new) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> EC_f_WOOD_age
+!-> EC_f_wood_age
 
   P = rcemis(EC_F_WOOD_AGE,k)  &
-    + rct(92,k) * xnew(EC_f_WOOD_new)
+    + rct(92,k) * xnew(EC_f_wood_new)
   
   ! L = 0.0
   
-  xnew(EC_f_WOOD_age) = xold(EC_f_WOOD_age) + dt2 * P
+  xnew(EC_f_wood_age) = xold(EC_f_wood_age) + dt2 * P
 
 
-!-> EC_c_WOOD
+!-> EC_c_wood
 
   ! P = 0.0
   
   ! L = 0.0
   
-  ! Nothing to do for EC_c_WOOD! xnew(EC_c_WOOD) = max(0.0, xold(EC_c_WOOD))
+  ! Nothing to do for EC_c_wood! xnew(EC_c_wood) = max(0.0, xold(EC_c_wood))
 
 
-!-> EC_f_FFUEL_new
+!-> EC_f_ffuel_new
 
   P = rcemis(EC_F_FFUEL_NEW,k)
   
   L = rct(92,k)
   
-  xnew(EC_f_FFUEL_new) = (xold(EC_f_FFUEL_new) + dt2 * P) / (1.0 + dt2 * L)
+  xnew(EC_f_ffuel_new) = (xold(EC_f_ffuel_new) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> EC_f_FFUEL_age
+!-> EC_f_ffuel_age
 
   P = rcemis(EC_F_FFUEL_AGE,k)  &
-    + rct(92,k) * xnew(EC_f_FFUEL_new)
+    + rct(92,k) * xnew(EC_f_ffuel_new)
   
   ! L = 0.0
   
-  xnew(EC_f_FFUEL_age) = xold(EC_f_FFUEL_age) + dt2 * P
+  xnew(EC_f_ffuel_age) = xold(EC_f_ffuel_age) + dt2 * P
 
 
-!-> EC_c_FFUEL
+!-> EC_c_ffuel
 
   P = rcemis(EC_C_FFUEL,k)
   
   ! L = 0.0
   
-  xnew(EC_c_FFUEL) = xold(EC_c_FFUEL) + dt2 * P
+  xnew(EC_c_ffuel) = xold(EC_c_ffuel) + dt2 * P
 
 
 !-> REMPPM25
@@ -401,40 +401,49 @@
   ! Nothing to do for OM25_p! xnew(OM25_p) = max(0.0, xold(OM25_p))
 
 
-!-> FFIRE_CO
+!-> Ash_f
 
-  P = rcemis(FFIRE_CO,k)
+  ! P = 0.0
   
-  L = rct(20,k) * xnew(OH)
+  ! L = 0.0
   
-  xnew(FFIRE_CO) = (xold(FFIRE_CO) + dt2 * P) / (1.0 + dt2 * L)
+  ! Nothing to do for Ash_f! xnew(Ash_f) = max(0.0, xold(Ash_f))
 
 
-!-> FFIRE_OM
+!-> Ash_c
+
+  ! P = 0.0
+  
+  ! L = 0.0
+  
+  ! Nothing to do for Ash_c! xnew(Ash_c) = max(0.0, xold(Ash_c))
+
+
+!-> ffire_OM
 
   P = rcemis(FFIRE_OM,k)
   
   ! L = 0.0
   
-  xnew(FFIRE_OM) = xold(FFIRE_OM) + dt2 * P
+  xnew(ffire_OM) = xold(ffire_OM) + dt2 * P
 
 
-!-> FFIRE_BC
+!-> ffire_BC
 
   P = rcemis(FFIRE_BC,k)
   
   ! L = 0.0
   
-  xnew(FFIRE_BC) = xold(FFIRE_BC) + dt2 * P
+  xnew(ffire_BC) = xold(ffire_BC) + dt2 * P
 
 
-!-> FFIRE_REMPPM25
+!-> ffire_remPPM25
 
   P = rcemis(FFIRE_REMPPM25,k)
   
   ! L = 0.0
   
-  xnew(FFIRE_REMPPM25) = xold(FFIRE_REMPPM25) + dt2 * P
+  xnew(ffire_remPPM25) = xold(ffire_remPPM25) + dt2 * P
 
 
 !-> ffire_c
