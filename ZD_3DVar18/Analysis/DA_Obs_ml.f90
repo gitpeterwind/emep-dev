@@ -450,7 +450,7 @@ contains
       ! target element:
       i = size(indices) + 1
       ! find index of coarse nitrate:
-      self%ispec(i) = find_index( 'NO3_C', species_adv(:)%name )
+      self%ispec(i) = find_index( 'NO3_C', species_adv(:)%name, any_case=.true.)
       ! add 27% of weight:
       self%w(i) = 0.27
     end if
@@ -1836,8 +1836,8 @@ contains
     ! Here add fraction alfa from course to fine mode,
     ! and at the end assign part of fine mode to coarse mode again.
     ! Find indices of nitrate aerosols:
-    ispec_no3f = find_index( 'NO3_F', species_adv(:)%name )
-    ispec_no3c = find_index( 'NO3_C', species_adv(:)%name )
+    ispec_no3f = find_index( 'NO3_F', species_adv(:)%name, any_case=.true. )
+    ispec_no3c = find_index( 'NO3_C', species_adv(:)%name, any_case=.true. )
     ! fraction of coarse part assigned to fine:
     no3 = alfa * xn_adv(ispec_no3c,:,:,:)
     ! switch:
@@ -2733,7 +2733,7 @@ contains
         !~ expected a single model species ...
         case default
           ! find index:
-          ispec = find_index( trim(ObsComp(iObsComp)), species_adv(:)%name )
+          ispec = find_index( trim(ObsComp(iObsComp)), species_adv(:)%name, any_case=.true. )
           ! check ...
           if ( ispec < 1 ) then
             write (gol,'(a,": observed species not found:",a)') rname, trim(obsData(iObsData)%name); call goErr

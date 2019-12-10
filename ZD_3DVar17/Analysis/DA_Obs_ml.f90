@@ -382,7 +382,7 @@ contains
       ! target element:
       i = size(indices) + 1
       ! find index of coarse nitrate:
-      self%ispec(i) = find_index( 'NO3_C', species_adv(:)%name )
+      self%ispec(i) = find_index( 'NO3_C', species_adv(:)%name, any_case=.true. )
       ! add 27% of weight:
       self%w(i) = 0.27
     end if
@@ -1107,7 +1107,7 @@ contains
     ! Therefore do not apply scale factors to coarse nitrate,
     ! only assimilation of pm10 will change its amount.
     ! Find index of coarse nitrate:
-    ispec_no3c = find_index( 'NO3_C', species_adv(:)%name )
+    ispec_no3c = find_index( 'NO3_C', species_adv(:)%name, any_case=.true. )
 
     ! weights of tracers in fine and corase:
     allocate( ispm(nspec,npm), stat=status )
@@ -1787,7 +1787,7 @@ contains
         !~ expected a single model species ...
         case default
           ! find index:
-          ispec = find_index( trim(ObsComp(iObsComp)), species_adv(:)%name )
+          ispec = find_index( trim(ObsComp(iObsComp)), species_adv(:)%name, any_case=.true. )
           ! check ...
           if ( ispec < 1 ) then
             write (gol,'(a,": observed species not found:",a)') rname, trim(obsData(iObsData)%name); call goErr
