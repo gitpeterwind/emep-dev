@@ -57,7 +57,7 @@ use MetFields_mod,         only: roa
 use MPI_Groups_mod,        only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, &
                              MPI_COMM_CALC, IERROR
 use NetCDF_mod,            only: ReadField_CDF,vertical_interpolate
-use OwnDataTypes_mod,      only: typ_i2fb
+use NumberConstants,       only: UNDEF_I, UNDEF_R
 use Par_mod,               only: LIMAX, LJMAX, limax, ljmax, me &
               ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
               ,NOPROC,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
@@ -74,7 +74,7 @@ private
 public  :: BoundaryConditions         ! call every month
 
 private :: GetBICData, &
-           readCMX_mapping,         & ! NEW 
+           readCMXmapping,          & ! NEW 
            Set_bcmap,               & ! sets xn2adv_changed, etc.
            My_bcmap                   ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
 
@@ -85,8 +85,15 @@ logical, private, save :: first_call  = .true.
 logical, private, parameter :: DEBUG_MYBC = .false.
 
 !/ - 2019 update for genChem
+!    for CMX boundary conditions
+type, public :: typ_i2fb
+    integer :: ind1 = UNDEF_I  !  typically for BIC species
+    integer :: ind2 = UNDEF_I  !  typically for emep species
+    real    :: num  = UNDEF_R
+    logical :: bool = .true.
+end type typ_i2fb
+type(typ_i2fb), dimension(100), private, save :: cmxmapping = typ_i2fb()
 
-type(typ_i2fb), dimension(100), save :: cmxmapping = typ_i2fb()
 
 type :: defBIC_t     ! Simple tabulate boundary & initial conditions, in case no global BICs
   character(len=30)  :: name       ! BIC species namej
@@ -217,9 +224,9 @@ logical,  private, save :: dbg0  ! MasterProc .and. DEBUG%BCS
 
 contains
 
-  ! SUBROUTINE to read files with e.g. 
+  ! SUBROUTINE to read CMX_BoundaryCondition file
   !   
-  subroutine readCMX_mapping(nused) ! NEW
+  subroutine readCMXmapping(nused) 
      integer, intent(out) :: nused
      character(len=100) :: txtinput
      character(len=*), parameter :: dtxt='rdCMX:'
@@ -272,7 +279,7 @@ contains
      write(txtinput,'(a, 2i4)') ' nposs, nused', npossible, nused
      call PrintLog(dtxt//' DONE '//txtinput,MasterProc)
      
-  end subroutine readCMX_mapping
+  end subroutine readCMXmapping
 
   subroutine BoundaryConditions(year,month)
     ! ---------------------------------------------------------------------------
@@ -301,17 +308,17 @@ contains
 
        dbg0 = (MasterProc .and. DEBUG%BCS)
 
-       call readCMX_mapping(ncmx) ! NEW
+       if ( dbg0 ) write(*,"(a,I3,1X,3(a,i5))") &
+            "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  &
+            "TREND YR ", iyr_trend
 
-       if ( dbg0 ) write(*,"(a,I3,1X,a,i5)") &
-            "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  "TREND YR ", iyr_trend
        allocate(misc_bc(NGLOB_BC+1:NTOT_BC,KMAX_MID))
        call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
                                      ! e.g.  bc2xn_adv(IBC_NOX,IXADV_NO2) = 0.55
        call Set_bcmap()              ! assigns xn2adv_changed, etc.
 
 
-       num_changed = num_adv_changed + num_bgn_changed   !u1
+       num_changed = num_adv_changed + num_bgn_changed 
        if ( dbg0 ) write(*, "((A,I0,1X))")           &
             "BCs: num_adv_changed: ", num_adv_changed,  &
             "BCs: num_bgn_changed: ", num_bgn_changed,  &
@@ -747,22 +754,17 @@ subroutine My_bcmap(iyr_trend)
   integer, intent(in) :: iyr_trend !ds Year for which BCs are wanted
   real :: trend_ch4
   integer :: ii,i,k, io_ch4, yr_rcp= -999
-  integer :: ibc, iadv, ncmx  ! CMX NEW
+  integer :: ibc, iadv, itot, ncmx  ! CMX NEW
   real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
         ! Gives the factor for how much of the top-layer conc. that is left
         ! at bottom layer
   character(len=120) :: txt
   real     ::  ch4_rcp
   character(len=*),parameter :: dtxt='BCs_Mybcmap:'
-
-!CMX  real :: top_misc_bc(NGLOB_BC+1:NTOT_BC) ! Conc. at top of misc bc
   real :: top_misc_bc(NGLOB_BC+1:NTOT_BC) ! Conc. at top of misc bc
 !    real :: ratio_length(KMAX_MID)    ! Vertical length of the actual layer
                                       ! divided by length from midpoint of
                                       ! layer 1 to layer KMAX_MID
-
-!CMX QUICK n DIRTY for GenCHem
-!  call readCMX_mapping(ncmx) ! NEW
 
   ! - Initialise
   misc_bc   = 0.0
@@ -863,15 +865,17 @@ subroutine My_bcmap(iyr_trend)
       "BCproblem - My_bcmap")
   end do
 
-!/- mappings for species from Logan + obs model given with IBC index.
-!CMX  include 'CMX_BoundaryConditions.inc'
-!CMX QUICK n DIRTY for GenCHem
-  call readCMX_mapping(ncmx) ! NEW
+!/- mappings for species from  CMX to emep 
+!CMX QUICK n DIRTY for now. Do we really need bc2xn also?
+
+  call readCMXmapping(ncmx)
+
   do i = 1, ncmx
     ibc  = cmxmapping(i)%ind1              ! index in defBIC
-    iadv = cmxmapping(i)%ind2 - NSPEC_SHL
-!CMXHERE - needs to be i ???
-!Or RATHER bc2xn_adv indices need checking elsewhere!
+    itot = cmxmapping(i)%ind2
+    iadv = itot  - NSPEC_SHL
+    if(dbg0) write(*,*)'MyCMX', ibc, itot, iadv, trim(species(itot)%name)
+    call CheckStop(iadv<1,dtxt//'ERROR spec not advec:'//species(itot)%name)
     bc2xn_adv(ibc, iadv) = cmxmapping(i)%num
   end do
 !END CMX
