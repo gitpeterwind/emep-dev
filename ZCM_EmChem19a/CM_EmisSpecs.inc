@@ -33,7 +33,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "PSO4F         " &
 , "PSO4C         " &
 , "SHIPNOX       " &
-, "FFIRE_CO      " &
 , "FFIRE_OM      " &
 , "FFIRE_BC      " &
 , "FFIRE_REMPPM25" &

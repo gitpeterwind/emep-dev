@@ -163,19 +163,18 @@ module ChemSpecs_mod
     , OM25_p      = 127  &
     , Ash_f       = 128  &
     , Ash_c       = 129  &
-    , ffire_CO    = 130
+    , ffire_OM    = 130
   
   integer, public, parameter :: &
-      ffire_OM    = 131  &
-    , ffire_BC    = 132  &
-    , ffire_remPPM25= 133  &
-    , ffire_c     = 134  &
-    , SeaSalt_f   = 135  &
-    , SeaSalt_c   = 136
+      ffire_BC    = 131  &
+    , ffire_remPPM25= 132  &
+    , ffire_c     = 133  &
+    , SeaSalt_f   = 134  &
+    , SeaSalt_c   = 135
   
   !+ Defines indices for ADV : Advected species
   integer, public, parameter :: FIRST_ADV=17, &
-                                 LAST_ADV=136
+                                 LAST_ADV=135
   
   integer, public, parameter :: &
       IXADV_RO2POOL     =   1  &
@@ -313,13 +312,12 @@ module ChemSpecs_mod
       IXADV_OM25_p      = 111  &
     , IXADV_Ash_f       = 112  &
     , IXADV_Ash_c       = 113  &
-    , IXADV_ffire_CO    = 114  &
-    , IXADV_ffire_OM    = 115  &
-    , IXADV_ffire_BC    = 116  &
-    , IXADV_ffire_remPPM25= 117  &
-    , IXADV_ffire_c     = 118  &
-    , IXADV_SeaSalt_f   = 119  &
-    , IXADV_SeaSalt_c   = 120
+    , IXADV_ffire_OM    = 114  &
+    , IXADV_ffire_BC    = 115  &
+    , IXADV_ffire_remPPM25= 116  &
+    , IXADV_ffire_c     = 117  &
+    , IXADV_SeaSalt_f   = 118  &
+    , IXADV_SeaSalt_c   = 119
   
   !+ Defines indices for SHL : Short-lived (non-advected) species
   integer, public, parameter :: FIRST_SHL=1, &
@@ -549,7 +547,6 @@ contains
     species(OM25_p      ) = Chemical("OM25_p      ",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(Ash_f       ) = Chemical("Ash_f       ",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(Ash_c       ) = Chemical("Ash_c       ",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
-    species(ffire_CO    ) = Chemical("ffire_CO    ",  28.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ffire_OM    ) = Chemical("ffire_OM    ",  20.4000,  0,   1.0000,   0.0000,   0.0000 )
     species(ffire_BC    ) = Chemical("ffire_BC    ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ffire_remPPM25) = Chemical("ffire_remPPM25",  12.0000,  0,   0.0000,   0.0000,   0.0000 )

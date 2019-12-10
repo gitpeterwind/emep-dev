@@ -230,7 +230,6 @@ contains
                & GAM=0.2,  &
                & S=S_M2M3(AERO%PM,  &
                & :))
-    rct(102,:) = 1.44e-13+M*3.43e-33
   
   end subroutine setChemRates
 

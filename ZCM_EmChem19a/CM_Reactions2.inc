@@ -468,15 +468,6 @@
   ! Nothing to do for Ash_c! xnew(Ash_c) = max(0.0, xold(Ash_c))
 
 
-!-> ffire_CO
-
-  P = rcemis(FFIRE_CO,k)
-  
-  L = rct(102,k) * xnew(OH)
-  
-  xnew(ffire_CO) = (xold(ffire_CO) + dt2 * P) / (1.0 + dt2 * L)
-
-
 !-> ffire_OM
 
   P = rcemis(FFIRE_OM,k)
