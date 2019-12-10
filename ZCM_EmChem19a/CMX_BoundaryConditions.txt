@@ -6,6 +6,7 @@
 # case the mapping here is not used.
 # Provided as part of the default GenChem system. 
 # For list of possible BICs, see defBICs in BoundaruConditions_mod.f90.
+# For SeaSalt and Dust, see extra_mechanisms
 #
 # globBC     emep             fac  wanted
 #
@@ -20,12 +21,34 @@
   'NO      ','NO      '   ,   1.0, T
   'NO2     ','NO2     '   ,   1.0, T
   'HCHO    ','HCHO    '   ,   1.0, T
-  'SEASALT_F  ','SeaSalt_f  '   ,   1.0, T
-  'SEASALT_C  ','SeaSaLT_c  '   ,   1.0, T
   'CH3CHO   ','CH3CHO  '   ,   1.0, T
   'NO3_f    ','NO3_f  '   ,   1.0, T
   'NO3_c    ','NO3_c  '   ,   1.0, T
   'NH4_f    ','NH4_f    '   ,   1.0, T
   'H2O2    ','H2O2    '   ,   1.0, T
-  'DUST_f  ','Dust_sah_f '  , 1.0, T  #Dust
-  'DUST_c  ','Dust_sah_c '  , 1.0, T  #Dust
+# CMX_BoundaryConditions.txt for generic emep run
+# Provides mapping betweeen default boundary and initial conditions
+# (BICs) and EMEP species. A numerical factor may be applied, and a wanted
+# column is also provided so that BICs may we switched off. In many cases
+# one may prefer to provide results from another model as BICs; in this
+# case the mapping here is not used.
+# Provided as part of the default GenChem system. 
+# For list of possible BICs, see defBICs in BoundaryConditions_mod.f90.
+#
+# globBC     emep             fac  wanted
+#
+  'SeaSalt_f  ','SeaSalt_f',   1.0,   T
+  'SeaSalt_c  ','SeaSalt_c',   1.0,   T
+# CMX_BoundaryConditions.txt for generic emep 
+# Provides mapping betweeen default boundary and initial conditions
+# (BICs) and EMEP species. A numerical factor may be applied, and a wanted
+# column is also provided so that BICs may we switched off. In many cases
+# one may prefer to provide results from another model as BICs; in this
+# case the mapping here is not used.
+# Provided as part of the default GenChem system.
+# For list of possible BICs, see defBICs in BoundaruConditions_mod.f90.
+#
+# globBC     emep             fac    wanted
+#
+ 'DUST_f',  'Dust_wb_f',     1.0,    T     #Dust
+ 'DUST_c',  'Dust_wb_c',     1.0,    T     #Dust
