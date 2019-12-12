@@ -349,7 +349,7 @@ subroutine massbudget()
     ! SUMMARY TABLE:
      open(newunit=iomb,file="MassBudgetSummary.txt")
      write(iomb,'(a)') ' # Mass Budget. Units are kg with MW used here. ADJUST! if needed' 
-     write(iomb,'(a3,1x,a14,a7,99a12)') '#n', 'Spec       ', &
+     write(iomb,'(a3,1x,a20,a7,99a12)') '#n', 'Spec       ', &
        'usedMW', 'emis', 'ddep', 'wdep', 'init', 'sum_mass', &
        'fluxout', 'fluxin', 'frac_mass'
 
@@ -375,7 +375,7 @@ subroutine massbudget()
              write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
         end if ! EXTENDED
 
-        write(iomb,'(i3,1x,a14,f7.1,99es12.4)') n,adjustl(species_adv(n)%name), &
+        write(iomb,'(i3,1x,a20,f7.1,99es12.4)') n,adjustl(species_adv(n)%name), &
           species_adv(n)%molwt, &  ! REMEMBER. Sometimes a dummy value, e.g. 1.0
           gtotem(n)*wgt_fac, gtotddep(n)*wgt_fac*ATWAIR, &
           gtotwdep(n)*wgt_fac*ATWAIR, sumini(n)*wgt_fac, sum_mass(n)*wgt_fac,&
