@@ -73,28 +73,30 @@
 !----------------------------------------------------------------------
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
-! EmChem16 needs this to be uncommented:
-!SplitDefaultFile ='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.defaults.POLL'
-!SplitSpecialsFile='OwnInputDir/ZCM_EmChem16x/emissplit_run/emissplit.specials.POLL'
-! EmChem19 (dafault):
-!SplitDefaultFile ='DataDir/ZCM_EmChem19/emissplit_run/emissplit.defaults.POLL'
-!SplitSpecialsFile='DataDir/ZCM_EmChem19/emissplit_run/emissplit.specials.POLL'
 
-! Dec 2019 Generic  (
-ZCMDIR='DataDir/ZCM_EmChem09dec2019',   ! also EmChem19a
-!
-!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL'
-!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL'
+! NEW Dec 2019 !!  ZCMDIR system
+!  path used for emisplits, and CMX files for BiomassBurning and BICs
+! ZCM_EmChem19 is default
+! Although not necessary unless defaults are changed, we store these settings
+! here for visibility, until all are used
+
+ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
+
+SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
+SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
+cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt',  
+cmxBiomassBurning_FINNv1p5 = 'ZCMDIR/CMX_BiomassBurning_FINNv1p5.txt',
+cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 
 !only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
 !  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
 
  !Good EECCA default:
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
+  EmisDir                 = 'DataDir/emis01deg_EMEP/',
+  emis_inputlist(1)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
 
 !  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
-  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII_2011.nc',
-!  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 ! PANDA=HTAP+MEIC
 ! emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.nc',
