@@ -23,6 +23,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th Dec 2019, Dave
+
+Further CMX'ing:
+
+ZCM_DIRS on DataDir now stores new-style files. Currently for EmChem19
+   and EmChem09.
+
+config_emep.nml - clearer text for CMX stuff. Changed default emis to
+                  GNFR instead of ancient TNO, and removed ancient GLOB_05
+
+ZCM_EmChem19a, ZCM_EmChem09
+
+  - updated files after upper-casing groups in GenChem, and fixing Ash
+
+MassBudgetSummary_mod: used wider field for compound name.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5-10th Dec 2019, Dave
 
 *** GenChem upgrade :-)
