@@ -26,28 +26,12 @@
   'NO3_c    ','NO3_c  ',      1.0,     T
   'NH4_f    ','NH4_f  ',      1.0,     T
   'H2O2    ','H2O2    ',      1.0,     T
-# CMX_BoundaryConditions.txt for generic emep run
-# Provides mapping betweeen default boundary and initial conditions
-# (BICs) and EMEP species. A numerical factor may be applied, and a wanted
-# column is also provided so that BICs may we switched off. In many cases
-# one may prefer to provide results from another model as BICs; in this
-# case the mapping here is not used.
-# Provided as part of the default GenChem system. 
-# For list of possible BICs, see defBICs in BoundaryConditions_mod.f90.
-#
+# CMX_BoundaryConditions.txt for generic emep run, Sea-salt
 # globBC     emep             fac  wanted
 #
   'SeaSalt_f  ','SeaSalt_f',   1.0,   T
   'SeaSalt_c  ','SeaSalt_c',   1.0,   T
-# CMX_BoundaryConditions.txt for generic emep 
-# Provides mapping betweeen default boundary and initial conditions
-# (BICs) and EMEP species. A numerical factor may be applied, and a wanted
-# column is also provided so that BICs may we switched off. In many cases
-# one may prefer to provide results from another model as BICs; in this
-# case the mapping here is not used.
-# Provided as part of the default GenChem system.
-# For list of possible BICs, see defBICs in BoundaruConditions_mod.f90.
-#
+# CMX_BoundaryConditions.txt for generic emep, dust
 # globBC     emep             fac    wanted
 #
  'DUST_f',  'Dust_wb_f',     1.0,    T     #Dust

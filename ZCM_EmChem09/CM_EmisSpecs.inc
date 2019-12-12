@@ -40,8 +40,6 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "DUST_ROAD_C   " &
 , "DUST_SAH_F    " &
 , "DUST_SAH_C    " &
-, "POLLEN_BIRCH  " &
-, "POLLEN_OLIVE  " &
-, "POLLEN_RWEED  " &
-, "POLLEN_GRASS  " &
+, "ASH_F         " &
+, "ASH_C         " &
 /)

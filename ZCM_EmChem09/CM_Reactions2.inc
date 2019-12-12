@@ -401,24 +401,6 @@
   ! Nothing to do for OM25_p! xnew(OM25_p) = max(0.0, xold(OM25_p))
 
 
-!-> Ash_f
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for Ash_f! xnew(Ash_f) = max(0.0, xold(Ash_f))
-
-
-!-> Ash_c
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for Ash_c! xnew(Ash_c) = max(0.0, xold(Ash_c))
-
-
 !-> ffire_OM
 
   P = rcemis(FFIRE_OM,k)
@@ -471,5 +453,23 @@
   ! L = 0.0
   
   xnew(SeaSalt_c) = xold(SeaSalt_c) + dt2 * P
+
+
+!-> Ash_f
+
+  P = rcemis(ASH_F,K)
+  
+  ! L = 0.0
+  
+  xnew(Ash_f) = xold(Ash_f) + dt2 * P
+
+
+!-> Ash_c
+
+  P = rcemis(ASH_C,K)
+  
+  ! L = 0.0
+  
+  xnew(Ash_c) = xold(Ash_c) + dt2 * P
 
 

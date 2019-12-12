@@ -50,10 +50,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("NON_C_BSOA_ug10", "ALD       ", -999.0 ) &
 , dep_t("NON_C_BSOA_ug1e2", "ALD       ", -999.0 ) &
 , dep_t("NON_C_BSOA_ug1e3", "ALD       ", -999.0 ) &
-, dep_t("SQT_SOA_nv", "PMf       ", -999.0 ) &
 , dep_t("TERPOOH   ", "LHISOLOOH ", -999.0 ) &
-, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
-, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
 , dep_t("shipNOx   ", "NO2       ", -999.0 ) &
 , dep_t("ffire_OM  ", "PMf       ", -999.0 ) &
 , dep_t("ffire_BC  ", "PMf       ", -999.0 ) &
@@ -67,8 +64,7 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("Dust_wb_c ", "DUc       ", -999.0 ) &
 , dep_t("Dust_sah_f", "DUf       ", -999.0 ) &
 , dep_t("Dust_sah_c", "DUc       ", -999.0 ) &
-, dep_t("POLLEN_BIRCH", "POLLb     ", -999.0 ) &
-, dep_t("POLLEN_OLIVE", "POLLo     ", -999.0 ) &
-, dep_t("POLLEN_RWEED", "POLLr     ", -999.0 ) &
-, dep_t("POLLEN_GRASS", "POLLg     ", -999.0 ) &
+, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
+, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
+, dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
 /)

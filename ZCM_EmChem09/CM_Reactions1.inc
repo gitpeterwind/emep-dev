@@ -1145,15 +1145,6 @@
   xnew(APINENE) = (xold(APINENE) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> SQT_SOA_nv
-
-  P = 0.00383* RCBIO(2,K)
-  
-  ! L = 0.0
-  
-  xnew(SQT_SOA_nv) = xold(SQT_SOA_nv) + dt2 * P
-
-
 !-> TERPOOH
 
   P = rct(94,k) * xnew(TERPO2) * xnew(HO2)
@@ -1227,39 +1218,12 @@
   xnew(Dust_sah_c) = xold(Dust_sah_c) + dt2 * P
 
 
-!-> POLLEN_BIRCH
+!-> SQT_SOA_NV
 
-  P = rcemis(POLLEN_BIRCH,k)
+  P = 0.00383* RCBIO(2,K)
   
   ! L = 0.0
   
-  xnew(POLLEN_BIRCH) = xold(POLLEN_BIRCH) + dt2 * P
-
-
-!-> POLLEN_OLIVE
-
-  P = rcemis(POLLEN_OLIVE,k)
-  
-  ! L = 0.0
-  
-  xnew(POLLEN_OLIVE) = xold(POLLEN_OLIVE) + dt2 * P
-
-
-!-> POLLEN_RWEED
-
-  P = rcemis(POLLEN_RWEED,k)
-  
-  ! L = 0.0
-  
-  xnew(POLLEN_RWEED) = xold(POLLEN_RWEED) + dt2 * P
-
-
-!-> POLLEN_GRASS
-
-  P = rcemis(POLLEN_GRASS,k)
-  
-  ! L = 0.0
-  
-  xnew(POLLEN_GRASS) = xold(POLLEN_GRASS) + dt2 * P
+  xnew(SQT_SOA_NV) = xold(SQT_SOA_NV) + dt2 * P
 
 
