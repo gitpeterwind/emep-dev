@@ -195,7 +195,7 @@ character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domai
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
   DataDir = '.',  &
-  ZCMDIR = 'DataDir/ZCM_EmChem19',  & ! default EmChem19 - also used for EmChem19a etc
+  ZCMDIR = 'DataDir/ZCM_DIRS/ZCM_EmChem19',  & ! default EmChem19 - also used for EmChem19a etc
   OwnInputDir = '.',  &  ! user-defined location
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
