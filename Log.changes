@@ -32,6 +32,12 @@ This does not happen with standard inputs.
 Now values are set to Undef in this case. (Earlier it would take in practice a 
 random point within the defined values)
 
+New emission format: the combination GNFR new emissions with SNAP sector 
+defintions did not work properly. Redefined gnfr2snap, where values are 
+negative if repeated. In loops over "all sectors" (read all sectors) only 
+positive values are taken, so that nothing is used twice. If values are 
+added (convert from gnfr to snap), the absolute value is taken. 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Dec 2019, Dave
 

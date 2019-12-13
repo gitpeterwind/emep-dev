@@ -379,8 +379,8 @@ contains
           endif
           if(EmisFiles(i)%sectorsName == 'GNFRsectors' .and. SECTORS_NAME == 'SNAP' .and. Emis_source(ii)%sector>0)then
              !map to SNAP sectors
-              if(me==0)write(*,*)'mapping GNFR ',Emis_source(ii)%sector,' onto SNAP ',gnfr2snap(Emis_source(ii)%sector),' for '//trim(Emis_source(ii)%varname)
-            Emis_source(ii)%sector = gnfr2snap(Emis_source(ii)%sector)
+              if(me==0)write(*,*)'mapping GNFR ',Emis_source(ii)%sector,' onto SNAP ',abs(gnfr2snap(Emis_source(ii)%sector)),' for '//trim(Emis_source(ii)%varname)
+            Emis_source(ii)%sector = abs(gnfr2snap(Emis_source(ii)%sector))
           endif
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)

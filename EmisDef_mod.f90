@@ -116,7 +116,7 @@ private
    integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
         GNFR_sec2split_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_SPLIT
 
-   integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
+   integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-8,-8,9,10,-10,5/)
 
 
 !GNFR_CAMS  specific definitions (used with CAMS v2.2.1 and  v3.1 emissions from November 2019)
