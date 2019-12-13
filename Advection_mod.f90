@@ -1,4 +1,4 @@
-! <Advection_mod.f90 - A component of the EMEP MSC-W Unified Eulerian
+! <Advection_mod.f90 - A component of the EMEP MSC-W Eulerian
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
