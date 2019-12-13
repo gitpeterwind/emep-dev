@@ -1,4 +1,4 @@
-! <local2global.f90 - A component of the EMEP MSC-W Unified Eulerian
+! <local2global.f90 - A component of the EMEP MSC-W Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 

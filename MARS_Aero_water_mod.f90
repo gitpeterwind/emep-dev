@@ -1,4 +1,4 @@
-! <MARS_Aero_water_mod.f90 - A component of the EMEP MSC-W Unified Eulerian
+! <MARS_Aero_water_mod.f90 - A component of the EMEP MSC-W Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 

@@ -1,4 +1,4 @@
-! <EQSAM4clim_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
+! <EQSAM4clim_ml.f90 - A component of the EMEP MSC-W Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
