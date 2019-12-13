@@ -3486,16 +3486,22 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
                  ig=nint((glon(i,j)-Rlon(startvec(1)))*dRloni)+1
-                 if(ig<0.5)ig=ig+dims(1)
-                 if(ig>dims(1))ig=ig-dims(1)
-                 ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
-                 igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
-                    Rvar(ijk)=Rvalues(igjgk)
+                 if(ig<0.5 .or. ig>dims(1))then
+                    if(present(UnDef))then
+                       Rvar(ijk)=UnDef_local
+                    else
+                       call StopAll("ReadField_CDF: values outside grid required "//trim(varname)//" "//trim(filename))
+                    endif
                  else
-                    Rvar(ijk)=UnDef_local
-                 end if
+                    ig=max(1,min(dims(1),ig))
+                    jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
+                    igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                    if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
+                       Rvar(ijk)=Rvalues(igjgk)
+                    else
+                       Rvar(ijk)=UnDef_local
+                    end if
+                 endif
               end do
            end do
         end do

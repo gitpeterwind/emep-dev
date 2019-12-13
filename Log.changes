@@ -23,6 +23,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Dec 2019, Peter
+
+Small bug in interpolation routine: in the case of zero order interpolation,
+lat lon, and the data does not cover the entire model grid, the results may 
+be dependent on the number of CPUs.
+This does not happen with standard inputs.
+Now values are set to Undef in this case. (Earlier it would take in practice a 
+random point within the defined values)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Dec 2019, Dave
 
 Further CMX'ing:
