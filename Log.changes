@@ -23,6 +23,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Jan 2020, Alvaro
+
+Merge changes from cams50 branch. Mostly data assmimilation related.
+
+Derived_mod: cleanup pmfine/pm10/sia indexing code
+EmisGet_mod: longer errmsg buffer
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Dec 2019, Dave, Robert
   Got rid of "Unified" in header lines! (10 years too late..)
 
