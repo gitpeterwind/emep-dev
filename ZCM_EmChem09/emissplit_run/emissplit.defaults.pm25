@@ -5,7 +5,7 @@
 # D. Simpson, May 2011, loosely based upon IIASA, POMI, CARBOSOL papers
 # change when emissions have artificial mass, e.g. 46 for NOx as NO2
 : MASS_ASSUMED 0 
-99 99   POM_f_FFUEL EC_f_FFUEL_new EC_f_FFUEL_age  POM_f_WOOD  EC_f_WOOD_new EC_f_WOOD_age  REMPPM25  #HEADERS  
+99 99   POM_f_ffuel EC_f_ffuel_new EC_f_ffuel_age  POM_f_wood  EC_f_wood_new EC_f_wood_age  REMPPM25  #HEADERS  
 #DATA
 0   1         2.0            4.0       1.0       0.0       0.0       0.0        93.0   
 0   2        50.0           16.0       4.0       0.0       0.0       0.0        30.0   

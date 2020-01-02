@@ -23,6 +23,125 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Dec 2019, Dave, Robert
+  Got rid of "Unified" in header lines! (10 years too late..)
+
+  ZCM_CB6r2 added
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Dec 2019, Peter
+
+Small bug in interpolation routine: in the case of zero order interpolation,
+lat lon, and the data does not cover the entire model grid, the results may 
+be dependent on the number of CPUs.
+This does not happen with standard inputs.
+Now values are set to Undef in this case. (Earlier it would take in practice a 
+random point within the defined values)
+
+New emission format: the combination GNFR new emissions with SNAP sector 
+defintions did not work properly. Redefined gnfr2snap, where values are 
+negative if repeated. In loops over "all sectors" (read all sectors) only 
+positive values are taken, so that nothing is used twice. If values are 
+added (convert from gnfr to snap), the absolute value is taken. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th Dec 2019, Dave
+
+Further CMX'ing:
+
+ZCM_DIRS on DataDir now stores new-style files. Currently for EmChem19
+   and EmChem09.
+
+config_emep.nml - clearer text for CMX stuff. Changed default emis to
+                  GNFR instead of ancient TNO, and removed ancient GLOB_05
+
+ZCM_EmChem19a, ZCM_EmChem09
+
+  - updated files after upper-casing groups in GenChem, and fixing Ash
+
+MassBudgetSummary_mod: used wider field for compound name.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5-10th Dec 2019, Dave
+
+*** GenChem upgrade :-)
+
+The code has been modified in various places to cope with the new GenChem
+system. The largest changes are:
+
+*** NEW ** 
+Use of text (not .inc) files for boundary and BiomassBurning now
+replaces older .inc files. Main advantage is that one can simply
+append series of files from different mechanisms, eg adding
+basic gas-phase, sea-salt, dust, PM, as requested by the user
+(via GenChem)
+
+CMX_BoundaryConditions.txt now replaces CM_BoundaryConditions.inc, and uses
+a simple mapping table of strings, e.g.
+
+  # globBC     emep             fac  wanted
+  #
+    'O3      ','O3      '   ,   1.0, T
+    'HNO3    ','HNO3    '   ,   1.0, T
+
+
+BoundaryConditions_mod - now reads table  from CMX_BoundaryConditions
+together with defBICs definitions for mapping.  Removed IBC_NO etc.
+
+ForestFire_mod - now reads tables  from CMX_BiomassBurning files.
+Some harmonisation of mapping routines for FINN and GFAS.
+
+CMX_BiomassBurning_FINNv1p5.txt and CMX_BiomassBurning_GFASv1.txt
+(stored in GenChem system) now replace older .inc files.
+
+EmisGet - uses any_case when reading emissplit
+
+mk.ChemFiles uses the new system.
+
+ZCMDIR now added in config_emep.nml, Config_module.f90
+(eg ZCMDIR="ZCM_EmChem19a")
+
+
+ZCM_EmChem19a - updated species settings also (from Robert/ecosx).
+ZCM_EmChem19  - updated species names etc
+ZCM_EmChem09  - updated to CMX (for FINNv1p5 and GFASv1 anyway)
+
+SmallUtils - added xcindex funtion to return index of substr in string
+   regardless of case. (e.g. matches DUST in Dust_road.)
+
+Biogenics_mod - small debug change
+
+NOTE: The CMX files should be placed in the appropriate ZCMDIR (probably
+on DataDir, e.g. ZCM_EmChem19). Done on stallo only so far.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Dec 2019, Dave
+
+USES treatment expanded to almost all USE_ variables.
+
+Config_module:
+
+  WriteConfig_to_RunLog routine added -
+     called at end of run.  Writes out the USES settings as they
+      were actually used.
+
+  Output of full ModelConfig namelist to RunLog.out commented out.
+  Could be sent elsewhere (config.out maybe?), but a RunLog of 35000 lines
+  was not readable, and this did not show if USES varuables had been 
+  changed. 
+
+  I would prefer that we build up a tidy output of the ModelConfig, but
+  it isn't obvious how to do it yet. Might just need hard-coded lines to
+  print out the important information, skipping all unused or unset values.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Nov 2019, Peter
+
+Bug in loop for Gridded monhly factor. No consequences in pratice now, but could 
+be prpblematic in other configurations.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Nov 2019, Agnes, Peter
 
 19 sector defintions for GNFR_CAMS.
@@ -674,57 +793,6 @@ Emissions_mod: Added filename to error message from EmisMask
 Landuse_mod:  Allow longer and more ewords to cope with complex fName
 
 SmallUtils_mod:  Extra error message if eword too long 
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7-8 May 2019, Peter
-
-Renamed ModelConstants_config -> Model_config
-
-Merged nest and external_bic config into ModelConstants_config.
-Most nest config variables renamed with a "NEST_" in front of variable.
-Some cleaning for consistency.
-Did *not* merge ExternalBICs_bc config
-
-Also OutputConcs_config, OutputDep_config and OutputSize_config are now 
-part of  Model_config
-
-Removed OutputMisc_config from config_emep.nml, as I could not see it was used.
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-6 May 2019, Peter
-
-Merged Columns and ForestFire config namelists into ModelConstants_config
-NB: some BB variables have changed name: 
-MODE->BBMODE
-need_file->BBneed_file
-need_date->BBneed_date
-need_poll->BBneed_poll
-verbose->BBverbose
-
-Allow to include additonal namelist files. Example:
-ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
-ExtraConfigFile(2)='OwnInputDir/MyVerySpecialConfig.nml',
-
-The definition of the last namelist is used if variables are set several times.
-
-Also replaced k20 with kmax in config, since we do not necessarily use 20 
-levels.
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3 May 2019, Peter
-
-Merged INPUT_PARA and Machine_config namelists into ModelConstants_config
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-18 Apr 2019, Peter
-
-mapping factor not allowed to be 0.0 at poles (lon lat only). (wrf problems otherwise).
-
-DryDep: added a "if(dbg)" for  'DBGXNO2 WRONG' . Please check: is this just a 
-warning or not allowed? (it is triggered when USES%EURO_SOILNOX=F and USES%GLOBAL_SOILNOx=F).
-Note also that the "first_ddep" never gets .false. (it is not saved).
-
-Put -O2 for intel optimization: test show that it is not slower and faster to compile.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Apr 2019, Dave

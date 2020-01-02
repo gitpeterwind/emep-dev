@@ -26,7 +26,7 @@ use Config_module,    only:  &
   ,MasterProc                   & 
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
-  ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
+  ,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP & ! Upper layer (k), upper level, and k for 1d fields
@@ -606,7 +606,7 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! Emissions from GEIA, was use for Aerocom NO3 experiment
-  if(USE_OCEAN_NH3)then
+  if(USES%OCEAN_NH3)then
      !keep separated from snapemis/rcemis in order to be able to include more
      ! advanced processes
      k=KMAX_MID
@@ -648,7 +648,7 @@ subroutine setup_rcemis(i,j)
      Kw=Kw/3600!cm/hour -> cm/s
 
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
-     if(USE_OCEAN_DMS)then
+     if(USES%OCEAN_DMS)then
       rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ &
       0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
                            (dA(k)+dB(k)*ps(i,j,1)) *AVOG 

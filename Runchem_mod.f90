@@ -24,7 +24,7 @@ module RunChem_mod
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, step_main,  &
-                              USE_FASTJ, USES, AOD_WANTED, dt_advec
+                              USES, AOD_WANTED, dt_advec
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
   use DefPhotolysis_mod, only: setup_phot
@@ -144,7 +144,7 @@ subroutine runchem()
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USE_FASTJ)then
+      if(USES%FASTJ)then
 !         call setup_phot_fastj(i,j,errcode,0)! recalculate the column
         !interpolate (intelligently) from 3-hourly values
          call  phot_fastj_interpolate(i,j,errcode)

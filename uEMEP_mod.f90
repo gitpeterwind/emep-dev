@@ -18,7 +18,7 @@ use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emi
                              make_iland_for_time,itot2iqrc,iqrc2iem
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
 use MetFields_mod,     only: ps,roa,EtaKz
-use Config_module,     only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR&
+use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, KMAX_MID &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &

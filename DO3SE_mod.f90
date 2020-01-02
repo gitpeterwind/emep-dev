@@ -233,7 +233,7 @@ contains
   !   Once per day, but for simplicity we do it every time-step.
 
   ! ************************************
-   !FEB2013 Set fSW in CellMet
+   !NOTE! Set fSW in CellMet
   ! ************************************
 
 

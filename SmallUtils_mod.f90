@@ -31,6 +31,7 @@ module SmallUtils_mod
   private :: num2str_i
   private :: num2str_r
   public :: to_upper     !> Converts string to upper case
+  public :: xcindex      !> index function which ignores case
   public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
@@ -399,6 +400,11 @@ elemental Function to_upper (str) Result (string)
     end do
 
 End Function to_upper
+elemental function xcindex(str,substr) result (ind)
+ character(len=*), intent(in) :: str, substr
+ integer :: ind
+  ind = index( to_upper(str), to_upper(substr) )
+end function xcindex
 !============================================================================
 ! key2str 
 !   replace occurence(s) of keyword key on string iname by value val

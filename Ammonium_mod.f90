@@ -1,4 +1,4 @@
-! <Ammonium_mod.f90 - A component of the EMEP MSC-W Unified Eulerian
+! <Ammonium_mod.f90 - A component of the EMEP MSC-W Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
