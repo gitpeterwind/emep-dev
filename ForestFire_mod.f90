@@ -113,10 +113,10 @@ character(len=TXTLEN_SHORT), dimension(23) :: &
    'BC' ,'C2H4' ,'GLYC' ,'HAC' ,'BENZ' ,&
    'TOLU','XYLE' ,'MGLY' ]
 
-character(len=TXTLEN_SHORT), dimension(23) :: &
+character(len=TXTLEN_SHORT), dimension(22) :: &
   GFASv1_SPECS  = [ character(len=TXTLEN_SHORT):: &
    'cofire', 'ch4fire', 'h2fire', 'noxfire', 'pm2p5fire', &
-   'ocfire', 'bcfire', 'ocfire', 'bcfire', 'so2fire', &
+   'tpmfire', 'ocfire', 'bcfire', 'so2fire', &
    'ch3ohfire', 'c2h5ohfire', 'c2h4fire', 'c3h6fire', 'c5h8fire', &
    'toluenefire', 'hialkenesfire', 'hialkanesfire', 'ch2ofire','c2h4ofire', &
    'nh3fire', 'c2h6fire', 'c4h10fire' ]
