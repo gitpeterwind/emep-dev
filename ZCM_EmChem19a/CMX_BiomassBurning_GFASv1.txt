@@ -32,6 +32,12 @@
 #----------------------------------------------------------------------------#
 # BiomassBurning mapping GFASv1 to EMEP's ffire_OM, ffire_BC, ffire_remPPM25
 #----------------------------------------------------------------------------#
+# Column-1 gives GFASv1 species,
+# Column-2 gives unitsfac
+# Column-3 gives mass fraction of GFASv1 emissions assign to EMEP species
+# Column-4 gives EMEP species
+# Note, GFAS species are not essential in all files, but if given they need
+# to be part of the POSSIBLE_GFASv1_SPECS array in EMEP's ForestFire_mod.
 #
 # FFire PM species only here, see FFireTracers for ffire_CO tracer if wanted.
 # 
