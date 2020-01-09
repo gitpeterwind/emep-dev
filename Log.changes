@@ -23,6 +23,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Jan 2020, Dave/Alvaro
+
+ForestFire_mod - enabled use of non-essential components (eg tpmfire) through
+    BBfound variable, and POSSIBLE_FINNv1p5_SPECS and POSSIBLE_GFASv1_SPECS
+    arrays. Also code tidy-up.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Jan 2020, Alvaro
 
 Merge changes from cams50 branch. Mostly data assmimilation related.
