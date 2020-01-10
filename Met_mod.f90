@@ -292,8 +292,7 @@ subroutine MeteoRead()
        ,"deep_soil_water_content" /)
    ! Hmix ditto:
   character(len=*),  parameter :: &
-    possible_HmixNames(2) =  [ "PBLH",&
-      "blh " ] ! GLOBAL05
+    possible_HmixNames(3) =  [ "pblh", "PBLH", "blh "]
 
   logical :: write_now
 
@@ -974,12 +973,14 @@ subroutine MeteoRead()
     foundHmix=.false.
     do isw = 1, size(possible_HmixNames)
       namefield=possible_HmixNames(isw)
-      if(first_call.and.MasterProc) &
-            write(*,*) "Met_mod: HMIX search ",isw,trim(namefield)
       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                pbl_nwp(:,:,nr),found=foundHmix)
+      if(first_call.and.MasterProc) &
+            write(*,*) "Met_mod: HMIX search ",isw,trim(namefield)," found=",foundHmix
       if(foundHmix) then ! found
-          exit
+         if(MasterProc)write(*,*)"using "//trim(namefield)//" for Hmix in meteo"
+         met(ix_pblnwp)%name=trim(namefield)
+         exit
       end if
     end do
   end if ! PBL Hmix
