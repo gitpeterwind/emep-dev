@@ -23,6 +23,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Jan 2020, Dave
+
+StoFlux - logic improved to use night rather than daynumber to reset SumVPD etc.
+          Should work better in non-European locations
+          Also, hard-coded 8.0 replaced by VPDcrit
+
+DryDep_mod  - call to Setup_StoFlux modified 
+
+RunChem_mod - DebugCell definition now separate from DEBUG%RUNCHEM
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Jan 2020, Dave/Alvaro
 
 ForestFire_mod - enabled use of non-essential components (eg tpmfire) through

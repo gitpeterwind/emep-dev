@@ -378,7 +378,7 @@ contains
 
     call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=debug_flag)
 
-    call Setup_StoFlux( daynumber )
+    call Setup_StoFlux( i, j )
 
 ! - can set settling velcoty here since not landuse dependent
 

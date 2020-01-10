@@ -103,9 +103,9 @@ subroutine runchem()
 
       !****** debug cell set here *******
       debug_flag =  .false.  
+      DebugCell = debug_proc .and. debug_li==i .and. debug_lj==j
       if(DEBUG%RUNCHEM.and.debug_proc) then
         debug_flag = (debug_li==i .and. debug_lj==j) 
-        DebugCell = debug_flag
         DEBUG%datetxt = print_date(current_date)
         if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
       end if
