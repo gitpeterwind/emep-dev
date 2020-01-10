@@ -80,4 +80,8 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("remPPM25  ", "PMf       ", -999.0 ) &
 , dep_t("remPPM_c  ", "PMc       ", -999.0 ) &
 , dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
+, dep_t("POLLEN_BIRCH", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_OLIVE", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_RWEED", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_GRASS", "POLLw     ", -999.0 ) &
 /)
