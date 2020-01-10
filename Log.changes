@@ -26,6 +26,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Jan 2020, Peter
 
 Added "pblh" in the list of possible HMIX names. (tested on EECCA)
+More robust interpolation from Polar Stereo to lat lon 
+(EECCA was crashing on Logan interpolation!)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Jan 2020, Dave
