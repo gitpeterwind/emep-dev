@@ -23,6 +23,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Jan 2020, Dave
+
+ZCM_EmChem19p added  = EmChem19a + Pollen (4 species)
+
+ZCM_EmChem19a files - slight updates.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Jan 2020, Peter
 
 Added "pblh" in the list of possible HMIX names. (tested on EECCA)
