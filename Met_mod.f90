@@ -974,7 +974,7 @@ subroutine MeteoRead()
     do isw = 1, size(possible_HmixNames)
       namefield=possible_HmixNames(isw)
       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
-               pbl_nwp(:,:,nr),found=foundHmix)
+               pbl_nwp(:,:,nr),needed=met(ix_pblnwp)%needed,found=foundHmix)
       if(first_call.and.MasterProc) &
             write(*,*) "Met_mod: HMIX search ",isw,trim(namefield)," found=",foundHmix
       if(foundHmix) then ! found
@@ -2695,8 +2695,11 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
 
   real :: scalefactors(2)
   integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart,Nlevel,kstart,kend
-  logical :: reverse_k
+  logical :: reverse_k, needed_local
   real, allocatable,save ::meteo_3D(:,:,:)
+
+  needed_local=.true.
+  if(present(needed))needed_local = needed
 
   validity=''
   call_msg = "GetMeteofield" // trim(namefield)
@@ -2716,7 +2719,7 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
           call ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='conservative', &
 !               use_lat_name='lat_u', use_lon_name='lon_u', &
                 stagg='stagg_u',&
-                needed=needed,found=found,unit=unit,debug_flag=.false.)
+                needed=needed_local,found=found,unit=unit,debug_flag=.false.)
         elseif(trim(namefield)=='v_wind') then
 !         call ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='zero_order', &
           call ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='conservative', &

@@ -27,6 +27,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Jan 2020, Peter
 
 Bug in Sec_emis output, when sector spcific output was requested.
+The bug referred below 10th jan (pblh) was not well fixed. Fixed now
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Jan 2020, Dave
