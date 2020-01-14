@@ -2725,10 +2725,10 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
           call ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='conservative', &
 !               use_lat_name='lat_v', use_lon_name='lon_v', &
                 stagg='stagg_v',&
-                needed=needed,found=found,unit=unit,debug_flag=.false.)
+                needed=needed_local,found=found,unit=unit,debug_flag=.false.)
         else
           call ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='zero_order', &
-                  needed=needed,found=found,unit=unit,debug_flag=.false.)
+                  needed=needed_local,found=found,unit=unit,debug_flag=.false.)
         end if
         validity='not set'
         ! CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
@@ -2738,7 +2738,7 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
 
       elseif(ndim==2)then
         call ReadField_CDF(meteoname,namefield,field(1),nstart=nrec,interpol='zero_order', &
-               needed=needed,found=found,unit=unit,debug_flag=.false.)
+               needed=needed_local,found=found,unit=unit,debug_flag=.false.)
         ! write(*,*)'METVAL ',trim(namefield),me,field(40),nrec
         ! NB: need to fix validity
         validity='not set'
@@ -2747,7 +2747,7 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
       if(MasterProc)then
         nfetch=1
         call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
-               JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity,needed=needed)
+               JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity,needed=needed_local)
       end if
 
       !note: var_global is defined only for me=0
@@ -2835,7 +2835,7 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
 
       call GetCDF_modelgrid(namefield_met,meteoname,meteo_3D,kstart,kend,nrec,&
             nfetch,i_start=istart,j_start=jstart,reverse_k=reverse_k,&
-            needed=needed,found=found)
+            needed=needed_local,found=found)
 
       if(KMAX==1)then
         ijk=0
