@@ -67,107 +67,105 @@ module ChemSpecs_mod
     , MGLYOX      =  47  &
     , BIACET      =  48  &
     , C5DICARB    =  49  &
-    , C5134CO2OH  =  50
+    , CH3OOH      =  50
   
   integer, public, parameter :: &
-      C54CO       =  51  &
-    , CH3OOH      =  52  &
-    , C2H5OOH     =  53  &
-    , BURO2H      =  54  &
-    , ETRO2H      =  55  &
-    , MEKO2H      =  56  &
-    , ISRO2H      =  57  &
-    , C5DICAROOH  =  58  &
-    , HPALD       =  59  &
-    , MACROOH     =  60
+      C2H5OOH     =  51  &
+    , BURO2H      =  52  &
+    , ETRO2H      =  53  &
+    , MEKO2H      =  54  &
+    , ISRO2H      =  55  &
+    , C5DICAROOH  =  56  &
+    , HPALD       =  57  &
+    , MACROOH     =  58  &
+    , OXYO2H      =  59  &
+    , CH3CO3H     =  60
   
   integer, public, parameter :: &
-      OXYO2H      =  61  &
-    , CH3CO3H     =  62  &
-    , PACALD      =  63  &
-    , IEPOX       =  64  &
-    , SC4H9NO3    =  65  &
-    , NALD        =  66  &
-    , ISON        =  67  &
-    , PAN         =  68  &
-    , MPAN        =  69  &
-    , APINENE     =  70
+      PACALD      =  61  &
+    , IEPOX       =  62  &
+    , SC4H9NO3    =  63  &
+    , NALD        =  64  &
+    , ISON        =  65  &
+    , PAN         =  66  &
+    , MPAN        =  67  &
+    , APINENE     =  68  &
+    , TERPOOH     =  69  &
+    , SO2         =  70
   
   integer, public, parameter :: &
-      TERPOOH     =  71  &
-    , SO2         =  72  &
-    , TERPPeroxy  =  73  &
-    , shipNOx     =  74  &
-    , Dust_road_f =  75  &
-    , Dust_road_c =  76  &
-    , Dust_wb_f   =  77  &
-    , Dust_wb_c   =  78  &
-    , Dust_sah_f  =  79  &
-    , Dust_sah_c  =  80
+      TERPPeroxy  =  71  &
+    , shipNOx     =  72  &
+    , Dust_road_f =  73  &
+    , Dust_road_c =  74  &
+    , Dust_wb_f   =  75  &
+    , Dust_wb_c   =  76  &
+    , Dust_sah_f  =  77  &
+    , Dust_sah_c  =  78  &
+    , SQT_SOA_NV  =  79  &
+    , ASOC_ng1e2  =  80
   
   integer, public, parameter :: &
-      SQT_SOA_NV  =  81  &
-    , ASOC_ng1e2  =  82  &
-    , ASOC_ug1    =  83  &
-    , ASOC_ug10   =  84  &
-    , ASOC_ug1e2  =  85  &
-    , ASOC_ug1e3  =  86  &
-    , non_C_ASOA_ng1e2=  87  &
-    , non_C_ASOA_ug1=  88  &
-    , non_C_ASOA_ug10=  89  &
-    , non_C_ASOA_ug1e2=  90
+      ASOC_ug1    =  81  &
+    , ASOC_ug10   =  82  &
+    , ASOC_ug1e2  =  83  &
+    , ASOC_ug1e3  =  84  &
+    , non_C_ASOA_ng1e2=  85  &
+    , non_C_ASOA_ug1=  86  &
+    , non_C_ASOA_ug10=  87  &
+    , non_C_ASOA_ug1e2=  88  &
+    , non_C_ASOA_ug1e3=  89  &
+    , BSOC_ng1e2  =  90
   
   integer, public, parameter :: &
-      non_C_ASOA_ug1e3=  91  &
-    , BSOC_ng1e2  =  92  &
-    , BSOC_ug1    =  93  &
-    , BSOC_ug10   =  94  &
-    , BSOC_ug1e2  =  95  &
-    , BSOC_ug1e3  =  96  &
-    , non_C_BSOA_ng1e2=  97  &
-    , non_C_BSOA_ug1=  98  &
-    , non_C_BSOA_ug10=  99  &
-    , non_C_BSOA_ug1e2= 100
+      BSOC_ug1    =  91  &
+    , BSOC_ug10   =  92  &
+    , BSOC_ug1e2  =  93  &
+    , BSOC_ug1e3  =  94  &
+    , non_C_BSOA_ng1e2=  95  &
+    , non_C_BSOA_ug1=  96  &
+    , non_C_BSOA_ug10=  97  &
+    , non_C_BSOA_ug1e2=  98  &
+    , non_C_BSOA_ug1e3=  99  &
+    , SO4         = 100
   
   integer, public, parameter :: &
-      non_C_BSOA_ug1e3= 101  &
-    , SO4         = 102  &
-    , NH3         = 103  &
-    , NO3_f       = 104  &
-    , NO3_c       = 105  &
-    , NH4_f       = 106  &
-    , OM25_bgnd   = 107  &
-    , OM25_p      = 108  &
-    , ffire_OM    = 109  &
-    , ffire_BC    = 110
+      NH3         = 101  &
+    , NO3_f       = 102  &
+    , NO3_c       = 103  &
+    , NH4_f       = 104  &
+    , OM25_bgnd   = 105  &
+    , OM25_p      = 106  &
+    , ffire_OM    = 107  &
+    , ffire_BC    = 108  &
+    , ffire_remPPM25= 109  &
+    , ffire_c     = 110
   
   integer, public, parameter :: &
-      ffire_remPPM25= 111  &
-    , ffire_c     = 112  &
-    , SeaSalt_f   = 113  &
-    , SeaSalt_c   = 114  &
-    , Ash_f       = 115  &
-    , Ash_c       = 116  &
-    , POM_f_wood  = 117  &
-    , POM_c_wood  = 118  &
-    , POM_f_ffuel = 119  &
-    , POM_c_ffuel = 120
+      SeaSalt_f   = 111  &
+    , SeaSalt_c   = 112  &
+    , Ash_f       = 113  &
+    , Ash_c       = 114  &
+    , POM_f_wood  = 115  &
+    , POM_c_wood  = 116  &
+    , POM_f_ffuel = 117  &
+    , POM_c_ffuel = 118  &
+    , EC_f_wood_new= 119  &
+    , EC_f_wood_age= 120
   
   integer, public, parameter :: &
-      EC_f_wood_new= 121  &
-    , EC_f_wood_age= 122  &
-    , EC_c_wood   = 123  &
-    , EC_f_ffuel_new= 124  &
-    , EC_f_ffuel_age= 125  &
-    , EC_c_ffuel  = 126  &
-    , pSO4f       = 127  &
-    , pSO4c       = 128  &
-    , remPPM25    = 129  &
-    , remPPM_c    = 130
+      EC_c_wood   = 121  &
+    , EC_f_ffuel_new= 122  &
+    , EC_f_ffuel_age= 123  &
+    , EC_c_ffuel  = 124  &
+    , pSO4f       = 125  &
+    , pSO4c       = 126  &
+    , remPPM25    = 127  &
+    , remPPM_c    = 128
   
   !+ Defines indices for ADV : Advected species
   integer, public, parameter :: FIRST_ADV=16, &
-                                 LAST_ADV=130
+                                 LAST_ADV=128
   
   integer, public, parameter :: &
       IXADV_RO2POOL     =   1  &
@@ -210,103 +208,101 @@ module ChemSpecs_mod
     , IXADV_MGLYOX      =  32  &
     , IXADV_BIACET      =  33  &
     , IXADV_C5DICARB    =  34  &
-    , IXADV_C5134CO2OH  =  35  &
-    , IXADV_C54CO       =  36  &
-    , IXADV_CH3OOH      =  37  &
-    , IXADV_C2H5OOH     =  38  &
-    , IXADV_BURO2H      =  39  &
-    , IXADV_ETRO2H      =  40
+    , IXADV_CH3OOH      =  35  &
+    , IXADV_C2H5OOH     =  36  &
+    , IXADV_BURO2H      =  37  &
+    , IXADV_ETRO2H      =  38  &
+    , IXADV_MEKO2H      =  39  &
+    , IXADV_ISRO2H      =  40
   
   integer, public, parameter :: &
-      IXADV_MEKO2H      =  41  &
-    , IXADV_ISRO2H      =  42  &
-    , IXADV_C5DICAROOH  =  43  &
-    , IXADV_HPALD       =  44  &
-    , IXADV_MACROOH     =  45  &
-    , IXADV_OXYO2H      =  46  &
-    , IXADV_CH3CO3H     =  47  &
-    , IXADV_PACALD      =  48  &
-    , IXADV_IEPOX       =  49  &
-    , IXADV_SC4H9NO3    =  50
+      IXADV_C5DICAROOH  =  41  &
+    , IXADV_HPALD       =  42  &
+    , IXADV_MACROOH     =  43  &
+    , IXADV_OXYO2H      =  44  &
+    , IXADV_CH3CO3H     =  45  &
+    , IXADV_PACALD      =  46  &
+    , IXADV_IEPOX       =  47  &
+    , IXADV_SC4H9NO3    =  48  &
+    , IXADV_NALD        =  49  &
+    , IXADV_ISON        =  50
   
   integer, public, parameter :: &
-      IXADV_NALD        =  51  &
-    , IXADV_ISON        =  52  &
-    , IXADV_PAN         =  53  &
-    , IXADV_MPAN        =  54  &
-    , IXADV_APINENE     =  55  &
-    , IXADV_TERPOOH     =  56  &
-    , IXADV_SO2         =  57  &
-    , IXADV_TERPPeroxy  =  58  &
-    , IXADV_shipNOx     =  59  &
-    , IXADV_Dust_road_f =  60
+      IXADV_PAN         =  51  &
+    , IXADV_MPAN        =  52  &
+    , IXADV_APINENE     =  53  &
+    , IXADV_TERPOOH     =  54  &
+    , IXADV_SO2         =  55  &
+    , IXADV_TERPPeroxy  =  56  &
+    , IXADV_shipNOx     =  57  &
+    , IXADV_Dust_road_f =  58  &
+    , IXADV_Dust_road_c =  59  &
+    , IXADV_Dust_wb_f   =  60
   
   integer, public, parameter :: &
-      IXADV_Dust_road_c =  61  &
-    , IXADV_Dust_wb_f   =  62  &
-    , IXADV_Dust_wb_c   =  63  &
-    , IXADV_Dust_sah_f  =  64  &
-    , IXADV_Dust_sah_c  =  65  &
-    , IXADV_SQT_SOA_NV  =  66  &
-    , IXADV_ASOC_ng1e2  =  67  &
-    , IXADV_ASOC_ug1    =  68  &
-    , IXADV_ASOC_ug10   =  69  &
-    , IXADV_ASOC_ug1e2  =  70
+      IXADV_Dust_wb_c   =  61  &
+    , IXADV_Dust_sah_f  =  62  &
+    , IXADV_Dust_sah_c  =  63  &
+    , IXADV_SQT_SOA_NV  =  64  &
+    , IXADV_ASOC_ng1e2  =  65  &
+    , IXADV_ASOC_ug1    =  66  &
+    , IXADV_ASOC_ug10   =  67  &
+    , IXADV_ASOC_ug1e2  =  68  &
+    , IXADV_ASOC_ug1e3  =  69  &
+    , IXADV_non_C_ASOA_ng1e2=  70
   
   integer, public, parameter :: &
-      IXADV_ASOC_ug1e3  =  71  &
-    , IXADV_non_C_ASOA_ng1e2=  72  &
-    , IXADV_non_C_ASOA_ug1=  73  &
-    , IXADV_non_C_ASOA_ug10=  74  &
-    , IXADV_non_C_ASOA_ug1e2=  75  &
-    , IXADV_non_C_ASOA_ug1e3=  76  &
-    , IXADV_BSOC_ng1e2  =  77  &
-    , IXADV_BSOC_ug1    =  78  &
-    , IXADV_BSOC_ug10   =  79  &
-    , IXADV_BSOC_ug1e2  =  80
+      IXADV_non_C_ASOA_ug1=  71  &
+    , IXADV_non_C_ASOA_ug10=  72  &
+    , IXADV_non_C_ASOA_ug1e2=  73  &
+    , IXADV_non_C_ASOA_ug1e3=  74  &
+    , IXADV_BSOC_ng1e2  =  75  &
+    , IXADV_BSOC_ug1    =  76  &
+    , IXADV_BSOC_ug10   =  77  &
+    , IXADV_BSOC_ug1e2  =  78  &
+    , IXADV_BSOC_ug1e3  =  79  &
+    , IXADV_non_C_BSOA_ng1e2=  80
   
   integer, public, parameter :: &
-      IXADV_BSOC_ug1e3  =  81  &
-    , IXADV_non_C_BSOA_ng1e2=  82  &
-    , IXADV_non_C_BSOA_ug1=  83  &
-    , IXADV_non_C_BSOA_ug10=  84  &
-    , IXADV_non_C_BSOA_ug1e2=  85  &
-    , IXADV_non_C_BSOA_ug1e3=  86  &
-    , IXADV_SO4         =  87  &
-    , IXADV_NH3         =  88  &
-    , IXADV_NO3_f       =  89  &
-    , IXADV_NO3_c       =  90
+      IXADV_non_C_BSOA_ug1=  81  &
+    , IXADV_non_C_BSOA_ug10=  82  &
+    , IXADV_non_C_BSOA_ug1e2=  83  &
+    , IXADV_non_C_BSOA_ug1e3=  84  &
+    , IXADV_SO4         =  85  &
+    , IXADV_NH3         =  86  &
+    , IXADV_NO3_f       =  87  &
+    , IXADV_NO3_c       =  88  &
+    , IXADV_NH4_f       =  89  &
+    , IXADV_OM25_bgnd   =  90
   
   integer, public, parameter :: &
-      IXADV_NH4_f       =  91  &
-    , IXADV_OM25_bgnd   =  92  &
-    , IXADV_OM25_p      =  93  &
-    , IXADV_ffire_OM    =  94  &
-    , IXADV_ffire_BC    =  95  &
-    , IXADV_ffire_remPPM25=  96  &
-    , IXADV_ffire_c     =  97  &
-    , IXADV_SeaSalt_f   =  98  &
-    , IXADV_SeaSalt_c   =  99  &
-    , IXADV_Ash_f       = 100
+      IXADV_OM25_p      =  91  &
+    , IXADV_ffire_OM    =  92  &
+    , IXADV_ffire_BC    =  93  &
+    , IXADV_ffire_remPPM25=  94  &
+    , IXADV_ffire_c     =  95  &
+    , IXADV_SeaSalt_f   =  96  &
+    , IXADV_SeaSalt_c   =  97  &
+    , IXADV_Ash_f       =  98  &
+    , IXADV_Ash_c       =  99  &
+    , IXADV_POM_f_wood  = 100
   
   integer, public, parameter :: &
-      IXADV_Ash_c       = 101  &
-    , IXADV_POM_f_wood  = 102  &
-    , IXADV_POM_c_wood  = 103  &
-    , IXADV_POM_f_ffuel = 104  &
-    , IXADV_POM_c_ffuel = 105  &
-    , IXADV_EC_f_wood_new= 106  &
-    , IXADV_EC_f_wood_age= 107  &
-    , IXADV_EC_c_wood   = 108  &
-    , IXADV_EC_f_ffuel_new= 109  &
-    , IXADV_EC_f_ffuel_age= 110
+      IXADV_POM_c_wood  = 101  &
+    , IXADV_POM_f_ffuel = 102  &
+    , IXADV_POM_c_ffuel = 103  &
+    , IXADV_EC_f_wood_new= 104  &
+    , IXADV_EC_f_wood_age= 105  &
+    , IXADV_EC_c_wood   = 106  &
+    , IXADV_EC_f_ffuel_new= 107  &
+    , IXADV_EC_f_ffuel_age= 108  &
+    , IXADV_EC_c_ffuel  = 109  &
+    , IXADV_pSO4f       = 110
   
   integer, public, parameter :: &
-      IXADV_EC_c_ffuel  = 111  &
-    , IXADV_pSO4f       = 112  &
-    , IXADV_pSO4c       = 113  &
-    , IXADV_remPPM25    = 114  &
-    , IXADV_remPPM_c    = 115
+      IXADV_pSO4c       = 111  &
+    , IXADV_remPPM25    = 112  &
+    , IXADV_remPPM_c    = 113
   
   !+ Defines indices for SHL : Short-lived (non-advected) species
   integer, public, parameter :: FIRST_SHL=1, &
@@ -332,8 +328,8 @@ module ChemSpecs_mod
     , IXSHL_TERPO2      =  15
   
   !+ Defines indices for SEMIVOL : Semi-volatile organic aerosols
-  integer, public, parameter :: FIRST_SEMIVOL=82, &
-                                 LAST_SEMIVOL=101
+  integer, public, parameter :: FIRST_SEMIVOL=80, &
+                                 LAST_SEMIVOL=99
   
   integer, public, parameter :: &
       IXSOA_ASOC_ng1e2  =   1  &
@@ -455,8 +451,6 @@ contains
     species(MGLYOX      ) = Chemical("MGLYOX      ",  72.0000,  0,   3.0000,   0.0000,   0.0000 )
     species(BIACET      ) = Chemical("BIACET      ",  86.0000,  0,   4.0000,   0.0000,   0.0000 )
     species(C5DICARB    ) = Chemical("C5DICARB    ",  98.0000,  0,   5.0000,   0.0000,   0.0000 )
-    species(C5134CO2OH  ) = Chemical("C5134CO2OH  ", 130.0000,  0,   5.0000,   0.0000,   0.0000 )
-    species(C54CO       ) = Chemical("C54CO       ", 128.0000,  0,   5.0000,   0.0000,   0.0000 )
     species(CH3OOH      ) = Chemical("CH3OOH      ",  48.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(C2H5OOH     ) = Chemical("C2H5OOH     ",  62.0000,  0,   2.0000,   0.0000,   0.0000 )
     species(BURO2H      ) = Chemical("BURO2H      ",  90.0000,  0,   4.0000,   0.0000,   0.0000 )

@@ -131,42 +131,40 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     BVOC_GROUP = (/ C5H8, APINENE /)
   
-  integer, public, target, save, dimension (13) :: &
+  integer, public, target, save, dimension (11) :: &
     RCHO_GROUP = (/  &
-      HCHO, CH3CHO, MACR, GLYOX, MGLYOX, C5DICARB, C5134CO2OH,  &
-      C54CO, C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
+      HCHO, CH3CHO, MACR, GLYOX, MGLYOX, C5DICARB, C5DICAROOH,  &
+      HPALD, MACROOH, PACALD, NALD  &
+    /)
+  
+  integer, public, target, save, dimension (9) :: &
+    WDEP_RCHO_GROUP = (/  &
+      HCHO, GLYOX, MGLYOX, C5DICARB, C5DICAROOH, HPALD, MACROOH,  &
+      PACALD, NALD  &
     /)
   
   integer, public, target, save, dimension (11) :: &
-    WDEP_RCHO_GROUP = (/  &
-      HCHO, GLYOX, MGLYOX, C5DICARB, C5134CO2OH, C54CO,  &
-      C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
-    /)
-  
-  integer, public, target, save, dimension (13) :: &
     DDEP_RCHO_GROUP = (/  &
-      HCHO, CH3CHO, MACR, GLYOX, MGLYOX, C5DICARB, C5134CO2OH,  &
-      C54CO, C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
+      HCHO, CH3CHO, MACR, GLYOX, MGLYOX, C5DICARB, C5DICAROOH,  &
+      HPALD, MACROOH, PACALD, NALD  &
     /)
   
-  integer, public, target, save, dimension (17) :: &
+  integer, public, target, save, dimension (15) :: &
     CARBONYL_GROUP = (/  &
       HCHO, CH3CHO, MACR, MEK, ACETOL, GLYOX, MGLYOX, BIACET,  &
-      C5DICARB, C5134CO2OH, C54CO, MEKO2H, C5DICAROOH, HPALD,  &
-      MACROOH, PACALD, NALD  &
+      C5DICARB, MEKO2H, C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
     /)
   
-  integer, public, target, save, dimension (13) :: &
+  integer, public, target, save, dimension (11) :: &
     WDEP_CARBONYL_GROUP = (/  &
-      HCHO, ACETOL, GLYOX, MGLYOX, C5DICARB, C5134CO2OH, C54CO,  &
-      MEKO2H, C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
+      HCHO, ACETOL, GLYOX, MGLYOX, C5DICARB, MEKO2H, C5DICAROOH,  &
+      HPALD, MACROOH, PACALD, NALD  &
     /)
   
-  integer, public, target, save, dimension (17) :: &
+  integer, public, target, save, dimension (15) :: &
     DDEP_CARBONYL_GROUP = (/  &
       HCHO, CH3CHO, MACR, MEK, ACETOL, GLYOX, MGLYOX, BIACET,  &
-      C5DICARB, C5134CO2OH, C54CO, MEKO2H, C5DICAROOH, HPALD,  &
-      MACROOH, PACALD, NALD  &
+      C5DICARB, MEKO2H, C5DICAROOH, HPALD, MACROOH, PACALD, NALD  &
     /)
   
   integer, public, target, save, dimension (1) :: &

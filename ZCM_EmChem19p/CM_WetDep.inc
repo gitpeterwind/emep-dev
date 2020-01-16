@@ -10,8 +10,6 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("GLYOX     ", "H2O2      ", -999.0 ) &
 , dep_t("MGLYOX    ", "0p3       ", -999.0 ) &
 , dep_t("C5DICARB  ", "H2O2      ", -999.0 ) &
-, dep_t("C5134CO2OH", "H2O2      ", -999.0 ) &
-, dep_t("C54CO     ", "H2O2      ", -999.0 ) &
 , dep_t("ETRO2H    ", "H2O2      ", -999.0 ) &
 , dep_t("MEKO2H    ", "1p3       ", -999.0 ) &
 , dep_t("ISRO2H    ", "H2O2      ", -999.0 ) &

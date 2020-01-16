@@ -16,8 +16,6 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("MGLYOX    ", "MGLYOX    ", -999.0 ) &
 , dep_t("BIACET    ", "MEK       ", -999.0 ) &
 , dep_t("C5DICARB  ", "C5DICARB  ", -999.0 ) &
-, dep_t("C5134CO2OH", "MDSOLOOH  ", -999.0 ) &
-, dep_t("C54CO     ", "VHISOLOOH ", -999.0 ) &
 , dep_t("CH3OOH    ", "MEOOH     ", -999.0 ) &
 , dep_t("C2H5OOH   ", "MEOOH     ", -999.0 ) &
 , dep_t("BURO2H    ", "C3H7OOH   ", -999.0 ) &

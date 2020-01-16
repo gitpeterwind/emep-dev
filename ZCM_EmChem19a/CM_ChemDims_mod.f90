@@ -7,10 +7,10 @@ module ChemDims_mod
   
 
     ! NSPEC for TOT : All reacting species
-    integer, public, parameter :: NSPEC_TOT=130
+    integer, public, parameter :: NSPEC_TOT=128
     
     ! NSPEC for ADV : Advected species
-    integer, public, parameter :: NSPEC_ADV=115
+    integer, public, parameter :: NSPEC_ADV=113
     
     ! NSPEC for SHL : Short-lived (non-advected) species
     integer, public, parameter :: NSPEC_SHL=15
@@ -19,10 +19,10 @@ module ChemDims_mod
     integer, public, parameter :: NSPEC_SEMIVOL=20
         
     ! No. DRY deposition species
-    integer, public, parameter :: NDRYDEP_ADV = 93
+    integer, public, parameter :: NDRYDEP_ADV = 91
     
     ! No. WET deposition species
-    integer, public, parameter :: NWETDEP_ADV = 80
+    integer, public, parameter :: NWETDEP_ADV = 78
     
     ! No. rate coefficients
     integer, parameter, public :: NCHEMRATES = 101
