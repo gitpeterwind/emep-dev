@@ -12,14 +12,14 @@ use CheckStop_mod,      only: CheckStop, StopAll
 use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
 use ChemFunctions_mod,  only: Chem2Index_adv, Chem2Index
 use ChemSpecs_mod
-use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
+use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCOARSE_GROUP
 use Config_module,      only: NMET,PPBINV,PPTINV, KMAX_MID, MasterProc&
                               ,RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
                               ,SitesFile,SondesFile,KMAX_BND,PT, NPROC,&  ! for sitesout
                               SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names,&
       NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
       SITE_XTRA_MISC, SITE_XTRA_D2D, &
-      FREQ_SITE, &
+      NSITES_MAX, NSONDES_MAX, FREQ_SITE, NSHL_SITE_MAX, &
       NXTRA_SONDE, & 
        SONDE_XTRA, & 
       FREQ_SONDE
@@ -63,9 +63,6 @@ private :: Init_sites       ! reads locations, species
 private :: set_species      ! Sets species/variable names for output
 private :: siteswrt_out     ! Collects output from all nodes and prints
 
-
-integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
-integer, public, parameter ::  NSITES_MAX = 99 ! Max. no surface sites allowed
 
 integer, public, save :: nglobal_sites, nlocal_sites
 integer,private, save :: nglobal_sondes, nlocal_sondes
@@ -602,8 +599,8 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
             sum_PM(k) = (dot_product(xn_adv(PMFINE_GROUP-NSPEC_SHL,ix,iy,k),&
                                   to_ug_ADV(PMFINE_GROUP-NSPEC_SHL)) &
                           + 0.5 * &  ! 50% of PMcoare in PM2.5, since Dp=2.5
-                          dot_product(xn_adv(PMCO_GROUP-NSPEC_SHL,ix,iy,k),&
-                                  to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
+                          dot_product(xn_adv(PMCOARSE_GROUP-NSPEC_SHL,ix,iy,k),&
+                                  to_ug_ADV(PMCOARSE_GROUP-NSPEC_SHL)) &
                         ) * roa(ix,iy,k,1)
           end do !k
 !bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
@@ -614,8 +611,8 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
         case("PMco")  !!  PM data converted to ug m-3
           sum_PM(:) = 0.
           do k = 1, KMAX_MID
-            sum_PM(k) = dot_product(xn_adv(PMCO_GROUP-NSPEC_SHL,ix,iy,k),&
-                                  to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
+            sum_PM(k) = dot_product(xn_adv(PMCOARSE_GROUP-NSPEC_SHL,ix,iy,k),&
+                                  to_ug_ADV(PMCOARSE_GROUP-NSPEC_SHL)) &
                       * roa(ix,iy,k,1)
           end do !k
 !bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)

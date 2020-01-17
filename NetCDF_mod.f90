@@ -22,7 +22,7 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
                              ,IOU_HOUR,IOU_HOUR_INST &
                              ,PT,Pref,NLANDUSEMAX, model&
-                             ,USE_EtaCOORDINATES,RUNDOMAIN&
+                             ,USES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
                              ,SurfacePressureFile &
                              , num_lev3d,lev3d&      ! 3D levels on 3D output
@@ -246,6 +246,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
 
       call check(nf90_def_var(ncFileID,"P0",nf90_double,varID))
       call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+      call check(nf90_put_att(ncFileID,varID,"standard_name","reference_air_pressure_for_atmosphere_vertical_coordinate"))
       call check(nf90_def_var(ncFileID,"PS",nf90_double,[StationDimID,timeDimID],varID))
       call check(nf90_put_att(ncFileID,varID,"long_name","Surface pressure"))
       call check(nf90_put_att(ncFileID,varID,"units","hPa"))
@@ -256,12 +257,14 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       call check(nf90_put_att(ncFileID,varID,"units","hPa"))
       call check(nf90_def_var(ncFileID,"hybm",nf90_double,levDimID,varID))
       call check(nf90_put_att(ncFileID,varID,"long_name","hybrid B coefficient at layer midpoints"))
+      call check(nf90_put_att(ncFileID,varID,"units","1"))
         
       call check(nf90_def_var(ncFileID,"hyai",nf90_double,ilevDimID,varID))
       call check(nf90_put_att(ncFileID,varID,"long_name","hybrid A coefficient at layer interfaces"))
       call check(nf90_put_att(ncFileID,varID,"units","hPa"))
       call check(nf90_def_var(ncFileID,"hybi",nf90_double,ilevDimID,varID) )
       call check(nf90_put_att(ncFileID,varID,"long_name","hybrid B coefficient at layer interfaces"))       
+      call check(nf90_put_att(ncFileID,varID,"units","1"))
     else
       if(debug_1D)write(*,*)'not defining vertical levels ',KMAXcdf
     end if
@@ -269,6 +272,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
     call check(nf90_def_var(ncFileID,"time",nf90_double,timeDimID,varID))
     call check(nf90_put_att(ncFileID,varID,"long_name", "time (instantaneous)"))
     call check(nf90_put_att(ncFileID,varID,"units","days since 1900-1-1 0:0:0"))
+    call check(nf90_put_att(ncFileID,varID,"calendar","standard"))
 
     call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
     call check(nf90_put_att(ncFileID,nf90_global,"created_date",lastmodified_date))
@@ -675,7 +679,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       'created_date: ',created_date,'created_hour: ',created_hour
 
     ! Write global attributes
-    call check(nf90_put_att(ncFileID,nf90_global,"Conventions", "CF-1.6" ))
+    call check(nf90_put_att(ncFileID,nf90_global,"Conventions", "CF-1.6 for coordinates" ))
    !call check(nf90_put_att(ncFileID,nf90_global,"version", version ))
     call check(nf90_put_att(ncFileID,nf90_global,"model", model))
     call check(nf90_put_att(ncFileID,nf90_global,"author_of_run", author_of_run))
@@ -976,12 +980,15 @@ function define_var(vname,xtype,dimIDs) result(varID)
   case("hybm")
     call check(nf90_def_var(ncFileID,vname,xtype,dimIDs,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID, "long_name","hybrid B coefficient at layer midpoints"))
+    call check(nf90_put_att(ncFileID,varID,"units","1"))
   case("hybi")
     call check(nf90_def_var(ncFileID,vname,xtype,dimIDs,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"long_name","hybrid B coefficient at layer interfaces"))
+    call check(nf90_put_att(ncFileID,varID,"units","1"))
   case("P0")
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+    call check(nf90_put_att(ncFileID,varID,"standard_name","reference_air_pressure_for_atmosphere_vertical_coordinate"))
   case("x_dist")
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"long_name","displacement in x direction"))
@@ -997,6 +1004,7 @@ function define_var(vname,xtype,dimIDs) result(varID)
       call check(nf90_put_att(ncFileID,varID,"long_name","time at middle of period"))
     end select
     call check(nf90_put_att(ncFileID,varID,"units","days since 1900-1-1 0:0:0"))
+    call check(nf90_put_att(ncFileID,varID,"calendar","standard"))
   case('Polar_Stereographic')
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"grid_mapping_name", "polar_stereographic"))
@@ -1249,7 +1257,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
       end select
 
-      if(USE_EtaCOORDINATES)then
+      if(USES%EtaCOORDINATES)then
         call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
       else
         call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
@@ -1916,8 +1924,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   end if
 
   if(ndims>3.and.dims(3)>varKMAX)then
-    if(me==0)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
-!   Call StopAll('GetCDF not reading all levels')
+    if(MasterProc.and.DEBUG_NETCDF)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
   end if
 
   if(nstart+nfetch-1>dims(ndims))then
@@ -2912,7 +2919,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            imin=1!cover everything available
            imax=dims(1)!cover everything available
         else
-          imin=max(1,floor((minlon-Rlon(1))*dRloni-0.001))+1
+          imin=max(0,floor((minlon-Rlon(1))*dRloni-0.001))+1
           imax=min(dims(1),ceiling((maxlon-Rlon(1))*dRloni+1.001))
         endif
      else if(dRloni>0)then
@@ -3479,16 +3486,31 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
                  ig=nint((glon(i,j)-Rlon(startvec(1)))*dRloni)+1
-                 if(ig<0.5)ig=ig+dims(1)
-                 if(ig>dims(1))ig=ig-dims(1)
-                 ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
-                 igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
-                    Rvar(ijk)=Rvalues(igjgk)
+                 if(ig<0.5 .or. ig>dims(1))then
+                    !try to come from the other side
+                    !check first that it covers all latitudes
+                    if(abs(Rlon(dims(1))-Rlon(1))<0.1+1/dRloni)then
+                       if(ig<0.5)ig=ig+dims(1)
+                       if(ig>dims(1))ig=ig-dims(1)
+                    endif
+                 endif
+                 if(ig<0.5 .or. ig>dims(1))then
+                    if(present(UnDef))then
+                       Rvar(ijk)=UnDef_local
+                    else
+                       write(*,*)me,i,j,k,glon(i,j),glat(i,j),ig
+                       call StopAll("ReadField_CDF: values outside grid required "//trim(varname)//" "//trim(filename))
+                    endif
                  else
-                    Rvar(ijk)=UnDef_local
-                 end if
+                    ig=max(1,min(dims(1),ig))
+                    jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
+                    igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                    if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
+                       Rvar(ijk)=Rvalues(igjgk)
+                    else
+                       Rvar(ijk)=UnDef_local
+                    end if
+                 endif
               end do
            end do
         end do

@@ -37,7 +37,7 @@ contains
   subroutine AJS_Init( status )
 
     use GO               , only : GO_Init
-    use GO               , only : TrcFile, Init, Done, ReadRc
+!    use GO               , only : TrcFile, Init, Done, ReadRc
     use GO               , only : goGetFU, goStdErr
     use GO               , only : GO_Par_Setup, me
     use GO               , only : GO_Print_Set, GO_Print_Logfile
@@ -54,14 +54,14 @@ contains
     
     character(len=*), parameter  ::  rname = mname//'/AJS_Init'
     
-    ! settings used by 3D-var:
-    character(len=*), parameter   ::  rcfile = 'emo.rc'
+!    ! settings used by 3D-var:
+!    character(len=*), parameter   ::  rcfile = 'emo.rc'
 
     ! --- local -----------------------------
     
     character(len=1024)     ::  fname
     character(len=32)       ::  key
-    type(TRcFile)           ::  rcF
+!    type(TRcFile)           ::  rcF
     logical                 ::  flag
     character(len=1024)     ::  mefile
     
@@ -85,13 +85,14 @@ contains
     call GO_Par_Setup( MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)
   
-    ! extra settings:
-    call Init( rcF, rcfile, status )
-    IF_NOT_OK_RETURN(status=1)
+!    ! extra settings:
+!    call Init( rcF, rcfile, status )
+!    IF_NOT_OK_RETURN(status=1)
 
-    ! log all processes ?
-    call ReadRc( rcF, 'emo.log.all', flag, status )
-    IF_NOT_OK_RETURN(status=1)
+!    ! log all processes ?
+!    call ReadRc( rcF, 'emo.log.all', flag, status )
+!    IF_NOT_OK_RETURN(status=1)
+    flag = .true.
     ! set flag if processes should be logged:
     call GO_Print_Set( status, apply=(MasterProc .or. flag) )
     IF_NOT_OK_RETURN(status=1)
@@ -107,16 +108,18 @@ contains
     write (gol,'(a,": test error  message ...")') rname; call goErr
 
     ! single analysis step only?
-    call ReadRc( rcF, 'test.da_1step', DEBUG_DA_1STEP, status )
-    IF_NOT_OK_RETURN(status=1)
+!    call ReadRc( rcF, 'test.da_1step', DEBUG_DA_1STEP, status )
+!    IF_NOT_OK_RETURN(status=1)
+    DEBUG_DA_1STEP = .false.
 
     ! stop after first hour?
-    call ReadRc( rcF, 'test.stop_hh', DEBUG%STOP_HH, status )
-    IF_NOT_OK_RETURN(status=1)
+!    call ReadRc( rcF, 'test.stop_hh', DEBUG%STOP_HH, status )
+!    IF_NOT_OK_RETURN(status=1)
+    DEBUG%STOP_HH = -1 
     
-    ! done with settings:
-    call Done( rcF, status )
-    IF_NOT_OK_RETURN(status=1)
+!    ! done with settings:
+!    call Done( rcF, status )
+!    IF_NOT_OK_RETURN(status=1)
   
     ! ok
     status = 0

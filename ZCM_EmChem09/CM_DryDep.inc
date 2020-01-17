@@ -19,16 +19,15 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("NO3_f     ", "PMf       ", -999.0 ) &
 , dep_t("NH4_f     ", "PMf       ", -999.0 ) &
 , dep_t("NO3_c     ", "PMc       ", -999.0 ) &
-, dep_t("SHIPNOX   ", "NO2       ", -999.0 ) &
-, dep_t("POM_f_WOOD", "PMf       ", -999.0 ) &
-, dep_t("POM_f_FFUEL", "PMf       ", -999.0 ) &
-, dep_t("POM_c_FFUEL", "PMc       ", -999.0 ) &
-, dep_t("EC_f_WOOD_new", "PMf       ", -999.0 ) &
-, dep_t("EC_f_WOOD_age", "PMf       ", -999.0 ) &
-, dep_t("EC_c_WOOD ", "PMc       ", -999.0 ) &
-, dep_t("EC_f_FFUEL_new", "PMf       ", -999.0 ) &
-, dep_t("EC_f_FFUEL_age", "PMf       ", -999.0 ) &
-, dep_t("EC_c_FFUEL", "PMc       ", -999.0 ) &
+, dep_t("POM_f_wood", "PMf       ", -999.0 ) &
+, dep_t("POM_f_ffuel", "PMf       ", -999.0 ) &
+, dep_t("POM_c_ffuel", "PMc       ", -999.0 ) &
+, dep_t("EC_f_wood_new", "PMf       ", -999.0 ) &
+, dep_t("EC_f_wood_age", "PMf       ", -999.0 ) &
+, dep_t("EC_c_wood ", "PMc       ", -999.0 ) &
+, dep_t("EC_f_ffuel_new", "PMf       ", -999.0 ) &
+, dep_t("EC_f_ffuel_age", "PMf       ", -999.0 ) &
+, dep_t("EC_c_ffuel", "PMc       ", -999.0 ) &
 , dep_t("REMPPM25  ", "PMf       ", -999.0 ) &
 , dep_t("REMPPM_c  ", "PMc       ", -999.0 ) &
 , dep_t("ASOC_ng100", "ALD       ", -999.0 ) &
@@ -51,15 +50,21 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("NON_C_BSOA_ug10", "ALD       ", -999.0 ) &
 , dep_t("NON_C_BSOA_ug1e2", "ALD       ", -999.0 ) &
 , dep_t("NON_C_BSOA_ug1e3", "ALD       ", -999.0 ) &
-, dep_t("FFIRE_OM  ", "PMf       ", -999.0 ) &
-, dep_t("FFIRE_BC  ", "PMf       ", -999.0 ) &
-, dep_t("FFIRE_REMPPM25", "PMf       ", -999.0 ) &
+, dep_t("TERPOOH   ", "LHISOLOOH ", -999.0 ) &
+, dep_t("shipNOx   ", "NO2       ", -999.0 ) &
+, dep_t("ffire_OM  ", "PMf       ", -999.0 ) &
+, dep_t("ffire_BC  ", "PMf       ", -999.0 ) &
+, dep_t("ffire_remPPM25", "PMf       ", -999.0 ) &
+, dep_t("ffire_c   ", "PMc       ", -999.0 ) &
 , dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
 , dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
-, dep_t("Dust_ROAD_f", "DUf       ", -999.0 ) &
-, dep_t("Dust_ROAD_c", "DUc       ", -999.0 ) &
-, dep_t("Dust_WB_f ", "DUf       ", -999.0 ) &
-, dep_t("Dust_WB_c ", "DUc       ", -999.0 ) &
-, dep_t("Dust_SAH_f", "DUf       ", -999.0 ) &
-, dep_t("Dust_SAH_c", "DUc       ", -999.0 ) &
+, dep_t("Dust_road_f", "DUf       ", -999.0 ) &
+, dep_t("Dust_road_c", "DUc       ", -999.0 ) &
+, dep_t("Dust_wb_f ", "DUf       ", -999.0 ) &
+, dep_t("Dust_wb_c ", "DUc       ", -999.0 ) &
+, dep_t("Dust_sah_f", "DUf       ", -999.0 ) &
+, dep_t("Dust_sah_c", "DUc       ", -999.0 ) &
+, dep_t("Ash_f     ", "PMf       ", -999.0 ) &
+, dep_t("Ash_c     ", "PMc       ", -999.0 ) &
+, dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
 /)

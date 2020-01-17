@@ -1,0 +1,26 @@
+EMEP 3DVar19
+============
+
+Implemented screening of observations: not analyzed if actual difference
+with simulation is too different from estimated std.dev. of difference.
+Output "obs" files have now integer "anstat" flag with analysis status.
+  Analysis/DA_3DVar_ml.f90
+  Analysis/DA_Obs_ml.f90
+
+Facilitate debugging: swap station codes from model to analysis domain
+to allow print messages for selected stations.
+  Analysis/DA_Obs_ml.f90
+  tools/mpif90.F90
+
+Fixes of test code that is enabled using "with_ajs" macro;
+now only new code in ZD_3DVarNN, not in main model.
+  Analysis/DA_3DVar_ml.f90
+  Analysis/DA_Obs_ml.f90
+  tools/AJS.F90
+  tools/go.F90
+  DA_Util_ml.f90
+  Makefile.conf
+  Makefile
+  
+Testing assimilation of S5p observations.
+

@@ -1,18 +1,31 @@
-EMEP 3D var
-===========
+EMEP/ZD_3DVarNN extension
+=========================
 
-Version 17, intended for CAMS-50 November-2017 update.
-Subversion "e", support total PM observations.
-Subversion "f", test per-station obs.repr. errors and scale factor for sigma.
+3D-var data assimilation.
 
-Changes
--------
 
-Explicitly set sigma to zero at (top) boundary cells to avoid strange updates.
-(AJS, 2018-10)
-  B_NMC/emep_bcovarsqrt.F90
+Enable "ajs" test code
+----------------------
 
-Commented 'use MPI' statements for 'MPI_AllGather' and 'MPI_AllToAllV',
-these seem not present in the MPI module on Elvis but will be linked correctly afterwards.
-  tools/go_par.F90
-  tools/mpif90.F90
+Extra codes enabled using "with_ajs" macro,
+for example used to have per-processor log files.
+
+Make the following changes to enable this:
+- Makefile
+    In "SRCS" line, add:
+      tools/AJS.F90
+- Makefile.conf
+    Add flag to define macro:
+      DFLAGS  = -D_MPI -Dwith_lapack95_mkl -Dwith_ajs
+- tools/AJS.F90
+    Check settings.
+
+
+
+Configuration
+-------------
+
+Template for CAMS50 NRT analysis settings:
+  ./config_ANALYSIS.nml
+
+

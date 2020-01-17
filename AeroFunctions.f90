@@ -75,7 +75,7 @@ module AeroFunctions_mod
 
  function LogNormFracBelow(Dpg,sig,Dp) result(Fn)
    real, intent(in) :: Dpg, sig, Dp
-   real :: Fn
+   real :: Fn, erf
    real, parameter :: sqrt_two = sqrt(2.0)
 
       Fn =  0.5 + 0.5 * erf( (log(Dp)-log(Dpg)) / ( sqrt_two * log(sig) ))

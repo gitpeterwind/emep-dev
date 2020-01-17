@@ -214,6 +214,7 @@ module MPIF90
   end interface MPIF90_AllToAll
   
   interface MPIF90_AllToAllV
+    module procedure MPIF90_AllToAllV_c_1d
     module procedure MPIF90_AllToAllV_i4_2d
     module procedure MPIF90_AllToAllV_i4_3d
     module procedure MPIF90_AllToAllV_r4_2d
@@ -796,6 +797,32 @@ contains
   ! AllToAllV
   ! ********************************************************************
 
+  subroutine MPIF90_AllToAllV_c_1d( sendbuf, sendcounts, sdispls, &
+                                    recvbuf, recvcounts, rdispls, &
+                                    comm, status )
+    ! external:
+    use MPI, only : MPI_CHAR
+!   use MPI, only : MPI_AllToAllV
+    ! arguments:
+    character(len=*), intent(in)    ::  sendbuf(:)
+    integer, intent(in)             ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)             ::  sdispls(:)   ! (nproc)
+    character(len=*), intent(out)   ::  recvbuf(:)
+    integer, intent(in)             ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)             ::  rdispls(:)   ! (nproc)
+    integer, intent(in)             ::  comm
+    integer, intent(out)            ::  status
+    ! specific call:
+    call MPI_AllToAllV( sendbuf, sendcounts, sdispls, MPI_CHAR, &
+                        recvbuf, recvcounts, rdispls, MPI_CHAR, &
+                        comm, status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+    ! ok
+    status = 0
+  end subroutine MPIF90_AllToAllV_c_1d
+  
+  ! *
+
   subroutine MPIF90_AllToAllV_i4_2d( sendbuf, sendcounts, sdispls, &
                                     recvbuf, recvcounts, rdispls, &
                                     comm, status )
@@ -804,11 +831,11 @@ contains
 !   use MPI, only : MPI_AllToAllV
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:,:)
-    integer, intent(in)           ::  sendcounts(2)
-    integer, intent(in)           ::  sdispls(2)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     integer(4), intent(out)       ::  recvbuf(:,:)
-    integer, intent(in)           ::  recvcounts(2)
-    integer, intent(in)           ::  rdispls(2)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -830,11 +857,11 @@ contains
  !  use MPI, only : MPI_AllToAllV
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:,:)
-    integer, intent(in)           ::  sendcounts(2)
-    integer, intent(in)           ::  sdispls(2)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     real(4), intent(out)          ::  recvbuf(:,:)
-    integer, intent(in)           ::  recvcounts(2)
-    integer, intent(in)           ::  rdispls(2)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -856,11 +883,11 @@ contains
 !   use MPI, only : MPI_AllToAllV
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:,:)
-    integer, intent(in)           ::  sendcounts(2)
-    integer, intent(in)           ::  sdispls(2)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     real(8), intent(out)          ::  recvbuf(:,:)
-    integer, intent(in)           ::  recvcounts(2)
-    integer, intent(in)           ::  rdispls(2)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -882,11 +909,11 @@ contains
 !   use MPI, only : MPI_AllToAllV
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:,:,:)
-    integer, intent(in)           ::  sendcounts(3)
-    integer, intent(in)           ::  sdispls(3)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     integer(4), intent(out)       ::  recvbuf(:,:,:)
-    integer, intent(in)           ::  recvcounts(3)
-    integer, intent(in)           ::  rdispls(3)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -908,11 +935,11 @@ contains
 !   use MPI, only : MPI_AllToAllV
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:,:,:)
-    integer, intent(in)           ::  sendcounts(3)
-    integer, intent(in)           ::  sdispls(3)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     real(4), intent(out)          ::  recvbuf(:,:,:)
-    integer, intent(in)           ::  recvcounts(3)
-    integer, intent(in)           ::  rdispls(3)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -934,11 +961,11 @@ contains
 !   use MPI, only : MPI_AllToAllV
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:,:,:)
-    integer, intent(in)           ::  sendcounts(3)
-    integer, intent(in)           ::  sdispls(3)
+    integer, intent(in)           ::  sendcounts(:)   ! (nproc)
+    integer, intent(in)           ::  sdispls(:)   ! (nproc)
     real(8), intent(out)          ::  recvbuf(:,:,:)
-    integer, intent(in)           ::  recvcounts(3)
-    integer, intent(in)           ::  rdispls(3)
+    integer, intent(in)           ::  recvcounts(:)   ! (nproc)
+    integer, intent(in)           ::  rdispls(:)   ! (nproc)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:

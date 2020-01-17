@@ -18,6 +18,9 @@ module DA_ml
   
   ! --- const -----------------------------------------
 
+  ! version string:
+  character(len=*), parameter   ::  DA_VERSION = '3DVar17 (patch 2019-09-30)'
+
   ! print debug messages ?
   logical, parameter            ::  DEBUG_DA     = .false.  ! general purpose debug messages
   logical, parameter            ::  DEBUG_DA_OBS = .false.  ! observation info
@@ -51,3 +54,10 @@ module DA_ml
   real, save                        :: datim_before, datim_after
 
 end module DA_ml
+
+!*****************************************************************************!
+! Shared data for with EMEP-CTM
+!*****************************************************************************!
+module DA_mod
+  use DA_ml, only: DEBUG_DA_1STEP
+end module DA_mod

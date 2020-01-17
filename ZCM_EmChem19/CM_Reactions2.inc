@@ -254,24 +254,6 @@
   xnew(non_C_BSOA_ug1e3) = (xold(non_C_BSOA_ug1e3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> ffuel_ng10
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for ffuel_ng10! xnew(ffuel_ng10) = max(0.0, xold(ffuel_ng10))
-
-
-!-> woodOA_ng10
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for woodOA_ng10! xnew(woodOA_ng10) = max(0.0, xold(woodOA_ng10))
-
-
 !-> SO4
 
   P = rcemis(SO4,k)  &
@@ -305,8 +287,8 @@
 
 !-> NO3_c
 
-  P = rct(102,k) * xnew(HNO3)  &
-    + rct(103,k) * xnew(HNO3)
+  P = rct(99,k) * xnew(HNO3)  &
+    + rct(100,k) * xnew(HNO3)
   
   ! L = 0.0
   
@@ -360,7 +342,7 @@
 
 !-> EC_f_wood_new
 
-  P = rcemis(EC_F_WOOD_new,k)
+  P = rcemis(EC_F_WOOD_NEW,k)
   
   L = rct(94,k)
   
@@ -369,7 +351,7 @@
 
 !-> EC_f_wood_age
 
-  P = rcemis(EC_F_WOOD_age,k)  &
+  P = rcemis(EC_F_WOOD_AGE,k)  &
     + rct(94,k) * xnew(EC_f_wood_new)
   
   ! L = 0.0
@@ -388,7 +370,7 @@
 
 !-> EC_f_ffuel_new
 
-  P = rcemis(EC_F_FFUEL_new,k)
+  P = rcemis(EC_F_FFUEL_NEW,k)
   
   L = rct(94,k)
   
@@ -397,7 +379,7 @@
 
 !-> EC_f_ffuel_age
 
-  P = rcemis(EC_F_FFUEL_age,k)  &
+  P = rcemis(EC_F_FFUEL_AGE,k)  &
     + rct(94,k) * xnew(EC_f_ffuel_new)
   
   ! L = 0.0
@@ -470,27 +452,27 @@
 
 !-> Ash_f
 
-  P = rcemis(ASH_F,K)
+  ! P = 0.0
   
   ! L = 0.0
   
-  xnew(Ash_f) = xold(Ash_f) + dt2 * P
+  ! Nothing to do for Ash_f! xnew(Ash_f) = max(0.0, xold(Ash_f))
 
 
 !-> Ash_c
 
-  P = rcemis(ASH_C,K)
+  ! P = 0.0
   
   ! L = 0.0
   
-  xnew(Ash_c) = xold(Ash_c) + dt2 * P
+  ! Nothing to do for Ash_c! xnew(Ash_c) = max(0.0, xold(Ash_c))
 
 
 !-> ffire_CO
 
   P = rcemis(FFIRE_CO,k)
   
-  L = rct(105,k) * xnew(OH)
+  L = rct(102,k) * xnew(OH)
   
   xnew(ffire_CO) = (xold(ffire_CO) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -520,6 +502,15 @@
   ! L = 0.0
   
   xnew(ffire_remPPM25) = xold(ffire_remPPM25) + dt2 * P
+
+
+!-> ffire_c
+
+  ! P = 0.0
+  
+  ! L = 0.0
+  
+  ! Nothing to do for ffire_c! xnew(ffire_c) = max(0.0, xold(ffire_c))
 
 
 !-> SeaSalt_f

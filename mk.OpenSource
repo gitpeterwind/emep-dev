@@ -1,4 +1,4 @@
-vers=rv4.33;year=2019                 # Input version/year flags
+vers=rv4.34;year=2020;chem=EmChem19p  # Input version/year/chem flags
 idir=`dirname ${BASH_SOURCE[0]}`      # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                  # top directory
@@ -15,10 +15,8 @@ echo "Making $cdir"
 #-- 0)  start from a "working" model code
 
 cd $idir
-for i in *.f90; do
-  [[ -L $i ]] && rm -f $i # remove old links to *.f90 files
-done
-make EMEP
+./mk.ChemFiles $chem
+make -j6
 
 #-- 1)  Code ------------------------------------------------------------------
 

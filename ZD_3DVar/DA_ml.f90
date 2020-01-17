@@ -13,3 +13,10 @@ character(len=len(DA_FMT_DEF)):: da_fmt_msg=''
 character(len=128)            :: da_msg=''
 real, save                    :: datim_before,datim_after
 endmodule DA_ml
+
+!*****************************************************************************!
+! Shared data for with EMEP-CTM
+!*****************************************************************************!
+module DA_mod
+  use DA_ml, only: DEBUG_DA_1STEP
+end module DA_mod

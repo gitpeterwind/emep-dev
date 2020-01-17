@@ -17,7 +17,15 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 export MACHINE ?= stallo
 export DEBUG ?= no
 export ARCHIVE ?= no
-ifeq ($(MACHINE),stallo)
+ifeq ($(MACHINE),fram)
+  MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
+  MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
+  OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=mpiifort
+else ifeq ($(MACHINE),stallo)
   MODULES = netCDF-Fortran/4.4.4-intel-2016b
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
@@ -66,6 +74,7 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LDFLAGS += -Nmpi
   F90FLAGS += -Nmpi
 else ifneq (,$(findstring $(MACHINE),stratus nebula))
+# MODULES = buildenv-intel/2018a-eb netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare FFTW/3.3.6-nsc1
   MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
@@ -109,13 +118,8 @@ endif
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
-$(PROG): .depend $(if $(filter yes,$(ARCHIVE)),archive)
-
-ifndef MAKECMDGOALS
-  include .depend
-else ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
-  include .depend
-endif
+$(PROG): .depend
+include .depend
 
 # File dependencies
 .depend: depend
@@ -137,48 +141,11 @@ touchdepend:
 ###
 # Model/Config specific targets
 ###
-# My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC: \
-	  ./ZD_OZONE/My_Outputs_mod.f90 \
-	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90
-
-SR-EMEP:    EMEP              # SR is only a different config_emep.nml
-MACC-NMC:   MACC-EVA          # EVA run, with different nest/dump output
-MACC-EVAan: MACC-EVA-3DVar16  # 3DVar run, with EVA nest/dump output
-Pollen:     MACC-Pollen
-
-# Pollen for MACC FC runs
-MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
-MACC MACC-Pollen: ./ZD_Pollen/Pollen_mod.f90 ./ZD_Pollen/Pollen_const_mod.f90
 
 # Test
 TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
-
-# Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 CRI_v2_R5 eEMEP SR-MACC:
-	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
-
-#DSA2018# GenChem config
-#DSA2018.SECONDEXPANSION:
-#DSA2018EMEP:               GenChem-EMEP-EmChem16a
-#DSA2018EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
-#DSA2018HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
-#DSA2018MACC-EVA:           GenChem-MACCEVA-EmChem16a
-#DSA2018MACC-Pollen:        GenChem-MACCEVA-Pollen
-#DSA2018eEMEP ?= Emergency # Emergency | AshInversion
-#DSA2018eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
-#DSA2018
-#DSA2018GenChem%:
-#DSA2018	./mk.GenChem $(GenChemOptions) -q
-#DSA2018GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
-#DSA2018GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
-#DSA2018GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
-#DSA2018GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/Pollen
-#DSA2018GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
-#DSA2018GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
-#DSA2018GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs
 Emergency: VENTS ?= DefaultVolcano
@@ -197,20 +164,8 @@ AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: Bnmc / 3DVar
-%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
-%-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
-%-3DVar16: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar $(PROG)_3DVar
-%-3DVar17: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar $(PROG)_3DVar
-
-
-# Archive: create $(PROG).tar.bz2
-archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
-%.tar.bz2: $(SRCS) $(SRCS.$(EXP)) Makefile Makefile.SRCS .depend \
-           $(wildcard *.inc *.pl mk.* *.nml)
-	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
+3DVar16 3DVar17 3DVar18:
+	$(MAKE) -C ZD_$@/ PROG=$(PROG)_$@ $(PROG)_$@
 
 # Always re-make this targets
 .PHONY: $(PHONY) all depend modules

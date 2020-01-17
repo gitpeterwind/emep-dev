@@ -301,7 +301,7 @@ module Biogenics_mod
               debug_flag=.false.,UnDef=-999.0)
 
  
-         if( debug_proc ) then
+         if( DEBUG%BIO .and. debug_proc ) then
            write(*, "(2a,f12.3,3i2)") dtxt//":E ", &
              trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), &
                iVeg, ibvoc, iEmis
@@ -345,7 +345,7 @@ module Biogenics_mod
       character(len=*),parameter :: dtxt='BioModMerge:'
 
 
-      if ( debug_proc ) then
+      if ( DEBUG%BIO .and. debug_proc ) then
          write(*,*) dtxt//" Start"
          i= debug_li; j= debug_lj
          nlu= LandCover(i,j)%ncodes
@@ -385,7 +385,7 @@ module Biogenics_mod
                    LandDefs(iL)%BiomassD *EmBio%CLF
                bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * &
                    LandDefs(iL)%BiomassD
-                if( debug_flag ) then
+                if( DEBUG%BIO .and. debug_flag ) then
                    merge_case = 'defaultBVOC'
                   write(*,"(a,i3,8f8.2)") &
                   dtxt//": Outside local", iL, LandDefs(iL)%BiomassD,&
@@ -396,7 +396,7 @@ module Biogenics_mod
            end if
 
 
-           if( debug_flag ) then
+           if( DEBUG%BIO .and. debug_flag ) then
 
               biso = 0.0
               bmt  = 0.0
