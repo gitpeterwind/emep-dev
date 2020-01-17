@@ -163,9 +163,13 @@ AshInversion: VENTS ?= Eyjafjoll
 AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
-# Data assimilation: Bnmc / 3DVar
-3DVar16 3DVar17 3DVar18:
-	$(MAKE) -C ZD_$@/ PROG=$(PROG)_$@ $(PROG)_$@
+# Data assimilation: 3DVar
+3DVar16 3DVar17 3DVar20: EmChem19p
+	$(MAKE) -C ZD_$@/ $(PROG)
+
+# Chemistry version
+EmChem%:
+	rsync --checksum ZCM_$@/CM*.{inc,f90} .
 
 # Always re-make this targets
 .PHONY: $(PHONY) all depend modules
