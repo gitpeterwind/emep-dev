@@ -23,6 +23,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Jan 2020, Peter
+
+Country array was not initialized correctly (looped over NLAND, with NLAND 
+undefined).
+
+nvoc was uninitialized in Derived_mod
+
+find_index: first_only = .true. by default
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Jan 2020, Peter
 
 Bug in timestep for dt_advec<620 sec (grid 7km or smaller)
