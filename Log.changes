@@ -23,6 +23,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Jan 2020, Peter, Robert
+
+The bug correction from 13th Dec was not done properly. (and the comment that
+this only happens when the data grid does not cover the model grid was wrong;
+it should be: "the bug gives error message that the data does not cover
+the model grid")
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Jan 2020, Peter
 
 Country array was not initialized correctly (looped over NLAND, with NLAND 
