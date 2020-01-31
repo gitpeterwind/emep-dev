@@ -23,6 +23,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31th Jan 2020, Peter, Qing
+
+Nesting: the number of vertical levels in the BC file is checked before each
+usage. If the number of levels has changed, it reinitilializes the interpolation
+parameters.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Robert
 
 Added missing deposition parameters for an EmChem19X species + minor update of 
