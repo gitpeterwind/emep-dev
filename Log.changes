@@ -23,6 +23,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31th Jan 2020, Robert
+
+Added missing deposition parameters for an EmChem19X species + minor update of 
+some (di)carbonyl dry deposition parameters
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Jan 2020, Peter, Robert
 
 The bug correction from 13th Dec was not done properly. (and the comment that
