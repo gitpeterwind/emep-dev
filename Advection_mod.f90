@@ -76,7 +76,7 @@
                   USES,uEMEP,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_Eta
-  use EmisDef_mod,        only: NSECTORS, Nneighbors, loc_frac, loc_frac_1d
+  use EmisDef_mod,        only: NSECTORS, Nneighbors, loc_frac, loc_frac_src, loc_frac_1d, loc_frac_src_1d
   use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
@@ -315,6 +315,7 @@
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
        call vgrid_Eta
        if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
+       if(.not.allocated(loc_frac_src_1d))allocate(loc_frac_src_1d(81,1))!to avoid error messages
        if(ZERO_ORDER_ADVEC)then
           hor_adv0th = .true.
           vert_adv0th = .true.
@@ -488,7 +489,7 @@
                       call preadvx3(110+k+KMAX_MID*j               &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse,j,k,loc_frac_1d)
+                           ,psw,pse,j,k,loc_frac_1d,loc_frac_src_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -524,7 +525,7 @@
                    call preadvy3(520+k                            &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i,k,loc_frac_1d)
+                        ,pss, psn,i,k,loc_frac_1d,loc_frac_src_1d)
 
                    call advy(                                     &
                         v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)            &
@@ -601,7 +602,7 @@
                    call preadvy3(13000+k+KMAX_MID*itery+1000*i    &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i,k,loc_frac_1d)
+                        ,pss, psn,i,k,loc_frac_1d,loc_frac_src_1d)
 
                    ! y-direction
                    call advy(                                    &
@@ -636,7 +637,7 @@
                       call preadvx3(21000+k+KMAX_MID*iterx+1000*j  &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse,j,k,loc_frac_1d)
+                           ,psw,pse,j,k,loc_frac_1d,loc_frac_src_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -710,7 +711,6 @@
        call convection_Eta(dt_advec)
 
     end if
-
 
     do k=1,KMAX_MID
        do j = lj0,lj1
@@ -2925,7 +2925,7 @@ end if
   subroutine preadvx3(msgnr                &
                      ,xn_adv,ps3d,vel      &
                      ,xnbeg, xnend         &
-                     ,psbeg, psend,j,k,loc_frac_1d)
+                     ,psbeg, psend,j,k,loc_frac_1d,loc_frac_src_1d)
 
     ! Initialize arrays holding boundary slices
 
@@ -2939,16 +2939,19 @@ end if
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
+    real,intent(inout),dimension(81,0:limax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local
+    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local, uEMEP_Size1_local_src
 
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+81) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
     uEMEP_Size1_local = 0!default: do not treat this region
+    uEMEP_Size1_local_src = 0!default: do not treat this region 
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
+       uEMEP_Size1_local_src = uEMEP_Size1_local+81!treat this region 
        do i=li0,li1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -2958,6 +2961,9 @@ end if
                    loc_frac_1d(n,i) = loc_frac(isec_poll,dx,dy,i,j,k)
                enddo
              enddo
+          enddo
+          do n=1,81
+             loc_frac_src_1d(n,i) = loc_frac_src(n,i,j,k)
           enddo
        enddo
     endif
@@ -2987,8 +2993,12 @@ end if
           n=n+1
           send_buf_w(n) = loc_frac_1d(ii,1)
        enddo
+       do ii=1,81
+          n=n+1
+          send_buf_w(n) = loc_frac_src_1d(ii,1)
+       enddo
 
-       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
             neighbor(WEST), msgnr+1000 , MPI_COMM_CALC, request_w, IERROR)
     end if
 
@@ -3016,8 +3026,12 @@ end if
           n=n+1
           send_buf_e(n) = loc_frac_1d(ii,li1)
        enddo
+       do ii=1,81
+          n=n+1
+          send_buf_e(n) = loc_frac_src_1d(ii,li1)
+       enddo
 
-      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
           neighbor(EAST), msgnr+3000, MPI_COMM_CALC, request_e, IERROR)
     end if
 
@@ -3042,10 +3056,13 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,li0-1)=0.0
        enddo
+       do ii=1,81
+          loc_frac_src_1d(ii,li0-1)=0.0
+       enddo
 
     else
 
-       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
+       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE, &
             neighbor(WEST), msgnr+3000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
        n=0
@@ -3071,6 +3088,10 @@ end if
        do ii=1,uEMEP_Size1_local
           n=n+1
           loc_frac_1d(ii,li0-1) = rcv_buf_w(n)
+       enddo
+       do ii=1,81
+          n=n+1
+          loc_frac_src_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
 
     end if
@@ -3098,9 +3119,12 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,li1+1)=0.0
        enddo
+       do ii=1,81
+          loc_frac_src_1d(ii,li1+1)=0.0
+       enddo
     else
 
-      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
+      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE, &
            neighbor(EAST), msgnr+1000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
       n=0
@@ -3127,10 +3151,13 @@ end if
          n=n+1
          loc_frac_1d(ii,li1+1) = rcv_buf_e(n)
       enddo
+      do ii=1,81
+         n=n+1
+         loc_frac_src_1d(ii,li1+1) = rcv_buf_e(n)
+      enddo
 
    end if
-       do ii=1,uEMEP_Size1_local
-  enddo
+
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
       CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
@@ -3423,7 +3450,7 @@ end if
   subroutine preadvy3(msgnr                &
                      ,xn_adv,ps3d,vel      &
                      ,xnbeg, xnend         &
-                     ,psbeg, psend,i_send,k,loc_frac_1d)
+                     ,psbeg, psend,i_send,k,loc_frac_1d,loc_frac_src_1d)
 
     ! Initialize arrays holding boundary slices
 
@@ -3437,15 +3464,18 @@ end if
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
+    real,intent(inout),dimension(81,0:ljmax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
+    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local, uEMEP_Size1_local_src
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+81) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
     uEMEP_Size1_local = 0!default: do not treat this region
+    uEMEP_Size1_local_src = 0!default: do not treat this region
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
+       uEMEP_Size1_local_src = uEMEP_Size1_local+81!treat this region
        do j=lj0,lj1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -3456,6 +3486,10 @@ end if
                 enddo
              enddo
           enddo
+           do n=1,81
+             loc_frac_src_1d(n,j) = loc_frac_src(n,i_send,j,k)
+          enddo
+         
        enddo
     endif
 
@@ -3485,8 +3519,12 @@ end if
           n=n+1
           send_buf_s(n) = loc_frac_1d(ii,1)
        enddo
+       do ii=1,81
+          n=n+1
+          send_buf_s(n) = loc_frac_src_1d(ii,1)
+       enddo
 
-      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
     end if
 
@@ -3515,8 +3553,12 @@ end if
           n=n+1
           send_buf_n(n) = loc_frac_1d(ii,lj1)
        enddo
+       do ii=1,81
+          n=n+1
+          send_buf_n(n) = loc_frac_src_1d(ii,lj1)
+       enddo
 
-      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
     end if
 
@@ -3545,10 +3587,13 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,0)=0.0
        enddo
+       do ii=1,81
+          loc_frac_src_1d(ii,0)=0.0
+       enddo
 
     else
 
-      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local) , MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src) , MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
        n=0
        do ii=1,NSPEC_ADV
@@ -3573,6 +3618,10 @@ end if
        do ii=1,uEMEP_Size1_local
           n=n+1
           loc_frac_1d(ii,0) = rcv_buf_s(n)
+       enddo
+       do ii=1,81
+          n=n+1
+          loc_frac_src_1d(ii,0) = rcv_buf_s(n)
        enddo
      end if
 
@@ -3602,9 +3651,13 @@ end if
            n=n+1
            loc_frac_1d(ii,lj1+1) = 0.0
         enddo
+        do ii=1,81
+           n=n+1
+           loc_frac_src_1d(ii,lj1+1) = 0.0
+        enddo
     else
 
-      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
       n=0
       do ii=1,NSPEC_ADV
@@ -3629,6 +3682,10 @@ end if
       do ii=1,uEMEP_Size1_local
          n=n+1
          loc_frac_1d(ii,lj1+1) = rcv_buf_n(n)
+      enddo
+      do ii=1,81
+         n=n+1
+         loc_frac_src_1d(ii,lj1+1) = rcv_buf_n(n)
       enddo
     end if
 

@@ -232,20 +232,24 @@ real, public, allocatable, dimension(:,:,:,:), save :: SecEmisOut !per sector an
 
 !should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
-  loc_frac&    ! Fraction of pollutants that are produced locally
+  loc_frac&    ! Fraction of pollutants that are produced locally, surrounding sources
   ,loc_frac_hour_inst&  !Houry local fractions
   ,loc_frac_hour&  !Houry average of local fractions
   ,loc_frac_day&  !Daily average of local fractions
   ,loc_frac_month&  !Monthly average of local fractions
   ,loc_frac_full  !Fullrun average of local fractions
 real, public, allocatable, dimension(:,:,:,:), save :: &
-   loc_tot_hour_inst&   !all contributions
+   loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
+  ,loc_frac_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
+  ,loc_tot_hour_inst&   !all contributions
   ,loc_tot_hour&   !Hourly average of all contributions
   ,loc_tot_day&   !Daily average of all contributions
   ,loc_tot_month&  !Monthly average of all contributions
   ,loc_tot_full  !Fullrun average of all contributions
 real, public, allocatable, dimension(:,:,:,:), save :: &
   loc_frac_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
+real, public, allocatable, dimension(:,:), save :: &
+  loc_frac_src_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
 integer, public, parameter:: Nneighbors = 9 !localfractions from 8 neighbors + self
 
 !Ocean variables
