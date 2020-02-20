@@ -2949,12 +2949,6 @@ end if
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
-       do i=0,li0-1
-          loc_frac_1d(:,i)=0.0
-       enddo
-       do i=li1+1,limax+1
-          loc_frac_1d(:,i)=0.0
-       enddo
        do i=li0,li1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -3452,12 +3446,6 @@ end if
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
-       do j=0,lj0-1
-          loc_frac_1d(:,j) = 0.0
-       enddo
-       do j=lj1+1,ljmax+1
-          loc_frac_1d(:,j) = 0.0
-       enddo
        do j=lj0,lj1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -3555,7 +3543,7 @@ end if
           psbeg(3) =  psbeg(1)
         end if
        do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,0)=0.0
+          loc_frac_1d(ii,lj0-1)=0.0
        enddo
 
     else
@@ -3584,7 +3572,7 @@ end if
 
        do ii=1,uEMEP_Size1_local
           n=n+1
-          loc_frac_1d(ii,0) = rcv_buf_s(n)
+          loc_frac_1d(ii,lj0-1) = rcv_buf_s(n)
        enddo
      end if
 
