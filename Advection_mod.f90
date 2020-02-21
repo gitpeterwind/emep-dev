@@ -97,7 +97,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only: uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff
+  use uEMEP_mod, only: uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, Ndiv2_coarse
 
   implicit none
   private
@@ -315,7 +315,7 @@
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
        call vgrid_Eta
        if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
-       if(.not.allocated(loc_frac_src_1d))allocate(loc_frac_src_1d(81,1))!to avoid error messages
+       if(.not.allocated(loc_frac_src_1d))allocate(loc_frac_src_1d(0,1))!to avoid error messages
        if(ZERO_ORDER_ADVEC)then
           hor_adv0th = .true.
           vert_adv0th = .true.
@@ -2939,19 +2939,19 @@ end if
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
-    real,intent(inout),dimension(81,0:limax+1)  :: loc_frac_src_1d
+    real,intent(inout),dimension(Ndiv2_coarse,0:limax+1)  :: loc_frac_src_1d
 
 !    local
     integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local, uEMEP_Size1_local_src
 
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+81) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+Ndiv2_coarse) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
     uEMEP_Size1_local = 0!default: do not treat this region
     uEMEP_Size1_local_src = 0!default: do not treat this region 
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
-       uEMEP_Size1_local_src = uEMEP_Size1_local+81!treat this region 
+       uEMEP_Size1_local_src = uEMEP_Size1_local+Ndiv2_coarse!treat this region 
        do i=li0,li1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -2962,7 +2962,7 @@ end if
                enddo
              enddo
           enddo
-          do n=1,81
+          do n=1,Ndiv2_coarse
              loc_frac_src_1d(n,i) = loc_frac_src(n,i,j,k)
           enddo
        enddo
@@ -2993,7 +2993,7 @@ end if
           n=n+1
           send_buf_w(n) = loc_frac_1d(ii,1)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           send_buf_w(n) = loc_frac_src_1d(ii,1)
        enddo
@@ -3026,7 +3026,7 @@ end if
           n=n+1
           send_buf_e(n) = loc_frac_1d(ii,li1)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           send_buf_e(n) = loc_frac_src_1d(ii,li1)
        enddo
@@ -3056,7 +3056,7 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,li0-1)=0.0
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           loc_frac_src_1d(ii,li0-1)=0.0
        enddo
 
@@ -3089,7 +3089,7 @@ end if
           n=n+1
           loc_frac_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           loc_frac_src_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
@@ -3119,7 +3119,7 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,li1+1)=0.0
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           loc_frac_src_1d(ii,li1+1)=0.0
        enddo
     else
@@ -3151,7 +3151,7 @@ end if
          n=n+1
          loc_frac_1d(ii,li1+1) = rcv_buf_e(n)
       enddo
-      do ii=1,81
+      do ii=1,Ndiv2_coarse
          n=n+1
          loc_frac_src_1d(ii,li1+1) = rcv_buf_e(n)
       enddo
@@ -3464,18 +3464,18 @@ end if
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
-    real,intent(inout),dimension(81,0:ljmax+1)  :: loc_frac_src_1d
+    real,intent(inout),dimension(Ndiv2_coarse,0:ljmax+1)  :: loc_frac_src_1d
 
 !    local
     integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local, uEMEP_Size1_local_src
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+81) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+Ndiv2_coarse) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
     uEMEP_Size1_local = 0!default: do not treat this region
     uEMEP_Size1_local_src = 0!default: do not treat this region
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
        uEMEP_Size1_local = uEMEP_Size1!treat this region
-       uEMEP_Size1_local_src = uEMEP_Size1_local+81!treat this region
+       uEMEP_Size1_local_src = uEMEP_Size1_local+Ndiv2_coarse!treat this region
        do j=lj0,lj1
           n=0
           do dy=-uEMEP%dist,uEMEP%dist
@@ -3486,7 +3486,7 @@ end if
                 enddo
              enddo
           enddo
-           do n=1,81
+           do n=1,Ndiv2_coarse
              loc_frac_src_1d(n,j) = loc_frac_src(n,i_send,j,k)
           enddo
          
@@ -3519,7 +3519,7 @@ end if
           n=n+1
           send_buf_s(n) = loc_frac_1d(ii,1)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           send_buf_s(n) = loc_frac_src_1d(ii,1)
        enddo
@@ -3553,7 +3553,7 @@ end if
           n=n+1
           send_buf_n(n) = loc_frac_1d(ii,lj1)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           send_buf_n(n) = loc_frac_src_1d(ii,lj1)
        enddo
@@ -3587,7 +3587,7 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,0)=0.0
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           loc_frac_src_1d(ii,0)=0.0
        enddo
 
@@ -3619,7 +3619,7 @@ end if
           n=n+1
           loc_frac_1d(ii,0) = rcv_buf_s(n)
        enddo
-       do ii=1,81
+       do ii=1,Ndiv2_coarse
           n=n+1
           loc_frac_src_1d(ii,0) = rcv_buf_s(n)
        enddo
@@ -3651,7 +3651,7 @@ end if
            n=n+1
            loc_frac_1d(ii,lj1+1) = 0.0
         enddo
-        do ii=1,81
+        do ii=1,Ndiv2_coarse
            n=n+1
            loc_frac_src_1d(ii,lj1+1) = 0.0
         enddo
@@ -3683,7 +3683,7 @@ end if
          n=n+1
          loc_frac_1d(ii,lj1+1) = rcv_buf_n(n)
       enddo
-      do ii=1,81
+      do ii=1,Ndiv2_coarse
          n=n+1
          loc_frac_src_1d(ii,lj1+1) = rcv_buf_n(n)
       enddo
