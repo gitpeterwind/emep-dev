@@ -3494,23 +3494,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                        if(ig>dims(1))ig=ig-dims(1)
                     endif
                  endif
-                 if(ig<0.5 .or. ig>dims(1))then
-                    if(present(UnDef))then
-                       Rvar(ijk)=UnDef_local
-                    else
-                       write(*,*)me,i,j,k,glon(i,j),glat(i,j),ig
-                       call StopAll("ReadField_CDF: values outside grid required "//trim(varname)//" "//trim(filename))
-                    endif
+                 !nearest must always give something
+                 ig=max(1,min(dims(1),ig))
+                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
+                 igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
+                    Rvar(ijk)=Rvalues(igjgk)
                  else
-                    ig=max(1,min(dims(1),ig))
-                    jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
-                    igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                    if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
-                       Rvar(ijk)=Rvalues(igjgk)
-                    else
-                       Rvar(ijk)=UnDef_local
-                    end if
-                 endif
+                    Rvar(ijk)=UnDef_local
+                 end if
+                 
               end do
            end do
         end do
