@@ -23,6 +23,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Feb 2020, Peter
+
+Interpolation failed for GLOBAL_LAInBVOC.nc in GLOBAL05 runs.
+The reason is a combination of many factors:
+both grid have same resolution, but shifted by half a gridcell. The "nearest"
+neighbor (zero order interpolation) is just in between two gridcells, and at
+the end of the map it chose the "wrong side".
+Solution: we force the index to be within range.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Peter, Qing
 
 Nesting: the number of vertical levels in the BC file is checked before each
