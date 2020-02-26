@@ -182,6 +182,7 @@ subroutine init_uEMEP
   allocate(loc_poll_to(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
   loc_poll_to=0.0 
   endif
+
   allocate(loc_frac_1d(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:max(LIMAX,LJMAX)+1))        
   loc_frac_1d=0.0
   allocate(loc_frac_src_1d(Ndiv2_coarse,0:max(LIMAX,LJMAX)+1))
@@ -291,11 +292,17 @@ subroutine out_uEMEP(iotyp)
   dimNames(1)='x_dist'
   dimSizes(2)=2*uEMEP%dist+1
   dimNames(2)='y_dist'
-  dimSizes(3)=GIMAX
-  dimSizes(4)=GJMAX
 
-  dimSizes_tot(1)=GIMAX
-  dimSizes_tot(2)=GJMAX
+  uEMEP%DOMAIN(1) = max(RUNDOMAIN(1),uEMEP%DOMAIN(1))
+  uEMEP%DOMAIN(2) = min(RUNDOMAIN(2),uEMEP%DOMAIN(2))
+  uEMEP%DOMAIN(3) = max(RUNDOMAIN(3),uEMEP%DOMAIN(3))
+  uEMEP%DOMAIN(4) = min(RUNDOMAIN(4),uEMEP%DOMAIN(4))
+
+  dimSizes(3)=min(GIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
+  dimSizes(4)=min(GJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
+
+  dimSizes_tot(1)=min(GIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
+  dimSizes_tot(2)=min(GJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
 
   select case(projection)
   case('Stereographic')
@@ -338,10 +345,10 @@ subroutine out_uEMEP(iotyp)
   def2=def1
   def2%unit='ug/m3'
   chunksizes=1
-  !chunksizes(1)=dimSizes(1)
-  !chunksizes(2)=dimSizes(2)
-  chunksizes(3)=MAXLIMAX!dimSizes(3)
-  chunksizes(4)=MAXLJMAX!dimSizes(4)
+  !chunksizes(1)=dimSizes(1) !slower!!
+  !chunksizes(2)=dimSizes(2) !slower!!
+  chunksizes(3)=MAXLIMAX
+  chunksizes(4)=MAXLJMAX
   chunksizes(5)=dimSizes(5)
   chunksizes_tot=1
   chunksizes_tot(1)=MAXLIMAX

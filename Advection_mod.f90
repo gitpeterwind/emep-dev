@@ -3585,7 +3585,7 @@ end if
           psbeg(3) =  psbeg(1)
         end if
        do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,0)=0.0
+          loc_frac_1d(ii,lj0-1)=0.0
        enddo
        do ii=1,Ndiv2_coarse
           loc_frac_src_1d(ii,0)=0.0
@@ -3617,7 +3617,7 @@ end if
 
        do ii=1,uEMEP_Size1_local
           n=n+1
-          loc_frac_1d(ii,0) = rcv_buf_s(n)
+          loc_frac_1d(ii,lj0-1) = rcv_buf_s(n)
        enddo
        do ii=1,Ndiv2_coarse
           n=n+1
