@@ -294,11 +294,17 @@ subroutine out_uEMEP(iotyp)
   dimNames(1)='x_dist'
   dimSizes(2)=2*uEMEP%dist+1
   dimNames(2)='y_dist'
-  dimSizes(3)=LIMAX
-  dimSizes(4)=LJMAX
 
-  dimSizes_tot(1)=LIMAX
-  dimSizes_tot(2)=LJMAX
+  uEMEP%DOMAIN(1) = max(RUNDOMAIN(1),uEMEP%DOMAIN(1))
+  uEMEP%DOMAIN(2) = min(RUNDOMAIN(2),uEMEP%DOMAIN(2))
+  uEMEP%DOMAIN(3) = max(RUNDOMAIN(3),uEMEP%DOMAIN(3))
+  uEMEP%DOMAIN(4) = min(RUNDOMAIN(4),uEMEP%DOMAIN(4))
+
+  dimSizes(3)=min(LIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
+  dimSizes(4)=min(LJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
+
+  dimSizes_tot(1)=min(LIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
+  dimSizes_tot(2)=min(LJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
 
   select case(projection)
   case('Stereographic')
