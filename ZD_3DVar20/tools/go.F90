@@ -1041,6 +1041,7 @@ module GO
   use GO_Timer
   use GO_Par
   use GO_FU
+  use GO_Path
 
 !#ifdef with_ajs
 !  use GO_Rc
