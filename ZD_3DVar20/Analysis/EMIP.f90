@@ -1,6 +1,6 @@
 !######################################################################
 !
-! Read OMI NO2 file created by EMIP (EMEP Input Processor).
+! Read OMI/TROPOMI file created by EMIP (EMEP Input Processor).
 !
 ! EXAMPLE CONTENT
 !
@@ -135,9 +135,9 @@
 !
 !######################################################################
 
-module EMIP_OMI
+module EMIP
 
-  use DA_Util_ml, only : gol, goPr, goErr
+  use GO, only : gol, goPr, goErr
 
   implicit none
   
@@ -146,17 +146,17 @@ module EMIP_OMI
   
   private
   
-  public  ::  T_EMIP_OMI
+  public  ::  T_EMIP
   
 
   ! --- const ------------------------------------
 
-  character(len=*), parameter  ::  mname = 'EMIP_OMI'
+  character(len=*), parameter  ::  mname = 'EMIP'
 
 
   ! --- types ----------------------------------------
   
-  type T_EMIP_OMI
+  type T_EMIP
     ! originating file:
     character(len=1024)   ::  filename
     ! dimensions:
@@ -177,9 +177,9 @@ module EMIP_OMI
     real, allocatable     ::  phlev(:,:)
     character(len=32)     ::  phlev_units
   contains
-    procedure   ::  Init          => EMIP_OMI_Init
-    procedure   ::  Done          => EMIP_OMI_Done
-  end type T_EMIP_OMI
+    procedure   ::  Init          => EMIP_Init
+    procedure   ::  Done          => EMIP_Done
+  end type T_EMIP
 
 
 contains
@@ -190,19 +190,19 @@ contains
   ! Access EMEP OMI extract
   !
   
-  subroutine EMIP_OMI_Init( self, filename, status )
+  subroutine EMIP_Init( self, filename, status )
   
     use C3PO      , only : Datafile
 
     ! --- in/out ---------------------------------
     
-    class(T_EMIP_OMI), intent(out)            ::  self
+    class(T_EMIP), intent(out)            ::  self
     character(len=*), intent(in)              ::  filename
     integer, intent(out)                      ::  status
 
     ! --- const --------------------------------------
 
-    character(len=*), parameter  ::  rname = mname//'/EMIP_OMI_Init'
+    character(len=*), parameter  ::  rname = mname//'/EMIP_Init'
     
     ! --- local ----------------------------------
     
@@ -265,22 +265,22 @@ contains
     ! ok
     status = 0
   
-  end subroutine EMIP_OMI_Init
+  end subroutine EMIP_Init
 
 
   ! ***
   
 
-  subroutine EMIP_OMI_Done( self, status )
+  subroutine EMIP_Done( self, status )
   
     ! --- in/out ---------------------------------
     
-    class(T_EMIP_OMI), intent(inout)          ::  self
+    class(T_EMIP), intent(inout)          ::  self
     integer, intent(out)                      ::  status
 
     ! --- const --------------------------------------
 
-    character(len=*), parameter  ::  rname = mname//'/EMIP_OMI_Done'
+    character(len=*), parameter  ::  rname = mname//'/EMIP_Done'
     
     ! --- local ----------------------------------
     
@@ -303,11 +303,11 @@ contains
     ! ok
     status = 0
   
-  end subroutine EMIP_OMI_Done
+  end subroutine EMIP_Done
 
 
 
-end module EMIP_OMI
+end module EMIP
 
 
 !!=======================================================================
@@ -318,10 +318,10 @@ end module EMIP_OMI
 !
 !program test
 !
-!  use EMIP_OMI, only : T_EMIP_OMI
+!  use EMIP, only : T_EMIP
 !  
 !
-!  type(T_EMIP_OMI)      ::  omi
+!  type(T_EMIP)      ::  omi
 !  character(len=1024)   ::  filename
 !  integer               ::  status
 !  
