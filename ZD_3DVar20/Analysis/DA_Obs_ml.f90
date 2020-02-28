@@ -1,5 +1,6 @@
 !*****************************************************************************!
 !
+#define TRACELINE rname//' (__FILE__, line __LINE__)'
 #define TRACEBACK write (gol,'("in ",a," (",a,", line ",i5,")")') rname, __FILE__, __LINE__; call goErr
 #define IF_NOT_OK_RETURN(action) if (status/=0) then; TRACEBACK; action; return; end if
 !
@@ -11,23 +12,23 @@
 
 module DA_Obs_ml
 
-  use DA_Util_ml,       only: ngol, gol, goPr, goErr
-  use MPI   ,           only: MPI_SUCCESS, MPI_Error_String
-  use NetCDF,           only: NF90_NOERR, NF90_StrError
-  use TimeDate_mod,     only: current_date
-  use CheckStop_mod,    only: CheckStop
-  use Functions_mod,    only: great_circle_distance
-  use ChemDims_mod,     only: NSPEC_ADV
-  use ChemSpecs_mod,    only: species_adv
-  use ChemGroups_mod,   only: chemgroups
-  use Io_Progs_mod,     only: PrintLog
-  use Config_module,    only: MasterProc,runlabel1
-  use SmallUtils_mod,   only: find_index
-  use TimeDate_ExtraUtil_mod,only: date2string
-  use DA_ml           , only : debug => DEBUG_DA
-  use DA_ml           , only : dafmt => da_fmt_msg
-  use DA_ml           , only : damsg => da_msg
-  use DA_ml           , only : nlev
+  use GO                    , only : ngol, gol, goPr, goErr
+  use MPI                   , only : MPI_SUCCESS, MPI_Error_String
+  use NetCDF                , only : NF90_NOERR, NF90_StrError
+
+#ifdef with_assim
+  use CheckStop_mod         , only : CheckStop
+  use Functions_mod         , only : great_circle_distance
+  use ChemDims_mod          , only : NSPEC_ADV
+  use ChemSpecs_mod         , only : species_adv
+  use ChemGroups_mod        , only : chemgroups
+  use Io_Progs_mod          , only : PrintLog
+  use Config_module         , only : MasterProc,runlabel1
+  use SmallUtils_mod        , only : find_index
+  use DA_ml                 , only : debug => DEBUG_DA
+  use DA_ml                 , only : dafmt => da_fmt_msg
+  use DA_ml                 , only : damsg => da_msg
+#endif  ! with_assim
 
   implicit none
 
@@ -39,7 +40,7 @@ module DA_Obs_ml
   ! max length:
   integer, parameter  ::  LEN_LABEL = 64
   integer, parameter  ::  LEN_SCODE = 8
-  
+
   ! level types:                               extract from ...
   integer, parameter  ::  LEVTYPE_3D_ML      = 1  ! 3D model layers
   integer, parameter  ::  LEVTYPE_3D_ML_SFC  = 2  ! 3D model layers, surface simulation (3m)
@@ -71,8 +72,10 @@ module DA_Obs_ml
   public    ::  T_ObsOper
   public    ::  T_ObsOpers
   
-  public    ::  nObsData, obsData
   public    ::  nObsComp, ObsCompInfo
+
+#ifdef with_assim
+  public    ::  nObsData, obsData
   
   public    ::  LEVTYPE_3D_ML
   public    ::  LEVTYPE_3D_ML_SFC
@@ -85,10 +88,12 @@ module DA_Obs_ml
   !public    ::  dbg_cell, dbg_i, dbg_j
 
   public    ::  ANSTAT_NONE, ANSTAT_ANALYZED, ANSTAT_VALIDATION, ANSTAT_SCREENED, ANSTAT_OBSCURE
+#endif  ! with_assim
 
 
   ! --- const ----------------------------------------
   
+#ifdef with_assim
   ! analysis status numbers:
   integer, parameter            ::  ANSTAT_NONE       = 0
   integer, parameter            ::  ANSTAT_ANALYZED   = 1
@@ -97,10 +102,12 @@ module DA_Obs_ml
   integer, parameter            ::  ANSTAT_OBSCURE    = 4
   ! description:
   character(len=*), parameter   ::  ANSTAT_DESCRIPTION = '0=None, 1=analysed, 2=validation, 3=screened, 4=obscure'
+#endif  ! with_assim
 
 
   ! --- types ----------------------------------------
   
+#ifdef with_assim
   ! collection of observation errors per station code
   type T_ObsError_List
     ! number of stations:
@@ -116,6 +123,7 @@ module DA_Obs_ml
     procedure   ::  ReadFiles    => ObsError_List_ReadFiles
     procedure   ::  GetError     => ObsError_List_GetError
   end type T_ObsError_List
+#endif ! with_assim
   
   ! *
   
@@ -144,13 +152,16 @@ module DA_Obs_ml
     ! * elements defined in configuration namelist
     !
     ! file types:
-    !   'txt'  : text files used for operational processing
-    !   'omi'  : OMI netcdf files (converted from HDFEOS5)
+    !   'txt'      : text files used for operational processing
+    !   'emip'     : EMIP converted satellite data (OMI, S5p)
+    !   'superobs' : netcdf files with S5p superobservations
     character(len=32)         ::  ftype      = 'txt'
     ! observation file (analyzed):
     character(len=256)        ::  file       = ''
+#ifdef with_assim
     ! observation files for validation:
     character(len=256)        ::  file_val   = ''
+#endif ! with_assim
     !
     ! observed component:
     character(len=LEN_LABEL)  ::  name       = ''    ! 'O3', 'NO2', 'PM10', ...
@@ -159,6 +170,7 @@ module DA_Obs_ml
     !
     ! observation data units:
     character(len=LEN_LABEL)  ::  unit       = ''
+#ifdef with_assim
     ! allowed range:
     real                      ::  min        = 0.0
     real                      ::  max        = 1e3
@@ -181,6 +193,7 @@ module DA_Obs_ml
     logical                   ::  feedback      = .true.
     !~ how to feedback?
     character(len=LEN_LABEL)  ::  feedback_type = ''
+#endif ! with_assim
     !
     ! * auxilary
     !
@@ -188,9 +201,9 @@ module DA_Obs_ml
     character(len=256)        ::  tag        = ''
     ! used for mapping from model tracers:
     integer                   ::  iObsComp   = -999
-    ! some index range in txt input:
-    integer                   ::  iobs(0:1)  = -1
-  end type
+    !! some index range in txt input:
+    !integer                   ::  iobs(0:1)  = -1
+  end type obs_data
 
   !-----------------------------------------------------------------------
   ! H_jac is a matrix with components H_{n;i,j,l,k}, where
@@ -215,48 +228,55 @@ module DA_Obs_ml
   !  - ObsOper_Copy
   !  - ObsOpers_Swap
   type T_ObsOper
+    ! unique id for testing:
+    integer                     ::  id
     ! observation and std.dev.:
     real                        ::  obs
     real                        ::  obsstddev
-    ! model simulations:
-    real                        ::  xf       ! forecast
-    real                        ::  xa       ! analysis
-    real                        ::  sb       ! background sigma
-    real                        ::  sf       ! forecast sigma
-    ! innovation:
-    real                        ::  innov    ! obs - forecast
-    ! Jacobian dH/dx :
-    real, allocatable           ::  H_jac(:)  ! (nlev)
-    ! TESTING: scale factor for profile
-    real                        ::  H_jac1
+    ! meta data:
+    integer                     ::  stnid
+    real                        ::  lon, lat
+    real                        ::  alt
+    character(len=LEN_SCODE)    ::  stncode
     ! grid cell:
     integer                     ::  i
     integer                     ::  j
     ! vertical:
     integer                     ::  levtype
     integer                     ::  l(0:1)
-    ! id for testing:
-    integer                     ::  id
-    ! observed component:
-    integer                     ::  iObsComp
     ! index in 'obsData' array:
     integer                     ::  iObsData
-    ! meta data:
-    integer                     ::  stnid
-    real                        ::  lon, lat
-    real                        ::  alt
-    character(len=LEN_SCODE)    ::  stncode
+    ! observed component:
+    integer                     ::  iObsComp
+    ! Jacobian dH/dx :
+    real, allocatable           ::  H_jac(:)  ! (nlev)
+    ! TESTING: scale factor for profile
+    real                        ::  H_jac1
+    !
+    ! model simulations:
+    real                        ::  xf       ! forecast
+#ifdef with_assim
+    real                        ::  xa       ! analysis
+    real                        ::  sb       ! background sigma
+    real                        ::  sf       ! forecast sigma
+    ! innovation:
+    real                        ::  innov    ! obs - forecast
     ! flag for analysis/validation/screened/obscure
     integer                     ::  anstat
+#endif ! with_assim
     !
   contains
     procedure   ::  Init         => ObsOper_Init
     procedure   ::  Done         => ObsOper_Done
-    procedure   ::  Copy         => ObsOper_Copy
     procedure   ::  Fill         => ObsOper_Fill
+#ifdef with_assim
+    procedure   ::  Copy         => ObsOper_Copy
     procedure   ::  Evaluate     => ObsOper_Evaluate
     procedure   ::  Screening    => ObsOper_Screening
+#endif ! with_assim
   end type T_ObsOper
+  
+  ! *
 
   ! observation operators:
   type T_ObsOpers
@@ -264,20 +284,24 @@ module DA_Obs_ml
     integer                         ::  nobs
     ! info per observations:
     type(T_ObsOper), allocatable    ::  obs(:)
+#ifdef with_assim
     ! scale factors from online tuning:
     real, allocatable               ::  BScale(:)  ! (nObsComp)
+#endif ! with_assim
   contains
     procedure   ::  Init          => ObsOpers_Init
     procedure   ::  Done          => ObsOpers_Done
+    procedure   ::  Set_IDs       => ObsOpers_Set_IDs
+    procedure   ::  WriteToFile   => ObsOpers_WriteToFile
     procedure   ::  Alloc         => ObsOpers_Alloc
     procedure   ::  DeAlloc       => ObsOpers_DeAlloc
-    procedure   ::  Set_IDs       => ObsOpers_Set_IDs
+#ifdef with_assim
     procedure   ::  Swap          => ObsOpers_Swap
     procedure   ::  SelectTracers => ObsOpers_SelectTracers
     procedure   ::  Evaluate      => ObsOpers_Evaluate
     procedure   ::  Screening     => ObsOpers_Screening
     procedure   ::  SetBScale     => ObsOpers_SetBScale
-    procedure   ::  WriteToFile   => ObsOpers_WriteToFile
+#endif ! with_assim
   end type T_ObsOpers
 
   ! *
@@ -287,15 +311,6 @@ module DA_Obs_ml
     ! component name and units:
     character(len=32)                ::  name
     character(len=32)                ::  units
-    ! vertical: 
-    !   'mod-lev'   :  extract from (range of) model level(s)
-    !   'surface'   :  from bottom model layer to surface using 'cfac'
-    character(len=32)                ::  deriv
-    integer                          ::  levtype
-    ! covariance file:
-    character(len=1024)              ::  Bfile
-    ! adhoc scale factor for sigma:
-    real                             ::  Bsigfac
     ! number of model species:
     integer                          ::  nspec
     ! indices of model advected species:
@@ -309,15 +324,28 @@ module DA_Obs_ml
     logical                          ::  with_no3c_frac
     ! add aerosol water?
     logical                          ::  with_pmwater
+    ! vertical: 
+    !   'mod-lev'   :  extract from (range of) model level(s)
+    !   'surface'   :  from bottom model layer to surface using 'cfac'
+    character(len=32)                ::  deriv
+    integer                          ::  levtype
+#ifdef with_assim
+    ! covariance file:
+    character(len=1024)              ::  Bfile
+    ! adhoc scale factor for sigma:
+    real                             ::  Bsigfac
     ! feed back into model?
     logical                          ::  feedback
     !~ how to feed back?
     character(len=32)                ::  feedback_type = ''
+#endif  ! with_assim
+    !
   contains
     procedure :: Init                         => ObsCompInfo_Init
     procedure :: Done                         => ObsCompInfo_Done
     procedure :: Show                         => ObsCompInfo_Show
     procedure :: FillFields                   => ObsCompInfo_FillFields
+#ifdef with_assim
     procedure :: DistributeIncrement          => ObsCompInfo_DistributeIncrement_3d
     procedure :: DistributeIncrement1         => ObsCompInfo_DistributeIncrement1_3d
     procedure :: ChangeProfile                => ObsCompInfo_ChangeProfile
@@ -325,38 +353,42 @@ module DA_Obs_ml
     procedure :: AdjustFineCoarseRatio        => ObsCompInfo_AdjustFineCoarseRatio
     procedure :: ChangeML                     => ObsCompInfo_ChangeML
     procedure :: ChangeVCD                    => ObsCompInfo_ChangeVCD
+#endif  ! with_assim
     !
-  end type T_ObsCompInfo
+  end type T_ObsCompInfo  
+
 
 
   !--- local -------------------------------------------------------------
 
-  ! maximum number of data sets:
-  integer, parameter :: nObsDataMax = 10
-  ! storage for dataset definitions:
-  type(obs_data)     :: obsData(nObsDataMax)
-  ! actual number:
-  integer            :: nObsData=0
-
-  ! storage for error lists:
-  type(T_ObsError_List), allocatable    ::  ObsError_Lists(:)   ! (nObsData)
+  ! number of observed components:
+  integer                               ::  nObsComp
+  ! info:
+  type(T_ObsCompInfo), allocatable      ::  ObsCompInfo(:)  ! (nObsComp)
   
+  ! maximum number of data sets:
+  integer, parameter                    ::  nObsDataMax = 10
+  ! storage for dataset definitions:
+  type(obs_data)                        ::  obsData(nObsDataMax)
+  ! actual number:
+  integer                               ::  nObsData=0
+
   ! storage for kernels:
   type(T_ObsKernels), allocatable       ::  ObsKernels(:)  ! (nObsData)
 
-  
-  ! number of observed components:
-  integer                            ::  nObsComp
-  ! info:
-  type(T_ObsCompInfo), allocatable   ::  ObsCompInfo(:)  ! (nObsComp)
-  
+#ifdef with_assim
+  ! storage for error lists:
+  type(T_ObsError_List), allocatable    ::  ObsError_Lists(:)   ! (nObsData)
+
   !! testing ...
   !logical            ::  dbg_cell = .false.
   !integer            ::  dbg_i    = -999
   !integer            ::  dbg_j    = -999
+#endif  ! with_assim
   
 
 contains
+
 
 
   !=========================================================================
@@ -366,8 +398,12 @@ contains
   !=========================================================================
 
   
-  subroutine ObsCompInfo_Init( self, name, units, deriv, Bfile, indices, status, &
-                                 with_no3c_frac, with_pmwater, feedback, feedback_type, Bsigfac )
+  subroutine ObsCompInfo_Init( self, name, units, deriv, indices, status, &
+                                 with_no3c_frac, with_pmwater &
+#ifdef with_assim
+                                 , Bfile, Bsigfac, feedback, feedback_type &
+#endif  ! with_assim
+                                 )
   
     use Units_mod       , only : Units_Scale
     use SmallUtils_mod  , only : find_index
@@ -375,19 +411,22 @@ contains
 
     ! --- in/out ----------------------------
     
-    class(T_ObsCompInfo), intent(out)   ::  self
-    character(len=*), intent(in)        ::  name
-    character(len=*), intent(in)        ::  units
-    character(len=*), intent(in)        ::  deriv  ! 'mod-lev', 'surface'
-    character(len=*), intent(in)        ::  Bfile
-    integer, intent(in)                 ::  indices(:)
-    integer, intent(out)                ::  status
+    class(T_ObsCompInfo), intent(out)       ::  self
+    character(len=*), intent(in)            ::  name
+    character(len=*), intent(in)            ::  units
+    character(len=*), intent(in)            ::  deriv  ! 'mod-lev', 'surface'
+    integer, intent(in)                     ::  indices(:)
+    integer, intent(out)                    ::  status
     
     logical, intent(in), optional           ::  with_no3c_frac
     logical, intent(in), optional           ::  with_pmwater
+    
+#ifdef with_assim
+    character(len=*), intent(in), optional  ::  Bfile
+    real, intent(in), optional              ::  Bsigfac
     logical, intent(in), optional           ::  feedback
     character(len=*), intent(in), optional  ::  feedback_type
-    real, intent(in), optional              ::  Bsigfac
+#endif  ! with_assim
     
     ! --- const ----------------------------
     
@@ -403,22 +442,10 @@ contains
     self%name  = trim(name)
     self%units = trim(units)
     self%deriv = trim(deriv)
-    self%Bfile = trim(Bfile)
-
-    ! scale factor:
-    self%Bsigfac = 1.0
-    if ( present(Bsigfac) ) self%Bsigfac = Bsigfac
-
+    
     ! add aerosol water?
     self%with_pmwater = .false.
     if ( present(with_pmwater) ) self%with_pmwater = with_pmwater
-    
-    ! feed back into model?
-    self%feedback = .true.
-    if ( present(feedback) ) self%feedback = feedback
-    ! how to feed back:
-    self%feedback_type = ''
-    if ( present(feedback_type) ) self%feedback_type = feedback_type
     
     ! include fraction of coarse nitrate aerosol ? used for PM25:
     self%with_no3c_frac = .false.
@@ -458,16 +485,26 @@ contains
     ! loop over input species:
     do i = 1, self%nspec
       ! obtain unit conv factor to convert from ispec units to "units":
-!#ifdef with_ajs
-!      call Units_Scale( units, self%ispec(i), self%unitconv(i), &
-!                           needroa=self%unitroa(i), status=status )
-!      IF_NOT_OK_RETURN(status=1)
-!#else
       call Units_Scale( units, self%ispec(i), self%unitconv(i), &
-                           needroa=self%unitroa(i) )
-!#endif
-    end do
+                         needroa=self%unitroa(i), debug_msg=TRACELINE )
+    end do ! specs
     
+#ifdef with_assim
+    ! covariance file:
+    self%Bfile = ''
+    if ( present(Bfile) ) self%Bfile = trim(Bfile)
+    ! scale factor:
+    self%Bsigfac = 1.0
+    if ( present(Bsigfac) ) self%Bsigfac = Bsigfac
+
+    ! feed back into model?
+    self%feedback = .true.
+    if ( present(feedback) ) self%feedback = feedback
+    ! how to feed back:
+    self%feedback_type = ''
+    if ( present(feedback_type) ) self%feedback_type = feedback_type
+#endif  ! with_assim
+
     ! ok
     status = 0
     
@@ -509,8 +546,8 @@ contains
 
 
   ! ***
-  
-  
+
+      
   subroutine ObsCompInfo_Show( self, status )
 
     use ChemSpecs_mod, only : species_adv
@@ -726,6 +763,7 @@ contains
 
   ! *
 
+#ifdef with_assim  
 
   !
   ! Change xn_adv array (all tracers) given observed field (total pm?) and increment.
@@ -1298,14 +1336,8 @@ contains
 !        ! skip if no contribution:
 !        if ( .not. ispm(ispec,ipm) ) cycle
 !        ! info on conversion to target units:
-!#ifdef with_ajs
 !        call Units_Scale( obs_units, ispec, fscale, &
-!                                 needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
-!        call Units_Scale( obs_units, ispec, fscale, &
-!                                 needroa=needroa )
-!#endif
+!                          needroa=needroa, debug_msg=TRACELINE )
 !        !! testing ...
 !        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
 !        ! convert using air density?
@@ -1583,14 +1615,8 @@ contains
 !!        ! skip if no contribution:
 !!        if ( w(ispec,ipm) <= 0.0 ) cycle
 !!        ! info on conversion to target units:
-!!#ifdef with_ajs
 !!        call Units_Scale( obs_units, ispec, fscale, &
-!!                                 needroa=needroa, status=status )
-!!        IF_NOT_OK_RETURN(status=1)
-!!#else
-!!        call Units_Scale( obs_units, ispec, fscale, &
-!!                                 needroa=needroa )
-!!#endif
+!!                          needroa=needroa, debug_msg=TRACELINE )
 !!        !! testing ...
 !!        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
 !!        ! convert using air density?
@@ -1643,14 +1669,8 @@ contains
 !!    ! coarse nitrate:
 !!    ispec = ispec_no3c
 !!    ! info on conversion to target units:
-!!#ifdef with_ajs
 !!    call Units_Scale( obs_units, ispec, fscale, &
-!!                             needroa=needroa, status=status )
-!!    IF_NOT_OK_RETURN(status=1)
-!!#else
-!!    call Units_Scale( obs_units, ispec, fscale, &
-!!                             needroa=needroa )
-!!#endif
+!!                      needroa=needroa, debug_msg=TRACELINE )
 !!    !! testing ...
 !!    !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
 !!    ! convert using air density?
@@ -1898,14 +1918,8 @@ contains
         ! skip if no contribution:
         if ( .not. ispm(ispec,ipm) ) cycle
         ! info on conversion to target units:
-!#ifdef with_ajs
-!        call Units_Scale( obs_units, ispec, fscale, &
-!                                 needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
         call Units_Scale( obs_units, ispec, fscale, &
-                                 needroa=needroa )
-!#endif
+                          needroa=needroa, debug_msg=TRACELINE )
         !! testing ...
         !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
         ! convert using air density?
@@ -2459,6 +2473,7 @@ contains
     
   end subroutine ObsCompInfo_ChangeVCD
 
+#endif  ! with_assim
 
 
   !=========================================================================
@@ -2471,10 +2486,10 @@ contains
   subroutine DA_Obs_Init( status )
   
     use Io_mod          , only : IO_NML
-    use SmallUtils_mod  , only : find_index
-    use ChemSpecs_mod   , only : species_adv
     use ChemGroups_mod  , only : PPM25_GROUP, PPM10_GROUP, PMFINE_GROUP, PM10_GROUP
     use ChemDims_mod    , only : NSPEC_SHL  ! number of short-lived tracers, offseet to PM groups
+    use ChemSpecs_mod   , only : species_adv
+    use SmallUtils_mod  , only : find_index
     
     ! --- in/out ----------------------------
     
@@ -2491,20 +2506,22 @@ contains
 
     ! --- local -----------------------------
     
-    integer             ::  iObsData
+    integer             ::  iObsComp
     integer             ::  ispec
+    integer             ::  iObsData
     character(len=16)   ::  ObsComp(nObsDataMax)
     character(len=16)   ::  ObsBUnit(nObsDataMax)
     character(len=16)   ::  ObsType(nObsDataMax)
+#ifdef with_assim
     character(len=1024) ::  ObsBfile(nObsDataMax)
     real                ::  Bsigfac(nObsDataMax)
     logical             ::  ObsFeedback(nObsDataMax)
     character(len=32)   ::  ObsFeedbackType(nObsDataMax)
-    integer             ::  iObsComp
     integer             ::  i
+#endif  ! with_assim
 
     ! --- begin -----------------------------
-    
+
     ! * configuration by namelist
     
     !
@@ -2551,7 +2568,8 @@ contains
       ! add tag:
       write (obsData(iObsData)%tag,"(2(A,1X),'(',A,')')") &
                trim(obsData(iObsData)%name), trim(obsData(iObsData)%deriv), trim(obsData(iObsData)%unit)
-      
+
+#ifdef with_assim    
       ! * obs.repr.error
                 
       ! how is observation representation error set?
@@ -2585,6 +2603,7 @@ contains
           write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsData(iObsData)%error_type); call goErr
           TRACEBACK; status=1; return
       end select
+#endif  ! with_assim
 
     end do ! obs data sets
 
@@ -2640,11 +2659,16 @@ contains
         ! store name etc:
         ObsComp        (nObsComp) = trim(obsData(iObsData)%name)
         ObsType        (nObsComp) = trim(obsData(iObsData)%deriv)
-        ObsBfile       (nObsComp) = trim(obsData(iObsData)%Bfile)
+#ifdef with_assim
         ObsBUnit       (nObsComp) = trim(obsData(iObsData)%Bunit)
+        ObsBfile       (nObsComp) = trim(obsData(iObsData)%Bfile)
         Bsigfac        (nObsComp) = obsData(iObsData)%Bsigfac
         ObsFeedback    (nObsComp) = obsData(iObsData)%feedback
         ObsFeedbackType(nObsComp) = obsData(iObsData)%feedback_type
+#else
+        ! dummy, actually not used since unit convesion is in H:
+        ObsBUnit       (nObsComp) = 'ug/m3'    ! as used for concentratins
+#endif ! with_assim
         ! set index:
         iObsComp = nObsComp
       end if
@@ -2708,12 +2732,17 @@ contains
           ! for index in xn_adv remove the offset for short-lived species;
           ! also add part of coarse nitrate and aerosol water:
           call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
-                                           trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
+                                           trim(ObsType(iObsComp)), &
                                            PMFINE_GROUP-NSPEC_SHL, status, &
+                                           with_no3c_frac=.true., &
+                                           with_pmwater=.true. &
+#ifdef with_assim
+                                           , Bfile=trim(ObsBfile(iObsComp)), &
                                            Bsigfac=Bsigfac(iObsComp), &
-                                           with_no3c_frac=.true., with_pmwater=.true., &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_type=ObsFeedbackType(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) &
+#endif ! with_assim
+                                           )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ total coarse pm:
@@ -2722,12 +2751,16 @@ contains
           ! for index in xn_adv remove the offset for short-lived species;
           ! also add aerosol water:
           call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
-                                           trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
+                                           trim(ObsType(iObsComp)), &
                                            PM10_GROUP-NSPEC_SHL, status, &
+                                           with_pmwater=.true. &
+#ifdef with_assim
+                                           , Bfile=trim(ObsBfile(iObsComp)), &
                                            Bsigfac=Bsigfac(iObsComp), &
-                                           with_pmwater=.true., &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_type=ObsFeedbackType(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) &
+#endif ! with_assim
+                                            )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ expected a single model species ...
@@ -2741,11 +2774,14 @@ contains
           end if
           ! init mapping:
           call ObsCompInfo(iObsComp)%Init( trim(ObsComp(iObsComp)), trim(ObsBUnit(iObsComp)), &
-                                           trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
-                                           (/ispec/), status, &
+                                           trim(ObsType(iObsComp)), (/ispec/), status &
+#ifdef with_assim
+                                           , Bfile=trim(ObsBfile(iObsComp)), &
                                            Bsigfac=Bsigfac(iObsComp), &
                                            feedback=ObsFeedback(iObsComp), &
-                                           feedback_type=ObsFeedbackType(iObsComp) )
+                                           feedback_type=ObsFeedbackType(iObsComp) &
+#endif ! with_assim
+                                            )
           IF_NOT_OK_RETURN(status=1)
       end select
       ! info ...
@@ -2776,10 +2812,13 @@ contains
     
     ! --- local ----------------------------
     
+#ifdef with_assim
     integer     ::  i
+#endif  ! with_assim
     
     ! --- begin -----------------------------
     
+#ifdef with_assim
     ! error lists allocated?
     if ( allocated(ObsError_Lists) ) then
       ! loop over datasets:
@@ -2805,6 +2844,7 @@ contains
       deallocate( ObsKernels, stat=status )
       IF_NOT_OK_RETURN(status=1)
     end if
+#endif  ! with_assim
     
     ! ok
     status = 0
@@ -2812,6 +2852,7 @@ contains
   end subroutine DA_Obs_Done
 
 
+#ifdef with_assim
   !=========================================================================
   !===
   !=== observation errors
@@ -3195,10 +3236,12 @@ contains
     
   end subroutine ObsError_List_GetError
 
+#endif ! with_assim
+
 
   !=========================================================================
   !===
-  !=== observation errors
+  !=== observation kernels
   !===
   !=========================================================================
 
@@ -3363,35 +3406,46 @@ contains
     ! --- begin -----------------------------
     
     ! dummy values:
+    self%id        = -999
+    ! dummy values:
     self%obs       = -999.9
-    self%xf        = -999.9
-    self%xa        = -999.9
-    self%sb        = -999.9
-    self%sf        = -999.9
-    self%innov     = -999.9
     self%obsstddev = -999.9
+    ! dummy values:
+    self%stnid     = -999
+    self%lon       = -999.9
+    self%lat       = -999.9
+    self%alt       = -999.9
+    self%stncode   = '-'
+    ! dummy values:
     self%i         = -999
     self%j         = -999
-   
     ! level type:
     self%levtype   = -999
+    self%l         = -999
+    ! dummy values:
+    self%iObsData  = -999
+    self%iObsComp  = -999
+
     ! storage for vertical profile:
     allocate( self%H_jac(nlev), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! dummy values:
     self%H_jac     = -999.9
     self%H_jac1    = -999.9
-    self%l         = -999
     
     ! dummy values:
-    self%id        = -999
-    self%iObsData  = -999
-    self%iObsComp  = -999
-    self%lon       = -999.9
-    self%lat       = -999.9
-    self%alt       = -999.9
-    self%stncode   = '-'
+    self%xf        = -999.9
+
+#ifdef with_assim
+    ! dummy values:
+    self%xa        = -999.9
+    self%sb        = -999.9
+    self%sf        = -999.9
+    ! dummy values:
+    self%innov     = -999.9
+    ! dummy values:
     self%anstat    = ANSTAT_NONE
+#endif ! with_assim
 
     ! ok
     status = 0
@@ -3427,6 +3481,7 @@ contains
 
   ! ***
 
+#ifdef with_assim
   ! copy values from src into own
 
   subroutine ObsOper_Copy( self, src, status )
@@ -3473,6 +3528,7 @@ contains
     status = 0
 
   end subroutine ObsOper_Copy
+#endif ! with_assim
 
 
   ! ***
@@ -3530,6 +3586,7 @@ contains
     use ChemFields_mod       , only : cfac
     use ChemFields_mod       , only : PM25_water
     use ChemFields_mod       , only : pm25_water_rh50
+    use DA_ml                , only : nlev
 
     ! --- in/out ----------------------------
     
@@ -3577,7 +3634,9 @@ contains
     self%alt   = alt
     ! default values, will be filled outside this routine:
     self%stncode = ''
+#ifdef with_assim    
     self%anstat  = ANSTAT_NONE   ! actual value will be set in "get_innovations"
+#endif ! with_assim    
     ! store index in 'obsData' (and 'ObsKernels') array:
     self%iObsData = ipar
 
@@ -3606,7 +3665,8 @@ contains
     
     ! switch:
     select case ( trim(obsData(self%iObsData)%deriv) )
-    
+
+#ifdef with_assim    
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! derive from 3D model levels (or 3D lowest layer) via surface (cfac)
       case ( '3D-ML-SFC', '2D-ML-SFC' )
@@ -3745,8 +3805,17 @@ contains
             ! [1e15 mlc/cm2]/m = 
             !     (mol tracer)/(mole air)   ! input units
             !     * (kg air)/m3             ! applied later
-            !     * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
-            uconv = 1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)
+            !     * 1e-15   mlc/(mole tracer) * (mole air)/(kg air) * m2/cm2  
+            uconv = 1e-15 *      Avog            / (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)
+            ! multiply with air density later:
+            needroa = .true.
+          !~
+          case ( '1e-6 mol m^-2' )
+            ! [1e-6 mol m^-2]/m =
+            !     (mole tracer)/(mole air)   ! input units (ppv)
+            !     * (kg air)/m3              ! applied later
+            !     * 1e6 * (mole air)/(kg air)
+            uconv = 1e6     / (AtwAir*1e-3)   ! <units>/m/(kg/m3)/((mole tracer)/(mole air))
             ! multiply with air density later:
             needroa = .true.
           !~
@@ -3782,6 +3851,7 @@ contains
           ! add contribution to simulated observation:
           yn = yn + self%H_jac(ilev) * xn
         end do  ! ilev
+#endif ! with_assim    
     
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! derive from 3D model levels using kernels
@@ -3810,7 +3880,7 @@ contains
           TRACEBACK; status=1; return
         end if
 
-        ! conversion factor to <units>/m/(kg/m3),
+        ! conversion factor from tracer units to <units>/m/(kg/m3),
         ! integral over layer height is included per level:
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
@@ -3818,8 +3888,17 @@ contains
             ! [1e15 mlc/cm2]/m = 
             !     (mole tracer)/(mole air)   ! input units (ppv)
             !     * (kg air)/m3              ! applied later
-            !     * 1e-15   mlc/(mole tracer)  (mole air)/(kg air)   m2/cm2  
-            uconv = 1e-15 *      Avog        /    (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)/((mole tracer)/(mole air))
+            !     * 1e-15   mlc/(mole tracer) * (mole air)/(kg air) * m2/cm2  
+            uconv = 1e-15 *      Avog            / (AtwAir*1e-3)    *  1e-4  ! <units>/m/(kg/m3)/((mole tracer)/(mole air))
+            ! multiply with air density later:
+            needroa = .true.
+          !~
+          case ( '1e-6 mol m^-2' )
+            ! [1e-6 mol m^-2]/m =
+            !     (mole tracer)/(mole air)   ! input units (ppv)
+            !     * (kg air)/m3              ! applied later
+            !     * 1e6 * (mole air)/(kg air)
+            uconv = 1e6     / (AtwAir*1e-3)   ! <units>/m/(kg/m3)/((mole tracer)/(mole air))
             ! multiply with air density later:
             needroa = .true.
           !~
@@ -4022,6 +4101,7 @@ contains
         deallocate( vcd, stat=status )
         IF_NOT_OK_RETURN(status=1)
                          
+#ifdef with_assim    
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! 2D field of observation simulations
       case ( '2D-OBS-SFC' )
@@ -4074,6 +4154,7 @@ contains
 
         ! combine:
         yn = self%H_jac(k) * sf
+#endif ! with_assim    
     
 
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4091,6 +4172,7 @@ contains
   
   
   ! ***
+
   
   ! 
   ! Contribution of pressure interval [p1,p2] to kernel weighted column.
@@ -4193,6 +4275,7 @@ contains
   end subroutine PartialColumnContribution
 
 
+#ifdef with_assim
   ! ***
 
 
@@ -4352,6 +4435,7 @@ contains
     status = 0
     
   end subroutine ObsOper_Screening
+#endif ! with_assim
 
 
   !=========================================================================
@@ -4407,6 +4491,7 @@ contains
 
     ! --- begin -----------------------------
     
+#ifdef with_assim
     ! clear storage for observations:
     call self%DeAlloc( status )
     IF_NOT_OK_RETURN(status=1)
@@ -4416,6 +4501,7 @@ contains
       deallocate( self%BScale, stat=status )
       IF_NOT_OK_RETURN(status=1)
     end if
+#endif ! with_assim
 
     ! ok
     status = 0
@@ -4501,7 +4587,7 @@ contains
       ! loop over new values:
       do iobs = 1, self%nobs
         ! done with value:
-        call ObsOper_Done( self%obs(iobs), status )
+        call self%obs(iobs)%Done( status )
         IF_NOT_OK_RETURN(status=1)
       end do
       ! clear:
@@ -4590,6 +4676,7 @@ contains
   end subroutine ObsOpers_Set_IDs
 
 
+#ifdef with_assim
   ! ***
 
 
@@ -4615,7 +4702,8 @@ contains
     use MPI_Groups_mod   , only : MPI_COMM_CALC
     use Config_module    , only : nproc
     use Par_mod          , only : me
-    use DA_Util_ml       , only : T_Domains
+    use GO               , only : T_Domains
+    use DA_ml            , only : nlev
     
     ! --- in/out -----------------------------
     
@@ -5368,20 +5456,23 @@ contains
     
   end subroutine ObsOpers_SetBScale
 
+#endif ! with_assim
+
 
   ! ***
 
 
   subroutine ObsOpers_WriteToFile( self, cdate, status )
 
+    use TimeDate_mod     , only : date
     use MPIF90           , only : MPIF90_AllGather
     use MPIF90           , only : MPIF90_Displacements
     use MPIF90           , only : MPIF90_GatherV
     use MPI_Groups_mod   , only : MPI_COMM_CALC
     use MPI_Groups_mod   , only : MasterPE
     use Config_module    , only : nproc
+    use Config_module    , only : MasterProc
     use Par_mod          , only : me
-    use TimeDate_mod     , only : date
     use C3PO             , only : Datafile
     use C3PO             , only : Dimension
     use C3PO             , only : IntegerCoordinate
@@ -5411,13 +5502,17 @@ contains
     integer                   ::  varid_iobsdata
     integer                   ::  varid_stnid
     integer                   ::  varid_scode
-    integer                   ::  varid_anstat
     integer                   ::  varid_lon, varid_lat, varid_alt
     integer                   ::  varid_y, varid_r
+#ifdef with_assim
+    integer                   ::  varid_anstat
     integer                   ::  varid_xf, varid_xa, varid_sb, varid_sf
+    integer                   ::  varid_sigma_scale
+#else
+    integer                   ::  varid_xb
+#endif ! with_assim
 
     integer                   ::  iObsComp
-    integer                   ::  varid_sigma_scale
 
     integer, allocatable      ::  ivalues(:), ivalues_all(:)
     real, allocatable         ::  rvalues(:)
@@ -5569,17 +5664,6 @@ contains
         varid_iobsdata = varid
 
         ! define new variable:
-        status = NF90_Def_Var( F%ncid, 'sigma_scale', NF90_FLOAT, (/obsdata_dim%dimid/), varid )
-        IF_NF90_NOT_OK_RETURN(status=1)
-        ! extra attributes:
-        status = NF90_Put_Att( F%ncid, varid, 'long_name', 'calibration factor for sigma' )
-        IF_NF90_NOT_OK_RETURN(status=1)
-        status = NF90_Put_Att( F%ncid, varid, 'units', '1' )
-        IF_NF90_NOT_OK_RETURN(status=1)
-        ! store:
-        varid_sigma_scale = varid
-
-        ! define new variable:
         status = NF90_Def_Var( F%ncid, 'stnid', NF90_INT, (/obs_coor%dimid/), varid )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! extra attributes:
@@ -5602,6 +5686,18 @@ contains
         ! store:
         varid_scode = varid
 
+#ifdef with_assim
+        ! define new variable:
+        status = NF90_Def_Var( F%ncid, 'sigma_scale', NF90_FLOAT, (/obsdata_dim%dimid/), varid )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! extra attributes:
+        status = NF90_Put_Att( F%ncid, varid, 'long_name', 'calibration factor for sigma' )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( F%ncid, varid, 'units', '1' )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! store:
+        varid_sigma_scale = varid
+
         ! define new variable:
         status = NF90_Def_Var( F%ncid, 'anstat', NF90_INT, (/obs_coor%dimid/), varid )
         IF_NF90_NOT_OK_RETURN(status=1)
@@ -5614,6 +5710,7 @@ contains
         IF_NF90_NOT_OK_RETURN(status=1)
         ! store:
         varid_anstat = varid
+#endif ! with_assim
 
         ! define new variable:
         status = NF90_Def_Var( F%ncid, 'longitude', NF90_FLOAT, (/obs_coor%dimid/), varid )
@@ -5670,6 +5767,7 @@ contains
         ! store:
         varid_r = varid
 
+#ifdef with_assim
         ! define new variable:
         status = NF90_Def_Var( F%ncid, 'xf', NF90_FLOAT, (/obs_coor%dimid/), varid )
         IF_NF90_NOT_OK_RETURN(status=1)
@@ -5713,6 +5811,21 @@ contains
         IF_NF90_NOT_OK_RETURN(status=1)
         ! store:
         varid_xa = varid
+
+#else
+
+        ! define new variable:
+        status = NF90_Def_Var( F%ncid, 'xb', NF90_FLOAT, (/obs_coor%dimid/), varid )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! extra attributes:
+        status = NF90_Put_Att( F%ncid, varid, 'long_name', 'model simulation' )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( F%ncid, varid, 'units', '1' )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! store:
+        varid_xb = varid
+
+#endif ! with_assim
 
         ! end of defintions:
         call F%EndDef( status )
@@ -5790,7 +5903,8 @@ contains
                                   start=(/1,iobsdata/), count=(/LEN_LABEL,1/) )
           IF_NF90_NOT_OK_RETURN(status=1)
         end do ! obsdata
-        
+
+#ifdef with_assim        
         ! write scale factors from root since same on all processes ;
         ! available per observed component in self%BScale(1:nObsComp) ;
         ! loop over target elemtns:
@@ -5802,6 +5916,7 @@ contains
                                     start=(/iobsdata/), count=(/1/) )
           IF_NF90_NOT_OK_RETURN(status=1)
         end do ! obsdata
+#endif ! with_assim
 
       end if  ! root
       
@@ -5837,16 +5952,6 @@ contains
       end do
       ! write:
       call ObsOpers_Write_s( F%ncid, varid_scode, svalues, self%nobs, LEN_SCODE, &
-                                recvcounts, rdispls, &
-                                me, MasterPE, MPI_COMM_CALC, status )
-      IF_NOT_OK_RETURN(status=1)
-      
-      ! fill local values:
-      do iobs = 1, self%nobs
-        ivalues(iobs) = self%obs(iobs)%anstat
-      end do
-      ! write:
-      call ObsOpers_Write_i( F%ncid, varid_anstat, ivalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
       IF_NOT_OK_RETURN(status=1)
@@ -5901,12 +6006,23 @@ contains
                                 me, MasterPE, MPI_COMM_CALC, status )
       IF_NOT_OK_RETURN(status=1)
       
+#ifdef with_assim
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%xf
       end do
       ! write:
       call ObsOpers_Write_r( F%ncid, varid_xf, rvalues, self%nobs, &
+                                recvcounts, rdispls, &
+                                me, MasterPE, MPI_COMM_CALC, status )
+      IF_NOT_OK_RETURN(status=1)
+      
+      ! fill local values:
+      do iobs = 1, self%nobs
+        ivalues(iobs) = self%obs(iobs)%anstat
+      end do
+      ! write:
+      call ObsOpers_Write_i( F%ncid, varid_anstat, ivalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
       IF_NOT_OK_RETURN(status=1)
@@ -5940,6 +6056,20 @@ contains
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
       IF_NOT_OK_RETURN(status=1)
+
+#else
+
+      ! fill local values; note that output variable is named "xb", while array is "xf" ...
+      do iobs = 1, self%nobs
+        rvalues(iobs) = self%obs(iobs)%xf
+      end do
+      ! write:
+      call ObsOpers_Write_r( F%ncid, varid_xb, rvalues, self%nobs, &
+                                recvcounts, rdispls, &
+                                me, MasterPE, MPI_COMM_CALC, status )
+      IF_NOT_OK_RETURN(status=1)
+      
+#endif ! with_assim
 
       ! only root has written:
       if (MasterProc) then
@@ -6183,6 +6313,7 @@ contains
     status = 0
 
   end subroutine ObsOpers_Write_s
+
   
   
   !=========================================================================
@@ -6199,11 +6330,17 @@ contains
   subroutine read_obs( domain, maxobs, &
                         stnid, flat,flon,falt, y,stddev, scode, analyse, &
                         ipar, nobs, status )
-    use GridValues_mod, only : coord_in_domain
-    use Io_mod        , only : IO_TMP
-    use AOD_PM_mod    , only : AOD_init,wavelength
-    use MPI           , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
-    use MPI_Groups_mod, only : MPI_COMM_CALC
+
+    use TimeDate_mod          , only : current_date
+    use TimeDate_ExtraUtil_mod, only : date2string
+
+#ifdef with_assim
+    use GridValues_mod        , only : coord_in_domain
+    use Io_mod                , only : IO_TMP
+    use AOD_PM_mod            , only : AOD_init,wavelength
+    use MPI                   , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
+    use MPI_Groups_mod        , only : MPI_COMM_CALC
+#endif ! with_assim
   
     ! --- in/out ---------------------------------
 
@@ -6234,16 +6371,25 @@ contains
     logical             ::  avflag
     character(len=256)  ::  file
     logical             ::  exist
+#ifdef with_assim
     integer             ::  no
-!    character(len=1024) ::  line
-!    real                ::  flon0, flat0, falt0, y0, stddev0
-!    character(len=16)   ::  scode0
-!    integer             ::  slen
+#endif ! with_assim
                                             
     ! --- begin ----------------------------------
 
     ! init counter:
     nobs = 0
+    
+    ! dumy output ...
+    stnid   = 0
+    flat    = 0.0
+    flon    = 0.0
+    falt    = 0.0
+    y       = 0.0
+    stddev  = 0.0
+    scode   = ''
+    analyse = .false.
+    ipar    = 0
 
     !-----------------------------------------------------------------------
     ! open observational data file in standard format, if applicable
@@ -6251,9 +6397,9 @@ contains
     ! loop over data sets:
     do nd = 1, nobsData
     
-      ! init index range:
-      obsData(nd)%iobs(0)=0
-      obsData(nd)%iobs(1)=0
+      !! init index range:
+      !obsData(nd)%iobs(0)=0
+      !obsData(nd)%iobs(1)=0
 
       ! loop:
       do iav = 1, 2
@@ -6270,13 +6416,14 @@ contains
             cycle
           end if
           ! replace time values in template:
-          file = date2string( obsData(nd)%file, current_date )
+          file = date2string( obsData(nd)%file, current_date, mode='YMDH' )
           ! set flag:
           avflag = .true.
           
         !~ validation
         else if ( iav == 2 ) then
     
+#ifdef with_assim
           ! undefined ? 
           if ( len_trim(obsData(nd)%file_val) == 0 ) then
             ! info ...
@@ -6285,10 +6432,14 @@ contains
             cycle
           end if
           ! replace time values in template:
-          file = date2string( obsData(nd)%file_val, current_date )
+          file = date2string( obsData(nd)%file_val, current_date, mode='YMDH' )
           ! set flag:
-          avflag = .false.
-          
+          avflag = .false.          
+#else
+          ! simulating observations from "first" set only ..
+          exit
+#endif
+      
         !~
         else
           write (gol,'("unsupported iav ",i0)') iav; call goErr
@@ -6305,6 +6456,7 @@ contains
         ! switch:
         select case ( trim(obsData(nd)%ftype) )
         
+#ifdef with_assim
           ! good old text files:
           case ( 'txt' )
          
@@ -6314,15 +6466,26 @@ contains
                                 stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
                                 nobs, status )
             IF_NOT_OK_RETURN(status=1)
+#endif ! with_assim
         
-          ! OMI extract:
-          case ( 'omi' )
+          ! EMIP extract from OMI or TROPOMI files
+          case ( 'emip' )
          
             ! read:
-            call read_obs_omi( obsData(nd), nd, avflag, trim(file), &
+            call read_obs_emip( obsData(nd), nd, avflag, trim(file), &
                                 domain, maxobs, &
                                 stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
                                 nobs, status )
+            IF_NOT_OK_RETURN(status=1)
+        
+          ! superopbservations:
+          case ( 'superobs' )
+         
+            ! read:
+            call read_obs_superobs( obsData(nd), nd, avflag, trim(file), current_date, &
+                                    domain, maxobs, &
+                                    stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                                    nobs, status )
             IF_NOT_OK_RETURN(status=1)
             
           ! unknown ...
@@ -6358,6 +6521,8 @@ contains
   
   ! *
   
+
+#ifdef with_assim
   
   subroutine read_obs_txt( obsd, nd, avflag, filename, &
                             domain, maxobs, &
@@ -6417,8 +6582,8 @@ contains
     ! read data
     !-----------------------------------------------------------------------
 
-    ! init index to collected observation array:
-    obsd%iobs(0) = nobs+1
+    !! init index to collected observation array:
+    !obsd%iobs(0) = nobs+1
 
     ! loop over lines:
     do
@@ -6518,8 +6683,8 @@ contains
 
     end do  ! lines
 
-    ! store end number:
-    obsd%iobs(1) = nobs
+    !! store end number:
+    !obsd%iobs(1) = nobs
 
     ! close:
     close( IO_TMP, iostat=status )
@@ -6529,18 +6694,20 @@ contains
     status = 0
         
   end subroutine read_obs_txt
+
+#endif ! with_assim
   
   
   ! *
   
   
-  subroutine read_obs_omi( obsd, nd, avflag, filename, &
+  subroutine read_obs_emip( obsd, nd, avflag, filename, &
                             domain, maxobs, &
                             stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
                             nobs, status )
 
     use GridValues_mod, only : coord_in_domain
-    use EMIP_OMI     , only : T_EMIP_OMI
+    use EMIP      , only : T_EMIP
   
     ! --- in/out ---------------------------------
 
@@ -6566,14 +6733,14 @@ contains
 
     ! --- const --------------------------------------
 
-    character(len=*), parameter  ::  rname = mname//'/read_obs_omi'
+    character(len=*), parameter  ::  rname = mname//'/read_obs_emip'
     
     ! minimum allowed retrieval:
     real, parameter   ::  y0_minval = -0.2
 
     ! --- local ----------------------------------
 
-    type(T_EMIP_OMI)    ::  df
+    type(T_EMIP)        ::  df
     integer             ::  ipix
     real                ::  flon0, flat0
     real                ::  y0, stddev0
@@ -6583,12 +6750,19 @@ contains
     ! info ...
     write (gol,'(a,": open ",a)') rname, trim(filename); call goPr
     
-    ! init index to collected observation array:
-    obsd%iobs(0) = nobs+1
+    !! init index to collected observation array:
+    !obsd%iobs(0) = nobs+1
 
     ! read file content:
     call df%Init( filename, status )
     IF_NOT_OK_RETURN(status=1)
+      
+    ! check units, in future convert?
+    if ( trim(df%vcd_trop_units) /= trim(obsd%unit) ) then
+      write (gol,'("observation units in data file (",a,") do not match with expected obsData units (",a,") in namelist")') &
+                     trim(df%vcd_trop_units), trim(obsd%unit); call goErr
+      TRACEBACK; status=1; return
+    end if
     
     ! copy kernels:
     call ObsKernels(nd)%Fill( df%kernel, df%kernel_units, &
@@ -6636,12 +6810,13 @@ contains
       falt  (nobs) = 0.0   ! dummy
       y     (nobs) = y0
       ! use 'station' code with pixel number:
-      write (scode(nobs),'("p",i5.5)') ipix
+      write (scode(nobs),'("p",i8.8)') ipix
       ! store data set number:
       ipar(nobs) = nd
       ! store analyse/validation flag:
       analyse(nobs) = avflag
 
+#ifdef with_assim
       ! how is observation representation error set?
       select case ( trim(obsd%error_type) )
         !~ as in product:
@@ -6666,11 +6841,12 @@ contains
           write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsd%error_type); call goErr
           TRACEBACK; status=1; return
       end select
+#endif ! with_assim
       
     end do  ! pixels
 
-    ! store end number:
-    obsd%iobs(1) = nobs
+    !! store end number:
+    !obsd%iobs(1) = nobs
 
     ! clear:
     call df%Done( status )
@@ -6679,6 +6855,191 @@ contains
     ! ok
     status = 0
         
-  end subroutine read_obs_omi
+  end subroutine read_obs_emip
+  
+  
+  ! *
+  
+  
+  subroutine read_obs_superobs( obsd, nd, avflag, filename, cdate, &
+                            domain, maxobs, &
+                            stnid, flat,flon,falt, y,stddev, scode, analyse, ipar, &
+                            nobs, status )
+
+    use TimeDate_mod  , only : date
+    use GridValues_mod, only : coord_in_domain
+    use HESK_SuperObs , only : T_HESK_Listing
+    use HESK_SuperObs , only : T_HESK_SuperObs
+  
+    ! --- in/out ---------------------------------
+
+    type(obs_data), intent(inout)     ::  obsd      ! data set info
+    integer, intent(in)               ::  nd        ! id of 'obsd' argument, stored in 'ipar' array
+    logical, intent(in)               ::  avflag    ! analysis or validation set? copied into 'analyse' array
+    character(len=*), intent(in)      ::  filename  ! name of s5p listing file
+    type(date), intent(in)            ::  cdate     ! current date, used to select record in listing file
+    character(len=*), intent(in)      ::  domain    ! domain/scope for observations
+                                                    !    "full":      all obs in full model domain
+                                                    !    "processor": all obs in this processor sub-domain
+    integer, intent(in)               ::  maxobs
+    integer, intent(inout)            ::  stnid(maxobs)  ! 1-based station number
+    real, intent(inout)               ::  flat(maxobs)
+    real, intent(inout)               ::  flon(maxobs)
+    real, intent(inout)               ::  falt(maxobs)
+    real, intent(inout)               ::  y(maxobs)
+    real, intent(inout)               ::  stddev(maxobs)
+    character(len=*), intent(inout)   ::  scode(maxobs)
+    logical, intent(inout)            ::  analyse(maxobs)
+    integer, intent(inout)            ::  ipar(maxobs)
+    integer, intent(inout)            ::  nobs       ! number values filled in (maxobs) arrays on input and output
+    integer, intent(out)              ::  status
+
+    ! --- const --------------------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/read_obs_superobs'
+    
+    !! minimum allowed retrieval:
+    !real, parameter   ::  y0_minval = -0.2
+
+    ! --- local ----------------------------------
+
+    type(T_HESK_Listing)     ::  lst
+    character(len=1024)      ::  orbitfile
+    type(T_HESK_SuperObs)    ::  df
+    integer                  ::  ipix
+    real                     ::  flon0, flat0
+    real                     ::  y0, stddev0
+                                            
+    ! --- begin ----------------------------------
+  
+    ! info ...
+    write (gol,'(a,": open ",a)') rname, trim(filename); call goPr
+    
+    !! init index to collected observation array:
+    !obsd%iobs(0) = nobs+1
+    
+    ! init listing:
+    call lst%Init( filename, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! search record, empty filename if no match:
+    call lst%Search( cdate, orbitfile, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! done:
+    call lst%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! defined?
+    if ( len_trim(orbitfile) > 0 ) then
+
+      ! read file content:
+      call df%Init( trim(orbitfile), status )
+      IF_NOT_OK_RETURN(status=1)
+      
+      ! check units, in future convert?
+      if ( trim(df%vcd_trop_units) /= trim(obsd%unit) ) then
+        write (gol,'("observation units in data file (",a,") do not match with expected obsData units (",a,") in namelist")') &
+                       trim(df%vcd_trop_units), trim(obsd%unit); call goErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! copy kernels:
+      call ObsKernels(nd)%Fill( df%kernel, df%kernel_units, &
+                                df%phlev, df%phlev_units, status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! info ..
+      write (gol,'(a,":   number of pixels: ",i0)') rname, df%npixel; call goPr
+      !write (gol,'(a,":   skip retrievals below ",f8.2)') rname, y0_minval; call goPr
+
+      ! loop over pixels:
+      do ipix = 1, df%npixel
+
+        ! extract:
+        flon0   = df%longitude(ipix)
+        flat0   = df%latitude (ipix)
+        y0      = df%vcd_trop (ipix)
+        stddev0 = df%sigma_vcd_trop(ipix)
+
+        ! if ouside domain/scope, next record:
+        if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
+
+        !! TESTING: only pixels around selected location ...
+        !if ( (abs(flon0-4.5) >= 0.5) .or. (abs(flat0-52.0) >= 0.5) ) cycle
+
+        !! OMI NO2 could be slightly negative, but some values are really strange ...
+        !! skip the values that are very negative:
+        !if ( y0 < y0_minval ) then
+        !  ! next record:
+        !  cycle
+        !end if
+
+        ! accepted!
+        ! increse counter:
+        nobs = nobs + 1
+        ! check if storage is sufficient:
+        if ( nobs > maxobs ) then
+          write (gol,'("maxobs too small, cannot store all observations")'); call goErr
+          TRACEBACK; status=1; return
+        end if
+        ! store:
+        stnid (nobs) = ipix  ! use pixel number as 'station' id
+        flat  (nobs) = flat0
+        flon  (nobs) = flon0
+        falt  (nobs) = 0.0   ! dummy
+        y     (nobs) = y0
+        ! use 'station' code with pixel number:
+        write (scode(nobs),'("p",i8.8)') ipix
+        ! store data set number:
+        ipar(nobs) = nd
+        ! store analyse/validation flag:
+        analyse(nobs) = avflag
+
+#ifdef with_assim
+        ! how is observation representation error set?
+        select case ( trim(obsd%error_type) )
+          !~ as in product:
+          case ( 'retrieval' )
+            ! copy:
+            stddev(nobs) = stddev0
+          !~ relative to observed value:
+          case ( 'fraction' )
+            ! error estimate read from file (fraction of value?)
+            stddev(nobs) = stddev0
+            ! truncate std.dev. to relative or absolute maximum:
+            stddev(nobs) = max( stddev(nobs), &
+                                obsd%error_rel * y(nobs), &
+                                obsd%error_rep            )
+            ! check .. 
+            if ( stddev(nobs) <= 0e0 ) then
+              print dafmt,'WARNING obs stddev <= 0'
+              stddev(nobs) = 1e-9
+            end if
+          !~
+          case default
+            write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsd%error_type); call goErr
+            TRACEBACK; status=1; return
+        end select
+#endif ! with_assim
+
+      end do  ! pixels
+
+      !! store end number:
+      !obsd%iobs(1) = nobs
+
+      ! clear:
+      call df%Done( status )
+      IF_NOT_OK_RETURN(status=1)
+
+      !! testing ...
+      !write (gol,'("break")'); call goErr
+      !TRACEBACK; status=1; return
+      
+    end if ! orbit file
+    
+    ! ok
+    status = 0
+        
+  end subroutine read_obs_superobs
+
 
 end module DA_Obs_ml
