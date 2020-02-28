@@ -4023,7 +4023,7 @@ contains
                                           units, units_step, units_t0, &
                                           calendar, climatology )
   
-    use GO, only : TDate, IsAnyDate, TIncrDate, Extract_Ref_and_Step, ExpandTime
+    use GO, only : TDate, IsAnyDate, TIncrDate, Extract_Ref_and_Step
     
     ! --- const ----------------------------------
 

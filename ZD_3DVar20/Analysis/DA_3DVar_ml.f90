@@ -747,7 +747,7 @@ contains
     ! info ...
     write (gol,'(a,": model decomposition")') rname; call goPr
     do k = 0, nproc-1
-      write (gol,'(a,":   domain ",i2," cells  [",i3,",",i3,"] x [",i3,",",i3,"]")') &
+      write (gol,'(a,":   domain ",i3," cells  [",i3,",",i3,"] x [",i3,",",i3,"]")') &
                rname, k, tgi0(k), tgi1(k), tgj0(k), tgj1(k); call goPr
     end do
 
@@ -2966,7 +2966,7 @@ contains
                (obs(n) > obsData(ipar)%max)     ) then
             ! info ...
             write (gol,'("WARNING - observation ",i6," from ",i6," has value ",e16.6," outside accepted value range ",2e16.6)') &
-                     n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goErr
+                     n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goPr
             ! do not analyse:
             !Hops%obs(n)%analyse = .false.
             Hops%obs(n)%anstat = ANSTAT_OBSCURE

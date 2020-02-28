@@ -6707,7 +6707,7 @@ contains
                             nobs, status )
 
     use GridValues_mod, only : coord_in_domain
-    use EMIP      , only : T_EMIP
+    use EMIP          , only : T_EMIP
   
     ! --- in/out ---------------------------------
 
