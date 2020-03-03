@@ -1,0 +1,169 @@
+#! /usr/bin/env python
+
+"""
+S5p superobs files have the orbit number in the filename:
+
+    201805_0.5deg/compressed/s5p_no2_rpro_v1.2.2_superobs_ll_0.5deg_02833.nc
+
+Timerange for which the orbit is valid is stored in the global attributes:
+
+    time_coverage_start = "2019-01-01T07:03:33Z"
+	time_coverage_end   = "2019-01-01T08:01:57Z"
+    
+This script cycles over the month/compressed directories and creates
+a csv table with the filename and the time attributes:    
+ 
+    filename                                                                ;time_coverage_start ;time_coverage_end
+    201805_0.5deg/compressed/s5p_no2_rpro_v1.2.2_superobs_ll_0.5deg_02833.nc;2019-01-01T07:03:33Z;2019-01-01T08:01:57Z
+    :
+
+"""
+
+#-----------------------------------------------------------------------
+# modules
+#-----------------------------------------------------------------------
+
+# modules:
+import os
+import fnmatch
+import netCDF4
+
+
+#-----------------------------------------------------------------------
+# settings
+#-----------------------------------------------------------------------
+
+# attributes to be extracted:
+anames = ['time_coverage_start','time_coverage_end']
+
+# target file:
+table = 's5p-listing.csv'
+# seperation character:
+sep = ';'
+
+
+#-----------------------------------------------------------------------
+# begin
+#-----------------------------------------------------------------------
+
+# info ...
+print( '' )
+print( '** s5p listing **' )
+print( '' )
+
+# headers in table:
+headers = ['filename']+anames
+
+# storage:
+values = {}
+for header in headers : values[header] = []
+
+# info ...
+print( 'current dictory: %s' % os.getcwd() )
+
+# current directory:
+fnames = os.listdir()
+# sort:
+fnames.sort()
+# filter on years:
+mdirs = fnmatch.filter( fnames, '[0-9][0-9][0-9][0-9]*' )
+# loop:
+for mdir in mdirs :
+    # info ...
+    print( '%s ...' % mdir )
+    # change:
+    os.chdir( mdir )
+    
+    # current directory:
+    fnames = os.listdir()
+    # filter on years:
+    #sdirs = fnmatch.filter( fnames, '[0-9][0-9]' )
+    sdirs = fnmatch.filter( fnames, 'compressed' )
+    # loop:
+    for sdir in sdirs :
+        # info ...
+        print( '  %s ...' % sdir )
+        # change:
+        os.chdir( sdir )
+
+        # list:
+        fnames = os.listdir()
+        # sort:
+        fnames.sort()
+        # loop:
+        for fname in fnames :
+            # full name:
+            filename = os.path.join(mdir,sdir,fname)
+            # info ...
+            print( '    %s ...' % filename )
+
+            # filter ...
+            if not fname.endswith('.nc') :
+                print( '        skip: wrong extension' )
+                continue
+            #endif
+
+            # store name:
+            values[headers[0]].append( filename )
+
+            # extract:
+            with netCDF4.Dataset(fname,'r') as ncid :
+                # loop over attributes:
+                for aname in anames :
+                    # check ..
+                    if aname not in ncid.ncattrs() :
+                        print( 'ERROR - attribute "%s" not found ..' % aname ) 
+                        raise Exception
+                    #endif
+                    # extact:
+                    value = ncid.getncattr(aname)
+                    # info ..
+                    print( '      %-20s = %s ...' % (aname,value) )
+                    # store:
+                    values[aname].append( value )
+                #endfor # attributes
+            #endwith # ncfile
+
+        #endfor # fnames
+
+        # back:
+        os.chdir( os.pardir )
+    #endfor # sdirs
+
+    # back:
+    os.chdir( os.pardir )
+#endfor # mdirs
+
+# info ...
+print( '    write %s ..' % table )
+# create:
+with open(table,'w') as f :
+    # header:
+    line = ''
+    for header in headers :
+        if len(line) > 0 : line = line+sep
+        line = line+header
+    #endfor
+    f.write( line+'\n' )
+    # number of records:
+    nrec = len(values[headers[0]])
+    # loop:
+    for irec in range(nrec) :
+        line = ''
+        for header in headers :
+            if len(line) > 0 : line = line+sep
+            line = line+values[header][irec]
+        #endfor
+        f.write( line+'\n' )
+    #endfor # rec
+#endwith # table file
+
+# info ...
+print( '' )
+print( '** end **' )
+print( '' )
+
+
+#-----------------------------------------------------------------------
+# end
+#-----------------------------------------------------------------------

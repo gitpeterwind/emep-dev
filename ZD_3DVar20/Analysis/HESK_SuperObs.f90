@@ -346,7 +346,8 @@ contains
 
   subroutine HESK_Listing_Search( self, cdate, orbitfile, status )
 
-    use GO            , only : TDate, NewDate, operator(>), operator(<=), wrtgol
+    use GO            , only : TDate, NewDate, IncrDate, operator(-)
+    use GO            , only : operator(<), operator(<=), wrtgol
     use GO            , only : pathsep
     use TimeDate_mod  , only : date
   
@@ -363,7 +364,7 @@ contains
     
     ! --- local ----------------------------------
     
-    type(TDate)     ::  t
+    type(TDate)     ::  t, t0
     integer         ::  irec
     integer         ::  nfound
     
@@ -372,7 +373,10 @@ contains
     ! convert ...
     t = NewDate( cdate%year, cdate%month, cdate%day, cdate%hour, int(floor(cdate%seconds/60.0)), modulo(cdate%seconds,60) )
     ! info ...
-    call wrtgol( 'search oribit files including time ', t ); call goPr
+    call wrtgol( 'search oribit files including (or entirely in hour prior to) ', t ); call goPr
+    
+    ! previous hour:
+    t0 = t - IncrDate(hour=1)
     
     ! init result:
     orbitfile = ''
@@ -381,7 +385,8 @@ contains
     ! loop over records:
     do irec = 1, self%nrec
       ! time matches?
-      if ( (t > self%tt(1,irec)) .and. (t <= self%tt(2,irec)) ) then
+      if ( ( (self%tt(1,irec) < t ) .and. (t <= self%tt(2,irec)) ) .or. &
+           ( (t0 < self%tt(1,irec)) .and. (self%tt(2,irec) <= t) )     ) then
         ! increase counter:
         nfound = nfound + 1
         ! copy, include path:

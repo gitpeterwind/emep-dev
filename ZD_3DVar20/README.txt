@@ -77,3 +77,9 @@ Support simulation of S5p super observations.
   tools/go_path.F90
   tools/go.F90
 
+Added script to create S5p superobs listing files.
+  bin/s5p-superobs-create-listing
+
+Added template settings.
+  nml/config_CAMS81_S5p_superobs.nml
+
