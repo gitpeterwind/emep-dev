@@ -2931,6 +2931,9 @@ contains
         ! obs.error std.dev.:
         Hops%obs(n)%obsstddev = obs_stddev(n)
 
+        ! store station code:
+        Hops%obs(n)%stncode = trim(stncodes(n))
+
 #ifdef with_assim
         ! compute innovation:
         Hops%obs(n)%innov = yn - obs(n)
@@ -2939,9 +2942,6 @@ contains
         !write (gol,*) rname//':    yyy1 yn, obs ', n,yn, obs(n); call goPr
         !write (gol,*) rname//':    yyy1 innov   ', n, Hops%obs(n)%innov; call goPr
         !write (gol,*) rname//':    yyy1 stdv    ', n, Hops%obs(n)%obsstddev; call goPr
-
-        ! store station code:
-        Hops%obs(n)%stncode = trim(stncodes(n))
 
         !! testing ...
         !write (gol,*) rname//':     flag1 ', size(obs_analyse), n

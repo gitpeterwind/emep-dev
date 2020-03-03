@@ -148,6 +148,7 @@ module HESK_SuperObs
     integer                             ::  nrec
     ! data values:
     character(len=128), allocatable     ::  orbitfile(:)  ! (nrec)
+    character(len=8), allocatable       ::  orbit(:)      ! (nrec)
     type(TDate), allocatable            ::  tt(:,:)       ! (2,nrec)
     !
   contains
@@ -167,6 +168,8 @@ module HESK_SuperObs
     integer               ::  nlev
     integer               ::  nhlev
     ! data values:
+    integer, allocatable  ::  ii(:)
+    integer, allocatable  ::  jj(:)
     real, allocatable     ::  longitude(:)
     character(len=32)     ::  longitude_units
     real, allocatable     ::  latitude(:)
@@ -191,14 +194,25 @@ contains
 
   ! ====================================================================
   ! ===
-  ! === Access nc file
+  ! === Listing file
   ! ===
   ! ====================================================================
   
+  !
+  ! Listing file is a csv table with filenames and timerange of pixels included.
+  ! Sample content:
+  !
+  !     orbit;filename;time_coverage_start;time_coverage_end
+  !     2833;201805_0.5deg/compressed/s5p_no2_rpro_v1.2.2_superobs_ll_0.5deg_02833.nc;2018-05-01T02:03:58Z;2018-05-01T02:56:14Z
+  !     2834;201805_0.5deg/compressed/s5p_no2_rpro_v1.2.2_superobs_ll_0.5deg_02834.nc;2018-05-01T03:45:28Z;2018-05-01T04:43:52Z
+  !        :
+  !
+
   subroutine HESK_Listing_Init( self, filename, status )
   
     use GO, only : goGetFU
     use GO, only : goDirname
+    use GO, only : goSplitString
     use GO, only : goReadFromLine
   
     ! --- in/out ---------------------------------
@@ -220,6 +234,8 @@ contains
     character(len=1)        ::  sep
     character(len=1024)     ::  line
     integer                 ::  irec
+    integer                 ::  nheader, iheader
+    character(len=64)       ::  headers(10)
 
     ! --- begin ----------------------------------
     
@@ -272,7 +288,13 @@ contains
         ! increase counter:
         iline = iline + 1
         ! header line?
-        if ( iline == 1 ) cycle
+        if ( iline == 1 ) then
+          ! split:
+          call goSplitString( line, nheader, headers, status, sep=sep )
+          IF_NOT_OK_RETURN(status=1)
+          ! next:
+          cycle
+        end if
         
         ! increase counter:
         irec = irec + 1
@@ -280,12 +302,32 @@ contains
         if ( iloop == 1 ) cycle
 
         ! read values:
-        call goReadFromLine( line, self%orbitfile(irec), status, sep=sep )
-        IF_NOT_OK_RETURN(status=1)
-        call goReadFromLine( line, self%tt(1,irec), status, sep=sep )
-        IF_NOT_OK_RETURN(status=1)
-        call goReadFromLine( line, self%tt(2,irec), status, sep=sep )
-        IF_NOT_OK_RETURN(status=1)
+        do iheader = 1, nheader
+          ! switch:
+          select case ( trim(headers(iheader)) )
+            !~
+            case ( 'orbit' )
+              call goReadFromLine( line, self%orbit(irec), status, sep=sep )
+              IF_NOT_OK_RETURN(status=1)
+            !~
+            case ( 'filename' )
+              call goReadFromLine( line, self%orbitfile(irec), status, sep=sep )
+              IF_NOT_OK_RETURN(status=1)
+            !~
+            case ( 'time_coverage_start' )
+              call goReadFromLine( line, self%tt(1,irec), status, sep=sep )
+              IF_NOT_OK_RETURN(status=1)
+            !~
+            case ( 'time_coverage_end' )
+              call goReadFromLine( line, self%tt(2,irec), status, sep=sep )
+              IF_NOT_OK_RETURN(status=1)
+            !~
+            case default
+              write (gol,'("unsupported header `",a,"` in file: ",a)') &
+                       trim(headers(iheader)), trim(self%filename); call goErr
+              TRACEBACK; status=1; return
+          end select
+        end do ! headers
           
       end do ! lines
       ! close:
@@ -298,6 +340,8 @@ contains
         self%nrec = irec
         ! storage:
         allocate( self%orbitfile(self%nrec), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        allocate( self%orbit(self%nrec), stat=status )
         IF_NOT_OK_RETURN(status=1)
         allocate( self%tt(2,self%nrec), stat=status )
         IF_NOT_OK_RETURN(status=1)
@@ -332,6 +376,8 @@ contains
     ! clear:
     deallocate( self%orbitfile, stat=status )
     IF_NOT_OK_RETURN(status=1)
+    deallocate( self%orbit, stat=status )
+    IF_NOT_OK_RETURN(status=1)
     deallocate( self%tt, stat=status )
     IF_NOT_OK_RETURN(status=1)
     
@@ -344,7 +390,7 @@ contains
   ! ***
   
 
-  subroutine HESK_Listing_Search( self, cdate, orbitfile, status )
+  subroutine HESK_Listing_Search( self, cdate, orbitfile, orbit, status )
 
     use GO            , only : TDate, NewDate, IncrDate, operator(-)
     use GO            , only : operator(<), operator(<=), wrtgol
@@ -356,6 +402,7 @@ contains
     class(T_HESK_Listing), intent(inout)      ::  self
     type(date), intent(in)                    ::  cdate
     character(len=*), intent(out)             ::  orbitfile
+    character(len=*), intent(out)             ::  orbit
     integer, intent(out)                      ::  status
 
     ! --- const --------------------------------------
@@ -391,6 +438,8 @@ contains
         nfound = nfound + 1
         ! copy, include path:
         orbitfile = trim(self%dirname)//pathsep//trim(self%orbitfile(irec))
+        ! copy:
+        orbit = trim(self%orbit(irec))
         ! info ...
         write (gol,'("  found orbitfile : ",a)') trim(orbitfile); call goPr
         call wrtgol( '  valid for       : ', self%tt(:,irec) ); call goPr
@@ -441,7 +490,6 @@ contains
     real, allocatable         ::  field3d(:,:,:)  ! (nlon,nlat,nlev)
     character(len=32)         ::  units
     real                      ::  fill_value
-    integer, allocatable      ::  ii(:), jj(:)   ! (npix)
     integer                   ::  ipix
     integer                   ::  i, j
     real, allocatable         ::  a(:,:), b(:,:)   ! (2,nlev)
@@ -486,28 +534,12 @@ contains
       write (gol,'("no valid values in ",a)') trim(self%filename); call goErr
       TRACEBACK; status=1; return
     end if
-    ! storage for mapping from pixel to (i,j):
-    allocate( ii(self%npixel), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    allocate( jj(self%npixel), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    ! init counter:
-    ipix = 0
-    ! loop:
-    do j = 1, nlat
-      do i = 1, nlon
-        ! valid?
-        if ( field2d(i,j) /= fill_value ) then
-          ! increase counter:
-          ipix = ipix + 1
-          ! store:
-          ii(ipix) = i
-          jj(ipix) = j
-        end if ! valid
-      end do ! i
-    end do ! j
     
     ! storage:
+    allocate( self%ii(self%npixel), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( self%jj(self%npixel), stat=status )
+    IF_NOT_OK_RETURN(status=1)
     allocate( self%longitude(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( self%latitude(self%npixel), stat=status )
@@ -521,6 +553,22 @@ contains
     allocate( self%phlev(self%nhlev,self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
+    ! init counter:
+    ipix = 0
+    ! loop:
+    do j = 1, nlat
+      do i = 1, nlon
+        ! valid?
+        if ( field2d(i,j) /= fill_value ) then
+          ! increase counter:
+          ipix = ipix + 1
+          ! store:
+          self%ii(ipix) = i
+          self%jj(ipix) = j
+        end if ! valid
+      end do ! i
+    end do ! j
+
     ! storage:
     allocate( field1d(nlon), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -529,7 +577,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%longitude(ipix) = field1d(ii(ipix))
+      self%longitude(ipix) = field1d(self%ii(ipix))
     end do
     ! clear:
     deallocate( field1d, stat=status )
@@ -543,7 +591,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%latitude(ipix) = field1d(jj(ipix))
+      self%latitude(ipix) = field1d(self%jj(ipix))
     end do
     ! clear:
     deallocate( field1d, stat=status )
@@ -554,7 +602,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%vcd_trop(ipix) = field2d(ii(ipix),jj(ipix))
+      self%vcd_trop(ipix) = field2d(self%ii(ipix),self%jj(ipix))
     end do
 
     ! read:
@@ -562,7 +610,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%sigma_vcd_trop(ipix) = field2d(ii(ipix),jj(ipix))
+      self%sigma_vcd_trop(ipix) = field2d(self%ii(ipix),self%jj(ipix))
     end do
 
     ! read:
@@ -570,7 +618,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%kernel(:,ipix) = field3d(ii(ipix),jj(ipix),:)
+      self%kernel(:,ipix) = field3d(self%ii(ipix),self%jj(ipix),:)
     end do
 
     ! read:
@@ -588,8 +636,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%phlev(1           ,ipix) = a(1,1) + b(1,1) * field2d(ii(ipix),jj(ipix))
-      self%phlev(2:self%nhlev,ipix) = a(2,:) + b(2,:) * field2d(ii(ipix),jj(ipix))
+      self%phlev(1           ,ipix) = a(1,1) + b(1,1) * field2d(self%ii(ipix),self%jj(ipix))
+      self%phlev(2:self%nhlev,ipix) = a(2,:) + b(2,:) * field2d(self%ii(ipix),self%jj(ipix))
     end do
     ! clear:
     deallocate( a, stat=status )
@@ -598,10 +646,6 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
     ! clear:
-    deallocate( ii, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( jj, stat=status )
-    IF_NOT_OK_RETURN(status=1)
     deallocate( field2d, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( field3d, stat=status )
@@ -636,6 +680,10 @@ contains
     ! --- begin ----------------------------------
     
     ! clear:
+    deallocate( self%ii, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( self%jj, stat=status )
+    IF_NOT_OK_RETURN(status=1)
     deallocate( self%longitude, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( self%latitude, stat=status )

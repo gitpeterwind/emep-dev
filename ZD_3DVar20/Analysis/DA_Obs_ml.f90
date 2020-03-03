@@ -39,7 +39,7 @@ module DA_Obs_ml
   
   ! max length:
   integer, parameter  ::  LEN_LABEL = 64
-  integer, parameter  ::  LEN_SCODE = 8
+  integer, parameter  ::  LEN_SCODE = 16
 
   ! level types:                               extract from ...
   integer, parameter  ::  LEVTYPE_3D_ML      = 1  ! 3D model layers
@@ -6905,6 +6905,7 @@ contains
 
     type(T_HESK_Listing)     ::  lst
     character(len=1024)      ::  orbitfile
+    character(len=8)         ::  orbit
     type(T_HESK_SuperObs)    ::  df
     integer                  ::  ipix
     real                     ::  flon0, flat0
@@ -6922,7 +6923,7 @@ contains
     call lst%Init( filename, status )
     IF_NOT_OK_RETURN(status=1)
     ! search record, empty filename if no match:
-    call lst%Search( cdate, orbitfile, status )
+    call lst%Search( cdate, orbitfile, orbit, status )
     IF_NOT_OK_RETURN(status=1)
     ! done:
     call lst%Done( status )
@@ -6987,8 +6988,8 @@ contains
         flon  (nobs) = flon0
         falt  (nobs) = 0.0   ! dummy
         y     (nobs) = y0
-        ! use 'station' code with pixel number:
-        write (scode(nobs),'("p",i8.8)') ipix
+        ! fill 'station code' with orbit and pixel indices:
+        write (scode(nobs),'(a,";",i0,";",i0)') trim(orbit), df%ii(ipix), df%jj(ipix)
         ! store data set number:
         ipar(nobs) = nd
         ! store analyse/validation flag:

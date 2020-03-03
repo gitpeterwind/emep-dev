@@ -36,6 +36,13 @@ import netCDF4
 # attributes to be extracted:
 anames = ['time_coverage_start','time_coverage_end']
 
+# header names:
+header_filename = 'filename'
+header_orbit    = 'orbit'
+
+# all headers:
+headers = [header_orbit,header_filename]+anames
+
 # target file:
 table = 's5p-listing.csv'
 # seperation character:
@@ -50,9 +57,6 @@ sep = ';'
 print( '' )
 print( '** s5p listing **' )
 print( '' )
-
-# headers in table:
-headers = ['filename']+anames
 
 # storage:
 values = {}
@@ -102,9 +106,16 @@ for mdir in mdirs :
                 print( '        skip: wrong extension' )
                 continue
             #endif
+            
+            # store:
+            values[header_filename].append( filename )
 
-            # store name:
-            values[headers[0]].append( filename )
+            # split filename in parts:
+            parts = fname.replace('.nc','').split('_')
+            # last part is orbit nubmer (store as str to keep original formatting):
+            orbit = parts[-1]
+            # store:
+            values[header_orbit].append( orbit )
 
             # extract:
             with netCDF4.Dataset(fname,'r') as ncid :
