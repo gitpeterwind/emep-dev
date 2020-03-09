@@ -16,7 +16,7 @@
 
 module C3PO_Datafile
 
-  use DA_Util_ml, only : gol, goPr, goErr
+  use GO    , only : gol, goPr, goErr
   use NetCDF, only : NF90_NOERR, NF90_StrError
 
   implicit none

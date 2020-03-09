@@ -4285,7 +4285,7 @@ contains
   subroutine TimeCoordinate_Get_Value( self, irec, status, &
                                           t, climat )
   
-    use GO, only : TDate, Num_to_Date
+    use GO, only : TDate, ExpandTime
 
     ! --- in/out ---------------------------------
     
@@ -4333,7 +4333,7 @@ contains
         TRACEBACK; status=1; return
       end if
       ! convert:
-      call Num_to_Date( self%values(irec), self%units, t, status )
+      call ExpandTime( self%values(irec), self%units, 'standard', t, status )
       IF_NOT_OK_RETURN(status=1)
     end if
     
@@ -4347,7 +4347,7 @@ contains
       ! loop over bounds:
       do iv = 1, nv
         ! convert:
-        call Num_to_Date( self%climat(iv,irec), self%units, climat(iv), status )
+        call ExpandTime( self%climat(iv,irec), self%units, 'standard', climat(iv), status )
         IF_NOT_OK_RETURN(status=1)
       end do
     end if
