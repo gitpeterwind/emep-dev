@@ -367,6 +367,12 @@ subroutine out_uEMEP(iotyp)
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=.true.,chunksizes=chunksizes)
            overwrite=.false.
+           if(isec_poll1==1)then
+              write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_fractions_coarse'
+              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_fractions_coarse'
+              call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_src_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=.true.,chunksizes=chunksizes)  
+           endif
            if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
            write(def2%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
            if(isec==0)write(def2%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
