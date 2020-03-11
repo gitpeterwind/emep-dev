@@ -290,6 +290,7 @@ type, public :: emis_in
 end type emis_in
 
 type, public :: uEMEP_type
+  integer     :: Nsrc=0 !number of distinct source to include
   integer     :: Npoll=0    ! Number of pollutants to treat in total
   integer     :: Nsec_poll=1    ! Number of sector and pollutants to treat in total
   integer     :: dist=0    ! max distance of neighbor to include. (will include a square with edge size=2*dist+1)

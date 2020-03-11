@@ -7,7 +7,7 @@ use Chemfields_mod,    only: xn_adv
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemSpecs_mod,     only: species_adv,species
 use Country_mod,       only: MAXNLAND,NLAND,Country
-use EmisDef_mod,       only: loc_frac, loc_frac_src, loc_frac_1d, loc_frac_src_1d, loc_frac_hour, loc_tot_hour,&
+use EmisDef_mod,       only: loc_frac, loc_frac_src, lf,loc_frac_1d, loc_frac_src_1d, loc_frac_hour, loc_tot_hour,&
                             loc_frac_hour_inst, loc_tot_hour_inst,loc_frac_day, &
                             loc_tot_day, loc_frac_month,loc_tot_month,&
                             loc_frac_full,loc_frac_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
@@ -69,9 +69,23 @@ integer, public, save :: NTIMING_uEMEP=7
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=0, Ndiv2_coarse=0
 
+type, public :: lf_sources
+  character(len=4) :: emis = 'NOTSET' !pollutants to include
+  integer, dimension(Nsector_uemep_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
+  integer :: start = 1 ! first position index in lf_src (set by model)
+  integer :: end = 1 ! last position index in lf_src (set by model)
+  integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
+  integer :: Npos = 0 ! number of position indices in lf_src (set by model)
+  integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
+  integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
+  integer, dimension(15) :: mw=0.0  ! molecualr weight of the (splitted) species (set by model)
+end type lf_sources
+integer, public, parameter :: MAXSRC=100
+type(lf_sources), public, save :: lf_src(MAXSRC)
+
 contains
 subroutine init_uEMEP
-  integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4
+  integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size
 
   call Code_timer(tim_before)
   Ndiv_coarse = 2*uEMEP%dist+1
@@ -97,6 +111,59 @@ subroutine init_uEMEP
         enddo
      endif
   enddo
+  lf_src(1)%emis = 'pm25'
+  lf_src(1)%sector = 0
+  lf_src(1)%Npos = Ndiv2_coarse
+
+  uEMEP%Nsrc = 0
+  do i = 1, Npoll_uemep_max
+     if(lf_src(1)%emis /= 'NOTSET') uEMEP%Nsrc = uEMEP%Nsrc + 1
+  enddo
+  
+  do iemis = 1, uEMEP%Nsrc  
+     iem=find_index(lf_src(iemis)%emis ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(lf_src(iemis)%emis) )
+     lf_src(iemis)%iem = iem
+     lf_src(iemis)%Nsplit=emis_nsplit(iem)
+     do i=1,lf_src(iemis)%Nsplit
+        iqrc=sum(emis_nsplit(1:iem-1)) + i
+        itot=iqrc2itot(iqrc)
+        ix=itot-NSPEC_SHL
+        lf_src(iemis)%ix(i)=ix
+        lf_src(iemis)%mw(i)=species_adv(ix)%molwt
+        if(lf_src(iemis)%emis=="nox ")then
+           ix=find_index("NO2",species_adv(:)%name)
+           call CheckStop(ix<0,'Index for NO2 not found')
+           lf_src(iemis)%mw(i)=species_adv(ix)%molwt
+        endif
+        if(lf_src(iemis)%emis=="sox ")then
+           ix=find_index("SO2",species_adv(:)%name)
+           call CheckStop(ix<0,'Index for SO2 not found')
+           lf_src(iemis)%mw(i)=species_adv(ix)%molwt
+        endif
+
+        if(lf_src(iemis)%emis=="nh3 ")then
+           lf_src(iemis)%Nsplit = 0
+           ixnh4=find_index("NH4_F",species_adv(:)%name , any_case=.true.)
+           ixnh3=find_index("NH3",species_adv(:)%name)
+           do ix=1,NSPEC_ADV
+              if(ix/=ixnh4.and.ix/=ixnh3)cycle!not reduced nitrogen
+              if(species_adv(ix)%nitrogens>0)then
+                 lf_src(iemis)%Nsplit = lf_src(iemis)%Nsplit + 1
+                 lf_src(iemis)%ix(lf_src(iemis)%Nsplit) = ix
+                 lf_src(iemis)%mw(lf_src(iemis)%Nsplit) = species_adv(ixnh3)%molwt !use NH3 mw also for NH4
+              endif
+           enddo
+        endif
+     end do
+     if(MasterProc)then
+        write(*,*)'uEMEP pollutant : ',lf_src(iemis)%emis
+        write(*,*)'uEMEP number of species in '//trim(lf_src(iemis)%emis)//' group: ',lf_src(iemis)%Nsplit
+        write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(iemis)%ix(i))%name)//', mw ',lf_src(iemis)%mw(i),i=1,lf_src(iemis)%Nsplit)
+!        write(*,"(A,30I4)")'sectors:',(uEMEP%poll(ipoll)%sector(i),i=1,uEMEP%poll(ipoll)%Nsectors)
+!        write(*,"(A,30I4)")'ix:',(uEMEP%poll(ipoll)%ix(i),i=1,uEMEP%poll(ipoll)%Nix)
+     end if
+  end do
 
 !find indices in EMIS_File
   do ipoll=1,uEMEP%Npoll        
@@ -177,6 +244,15 @@ subroutine init_uEMEP
 
   allocate(loc_frac_src(Ndiv2_coarse,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
   loc_frac_src=0.0
+   
+  size = 0
+  do iemis = 1, uEMEP%Nsrc
+     lf_src(iemis)%start = size + 1
+     lf_src(iemis)%end = size + lf_src(iemis)%Npos
+     size = size + lf_src(iemis)%Npos
+  enddo
+  allocate(lf(size,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
+  lf=0.0
 
   if(COMPUTE_LOCAL_TRANSPORT)then
   allocate(loc_poll_to(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
@@ -945,6 +1021,47 @@ end subroutine av_uEMEP
        endif
        isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
     enddo
+    !new format
+    do ipoll=1,uEMEP%Nsrc
+       xn=0.0
+       x=0.0
+       xx=0.0
+       !positive x or xx means incoming, negative means outgoing
+       do iix=1,lf_src(ipoll)%Nsplit
+          ix=lf_src(ipoll)%ix(iix)
+          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+          x=x-xm2(i,j)*fluxy(ix,j)*lf_src(ipoll)%mw(iix)!flux through "North" face (Up)
+          xx=xx+xm2(i,j)*fluxy(ix,j-1)*lf_src(ipoll)%mw(iix)!flux through "South" face (Bottom)
+       end do
+       !NB: here xn already includes the fluxes. Remove them!
+       xn=xn-xx-x
+       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+       
+       x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
+       xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
+       xn = xn * inv_tot
+       !often either x or xx is zero
+       if(x>1.E-20)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
+          enddo
+          if(xx>1.E-20)then
+             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
+             enddo            
+          endif
+       else if (xx>1.E-20)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
+          enddo       
+       else
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn
+          enddo
+       endif       
+    enddo
     call Add_2timing(NTIMING-6,tim_after,tim_before,"uEMEP: adv_y")
   end subroutine uemep_adv_y
 
@@ -1001,6 +1118,49 @@ end subroutine av_uEMEP
        endif
        isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
     enddo
+
+    !new format
+    do ipoll=1,uEMEP%Nsrc
+       xn=0.0
+       x=0.0
+       xx=0.0
+       !positive x or xx means incoming, negative means outgoing
+       do iix=1,lf_src(ipoll)%Nsplit
+          ix=lf_src(ipoll)%ix(iix)
+          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+          x=x-xm2(i,j)*fluxx(ix,i)*lf_src(ipoll)%mw(iix)!flux through "East" face (Right)
+          xx=xx+xm2(i,j)*fluxx(ix,i-1)*lf_src(ipoll)%mw(iix)!flux through "West" face (Left)
+       end do
+       !NB: here xn already includes the fluxes. Remove them!
+       xn=xn-xx-x
+       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+       
+       x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
+       xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
+       xn = xn * inv_tot
+       !often either x or xx is zero
+       if(x>1.E-20)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
+          enddo
+          if(xx>1.E-20)then
+             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,i-1)*xx
+             enddo            
+          endif
+       else if (xx>1.E-20)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
+          enddo       
+       else
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn
+          enddo
+       endif       
+    enddo
+    
     call Add_2timing(NTIMING-7,tim_after,tim_before,"uEMEP: adv_x")
  
   end subroutine uemep_adv_x
@@ -1099,6 +1259,47 @@ end subroutine av_uEMEP
           endif
           isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
        enddo
+      !new format
+    do ipoll=1,uEMEP%Nsrc
+       xn=0.0
+       x=0.0
+       xx=0.0
+       !positive x or xx means incoming, negative means outgoing
+       do iix=1,lf_src(ipoll)%Nsplit
+          ix=lf_src(ipoll)%ix(iix)
+          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+          if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(ipoll)%mw(iix)
+          xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(ipoll)%mw(iix)
+       end do
+       !NB: here xn already includes the fluxes. Remove them!
+       xn=xn-xx-x
+       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+       
+       x =max(0.0,x)*inv_tot!factor due to flux bottom facethrough
+       xx=max(0.0,xx)*inv_tot!factor due to flux through top face
+       xn = xn * inv_tot
+       !often either x or xx is zero
+       if(x>1.E-20 .and. k<KMAX_MID)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac(isec_poll,dx,dy,i,j,k+1)*x
+          enddo
+          if(xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
+             enddo            
+          endif
+       else if (xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
+          enddo       
+       else
+          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+             lf(n,i,j,k) = lf(n,i,j,k)*xn
+          enddo
+       endif       
+    enddo     
        
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"uEMEP: adv_k")

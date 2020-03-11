@@ -240,6 +240,7 @@ real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
   ,loc_frac_full  !Fullrun average of local fractions
 real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
+  ,lf &   ! Fraction of pollutants that are produced locally, for all defined sources
   ,loc_frac_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,loc_tot_hour_inst&   !all contributions
   ,loc_tot_hour&   !Hourly average of all contributions
