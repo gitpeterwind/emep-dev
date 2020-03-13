@@ -3166,7 +3166,7 @@ contains
 
     ! --- const ----------------------------
 
-    character(len=*), parameter  ::  rname = mname//'/ObsError_List_ReadFiles'
+    character(len=*), parameter  ::  rname = mname//'/ObsError_List_GetError'
     
     ! default station code (median value for suburban type):
     character(len=*), parameter  ::  scode0 = 'XX9999S'
@@ -3801,7 +3801,7 @@ contains
         ! integral over layer height is included per level:
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
-          case ( '1e15molec/cm2' )
+          case ( '1e15molec/cm2', '1e15 mlc/cm2' )
             ! [1e15 mlc/cm2]/m = 
             !     (mol tracer)/(mole air)   ! input units
             !     * (kg air)/m3             ! applied later
@@ -3884,7 +3884,7 @@ contains
         ! integral over layer height is included per level:
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
-          case ( '1e15molec/cm2' )
+          case ( '1e15molec/cm2', '1e15 mlc/cm2' )
             ! [1e15 mlc/cm2]/m = 
             !     (mole tracer)/(mole air)   ! input units (ppv)
             !     * (kg air)/m3              ! applied later
@@ -3968,8 +3968,8 @@ contains
           !                   <units>/m/ppv  * 1
           self%H_jac(ilev) =      H0(ilev)   * Hi  ! <units> / ppv
           
-          ! reset above 200 hPa:
-          if ( ph(ilev) < 200.0e2 ) H0(ilev) = 0.0
+          !! TESTING: reset above 200 hPa ...
+          !if ( ph(ilev) < 200.0e2 ) H0(ilev) = 0.0
         
           !! testing ..
           !if ( modulo(self%stnid-1,10) == 0 ) then
@@ -6649,7 +6649,13 @@ contains
 
         ! how is observation representation error set?
         select case ( trim(obsd%error_type) )
+
           !~ original:
+          case ( 'retrieval' )
+            ! error estimate read from file (fraction of value?)
+            stddev(nobs) = stddev0
+
+          !~ fraction of observed value:
           case ( 'fraction' )
             ! error estimate read from file (fraction of value?)
             stddev(nobs) = stddev0
@@ -6662,11 +6668,13 @@ contains
               print dafmt,'WARNING obs stddev <= 0'
               stddev(nobs) = 1e-9
             end if
+
           !~ values per site:
           case ( 'estim' )
             ! extract for current site:
             call ObsError_Lists(nd)%GetError( trim(scode(nobs)), stddev(nobs), status )
             IF_NOT_OK_RETURN(status=1)
+
           !~
           case default
             write (gol,'("unsupported obs.repr.error type `",a,"`")') trim(obsd%error_type); call goErr
@@ -6758,9 +6766,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
       
     ! check units, in future convert?
-    if ( trim(df%vcd_trop_units) /= trim(obsd%unit) ) then
+    if ( trim(df%vcd_units) /= trim(obsd%unit) ) then
       write (gol,'("observation units in data file (",a,") do not match with expected obsData units (",a,") in namelist")') &
-                     trim(df%vcd_trop_units), trim(obsd%unit); call goErr
+                     trim(df%vcd_units), trim(obsd%unit); call goErr
       TRACEBACK; status=1; return
     end if
     
@@ -6779,8 +6787,8 @@ contains
       ! extract:
       flon0   = df%longitude(ipix)
       flat0   = df%latitude (ipix)
-      y0      = df%vcd_trop (ipix)
-      stddev0 = df%sigma_vcd_trop(ipix)
+      y0      = df%vcd (ipix)
+      stddev0 = df%sigma_vcd(ipix)
 
       ! if ouside domain/scope, next record:
       if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle
@@ -6937,9 +6945,9 @@ contains
       IF_NOT_OK_RETURN(status=1)
       
       ! check units, in future convert?
-      if ( trim(df%vcd_trop_units) /= trim(obsd%unit) ) then
+      if ( trim(df%vcd_units) /= trim(obsd%unit) ) then
         write (gol,'("observation units in data file (",a,") do not match with expected obsData units (",a,") in namelist")') &
-                       trim(df%vcd_trop_units), trim(obsd%unit); call goErr
+                       trim(df%vcd_units), trim(obsd%unit); call goErr
         TRACEBACK; status=1; return
       end if
 
@@ -6958,8 +6966,8 @@ contains
         ! extract:
         flon0   = df%longitude(ipix)
         flat0   = df%latitude (ipix)
-        y0      = df%vcd_trop (ipix)
-        stddev0 = df%sigma_vcd_trop(ipix)
+        y0      = df%vcd (ipix)
+        stddev0 = df%sigma_vcd(ipix)
 
         ! if ouside domain/scope, next record:
         if ( .not. coord_in_domain(domain,flon0,flat0) ) cycle

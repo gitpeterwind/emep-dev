@@ -1946,14 +1946,9 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-#ifdef with_ajs
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa, status=status )
+                                 needroa=needroa, debug_msg=TRACELINE )
         IF_NOT_OK_RETURN(status=1)
-#else
-        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa )
-#endif
         ! only partly ..
         fscale = fscale * 0.27
         ! extract from bottom level:
@@ -2052,14 +2047,8 @@ contains
           ! extract index of specie:
           ispec = out_group(k) - out_offset
           ! info on conversion to target units:
-#ifdef with_ajs
           call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                  needroa=needroa, status=status )
-          IF_NOT_OK_RETURN(status=1)
-#else
-          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                  needroa=needroa )
-#endif
+                                  needroa=needroa, debug_msg=TRACELINE )
           ! convert using air density?
           if ( needroa ) then
             ! add contribution, multiply with air density:
@@ -2085,14 +2074,8 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-#ifdef with_ajs
         call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                needroa=needroa, status=status )
-        IF_NOT_OK_RETURN(status=1)
-#else
-        call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                needroa=needroa )
-#endif
+                                needroa=needroa, debug_msg=TRACELINE )
         ! only partly ..
         fscale = fscale * 0.27
         ! convert using air density?

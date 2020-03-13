@@ -83,3 +83,22 @@ Added script to create S5p superobs listing files.
 Added template settings.
   nml/config_CAMS81_S5p_superobs.nml
 
+
+Changes for VALS-5P
+-------------------
+
+Extended support for simulation of TROPOMI data for SO2 and CO columns.
+
+Use debug message in call to unit scale.
+  Analysis/DA_3DVar_ml.f90
+
+Support different notations for "1e15 mlc/cm2" units.
+Removed forcing to zero sensitivity above 200 hPa for kernel operator.
+  Analysis/DA_Obs_ml.F90
+
+Rename "vcd_trop" to "vcd" in variable names.
+  Analysis/DA_Obs_ml.F90
+  Analysis/EMIP.F90
+  Analysis/HESK_SuperObs.f90
+  B_NMC/c3po_datafile.F90
+

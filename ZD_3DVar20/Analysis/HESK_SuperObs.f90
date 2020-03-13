@@ -174,10 +174,10 @@ module HESK_SuperObs
     character(len=32)     ::  longitude_units
     real, allocatable     ::  latitude(:)
     character(len=32)     ::  latitude_units
-    real, allocatable     ::  vcd_trop(:)
-    character(len=32)     ::  vcd_trop_units
-    real, allocatable     ::  sigma_vcd_trop(:)
-    character(len=32)     ::  sigma_vcd_trop_units
+    real, allocatable     ::  vcd(:)
+    character(len=32)     ::  vcd_units
+    real, allocatable     ::  sigma_vcd(:)
+    character(len=32)     ::  sigma_vcd_units
     real, allocatable     ::  kernel(:,:)
     character(len=32)     ::  kernel_units
     real, allocatable     ::  phlev(:,:)
@@ -544,9 +544,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
     allocate( self%latitude(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( self%vcd_trop(self%npixel), stat=status )
+    allocate( self%vcd(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( self%sigma_vcd_trop(self%npixel), stat=status )
+    allocate( self%sigma_vcd(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( self%kernel(self%nlev,self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -598,19 +598,19 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
     ! read:
-    call df%Get_Var( 'no2_superobs', field2d, self%vcd_trop_units, status )
+    call df%Get_Var( 'no2_superobs', field2d, self%vcd_units, status )
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%vcd_trop(ipix) = field2d(self%ii(ipix),self%jj(ipix))
+      self%vcd(ipix) = field2d(ii(ipix),jj(ipix))
     end do
 
     ! read:
-    call df%Get_Var( 'no2_superobs_uncertainty', field2d, self%sigma_vcd_trop_units, status )
+    call df%Get_Var( 'no2_superobs_uncertainty', field2d, self%sigma_vcd_units, status )
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%sigma_vcd_trop(ipix) = field2d(self%ii(ipix),self%jj(ipix))
+      self%sigma_vcd(ipix) = field2d(ii(ipix),jj(ipix))
     end do
 
     ! read:
@@ -618,7 +618,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%kernel(:,ipix) = field3d(self%ii(ipix),self%jj(ipix),:)
+      self%kernel(:,ipix) = field3d(ii(ipix),jj(ipix),:)
     end do
 
     ! read:
@@ -688,9 +688,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
     deallocate( self%latitude, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( self%vcd_trop, stat=status )
+    deallocate( self%vcd, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( self%sigma_vcd_trop, stat=status )
+    deallocate( self%sigma_vcd, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( self%kernel, stat=status )
     IF_NOT_OK_RETURN(status=1)

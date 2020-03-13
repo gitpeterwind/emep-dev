@@ -1,0 +1,417 @@
+!#######################################################################
+! 
+! Template settings for simulation (assimilation?) of S5P satellite products.
+!
+!#######################################################################
+&Model_config
+  GRID      = 'CAMS07',
+  iyr_trend = 2019,
+  !runlabel1 = 'CWF_%{RDIR}-%{START_YYYYMMDD}',
+  runlabel1 = 'CWF',
+  runlabel2 = 'CAMS50.202001_EmChem19_CAMS50-ANALYSIS',
+  startdate = %{STARTDATE},
+  enddate   = %{ENDDATE},
+  spinup_enddate = %{STARTDATE},
+
+  DataPath(1) = '/home/sm_alvva/CAMS50/Data',
+
+  !meteo                 = './meteoYYYYMMDD.nc',
+  meteo                 = '/nobackup/prod2/metno_op/work/cwf/meteoCAMS07_00UTC/meteoYYYYMMDD_00.nc',
+  
+  EXP_NAME              = 'ANALYSIS',
+  EmBio%GlobBvocMethod = 'GLC-CLM',
+  EmBio%CLF            =  0.59,
+  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+  LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
+  YieldModifications = 'VBS-T10',
+
+  USES%testname         = 'ANALYSIS',
+  USES%FOREST_FIRES     = T,
+  USES%EMISSTACKS       = F,
+  USES%DEGREEDAY_FACTORS= F,
+  USES%PlumeMethod      = 'PVDI',
+  USES%SOILWATER        = T,
+  USES%CONVECTION       = F,
+  USES%SEASALT          = T,
+  USES%AIRCRAFT_EMIS    = T,
+  USES%LIGHTNING_EMIS   = T,
+  USES%EURO_SOILNOX     = F,
+  EURO_SOILNOX_DEPSCALE = 1.0,
+  USES%GLOBAL_SOILNOX   = F,
+  USES%POLLEN           = F,
+  USES%ROADDUST         = F,
+  USES%DUST             = T,
+
+  NETCDF_DEFLATE_LEVEL  = 4,
+  INERIS_SNAP1          = F,
+  INERIS_SNAP2          = F,
+  EmisDir               ='DataDir/Emis/CAMS_TNO',
+  emis_inputlist(1)%name='EmisDir/Emis_CAMS_v3_1_GNFR_01005deg_2016_A_F_subsec.nc',
+
+  USES%PROGRESS_FILES   = T,
+  USES%SKIP_INCOMPLETE_OUTPUT = T,
+  USES%ASH              = T,
+  ANALYSIS              = T,
+  BGND_CH4              = -1,
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF',
+
+! fileName_O3_Top            = 'NOTSET',
+  femisFile                  = 'DataDir/Other/femis.dat',
+  Vertical_levelsFile        = 'DataDir/Other/Vertical_levels.txt',
+  EmisHeightsFile            = 'DataDir/Other/EmisHeights.txt',
+  SoilTypesFile              = 'DataDir/Other/SoilTypes_IFS.nc',
+  SurfacePressureFile        = 'DataDir/Other/SurfacePressure.nc',
+  AircraftEmis_FLFile        = 'DataDir/Other/AircraftEmis_FL.nc',
+  nox_emission_1996_2005File = 'DataDir/Other/nox_emission_1996-2005.nc',
+  MonthlyFacFile             = 'DataDir/Other/MonthlyFac.POLL',
+  DailyFacFile               = 'DataDir/Other/DailyFac.POLL',
+  HourlyFacFile              = 'DataDir/Other/HourlyFacs.INERIS',
+  ZCMDIR                     = 'DataDir/Emis/ZCM_EmChem19',
+  SplitDefaultFile           = 'ZCMDIR/emissplit.defaults_GNFR_CAMS.POLL',
+  SplitSpecialsFile          = 'ZCMDIR/emissplit.specials_GNFR_CAMS.POLL',
+  cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt',
+  cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
+  RoadMapFile                = 'DataDir/Other/RoadMap.nc',
+  AVG_SMI_2005_2010File      = 'DataDir/Other/AVG_SMI_2005_2010.nc',
+  Soil_TegenFile             = 'DataDir/Other/Soil_Tegen.nc',
+  SitesFile                  = 'DataDir/Other/sites.dat',
+  SondesFile                 = 'DataDir/Other/sondes.dat',
+  GLOBAL_LAInBVOCFile        = 'DataDir/Other/GLOBAL_LAInBVOC.nc',
+  EMEP_EuroBVOCFile          = 'DataDir/Other/EMEP_EuroBVOC.nc',
+  jclearFile                 = 'DataDir/Other/jclear.SEASON',
+  jcl1kmFile                 = 'DataDir/Other/jcl1.SEASON',
+  jcl3kmFile                 = 'DataDir/Other/jcl3.SEASON',
+  NdepFile                   = 'DataDir/Other/annualNdep.nc',
+  lightningFile              = 'DataDir/Other/lightningMM.dat',
+  LoganO3File                = 'DataDir/Other/Logan_P.nc',
+  DustFile                   = 'DataDir/Other/Dust.nc',
+  TopoFile                   = 'DataDir/Other/topography_GRID.nc',
+  flocdef                    = 'DataDir/Other/columnsource_location.csv',
+  femsdef                    = 'DataDir/Other/columnsource_emission.csv',
+
+  BBneed_file=F,BBneed_date=F,BBneed_poll=F,
+  BBMAP='GFAS',BBMODE='HOURLY_REC',
+  GFAS_PATTERN='/nobackup/prod2/metno_op/work/cwf/input/BCs/cwf-GFAS_YYYYMMDD.nc',
+
+  NEST_MODE_READ        = 'NHOUR',
+  NEST_template_read_3D = '%{RESTART_FILE}',
+  NEST_template_read_BC = '/nobackup/prod2/metno_op/work/cwf/input/BCs/cwf-cifs_hYYYYMMDD00_raqbc.nc',
+  NEST_template_dump    = 'CWF_%{RDIR}-YYYYMMDD_restart.nc',
+  NEST_native_grid_3D   = T,
+  NEST_native_grid_BC   = F,
+  NEST_outdate_NDUMP    = %{FORECAST_NDUMP},   ! 0 to not write restart file, 1 to write
+  ! When to write restart file?
+  ! Do not write too often, slows down the model!
+  !  2019,09,09,00,0000    # fixed date
+  !    -1,-1,01,00,0000    # once per month
+  NEST_outdate          = -1,-1,01,00,0000,
+
+  USE_EXTERNAL_BIC     = T,
+  EXTERNAL_BIC_NAME    = 'MACC_ENS',
+  EXTERNAL_BIC_VERSION = 'IFS_CMP_46r1',
+  TOP_BC               = T,
+  filename_eta         = '/home/sm_alvva/CAMS50/Data/BCs/mozart_eta.zaxis',
+
+  ! Time stamps in hourly output files?
+  !HOURLYFILE_ending    = '.nc',          ! default, just one file
+  !HOURLYFILE_ending    = '_YYYYMM.nc',    ! MM  -> month (01 .. 12)
+  HOURLYFILE_ending    = '_YYYYMMDD.nc',  ! DD  -> day of the month (00 .. 31)
+  !HOURLYFILE_ending    = '_JJJ.nc',       ! JJJ -> the day of the year (001 .. 366)
+
+!
+! Extra output for 3D-var.
+! Settings taken from:
+!   emo/nml/v3407/R2016/config_emep.nml
+!
+! subclasses:
+!   3DVAR_OBS_[FG|AN]   : first guess and analysis of "observation" field,
+!                         thus O3 at sfc or PM10 at sfc incl water ;
+!                         this is the "offline" result in case of no feedback
+!   3DVAR_[FG|AN]       : first guess and analysis of model fields,
+!                         thus analyzed using "3DVAR_OBS_AN" in case of feedback
+!
+! Eventually increase maximum number of output fields:
+!   My_Derived_ml.f90,  parameter MAX_NUM_DERIV3D
+!
+!OutputMisc=
+! name                 , class,subclass      , txt      ,unit   ,index,f2d,dt_scale,scale,av,iotype,
+!  'SURF_ug_O3_FG'      ,'USET','3DVAR_FG'    ,'O3'      ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_O3_FG'      ,'USET','3DVAR_FG'    ,'O3'      ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_NO2_FG'      ,'USET','3DVAR_FG'    ,'NO2'     ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_NO2_FG'      ,'USET','3DVAR_FG'    ,'NO2'     ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM25_FG'    ,'USET','3DVAR_FG'    ,'PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM25_AN'    ,'USET','3DVAR_AN'    ,'PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM25_OF'    ,'USET','3DVAR_OBS_FG','PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM25_OA'    ,'USET','3DVAR_OBS_AN','PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM10_FG'    ,'USET','3DVAR_FG'    ,'PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM10_AN'    ,'USET','3DVAR_AN'    ,'PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM10_OF'    ,'USET','3DVAR_OBS_FG','PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!  'SURF_ug_PM10_OA'    ,'USET','3DVAR_OBS_AN','PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_PM10_FG'    ,'USET','3DVAR_FG'    ,'PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_PM10_AN'    ,'USET','3DVAR_AN'    ,'PM10'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_PM25_FG'    ,'USET','3DVAR_FG'    ,'PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!    'D3_ug_PM25_AN'    ,'USET','3DVAR_AN'    ,'PM25'    ,'ug/m3',  -99,-99,       F,-99.9, T,   'I',
+!
+! Put out concentration fields:
+!  'NO2'              , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI', # hourInst SURF_ug_NO2   (24,    lat,lon)
+!                                                                    # day      SURF_ug_NO2   ( 1,    lat,lon)
+!  'NO2'              , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I', # hourInst D3_ug_NO2     (24,lev,lat,lon)
+!  'NO2'              , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I'  # hourInst COLUMN_NO2_k20(24,    lat,lon)
+!
+! NOT YET:
+!   half level altitudes; dZ has thickness, need "surf_height" ;
+!   now estimate surfheight from PS ?
+!   orography from:
+!    /home/sm_alvva/CAMS50/Data/Other/topography_CAMS07.nc
+!   top height (relative to surface!)
+!     z_top or z_bnd
+!
+! Column output:
+!    "k20" is to layer 20
+!    choose other numbers for lower columns, subtract two of them to have partial column
+!
+OutputConcs=
+  'PS'               ,'hPa'  , '2d'   , 'PS'       ,'MISC'  ,  'I', ! surface pressure
+  'Z'                ,'m'    , '3d'   , 'Z_MID'    ,'MISC'  ,  'I', ! hourly mid level heights
+  'dZ'               ,'m'    , '3d'   , 'dZ'       ,'MISC'  ,  'I', ! hourly layer thickness
+!  'O3'               , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+  'NO2'              , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'PMFINE'           , 'ug'  , '2d'   , 'AIR_CONCS', 'GROUP',   '',
+!  'PM10'             , 'ug'  , '2d'   , 'AIR_CONCS', 'GROUP',   '',
+!  'SURF_PM25water'   , 'ug'  , '2d'   , 'PM25water', 'MISC' ,   '',
+!  'SURF_ug_PM25_rh50', 'ug'  , '2d'   , 'PM25_rh50', 'MISC' , 'DI',
+!  'SURF_ug_PM10_rh50', 'ug'  , '2d'   , 'PM10_rh50', 'MISC' , 'DI',
+!  'NO'               , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'SO2'              , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'CO'               , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'NH3'              , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'PAN'              , 'ug'  , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'NMVOC'            , 'ug'  , '2d'   , 'AIR_CONCS', 'GROUP', 'DI',
+!  'DUST'             , 'ug'  , '2d'   , 'AIR_CONCS', 'GROUP', 'DI',
+!  'SIA'              , 'ug'  , '2d'   , 'AIR_CONCS', 'GROUP',  'D',
+!  'SURF_ug_SIA25'    , 'ug'  , '2d'   , 'SIA25'    , 'MISC' ,  'I',
+!  'POLLEN_BIRCH'     , 'Gm3' , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'POLLEN_OLIVE'     , 'Gm3' , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'POLLEN_GRASS'     , 'Gm3' , '2d'   , 'AIR_CONCS', 'SPEC' , 'DI',
+!  'O3'               , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+  'NO2'              , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+!  'PMFINE'           , 'ug'  , '3d'   , 'AIR_CONCS', 'GROUP',   '',
+!  'PM10'             , 'ug'  , '3d'   , 'AIR_CONCS', 'GROUP',   '',
+!  'D3_PM25water'     , 'ug'  , '3d'   , 'PM25water', 'MISC' ,   '',
+!  'D3_ug_PM25_wet'   , 'ug'  , '3d'   , 'PM25_wet' , 'MISC' ,  'I',
+!  'D3_ug_PM10_wet'   , 'ug'  , '3d'   , 'PM10_wet' , 'MISC' ,  'I',
+!  'NO'               , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+  'SO2'              , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+  'CO'               , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+!  'NH3'              , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+!  'PAN'              , 'ug'  , '3d'   , 'AIR_CONCS', 'SPEC' ,  'I',
+!  'NMVOC'            , 'ug'  , '3d'   , 'AIR_CONCS', 'GROUP',  'I',
+!  'DUST'             , 'ug'  , '3d'   , 'AIR_CONCS', 'GROUP',  'I',
+!  'SIA'              , 'ug'  , '3d'   , 'AIR_CONCS', 'GROUP',  '',
+!  'D3_ug_SIA25'      , 'ug'  , '3d'   , 'SIA25'    , 'MISC' ,  'I',
+  'NO2'              , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I',
+!  'O3'               , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I',
+  'SO2'              , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I',
+  'CO'               , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I',
+!  'HCHO'             , 'ugm2', 'k20'  , 'COLUMN'   , 'MISC' ,  'I',
+!  'AOD'              , ' '   , '550nm', 'AOD:GROUP', 'MISC' ,  'I',
+
+  !num_lev3d =8,
+  !lev3d=1,2,3,4,6,9,10,12,
+  num_lev3d =20,
+  lev3d=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
+  lev3d_from_surface=T,
+&end
+&ExternalBICs_bc
+  description='MACC_ENS','IFS_CMP_g4e2',24,
+  map_bc=
+    'O3'        ,'go3'    ,1.0,T,F,-1,
+    'CO'        ,'co'     ,1.0,T,F,-1,
+    'NO'        ,'no'     ,1.0,T,F,-1,
+    'NO2'       ,'no2'    ,1.0,T,F,-1,
+    'PAN'       ,'pan'    ,1.0,T,F,-1,
+    'HNO3'      ,'hno3'   ,1.0,T,F,-1,
+    'HCHO'      ,'hcho'   ,1.0,T,F,-1,
+    'SO2'       ,'so2'    ,1.0,T,F,-1,
+    'CH4'       ,'ch4'    ,1.0,T,F,-1,
+    'C5H8'      ,'c5h8'   ,1.0,T,F,-1,
+    'C2H6'      ,'c2h6'   ,1.0,T,F,-1,
+    'SeaSalt_f' ,'aermr01',0.23255814,T,F,-1,
+    'SeaSalt_c' ,'aermr02',0.23255814,T,F,-1,
+    'SeaSalt_c' ,'aermr03',0.23255814,F,F,-1,
+    'Dust_SAH_f','aermr04',1.0,T,F,-1,
+    'Dust_SAH_f','aermr05',1.0,T,F,-1,
+    'Dust_SAH_f','aermr06',.15,T,F,-1,
+    'Dust_SAH_c','aermr06',.35,T,F,-1,
+    'FFIRE_OM'  ,'aermr07',1.7,F,F,-1,
+    'FFIRE_OM'  ,'aermr08',1.7,F,F,-1,
+    'FFIRE_BC'  ,'aermr09',1.0,F,F,-1,
+    'FFIRE_BC'  ,'aermr10',1.0,F,F,-1,
+    'SO4'       ,'aermr11',1.0,T,F,-1,
+    'SO2'       ,'aermr12',1.0,F,F,-1,
+&end
+&ExternalBICs_bc
+  description='MACC_ENS','IFS_CMP_46r1',25,
+  map_bc=
+    'O3'        ,'go3'    ,1.0,T,F,-1,
+    'CO'        ,'co'     ,1.0,T,F,-1,
+    'NO'        ,'no'     ,1.0,T,F,-1,
+    'NO2'       ,'no2'    ,1.0,T,F,-1,
+    'PAN'       ,'pan'    ,1.0,T,F,-1,
+    'HNO3'      ,'hno3'   ,1.0,T,F,-1,
+    'HCHO'      ,'hcho'   ,1.0,T,F,-1,
+    'SO2'       ,'so2'    ,1.0,T,F,-1,
+    'CH4'       ,'ch4'    ,1.0,T,F,-1,
+    'C5H8'      ,'c5h8'   ,1.0,T,F,-1,
+    'C2H6'      ,'c2h6'   ,1.0,T,F,-1,
+    'SeaSalt_f' ,'aermr01',0.23255814,T,F,-1,
+    'SeaSalt_f' ,'aermr02',0.11627907,T,F,-1,
+    'SeaSalt_c' ,'aermr02',0.11627907,T,F,-1,
+    'Dust_SAH_f','aermr04',1.0,T,F,-1,
+    'Dust_SAH_f','aermr05',1.0,T,F,-1,
+    'Dust_SAH_c','aermr06',0.4,T,F,-1,
+    'FFIRE_OM'  ,'aermr07',1.7,T,F,-1,
+    'FFIRE_OM'  ,'aermr08',1.7,T,F,-1,
+    'FFIRE_BC'  ,'aermr09',1.0,T,F,-1,
+    'FFIRE_BC'  ,'aermr10',1.0,T,F,-1,
+    'SO4'       ,'aermr11',1.0,T,F,-1,
+    'NO3_F'     ,'aermr16',1.0,T,F,-1,
+    'NO3_C'     ,'aermr17',1.0,T,F,-1,
+    'NH4'       ,'aermr18',1.0,T,F,-1,
+&end
+
+!-------------------------------------------------------------
+! 3D-var data assimilation
+!-------------------------------------------------------------
+&DA_CONFIG
+  analysis_ndate=1,
+  analysis_date(1)= -1,-1,-1,-1,0000,
+  solver_scaling =    1,
+  solver_nupdates=   20,
+  solver_maxiter =  500,
+  solver_maxsim  =    3,
+  solver_logall  =    F,
+&end
+
+!-------------------------------------------------------------
+! observations (as used by 3D-var operator)
+!-------------------------------------------------------------
+&OBSERVATIONS
+  nobsData=6,
+
+  obsData(1)%ftype          = 'emip',
+  obsData(1)%file           = '/nobackup/forsk/sm_arjse/work/observations/EMIP/S5P/OFFL/NO2/Europe/YYYY/MM/S5P_OFFL_L2_NO2_YYYYMMDD_hh00.nc',
+  obsData(1)%file_val       = '',
+  obsData(1)%name           = 'NO2',
+  obsData(1)%deriv          = '3D-ML-K2',
+  obsData(1)%unit           = '1e15 mlc/cm2',
+  obsData(1)%min            = -5.0,
+  obsData(1)%max            = 50.0,
+  obsData(1)%error_type     = 'retrieval',
+  obsData(1)%error_rel      = 0.0,
+  obsData(1)%error_obs      = 'None',
+  obsData(1)%error_spat     = 'None',
+  obsData(1)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_NO2.nc',
+  obsData(1)%Bunit          = 'ug/m3',
+  obsData(1)%Bsigfac        = -999.9,
+  obsData(1)%feedback       = %{FEEDBACK_S5P},
+  obsData(1)%feedback_type  = 'ScaleTrop',
+
+  ! surface obs, NO FEEDBACK !
+  obsData(2)%ftype          = 'txt',
+  obsData(2)%file           = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/no2_YYYYMMDD_hh.txt',
+  obsData(2)%file_val       = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/no2_YYYYMMDD_hh.val',
+  obsData(2)%name           = 'NO2',
+  obsData(2)%deriv          = '2D-ML-SFC',
+  obsData(2)%unit           = 'ug/m3',
+  obsData(2)%min            =   0.0,
+  obsData(2)%max            = 150.0,
+  obsData(2)%error_type     = 'estim',
+  obsData(2)%error_rel      = 0.10,
+  obsData(2)%error_obs      = 'file=/home/sm_alvva/CAMS50/modules/Unimod.CAMS50.202001/data/NO2_temperr_2012.csv,code=code,err=temperr',
+  obsData(2)%error_spat     = 'file=/home/sm_alvva/CAMS50/modules/Unimod.CAMS50.202001/data/NO2_spaterr_2010.csv,code=code,err=spaterr',
+  obsData(2)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_NO2.nc',
+  obsData(2)%Bunit          = 'ug/m3',
+  obsData(2)%Bsigfac        = -999.9,
+  obsData(2)%feedback       = .false.,
+  obsData(2)%feedback_type  = 'ScaleBL',
+
+  obsData(3)%ftype          = 'emip',
+  obsData(3)%file           = '/nobackup/forsk/sm_arjse/work/observations/EMIP/S5P/OFFL/SO2/Europe/YYYY/MM/S5P_OFFL_L2__SO2____YYYYMMDD_hh00.nc',
+  obsData(3)%file_val       = '',
+  obsData(3)%name           = 'SO2',
+  obsData(3)%deriv          = '3D-ML-K2',
+  obsData(3)%unit           = '1e15 mlc/cm2',
+  obsData(3)%min            = -5.0,
+  obsData(3)%max            = 500.0,
+  obsData(3)%error_type     = 'retrieval',
+  obsData(3)%error_rel      = 0.0,
+  obsData(3)%error_obs      = 'None',
+  obsData(3)%error_spat     = 'None',
+  obsData(3)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_SO2.nc',
+  obsData(3)%Bunit          = 'ug/m3',
+  obsData(3)%Bsigfac        = -999.9,
+  obsData(3)%feedback       = %{FEEDBACK_S5P},
+  obsData(3)%feedback_type  = 'ScaleTrop',
+
+  ! surface obs, NO FEEDBACK !
+  obsData(4)%ftype          = 'txt',
+  obsData(4)%file           = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/so2_YYYYMMDD_hh.txt',
+  obsData(4)%file_val       = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/so2_YYYYMMDD_hh.val',
+  obsData(4)%name           = 'SO2',
+  obsData(4)%deriv          = '2D-ML-SFC',
+  obsData(4)%unit           = 'ug/m3',
+  obsData(4)%min            =   0.0,
+  obsData(4)%max            = 350.0,
+  obsData(4)%error_type     = 'estim',
+  obsData(4)%error_rel      = 0.10,
+  obsData(4)%error_obs      = 'file=/home/sm_alvva/CAMS50/modules/Unimod.CAMS50.202001/data/SO2_temperr_2012.csv,code=code,err=temperr',
+  obsData(4)%error_spat     = 'file=/home/sm_alvva/CAMS50/modules/Unimod.CAMS50.202001/data/SO2_spaterr_2010.csv,code=code,err=spaterr',
+  obsData(4)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_SO2.nc',
+  obsData(4)%Bunit          = 'ug/m3',
+  obsData(4)%Bsigfac        = -999.9,
+  obsData(4)%feedback       = .false.,
+  obsData(4)%feedback_type  = 'ScaleBL',
+
+  obsData(5)%ftype          = 'emip',
+  obsData(5)%file           = '/nobackup/forsk/sm_arjse/work/observations/EMIP/S5P/OFFL/CO/Europe/YYYY/MM/S5P_OFFL_L2__CO_____YYYYMMDD_hh00.nc',
+  obsData(5)%file_val       = '',
+  obsData(5)%name           = 'CO',
+  obsData(5)%deriv          = '3D-ML-K2',
+  obsData(5)%unit           = '1e15 mlc/cm2',
+  obsData(5)%min            = -5.0,
+  obsData(5)%max            = 500.0,
+  obsData(5)%error_type     = 'retrieval',
+  obsData(5)%error_rel      = 0.0,
+  obsData(5)%error_obs      = 'None',
+  obsData(5)%error_spat     = 'None',
+  obsData(5)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_CO.nc',
+  obsData(5)%Bunit          = 'ug/m3',
+  obsData(5)%Bsigfac        = -999.9,
+  obsData(5)%feedback       = %{FEEDBACK_S5P},
+  obsData(5)%feedback_type  = 'ScaleTrop',
+
+  ! surface obs, NO FEEDBACK !
+  obsData(6)%ftype          = 'txt',
+  obsData(6)%file           = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/co_YYYYMMDD_hh.txt',
+  obsData(6)%file_val       = '/nobackup/prod2/metno_op/work/cwf/input/obs/YYYYMMDD/co_YYYYMMDD_hh.val',
+  obsData(6)%name           = 'CO',
+  obsData(6)%deriv          = '2D-ML-SFC',
+  obsData(6)%unit           = 'ug/m3',
+  obsData(6)%min            =   0.0,
+  obsData(6)%max            = 350.0,
+  obsData(6)%error_type     = 'fraction',
+  obsData(6)%error_rel      = 0.10,
+  obsData(6)%error_obs      = 'None',
+  obsData(6)%error_spat     = 'None',
+  obsData(6)%Bfile          = '/home/sm_alvva/CAMS50/Data/Bnmc/CAMS07/nmc-BB_CO.nc',
+  obsData(6)%Bunit          = 'ug/m3',
+  obsData(6)%Bsigfac        = -999.9,
+  obsData(6)%feedback       = .false.,
+  obsData(6)%feedback_type  = 'ScaleBL',
+
+&end
+

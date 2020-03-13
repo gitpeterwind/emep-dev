@@ -23,6 +23,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Mar 2020, Peter
+
+EmisDir replaced as keyword in all config names. (not tested)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Feb 2020, Peter
 
 Interpolation failed for GLOBAL_LAInBVOC.nc in GLOBAL05 runs.

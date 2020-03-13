@@ -58,10 +58,6 @@
 !	        sigma_vcd_trop:_FillValue = 1.e+20f ;
 !	        sigma_vcd_trop:units = "1e15 cm**-2" ;
 !	        sigma_vcd_trop:long_name = "Error in the NO2 tropospheric vertical column density" ;
-!	      float sigma_vcd_trop_ak(pixel) ;
-!	        sigma_vcd_trop_ak:_FillValue = 1.e+20f ;
-!	        sigma_vcd_trop_ak:units = "1e15 cm**-2" ;
-!	        sigma_vcd_trop_ak:long_name = "Error in the NO2 tropospheric vertical column density using averaging kernel information (w/o profile error contribution)" ;
 !	      float kernel(pixel, layer) ;
 !	        kernel:units = "1" ;
 !	        kernel:long_name = "averaging kernel" ;
@@ -168,10 +164,10 @@ module EMIP
     character(len=32)     ::  longitude_units
     real, allocatable     ::  latitude(:)
     character(len=32)     ::  latitude_units
-    real, allocatable     ::  vcd_trop(:)
-    character(len=32)     ::  vcd_trop_units
-    real, allocatable     ::  sigma_vcd_trop(:)
-    character(len=32)     ::  sigma_vcd_trop_units
+    real, allocatable     ::  vcd(:)
+    character(len=32)     ::  vcd_units
+    real, allocatable     ::  sigma_vcd(:)
+    character(len=32)     ::  sigma_vcd_units
     real, allocatable     ::  kernel(:,:)
     character(len=32)     ::  kernel_units
     real, allocatable     ::  phlev(:,:)
@@ -196,7 +192,7 @@ contains
 
     ! --- in/out ---------------------------------
     
-    class(T_EMIP), intent(out)            ::  self
+    class(T_EMIP), intent(out)                ::  self
     character(len=*), intent(in)              ::  filename
     integer, intent(out)                      ::  status
 
@@ -235,24 +231,39 @@ contains
     IF_NOT_OK_RETURN(status=1)
     allocate( self%latitude(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( self%vcd_trop(self%npixel), stat=status )
+    allocate( self%vcd(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( self%sigma_vcd_trop(self%npixel), stat=status )
+    allocate( self%sigma_vcd(self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( self%kernel(self%nlev,self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( self%phlev(self%nhlev,self%npixel), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! read:
+    ! read locations:
     call df%Get_Var( 'longitude', self%longitude, self%longitude_units, status )
     IF_NOT_OK_RETURN(status=1)
     call df%Get_Var( 'latitude', self%latitude, self%latitude_units, status )
     IF_NOT_OK_RETURN(status=1)
-    call df%Get_Var( 'vcd_trop', self%vcd_trop, self%vcd_trop_units, status )
-    IF_NOT_OK_RETURN(status=1)
-    call df%Get_Var( 'sigma_vcd_trop', self%sigma_vcd_trop, self%sigma_vcd_trop_units, status )
-    IF_NOT_OK_RETURN(status=1)
+    
+    ! different names are used ...
+    call df%Inquire( status, varname='vcd_trop' )
+    if ( status == 0 ) then
+      call df%Get_Var( 'vcd_trop', self%vcd, self%vcd_units, status )
+      IF_NOT_OK_RETURN(status=1)
+      call df%Get_Var( 'sigma_vcd_trop', self%sigma_vcd, self%sigma_vcd_units, status )
+      IF_NOT_OK_RETURN(status=1)
+    else if ( status < 0 ) then
+      call df%Get_Var( 'vcd', self%vcd, self%vcd_units, status )
+      IF_NOT_OK_RETURN(status=1)
+      call df%Get_Var( 'sigma_vcd', self%sigma_vcd, self%sigma_vcd_units, status )
+      IF_NOT_OK_RETURN(status=1)
+    else
+      write (gol,'("could not read (find?) vcd variables")'); call goErr
+      TRACEBACK; status=1; return
+    end if
+
+    ! kernel and levels:
     call df%Get_Var( 'kernel', self%kernel, self%kernel_units, status )
     IF_NOT_OK_RETURN(status=1)
     call df%Get_Var( 'pressure_levels', self%phlev, self%phlev_units, status )
@@ -291,9 +302,9 @@ contains
     IF_NOT_OK_RETURN(status=1)
     deallocate( self%latitude, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( self%vcd_trop, stat=status )
+    deallocate( self%vcd, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( self%sigma_vcd_trop, stat=status )
+    deallocate( self%sigma_vcd, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( self%kernel, stat=status )
     IF_NOT_OK_RETURN(status=1)
