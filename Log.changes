@@ -5,15 +5,17 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19
+    mk.ChemFiles EmChem19a
 
-  [This will copy pre-made files from ZCM_EmChem19. The files in that directory
+  [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
+EmChem19a should be the default chemistry for most emep jobs. This also uses the EmChem19 emissplits though.
+EmChem19p is just EmChem19a + Alvaro's pollen species.
+
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
-the appropriate place, DataDir/ZCM_EmChem16x for old Chemistry or
-(latest) DataDir/ZCM_EmChem19.
+the appropriate place, DataDir/ZCM_EmChem19.
 
 =============================================================================
 !----------------------------------------------------------
