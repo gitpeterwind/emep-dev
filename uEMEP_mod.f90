@@ -10,7 +10,7 @@ use Country_mod,       only: MAXNLAND,NLAND,Country
 use EmisDef_mod,       only: loc_frac, loc_frac_src, lf,loc_frac_1d, loc_frac_src_1d, loc_frac_hour, loc_tot_hour,&
                             loc_frac_hour_inst, loc_tot_hour_inst,loc_frac_day, &
                             loc_tot_day, loc_frac_month,loc_tot_month,&
-                            loc_frac_full,loc_frac_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
+                            loc_frac_full,loc_frac_src_full,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
                             nlandcode,landcode,sec2tfac_map,sec2hfac_map, &
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
@@ -70,7 +70,7 @@ real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=0, Ndiv2_coarse=0
 
 type, public :: lf_sources
-  character(len=4) :: emis = 'NOTSET' !pollutants to include
+  character(len=4) :: emis = 'NONE' !pollutants to include (NB: 4 char)
   integer, dimension(Nsector_uemep_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
   integer :: start = 1 ! first position index in lf_src (set by model)
   integer :: end = 1 ! last position index in lf_src (set by model)
@@ -82,6 +82,7 @@ type, public :: lf_sources
 end type lf_sources
 integer, public, parameter :: MAXSRC=100
 type(lf_sources), public, save :: lf_src(MAXSRC)
+integer, public, save :: LF_SRC_TOTSIZE
 
 contains
 subroutine init_uEMEP
@@ -111,13 +112,14 @@ subroutine init_uEMEP
         enddo
      endif
   enddo
+  
   lf_src(1)%emis = 'pm25'
   lf_src(1)%sector = 0
   lf_src(1)%Npos = Ndiv2_coarse
 
   uEMEP%Nsrc = 0
   do i = 1, Npoll_uemep_max
-     if(lf_src(1)%emis /= 'NOTSET') uEMEP%Nsrc = uEMEP%Nsrc + 1
+     if(lf_src(i)%emis /= 'NONE') uEMEP%Nsrc = uEMEP%Nsrc + 1
   enddo
   
   do iemis = 1, uEMEP%Nsrc  
@@ -159,7 +161,7 @@ subroutine init_uEMEP
      if(MasterProc)then
         write(*,*)'uEMEP pollutant : ',lf_src(iemis)%emis
         write(*,*)'uEMEP number of species in '//trim(lf_src(iemis)%emis)//' group: ',lf_src(iemis)%Nsplit
-        write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(iemis)%ix(i))%name)//', mw ',lf_src(iemis)%mw(i),i=1,lf_src(iemis)%Nsplit)
+!        write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(iemis)%ix(i))%name)//', mw ',lf_src(iemis)%mw(i),i=1,lf_src(iemis)%Nsplit)
 !        write(*,"(A,30I4)")'sectors:',(uEMEP%poll(ipoll)%sector(i),i=1,uEMEP%poll(ipoll)%Nsectors)
 !        write(*,"(A,30I4)")'ix:',(uEMEP%poll(ipoll)%ix(i),i=1,uEMEP%poll(ipoll)%Nix)
      end if
@@ -245,13 +247,16 @@ subroutine init_uEMEP
   allocate(loc_frac_src(Ndiv2_coarse,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
   loc_frac_src=0.0
    
-  size = 0
+  LF_SRC_TOTSIZE = 0
   do iemis = 1, uEMEP%Nsrc
-     lf_src(iemis)%start = size + 1
-     lf_src(iemis)%end = size + lf_src(iemis)%Npos
-     size = size + lf_src(iemis)%Npos
+     lf_src(iemis)%start = LF_SRC_TOTSIZE + 1
+     lf_src(iemis)%end = LF_SRC_TOTSIZE + lf_src(iemis)%Npos
+     LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(iemis)%Npos
+     if(me==0)then
+        write(*,*)iemis,' ',trim(lf_src(iemis)%emis)," start ",lf_src(iemis)%start," end ",lf_src(iemis)%end,LF_SRC_TOTSIZE
+     endif
   enddo
-  allocate(lf(size,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
+  allocate(lf(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
   lf=0.0
 
   if(COMPUTE_LOCAL_TRANSPORT)then
@@ -295,10 +300,13 @@ subroutine init_uEMEP
      loc_tot_full=0.0
      allocate(loc_frac_src_full(Ndiv2_coarse,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
      loc_frac_src_full=0.0
+     allocate(lf_src_full(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
+     lf_src_full=0.0
   else
      !need to be allocated to avoid debugging error
      allocate(loc_frac_full(1,1,1,1,1,1))
      allocate(loc_frac_src_full(1,1,1,1))
+     allocate(lf_src_full(1,1,1,1))
      allocate(loc_tot_full(1,1,1,1))
   endif
   
@@ -447,6 +455,10 @@ subroutine out_uEMEP(iotyp)
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_fractions_coarse'
               if(isec==0) write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_fractions_coarse'
               call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_src_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=.true.,chunksizes=chunksizes)  
+              write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_new_fractions_coarse'
+              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_new_fractions_coarse'
+              call Out_netCDF(iotyp,def1,ndim,kmax,lf_src_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=.true.,chunksizes=chunksizes)  
            endif
            if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
@@ -799,6 +811,7 @@ subroutine out_uEMEP(iotyp)
               if(isec==0) write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_fractions_coarse'
               call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_src_full(1,1,1,KMAX_MID-uEMEPNvertout+1),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)  
+
            endif
            if(iisec==1)then
               def1%name=trim(uEMEP%poll(ipoll)%emis)//'_fracsum'
@@ -836,8 +849,26 @@ subroutine out_uEMEP(iotyp)
              t1 = MPI_WTIME()
              if(me==0)write(*,*)'transport out ',t1-t2,' seconds'
            endif
-         enddo
-
+        enddo
+        if(ipoll==1)then !NB TEMPORARY
+           isec=0
+           do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
+              do j=1,ljmax
+                 do i=1,limax
+                    invtot=1.0/(loc_tot_full(i,j,k,ipoll)+1.E-20)
+                    do n=lf_src(ipoll)%start, lf_src(ipoll)%end
+                       lf_src_full(n,i,j,k)=lf_src_full(n,i,j,k)*invtot
+                    enddo
+                 enddo
+              enddo
+           enddo
+           scale=1.0
+           write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_new_fractions_coarse'
+           if(isec==0) write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_new_fractions_coarse'
+           call Out_netCDF(iotyp,def1,ndim,kmax,lf_src_full(1,1,1,KMAX_MID-uEMEPNvertout+1),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+                fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)
+        endif
+        
         if(abs(av_fac_full)>1.E-5)then
            scale=1.0/av_fac_full
         else
@@ -846,7 +877,7 @@ subroutine out_uEMEP(iotyp)
         def2%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def2,ndim_tot,kmax,loc_tot_full(1,1,KMAX_MID-uEMEPNvertout+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)
-
+        
      else
         if(me==0)write(*,*)'IOU not recognized'
      endif
@@ -959,6 +990,27 @@ subroutine av_uEMEP(dt,End_of_Day)
         enddo
      enddo
   enddo
+  do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+     do j=1,ljmax
+        do i=1,limax
+           do ipoll=1,uEMEP%Nsrc
+              xtot=0.0
+              do iix=1,lf_src(ipoll)%Nsplit
+                 ix=lf_src(ipoll)%ix(iix)
+                 xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix))/ATWAIR&
+                      *roa(i,j,k,1)*1.E9 !for ug/m3
+                 !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+              end do
+              if(uEMEP%YEAR)then
+                 do n=lf_src(ipoll)%start, lf_src(ipoll)%end
+                    lf_src_full(n,i,j,k)=lf_src_full(n,i,j,k)+xtot*lf(n,i,j,k)
+                 end do
+              endif
+           enddo
+        enddo
+     enddo
+  enddo
+
   av_fac_hour=av_fac_hour+1.0
   av_fac_day=av_fac_day+1.0
   av_fac_month=av_fac_month+1.0
@@ -1022,7 +1074,7 @@ end subroutine av_uEMEP
        isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
     enddo
     !new format
-    do ipoll=1,uEMEP%Nsrc
+    do ipoll=2,1!,uEMEP%Nsrc
        xn=0.0
        x=0.0
        xx=0.0
@@ -1120,7 +1172,7 @@ end subroutine av_uEMEP
     enddo
 
     !new format
-    do ipoll=1,uEMEP%Nsrc
+    do ipoll=2,1!,uEMEP%Nsrc
        xn=0.0
        x=0.0
        xx=0.0
@@ -1260,7 +1312,7 @@ end subroutine av_uEMEP
           isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
        enddo
       !new format
-    do ipoll=1,uEMEP%Nsrc
+    do ipoll=2,1!,uEMEP%Nsrc
        xn=0.0
        x=0.0
        xx=0.0
@@ -1287,16 +1339,16 @@ end subroutine av_uEMEP
           enddo
           if(xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
              do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
+ !               lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
              enddo            
           endif
        else if (xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
+ !            lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_km1(isec_poll,dx,dy,k-1) *xx
           enddo       
        else
           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn
+!             lf(n,i,j,k) = lf(n,i,j,k)*xn
           enddo
        endif       
     enddo     
@@ -1320,8 +1372,8 @@ end subroutine av_uEMEP
     real, intent(in) :: ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     integer, intent(in) :: i,j,ndiff
 !    real :: xn_k(uEMEP_Size1+uEMEP%Nsec_poll,KMAX_MID),x
-    real :: xn_k(uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse,KMAX_MID),x
-    integer ::isec_poll1,ipoll,isec_poll
+    real :: xn_k(uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse+LF_SRC_TOTSIZE,KMAX_MID),x
+    integer ::isec_poll1,ipoll,isec_poll,iemis
     integer ::k,n,ix,iix,dx,dy
     !how far diffusion should take place above uEMEP%Nvert. 
     ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
@@ -1354,8 +1406,12 @@ end subroutine av_uEMEP
              enddo
           endif
          isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
-       enddo
+      enddo
+      do n=1,LF_SRC_TOTSIZE
+!         xn_k(uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse+n,k)=x*lf(n,i,j,k)               
+      enddo      
     enddo
+   
     do k = 1,KMAX_MID
        isec_poll1=1
        do ipoll=1,uEMEP%Npoll
@@ -1370,7 +1426,7 @@ end subroutine av_uEMEP
        enddo
     enddo
     
-    call vertdiffn(xn_k,uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+    call vertdiffn(xn_k,uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse+LF_SRC_TOTSIZE,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
     
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
        isec_poll1=1
@@ -1392,6 +1448,17 @@ end subroutine av_uEMEP
           endif
           isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
        end do
+       do iemis=1,uEMEP%Nsrc
+          x=-1
+          do ipoll=1,uEMEP%Npoll 
+              if(uEMEP%poll(ipoll)%emis == trim(lf_src(iemis)%emis)) x =  1.0/(xn_k(uEMEP_Size1+ipoll,k)+1.E-30)
+           enddo
+           if(x<0.5)write(*,*)'ERROR'
+          do n=lf_src(iemis)%start, lf_src(iemis)%end
+             !lf(n,i,j,k) = xn_k(uEMEP_Size1+uEMEP%Npoll+Ndiv2_coarse+n,k)*x                               
+          enddo
+       enddo
+      
     end do
     call Add_2timing(NTIMING-4,tim_after,tim_before,"uEMEP: diffusion")
   end subroutine uemep_diff
@@ -1419,7 +1486,7 @@ subroutine uEMEP_emis(indate)
   integer :: hour_iland
   integer ::icc_uemep, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iy,iix, dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
+  integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NEMIS_FILE,NSECTORS),emis_tot(KMAX_MID,NEMIS_FILE)
   real :: lon
   integer :: jmin,jmax,imin,imax,n0
@@ -1599,7 +1666,27 @@ subroutine uEMEP_emis(indate)
          end do! k
          isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
       enddo!Npoll
-   end do ! i
+
+      ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
+      iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
+      do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+         do ipoll=1,uEMEP%Nsrc      
+            iem = lf_src(ipoll)%iem
+            if(emis_tot(k,iem)<1.E-20)cycle
+            xtot=0.0
+            do iix=1,lf_src(ipoll)%Nsplit
+               iiix=lf_src(ipoll)%ix(iix)
+               xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(ipoll)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+            end do
+            n0 = lf_src(ipoll)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local           
+            lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+            do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+               if(n==n0)cycle  !counted above               
+               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+emis_tot(k,iem)+1.e-20)!fractions are diluted
+            enddo
+         enddo
+      enddo
+    end do ! i
   end do ! j
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"uEMEP: emissions")
