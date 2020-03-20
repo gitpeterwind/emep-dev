@@ -71,6 +71,7 @@ integer, public, save :: Ndiv_coarse=0, Ndiv2_coarse=0
 
 type, public :: lf_sources
   character(len=4) :: emis = 'NONE' !pollutants to include (NB: 4 char)
+  character(len=20) :: type = 'NOTSET' !Qualitatively different type of sources: "coarse", "relative", "country"
   integer :: sector=-1    ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model)
   integer :: start = 1 ! first position index in lf_src (set by model)
@@ -121,12 +122,14 @@ subroutine init_uEMEP
   lf_src(1)%emis = 'pm25'
   lf_src(1)%poll = 1 !index of pollutant
   lf_src(1)%sector = 0
+  lf_src(1)%type = 'coarse'
   lf_src(1)%Npos = Ndiv2_coarse
 
   lf_src(2)%emis = 'pm25'
   lf_src(2)%poll = 1 !index of pollutant
-  lf_src(2)%sector = 7
+  lf_src(2)%sector = 0
   lf_src(2)%Npos = Ndiv2_coarse
+  lf_src(2)%type = 'relative'
   
   uEMEP%Nsrc = 0
   do i = 1, Npoll_uemep_max
@@ -911,8 +914,8 @@ subroutine out_uEMEP(iotyp)
               enddo
            enddo
         endif
-        write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_new_fractions_coarse'
-        if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_new_fractions_coarse'
+        write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_fractions_'//trim(lf_src(isrc)%type)
+        if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fractions_'//trim(lf_src(isrc)%type)
         scale=1.0
         if(me==0)write(*,*)isrc,'outp ',tmp_out(1,5,5)
         call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
@@ -1075,199 +1078,273 @@ subroutine av_uEMEP(dt,End_of_Day)
 
 end subroutine av_uEMEP
 
-  subroutine uemep_adv_y(fluxy,i,j,k)
-    real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
-    integer, intent(in)::i,j,k
-    real ::x,xn,xx,f_in,inv_tot
-    integer ::n,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
+subroutine uemep_adv_x(fluxx,i,j,k)
+  real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
+  integer, intent(in)::i,j,k
+  real ::x,xn,xx,f_in,inv_tot
+  integer ::n,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
 
-    call Code_timer(tim_before)
-    isec_poll1=1
-    do ipoll=1,uEMEP%Npoll
-       xn=0.0
-       x=0.0
-       xx=0.0
-       !positive x or xx means incoming, negative means outgoing
-       do iix=1,uEMEP%poll(ipoll)%Nix
-          ix=uEMEP%poll(ipoll)%ix(iix)
-          xn=xn+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
-          x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%poll(ipoll)%mw(iix)!flux through "North" face (Up)
-          xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%poll(ipoll)%mw(iix)!flux through "South" face (Bottom)
-       end do
-       !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx-x
-       
-       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-       
-       xx=max(0.0,xx)*inv_tot!factor due to flux through "South" face (Bottom)
-       x =max(0.0,x)*inv_tot!factor due to flux through "North" face (Up)
+  call Code_timer(tim_before)
+  isec_poll1=1
+  do ipoll=1,uEMEP%Npoll
+     xn=0.0
+     x=0.0
+     xx=0.0
+     !positive x or xx means incoming, negative means outgoing
+     do iix=1,uEMEP%poll(ipoll)%Nix
+        ix=uEMEP%poll(ipoll)%ix(iix)
+        xn=xn+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+        x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%poll(ipoll)%mw(iix)!flux through "East" face (Right)
+        xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%poll(ipoll)%mw(iix)!flux through "West" face (Left)
+     end do
+     !NB: here xn already includes the fluxes. Remove them!
+     xn=xn-xx-x
 
-       do dy=-uEMEP%dist,uEMEP%dist
-          do dx=-uEMEP%dist,uEMEP%dist
-             do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
-             enddo
-             if(x>0.0.and.dy>-uEMEP%dist)then
-                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                   loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy-1,j+1)*x
-                enddo
-             endif
-             if(xx>0.0.and.dy<uEMEP%dist)then
-                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                   loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy+1,j-1)*xx
-                enddo
-             endif
-          enddo
-       enddo
-       isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
-    enddo
-    !new format
-    do ipoll=1,uEMEP%Nsrc
-       xn=0.0
-       x=0.0
-       xx=0.0
-       !positive x or xx means incoming, negative means outgoing
-       do iix=1,lf_src(ipoll)%Nsplit
-          ix=lf_src(ipoll)%ix(iix)
-          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
-          x=x-xm2(i,j)*fluxy(ix,j)*lf_src(ipoll)%mw(iix)!flux through "North" face (Up)
-          xx=xx+xm2(i,j)*fluxy(ix,j-1)*lf_src(ipoll)%mw(iix)!flux through "South" face (Bottom)
-       end do
-       !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx-x
-       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-       
-       x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
-       xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
-       xn = xn * inv_tot
-       !often either x or xx is zero
-       if(x>1.E-20)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
-          enddo
-          if(xx>1.E-20)then
-             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
-             enddo            
-          endif
-       else if (xx>1.E-20)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
-          enddo       
-       else
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn
-          enddo
-       endif       
-    enddo
-    call Add_2timing(NTIMING-6,tim_after,tim_before,"uEMEP: adv_y")
+     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
 
-  end subroutine uemep_adv_y
+     x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
+     xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
 
-  subroutine uemep_adv_x(fluxx,i,j,k)
-    real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
-    integer, intent(in)::i,j,k
-    real ::x,xn,xx,f_in,inv_tot
-    integer ::n,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
+     do dy=-uEMEP%dist,uEMEP%dist
+        do dx=-uEMEP%dist,uEMEP%dist
+           do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+              loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
+           enddo
+           if(x>0.0.and.dx>-uEMEP%dist)then
+              do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                 loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx-1,dy,i+1)*x
+              enddo
+           endif
+           if(xx>0.0.and.dx<uEMEP%dist)then
+              do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                 loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx+1,dy,i-1)*xx
+              enddo
+           endif
+        enddo
+     enddo
+     if(isec_poll1==1)then
+        do n= 1,Ndiv2_coarse
+           loc_frac_src(n,i,j,k) = loc_frac_src(n,i,j,k)*xn *inv_tot + loc_frac_src_1d(n,i+1)*x + loc_frac_src_1d(n,i-1)*xx
+        enddo
+     endif
+     isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+  enddo
 
-    call Code_timer(tim_before)
-    isec_poll1=1
-    do ipoll=1,uEMEP%Npoll
-       xn=0.0
-       x=0.0
-       xx=0.0
-       !positive x or xx means incoming, negative means outgoing
-       do iix=1,uEMEP%poll(ipoll)%Nix
-          ix=uEMEP%poll(ipoll)%ix(iix)
-          xn=xn+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
-          x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%poll(ipoll)%mw(iix)!flux through "East" face (Right)
-          xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%poll(ipoll)%mw(iix)!flux through "West" face (Left)
-       end do
-       !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx-x
+  !new format
+  do ipoll=1,uEMEP%Nsrc
+     xn=0.0
+     x=0.0
+     xx=0.0
+     !positive x or xx means incoming, negative means outgoing
+     do iix=1,lf_src(ipoll)%Nsplit
+        ix=lf_src(ipoll)%ix(iix)
+        xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+        x=x-xm2(i,j)*fluxx(ix,i)*lf_src(ipoll)%mw(iix)!flux through "East" face (Right)
+        xx=xx+xm2(i,j)*fluxx(ix,i-1)*lf_src(ipoll)%mw(iix)!flux through "West" face (Left)
+     end do
+     !NB: here xn already includes the fluxes. Remove them!
+     xn=xn-xx-x
+     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
 
-       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-       
-       x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
-       xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
-    
-       do dy=-uEMEP%dist,uEMEP%dist
-          do dx=-uEMEP%dist,uEMEP%dist
-             do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
-             enddo
-             if(x>0.0.and.dx>-uEMEP%dist)then
-                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                   loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx-1,dy,i+1)*x
-                enddo
-             endif
-             if(xx>0.0.and.dx<uEMEP%dist)then
-                do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
-                   loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx+1,dy,i-1)*xx
-                enddo
-             endif
-          enddo
-       enddo
-       if(isec_poll1==1)then
-          do n= 1,Ndiv2_coarse
-             loc_frac_src(n,i,j,k) = loc_frac_src(n,i,j,k)*xn *inv_tot + loc_frac_src_1d(n,i+1)*x + loc_frac_src_1d(n,i-1)*xx
-          enddo
-       endif
-       isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
-    enddo
+     x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
+     xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
+     xn = xn * inv_tot
+     !often either x or xx is zero
+     if(lf_src(ipoll)%type=='coarse')then
+        if(x>1.E-20)then
+           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+              lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
+           enddo
+           if(xx>1.E-20)then
+              do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                 lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,i-1)*xx
+              enddo
+           endif
+        else if (xx>1.E-20)then
+           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+              lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
+           enddo
+        endif
+     else if(lf_src(ipoll)%type=='relative')then
+        if(x>1.E-20)then
+           n = lf_src(ipoll)%start
+           do dy=-uEMEP%dist,uEMEP%dist
+              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-uEMEP%dist there are no local fractions to transport
+              n=n+1
+              do dx=-uEMEP%dist+1,uEMEP%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-1,i+1)*x
+                 n=n+1
+              enddo
+           enddo
+           if(xx>1.E-20)then
+              n = lf_src(ipoll)%start
+              do dy=-uEMEP%dist,uEMEP%dist
+                 do dx=-uEMEP%dist,uEMEP%dist-1
+                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+1,i-1)*xx   
+                    n=n+1
+                 enddo                
+                 n=n+1! when dx=uEMEP%dist there are no local fractions to transport
+              enddo
+           endif
+        else if (xx>1.E-20)then
+           n = lf_src(ipoll)%start
+           do dy=-uEMEP%dist,uEMEP%dist
+              do dx=-uEMEP%dist,uEMEP%dist-1
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+1,i-1)*xx 
+                 n=n+1
+              enddo
+              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=uEMEP%dist there are no local fractions to transport
+              n=n+1
+           enddo
+        else
+           !nothing to do if no incoming fluxes
+        endif
+      else
+        if(me==0)write(*,*)'LF type not recognized)'
+        stop
+     endif
+  enddo
 
-    !new format
-    do ipoll=1,uEMEP%Nsrc
-       xn=0.0
-       x=0.0
-       xx=0.0
-       !positive x or xx means incoming, negative means outgoing
-       do iix=1,lf_src(ipoll)%Nsplit
-          ix=lf_src(ipoll)%ix(iix)
-          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
-          x=x-xm2(i,j)*fluxx(ix,i)*lf_src(ipoll)%mw(iix)!flux through "East" face (Right)
-          xx=xx+xm2(i,j)*fluxx(ix,i-1)*lf_src(ipoll)%mw(iix)!flux through "West" face (Left)
-       end do
-       !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx-x
-       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-       
-       x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
-       xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
-       xn = xn * inv_tot
-       !often either x or xx is zero
-       if(x>1.E-20)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
-          enddo
-          if(xx>1.E-20)then
-             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,i-1)*xx
-             enddo            
-          endif
-       else if (xx>1.E-20)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
-          enddo       
-       else
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn
-          enddo
-       endif       
-    enddo
-    
-    call Add_2timing(NTIMING-7,tim_after,tim_before,"uEMEP: adv_x")
+  call Add_2timing(NTIMING-7,tim_after,tim_before,"uEMEP: adv_x")
 
-  end subroutine uemep_adv_x
+end subroutine uemep_adv_x
 
+subroutine uemep_adv_y(fluxy,i,j,k)
+  real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
+  integer, intent(in)::i,j,k
+  real ::x,xn,xx,f_in,inv_tot
+  integer ::n,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
+
+  call Code_timer(tim_before)
+  isec_poll1=1
+  do ipoll=1,uEMEP%Npoll
+     xn=0.0
+     x=0.0
+     xx=0.0
+     !positive x or xx means incoming, negative means outgoing
+     do iix=1,uEMEP%poll(ipoll)%Nix
+        ix=uEMEP%poll(ipoll)%ix(iix)
+        xn=xn+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+        x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%poll(ipoll)%mw(iix)!flux through "North" face (Up)
+        xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%poll(ipoll)%mw(iix)!flux through "South" face (Bottom)
+     end do
+     !NB: here xn already includes the fluxes. Remove them!
+     xn=xn-xx-x
+
+     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+
+     xx=max(0.0,xx)*inv_tot!factor due to flux through "South" face (Bottom)
+     x =max(0.0,x)*inv_tot!factor due to flux through "North" face (Up)
+
+     do dy=-uEMEP%dist,uEMEP%dist
+        do dx=-uEMEP%dist,uEMEP%dist
+           do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+              loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
+           enddo
+           if(x>0.0.and.dy>-uEMEP%dist)then
+              do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                 loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy-1,j+1)*x
+              enddo
+           endif
+           if(xx>0.0.and.dy<uEMEP%dist)then
+              do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                 loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy+1,j-1)*xx
+              enddo
+           endif
+        enddo
+     enddo
+     isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+  enddo
+  !new format
+  do ipoll=1,uEMEP%Nsrc
+     xn=0.0
+     x=0.0
+     xx=0.0
+     !positive x or xx means incoming, negative means outgoing
+     do iix=1,lf_src(ipoll)%Nsplit
+        ix=lf_src(ipoll)%ix(iix)
+        xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+        x=x-xm2(i,j)*fluxy(ix,j)*lf_src(ipoll)%mw(iix)!flux through "North" face (Up)
+        xx=xx+xm2(i,j)*fluxy(ix,j-1)*lf_src(ipoll)%mw(iix)!flux through "South" face (Bottom)
+     end do
+     !NB: here xn already includes the fluxes. Remove them!
+     xn=xn-xx-x
+     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+
+     x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
+     xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
+     xn = xn * inv_tot
+     if(lf_src(ipoll)%type=='coarse')then
+        !often either x or xx is zero
+        if(x>1.E-20)then
+           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+              lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
+           enddo
+           if(xx>1.E-20)then
+              do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                 lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
+              enddo
+           endif
+        else if (xx>1.E-20)then
+           do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+              lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
+           enddo
+        endif
+     else if(lf_src(ipoll)%type=='relative')then
+        if(x>1.E-20)then
+           n = lf_src(ipoll)%start
+           dy = -uEMEP%dist
+           do dx=-uEMEP%dist,uEMEP%dist
+              lf(n,i,j,k) = lf(n,i,j,k)*xn
+              n=n+1
+           enddo
+           do dy=-uEMEP%dist+1,uEMEP%dist
+              do dx=-uEMEP%dist,uEMEP%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-Ndiv_coarse,j+1)*x
+                 n=n+1
+              enddo
+           enddo
+           if(xx>1.E-20)then
+              n = lf_src(ipoll)%start
+              do dy=-uEMEP%dist,uEMEP%dist-1
+                 do dx=-uEMEP%dist,uEMEP%dist
+                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+Ndiv_coarse,j-1)*xx
+                    n=n+1
+                 enddo
+              enddo
+           endif
+        else if (xx>1.E-20)then
+           n = lf_src(ipoll)%start
+           do dy=-uEMEP%dist,uEMEP%dist-1
+              do dx=-uEMEP%dist,uEMEP%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+Ndiv_coarse,j-1)*xx 
+                 n=n+1
+              enddo
+           enddo
+           dy=uEMEP%dist
+           do dx=-uEMEP%dist,uEMEP%dist
+              lf(n,i,j,k) = lf(n,i,j,k)*xn
+              n=n+1
+           enddo
+        endif
+
+     else
+        if(me==0)write(*,*)'LF type not recognized)'
+        stop
+     endif
+
+  enddo
+  call Add_2timing(NTIMING-6,tim_after,tim_before,"uEMEP: adv_y")
+
+end subroutine uemep_adv_y
   subroutine uemep_adv_k(fluxk,i,j)
     real, intent(in)::fluxk(NSPEC_ADV,KMAX_MID)
     integer, intent(in)::i,j
@@ -1280,7 +1357,7 @@ end subroutine av_uEMEP
     !need to be careful to always use non-updated values on the RHS
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID-1
        loc_frac_km1(:,:,:,k)=loc_frac(:,:,:,i,j,k)
-!       loc_frac_src_km1(:,k)=loc_frac_src(:,i,j,k)
+       !       loc_frac_src_km1(:,k)=loc_frac_src(:,i,j,k)
        loc_frac_src_km1(:,k)=lf(:,i,j,k)
     enddo
     loc_frac_km1(:,:,:,KMAX_MID-uEMEP%Nvert)=0.0!Assume zero local fractions coming from above
@@ -1302,11 +1379,11 @@ end subroutine av_uEMEP
           end do
           !NB: here xn already includes the fluxes. Remove them!
           xn=xn-xx-x
-          
+
           xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
           f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
           inv_tot = 1.0/(xn+f_in+1.e-20)
-          
+
           x =max(0.0,x)*inv_tot!factor due to flux through bottom face
           xx=max(0.0,xx)*inv_tot!factor due to flux through top face
           if(k<KMAX_MID)then
@@ -1325,7 +1402,7 @@ end subroutine av_uEMEP
                       loc_frac_src(n,i,j,k) = loc_frac_src(n,i,j,k) * xn * inv_tot &
                            + loc_frac_src_km1(n,k-1) * xx&
                            + loc_frac_src(n,i,j,k+1) * x!k is increasing-> can use k+1 to access non-updated value
-                   enddo                   
+                   enddo
                 endif
              else
                 !k=KMAX_MID-uEMEP%Nvert+1 , assume no local fractions from above
@@ -1363,50 +1440,55 @@ end subroutine av_uEMEP
           endif
           isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
        enddo
-      !new format
-    do ipoll=1,uEMEP%Nsrc
-       xn=0.0
-       x=0.0
-       xx=0.0
-       !positive x or xx means incoming, negative means outgoing
-       do iix=1,lf_src(ipoll)%Nsplit
-          ix=lf_src(ipoll)%ix(iix)
-          xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
-          if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(ipoll)%mw(iix)
-          xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(ipoll)%mw(iix)
-       end do
-       !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx-x
-       xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-       f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-       inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-       
-       x =max(0.0,x)*inv_tot!factor due to flux bottom facethrough
-       xx=max(0.0,xx)*inv_tot!factor due to flux through top face
-       xn = xn * inv_tot
-       !often either x or xx is zero
-       if(x>1.E-20 .and. k<KMAX_MID)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x! loc_frac(isec_poll,dx,dy,i,j,k+1)*x
-          enddo
-          if(xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
-             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-                lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k-1)*xx
-             enddo            
+       !new format
+       do ipoll=1,uEMEP%Nsrc
+          xn=0.0
+          x=0.0
+          xx=0.0
+          !positive x or xx means incoming, negative means outgoing
+          do iix=1,lf_src(ipoll)%Nsplit
+             ix=lf_src(ipoll)%ix(iix)
+             xn=xn+xn_adv(ix,i,j,k)*lf_src(ipoll)%mw(iix)
+             if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(ipoll)%mw(iix)
+             xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(ipoll)%mw(iix)
+          end do
+          !NB: here xn already includes the fluxes. Remove them!
+          xn=xn-xx-x
+          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+          f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+          inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+
+          x =max(0.0,x)*inv_tot!factor due to flux bottom facethrough
+          xx=max(0.0,xx)*inv_tot!factor due to flux through top face
+          xn = xn * inv_tot
+          !often either x or xx is zero
+          if(lf_src(ipoll)%type=='coarse' .or. lf_src(ipoll)%type=='relative')then
+             if(x>1.E-20 .and. k<KMAX_MID)then
+                do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                   lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x! loc_frac(isec_poll,dx,dy,i,j,k+1)*x
+                enddo
+                if(xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+                   do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                      lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k-1)*xx
+                   enddo
+                endif
+             else if (xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+                do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                   lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k-1)*xx
+                enddo
+             else
+                do n = lf_src(ipoll)%start, lf_src(ipoll)%end
+                   lf(n,i,j,k) = lf(n,i,j,k)*xn
+                enddo
+             endif
+          else
+             if(me==0)write(*,*)'LF type not recognized)'
+             stop
           endif
-       else if (xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k-1)*xx
-          enddo       
-       else
-          do n = lf_src(ipoll)%start, lf_src(ipoll)%end
-             lf(n,i,j,k) = lf(n,i,j,k)*xn
-          enddo
-       endif       
-    enddo     
+       enddo
        
     end do
-
+    
     call Add_2timing(NTIMING-5,tim_after,tim_before,"uEMEP: adv_k")
   end subroutine uemep_adv_k
  
@@ -1733,8 +1815,16 @@ subroutine uEMEP_emis(indate)
                iiix=lf_src(ipoll)%ix(iix)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(ipoll)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
-            n0 = lf_src(ipoll)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local           
-            lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+            if(lf_src(ipoll)%type=='coarse')then
+               n0 = lf_src(ipoll)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local           
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+            else if(lf_src(ipoll)%type=='relative')then
+               n0 = lf_src(ipoll)%start + (lf_src(ipoll)%Npos - 1)/2 !"middle" point is dx=0 dy=0
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+            else
+               if(me==0)write(*,*)'LF type not recognized)'
+               stop
+            endif
             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
                if(n==n0)cycle  !counted above               
                lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+emis_tot(k,iem)+1.e-20)!fractions are diluted
