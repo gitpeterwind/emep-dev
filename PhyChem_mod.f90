@@ -129,10 +129,6 @@ subroutine phyche()
     end if
   end if
 
-  call EmisSet(current_date)
-
-  call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
-
   ! For safety we initialise instant. values here to zero.
   ! Usually not needed, but sometimes
   ! ========================
@@ -201,6 +197,10 @@ subroutine phyche()
   !===================================
   call init_drydep()
   !===================================
+
+  call EmisSet(current_date)
+
+  call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
   call Code_timer(tim_before0)
   !must be placed just before emissions are used

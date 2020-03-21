@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Mar 2020, Peter)
+
+Moved EmisSet call (in PhyChem) just before runchem.
+Gives identical results.
+It is better to define emis just before they are used in runchem.
+(this will perhaps be needed by uEMEP later)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Mar 2020, Svetlana, (Peter)
 
 replace in config_emep the old
