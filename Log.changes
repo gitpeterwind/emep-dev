@@ -5,15 +5,17 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19
+    mk.ChemFiles EmChem19a
 
-  [This will copy pre-made files from ZCM_EmChem19. The files in that directory
+  [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
+EmChem19a should be the default chemistry for most emep jobs. This also uses the EmChem19 emissplits though.
+EmChem19p is just EmChem19a + Alvaro's pollen species.
+
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
-the appropriate place, DataDir/ZCM_EmChem16x for old Chemistry or
-(latest) DataDir/ZCM_EmChem19.
+the appropriate place, DataDir/ZCM_EmChem19.
 
 =============================================================================
 !----------------------------------------------------------
@@ -21,6 +23,26 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Mar 2020, Peter)
+
+Moved EmisSet call (in PhyChem) just before runchem.
+Gives identical results.
+It is better to define emis just before they are used in runchem.
+(this will perhaps be needed by uEMEP later)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Mar 2020, Svetlana, (Peter)
+
+replace in config_emep the old
+  flocdef="DataDir/volcano_location.csv_20160610",
+  femsdef="DataDir/volcano_emission.csv_20160610",
+
+with more relevant
+  flocdef="DataDir/volcano_location.csv_20180321",
+  femsdef="DataDir/volcano_emission.csv_20190606",
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Mar 2020, Peter
