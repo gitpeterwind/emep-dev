@@ -246,6 +246,8 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
 real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf &   ! Fraction of pollutants that are produced locally, for all defined sources
+  ,lf_emis &   ! 3D Emission defined for each source
+  ,lf_emis_tot &   ! sum of 3D Emission defined for each pollutant used for lf
   ,loc_frac_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,loc_tot_hour_inst&   !all contributions

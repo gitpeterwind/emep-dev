@@ -69,8 +69,8 @@ use EmisDef_mod,       only: &
      , NEmisMask, EmisMaskValues & !new format
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
-     , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources
-
+     , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources&
+     , lf_emis, lf_emis_tot
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -122,6 +122,7 @@ use Timefactors_mod,   only: &
     ,Read_monthly_emis_grid_fac &
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
+use uEMEP_mod, only : add_lf_emis
 implicit none
 private
 
@@ -1644,7 +1645,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     totemadd(:)  = 0.
     gridrcemis(:,:,:,:) = 0.0 
     SecEmisOut(:,:,:,:) = 0.0
-    if(USES%ROADDUST)gridrcroadd0(:,:,:) = 0.0
+    if(USES%uEMEP) lf_emis(:,:,:,:) = 0.0
+    if(USES%uEMEP) lf_emis_tot(:,:,:,:) = 0.0
+    if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
     do j = 1,ljmax
@@ -1715,6 +1718,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
               end do ! f
+             
+              if(USES%uEMEP) call add_lf_emis(s,i,j,iem,isec,iland)
+              
             end do ! iem
 
             !  Assign to height levels 1-KEMISTOP

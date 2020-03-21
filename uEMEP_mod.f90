@@ -7,7 +7,7 @@ use Chemfields_mod,    only: xn_adv
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemSpecs_mod,     only: species_adv,species
 use Country_mod,       only: MAXNLAND,NLAND,Country
-use EmisDef_mod,       only: loc_frac, loc_frac_src, lf,loc_frac_1d, loc_frac_src_1d, loc_frac_hour, loc_tot_hour,&
+use EmisDef_mod,       only: loc_frac, loc_frac_src, lf, lf_emis, lf_emis_tot, loc_frac_1d, loc_frac_src_1d, loc_frac_hour, loc_tot_hour,&
                             loc_frac_hour_inst, loc_tot_hour_inst,loc_frac_day, &
                             loc_tot_day, loc_frac_month,loc_tot_month,&
                             loc_frac_full,loc_frac_src_full,lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
@@ -54,6 +54,7 @@ public  :: uemep_adv_y
 public  :: uemep_adv_k
 public  :: uemep_diff
 public  :: uemep_emis
+public  :: add_lf_emis
 
 integer, public, save :: uEMEP_Size1=0 !total size of the first 3 dimensions of loc_frac
 !uEMEP_Size1=uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2
@@ -88,6 +89,7 @@ integer, public, save :: LF_SRC_TOTSIZE
 integer,  public, save :: iotyp2ix(IOU_MAX_MAX)
 integer,  public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
 integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
+integer,  public, save :: iem2ipoll(NEMIS_File)
 
 contains
 subroutine init_uEMEP
@@ -118,15 +120,15 @@ subroutine init_uEMEP
      endif
   enddo
 
-  Npoll = 1
+!  Npoll = 1
   lf_src(1)%emis = 'pm25'
-  lf_src(1)%poll = 1 !index of pollutant
+!  lf_src(1)%poll = 1 !index of pollutant
   lf_src(1)%sector = 0
   lf_src(1)%type = 'coarse'
   lf_src(1)%Npos = Ndiv2_coarse
 
   lf_src(2)%emis = 'pm25'
-  lf_src(2)%poll = 1 !index of pollutant
+!  lf_src(2)%poll = 1 !index of pollutant
   lf_src(2)%sector = 0
   lf_src(2)%Npos = Ndiv2_coarse
   lf_src(2)%type = 'relative'
@@ -135,11 +137,21 @@ subroutine init_uEMEP
   do i = 1, Npoll_uemep_max
      if(lf_src(i)%emis /= 'NONE') uEMEP%Nsrc = uEMEP%Nsrc + 1
   enddo
-  
+
+  ipoll=0
+  iem2ipoll = -1
   do iemis = 1, uEMEP%Nsrc  
      iem=find_index(lf_src(iemis)%emis ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(lf_src(iemis)%emis) )
      lf_src(iemis)%iem = iem
+
+     if(iem2ipoll(iem)<0)then
+        ipoll = ipoll + 1
+        iem2ipoll(iem) = ipoll     
+        Npoll = ipoll
+        !write(*,*)'iem2ipoll ',iem,ipoll
+     endif
+     
      lf_src(iemis)%Nsplit=emis_nsplit(iem)
      do i=1,lf_src(iemis)%Nsplit
         iqrc=sum(emis_nsplit(1:iem-1)) + i
@@ -172,6 +184,7 @@ subroutine init_uEMEP
            enddo
         endif
      end do
+
      if(MasterProc)then
         write(*,*)'uEMEP pollutant : ',lf_src(iemis)%emis
         write(*,*)'uEMEP number of species in '//trim(lf_src(iemis)%emis)//' group: ',lf_src(iemis)%Nsplit
@@ -337,6 +350,10 @@ subroutine init_uEMEP
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
+  allocate(lf_emis(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Nsrc))
+  lf_emis = 0.0
+  allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Npoll))
+  lf_emis_tot = 0.0
  
   call Add_2timing(NTIMING-9,tim_after,tim_before,"uEMEP: init")
 end subroutine init_uEMEP
@@ -1627,7 +1644,6 @@ subroutine uEMEP_emis(indate)
   real :: lon
   integer :: jmin,jmax,imin,imax,n0
   
-  if(me==0)write(*,*)'emis strt ',lf(122,5,5,20)
   call Code_timer(tim_before)
   dt_uemep=dt_advec
 
@@ -1807,8 +1823,9 @@ subroutine uEMEP_emis(indate)
       ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
       iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
       do ipoll=1,uEMEP%Nsrc      
+         iem = lf_src(ipoll)%iem
+         isec = lf_src(ipoll)%sector
          do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
-            iem = lf_src(ipoll)%iem
             if(emis_tot(k,iem)<1.E-20)cycle
             xtot=0.0
             do iix=1,lf_src(ipoll)%Nsplit
@@ -1817,26 +1834,51 @@ subroutine uEMEP_emis(indate)
             end do
             if(lf_src(ipoll)%type=='coarse')then
                n0 = lf_src(ipoll)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local           
-               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+!               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis_tot(i,j,k,lf_src(ipoll)%poll))/(xtot+lf_emis_tot(i,j,k,lf_src(ipoll)%poll)+1.e-20)
             else if(lf_src(ipoll)%type=='relative')then
                n0 = lf_src(ipoll)%start + (lf_src(ipoll)%Npos - 1)/2 !"middle" point is dx=0 dy=0
-               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+!               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis_tot(i,j,k,lf_src(ipoll)%poll))/(xtot+lf_emis_tot(i,j,k,lf_src(ipoll)%poll)+1.e-20)
+               if(abs(emis_tot(k,iem) - lf_emis_tot(i,j,k,lf_src(ipoll)%poll))>1.e-20)write(*,*)'error tot',me,i,j,k,ipoll,iem,emis_tot(k,iem) , lf_emis_tot(i,j,k,lf_src(ipoll)%poll)
+               if(isec/=0 .and. abs(emis_uemep(k,iem,isec) - lf_emis(i,j,k,ipoll))>1.e-20)write(*,*)'error',me,i,j,k,ipoll,iem,isec,emis_uemep(k,iem,isec) , lf_emis(i,j,k,ipoll)
             else
                if(me==0)write(*,*)'LF type not recognized)'
                stop
             endif
             do n = lf_src(ipoll)%start, lf_src(ipoll)%end
                if(n==n0)cycle  !counted above               
-               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+emis_tot(k,iem)+1.e-20)!fractions are diluted
+!               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+emis_tot(k,iem)+1.e-20)!fractions are diluted
+               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+lf_emis_tot(i,j,k,lf_src(ipoll)%poll)+1.e-20)!fractions are diluted
             enddo
          enddo
       enddo
     end do ! i
   end do ! j
-  if(me==0)write(*,*)'emis end ',lf(122,5,5,20)
   call Add_2timing(NTIMING-3,tim_after,tim_before,"uEMEP: emissions")
 
 end subroutine uEMEP_emis
 
+subroutine add_lf_emis(s,i,j,iem,isec,iland)
+  real, intent(in) :: s
+  integer, intent(in) :: i,j,iem,isec,iland
+  integer :: isrc, k, ipoll
+
+  ipoll = iem2ipoll(iem)
+  if(ipoll>0)then
+     do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+        lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total for each pollutant
+     enddo
+  endif
+
+  do isrc = 1, uEMEP%Nsrc
+     if(lf_src(isrc)%iem /= iem) cycle
+     if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
+     do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+        lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
+     enddo
+  enddo
+  
+end subroutine add_lf_emis
 
 end module uEMEP_mod
