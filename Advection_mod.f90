@@ -76,7 +76,7 @@
                   USES,uEMEP,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_Eta
-  use EmisDef_mod,        only: NSECTORS, Nneighbors, lf, loc_frac, loc_frac_src, loc_frac_1d, loc_frac_src_1d
+  use EmisDef_mod,        only: NSECTORS, Nneighbors, lf, loc_frac_src, loc_frac_src_1d
   use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
@@ -97,7 +97,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only: uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, LF_SRC_TOTSIZE
+  use uEMEP_mod, only: uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, LF_SRC_TOTSIZE
 
   implicit none
   private
@@ -314,7 +314,6 @@
        end if
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
        call vgrid_Eta
-       if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
        if(.not.allocated(loc_frac_src_1d))allocate(loc_frac_src_1d(0,1))!to avoid error messages
        if(ZERO_ORDER_ADVEC)then
           hor_adv0th = .true.
@@ -489,7 +488,7 @@
                       call preadvx3(110+k+KMAX_MID*j               &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse,j,k,loc_frac_1d,loc_frac_src_1d)
+                           ,psw,pse,j,k,loc_frac_src_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -525,7 +524,7 @@
                    call preadvy3(520+k                            &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i,k,loc_frac_1d,loc_frac_src_1d)
+                        ,pss, psn,i,k,loc_frac_src_1d)
 
                    call advy(                                     &
                         v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)            &
@@ -602,7 +601,7 @@
                    call preadvy3(13000+k+KMAX_MID*itery+1000*i    &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i,k,loc_frac_1d,loc_frac_src_1d)
+                        ,pss, psn,i,k,loc_frac_src_1d)
 
                    ! y-direction
                    call advy(                                    &
@@ -637,7 +636,7 @@
                       call preadvx3(21000+k+KMAX_MID*iterx+1000*j  &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse,j,k,loc_frac_1d,loc_frac_src_1d)
+                           ,psw,pse,j,k,loc_frac_src_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -2925,7 +2924,7 @@ end if
   subroutine preadvx3(msgnr                &
                      ,xn_adv,ps3d,vel      &
                      ,xnbeg, xnend         &
-                     ,psbeg, psend,j,k,loc_frac_1d,loc_frac_src_1d)
+                     ,psbeg, psend,j,k,loc_frac_src_1d)
 
     ! Initialize arrays holding boundary slices
 
@@ -2938,30 +2937,18 @@ end if
 !    output
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
-    real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
     real,intent(inout),dimension(LF_SRC_TOTSIZE,0:limax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local, uEMEP_Size1_local_src
+    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local_src
 
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+LF_SRC_TOTSIZE) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
+    real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
-    uEMEP_Size1_local = 0!default: do not treat this region
     uEMEP_Size1_local_src = 0!default: do not treat this region 
 
-    if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
-       uEMEP_Size1_local = uEMEP_Size1!treat this region
-       uEMEP_Size1_local_src = uEMEP_Size1_local+LF_SRC_TOTSIZE!treat this region 
+    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-uEMEP%Nvert)then
+       uEMEP_Size1_local_src = LF_SRC_TOTSIZE!treat this region 
        do i=li0,li1
-          n=0
-          do dy=-uEMEP%dist,uEMEP%dist
-             do dx=-uEMEP%dist,uEMEP%dist
-                do isec_poll=1,uEMEP%Nsec_poll
-                   n=n+1
-                   loc_frac_1d(n,i) = loc_frac(isec_poll,dx,dy,i,j,k)
-               enddo
-             enddo
-          enddo
           do n=1,LF_SRC_TOTSIZE
              loc_frac_src_1d(n,i) = lf(n,i,j,k)
           enddo
@@ -2989,10 +2976,6 @@ end if
        send_buf_w(n) = ps3d(LIMAX+1)
        n=n+1
        send_buf_w(n) = ps3d(LIMAX+2)
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          send_buf_w(n) = loc_frac_1d(ii,1)
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           send_buf_w(n) = loc_frac_src_1d(ii,1)
@@ -3022,10 +3005,6 @@ end if
        send_buf_e(n) = ps3d(LIMAX+li1-2)
        n=n+1
        send_buf_e(n) = ps3d(LIMAX+li1-1)
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          send_buf_e(n) = loc_frac_1d(ii,li1)
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           send_buf_e(n) = loc_frac_src_1d(ii,li1)
@@ -3053,9 +3032,6 @@ end if
           psbeg(2) = ps3d(LIMAX)
           psbeg(3) = ps3d(LIMAX)
        end if
-       do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,li0-1)=0.0
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           loc_frac_src_1d(ii,li0-1)=0.0
        enddo
@@ -3085,10 +3061,6 @@ end if
        n=n+1
        psbeg(3) = rcv_buf_w(n)
 
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          loc_frac_1d(ii,li0-1) = rcv_buf_w(n)
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           loc_frac_src_1d(ii,li0-1) = rcv_buf_w(n)
@@ -3116,9 +3088,6 @@ end if
           psend(2) = ps3d(LIMAX+li1)
           psend(3) = ps3d(LIMAX+li1)
        end if
-       do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,li1+1)=0.0
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           loc_frac_src_1d(ii,li1+1)=0.0
        enddo
@@ -3147,10 +3116,6 @@ end if
       n=n+1
       psend(3) = rcv_buf_e(n)
 
-      do ii=1,uEMEP_Size1_local
-         n=n+1
-         loc_frac_1d(ii,li1+1) = rcv_buf_e(n)
-      enddo
       do ii=1,LF_SRC_TOTSIZE
          n=n+1
          loc_frac_src_1d(ii,li1+1) = rcv_buf_e(n)
@@ -3450,7 +3415,7 @@ end if
   subroutine preadvy3(msgnr                &
                      ,xn_adv,ps3d,vel      &
                      ,xnbeg, xnend         &
-                     ,psbeg, psend,i_send,k,loc_frac_1d,loc_frac_src_1d)
+                     ,psbeg, psend,i_send,k,loc_frac_src_1d)
 
     ! Initialize arrays holding boundary slices
 
@@ -3463,29 +3428,17 @@ end if
 !    output
     real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
     real,intent(out),dimension(3)           :: psend,psbeg
-    real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
     real,intent(inout),dimension(LF_SRC_TOTSIZE,0:ljmax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local, uEMEP_Size1_local_src
-    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1+LF_SRC_TOTSIZE) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
+    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local_src
+    real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
-    uEMEP_Size1_local = 0!default: do not treat this region
     uEMEP_Size1_local_src = 0!default: do not treat this region
 
-    if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
-       uEMEP_Size1_local = uEMEP_Size1!treat this region
-       uEMEP_Size1_local_src = uEMEP_Size1_local+LF_SRC_TOTSIZE!treat this region
+    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-uEMEP%Nvert)then
+       uEMEP_Size1_local_src = LF_SRC_TOTSIZE!treat this region
        do j=lj0,lj1
-          n=0
-          do dy=-uEMEP%dist,uEMEP%dist
-             do dx=-uEMEP%dist,uEMEP%dist
-                do isec_poll=1,uEMEP%Nsec_poll
-                   n=n+1
-                   loc_frac_1d(n,j) = loc_frac(isec_poll,dx,dy,i_send,j,k)
-                enddo
-             enddo
-          enddo
            do n=1,LF_SRC_TOTSIZE
              loc_frac_src_1d(n,j) = lf(n,i_send,j,k)
           enddo
@@ -3515,10 +3468,7 @@ end if
        send_buf_s(n) = ps3d(i_send+LIMAX)
        n=n+1
        send_buf_s(n) = ps3d(i_send+2*LIMAX)
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          send_buf_s(n) = loc_frac_1d(ii,1)
-       enddo
+
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           send_buf_s(n) = loc_frac_src_1d(ii,1)
@@ -3549,10 +3499,7 @@ end if
        send_buf_n(n) = ps3d(i_send+(lj1-2)*LIMAX)
        n=n+1
        send_buf_n(n) = ps3d(i_send+(lj1-1)*LIMAX)
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          send_buf_n(n) = loc_frac_1d(ii,lj1)
-       enddo
+
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           send_buf_n(n) = loc_frac_src_1d(ii,lj1)
@@ -3584,9 +3531,7 @@ end if
           psbeg(2) =  psbeg(1)
           psbeg(3) =  psbeg(1)
         end if
-       do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,lj0-1)=0.0
-       enddo
+
        do ii=1,LF_SRC_TOTSIZE
           loc_frac_src_1d(ii,0)=0.0
        enddo
@@ -3615,10 +3560,6 @@ end if
        n=n+1
        psbeg(3) = rcv_buf_s(n)
 
-       do ii=1,uEMEP_Size1_local
-          n=n+1
-          loc_frac_1d(ii,lj0-1) = rcv_buf_s(n)
-       enddo
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
           loc_frac_src_1d(ii,0) = rcv_buf_s(n)
@@ -3647,10 +3588,7 @@ end if
           psend(2) = psend(1)
           psend(3) = psend(1)
         end if
-        do ii=1,uEMEP_Size1_local
-           n=n+1
-           loc_frac_1d(ii,lj1+1) = 0.0
-        enddo
+
         do ii=1,LF_SRC_TOTSIZE
            n=n+1
            loc_frac_src_1d(ii,lj1+1) = 0.0
@@ -3679,10 +3617,6 @@ end if
       n=n+1
       psend(3) = rcv_buf_n(n)
 
-      do ii=1,uEMEP_Size1_local
-         n=n+1
-         loc_frac_1d(ii,lj1+1) = rcv_buf_n(n)
-      enddo
       do ii=1,LF_SRC_TOTSIZE
          n=n+1
          loc_frac_src_1d(ii,lj1+1) = rcv_buf_n(n)
