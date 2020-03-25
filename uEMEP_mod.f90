@@ -67,10 +67,12 @@ integer , private, save :: uEMEPNvertout = 1!number of vertical levels to save i
 integer, public, save :: NTIMING_uEMEP=7
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=0, Ndiv2_coarse=0
+integer, public, save :: Nsources=0
 
 type, public :: lf_sources
   character(len=4) :: emis = 'NONE' !pollutants to include (NB: 4 char)
   character(len=20) :: type = 'NOTSET' !Qualitatively different type of sources: "coarse", "relative", "country"
+  integer :: dist = -1 ! window dimension, if defined 
   integer :: sector=-1    ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model)
   integer :: start = 1 ! first position index in lf_src (set by model)
@@ -78,6 +80,7 @@ type, public :: lf_sources
   integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
   integer :: Npos = 0 ! number of position indices in lf_src (set by model)
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
+  integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
   integer, dimension(15) :: mw=0.0  ! molecualr weight of the (splitted) species (set by model)
 end type lf_sources
@@ -93,8 +96,14 @@ contains
 subroutine init_uEMEP
   integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
 
+  lf_src(:)%dist = uEMEP%dist !Temporary
+  lf_src(:)%DOMAIN(1) = uEMEP%DOMAIN(1) !Temporary
+  lf_src(:)%DOMAIN(2) = uEMEP%DOMAIN(2) !Temporary
+  lf_src(:)%DOMAIN(3) = uEMEP%DOMAIN(3) !Temporary
+  lf_src(:)%DOMAIN(4) = uEMEP%DOMAIN(4) !Temporary
+
   call Code_timer(tim_before)
-  Ndiv_coarse = 2*uEMEP%dist+1
+  Ndiv_coarse = 2*lf_src(1)%dist+1
   Ndiv2_coarse = Ndiv_coarse*Ndiv_coarse
   uEMEP%Nsec_poll = 0
   uEMEP%Npoll = 0
@@ -129,14 +138,17 @@ subroutine init_uEMEP
   lf_src(2)%Npos = Ndiv2_coarse
   lf_src(2)%type = 'relative'
   
-  uEMEP%Nsrc = 0
+  Nsources = 0
   do i = 1, Npoll_uemep_max
-     if(lf_src(i)%emis /= 'NONE') uEMEP%Nsrc = uEMEP%Nsrc + 1
+     if(lf_src(i)%emis /= 'NONE') Nsources = Nsources + 1
   enddo
 
   ipoll=0
   iem2ipoll = -1
-  do isrc = 1, uEMEP%Nsrc  
+  do isrc = 1, Nsources
+     do i=1,4
+        if(lf_src(i)%DOMAIN(i)<0)lf_src(i)%DOMAIN(i) = RUNDOMAIN(i)
+     enddo
      iem=find_index(lf_src(isrc)%emis ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(lf_src(isrc)%emis) )
      lf_src(isrc)%iem = iem
@@ -205,7 +217,7 @@ subroutine init_uEMEP
      if(uEMEP%DOMAIN(i)<0)uEMEP%DOMAIN(i) = RUNDOMAIN(i)
   enddo
 
-  uEMEP_Sizedxdy = (2*uEMEP%dist+1)**2
+  uEMEP_Sizedxdy = (2*lf_src(1)%dist+1)**2
   uEMEP_Size1 = uEMEP%Nsec_poll*uEMEP_Sizedxdy
 
   if(MasterProc)then
@@ -265,7 +277,7 @@ subroutine init_uEMEP
   av_fac_full=0.0
   
   LF_SRC_TOTSIZE = 0
-  do isrc = 1, uEMEP%Nsrc
+  do isrc = 1, Nsources
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
@@ -302,7 +314,7 @@ subroutine init_uEMEP
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
-  allocate(lf_emis(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Nsrc))
+  allocate(lf_emis(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Nsources))
   lf_emis = 0.0
   allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
@@ -369,9 +381,9 @@ subroutine out_uEMEP(iotyp)
   CDFtype=Real4
   !  dimSizes(1)=uEMEP%Nsec_poll
   !  dimNames(1)='sector'
-  dimSizes(1)=2*uEMEP%dist+1
+  dimSizes(1)=2*lf_src(1)%dist+1
   dimNames(1)='x_dist'
-  dimSizes(2)=2*uEMEP%dist+1
+  dimSizes(2)=2*lf_src(1)%dist+1
   dimNames(2)='y_dist'
 
   uEMEP%DOMAIN(1) = max(RUNDOMAIN(1),uEMEP%DOMAIN(1))
@@ -452,11 +464,11 @@ subroutine out_uEMEP(iotyp)
         create_var_only=.false.
      endif
      pollwritten = .false.
-     do isrc = 1, uEMEP%Nsrc  
+     do isrc = 1, Nsources
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
-           def2%name=trim(uEMEP%poll(isrc)%emis)
+           def2%name=trim(lf_src(isrc)%emis)
            scale=1.0/av_fac_full
            call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-uEMEPNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot)                
@@ -533,7 +545,7 @@ subroutine av_uEMEP(dt,End_of_Day)
   !do the averaging
   pollwritten = .false.
   do iou_ix = 1, Niou_ix
-     do isrc=1,uEMEP%Nsrc
+     do isrc=1,Nsources
         ipoll = lf_src(isrc)%poll
         do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
            do j=1,ljmax
@@ -574,7 +586,7 @@ subroutine uemep_adv_x(fluxx,i,j,k)
   integer ::n,iix,ix,dx,dy,isrc
 
   call Code_timer(tim_before)
-  do isrc=1,uEMEP%Nsrc
+  do isrc=1,Nsources
      xn=0.0
      x=0.0
      xx=0.0
@@ -613,10 +625,10 @@ subroutine uemep_adv_x(fluxx,i,j,k)
      else if(lf_src(isrc)%type=='relative')then
         if(x>1.E-20)then
            n = lf_src(isrc)%start
-           do dy=-uEMEP%dist,uEMEP%dist
+           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
               lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-uEMEP%dist there are no local fractions to transport
               n=n+1
-              do dx=-uEMEP%dist+1,uEMEP%dist
+              do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
                  lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-1,i+1)*x
                  n=n+1
               enddo
@@ -624,22 +636,22 @@ subroutine uemep_adv_x(fluxx,i,j,k)
 
            if(xx>1.E-20)then
               n = lf_src(isrc)%start
-              do dy=-uEMEP%dist,uEMEP%dist
-                 do dx=-uEMEP%dist,uEMEP%dist-1
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
                     lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+1,i-1)*xx   
                     n=n+1
                  enddo                
-                 n=n+1! when dx=uEMEP%dist there are no local fractions to transport
+                 n=n+1! when dx=lf_src(isrc)%dist there are no local fractions to transport
               enddo
            endif
         else if (xx>1.E-20)then
            n = lf_src(isrc)%start
-           do dy=-uEMEP%dist,uEMEP%dist
-              do dx=-uEMEP%dist,uEMEP%dist-1
+           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
                  lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+1,i-1)*xx 
                  n=n+1
               enddo
-              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=uEMEP%dist there are no local fractions to transport
+              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist there are no local fractions to transport
               n=n+1
            enddo
         else
@@ -662,7 +674,7 @@ subroutine uemep_adv_y(fluxy,i,j,k)
   integer ::n,iix,ix,dx,dy,isrc
 
   call Code_timer(tim_before)
-  do isrc=1,uEMEP%Nsrc
+  do isrc=1,Nsources
      xn=0.0
      x=0.0
      xx=0.0
@@ -701,21 +713,21 @@ subroutine uemep_adv_y(fluxy,i,j,k)
      else if(lf_src(isrc)%type=='relative')then
         if(x>1.E-20)then
            n = lf_src(isrc)%start
-           dy = -uEMEP%dist
-           do dx=-uEMEP%dist,uEMEP%dist
+           dy = -lf_src(isrc)%dist
+           do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
               lf(n,i,j,k) = lf(n,i,j,k)*xn
               n=n+1
            enddo
-           do dy=-uEMEP%dist+1,uEMEP%dist
-              do dx=-uEMEP%dist,uEMEP%dist
+           do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
                  lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-Ndiv_coarse,j+1)*x
                  n=n+1
               enddo
            enddo
            if(xx>1.E-20)then
               n = lf_src(isrc)%start
-              do dy=-uEMEP%dist,uEMEP%dist-1
-                 do dx=-uEMEP%dist,uEMEP%dist
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
                     lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+Ndiv_coarse,j-1)*xx
                     n=n+1
                  enddo
@@ -723,14 +735,14 @@ subroutine uemep_adv_y(fluxy,i,j,k)
            endif
         else if (xx>1.E-20)then
            n = lf_src(isrc)%start
-           do dy=-uEMEP%dist,uEMEP%dist-1
-              do dx=-uEMEP%dist,uEMEP%dist
+           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
                  lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+Ndiv_coarse,j-1)*xx 
                  n=n+1
               enddo
            enddo
-           dy=uEMEP%dist
-           do dx=-uEMEP%dist,uEMEP%dist
+           dy=lf_src(isrc)%dist
+           do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
               lf(n,i,j,k) = lf(n,i,j,k)*xn
               n=n+1
            enddo
@@ -760,7 +772,7 @@ end subroutine uemep_adv_y
     loc_frac_src_km1(:,KMAX_MID-uEMEP%Nvert)=0.0!Assume zero local fractions coming from above
 
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
-       do isrc=1,uEMEP%Nsrc
+       do isrc=1,Nsources
           xn=0.0
           x=0.0
           xx=0.0
@@ -836,7 +848,7 @@ end subroutine uemep_adv_y
     call Code_timer(tim_before)
     xn_k = 0.0
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-       do isrc=1,uEMEP%Nsrc
+       do isrc=1,Nsources
           x=0.0
           do iix=1,lf_src(isrc)%Nsplit
              ix=lf_src(isrc)%ix(iix)
@@ -853,7 +865,7 @@ end subroutine uemep_adv_y
     call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
   
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-       do isrc=1,uEMEP%Nsrc
+       do isrc=1,Nsources
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
              lf(n,i,j,k) = xn_k(n,k)*x                               
@@ -898,7 +910,7 @@ subroutine uEMEP_emis(indate)
     do i = li0,li1
       ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
       iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
-      do isrc=1,uEMEP%Nsrc      
+      do isrc=1,Nsources   
          iem = lf_src(isrc)%iem
          isec = lf_src(isrc)%sector
          do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
@@ -947,7 +959,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      enddo
    endif
 
-  do isrc = 1, uEMEP%Nsrc
+  do isrc = 1, Nsources
      if(lf_src(isrc)%iem /= iem) cycle
      if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
      do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
