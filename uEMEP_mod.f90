@@ -130,11 +130,11 @@ subroutine init_uEMEP
 !  Npoll = 1
   lf_src(1)%emis = 'pm25'
   lf_src(1)%sector = 0
-  lf_src(1)%type = 'coarse'
+  lf_src(1)%type = 'relative'
   lf_src(1)%Npos = Ndiv2_coarse
 
   lf_src(2)%emis = 'pm25'
-  lf_src(2)%sector = 0
+  lf_src(2)%sector = 7
   lf_src(2)%Npos = Ndiv2_coarse
   lf_src(2)%type = 'relative'
   
@@ -922,20 +922,16 @@ subroutine uEMEP_emis(indate)
             end do
             if(lf_src(isrc)%type=='coarse')then
                n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local           
-!               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
-               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
             else if(lf_src(isrc)%type=='relative')then
                n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
-!               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_tot(k,iem))/(xtot+emis_tot(k,iem)+1.e-20)
-               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-               !if(i==5.and.j==5 .and. k==20)write(*,*)'emis ',lf(182,5,5,20),xtot,lf_emis_tot(i,j,k,lf_src(isrc)%poll)
-           else
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+lf_emis(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+            else
                if(me==0)write(*,*)'LF type not recognized)'
                stop
             endif
             do n = lf_src(isrc)%start, lf_src(isrc)%end
                if(n==n0)cycle  !counted above               
-!               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+emis_tot(k,iem)+1.e-20)!fractions are diluted
                lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)!fractions are diluted
              enddo
          enddo
