@@ -137,6 +137,11 @@ subroutine init_uEMEP
   lf_src(2)%sector = 7
   lf_src(2)%Npos = Ndiv2_coarse
   lf_src(2)%type = 'relative'
+
+  lf_src(3)%emis = 'nox'
+  lf_src(3)%sector = 0
+  lf_src(3)%Npos = Ndiv2_coarse
+  lf_src(3)%type = 'relative'
   
   Nsources = 0
   do i = 1, Npoll_uemep_max
@@ -157,8 +162,8 @@ subroutine init_uEMEP
         ipoll = ipoll + 1
         iem2ipoll(iem) = ipoll     
         Npoll = ipoll
-        !write(*,*)'iem2ipoll ',iem,ipoll
      endif
+     lf_src(isrc)%poll = iem2ipoll(iem)
      
      lf_src(isrc)%Nsplit=emis_nsplit(iem)
      do i=1,lf_src(isrc)%Nsplit
@@ -488,10 +493,9 @@ subroutine out_uEMEP(iotyp)
               enddo
            enddo
         endif
-        write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_fractions_'//trim(lf_src(isrc)%type)
-        if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fractions_'//trim(lf_src(isrc)%type)
+        write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
+        if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fraction_'//trim(lf_src(isrc)%type)
         scale=1.0
-        if(me==0)write(*,*)isrc,'outp ',tmp_out(1,5,5),tmp_out(60,5,5),tmp_out(61,5,5),tmp_out(62,5,5)
         call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
           fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes)
      enddo
@@ -601,7 +605,7 @@ subroutine uemep_adv_x(fluxx,i,j,k)
      xn=xn-xx-x
      xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
      f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+     inv_tot=1.0/(xn+f_in+1.e-40)!incoming dilutes
 
      x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
      xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
@@ -655,7 +659,7 @@ subroutine uemep_adv_x(fluxx,i,j,k)
               n=n+1
            enddo
         else
-           !nothing to do if no incoming fluxes
+          !nothing to do if no incoming fluxes
         endif
       else
         if(me==0)write(*,*)'LF type not recognized)'
@@ -689,7 +693,7 @@ subroutine uemep_adv_y(fluxy,i,j,k)
      xn=xn-xx-x
      xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
      f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+     inv_tot=1.0/(xn+f_in+1.e-40)!incoming dilutes
 
      x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
      xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
@@ -746,6 +750,8 @@ subroutine uemep_adv_y(fluxy,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn
               n=n+1
            enddo
+        else
+           !nothing to do if no incoming fluxes          
         endif
 
      else
@@ -757,7 +763,8 @@ subroutine uemep_adv_y(fluxy,i,j,k)
   call Add_2timing(NTIMING-6,tim_after,tim_before,"uEMEP: adv_y")
 
 end subroutine uemep_adv_y
-  subroutine uemep_adv_k(fluxk,i,j)
+
+subroutine uemep_adv_k(fluxk,i,j)
     real, intent(in)::fluxk(NSPEC_ADV,KMAX_MID)
     integer, intent(in)::i,j
     real ::x,xn,xx,f_in,inv_tot
@@ -787,7 +794,7 @@ end subroutine uemep_adv_y
           xn=xn-xx-x
           xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
           f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-          inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+          inv_tot=1.0/(xn+f_in+1.e-40)!incoming dilutes
 
           x =max(0.0,x)*inv_tot!factor due to flux bottom facethrough
           xx=max(0.0,xx)*inv_tot!factor due to flux through top face
@@ -808,9 +815,7 @@ end subroutine uemep_adv_y
                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k-1)*xx
                 enddo
              else
-                do n = lf_src(isrc)%start, lf_src(isrc)%end
-                   lf(n,i,j,k) = lf(n,i,j,k)*xn
-                enddo
+                !nothing to do if no incoming fluxes
              endif
           else
              if(me==0)write(*,*)'LF type not recognized)'
@@ -847,7 +852,7 @@ end subroutine uemep_adv_y
 
     call Code_timer(tim_before)
     xn_k = 0.0
-    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+    do k = 1,KMAX_MID
        do isrc=1,Nsources
           x=0.0
           do iix=1,lf_src(isrc)%Nsplit
@@ -855,17 +860,19 @@ end subroutine uemep_adv_y
              !assumes mixing ratios units, but weight by mass
              x=x+xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix)
           end do
-          do n=lf_src(isrc)%start, lf_src(isrc)%end
-             xn_k(n,k)=x*lf(n,i,j,k)
-          enddo
+          if(k>KMAX_MID-uEMEP%Nvert)then ! lf zero above
+             do n=lf_src(isrc)%start, lf_src(isrc)%end
+                xn_k(n,k)=x*lf(n,i,j,k)
+             enddo
+          endif
           xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k) = x
       enddo
     enddo
-    
+
     call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
-  
+ 
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-       do isrc=1,Nsources
+     do isrc=1,Nsources
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
              lf(n,i,j,k) = xn_k(n,k)*x                               

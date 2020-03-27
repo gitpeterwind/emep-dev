@@ -3533,7 +3533,7 @@ end if
         end if
 
        do ii=1,LF_SRC_TOTSIZE
-          loc_frac_src_1d(ii,0)=0.0
+          loc_frac_src_1d(ii,lj0-1)=0.0
        enddo
 
     else
@@ -3562,7 +3562,7 @@ end if
 
        do ii=1,LF_SRC_TOTSIZE
           n=n+1
-          loc_frac_src_1d(ii,0) = rcv_buf_s(n)
+          loc_frac_src_1d(ii,lj0-1) = rcv_buf_s(n)
        enddo
      end if
 
