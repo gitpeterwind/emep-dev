@@ -1859,6 +1859,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                       ! Add up emissions in ktonne 
                    totemadd(itot) = totemadd(itot) &
                         + s * dtgrid * xmd(i,j)
+
+                   if(USES%uEMEP .and. me==0) write(*,*)'WARNING: single emitted species not implemented in uEMEP yet'
+                   
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID
                       gridrcemis(iqrc,k,i,j) = gridrcemis(iqrc,k,i,j)   &
@@ -1923,6 +1926,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                         SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
                    ! Add up emissions in ktonne 
                    totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
+
+                   if(USES%uEMEP) call add_lf_emis(s,i,j,iem,isec,iland)
 
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID

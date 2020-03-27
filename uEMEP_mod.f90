@@ -9,11 +9,11 @@ use ChemSpecs_mod,     only: species_adv,species
 use Country_mod,       only: MAXNLAND,NLAND,Country
 use EmisDef_mod,       only: lf, lf_emis, lf_emis_tot, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
-                            nlandcode,landcode,sec2tfac_map,sec2hfac_map, &
+                            nlandcode,landcode,sec2tfac_map,sec2hfac_map, sec2split_map,&
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
-                             make_iland_for_time,itot2iqrc,iqrc2iem
+                             make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom
 use MetFields_mod,     only: ps,roa,EtaKz
 use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, IOU_HOUR&
@@ -66,13 +66,14 @@ logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , private, save :: uEMEPNvertout = 1!number of vertical levels to save in output
 integer, public, save :: NTIMING_uEMEP=7
 real, private :: tim_after,tim_before
-integer, public, save :: Ndiv_coarse=0, Ndiv2_coarse=0
+integer, public, save :: Ndiv_coarse=0, Ndiv_rel=0, Ndiv2_coarse=0
 integer, public, save :: Nsources=0
 
 type, public :: lf_sources
   character(len=4) :: emis = 'NONE' !pollutants to include (NB: 4 char)
-  character(len=20) :: type = 'NOTSET' !Qualitatively different type of sources: "coarse", "relative", "country"
+  character(len=20) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
   integer :: dist = -1 ! window dimension, if defined 
+  integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
   integer :: sector=-1    ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model)
   integer :: start = 1 ! first position index in lf_src (set by model)
@@ -80,6 +81,8 @@ type, public :: lf_sources
   integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
   integer :: Npos = 0 ! number of position indices in lf_src (set by model)
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
+  integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox) 
+  integer :: iqrc = -1 !index for emissplits, if single pollutant (for example NO or NO2, instead of nox) 
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
   integer, dimension(15) :: mw=0.0  ! molecualr weight of the (splitted) species (set by model)
@@ -96,52 +99,46 @@ contains
 subroutine init_uEMEP
   integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
 
-  lf_src(:)%dist = uEMEP%dist !Temporary
-  lf_src(:)%DOMAIN(1) = uEMEP%DOMAIN(1) !Temporary
-  lf_src(:)%DOMAIN(2) = uEMEP%DOMAIN(2) !Temporary
-  lf_src(:)%DOMAIN(3) = uEMEP%DOMAIN(3) !Temporary
-  lf_src(:)%DOMAIN(4) = uEMEP%DOMAIN(4) !Temporary
 
   call Code_timer(tim_before)
-  Ndiv_coarse = 2*lf_src(1)%dist+1
-  Ndiv2_coarse = Ndiv_coarse*Ndiv_coarse
-  uEMEP%Nsec_poll = 0
-  uEMEP%Npoll = 0
-  do isrc=1,Npoll_uemep_max
-     if(uEMEP%poll(isrc)%emis=='none')then
-        call CheckStop(isrc==1,"init_uEMEP: no pollutant specified")
-        exit
-     else
-        uEMEP%Npoll = uEMEP%Npoll + 1
-        uEMEP%poll(isrc)%Nsectors = 0
-        uEMEP%poll(isrc)%sec_poll_ishift=uEMEP%Nsec_poll
-        do isec=1,Nsector_uemep_max
-           if(uEMEP%poll(isrc)%sector(isec)<0)then
-              call CheckStop(isec==0,"init_uEMEP: nosector specified for "//uEMEP%poll(isrc)%emis)
-              exit
-           else
-              uEMEP%Nsec_poll = uEMEP%Nsec_poll + 1
-              uEMEP%poll(isrc)%Nsectors = uEMEP%poll(isrc)%Nsectors +1
-           endif
-        enddo
-     endif
-  enddo
-
-!  Npoll = 1
-  lf_src(1)%emis = 'pm25'
-  lf_src(1)%sector = 0
-  lf_src(1)%type = 'relative'
-  lf_src(1)%Npos = Ndiv2_coarse
-
-  lf_src(2)%emis = 'pm25'
-  lf_src(2)%sector = 7
-  lf_src(2)%Npos = Ndiv2_coarse
-  lf_src(2)%type = 'relative'
-
-  lf_src(3)%emis = 'nox'
-  lf_src(3)%sector = 0
-  lf_src(3)%Npos = Ndiv2_coarse
-  lf_src(3)%type = 'relative'
+  ix=0
+  if(lf_src(1)%emis == 'NONE')then
+     !Temporary: we keep compatibilty with uEMEP input
+     lf_src(:)%dist = uEMEP%dist !Temporary
+     lf_src(:)%Nvert = uEMEP%Nvert !Temporary
+     lf_src(:)%DOMAIN(1) = uEMEP%DOMAIN(1) !Temporary
+     lf_src(:)%DOMAIN(2) = uEMEP%DOMAIN(2) !Temporary
+     lf_src(:)%DOMAIN(3) = uEMEP%DOMAIN(3) !Temporary
+     lf_src(:)%DOMAIN(4) = uEMEP%DOMAIN(4) !Temporary
+     Ndiv_rel = 2*lf_src(1)%dist+1
+     Ndiv_coarse = 2*lf_src(1)%dist+1
+     Ndiv2_coarse = Ndiv_coarse*Ndiv_coarse
+     uEMEP%Nsec_poll = 0
+     uEMEP%Npoll = 0
+     do isrc=1,Npoll_uemep_max
+        if(uEMEP%poll(isrc)%emis=='none')then
+           call CheckStop(isrc==1,"init_uEMEP: no pollutant specified")
+           exit
+        else
+           uEMEP%Npoll = uEMEP%Npoll + 1
+           uEMEP%poll(isrc)%Nsectors = 0
+           uEMEP%poll(isrc)%sec_poll_ishift=uEMEP%Nsec_poll
+           do isec=1,Nsector_uemep_max
+              if(uEMEP%poll(isrc)%sector(isec)<0)then
+                 call CheckStop(isec==0,"init_uEMEP: nosector specified for "//uEMEP%poll(isrc)%emis)
+                 exit
+              else
+                 uEMEP%Nsec_poll = uEMEP%Nsec_poll + 1
+                 uEMEP%poll(isrc)%Nsectors = uEMEP%poll(isrc)%Nsectors +1
+                 ix=ix+1
+                 lf_src(ix)%emis = uEMEP%poll(isrc)%emis
+                 lf_src(ix)%sector = uEMEP%poll(isrc)%sector(isec)
+                 lf_src(ix)%Npos = (2*lf_src(ix)%dist+1)* (2*lf_src(ix)%dist+1)     
+              endif
+           enddo
+        endif
+     enddo
+  endif
   
   Nsources = 0
   do i = 1, Npoll_uemep_max
@@ -155,7 +152,22 @@ subroutine init_uEMEP
         if(lf_src(i)%DOMAIN(i)<0)lf_src(i)%DOMAIN(i) = RUNDOMAIN(i)
      enddo
      iem=find_index(lf_src(isrc)%emis ,EMIS_FILE(1:NEMIS_FILE))
-     call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(lf_src(isrc)%emis) )
+     if(iem<1)then
+        !defined as single species
+        ix=find_index(lf_src(isrc)%emis ,species(:)%name)
+        if(ix<0)then
+           ix=find_index(lf_src(isrc)%emis ,species(:)%name, any_case=.true.)
+           if(me==0 .and. ix>0)then
+              write(*,*)'WARNING: '//trim(lf_src(isrc)%emis)//' not found, replacing with '//trim(species(ix)%name)
+              lf_src(isrc)%emis=trim(species(ix)%name)
+           endif
+        endif
+        call CheckStop( ix<1, "uEMEP did not find corresponding pollutant: "//trim(lf_src(isrc)%emis) )
+        iem=-1
+        lf_src(isrc)%species_ix = ix
+        lf_src(isrc)%iqrc = itot2iqrc(ix)        
+     endif
+
      lf_src(isrc)%iem = iem
 
      if(iem2ipoll(iem)<0)then
@@ -724,7 +736,7 @@ subroutine uemep_adv_y(fluxy,i,j,k)
            enddo
            do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
               do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-Ndiv_coarse,j+1)*x
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-Ndiv_rel,j+1)*x
                  n=n+1
               enddo
            enddo
@@ -732,7 +744,7 @@ subroutine uemep_adv_y(fluxy,i,j,k)
               n = lf_src(isrc)%start
               do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
                  do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+Ndiv_coarse,j-1)*xx
+                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+Ndiv_rel,j-1)*xx
                     n=n+1
                  enddo
               enddo
@@ -965,9 +977,15 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
   do isrc = 1, Nsources
      if(lf_src(isrc)%iem /= iem) cycle
      if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
-     do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
-        lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
-     enddo
+     if(lf_src(isrc)%iqrc>0)then
+        !single pollutant, part of emitted group of pollutant        
+        lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+             * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
+     else
+        do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+           lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
+        enddo
+     endif
   enddo
   
 end subroutine add_lf_emis
