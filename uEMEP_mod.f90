@@ -54,11 +54,6 @@ public  :: uemep_diff
 public  :: uemep_emis
 public  :: add_lf_emis
 
-integer, public, save :: uEMEP_Size1=0 !total size of the first 3 dimensions of loc_frac
-!uEMEP_Size1=uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2
-integer, public, save :: uEMEP_Sizedxdy=0 !total size of the first 3 dimensions of loc_frac
-!uEMEP_Sizedxdy=(2*uEMEP%dist+1)**2
-
 real, private, save ::av_fac_hour,av_fac_day,av_fac_month,av_fac_full
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
@@ -68,6 +63,7 @@ integer, public, save :: NTIMING_uEMEP=7
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=0, Ndiv_rel=0, Ndiv2_coarse=0
 integer, public, save :: Nsources=0
+integer, public, save :: lf_Nvert=0
 
 type, public :: lf_sources
   character(len=4) :: emis = 'NONE' !pollutants to include (NB: 4 char)
@@ -105,31 +101,25 @@ subroutine init_uEMEP
   if(lf_src(1)%emis == 'NONE')then
      !Temporary: we keep compatibilty with uEMEP input
      lf_src(:)%dist = uEMEP%dist !Temporary
-     lf_src(:)%Nvert = uEMEP%Nvert !Temporary
-     lf_src(:)%DOMAIN(1) = uEMEP%DOMAIN(1) !Temporary
-     lf_src(:)%DOMAIN(2) = uEMEP%DOMAIN(2) !Temporary
-     lf_src(:)%DOMAIN(3) = uEMEP%DOMAIN(3) !Temporary
-     lf_src(:)%DOMAIN(4) = uEMEP%DOMAIN(4) !Temporary
+     lf_Nvert = uEMEP%Nvert !Temporary
+     do i=1,4
+        lf_src(:)%DOMAIN(i) = uEMEP%DOMAIN(i) !Temporary
+        if(lf_src(1)%DOMAIN(i)<0)lf_src(:)%DOMAIN(i) = RUNDOMAIN(i)
+        if(me==0)write(*,*)i,' DOMAIN ',lf_src(1)%DOMAIN(i)
+     enddo
      Ndiv_rel = 2*lf_src(1)%dist+1
      Ndiv_coarse = 2*lf_src(1)%dist+1
      Ndiv2_coarse = Ndiv_coarse*Ndiv_coarse
-     uEMEP%Nsec_poll = 0
-     uEMEP%Npoll = 0
      do isrc=1,Npoll_uemep_max
         if(uEMEP%poll(isrc)%emis=='none')then
            call CheckStop(isrc==1,"init_uEMEP: no pollutant specified")
            exit
         else
-           uEMEP%Npoll = uEMEP%Npoll + 1
-           uEMEP%poll(isrc)%Nsectors = 0
-           uEMEP%poll(isrc)%sec_poll_ishift=uEMEP%Nsec_poll
            do isec=1,Nsector_uemep_max
               if(uEMEP%poll(isrc)%sector(isec)<0)then
                  call CheckStop(isec==0,"init_uEMEP: nosector specified for "//uEMEP%poll(isrc)%emis)
                  exit
               else
-                 uEMEP%Nsec_poll = uEMEP%Nsec_poll + 1
-                 uEMEP%poll(isrc)%Nsectors = uEMEP%poll(isrc)%Nsectors +1
                  ix=ix+1
                  lf_src(ix)%emis = uEMEP%poll(isrc)%emis
                  lf_src(ix)%sector = uEMEP%poll(isrc)%sector(isec)
@@ -149,7 +139,7 @@ subroutine init_uEMEP
   iem2ipoll = -1
   do isrc = 1, Nsources
      do i=1,4
-        if(lf_src(i)%DOMAIN(i)<0)lf_src(i)%DOMAIN(i) = RUNDOMAIN(i)
+        lf_src(isrc)%DOMAIN(i) = max(RUNDOMAIN(1),lf_src(isrc)%DOMAIN(i))
      enddo
      iem=find_index(lf_src(isrc)%emis ,EMIS_FILE(1:NEMIS_FILE))
      if(iem<1)then
@@ -213,29 +203,12 @@ subroutine init_uEMEP
      if(MasterProc)then
         write(*,*)'uEMEP pollutant : ',lf_src(isrc)%emis
         write(*,*)'uEMEP number of species in '//trim(lf_src(isrc)%emis)//' group: ',lf_src(isrc)%Nsplit
-!        write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
-!        write(*,"(A,30I4)")'sectors:',(uEMEP%poll(ipoll)%sector(i),i=1,uEMEP%poll(ipoll)%Nsectors)
-!        write(*,"(A,30I4)")'ix:',(uEMEP%poll(ipoll)%ix(i),i=1,uEMEP%poll(ipoll)%Nix)
+        write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
+        write(*,"(A,30I4)")'sector:',lf_src(isrc)%sector
+        write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
 
-!find indices in EMIS_File
-  do ipoll=1,uEMEP%Npoll        
-     do iem=1,NEMIS_FILE 
-        if(trim(EMIS_File(iem))==trim(uEMEP%poll(ipoll)%emis))then
-           uEMEP%poll(ipoll)%EMIS_File_ix = iem
-           exit
-        endif
-     enddo
-     call CheckStop(iem>NEMIS_FILE,"uemep pollutant not found: "//trim(uEMEP%poll(ipoll)%emis))
-  enddo
- 
-  do i=1,4
-     if(uEMEP%DOMAIN(i)<0)uEMEP%DOMAIN(i) = RUNDOMAIN(i)
-  enddo
-
-  uEMEP_Sizedxdy = (2*lf_src(1)%dist+1)**2
-  uEMEP_Size1 = uEMEP%Nsec_poll*uEMEP_Sizedxdy
 
   if(MasterProc)then
      write(*,*)'uEMEP pollutants : ',uEMEP%Npoll
@@ -302,7 +275,7 @@ subroutine init_uEMEP
         write(*,*)isrc,' ',trim(lf_src(isrc)%emis)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end,LF_SRC_TOTSIZE
      endif
   enddo
-  allocate(lf(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
+  allocate(lf(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
   lf=0.0
 
   if(uEMEP%HOUR)then
@@ -325,15 +298,15 @@ subroutine init_uEMEP
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_YEAR)=Niou_ix
   endif
-  allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Niou_ix))
+  allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Niou_ix))
   lf_src_acc = 0.0
-  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Npoll,Niou_ix))
+  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll,Niou_ix))
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
-  allocate(lf_emis(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Nsources))
+  allocate(lf_emis(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Nsources))
   lf_emis = 0.0
-  allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,Npoll))
+  allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
  
   call Add_2timing(NTIMING-9,tim_after,tim_before,"uEMEP: init")
@@ -407,16 +380,12 @@ subroutine out_uEMEP(iotyp)
   dimSizes(2)=2*lf_src(1)%dist+1
   dimNames(2)='y_dist'
 
-  uEMEP%DOMAIN(1) = max(RUNDOMAIN(1),uEMEP%DOMAIN(1))
-  uEMEP%DOMAIN(2) = min(RUNDOMAIN(2),uEMEP%DOMAIN(2))
-  uEMEP%DOMAIN(3) = max(RUNDOMAIN(3),uEMEP%DOMAIN(3))
-  uEMEP%DOMAIN(4) = min(RUNDOMAIN(4),uEMEP%DOMAIN(4))
+  isrc=1!temporary
+  dimSizes(3)=min(GIMAX,lf_src(isrc)%DOMAIN(2)-lf_src(isrc)%DOMAIN(1)+1)
+  dimSizes(4)=min(GJMAX,lf_src(isrc)%DOMAIN(4)-lf_src(isrc)%DOMAIN(3)+1)
 
-  dimSizes(3)=min(GIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
-  dimSizes(4)=min(GJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
-
-  dimSizes_tot(1)=min(GIMAX,uEMEP%DOMAIN(2)-uEMEP%DOMAIN(1)+1)
-  dimSizes_tot(2)=min(GJMAX,uEMEP%DOMAIN(4)-uEMEP%DOMAIN(3)+1)
+  dimSizes_tot(1)=min(GIMAX,lf_src(isrc)%DOMAIN(2)-lf_src(isrc)%DOMAIN(1)+1)
+  dimSizes_tot(2)=min(GJMAX,lf_src(isrc)%DOMAIN(4)-lf_src(isrc)%DOMAIN(3)+1)
 
   select case(projection)
   case('Stereographic')
@@ -477,8 +446,10 @@ subroutine out_uEMEP(iotyp)
   do iter=1,2
      if(iter==1 .and. .not. first_call(iotyp))cycle
 
-     overwrite=.false.
+     overwrite=.false. !only used once per file 
      if(iter==1)overwrite=.true.!only create all variables before writing into them
+     create_var_only=.false.
+     if(iter==1)create_var_only=.true.!only create all variables before writing into them
 
      pollwritten = .false.
      do isrc = 1, Nsources
@@ -487,9 +458,10 @@ subroutine out_uEMEP(iotyp)
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%emis)
            scale=1.0/av_fac_full
-           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-uEMEPNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
+           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-uEMEPNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)                
            pollwritten(ipoll) = .true.
+           overwrite=.false.
         endif
         if(iter==2)then
            if(isrc==1)fracsum=0.0
@@ -516,12 +488,13 @@ subroutine out_uEMEP(iotyp)
            if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fraction_'//trim(lf_src(isrc)%type)
         endif
         scale=1.0
-        call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
-          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=overwrite,chunksizes=chunksizes,ncFileID_given=ncFileID)
+        call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
+        overwrite=.false.
         if(isrc==1)then
            def1%name=trim(lf_src(isrc)%emis)//'_fracsum'
-           call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=overwrite,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+           call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
         endif
      enddo
   enddo
@@ -576,7 +549,7 @@ subroutine av_uEMEP(dt,End_of_Day)
   do iou_ix = 1, Niou_ix
      do isrc=1,Nsources
         ipoll = lf_src(isrc)%poll
-        do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+        do k = KMAX_MID-lf_Nvert+1,KMAX_MID
            do j=1,ljmax
               do i=1,limax
                  xtot=0.0
@@ -655,7 +628,7 @@ subroutine uemep_adv_x(fluxx,i,j,k)
         if(x>1.E-20)then
            n = lf_src(isrc)%start
            do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-uEMEP%dist there are no local fractions to transport
+              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist there are no local fractions to transport
               n=n+1
               do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
                  lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-1,i+1)*x
@@ -794,16 +767,16 @@ subroutine uemep_adv_k(fluxk,i,j)
     integer, intent(in)::i,j
     real ::x,xn,xx,f_in,inv_tot
     integer ::n,k,iix,ix,dx,dy,isrc
-    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-uEMEP%Nvert:KMAX_MID-1)
+    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert:KMAX_MID-1)
 
     call Code_timer(tim_before)
     !need to be careful to always use non-updated values on the RHS
-    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID-1
+    do k = KMAX_MID-lf_Nvert+1,KMAX_MID-1
        loc_frac_src_km1(:,k)=lf(:,i,j,k)
     enddo
-    loc_frac_src_km1(:,KMAX_MID-uEMEP%Nvert)=0.0!Assume zero local fractions coming from above
+    loc_frac_src_km1(:,KMAX_MID-lf_Nvert)=0.0!Assume zero local fractions coming from above
 
-    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
+    do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
           xn=0.0
           x=0.0
@@ -830,12 +803,12 @@ subroutine uemep_adv_k(fluxk,i,j)
                 do n = lf_src(isrc)%start, lf_src(isrc)%end
                    lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x! loc_frac(isec_poll,dx,dy,i,j,k+1)*x
                 enddo
-                if(xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+                if(xx>1.E-20 .and. k>KMAX_MID-lf_Nvert+1)then
                    do n = lf_src(isrc)%start, lf_src(isrc)%end
                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k-1)*xx
                    enddo
                 endif
-             else if (xx>1.E-20 .and. k>KMAX_MID-uEMEP%Nvert+1)then
+             else if (xx>1.E-20 .and. k>KMAX_MID-lf_Nvert+1)then
                 do n = lf_src(isrc)%start, lf_src(isrc)%end
                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k-1)*xx
                 enddo
@@ -870,7 +843,7 @@ subroutine uemep_adv_k(fluxk,i,j)
     real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x
     integer ::isec_poll1,isrc
     integer ::k,n,ix,iix,dx,dy
-    !how far diffusion should take place above uEMEP%Nvert. 
+    !how far diffusion should take place above lf_Nvert. 
     ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
     !ship emission are higher up and need to come down to diminish locfrac
     integer, parameter :: KUP = 2
@@ -885,7 +858,7 @@ subroutine uemep_adv_k(fluxk,i,j)
              !assumes mixing ratios units, but weight by mass
              x=x+xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix)
           end do
-          if(k>KMAX_MID-uEMEP%Nvert)then ! lf zero above
+          if(k>KMAX_MID-lf_Nvert)then ! lf zero above
              do n=lf_src(isrc)%start, lf_src(isrc)%end
                 xn_k(n,k)=x*lf(n,i,j,k)
              enddo
@@ -894,9 +867,9 @@ subroutine uemep_adv_k(fluxk,i,j)
       enddo
     enddo
 
-    call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-uEMEP%Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+    call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-lf_Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
  
-    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+    do k = KMAX_MID-lf_Nvert+1,KMAX_MID
      do isrc=1,Nsources
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -945,7 +918,7 @@ subroutine uEMEP_emis(indate)
       do isrc=1,Nsources   
          iem = lf_src(isrc)%iem
          isec = lf_src(isrc)%sector
-         do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
             if(lf_emis_tot(i,j,k,lf_src(isrc)%poll)<1.E-20)cycle
             xtot=0.0
             do iix=1,lf_src(isrc)%Nsplit
@@ -982,7 +955,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
 
   ipoll = iem2ipoll(iem)
   if(ipoll>0)then
-     do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+     do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
         lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total for each pollutant
      enddo
    endif
@@ -995,7 +968,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
         lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
              * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
      else
-        do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
+        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
            lf_emis(i,j,k,isrc) = lf_emis(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
         enddo
      endif

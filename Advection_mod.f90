@@ -73,7 +73,7 @@
   use Config_module, only : KMAX_BND,KMAX_MID,NMET, step_main, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, &
                   NPROCX,NPROCY,NPROC, &
-                  USES,uEMEP,ZERO_ORDER_ADVEC
+                  USES,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_Eta
   use EmisDef_mod,        only: NSECTORS, Nneighbors, lf, loc_frac_src, loc_frac_src_1d
@@ -97,7 +97,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only: uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, LF_SRC_TOTSIZE
+  use uEMEP_mod, only: uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, LF_SRC_TOTSIZE, lf_Nvert
 
   implicit none
   private
@@ -285,7 +285,7 @@
     integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xn_k(uEMEP%Nsec_poll*(1+(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),kmax_mid),x
+    real :: x
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -499,7 +499,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USES%uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)
+                         if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -534,7 +534,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USES%uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_y(fluxy,i,j,k)
+                      if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -612,7 +612,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USES%uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_y(fluxy,i,j,k)
+                      if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -647,7 +647,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USES%uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)
+                         if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -2940,14 +2940,11 @@ end if
     real,intent(inout),dimension(LF_SRC_TOTSIZE,0:limax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local_src
+    integer  n,i,dx,dy,isec_poll, ii
 
     real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
-    uEMEP_Size1_local_src = 0!default: do not treat this region 
-
-    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-uEMEP%Nvert)then
-       uEMEP_Size1_local_src = LF_SRC_TOTSIZE!treat this region 
+    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-lf_Nvert)then
        do i=li0,li1
           do n=1,LF_SRC_TOTSIZE
              loc_frac_src_1d(n,i) = lf(n,i,j,k)
@@ -2981,7 +2978,7 @@ end if
           send_buf_w(n) = loc_frac_src_1d(ii,1)
        enddo
 
-       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
+       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
             neighbor(WEST), msgnr+1000 , MPI_COMM_CALC, request_w, IERROR)
     end if
 
@@ -3010,7 +3007,7 @@ end if
           send_buf_e(n) = loc_frac_src_1d(ii,li1)
        enddo
 
-      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
           neighbor(EAST), msgnr+3000, MPI_COMM_CALC, request_e, IERROR)
     end if
 
@@ -3038,7 +3035,7 @@ end if
 
     else
 
-       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE, &
+       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE, &
             neighbor(WEST), msgnr+3000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
        n=0
@@ -3093,7 +3090,7 @@ end if
        enddo
     else
 
-      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE, &
+      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE, &
            neighbor(EAST), msgnr+1000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
       n=0
@@ -3431,13 +3428,10 @@ end if
     real,intent(inout),dimension(LF_SRC_TOTSIZE,0:ljmax+1)  :: loc_frac_src_1d
 
 !    local
-    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local_src
+    integer  ii,j,dx,dy,isec_poll,n
     real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
-    uEMEP_Size1_local_src = 0!default: do not treat this region
-
-    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-uEMEP%Nvert)then
-       uEMEP_Size1_local_src = LF_SRC_TOTSIZE!treat this region
+    if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-lf_Nvert)then
        do j=lj0,lj1
            do n=1,LF_SRC_TOTSIZE
              loc_frac_src_1d(n,j) = lf(n,i_send,j,k)
@@ -3474,7 +3468,7 @@ end if
           send_buf_s(n) = loc_frac_src_1d(ii,1)
        enddo
 
-      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
     end if
 
@@ -3505,7 +3499,7 @@ end if
           send_buf_n(n) = loc_frac_src_1d(ii,lj1)
        enddo
 
-      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
     end if
 
@@ -3538,7 +3532,7 @@ end if
 
     else
 
-      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src) , MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) , MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
        n=0
        do ii=1,NSPEC_ADV
@@ -3595,7 +3589,7 @@ end if
         enddo
     else
 
-      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local_src), MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
       n=0
       do ii=1,NSPEC_ADV
