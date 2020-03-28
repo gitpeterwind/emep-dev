@@ -25,7 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-21st Mar 2020, Peter)
+28th Mar 2020, Peter
+
+Heavy refactoring of all uEMEP parts. Backward compatibility for now.
+Will allow generalization to remote fractions, land fractions, chemistry etc.
+Will go over to "lf" names instead of uEMEP.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Mar 2020, Peter
 
 Moved EmisSet call (in PhyChem) just before runchem.
 Gives identical results.
