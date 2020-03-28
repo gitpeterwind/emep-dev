@@ -22,7 +22,7 @@ use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, IOU_HOUR&
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending
 use MPI_Groups_mod
-use NetCDF_mod,        only: Real4,Out_netCDF
+use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
 use OwnDataTypes_mod,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max, TXTLEN_FILE
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
@@ -359,6 +359,8 @@ subroutine out_uEMEP(iotyp)
   character(len=TXTLEN_FILE),save :: oldmonthlyname
   real :: fracsum(LIMAX,LJMAX)
   logical :: pollwritten(Npoll_uemep_max)
+  integer :: ncFileID
+  logical :: old_format=.true. !temporary
   
   call Code_timer(tim_before)
 
@@ -391,6 +393,8 @@ subroutine out_uEMEP(iotyp)
   else
      return
   endif
+  ncFileID=LF_ncFileID_iou(iotyp)
+  
   ndim=5
   ndim_tot=3
   kmax=uEMEPNvertout
@@ -472,14 +476,10 @@ subroutine out_uEMEP(iotyp)
   !first loop only create all variables before writing into them (faster for NetCDF)
   do iter=1,2
      if(iter==1 .and. .not. first_call(iotyp))cycle
-     if(iter==1)then
-        !only create all variables before writing into them
-        overwrite=.true.
-        create_var_only=.true.
-     else
-        overwrite=.false.
-        create_var_only=.false.
-     endif
+
+     overwrite=.false.
+     if(iter==1)overwrite=.true.!only create all variables before writing into them
+
      pollwritten = .false.
      do isrc = 1, Nsources
         isec=lf_src(isrc)%sector
@@ -488,10 +488,11 @@ subroutine out_uEMEP(iotyp)
            def2%name=trim(lf_src(isrc)%emis)
            scale=1.0/av_fac_full
            call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-uEMEPNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot)                
+                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)                
            pollwritten(ipoll) = .true.
         endif
         if(iter==2)then
+           if(isrc==1)fracsum=0.0
            do k = KMAX_MID-uEMEPNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -500,16 +501,28 @@ subroutine out_uEMEP(iotyp)
                     do n=lf_src(isrc)%start, lf_src(isrc)%end
                        n1=n1+1
                        tmp_out(n1,i,j) = lf_src_acc(n,i,j,k,iou_ix)*invtot
+                       if(isrc==1)fracsum(i,j)=fracsum(i,j)+tmp_out(n1,i,j)
                     enddo
                  enddo
               enddo
            enddo
         endif
-        write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
-        if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fraction_'//trim(lf_src(isrc)%type)
+        if(old_format)then
+           !for backward compatibility
+           write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_local_fraction'
+           if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_local_fraction'
+        else
+           write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
+           if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%emis)//'_fraction_'//trim(lf_src(isrc)%type)
+        endif
         scale=1.0
         call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
-          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes)
+          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=overwrite,chunksizes=chunksizes,ncFileID_given=ncFileID)
+        if(isrc==1)then
+           def1%name=trim(lf_src(isrc)%emis)//'_fracsum'
+           call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
+                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=overwrite,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+        endif
      enddo
   enddo
   deallocate(tmp_out)
