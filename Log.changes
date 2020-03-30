@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Mar 2020, Peter
+
+Renamed uEMEP_mod to LocalFractions_mod and in config use lf_src% instead of
+uEMEP% to set settings.
+Compatibility with old (uEMP) format is kept for input and output, if input
+is in old format.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Mar 2020, Peter
 
 Heavy refactoring of all uEMEP parts. Backward compatibility for now.

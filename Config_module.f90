@@ -12,7 +12,7 @@ use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_mod,      only: typ_ss, uEMEP_type, Emis_id_type, emis_in,&
+use OwnDataTypes_mod,      only: typ_ss, lf_sources, uEMEP_type, Emis_id_type, emis_in,&
                                  EmisFile_id_type, Emis_sourceFile_id_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                   TXTLEN_DERIV, Emis_mask_type, &
@@ -142,6 +142,7 @@ type, public :: emep_useconfig
 !    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! 
     ,uEMEP            = .false. &! make local fraction of pollutants
+    ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
     ,SOILWATER        = .false. &!
     ,EtaCOORDINATES   = .true.  &! default since October 2014
@@ -219,7 +220,9 @@ logical, public, save ::             &
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
 type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
-integer, public, save :: NTIMING_uEMEP = 5 !reset to zero if USES%uEMEP = F 
+
+integer, public, parameter :: MAXSRC=100
+type(lf_sources), public, save :: lf_src(MAXSRC)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -754,7 +757,8 @@ subroutine Config_Constants(iolog)
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
-   ,uEMEP &
+   ,uEMEP & !old format . Avoid, will be removed in future versions
+   ,lf_src & !new format "uEMEP" Local Fractions
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
@@ -854,6 +858,8 @@ subroutine Config_Constants(iolog)
     write(*,*) trim(logtxt), IOLOG
     write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
   end if
+ 
+  USES%LocalFractions = USES%LocalFractions .or. USES%uEMEP !for backward compatibility
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
@@ -1025,8 +1031,6 @@ subroutine Config_Constants(iolog)
   if(trim(fileName_CH4_ibcs)/="NOTSET" .and. MasterProc)then
      write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
   endif
-
-  if(.not. USES%uEMEP)NTIMING_uEMEP = 0
 
 end subroutine Config_Constants
 

@@ -97,7 +97,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use uEMEP_mod, only: uemep_adv_x, uemep_adv_y, uemep_adv_k, uemep_diff, LF_SRC_TOTSIZE, lf_Nvert
+  use LocalFractions_mod, only: lf_adv_x, lf_adv_y, lf_adv_k, lf_diff, LF_SRC_TOTSIZE, lf_Nvert
 
   implicit none
   private
@@ -120,8 +120,6 @@
   public :: alloc_adv_arrays
   public :: vgrid
   public :: vgrid_Eta
-  public :: advecdiff
-  public :: advecdiff_poles
   public :: advecdiff_Eta
   public :: vertdiff_1d
 !  public :: adv_var
@@ -134,7 +132,7 @@
   private :: preadvx3
   private :: preadvy3
 
-!NB: vertdiffn is outside the module, because of circular dependencies with uEMEP_mod
+!NB: vertdiffn is outside the module, because of circular dependencies with LocalFractions_mod
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
@@ -217,20 +215,6 @@
   end subroutine assign_nmax
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  subroutine advecdiff
-
-       call StopAll('advecdiff and sigma coordinates no more available')
-
-  end subroutine advecdiff
-
-  subroutine advecdiff_poles
-
-       call StopAll('advecdiff_poles and sigma coordinates no more available')
-
-  end subroutine advecdiff_poles
-
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
   subroutine advecdiff_Eta
     !___________________________________________________________________________________
     !Uses more robust options:
@@ -298,7 +282,7 @@
     !This case can arises where there is a singularity close to the
     !poles in long-lat coordinates.
     integer,parameter :: NITERXMAX=40
-    real :: tim_uemep_before,tim_uemep_after
+    real :: tim_lf_before,tim_lf_after
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 
@@ -485,7 +469,7 @@
                    do iterx=1,niterx(j,k)
 
                       ! send/receive in x-direction
-                      call preadvx3(110+k+KMAX_MID*j               &
+                     call preadvx3(110+k+KMAX_MID*j               &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
                            ,psw,pse,j,k,loc_frac_src_1d)
@@ -499,7 +483,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_x(fluxx,i,j,k)
+                         if(USES%LocalFractions .and. k>KMAX_MID-lf_Nvert)call lf_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -534,7 +518,8 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_y(fluxy,i,j,k)
+
+                      if(USES%LocalFractions .and. k>KMAX_MID-lf_Nvert)call lf_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -560,10 +545,11 @@
                       !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
                       call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
                    endif
-                   if(USES%uEMEP)then
-                      call uemep_adv_k(fluxk,i,j)
-                   end if
 
+                   if(USES%LocalFractions)then
+                      call lf_adv_k(fluxk,i,j)
+                   end if
+ 
                    if(iters<niters .or. iterxys < niterxys)then
                       do k=1,KMAX_MID
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -612,7 +598,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_y(fluxy,i,j,k)
+                      if(USES%LocalFractions .and. k>KMAX_MID-lf_Nvert)call lf_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -647,7 +633,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USES%uEMEP .and. k>KMAX_MID-lf_Nvert)call uemep_adv_x(fluxx,i,j,k)
+                         if(USES%LocalFractions .and. k>KMAX_MID-lf_Nvert)call lf_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -675,8 +661,8 @@
                       call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
                    endif
 
-                   if(USES%uEMEP)then
-                      call uemep_adv_k(fluxk,i,j)
+                   if(USES%LocalFractions)then
+                      call lf_adv_k(fluxk,i,j)
                    end if
 
                    if(iters<niters .or. iterxys < niterxys)then
@@ -779,7 +765,7 @@
 
     do j = lj0,lj1
        do i = li0,li1
-          if(USES%uEMEP)call uemep_diff(i,j,ds3,ds4,ndiff)
+          if(USES%LocalFractions)call lf_diff(i,j,ds3,ds4,ndiff)
           
           call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,1,EtaKz(i,j,1,1),ds3,ds4,ndiff)
 
@@ -3584,7 +3570,6 @@ end if
         end if
 
         do ii=1,LF_SRC_TOTSIZE
-           n=n+1
            loc_frac_src_1d(ii,lj1+1) = 0.0
         enddo
     else
@@ -3700,7 +3685,6 @@ end if
     k=KMAX_MID-1
     xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k+1))*dhs1i(k+2))
     ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1))*dhs1i(k+2))
-
 
   end subroutine adv_vert_zero
 

@@ -21,7 +21,7 @@ use SmallUtils_mod,     only: find_duplicates
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
                              ,daynumber,add2current_date,date
 use TimeDate_ExtraUtil_mod,only: date2string, date_is_reached
-use uEMEP_mod,          only: out_uEMEP
+use LocalFractions_mod,          only: out_lf
 use Units_mod,          only: Init_Units
 
 implicit none
@@ -203,8 +203,8 @@ subroutine Output_fields(iotyp)
   call CloseNetCDF
 
   !uemep use own outputting for now, since it has several extra dimensions
-  if(USES%uEMEP)then
-    call out_uEMEP(iotyp)
+  if(USES%LocalFractions)then
+    call out_lf(iotyp)
   endif
 
   ! Write text file to mark output is finished

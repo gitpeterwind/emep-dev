@@ -161,28 +161,26 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 
 
-!-------uEMEP setup example
-  USES%uEMEP             = F, ! T for computing uEMEP 
-  !uEMEP pollutants and sectors to include:
-  uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors
-  uEMEP%poll(1)%sector(2)=1 !1 means sector 1
-  uEMEP%poll(1)%sector(3)=7
-  uEMEP%poll(1)%sector(4)=8
+!-------Local Fractions setup example
+  USES%LocalFractions = T, ! T for computing Local Fractions
+  !Local Fractions pollutants and sectors to include:
+  lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  lf_src(1)%sector=0 !0 means sum of all sectors
+  lf_src(2)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  lf_src(2)%sector=8 !0 means sum of all sectors
 
-  uEMEP%poll(2)%emis="nox "
-  uEMEP%poll(2)%sector(1)=0
-  uEMEP%poll(2)%sector(2)=7
-  uEMEP%poll(2)%sector(3)=8
+  lf_src(3)%species="nox "
+  lf_src(3)%sector=0
+  lf_src(4)%species="nox "
+  lf_src(4)%sector=8
 
-  !uEMEP frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
-  uEMEP%YEAR = T !set T as default
-  uEMEP%HOUR_INST = F !set F as default
+  !Local Fractions frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  !Values from lf_src(1) are used for all sources
+  lf_src(1)%YEAR = T !average value for full run in output
+  lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
+  lf_src(1)%Nvert = 7, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
 
-  uEMEP%dist = 3,  !how far the neighbors can be in each direction (NB: high cost for large dist)
-  uEMEP%Nvert = 7, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
-
-!  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
+!  lf_src(1)%DOMAIN = 370, 420, 270, 320, !which domain to include in lf output. Will save disk, but not CPU to reduce.
 
 
 !-------- Sub domain (x0,x1,y0,y1)

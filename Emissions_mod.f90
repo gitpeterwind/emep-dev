@@ -70,7 +70,7 @@ use EmisDef_mod,       only: &
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
      , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources&
-     , lf_emis, lf_emis_tot
+     , emis_lf, lf_emis_tot
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -122,7 +122,7 @@ use Timefactors_mod,   only: &
     ,Read_monthly_emis_grid_fac &
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
-use uEMEP_mod, only : add_lf_emis
+use LocalFractions_mod, only : add_lf_emis
 implicit none
 private
 
@@ -366,7 +366,7 @@ contains
              Emis_source(ii)%species_ix = ix
              if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
                   trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
-             if(Emis_source(ii)%include_in_local_fractions .and. USES%uEMEP )then
+             if(Emis_source(ii)%include_in_local_fractions .and. USES%LocalFractions )then
                 if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
              endif
           else ! ix<=0
@@ -1645,8 +1645,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     totemadd(:)  = 0.
     gridrcemis(:,:,:,:) = 0.0 
     SecEmisOut(:,:,:,:) = 0.0
-    if(USES%uEMEP) lf_emis(:,:,:,:) = 0.0
-    if(USES%uEMEP) lf_emis_tot(:,:,:,:) = 0.0
+    if(USES%LocalFractions) emis_lf(:,:,:,:) = 0.0
+    if(USES%LocalFractions) lf_emis_tot(:,:,:,:) = 0.0
     if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
@@ -1719,7 +1719,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
               end do ! f
              
-              if(USES%uEMEP) call add_lf_emis(s,i,j,iem,isec,iland)
+              if(USES%LocalFractions) call add_lf_emis(s,i,j,iem,isec,iland)
               
             end do ! iem
 
@@ -1860,7 +1860,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    totemadd(itot) = totemadd(itot) &
                         + s * dtgrid * xmd(i,j)
 
-                   if(USES%uEMEP .and. me==0) write(*,*)'WARNING: single emitted species not implemented in uEMEP yet'
+                   if(USES%LocalFractions .and. me==0) write(*,*)'WARNING: single emitted species not implemented in uEMEP yet'
                    
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID
@@ -1927,7 +1927,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    ! Add up emissions in ktonne 
                    totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
 
-                   if(USES%uEMEP) call add_lf_emis(s,i,j,iem,isec,iland)
+                   if(USES%LocalFractions) call add_lf_emis(s,i,j,iem,isec,iland)
 
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID

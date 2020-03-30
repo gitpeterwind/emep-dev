@@ -6,7 +6,7 @@ module PhyChem_mod
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
-use Advection_mod,     only: advecdiff_poles,advecdiff_Eta!,adv_int
+use Advection_mod,     only: advecdiff_Eta
 use Biogenics_mod,     only: Set_SoilNOx
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv,cfac,xn_shl
@@ -62,7 +62,7 @@ use TimeDate_mod,      only: date,daynumber,day_of_year, add_secs, &
 use TimeDate_ExtraUtil_mod,only : date2string
 use Timefactors_mod,   only: NewDayFactors
 use Trajectory_mod,    only: trajectory_out     ! 'Aircraft'-type  outputs
-use uEMEP_mod,         only: uEMEP_emis
+use LocalFractions_mod,         only: lf_emis
 
 !-----------------------------------------------------------------------------
 implicit none
@@ -169,12 +169,8 @@ subroutine phyche()
 
   call Code_timer(tim_before0)
 
-  if(USES%EtaCOORDINATES)then
-    call advecdiff_Eta
-  else
-    call advecdiff_poles
-  end if
- 
+  call advecdiff_Eta
+
   call Add_2timing(13,tim_after,tim_before0,"phyche: total advecdiff")
 
   if(USES%ASH) call gravset
@@ -204,7 +200,7 @@ subroutine phyche()
 
   call Code_timer(tim_before0)
   !must be placed just before emissions are used
-  if(USES%uEMEP)call uemep_emis(current_date)
+  if(USES%LocalFractions)call lf_emis(current_date)
 
   !=========================================================!
   call debug_concs("PhyChe pre-chem ")

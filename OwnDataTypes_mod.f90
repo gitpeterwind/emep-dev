@@ -180,11 +180,11 @@ end type O3cl_t
 
 !==================
 ! uEMEP parameters
-integer, public, parameter :: Npoll_uemep_max=7 !max number of uEMEP pollutant
-integer, public, parameter :: Nsector_uemep_max=10 !max number of sectors for each uEMEP pollutant
+integer, public, parameter :: Npoll_lf_max=7 !max number of lf pollutant
+integer, public, parameter :: Nsector_lf_max=10 !max number of sectors for each lf pollutant
 type, public :: poll_type
   character(len=4):: emis='none'    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  integer, dimension(Nsector_uemep_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
+  integer, dimension(Nsector_lf_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
   integer :: EMIS_File_ix = 0 !index in EMIS_File (set by model)
   integer :: Nsectors = 0 !set by model
   integer :: sec_poll_ishift = 0 !The start of index for isec_poll loops
@@ -296,7 +296,7 @@ type, public :: uEMEP_type
   integer     :: dist=0    ! max distance of neighbor to include. (will include a square with edge size=2*dist+1)
   integer     :: Nvert=20   ! number of k levels to include
   integer     :: DOMAIN(4) = -999
-  type(poll_type) :: poll(Npoll_uemep_max) !pollutants to include
+  type(poll_type) :: poll(Npoll_lf_max) !pollutants to include
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
   character(len=40)::  MONTH_ENDING = "NOTSET"
@@ -305,6 +305,31 @@ type, public :: uEMEP_type
   logical     :: HOUR_INST =.false.
   logical     :: COMPUTE_LOCAL_TRANSPORT=.false.
 end type uEMEP_type
+
+type, public :: lf_sources
+  character(len=4) :: species = 'NONE' !pollutants to include (NB: 4 char)
+  character(len=20) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
+  integer :: dist = -1 ! window dimension, if defined 
+  integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
+  integer :: sector= -1 ! sector for this source. Zero is sum of all sectors
+  integer :: poll = 1 !index of pollutant in loc_tot (set by model)
+  integer :: start = 1 ! first position index in lf_src (set by model)
+  integer :: end = 1 ! last position index in lf_src (set by model)
+  integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
+  integer :: Npos = 0 ! number of position indices in lf_src (set by model)
+  integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
+  integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox) 
+  integer :: iqrc = -1 !index for emissplits, if single pollutant (for example NO or NO2, instead of nox) 
+  integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
+  integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
+  real, dimension(15) :: mw=0.0  ! molecular weight of the (splitted) species (set by model)
+  logical     :: YEAR =.true.! Output frequency
+  logical     :: MONTH =.false.
+  character(len=40)::  MONTH_ENDING = "NOTSET"
+  logical     :: DAY =.false.
+  logical     :: HOUR =.false.
+  logical     :: HOUR_INST =.false.
+end type lf_sources
 
 contains
 !=========================================================================

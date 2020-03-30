@@ -84,7 +84,7 @@ use SmallUtils_mod,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_mod,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
 use TimeDate_ExtraUtil_mod,only: to_stamp, date_is_reached
-use uEMEP_mod,             only: av_uEMEP
+use LocalFractions_mod,    only: av_lf
 use Units_mod,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
@@ -183,7 +183,7 @@ subroutine Init_Derived()
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
-  if(USES%uEMEP .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
+  if(USES%LocalFractions .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
 
   if(dbg0) write(*,*) dtxt//"INIT STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
@@ -2284,8 +2284,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   end do
 
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
-  if(USES%uEMEP .and. .not. present(ONLY_IOU))then
-    call av_uEMEP(dt,End_of_Day)
+  if(USES%LocalFractions .and. .not. present(ONLY_IOU))then
+    call av_lf(dt,End_of_Day)
   endif
 
   first_call = .false.
