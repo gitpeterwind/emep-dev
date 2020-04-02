@@ -68,7 +68,7 @@ program emep_Main
   use TimeDate_ExtraUtil_mod,only : date2string, assign_startandenddate,&
                                     date_is_reached
   use Trajectory_mod,    only: trajectory_init,trajectory_in
-  use LocalFractions_mod,         only: init_lf, NTIMING_lf
+  use LocalFractions_mod,         only: lf_init, NTIMING_lf
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
@@ -195,7 +195,7 @@ program emep_Main
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
   
-  if(USES%LocalFractions) call init_lf
+  if(USES%LocalFractions) call lf_init
 
   call MetModel_LandUse(1)   !
 

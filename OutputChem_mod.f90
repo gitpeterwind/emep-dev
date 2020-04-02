@@ -21,7 +21,7 @@ use SmallUtils_mod,     only: find_duplicates
 use TimeDate_mod,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
                              ,daynumber,add2current_date,date
 use TimeDate_ExtraUtil_mod,only: date2string, date_is_reached
-use LocalFractions_mod,          only: out_lf
+use LocalFractions_mod,          only: lf_out
 use Units_mod,          only: Init_Units
 
 implicit none
@@ -204,7 +204,7 @@ subroutine Output_fields(iotyp)
 
   !uemep use own outputting for now, since it has several extra dimensions
   if(USES%LocalFractions)then
-    call out_lf(iotyp)
+    call lf_out(iotyp)
   endif
 
   ! Write text file to mark output is finished

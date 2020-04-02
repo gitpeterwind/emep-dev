@@ -84,7 +84,7 @@ use SmallUtils_mod,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_mod,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
 use TimeDate_ExtraUtil_mod,only: to_stamp, date_is_reached
-use LocalFractions_mod,    only: av_lf
+use LocalFractions_mod,    only: lf_av
 use Units_mod,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
@@ -2285,7 +2285,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
   if(USES%LocalFractions .and. .not. present(ONLY_IOU))then
-    call av_lf(dt,End_of_Day)
+    call lf_av(dt,End_of_Day)
   endif
 
   first_call = .false.

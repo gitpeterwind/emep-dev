@@ -307,8 +307,8 @@ type, public :: uEMEP_type
 end type uEMEP_type
 
 type, public :: lf_sources
-  character(len=4) :: species = 'NONE' !pollutants to include (NB: 4 char)
-  character(len=20) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
+  character(len=TXTLEN_NAME) :: species = 'NONE' !pollutants to include 
+  character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
   integer :: dist = -1 ! window dimension, if defined 
   integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
   integer :: sector= -1 ! sector for this source. Zero is sum of all sectors
@@ -323,6 +323,8 @@ type, public :: lf_sources
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
   real, dimension(15) :: mw=0.0  ! molecular weight of the (splitted) species (set by model)
+  character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
+  integer :: country_ix = -1 !Internal country index. Does not have any meaning outside of code
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
   character(len=40)::  MONTH_ENDING = "NOTSET"
