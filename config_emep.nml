@@ -162,7 +162,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 
 
 !-------Local Fractions setup example
-  USES%LocalFractions = T, ! T for computing Local Fractions
+  USES%LocalFractions = F, ! T for computing Local Fractions
   !Local Fractions pollutants and sectors to include:
   lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(1)%sector=0 !0 means sum of all sectors
