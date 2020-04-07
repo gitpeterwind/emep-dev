@@ -57,7 +57,6 @@ public  :: lf_chem
 public  :: lf_emis
 public  :: add_lf_emis
 
-real, private, save ::av_fac_hour,av_fac_day,av_fac_month,av_fac_full
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
@@ -71,6 +70,7 @@ integer, public, save :: lf_Nvert=0
 
 integer, public, save :: LF_SRC_TOTSIZE
 integer,  public, save :: iotyp2ix(IOU_MAX_MAX)
+integer,  public, save :: av_fac(IOU_MAX_MAX)
 integer,  public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
 integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
 integer,  public, save :: iem2ipoll(NEMIS_File)
@@ -266,15 +266,13 @@ contains
         write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
-  if(isrc_O3 .and. (isrc_NO2<0 .or. isrc_NO<0))then
+
+  if(isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0))then
      if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
      stop!may be relaxed in future
   endif
-  
-  av_fac_hour=0.0
-  av_fac_day=0.0
-  av_fac_month=0.0
-  av_fac_full=0.0
+
+  av_fac=0.0
   
   LF_SRC_TOTSIZE = 0
   do isrc = 1, Nsources
@@ -470,7 +468,7 @@ subroutine lf_out(iotyp)
         if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%species)
-           scale=1.0/av_fac_full
+           scale=1.0/av_fac(iotyp)
            call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lfNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)                
            pollwritten(ipoll) = .true.
@@ -522,18 +520,26 @@ subroutine lf_out(iotyp)
         enddo
      enddo
   enddo
+
+  
+! reset the cumulative arrays
+  do isrc = 1, Nsources
+     do k = KMAX_MID-lfNvertout+1,KMAX_MID
+        do j=1,ljmax
+           do i=1,limax
+              do n=lf_src(isrc)%start, lf_src(isrc)%end
+                 lf_src_acc(n,i,j,k,iou_ix)=0
+              enddo
+           enddo
+        enddo
+     enddo
+  enddo
   
   !reset the cumulative counters
-  if(iotyp==IOU_HOUR)then
-     av_fac_hour=0
-  else  if(iotyp==IOU_DAY)then
-     av_fac_day=0.0
-  else  if(iotyp==IOU_MON)then
-     av_fac_month=0.0
-  else  if(iotyp==IOU_YEAR)then
-     av_fac_full=0.0
-  endif
+  av_fac(iotyp)=0
 
+  LF_ncFileID_iou(iotyp) = ncFileID !to use next time
+  
   first_call(iotyp)=.false.
 
   call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
@@ -558,8 +564,8 @@ subroutine lf_av(dt,End_of_Day)
      .not. lf_src(1)%YEAR       )return
 
   !do the averaging
-  pollwritten = .false.
   do iou_ix = 1, Niou_ix
+     pollwritten = .false.
      do isrc=1,Nsources
         ipoll = lf_src(isrc)%poll
         do k = KMAX_MID-lf_Nvert+1,KMAX_MID
@@ -585,11 +591,8 @@ subroutine lf_av(dt,End_of_Day)
       enddo
   enddo
   
-  av_fac_hour=av_fac_hour+1.0
-  av_fac_day=av_fac_day+1.0
-  av_fac_month=av_fac_month+1.0
-  av_fac_full=av_fac_full+1.0
-
+  av_fac=av_fac+1
+  
   call Add_2timing(NTIMING-8,tim_after,tim_before,"lf: averaging")
 
 end subroutine lf_av
@@ -920,14 +923,14 @@ subroutine lf_chem(i,j)
         d_NO = - k1*O3*lf(n_O3,i,j,k) + J_phot*NO2*lf(n_NO2,i,j,k)              
         d_O3 = - k1*NO*lf(n_NO,i,j,k) + J_phot*NO2*lf(n_NO2,i,j,k)
 
-        lf(n_NO2,i,j,k) = lf(n_NO2,i,j,k) + d_NO2/NO2 !or more exact(?): ((NO2-d_NO2)*lf(n_NO2,i,j,k) + d_NO2)/NO2
+        lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO2)/(NO2+ d_NO2) !or more exact(?): ((NO2-d_NO2)*lf(n_NO2,i,j,k) + d_NO2)/NO2
                                                       !or use xn_adv to compute old concentrations?
-        lf(n_NO,i,j,k) = lf(n_NO,i,j,k) + d_NO/NO
-        lf(n_O3,i,j,k) = lf(n_O3,i,j,k) + d_O3/O3
+        lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO)/(NO + d_NO)
+        lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_O3)/(O3 + d_O3)
 
         n_O3 = n_O3+1
         n_NO = n_NO+1
-        
+
      enddo
   enddo
 end subroutine lf_chem
