@@ -291,11 +291,11 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       read(unit=txtinput,fmt=*) s,  ix,  iy, lev
     end if
 
-    if(lev<=0) lev = KMAX_MID
+    if (lev<0) lev = KMAX_MID
     if(lev>KMAX_MID)then
        write(*,*)'WARNING: sites.dat found vertical level out of range. Setting to ',KMAX_MID
     endif
-    lev=min(lev,KMAX_MID)
+    lev = min(lev,KMAX_MID)
     
     if (ioerr < 0) then
       write(6,*) dtxt//" end of file after ", nin-1, trim(fname)
