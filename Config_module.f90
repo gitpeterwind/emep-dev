@@ -1038,8 +1038,10 @@ end subroutine Config_Constants
 subroutine WriteConfig_to_RunLog(iolog)
   integer, intent(in) :: iolog ! for Log file
   NAMELIST /OutUSES/ USES
-  write(iolog,*) ' USES after 1st time-step'
-  write(iolog,nml=OutUSES)
+  if(MasterProc)then
+     write(iolog,*) ' USES after 1st time-step'
+     write(iolog,nml=OutUSES)
+  endif
 end subroutine WriteConfig_to_RunLog
 
 subroutine associate_File(FileName)

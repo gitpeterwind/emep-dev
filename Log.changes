@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Apr 2020, Peter, Massimo
+
+More robust sites.dat: allows to use -999 as vertical level for surface (not tested).
+
+Small bug corrected: WriteConfig_to_RunLog was writing into "fort.7" if not MasterProc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Mar 2020, Peter
 
 Renamed uEMEP_mod to LocalFractions_mod and in config use lf_src% instead of
