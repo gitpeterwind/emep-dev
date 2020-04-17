@@ -6,6 +6,11 @@ use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemSpecs_mod,     only: species_adv,species
+use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
+                             , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
+                             ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX, KMAX_MID &
+                             ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
+                             ,HOURLYFILE_ending, MAXSRC
 use Country_mod,       only: MAXNLAND,NLAND,Country
 use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, loc_frac_src_1d,&
@@ -17,11 +22,6 @@ use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emi
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom
 use MetFields_mod,     only: ps,roa,EtaKz
-use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
-                             , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
-                             ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX, KMAX_MID &
-                             ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
 use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_FILE
@@ -61,7 +61,7 @@ real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , private, save :: lfNvertout = 1!number of vertical levels to save in output
-integer, public, save :: NTIMING_lf=7
+integer, public, save :: NTIMING_lf=9
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
 integer, public, save :: Nsources=0
@@ -75,8 +75,8 @@ integer,  public, save :: Niou_ix = 0 ! number of time periods to consider (hour
 integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
 integer,  public, save :: iem2ipoll(NEMIS_File)
 logical :: old_format=.false. !temporary, use old format for input and output
-integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1
-integer, private, save :: ix_O3=-1,ix_NO2=-1,ix_NO=-1
+integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
+integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3, ix_HO2
 
 contains
 
@@ -134,7 +134,7 @@ contains
 
   lf_Nvert = lf_src(1)%Nvert !Temporary
   Nsources = 0
-  do i = 1, Npoll_lf_max
+  do i = 1, MAXSRC
      if(lf_src(i)%species /= 'NONE') Nsources = Nsources + 1
   enddo
 
@@ -143,19 +143,17 @@ contains
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
      if(lf_src(isrc)%type == 'relative')then
-        Ndiv_rel = 2*lf_src(isrc)%dist+1
-        lf_src(isrc)%Npos = Ndiv_rel*Ndiv_rel
+        lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
+        Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
      endif
      if(lf_src(isrc)%type == 'coarse')then
-        Ndiv_coarse = 2*lf_src(isrc)%dist+1
-        lf_src(isrc)%Npos = Ndiv_coarse*Ndiv_coarse
-        Ndiv2_coarse = Ndiv_coarse*Ndiv_coarse
+        Ndiv_coarse = max(Ndiv_coarse,2*lf_src(isrc)%dist+1)
+        lf_src(isrc)%Npos = (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
+        Ndiv2_coarse = max(Ndiv2_coarse,Ndiv_coarse*Ndiv_coarse)
      endif
      if(lf_src(isrc)%type == 'country')then
         lf_src(isrc)%type = 'country' !could use 'coarse'?
         lf_src(isrc)%Npos = 1
-        Ndiv_coarse = 1
-        Ndiv2_coarse = 1
         ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
         call CheckStop(ix<0,'country '//trim(lf_src(isrc)%country_ISO)//' not defined. ')        
         lf_src(isrc)%country_ix = ix
@@ -168,6 +166,7 @@ contains
            if(me==0)write(*,*)'LF: WARNING: country '//trim(lf_src(isrc)%country_ISO)//' not defined. '
         endif
         lf_src(isrc)%country_ix = ix
+        if(MasterProc)write(*,*)isrc,' country '//trim(lf_src(isrc)%country_ISO)//' '//trim(lf_src(isrc)%species)
      endif
      
      do i=1,4
@@ -210,18 +209,27 @@ contains
            ix=itot-NSPEC_SHL
            lf_src(isrc)%ix(i)=ix
            lf_src(isrc)%mw(i)=species_adv(ix)%molwt
-           if(lf_src(isrc)%species=="nox ")then
+           if(lf_src(isrc)%species=="voc")then
+              isrc_VOC = isrc
+              ix=find_index('CH3CO3', species(:)%name)
+              call CheckStop( ix<1, "Local Fractions did not find CH3CO3 ")
+              ix_CH3CO3 = ix - NSPEC_SHL!shortcut
+              ix=find_index('HO2', species(:)%name)
+              call CheckStop( ix<1, "Local Fractions did not find HO2 ")
+              ix_HO2= ix!shortcut !NB: index as short lived
+           endif
+           if(lf_src(isrc)%species=="nox")then
               ix=find_index("NO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for NO2 not found')
               lf_src(isrc)%mw(i)=species_adv(ix)%molwt
            endif
-           if(lf_src(isrc)%species=="sox ")then
+           if(lf_src(isrc)%species=="sox")then
               ix=find_index("SO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for SO2 not found')
               lf_src(isrc)%mw(i)=species_adv(ix)%molwt
            endif
            
-           if(lf_src(isrc)%species=="nh3 ")then
+           if(lf_src(isrc)%species=="nh3")then
               lf_src(isrc)%Nsplit = 0
               ixnh4=find_index("NH4_F",species_adv(:)%name , any_case=.true.)
               ixnh3=find_index("NH3",species_adv(:)%name)
@@ -263,10 +271,9 @@ contains
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
         write(*,"(A,30I4)")'sector:',lf_src(isrc)%sector
-        write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
+        !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
-
   if(isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0))then
      if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
      stop!may be relaxed in future
@@ -320,7 +327,8 @@ contains
   allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
  
-  call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: init")
+!  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
+
 end subroutine lf_init
 
 
@@ -465,47 +473,63 @@ subroutine lf_out(iotyp)
      do isrc = 1, Nsources
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
-        if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
-        if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
+         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%species)
+           if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
            scale=1.0/av_fac(iotyp)
            call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lfNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)                
            pollwritten(ipoll) = .true.
            overwrite=.false.
         endif
+
         if(iter==2)then
-           if(isrc==1)fracsum=0.0
+           fracsum=0.0
+           tmp_out=0.0
            do k = KMAX_MID-lfNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
                     invtot=1.0/(lf_src_tot(i,j,k,ipoll,iou_ix)+1.E-20)
+                    if(lf_src(isrc)%type == 'country') invtot=1.0/av_fac(iotyp) !could also output fractions?
                     n1=0
                     do n=lf_src(isrc)%start, lf_src(isrc)%end
                        n1=n1+1
-                       tmp_out(n1,i,j) = lf_src_acc(n,i,j,k,iou_ix)*invtot
-                       if(isrc==1)fracsum(i,j)=fracsum(i,j)+tmp_out(n1,i,j)
+                       tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                       fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
                     enddo
                  enddo
               enddo
            enddo
         endif
-        if(old_format)then
-           !for backward compatibility
-           write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_local_fraction'
-           if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_local_fraction'
-        else
-           write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
-           if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
-        endif
-        scale=1.0
-        call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
-        overwrite=.false.
-        if(isrc==1)then
-           def1%name=trim(lf_src(isrc)%species)//'_fracsum'
-           call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+        
+        if(lf_src(isrc)%type == 'country')then
+           !single cell source
+           write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_src(isrc)%country_ISO)
+           if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_src(isrc)%country_ISO)
+           if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name) 
+           scale=1.0
+           call Out_netCDF(iotyp,def2,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+        else
+           if(old_format)then
+              !for backward compatibility
+              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_local_fraction'
+              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_local_fraction'
+           else
+              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
+              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
+              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
+              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
+           endif
+           scale=1.0
+           call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
+           overwrite=.false.
+           if(isrc==1)then
+              def1%name=trim(lf_src(isrc)%species)//'_fracsum'
+              call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+           endif           
         endif
      enddo
   enddo
@@ -593,7 +617,7 @@ subroutine lf_av(dt,End_of_Day)
   
   av_fac=av_fac+1
   
-  call Add_2timing(NTIMING-8,tim_after,tim_before,"lf: averaging")
+  call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: averaging")
 
 end subroutine lf_av
 
@@ -681,7 +705,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
      endif
   enddo
 
-  call Add_2timing(NTIMING-7,tim_after,tim_before,"lf: adv_x")
+  call Add_2timing(NTIMING-8,tim_after,tim_before,"lf: adv_x")
 
 end subroutine lf_adv_x
 
@@ -774,7 +798,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
      endif
 
   enddo
-  call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_y")
+  call Add_2timing(NTIMING-7,tim_after,tim_before,"lf: adv_y")
 
 end subroutine lf_adv_y
 
@@ -839,7 +863,7 @@ subroutine lf_adv_k(fluxk,i,j)
        
     end do
     
-    call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: adv_k")
+    call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_k")
   end subroutine lf_adv_k
  
   subroutine lf_diff(i,j,ds3,ds4,ndiff)
@@ -893,15 +917,17 @@ subroutine lf_adv_k(fluxk,i,j)
           enddo
        enddo
     end do
-    call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: diffusion")
+    call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffusion")
 
 end subroutine lf_diff
 
 subroutine lf_chem(i,j)
   !track through chemical reactions
   integer, intent(in) ::i,j
-  real :: O3,NO,NO2,d_O3,d_NO,d_NO2,k1,J_phot
-  integer :: k, n_O3,n_NO,n_NO2
+  real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,J_phot,invt
+  integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
+
+  call Code_timer(tim_before)
 
   if(isrc_O3<=0)return
   !the source index must give three values, stored at isrc_O3, isrc_NO and isrc_NO2
@@ -912,27 +938,40 @@ subroutine lf_chem(i,j)
      O3 = xn_2d(NSPEC_SHL+ix_O3,k) 
      NO = xn_2d(NSPEC_SHL+ix_NO,k) 
      NO2 = xn_2d(NSPEC_SHL+ix_NO2,k)
+     VOC = xn_2d(NSPEC_SHL+ix_CH3CO3,k)
+     HO2 = xn_2d(ix_HO2,k) !NB: ix_HO2 is already short lived index
      k1 = rct(11,k) * dt_advec
-     J_phot = rcphot(IDNO2,k) * dt_advec
+     !CH3CO3 + HO2 -> 0.162*O3 + 0.384*CH3CO3H + 0.454 OH + 0.454 CH3O2 + 0.162 CH3COOH ?
+     !k2 = 0.162* rct(45,k) * VOC * HO2 * dt_advec
+     d_VOC = VOC/(1 + 0.162* rct(45,k) * HO2 * dt_advec)
+     !d_VOC=0.0
      n_O3 = lf_src(isrc_O3)%start
      n_NO = lf_src(isrc_NO)%start
-     do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-        !NO2 photodecomposition is same for all fractions, i.e. lf does not change for this process
-        !changes of concentration due to source (assumed much smaller than actual concentrations for now)
-        d_NO2 = k1*O3*lf(n_O3,i,j,k)*NO + k1*O3*NO*lf(n_NO,i,j,k)                 
-        d_NO = - k1*O3*lf(n_O3,i,j,k) + J_phot*NO2*lf(n_NO2,i,j,k)              
-        d_O3 = - k1*NO*lf(n_NO,i,j,k) + J_phot*NO2*lf(n_NO2,i,j,k)
+     
+     !NO2 photodecomposition: NO2+hv->NO+O3 (we skip OP)
+     !d_NO2 = -J_phot*NO2
+     d_NO2 = NO2/(1 +  rcphot(IDNO2,k)*dt_advec)
+     !if(i==5 .and. j==5 .and. k==20 .and. me>300  .and. me>400  )write(*,*)d_VOC,d_NO2,rct(1,k),rct(10,k)*NO
 
-        lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO2)/(NO2+ d_NO2) !or more exact(?): ((NO2-d_NO2)*lf(n_NO2,i,j,k) + d_NO2)/NO2
-                                                      !or use xn_adv to compute old concentrations?
-        lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO)/(NO + d_NO)
-        lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_O3)/(O3 + d_O3)
+     !NO+O3->NO2+O2
+     !d_NO = k1*O3*NO                
 
-        n_O3 = n_O3+1
-        n_NO = n_NO+1
+     nsteps = 1
+     invt=1.0/nsteps
+     do n=1,nsteps
+!update fractions
+        n_O3 = lf_src(isrc_O3)%start
+        n_VOC = lf_src(isrc_VOC)%start
+        do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
+           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 + d_VOC + 1.0)
 
+           n_O3 = n_O3 + 1
+           n_VOC = n_VOC + 1
+        enddo
      enddo
+     
   enddo
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 end subroutine lf_chem
 
 subroutine lf_emis(indate)
@@ -984,7 +1023,8 @@ subroutine lf_emis(indate)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
             if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='country')then
-               n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local. Country constraints already included in emis_lf  
+               n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local. Country constraints already included in emis_lf
+               if(lf_src(isrc)%type=='country') n0 = lf_src(isrc)%start !only one source index per country
                if(lf_src(isrc)%iqrc<0)then
                   !emitted as primary. Relative to total for all sectors 
                   lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
@@ -1014,7 +1054,7 @@ subroutine lf_emis(indate)
     end do ! i
  end do ! j
 
-  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: emissions")
+  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
 
 end subroutine lf_emis
 
@@ -1022,6 +1062,8 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: isrc, k, ipoll
+
+  call Code_timer(tim_before)
 
   ipoll = iem2ipoll(iem)
   if(ipoll>0)then
@@ -1047,6 +1089,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
         enddo
      endif
   enddo
+  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
   
 end subroutine add_lf_emis
 

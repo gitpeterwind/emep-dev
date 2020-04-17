@@ -126,6 +126,8 @@ subroutine runchem()
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
  
+      if(USES%LocalFractions) call lf_chem(i,j)
+
       if(USES%SEASALT)  &
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
@@ -279,7 +281,6 @@ subroutine runchem()
          call Aero_water_MARS(i,j, debug_flag)         
       endif
 
-      if(USES%LocalFractions) call lf_chem(i,j)
       
       call check_negs(i,j,'END')
       if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) then
