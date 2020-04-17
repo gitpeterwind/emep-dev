@@ -34,6 +34,7 @@ module RunChem_mod
   use FastJ_mod,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_mod,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_mod,      only: datewrite
+  use LocalFractions_mod,only: lf_chem
   use MassBudget_mod,    only: emis_massbudget_1d
   use OrganicAerosol_mod,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
@@ -125,6 +126,8 @@ subroutine runchem()
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
  
+      if(USES%LocalFractions) call lf_chem(i,j)
+
       if(USES%SEASALT)  &
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
@@ -277,7 +280,8 @@ subroutine runchem()
       else
          call Aero_water_MARS(i,j, debug_flag)         
       endif
-                   
+
+      
       call check_negs(i,j,'END')
       if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) then
 
