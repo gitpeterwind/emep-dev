@@ -924,7 +924,7 @@ end subroutine lf_diff
 subroutine lf_chem(i,j)
   !track through chemical reactions
   integer, intent(in) ::i,j
-  real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,J_phot,invt
+  real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt
   integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
 
   call Code_timer(tim_before)
@@ -942,19 +942,25 @@ subroutine lf_chem(i,j)
      HO2 = xn_2d(ix_HO2,k) !NB: ix_HO2 is already short lived index
      k1 = rct(11,k) * dt_advec
      !CH3CO3 + HO2 -> 0.162*O3 + 0.384*CH3CO3H + 0.454 OH + 0.454 CH3O2 + 0.162 CH3COOH ?
-     !k2 = 0.162* rct(45,k) * VOC * HO2 * dt_advec
-     d_VOC = VOC/(1 + 0.162* rct(45,k) * HO2 * dt_advec)
-     !d_VOC=0.0
+     k2 = 0.162* rct(45,k) * HO2 * dt_advec
+     d_VOC = VOC*k2/(1 + k2)
+     d_VOC=0.0
      n_O3 = lf_src(isrc_O3)%start
      n_NO = lf_src(isrc_NO)%start
      
+     J_phot=rcphot(IDNO2,k)*dt_advec
      !NO2 photodecomposition: NO2+hv->NO+O3 (we skip OP)
      !d_NO2 = -J_phot*NO2
-     d_NO2 = NO2/(1 +  rcphot(IDNO2,k)*dt_advec)
+     d_NO2 = NO2*J_phot/(1 +  J_phot)
      !if(i==5 .and. j==5 .and. k==20 .and. me>300  .and. me>400  )write(*,*)d_VOC,d_NO2,rct(1,k),rct(10,k)*NO
 
      !NO+O3->NO2+O2
-     !d_NO = k1*O3*NO                
+     !d_NO = k1*O3*NO
+     if(NO<O3)then
+        d_NO = (k1*O3*NO)/(1+k1*O3)
+     else
+        d_NO = (k1*O3*NO)/(1+k1*NO)
+     endif
 
      nsteps = 1
      invt=1.0/nsteps
@@ -962,11 +968,15 @@ subroutine lf_chem(i,j)
 !update fractions
         n_O3 = lf_src(isrc_O3)%start
         n_VOC = lf_src(isrc_VOC)%start
+        n_NO = lf_src(isrc_NO)%start
         do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 + d_VOC + 1.0)
+           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) - d_NO*lf(n_NO,i,j,k) )/(O3 + d_NO2 + d_VOC - d_NO + 1.0)
+
+           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 + d_NO + 1.0)
 
            n_O3 = n_O3 + 1
            n_VOC = n_VOC + 1
+           n_NO = n_NO + 1
         enddo
      enddo
      
