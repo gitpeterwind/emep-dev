@@ -243,6 +243,7 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_tot ! concentrations of pollutants used for Local Fractions
      
+real, public, allocatable, dimension(:,:,:,:,:), save :: emis_lf_cntry
 real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf &   ! Fraction of pollutants that are produced locally, for all defined sources

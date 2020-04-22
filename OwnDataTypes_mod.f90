@@ -181,7 +181,8 @@ end type O3cl_t
 !==================
 ! uEMEP parameters
 integer, public, parameter :: Npoll_lf_max=7 !max number of lf pollutant
-integer, public, parameter :: Nsector_lf_max=10 !max number of sectors for each lf pollutant
+integer, public, parameter :: Nsector_lf_max=13 !max number of sectors for each lf pollutant
+integer, public, parameter :: Size_Country_list=100 !max number of countries for each lf pollutant
 type, public :: poll_type
   character(len=4):: emis='none'    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   integer, dimension(Nsector_lf_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors

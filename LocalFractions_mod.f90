@@ -10,10 +10,10 @@ use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX, KMAX_MID &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, MAXSRC
+                             ,HOURLYFILE_ending, MAXSRC,Max_Country_list,Max_Country_sectors, lf_country_sector_list,lf_country_list
 use Country_mod,       only: MAXNLAND,NLAND,Country
 use DefPhotolysis_mod, only: IDNO2
-use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, loc_frac_src_1d,&
+use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
                             nlandcode,landcode,sec2tfac_map,sec2hfac_map, sec2split_map,&
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
@@ -77,6 +77,9 @@ integer,  public, save :: iem2ipoll(NEMIS_File)
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3, ix_HO2
+integer, private, save :: country_ix_list(Max_Country_list)
+integer, private, save :: Ncountry_lf=0
+integer, private, save :: Nsectors_lf=0
 
 contains
 
@@ -152,12 +155,31 @@ contains
         Ndiv2_coarse = max(Ndiv2_coarse,Ndiv_coarse*Ndiv_coarse)
      endif
      if(lf_src(isrc)%type == 'country')then
-        lf_src(isrc)%type = 'country' !could use 'coarse'?
-        lf_src(isrc)%Npos = 1
-        ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
-        call CheckStop(ix<0,'country '//trim(lf_src(isrc)%country_ISO)//' not defined. ')        
-        lf_src(isrc)%country_ix = ix
-        lf_src(isrc)%Npos = 1
+        if(lf_country_list(1)/= 'NOTSET')then
+           !list of countries/sectors instead of single country
+           Ncountry_lf=0
+           do i = 1, Max_Country_list
+              if(lf_country_list(i) == 'NOTSET') exit
+              Ncountry_lf=Ncountry_lf+1
+              ix = find_index(trim(lf_country_list(i)) ,Country(:)%code, first_only=.true.)
+              call CheckStop(ix<0,'country '//trim(lf_country_list(i))//' not defined. ')        
+              country_ix_list(i) = ix
+              if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from ',trim(lf_country_list(i))
+           enddo
+           Nsectors_lf=0
+           do i = 1, Max_Country_sectors
+              if(lf_country_sector_list(i) < 0) exit
+              Nsectors_lf=Nsectors_lf+1
+              if(MasterProc)write(*,*)'country sector ',lf_country_sector_list(i)
+          enddo
+           lf_src(isrc)%Npos = Ncountry_lf*Nsectors_lf
+        else
+           lf_src(isrc)%Npos = 1
+           ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
+           call CheckStop(ix<0,'country '//trim(lf_src(isrc)%country_ISO)//' not defined. ')        
+           lf_src(isrc)%country_ix = ix
+           lf_src(isrc)%Npos = 1
+        endif
      endif
      if(lf_src(isrc)%country_ISO /= 'NOTSET')then
         lf_src(isrc)%type = 'country'
@@ -326,7 +348,13 @@ contains
   emis_lf = 0.0
   allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
- 
+  if(Ncountry_lf*Nsectors_lf>0)then
+     allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf,Nsectors_lf))
+     emis_lf_cntry=0.0
+  else
+     allocate(emis_lf_cntry(1,1,1,1,1))!So can be set to zero etc. without compiler complaining
+  endif
+  
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
 
 end subroutine lf_init
@@ -345,6 +373,7 @@ subroutine lf_out(iotyp)
   logical ::overwrite, create_var_only
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_out(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
+  real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
   type(date) :: onesecond = date(0,0,0,0,1)
   character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
@@ -457,6 +486,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(3)=dimSizes_tot(3)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
+  allocate(tmp_out_cntry(LIMAX,LJMAX,Ncountry_lf*Nsectors_lf))
  
   iou_ix = iotyp2ix(iotyp)
 
@@ -486,30 +516,45 @@ subroutine lf_out(iotyp)
         if(iter==2)then
            fracsum=0.0
            tmp_out=0.0
+           if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
            do k = KMAX_MID-lfNvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
                     invtot=1.0/(lf_src_tot(i,j,k,ipoll,iou_ix)+1.E-20)
-                    if(lf_src(isrc)%type == 'country') invtot=1.0/av_fac(iotyp) !could also output fractions?
                     n1=0
-                    do n=lf_src(isrc)%start, lf_src(isrc)%end
-                       n1=n1+1
-                       tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
-                       fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
-                    enddo
+                    if(lf_src(isrc)%type == 'country')then
+                       invtot=1.0/av_fac(iotyp) !could also output fractions?
+                       do n=lf_src(isrc)%start, lf_src(isrc)%end
+                          n1=n1+1
+                          tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                       enddo
+                    else
+                       do n=lf_src(isrc)%start, lf_src(isrc)%end
+                          n1=n1+1
+                          tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                          fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
+                       enddo
+                    endif
                  enddo
               enddo
            enddo
         endif
         
         if(lf_src(isrc)%type == 'country')then
-           !single cell source
-           write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_src(isrc)%country_ISO)
-           if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_src(isrc)%country_ISO)
-           if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name) 
-           scale=1.0
-           call Out_netCDF(iotyp,def2,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+           n1=0
+           do i=1,Ncountry_lf
+              do j=1,Nsectors_lf
+                 n1=n1+1
+                 !single cell source
+                 isec=lf_country_sector_list(j)
+                 write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
+                 if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
+                 if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name) 
+                 scale=1.0
+                 call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+              enddo
+           enddo
         else
            if(old_format)then
               !for backward compatibility
@@ -1007,7 +1052,7 @@ subroutine lf_emis(indate)
   integer :: hour_iland
   integer ::icc_lf, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc
+  integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
   real::dt_lf, xtot
   real :: lon
   integer :: jmin,jmax,imin,imax,n0
@@ -1033,15 +1078,32 @@ subroutine lf_emis(indate)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
             if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='country')then
-               n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local. Country constraints already included in emis_lf
-               if(lf_src(isrc)%type=='country') n0 = lf_src(isrc)%start !only one source index per country
-               if(lf_src(isrc)%iqrc<0)then
-                  !emitted as primary. Relative to total for all sectors 
-                  lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-                else
-                  !emitted as single species. Relative to that species only
-                  lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
-                endif
+               if(lf_src(isrc)%type=='country' .and. Ncountry_lf>0)then
+                  n0=lf_src(isrc)%start
+                  do ic=1,Ncountry_lf
+                     do is=1,Nsectors_lf
+                        if(lf_src(isrc)%iqrc<0)then
+                           !emitted as primary. Relative to total for all sectors 
+                           lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+                        else
+                           !emitted as single species. Relative to all emissions of that species only
+                           lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
+                        endif
+                        n0=n0+1
+                     enddo
+                  enddo
+                  cycle
+               else
+                  n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local. Country constraints already included in emis_lf
+                  if(lf_src(isrc)%type=='country') n0 = lf_src(isrc)%start !only one source index per country
+                  if(lf_src(isrc)%iqrc<0)then
+                     !emitted as primary. Relative to total for all sectors 
+                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+                  else
+                     !emitted as single species. Relative to that species only
+                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
+                  endif
+               endif
            else if(lf_src(isrc)%type=='relative')then
                n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
                if(lf_src(isrc)%iqrc<0)then
@@ -1058,7 +1120,7 @@ subroutine lf_emis(indate)
             do n = lf_src(isrc)%start, lf_src(isrc)%end
                if(n==n0)cycle  !counted above               
                lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)!fractions are diluted
-             enddo
+            enddo
          enddo
       enddo
     end do ! i
@@ -1071,7 +1133,8 @@ end subroutine lf_emis
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: isrc, k, ipoll
+  integer :: isrc, k, ipoll,ic,is
+  real emis
 
   call Code_timer(tim_before)
 
@@ -1084,20 +1147,42 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
 
    do isrc = 1, Nsources
       if(lf_src(isrc)%iem /= iem) cycle
-      if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
-      if(lf_src(isrc)%country_ix>0 .and. lf_src(isrc)%country_ix/=iland) cycle
-      if(lf_src(isrc)%iqrc>0)then
-         !single pollutant, part of emitted group of pollutant
-         ipoll = lf_src(isrc)%poll
-         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-            emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                 * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
-        enddo
-     else
-        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
-        enddo
-     endif
+      if(Ncountry_lf>0)then
+         !has to store more detailed info
+         do ic=1,Ncountry_lf
+            if(country_ix_list(ic)/=iland)cycle
+            do is=1,Nsectors_lf
+               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
+               emis = s * dt_advec
+               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
+               do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                  emis_lf_cntry(i,j,k,ic,is)=emis_lf_cntry(i,j,k,ic,is) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+               enddo
+            enddo
+         enddo
+         if(lf_src(isrc)%iqrc>0)then
+            !sum of all emissions for that species from all countries and sectors
+            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                    * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec
+            enddo
+         endif
+      else
+         if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
+         if(lf_src(isrc)%country_ix>0 .and. lf_src(isrc)%country_ix/=iland) cycle
+         if(lf_src(isrc)%iqrc>0)then
+            !single pollutant, part of emitted group of pollutant
+            ipoll = lf_src(isrc)%poll
+            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                    * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
+            enddo
+         else
+            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
+            enddo
+         endif
+      endif
   enddo
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
   

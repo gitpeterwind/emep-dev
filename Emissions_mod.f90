@@ -70,7 +70,7 @@ use EmisDef_mod,       only: &
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
      , Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources&
-     , emis_lf, lf_emis_tot
+     , emis_lf, lf_emis_tot, emis_lf_cntry
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -1647,6 +1647,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     SecEmisOut(:,:,:,:) = 0.0
     if(USES%LocalFractions) emis_lf(:,:,:,:) = 0.0
     if(USES%LocalFractions) lf_emis_tot(:,:,:,:) = 0.0
+    if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:) = 0.0
     if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
