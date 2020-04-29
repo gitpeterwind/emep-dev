@@ -1017,7 +1017,9 @@ subroutine lf_chem(i,j)
         do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
            lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) - d_NO*lf(n_NO,i,j,k) )/(O3 + d_NO2 + d_VOC - d_NO + 1.0)
 
-           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 + d_NO + 1.0)
+           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + 1.0)
+
+           lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO2*lf(n_NO2,i,j,k) - d_NO*lf(n_O3,i,j,k) )/(NO + d_NO2 - d_NO + 1.0)
 
            n_O3 = n_O3 + 1
            n_VOC = n_VOC + 1
