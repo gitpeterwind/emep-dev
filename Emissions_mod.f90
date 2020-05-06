@@ -1647,7 +1647,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     SecEmisOut(:,:,:,:) = 0.0
     if(USES%LocalFractions) emis_lf(:,:,:,:) = 0.0
     if(USES%LocalFractions) lf_emis_tot(:,:,:,:) = 0.0
-    if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:) = 0.0
+    if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:,:) = 0.0
     if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:

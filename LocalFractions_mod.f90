@@ -2,6 +2,7 @@ module LocalFractions_mod
 !
 ! all subroutines for Local Fractions
 !
+use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
@@ -24,7 +25,7 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
-use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_FILE
+use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_NAME, TXTLEN_FILE
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
@@ -73,10 +74,15 @@ integer,  public, save :: iotyp2ix(IOU_MAX_MAX)
 integer,  public, save :: av_fac(IOU_MAX_MAX)
 integer,  public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
 integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
-integer,  public, save :: iem2ipoll(NEMIS_File)
+integer, private, parameter :: MAXIPOLL=16
+integer,  public, save :: iem2ipoll(NEMIS_File,MAXIPOLL) !internal indices of pollutants for that emis file
+integer,  public, save :: ipoll2iqrc(MAXIPOLL)=-1 !-1 for primary pollutant
+integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
-integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3, ix_HO2
+integer, private, save :: isrc_SO2=-1, isrc_SO4=-1
+integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3=-1, ix_HO2=-1
+integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Nsectors_lf=0
@@ -84,7 +90,9 @@ integer, private, save :: Nsectors_lf=0
 contains
 
   subroutine lf_init
-  integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: found
+    character(len=TXTLEN_NAME) :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
 
   call Code_timer(tim_before)
   ix=0
@@ -143,6 +151,7 @@ contains
 
   ipoll=0
   iem2ipoll = -1
+  iem2Nipoll = 0
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
      if(lf_src(isrc)%type == 'relative')then
@@ -221,6 +230,10 @@ contains
         if(trim(species(ix)%name)=='O3')ix_O3=lf_src(isrc)%ix(1)!shortcut
         if(trim(species(ix)%name)=='NO')ix_NO=lf_src(isrc)%ix(1)!shortcut
         if(trim(species(ix)%name)=='NO2')ix_NO2=lf_src(isrc)%ix(1)!shortcut
+        if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
+        if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
+        if(trim(species(ix)%name)=='SO4')ix_SO4=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='SO2')ix_SO2=lf_src(isrc)%ix(1)
      else
         !species defines as primary emitted 
         lf_src(isrc)%iem = iem
@@ -267,21 +280,39 @@ contains
         end do
         
      endif
-
-     if(iem>0 .and. lf_src(isrc)%iqrc<0)then
-        !primary emitted species
-        if(iem2ipoll(iem)<0)then
+     if(ix_SO2>0)then
+        !need some more indices
+        ix_O3=find_index('O3' ,species(:)%name, any_case=.true.) - NSPEC_SHL !NB: index among advected species
+        ix_OH=find_index('OH' ,species(:)%name, any_case=.true.) !NB: index among all species
+        ix_H2O2=find_index('H2O2' ,species(:)%name, any_case=.true.) !NB: index among all species
+     endif
+     if(iem>0)then
+        !emitted species
+        found=0
+        do i=1,iem2Nipoll(iem)
+           if(iem2names(iem,i)==lf_src(isrc)%species)then
+              found=1
+              lf_src(isrc)%poll = iem2ipoll(iem,i)
+           endif
+        enddo
+        if(found==0)then
+           !add a new pollutant for that emis file
+           iem2Nipoll(iem)=iem2Nipoll(iem)+1
            ipoll = ipoll + 1
-           iem2ipoll(iem) = ipoll     
+           call CheckStop(ipoll>MAXIPOLL,"Error: increase MAXIPOLL in LocalFractions_mod")
+           iem2names(iem, iem2Nipoll(iem)) = trim(lf_src(isrc)%species)    
+           iem2ipoll(iem, iem2Nipoll(iem)) = ipoll     
+           lf_src(isrc)%poll = ipoll
            Npoll = ipoll
         endif
-        lf_src(isrc)%poll = iem2ipoll(iem)     
-     else
-        !single species (no sectors, one total per source)
+        if(lf_src(isrc)%iqrc>0)ipoll2iqrc(lf_src(isrc)%poll)=lf_src(isrc)%iqrc!single species
+      else
+        !single species not emitted (like O3)
         ipoll = ipoll + 1
         lf_src(isrc)%poll = ipoll
         Npoll = ipoll
-    endif
+        call CheckStop(ipoll>MAXIPOLL,"Error: increase MAXIPOLL in LocalFractions_mod")
+     endif
         
      if(MasterProc)then
         write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as '
@@ -298,6 +329,10 @@ contains
   end do
   if(isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0))then
      if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
+     stop!may be relaxed in future
+  endif
+  if(isrc_SO2>0 .and. (isrc_SO4<0))then
+     if(me==0)write(*,*)'WARNING: SO2 tracking requires SO4'
      stop!may be relaxed in future
   endif
 
@@ -349,10 +384,10 @@ contains
   allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
   if(Ncountry_lf*Nsectors_lf>0)then
-     allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf,Nsectors_lf))
+     allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf,Nsectors_lf,Nsources))
      emis_lf_cntry=0.0
   else
-     allocate(emis_lf_cntry(1,1,1,1,1))!So can be set to zero etc. without compiler complaining
+     allocate(emis_lf_cntry(1,1,1,1,1,1))!So can be set to zero etc. without compiler complaining
   endif
   
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
@@ -852,14 +887,16 @@ subroutine lf_adv_k(fluxk,i,j)
     integer, intent(in)::i,j
     real ::x,xn,xx,f_in,inv_tot
     integer ::n,k,iix,ix,dx,dy,isrc
-    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert:KMAX_MID-1)
+    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert+2:KMAX_MID)
 
     call Code_timer(tim_before)
     !need to be careful to always use non-updated values on the RHS
-    do k = KMAX_MID-lf_Nvert+1,KMAX_MID-1
-       loc_frac_src_km1(:,k)=lf(:,i,j,k)
+    do k = KMAX_MID-lf_Nvert+2,KMAX_MID
+       do n = 1, LF_SRC_TOTSIZE
+          loc_frac_src_km1(n,k)=lf(n,i,j,k-1) !NB: k is shifted by 1 in loc_frac_src_km1
+       enddo
     enddo
-    loc_frac_src_km1(:,KMAX_MID-lf_Nvert)=0.0!Assume zero local fractions coming from above
+    !loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1)=0.0!Assume zero local fractions coming from above
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
@@ -879,30 +916,27 @@ subroutine lf_adv_k(fluxk,i,j)
           f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
           inv_tot=1.0/(xn+f_in+1.e-40)!incoming dilutes
 
-          x =max(0.0,x)*inv_tot!factor due to flux bottom facethrough
+          x =max(0.0,x)*inv_tot!factor due to flux through bottom face
           xx=max(0.0,xx)*inv_tot!factor due to flux through top face
+          if(k<=KMAX_MID-lf_Nvert+1) xx = 0.0 !no fraction coming from higher than KMAX_MID-lf_Nvert+1
+          if(k==KMAX_MID) x = 0.0 !no fraction coming from surface
           xn = xn * inv_tot
           !often either x or xx is zero
-          if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='country')then
-             if(x>1.E-20 .and. k<KMAX_MID)then
+          if(x>1.E-20)then
+             do n = lf_src(isrc)%start, lf_src(isrc)%end
+                lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x
+             enddo
+             if(xx>1.E-20)then
                 do n = lf_src(isrc)%start, lf_src(isrc)%end
-                   lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x! loc_frac(isec_poll,dx,dy,i,j,k+1)*x
+                   lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k)*xx
                 enddo
-                if(xx>1.E-20 .and. k>KMAX_MID-lf_Nvert+1)then
-                   do n = lf_src(isrc)%start, lf_src(isrc)%end
-                      lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k-1)*xx
-                   enddo
-                endif
-             else if (xx>1.E-20 .and. k>KMAX_MID-lf_Nvert+1)then
-                do n = lf_src(isrc)%start, lf_src(isrc)%end
-                   lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k-1)*xx
-                enddo
-             else
-                !nothing to do if no incoming fluxes
              endif
+          else if (xx>1.E-20)then
+             do n = lf_src(isrc)%start, lf_src(isrc)%end
+                lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_km1(n,k)*xx
+             enddo
           else
-             if(me==0)write(*,*)'LF type not recognized)'
-             stop
+             !nothing to do if no incoming fluxes
           endif
        enddo
        
@@ -969,11 +1003,34 @@ end subroutine lf_diff
 subroutine lf_chem(i,j)
   !track through chemical reactions
   integer, intent(in) ::i,j
-  real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt
+  real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt,inv
+  real :: SO4,SO2, d_SO2, d_SO4
   integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
-
+  integer :: n_SO2,n_SO4
+  
   call Code_timer(tim_before)
+  if(isrc_SO2>0)then
+     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+       SO2 = xn_2d(NSPEC_SHL+ix_SO2,k)
+       SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
+       n_SO4 = lf_src(isrc_SO4)%start
 
+       !SO2->SO4
+       k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
+            + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
+            + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
+            + AQRCK(ICLRC3,K) )*dt_advec 
+       d_SO4 = SO2*k1/(1+k1)
+       inv = 1.0/(SO4+d_SO4)
+      
+       do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
+          lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*SO4+d_SO4*lf(n_SO2,i,j,k)) * inv
+          n_SO4 = n_SO4 + 1
+       enddo
+       
+    enddo
+
+  endif
   if(isrc_O3<=0)return
   !the source index must give three values, stored at isrc_O3, isrc_NO and isrc_NO2
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
@@ -1015,11 +1072,11 @@ subroutine lf_chem(i,j)
         n_VOC = lf_src(isrc_VOC)%start
         n_NO = lf_src(isrc_NO)%start
         do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) - d_NO*lf(n_NO,i,j,k) )/(O3 + d_NO2 + d_VOC - d_NO + 1.0)
-
-           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + 1.0)
+           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 + d_VOC + 1.0)
 
            lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO2*lf(n_NO2,i,j,k) - d_NO*lf(n_O3,i,j,k) )/(NO + d_NO2 - d_NO + 1.0)
+
+           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + 1.0)
 
            n_O3 = n_O3 + 1
            n_VOC = n_VOC + 1
@@ -1055,7 +1112,7 @@ subroutine lf_emis(indate)
   integer ::icc_lf, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
-  real::dt_lf, xtot
+  real::dt_lf, xtot, x
   real :: lon
   integer :: jmin,jmax,imin,imax,n0
   
@@ -1064,8 +1121,8 @@ subroutine lf_emis(indate)
   do j = lj0,lj1
     do i = li0,li1
        ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
-      iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
-      do isrc=1,Nsources   
+       iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
+       do isrc=1,Nsources
          iem = lf_src(isrc)%iem
          isec = lf_src(isrc)%sector
          do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
@@ -1079,53 +1136,31 @@ subroutine lf_emis(indate)
                iiix=lf_src(isrc)%ix(iix)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
-            if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='country')then
-               if(lf_src(isrc)%type=='country' .and. Ncountry_lf>0)then
-                  n0=lf_src(isrc)%start
-                  do ic=1,Ncountry_lf
-                     do is=1,Nsectors_lf
-                        if(lf_src(isrc)%iqrc<0)then
-                           !emitted as primary. Relative to total for all sectors 
-                           lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-                        else
-                           !emitted as single species. Relative to all emissions of that species only
-                           lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
-                        endif
-                        n0=n0+1
-                     enddo
+            if(lf_src(isrc)%type=='country' .and. Ncountry_lf>0)then
+               n0=lf_src(isrc)%start
+               do ic=1,Ncountry_lf
+                  do is=1,Nsectors_lf
+                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+                     n0=n0+1
                   enddo
-                  cycle
-               else
-                  n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse !emissions included as local. Country constraints already included in emis_lf
-                  if(lf_src(isrc)%type=='country') n0 = lf_src(isrc)%start !only one source index per country
-                  if(lf_src(isrc)%iqrc<0)then
-                     !emitted as primary. Relative to total for all sectors 
-                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-                  else
-                     !emitted as single species. Relative to that species only
-                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
-                  endif
-               endif
-           else if(lf_src(isrc)%type=='relative')then
-               n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
-               if(lf_src(isrc)%iqrc<0)then
-                  !emitted as primary. Relative to total for all sectors 
-                  lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-               else
-                  !emitted as single species. Relative to that species only
-                  lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+emis_lf(i,j,k,isrc)+1.e-20)
-               endif
+               enddo
+               cycle !only one fraction per country
+            else if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='coarse')then
+               !Country constraints already included in emis_lf
+               if(lf_src(isrc)%type=='relative') n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
+               if(lf_src(isrc)%type=='coarse') n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse 
+               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
             else
                if(me==0)write(*,*)'LF type not recognized)'
                stop
             endif
             do n = lf_src(isrc)%start, lf_src(isrc)%end
-               if(n==n0)cycle  !counted above               
+               if(n==n0)cycle  !counted above
                lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)!fractions are diluted
             enddo
          enddo
       enddo
-    end do ! i
+   end do ! i
  end do ! j
 
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
@@ -1135,21 +1170,29 @@ end subroutine lf_emis
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: isrc, k, ipoll,ic,is
+  integer :: n, isrc, k, ipoll,ic,is
   real emis
 
   call Code_timer(tim_before)
 
-  ipoll = iem2ipoll(iem)
-  if(ipoll>0)then
-     do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-        lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total for each pollutant
-     enddo
-   endif
+  do n=1,iem2Nipoll(iem)
+     ipoll = iem2ipoll(iem,n)
+     if(ipoll2iqrc(ipoll)>0)then
+        !only extract that single pollutant
+        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emisfrac(ipoll2iqrc(ipoll),sec2split_map(isec),iland)&
+                * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total over all sectors and countries for each pollutant
+        enddo
+     else
+        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total for each pollutant
+        enddo
+     endif
+  enddo
 
-   do isrc = 1, Nsources
-      if(lf_src(isrc)%iem /= iem) cycle
-      if(Ncountry_lf>0)then
+  do isrc = 1, Nsources
+     if(lf_src(isrc)%iem /= iem) cycle
+     if(Ncountry_lf>0)then
          !has to store more detailed info
          do ic=1,Ncountry_lf
             if(country_ix_list(ic)/=iland)cycle
@@ -1158,7 +1201,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
                emis = s * dt_advec
                if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
                do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                  emis_lf_cntry(i,j,k,ic,is)=emis_lf_cntry(i,j,k,ic,is) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+                  emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
                enddo
             enddo
          enddo

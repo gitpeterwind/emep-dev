@@ -126,8 +126,6 @@ subroutine runchem()
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
  
-      if(USES%LocalFractions) call lf_chem(i,j)
-
       if(USES%SEASALT)  &
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
@@ -187,6 +185,9 @@ subroutine runchem()
       if(DEBUG%RUNCHEM) call check_negs(i,j,'B')
 
       call Add_2timing(28,tim_after,tim_before,"Runchem:other setups")
+
+      if(USES%LocalFractions) call lf_chem(i,j)
+
 !     if(DEBUG%RUNCHEM.and.debug_flag) &
 !       call datewrite("RUNCHEM PRE-CHEM",(/xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20)/))
 !     !-------------------------------------------------
