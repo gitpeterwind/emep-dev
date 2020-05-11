@@ -59,6 +59,9 @@
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
+  real, public, dimension(:,:,:,:), save,allocatable :: &
+                    Dchem  ! Concentration increments due to chemistry
+
 
 
 contains
@@ -71,9 +74,6 @@ contains
     !.. In
     integer, intent(in) ::  i,j       ! Coordinates (needed for Dchem)
     logical, intent(in) :: debug_flag
-
-    real, dimension(:,:,:,:), save,allocatable :: &
-                    Dchem  ! Concentration increments due to chemistry
 
     logical, save ::  first_call = .true.
 

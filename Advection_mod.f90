@@ -2930,12 +2930,11 @@ end if
 
     real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
+    integer :: LF_SRC_TOTSIZE_eff=0 !used to avoid copying when k>KMAX_MID-lf_Nvert
+    
+    LF_SRC_TOTSIZE_eff=0
     if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-lf_Nvert)then
-       do i=li0,li1
-          do n=1,LF_SRC_TOTSIZE
-             loc_frac_src_1d(n,i) = lf(n,i,j,k)
-          enddo
-       enddo
+       LF_SRC_TOTSIZE_eff=LF_SRC_TOTSIZE
     endif
     !     Initialize arrays holding boundary slices
     !     send to WEST neighbor if any
@@ -2959,12 +2958,12 @@ end if
        send_buf_w(n) = ps3d(LIMAX+1)
        n=n+1
        send_buf_w(n) = ps3d(LIMAX+2)
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
-          send_buf_w(n) = loc_frac_src_1d(ii,1)
+          send_buf_w(n) = lf(ii,1,j,k)
        enddo
 
-       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
+       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE,&
             neighbor(WEST), msgnr+1000 , MPI_COMM_CALC, request_w, IERROR)
     end if
 
@@ -2988,12 +2987,12 @@ end if
        send_buf_e(n) = ps3d(LIMAX+li1-2)
        n=n+1
        send_buf_e(n) = ps3d(LIMAX+li1-1)
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
-          send_buf_e(n) = loc_frac_src_1d(ii,li1)
+          send_buf_e(n) = lf(ii,li1,j,k)
        enddo
 
-      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE,&
           neighbor(EAST), msgnr+3000, MPI_COMM_CALC, request_e, IERROR)
     end if
 
@@ -3015,13 +3014,13 @@ end if
           psbeg(2) = ps3d(LIMAX)
           psbeg(3) = ps3d(LIMAX)
        end if
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           loc_frac_src_1d(ii,li0-1)=0.0
        enddo
 
     else
 
-       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE, &
+       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE, &
             neighbor(WEST), msgnr+3000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
        n=0
@@ -3044,7 +3043,7 @@ end if
        n=n+1
        psbeg(3) = rcv_buf_w(n)
 
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
           loc_frac_src_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
@@ -3071,12 +3070,12 @@ end if
           psend(2) = ps3d(LIMAX+li1)
           psend(3) = ps3d(LIMAX+li1)
        end if
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           loc_frac_src_1d(ii,li1+1)=0.0
        enddo
     else
 
-      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE, &
+      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE, &
            neighbor(EAST), msgnr+1000, MPI_COMM_CALC, MPISTATUS, IERROR)
 
       n=0
@@ -3099,7 +3098,7 @@ end if
       n=n+1
       psend(3) = rcv_buf_e(n)
 
-      do ii=1,LF_SRC_TOTSIZE
+      do ii=1,LF_SRC_TOTSIZE_eff
          n=n+1
          loc_frac_src_1d(ii,li1+1) = rcv_buf_e(n)
       enddo
@@ -3416,14 +3415,11 @@ end if
 !    local
     integer  ii,j,dx,dy,isec_poll,n
     real,dimension((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
+    integer :: LF_SRC_TOTSIZE_eff !used to avoid copying when k>KMAX_MID-lf_Nvert
 
+    LF_SRC_TOTSIZE_eff=0
     if(LF_SRC_TOTSIZE>0 .and. k>KMAX_MID-lf_Nvert)then
-       do j=lj0,lj1
-           do n=1,LF_SRC_TOTSIZE
-             loc_frac_src_1d(n,j) = lf(n,i_send,j,k)
-          enddo
-         
-       enddo
+        LF_SRC_TOTSIZE_eff=LF_SRC_TOTSIZE
     endif
 
 !     send to SOUTH neighbor if any
@@ -3449,12 +3445,12 @@ end if
        n=n+1
        send_buf_s(n) = ps3d(i_send+2*LIMAX)
 
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
-          send_buf_s(n) = loc_frac_src_1d(ii,1)
+          send_buf_s(n) = lf(ii,i_send,1,k)
        enddo
 
-      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
     end if
 
@@ -3480,12 +3476,12 @@ end if
        n=n+1
        send_buf_n(n) = ps3d(i_send+(lj1-1)*LIMAX)
 
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
-          send_buf_n(n) = loc_frac_src_1d(ii,lj1)
+          send_buf_n(n) = lf(ii,i_send,lj1,k)
        enddo
 
-      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
+      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
     end if
 
@@ -3512,13 +3508,13 @@ end if
           psbeg(3) =  psbeg(1)
         end if
 
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           loc_frac_src_1d(ii,lj0-1)=0.0
        enddo
 
     else
 
-      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE) , MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff) , MPI_BYTE,&
             neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
        n=0
        do ii=1,NSPEC_ADV
@@ -3540,7 +3536,7 @@ end if
        n=n+1
        psbeg(3) = rcv_buf_s(n)
 
-       do ii=1,LF_SRC_TOTSIZE
+       do ii=1,LF_SRC_TOTSIZE_eff
           n=n+1
           loc_frac_src_1d(ii,lj0-1) = rcv_buf_s(n)
        enddo
@@ -3569,12 +3565,12 @@ end if
           psend(3) = psend(1)
         end if
 
-        do ii=1,LF_SRC_TOTSIZE
+        do ii=1,LF_SRC_TOTSIZE_eff
            loc_frac_src_1d(ii,lj1+1) = 0.0
         enddo
     else
 
-      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE), MPI_BYTE,&
+      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+LF_SRC_TOTSIZE_eff), MPI_BYTE,&
             neighbor(NORTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
       n=0
       do ii=1,NSPEC_ADV
@@ -3596,7 +3592,7 @@ end if
       n=n+1
       psend(3) = rcv_buf_n(n)
 
-      do ii=1,LF_SRC_TOTSIZE
+      do ii=1,LF_SRC_TOTSIZE_eff
          n=n+1
          loc_frac_src_1d(ii,lj1+1) = rcv_buf_n(n)
       enddo

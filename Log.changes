@@ -25,6 +25,33 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th May 2020, Peter
+
+Bug in MARS, rpmares. We assumed that mass of NH3+NH4  (or NO3+HNO3),  is conserved
+while it is only the number of molecules which is conserved. 
+
+old version:
+TNH4 = MAX( 0.0, (NH3 / MWNH3 + NH4 / MWNH4)  )
+TMASSNH3  = MAX(0.0, NH3 +  NH4 )
+
+...
+
+ANH4_High = min( YNH4 * MWNH4, TMASSNH3 )  !ASSUMES NH4 cannot be larger than TMASSNH3!!
+GNH3_High = TMASSNH3   - ANH4_High  !ASSUMES ANH4 + GNH3_High (in kg) is conserved!!
+
+
+Replaced two lines  with:
+
+ANH4_High = min(  YNH4 , TNH4 )* MWNH4
+GNH3_High = max(FLOOR,(TNH4 - YNH4))*MWNH3
+
+Since the mass(NH3)=17, mass(NH4)=18, mass(NO3)=62, mass(NO3)=63, so the error
+is about <6% for NH4 and <1.5% for NO3 
+
+
+(also some additional changes for local fractions)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Apr 2020, Peter, Massimo
 
 More robust sites.dat: allows to use -999 as vertical level for surface (not tested).

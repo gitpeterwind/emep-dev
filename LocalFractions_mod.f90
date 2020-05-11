@@ -29,6 +29,7 @@ use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_NAME, T
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
+use Chemsolver_mod,    only: Dchem
 use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use Timefactors_mod,   only: &
@@ -562,6 +563,12 @@ subroutine lf_out(iotyp)
                        do n=lf_src(isrc)%start, lf_src(isrc)%end
                           n1=n1+1
                           tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                          !if(tmp_out_cntry(i,j,n1)<1.e-18)tmp_out_cntry(i,j,n1)=0.0
+                          if(isnan(tmp_out_cntry(i,j,n1)).or. tmp_out_cntry(i,j,n1)>1.e19)then
+                             write(*,*)'tmp_out_cntry is nan ',tmp_out_cntry(i,j,n1),lf_src_acc(n,i,j,k,iou_ix),invtot,trim(lf_src(isrc)%species)
+                             stop
+                          endif
+  
                        enddo
                     else
                        do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -705,7 +712,17 @@ subroutine lf_adv_x(fluxx,i,j,k)
   real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,iix,ix,dx,dy,isrc
+  integer ::n,ii,iix,ix,dx,dy,isrc
+
+  if(i==li0)then
+     !copy small part (could be avoided, but simpler to copy)
+     !note that the right hand side of the lf equations must contain unupdated values, therefore values for j-1 must be buffered
+     do ii=li0,li1
+        do n=1,LF_SRC_TOTSIZE
+           loc_frac_src_1d(n,ii) = lf(n,ii,j,k)
+        enddo
+     enddo
+  endif
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
@@ -793,7 +810,17 @@ subroutine lf_adv_y(fluxy,i,j,k)
   real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,iix,ix,dx,dy,isrc
+  integer ::n,jj,iix,ix,dx,dy,isrc
+
+  if(j==lj0)then
+     !copy small part (could be avoided, but simpler to copy)
+     !note that the right hand side of the lf equations must contain unupdated values, therefore values for i-1 must be buffered
+     do jj=lj0,lj1
+        do n=1,LF_SRC_TOTSIZE
+           loc_frac_src_1d(n,jj) = lf(n,i,jj,k)
+        enddo
+     enddo
+  endif
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
@@ -1011,17 +1038,22 @@ subroutine lf_chem(i,j)
   call Code_timer(tim_before)
   if(isrc_SO2>0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-       SO2 = xn_2d(NSPEC_SHL+ix_SO2,k)
-       SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
-       n_SO4 = lf_src(isrc_SO4)%start
-
-       !SO2->SO4
-       k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
+        if(allocated(Dchem))then
+           !if(me==0.and. i==5 .and.j==5)write(*,*)'DCHEM ',Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec,xn_2d(NSPEC_SHL+ix_SO2,k)
+           SO2 = max(0.0,xn_2d(NSPEC_SHL+ix_SO2,k)+Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
+       else
+           SO2 = xn_2d(NSPEC_SHL+ix_SO2,k)
+        endif
+        SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
+        n_SO4 = lf_src(isrc_SO4)%start
+        
+        !SO2->SO4
+        k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
             + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
             + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
             + AQRCK(ICLRC3,K) )*dt_advec 
-       d_SO4 = SO2*k1/(1+k1)
-       inv = 1.0/(SO4+d_SO4)
+        d_SO4 = SO2*k1/(1+k1)
+        inv = 1.0/(SO4+d_SO4)
       
        do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
           lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*SO4+d_SO4*lf(n_SO2,i,j,k)) * inv
@@ -1037,9 +1069,15 @@ subroutine lf_chem(i,j)
      !xn_adv is proportional to concentrations (~kg/m3) units in advection routines, (in mass mixing ratio otherwise).
      !xn_2d is in units of molecules/cm3, and defined also with short lived
      !units do not matter for local fractions, as long as all units are the same.
+!     if(allocated(Dchem))then
+!        !if(me==0.and. i==5 .and.j==5)write(*,*)'DCHEM ',Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec,xn_2d(NSPEC_SHL+ix_SO2,k)
+!        NO = max(0.0,xn_2d(NSPEC_SHL+ix_NO,k)+Dchem(NSPEC_SHL+ix_NO,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
+!        NO2 = max(0.0,xn_2d(NSPEC_SHL+ix_NO2,k)+Dchem(NSPEC_SHL+ix_NO2,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
+!     else
+        NO = xn_2d(NSPEC_SHL+ix_NO,k)
+        NO2 = xn_2d(NSPEC_SHL+ix_NO2,k)
+!     endif
      O3 = xn_2d(NSPEC_SHL+ix_O3,k) 
-     NO = xn_2d(NSPEC_SHL+ix_NO,k) 
-     NO2 = xn_2d(NSPEC_SHL+ix_NO2,k)
      VOC = xn_2d(NSPEC_SHL+ix_CH3CO3,k)
      HO2 = xn_2d(ix_HO2,k) !NB: ix_HO2 is already short lived index
      k1 = rct(11,k) * dt_advec
@@ -1072,12 +1110,37 @@ subroutine lf_chem(i,j)
         n_VOC = lf_src(isrc_VOC)%start
         n_NO = lf_src(isrc_NO)%start
         do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 + d_VOC + 1.0)
+           if(isnan(lf(n_O3,i,j,k)) .or. lf(n_O3,i,j,k)>10.0)then
+              write(*,*)'O3 is nan before chem',O3,NO2,NO,VOC, d_NO2 , d_VOC 
+              stop
+           endif
+           if(isnan(lf(n_NO,i,j,k)))then
+              write(*,*)'NO is nan before chem',O3,NO2,NO,VOC
+               stop
+           endif
+           if(isnan(lf(n_NO2,i,j,k)) .or. lf(n_NO2,i,j,k)>10.0)then
+              write(*,*)'NO2 is nan before chem',O3,NO2,NO,VOC
+               stop
+           endif
+           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) -d_NO*lf(n_NO,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 - d_NO + d_VOC + 1.0)
 
-           lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO2*lf(n_NO2,i,j,k) - d_NO*lf(n_O3,i,j,k) )/(NO + d_NO2 - d_NO + 1.0)
+           if(isnan(lf(n_O3,i,j,k)) .or. lf(n_O3,i,j,k)>10.0)then
+              write(*,*)'O3 is nan after chem ',lf(n_O3,i,j,k),lf(n_NO2,i,j,k),O3,NO2,NO,VOC, d_NO2 , d_VOC 
+              stop
+           endif
 
-           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + 1.0)
+           lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO2*lf(n_NO2,i,j,k) )/(NO + d_NO2 + 1.0)
 
+           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*(NO2-d_NO2) + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + d_NO + 1.0)
+           if(isnan(lf(n_NO,i,j,k)) .or. lf(n_NO,i,j,k)>10.0)then
+              write(*,*)'NO is nan after chem ',lf(n_NO,i,j,k),O3,NO2,NO,VOC
+               stop
+           endif
+           if(isnan(lf(n_NO2,i,j,k)) .or. lf(n_NO2,i,j,k)>10.0)then
+              write(*,*)'NO2 is nan after chem ',lf(n_NO2,i,j,k),O3,NO2,NO,VOC,d_NO2 , d_NO
+               stop
+           endif
+ 
            n_O3 = n_O3 + 1
            n_VOC = n_VOC + 1
            n_NO = n_NO + 1
