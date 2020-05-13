@@ -9,7 +9,7 @@ use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemSpecs_mod,     only: species_adv,species
 use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
-                             ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX, KMAX_MID &
+                             ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending, MAXSRC,Max_Country_list,Max_Country_sectors, lf_country_sector_list,lf_country_list
 use Country_mod,       only: MAXNLAND,NLAND,Country
@@ -56,6 +56,7 @@ public  :: lf_adv_y
 public  :: lf_adv_k
 public  :: lf_diff
 public  :: lf_chem
+public  :: lf_aero_pre,lf_aero_pos 
 public  :: lf_emis
 public  :: add_lf_emis
 
@@ -81,9 +82,11 @@ integer,  public, save :: ipoll2iqrc(MAXIPOLL)=-1 !-1 for primary pollutant
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
-integer, private, save :: isrc_SO2=-1, isrc_SO4=-1
+integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
 integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3=-1, ix_HO2=-1
 integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
+integer, private, save :: ix_NH4=-1, ix_NH3=-1
+real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Nsectors_lf=0
@@ -235,6 +238,10 @@ contains
         if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
         if(trim(species(ix)%name)=='SO4')ix_SO4=lf_src(isrc)%ix(1)
         if(trim(species(ix)%name)=='SO2')ix_SO2=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
+        if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
+        if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
      else
         !species defines as primary emitted 
         lf_src(isrc)%iem = iem
@@ -372,6 +379,11 @@ contains
   if(lf_src(isrc)%YEAR)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_YEAR)=Niou_ix
+  endif
+
+  if(isrc_NH4>0)then
+     allocate(lf_NH4(KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(lf_NH3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   endif
 
   allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Niou_ix))
@@ -1150,6 +1162,52 @@ subroutine lf_chem(i,j)
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 end subroutine lf_chem
+
+subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
+  integer, intent(in) ::i,j
+  integer :: k
+  !save concentrations, to see changes
+  do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+     lf_NH4(k) = xn_2d(NSPEC_SHL+ix_NH4,k)
+     lf_NH3(k) = xn_2d(NSPEC_SHL+ix_NH3,k)
+  enddo
+  
+end subroutine lf_aero_pre
+
+subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
+  integer, intent(in) ::i,j
+  real :: d_NH4, d_NH3, NH4, NH3, inv
+  integer :: n_NH3, n_NH4, k
+
+  do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+
+     NH3 = xn_2d(NSPEC_SHL+ix_NH3,k)
+     NH4 = xn_2d(NSPEC_SHL+ix_NH4,k)
+     d_NH4 = NH4 - lf_NH4(k) 
+     d_NH3 = NH3 - lf_NH3(k)
+     
+     if(d_NH4>0.0 .and. d_NH3<0.0)then
+        !NH3 has been transformed into NH4
+        n_NH3 = lf_src(isrc_NH3)%start
+        inv = 1.0/(NH4+d_NH4)
+        do n_NH4=lf_src(isrc_NH4)%start, lf_src(isrc_NH4)%end
+           lf(n_NH4,i,j,k) = (lf(n_NH4,i,j,k)*NH4 + d_NH4*lf(n_NH3,i,j,k)) * inv
+           n_NH3 = n_NH3 + 1
+        enddo
+     else if(d_NH4<0.0 .and. d_NH3>0.0)then
+        !NH4 has been transformed into NH3
+        n_NH3 = lf_src(isrc_NH3)%start
+        inv = 1.0/(NH3+d_NH3)
+        do n_NH4=lf_src(isrc_NH4)%start, lf_src(isrc_NH4)%end
+           lf(n_NH3,i,j,k) = (lf(n_NH3,i,j,k)*NH3 + d_NH3*lf(n_NH4,i,j,k)) * inv
+           n_NH3 = n_NH3 + 1
+        enddo
+     else
+        !N is not conserved or concentrations are constant
+     endif
+  enddo
+  
+end subroutine lf_aero_pos
 
 subroutine lf_emis(indate)
 !include emission contributions to local fractions

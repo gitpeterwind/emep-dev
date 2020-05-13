@@ -34,7 +34,7 @@ module RunChem_mod
   use FastJ_mod,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_mod,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_mod,      only: datewrite
-  use LocalFractions_mod,only: lf_chem
+  use LocalFractions_mod,only: lf_chem,lf_aero_pre,lf_aero_pos
   use MassBudget_mod,    only: emis_massbudget_1d
   use OrganicAerosol_mod,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
@@ -233,8 +233,10 @@ subroutine runchem()
                 
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
-      if(mod(step_main,2)/=0) then 
+      if(mod(step_main,2)/=0) then
+        if(USES%LocalFractions) call lf_aero_pre(i,j)
         call AerosolEquilib(debug_flag)
+        if(USES%LocalFractions) call lf_aero_pos(i,j)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'D')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
@@ -247,7 +249,9 @@ subroutine runchem()
         call DryDep(i,j)
         call Add_2timing(31,tim_after,tim_before,"Runchem:DryDep")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'F')
+        if(USES%LocalFractions) call lf_aero_pre(i,j)
         call AerosolEquilib(debug_flag)
+        if(USES%LocalFractions) call lf_aero_pos(i,j)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'G')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
