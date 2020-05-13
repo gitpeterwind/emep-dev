@@ -352,7 +352,7 @@ contains
   Ndrydep_lf=0
   LF_SRC_TOTSIZE = 0
   do isrc = 1, Nsources
-     if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + 1
+     if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + lf_src(isrc)%Npos
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
@@ -564,7 +564,6 @@ subroutine lf_out(iotyp)
      pollwritten = .false.
      iddep = 0
      do isrc = 1, Nsources
-        if(lf_src(isrc)%drydep)iddep = iddep + 1
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
@@ -628,11 +627,12 @@ subroutine lf_out(iotyp)
                     write(def3%name,"(A)")'DDEP_'//trim(def2%name)
                     def3%unit='mg/m2'
                     if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
-                    if(lf_src(isrc)%species=="nox")def3%unit='mgN/m2'
+                    if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
                    
+                    iddep=iddep+1
                     call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
-                   
+
                  endif
               enddo
            enddo
@@ -1240,22 +1240,24 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   integer, intent(in) :: i,j
   real, intent(in) :: fac
   real, intent(in), dimension(NSPEC_ADV) :: DepLoss
-  integer :: n,ix,iix,idep, isrc
+  integer :: n,ix,iix,idep, idep0, isrc
   real :: ffac
-  idep=0
+  idep0=0
  
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%DryDep)cycle
-     idep=idep+1
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         ffac = fac*1.e6*lf_src(isrc)%mw(iix) !(units ok?)
         if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")ffac = ffac*32.0/64.0 !SO2->S
-        if(lf_src(isrc)%species=="nox")ffac = ffac* 14.0/46.0!NOx->N
+        if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")ffac = ffac* 14.0/17.0!NH3->N
+        idep=idep0
         do n = lf_src(isrc)%start, lf_src(isrc)%end
-           loc_frac_drydep(i,j,n) = loc_frac_drydep(i,j,n) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
+           idep=idep+1
+           loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
         enddo
      enddo
+     idep0 = idep
   enddo
 end subroutine lf_drydep
 
