@@ -58,6 +58,7 @@ use Landuse_mod,          only: SetLandUse, Land_codes  &
                              ,NLUMAX &  ! Max. no countries per grid
                              ,LandCover   ! Provides codes, SGS, LAI, etc,
 use LandDefs_mod,         only: LandType, LandDefs, STUBBLE
+use LocalFractions_mod,   only: lf_drydep
 use LocalVariables_mod,   only: Grid, L, iL & ! Grid and sub-scale Met/Veg data
                                 ,NLOCDRYDEP_MAX ! Used to store Vg
 use MassBudget_mod,       only: totddep
@@ -925,7 +926,9 @@ contains
 
    convfac2 = convfac * xm2(i,j) * inv_gridarea
 
-  !.. Add DepLoss to budgets if needed:
+   if(USES%LocalFractions) call lf_drydep(i,j,DepLoss, convfac2)
+   
+   !.. Add DepLoss to budgets if needed:
 
    call Add_MosaicOutput(debug_flag,i,j,convfac2,&
             itot2DDspec, fluxfrac_adv, Deploss ) 

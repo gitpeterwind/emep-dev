@@ -3080,7 +3080,7 @@ subroutine set_EuropeanAndGlobal_Config()
         lat = glat(li1,ljmax/2)
         CALL MPI_BCAST(lon,8,MPI_BYTE,EastProc,MPI_COMM_CALC,IERROR)
         CALL MPI_BCAST(lat,8,MPI_BYTE,EastProc,MPI_COMM_CALC,IERROR)
-        x1=-32;x2=50;x3=x2;x4=x1;y1=30;y2=y1;y3=70;y4=y3
+        x1=-32;x2=90;x3=x2;x4=x1;y1=30;y2=y1;y3=70;y4=y3
         if(.not. inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat) )then
            GLOBAL_settings = 'YES' 
            if(MasterProc)write(*,18) dtxt//'assuming GLOBAL_settings: lon lat ',lon,lat,' outside Europe'
