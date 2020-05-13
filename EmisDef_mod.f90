@@ -256,6 +256,8 @@ real, public, allocatable, dimension(:,:,:,:), save :: &
   ,loc_tot_day&   !Daily average of all contributions
   ,loc_tot_month&  !Monthly average of all contributions
   ,loc_tot_full  !Fullrun average of all contributions
+real, public, allocatable, dimension(:,:,:), save :: &
+  loc_frac_drydep  ! depositions per source (not fractions!)
 real, public, allocatable, dimension(:,:,:,:), save :: &
   loc_frac_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
 real, public, allocatable, dimension(:,:), save :: &

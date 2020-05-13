@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12-13th May 2020, Peter
+
+Safer automatic "GLOBAL_settings". Take the (approximatively) the point in the
+middle of the grid in latitude direction and Easternmost in the longitudes, and
+see if it is within "Europe", here defined as the square
+with lon from -32 to 90 and lat from 30 to 70
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th May 2020, Peter
 
 Bug in MARS, rpmares. We assumed that mass of NH3+NH4  (or NO3+HNO3),  is conserved

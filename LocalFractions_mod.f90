@@ -16,6 +16,7 @@ use Country_mod,       only: MAXNLAND,NLAND,Country
 use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
+                            loc_frac_drydep, &
                             nlandcode,landcode,sec2tfac_map,sec2hfac_map, sec2split_map,&
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
@@ -57,6 +58,7 @@ public  :: lf_adv_k
 public  :: lf_diff
 public  :: lf_chem
 public  :: lf_aero_pre,lf_aero_pos 
+public  :: lf_drydep
 public  :: lf_emis
 public  :: add_lf_emis
 
@@ -90,6 +92,7 @@ real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Nsectors_lf=0
+integer, private, save :: Ndrydep_lf=0
 
 contains
 
@@ -346,8 +349,10 @@ contains
 
   av_fac=0.0
   
+  Ndrydep_lf=0
   LF_SRC_TOTSIZE = 0
   do isrc = 1, Nsources
+     if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + 1
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
@@ -402,7 +407,13 @@ contains
   else
      allocate(emis_lf_cntry(1,1,1,1,1,1))!So can be set to zero etc. without compiler complaining
   endif
-  
+  if(Ndrydep_lf>0)then
+     allocate(loc_frac_drydep(LIMAX,LJMAX,Ndrydep_lf))
+     loc_frac_drydep=0.0
+  else
+     allocate(loc_frac_drydep(1,1,1))
+  endif
+
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
 
 end subroutine lf_init
@@ -412,12 +423,13 @@ subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
   real :: xtot,scale,invtot,t1,t2
-  integer ::i,j,k,n,n1,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1,isrc,iou_ix,iter
+  integer ::i,j,k,n,n1,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1,isrc,iou_ix,iter,iddep
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
   character (len=20) ::dimNames(10),dimNames_tot(10)
-  type(Deriv) :: def1 ! definition of fields
-  type(Deriv) :: def2 ! definition of fields
+  type(Deriv) :: def1 ! definition of fields for local fraction
+  type(Deriv) :: def2 ! definition of fields for totals
+  type(Deriv) :: def3 ! definition of drydep fields
   logical ::overwrite, create_var_only
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_out(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
@@ -522,6 +534,8 @@ subroutine lf_out(iotyp)
   def1%unit=''
   def2=def1
   def2%unit='ug/m3'
+  def3=def1
+  def3%unit='mg/m2'
   chunksizes=1
   !chunksizes(1)=dimSizes(1) !slower!!
   !chunksizes(2)=dimSizes(2) !slower!!
@@ -548,10 +562,12 @@ subroutine lf_out(iotyp)
      if(iter==1)create_var_only=.true.!only create all variables before writing into them
 
      pollwritten = .false.
+     iddep = 0
      do isrc = 1, Nsources
+        if(lf_src(isrc)%drydep)iddep = iddep + 1
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
-         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
+        if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%species)
            if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
            scale=1.0/av_fac(iotyp)
@@ -603,10 +619,21 @@ subroutine lf_out(iotyp)
                  isec=lf_country_sector_list(j)
                  write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
                  if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
-                 if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name) 
+                 if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name)
+                 def2%unit='ug/m3'
                  scale=1.0
                  call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                       fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+                 if(lf_src(isrc)%drydep)then
+                    write(def3%name,"(A)")'DDEP_'//trim(def2%name)
+                    def3%unit='mg/m2'
+                    if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
+                    if(lf_src(isrc)%species=="nox")def3%unit='mgN/m2'
+                   
+                    call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+                   
+                 endif
               enddo
            enddo
         else
@@ -1208,6 +1235,29 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
   enddo
   
 end subroutine lf_aero_pos
+
+subroutine  lf_drydep(i,j,DepLoss, fac)
+  integer, intent(in) :: i,j
+  real, intent(in) :: fac
+  real, intent(in), dimension(NSPEC_ADV) :: DepLoss
+  integer :: n,ix,iix,idep, isrc
+  real :: ffac
+  idep=0
+ 
+  do isrc=1,Nsources
+     if(.not. lf_src(isrc)%DryDep)cycle
+     idep=idep+1
+     do iix=1,lf_src(isrc)%Nsplit
+        ix=lf_src(isrc)%ix(iix)
+        ffac = fac*1.e6*lf_src(isrc)%mw(iix) !(units ok?)
+        if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")ffac = ffac*32.0/64.0 !SO2->S
+        if(lf_src(isrc)%species=="nox")ffac = ffac* 14.0/46.0!NOx->N
+        do n = lf_src(isrc)%start, lf_src(isrc)%end
+           loc_frac_drydep(i,j,n) = loc_frac_drydep(i,j,n) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
+        enddo
+     enddo
+  enddo
+end subroutine lf_drydep
 
 subroutine lf_emis(indate)
 !include emission contributions to local fractions

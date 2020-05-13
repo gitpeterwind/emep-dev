@@ -326,6 +326,7 @@ type, public :: lf_sources
   real, dimension(15) :: mw=0.0  ! molecular weight of the (splitted) species (set by model)
   character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
   integer :: country_ix = -1 !Internal country index. Does not have any meaning outside of code
+  logical :: DryDep = .false. ! if drydep is to be outputed
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
   character(len=40)::  MONTH_ENDING = "NOTSET"

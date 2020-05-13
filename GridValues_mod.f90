@@ -20,7 +20,7 @@ use Io_Nums_mod,             only: IO_LOG,IO_TMP
 use MetFields_mod
 use Config_module,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
-     MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
+     MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,NPROCX,NPROCY,&
      PT,Pref,NMET,MANUAL_GRID,&
      startdate,NPROCX,NPROCY,Vertical_levelsFile,&
      EUROPEAN_settings, GLOBAL_settings,USES,FORCE_PFT_MAPS_FALSE
@@ -3030,7 +3030,7 @@ subroutine set_EuropeanAndGlobal_Config()
   implicit none
   real:: x1,x2,x3,x4,y1,y2,y3,y4,lon,lat,ir,jr
   character(len=*), parameter :: dtxt='EurGlobSettings:'
-
+  integer :: EastProc
   if(EUROPEAN_settings == 'NOTSET')then
      !No value set in config input, use grid to see if it covers Europe
      !Test approximatively if any European country is included in rundomain
@@ -3043,11 +3043,9 @@ subroutine set_EuropeanAndGlobal_Config()
         EUROPEAN_settings = 'YES' 
      else
         
-        ! define middle point of middle subdomain
-        if(me==NPROC/2)then 
-           lon = glon(limax/2,ljmax/2)
-           lat = glat(limax/2,ljmax/2)
-        endif
+        ! define middle point of middle subdomain (only values from me=NPROC/2 will be used)
+        lon = glon(limax/2,ljmax/2)
+        lat = glat(limax/2,ljmax/2)
         CALL MPI_BCAST(lon,8,MPI_BYTE,NPROC/2,MPI_COMM_CALC,IERROR)
         CALL MPI_BCAST(lat,8,MPI_BYTE,NPROC/2,MPI_COMM_CALC,IERROR)
         
@@ -3076,20 +3074,32 @@ subroutine set_EuropeanAndGlobal_Config()
         GLOBAL_settings = 'YES' !default
         if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
      else
-        !find if the point with lon = -40 and lat = 45 is within the domain
-        call lb2ij(-40.0,45.0,ir,jr)
-        if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
-           GLOBAL_settings = 'YES' !default
-           if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
-        else 
-           !find if the point with lon = 92 and lat = 45 is within the domain
-           call lb2ij(92.0,45.0,ir,jr)
+        !test the Eastern point at approximatively middle in the Y direction
+        EastProc = NPROCY/2 *NPROCX+NPROCX-1
+        lon = glon(li1,ljmax/2)
+        lat = glat(li1,ljmax/2)
+        CALL MPI_BCAST(lon,8,MPI_BYTE,EastProc,MPI_COMM_CALC,IERROR)
+        CALL MPI_BCAST(lat,8,MPI_BYTE,EastProc,MPI_COMM_CALC,IERROR)
+        x1=-32;x2=90;x3=x2;x4=x1;y1=30;y2=y1;y3=70;y4=y3
+        if(.not. inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat) )then
+           GLOBAL_settings = 'YES' 
+           if(MasterProc)write(*,18) dtxt//'assuming GLOBAL_settings: lon lat ',lon,lat,' outside Europe'
+        else           
+           !find if the point with lon = -40 and lat = 45 is within the domain
+           call lb2ij(-40.0,45.0,ir,jr)
            if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
               GLOBAL_settings = 'YES' !default
-              if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
-           else
-              if(MasterProc)write(*,*)dtxt//'Not assuming GLOBAL_settings'
-           endif           
+              if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
+           else 
+              !find if the point with lon = 92 and lat = 45 is within the domain
+              call lb2ij(92.0,45.0,ir,jr)
+              if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
+                 GLOBAL_settings = 'YES' !default
+                 if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
+              else
+                 if(MasterProc)write(*,*)dtxt//'Not assuming GLOBAL_settings'
+              endif
+           endif
         endif
      endif
   endif
