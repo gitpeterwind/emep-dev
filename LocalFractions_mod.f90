@@ -1073,6 +1073,7 @@ subroutine lf_chem(i,j)
   real :: SO4,SO2, d_SO2, d_SO4
   integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
   integer :: n_SO2,n_SO4
+  real :: k_OH, k_H2O2, k_O3
   
   call Code_timer(tim_before)
   if(isrc_SO2>0)then
@@ -1087,13 +1088,21 @@ subroutine lf_chem(i,j)
         n_SO4 = lf_src(isrc_SO4)%start
         
         !SO2->SO4
-        k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
-            + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
-            + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
-            + AQRCK(ICLRC3,K) )*dt_advec 
-        d_SO4 = SO2*k1/(1+k1)
+        !k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
+        !    + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
+        !    + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
+        !    + AQRCK(ICLRC3,K) )*dt_advec 
+        !d_SO4 = SO2*k1/(1+k1)
+        !inv = 1.0/(SO4+d_SO4)
+
+        !second order method
+        k_OH = AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k) /(1.0+SO2*AQRCK(ICLOHSO2,K)*2.00e-12 * dt_advec)
+        k_H2O2 = AQRCK(ICLRC1,K) * xn_2d(ix_H2O2,k) /(1.0+SO2*AQRCK(ICLRC1,K)*dt_advec)
+        k_O3 = AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k) /(1.0+SO2*AQRCK(ICLRC2,K)*dt_advec)
+        k1 = (k_OH + k_H2O2 + k_O3 + AQRCK(ICLRC3,K) )*dt_advec
+        d_SO4 = SO2*k1/(1.0+k1)
         inv = 1.0/(SO4+d_SO4)
-      
+        
        do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
           lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*SO4+d_SO4*lf(n_SO2,i,j,k)) * inv
           n_SO4 = n_SO4 + 1
@@ -1194,6 +1203,7 @@ subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
   integer, intent(in) ::i,j
   integer :: k
   !save concentrations, to see changes
+  if(isrc_NH4<0)return;
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
      lf_NH4(k) = xn_2d(NSPEC_SHL+ix_NH4,k)
      lf_NH3(k) = xn_2d(NSPEC_SHL+ix_NH3,k)
@@ -1206,6 +1216,7 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
   real :: d_NH4, d_NH3, NH4, NH3, inv
   integer :: n_NH3, n_NH4, k
 
+  if(isrc_NH4<0)return;
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
 
      NH3 = xn_2d(NSPEC_SHL+ix_NH3,k)
