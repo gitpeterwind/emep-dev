@@ -4,7 +4,7 @@ module LocalFractions_mod
 !
 use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
 use CheckStop_mod,     only: CheckStop,StopAll
-use Chemfields_mod,    only: xn_adv
+use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemSpecs_mod,     only: species_adv,species
 use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
@@ -65,7 +65,7 @@ public  :: add_lf_emis
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
-integer , private, save :: lfNvertout = 1!number of vertical levels to save in output
+integer , private, save :: lf_Nvertout = 1!number of vertical levels to save in output
 integer, public, save :: NTIMING_lf=9
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
@@ -391,9 +391,9 @@ contains
      allocate(lf_NH3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   endif
 
-  allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Niou_ix))
+  allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
   lf_src_acc = 0.0
-  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll,Niou_ix))
+  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Npoll,Niou_ix))
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
@@ -477,7 +477,7 @@ subroutine lf_out(iotyp)
   
   ndim=5
   ndim_tot=3
-  kmax=lfNvertout
+  kmax=lf_Nvertout
   scale=1.0
   CDFtype=Real4
   !  dimSizes(1)=uEMEP%Nsec_poll
@@ -570,7 +570,7 @@ subroutine lf_out(iotyp)
            def2%name=trim(lf_src(isrc)%species)
            if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
            scale=1.0/av_fac(iotyp)
-           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lfNvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)                
            pollwritten(ipoll) = .true.
            overwrite=.false.
@@ -580,7 +580,7 @@ subroutine lf_out(iotyp)
            fracsum=0.0
            tmp_out=0.0
            if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
-           do k = KMAX_MID-lfNvertout+1,KMAX_MID
+           do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
                     invtot=1.0/(lf_src_tot(i,j,k,ipoll,iou_ix)+1.E-20)
@@ -662,7 +662,7 @@ subroutine lf_out(iotyp)
   deallocate(tmp_out)
   
   do ipoll=1,Npoll
-     do k = KMAX_MID-lfNvertout+1,KMAX_MID
+     do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
               lf_src_tot(i,j,k,ipoll,iou_ix) = 0.0
@@ -674,7 +674,7 @@ subroutine lf_out(iotyp)
   
 ! reset the cumulative arrays
   do isrc = 1, Nsources
-     do k = KMAX_MID-lfNvertout+1,KMAX_MID
+     do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
               do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -718,16 +718,23 @@ subroutine lf_av(dt,End_of_Day)
      pollwritten = .false.
      do isrc=1,Nsources
         ipoll = lf_src(isrc)%poll
-        do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+        do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
            do j=1,ljmax
               do i=1,limax
                  xtot=0.0
                  do iix=1,lf_src(isrc)%Nsplit
                     ix=lf_src(isrc)%ix(iix)
-                    xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
-                         *roa(i,j,k,1)*1.E9 !for ug/m3
-                    !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
-                 end do
+                    if(lf_src(isrc)%type=='country')then
+                       !3m height cfac correction
+                       xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                         *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
+                       !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                    else
+                        xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                             *roa(i,j,k,1)*1.E9 !for ug/m3
+                       !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                    endif
+                end do
                  if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
                     lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
                  endif
@@ -1088,20 +1095,20 @@ subroutine lf_chem(i,j)
         n_SO4 = lf_src(isrc_SO4)%start
         
         !SO2->SO4
-        !k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
-        !    + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
-        !    + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
-        !    + AQRCK(ICLRC3,K) )*dt_advec 
-        !d_SO4 = SO2*k1/(1+k1)
-        !inv = 1.0/(SO4+d_SO4)
+        k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
+            + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
+            + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
+            + AQRCK(ICLRC3,K) )*dt_advec 
+        d_SO4 = SO2*k1/(1+k1)
+        inv = 1.0/(SO4+d_SO4)
 
         !second order method
-        k_OH = AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k) /(1.0+SO2*AQRCK(ICLOHSO2,K)*2.00e-12 * dt_advec)
-        k_H2O2 = AQRCK(ICLRC1,K) * xn_2d(ix_H2O2,k) /(1.0+SO2*AQRCK(ICLRC1,K)*dt_advec)
-        k_O3 = AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k) /(1.0+SO2*AQRCK(ICLRC2,K)*dt_advec)
-        k1 = (k_OH + k_H2O2 + k_O3 + AQRCK(ICLRC3,K) )*dt_advec
-        d_SO4 = SO2*k1/(1.0+k1)
-        inv = 1.0/(SO4+d_SO4)
+        !k_OH = AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k) /(1.0+SO2*AQRCK(ICLOHSO2,K)*2.00e-12 * dt_advec)
+        !k_H2O2 = AQRCK(ICLRC1,K) * xn_2d(ix_H2O2,k) /(1.0+SO2*AQRCK(ICLRC1,K)*dt_advec)
+        !k_O3 = AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k) /(1.0+SO2*AQRCK(ICLRC2,K)*dt_advec)
+        !k1 = (k_OH + k_H2O2 + k_O3 + AQRCK(ICLRC3,K) )*dt_advec
+        !d_SO4 = SO2*k1/(1.0+k1)
+        !inv = 1.0/(SO4+d_SO4)
         
        do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
           lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*SO4+d_SO4*lf(n_SO2,i,j,k)) * inv
