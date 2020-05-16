@@ -25,6 +25,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2020, Dave
+
+Added utils/clean_config.py script - removes trailing comments (which
+  seem to cause problems with some gfortran systems).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12-13th May 2020, Peter
 
 Safer automatic "GLOBAL_settings". Take the (approximatively) the point in the
