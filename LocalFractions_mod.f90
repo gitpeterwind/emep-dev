@@ -1211,10 +1211,12 @@ subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
   integer :: k
   !save concentrations, to see changes
   if(isrc_NH4<0)return;
+  call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
      lf_NH4(k) = xn_2d(NSPEC_SHL+ix_NH4,k)
      lf_NH3(k) = xn_2d(NSPEC_SHL+ix_NH3,k)
   enddo
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   
 end subroutine lf_aero_pre
 
@@ -1224,6 +1226,7 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
   integer :: n_NH3, n_NH4, k
 
   if(isrc_NH4<0)return;
+  call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
 
      NH3 = xn_2d(NSPEC_SHL+ix_NH3,k)
@@ -1251,6 +1254,7 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
         !N is not conserved or concentrations are constant
      endif
   enddo
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   
 end subroutine lf_aero_pos
 
@@ -1260,23 +1264,49 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   real, intent(in), dimension(NSPEC_ADV) :: DepLoss
   integer :: n,ix,iix,idep, idep0, isrc
   real :: ffac
+  integer :: istart,iend
   idep0=0
+  call Code_timer(tim_before)
  
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%DryDep)cycle
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         ffac = fac*1.e6*lf_src(isrc)%mw(iix) !(units ok?)
+        istart = lf_src(isrc)%start 
+        iend = lf_src(isrc)%end
         if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")ffac = ffac*32.0/64.0 !SO2->S
         if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")ffac = ffac* 14.0/17.0!NH3->N
+        
+        if( ix==ix_SO4 ) then
+           !take directly local fractions from SO4 instead of sox
+           istart = lf_src(isrc_SO4)%start
+           iend= lf_src(isrc_SO4)%end
+        endif
+        if( ix==ix_SO2 ) then
+           !take directly local fractions from SO2 instead of sox
+           istart = lf_src(isrc_SO2)%start
+           iend= lf_src(isrc_SO2)%end
+        endif
+        
+        if( ix==ix_NH4 ) then
+           istart = lf_src(isrc_NH4)%start
+           iend= lf_src(isrc_NH4)%end
+        endif
+        if( ix==ix_NH3 ) then
+           istart = lf_src(isrc_NH3)%start
+           iend= lf_src(isrc_NH3)%end
+        endif
+        
         idep=idep0
-        do n = lf_src(isrc)%start, lf_src(isrc)%end
+        do n = istart, iend 
            idep=idep+1
            loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
         enddo
-     enddo
+     enddo        
      idep0 = idep
   enddo
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 end subroutine lf_drydep
 
 subroutine lf_emis(indate)
