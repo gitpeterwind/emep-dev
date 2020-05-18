@@ -174,7 +174,8 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   lf_src(4)%species="nox "
   lf_src(4)%sector=8
 
-  lf_src(5)%type='country',
+  lf_src(1)%type='country',
+  lf_src(1)%drydep=T !means make country dry deposition maps too
   lf_country_sector_list(1:8)=0,1,2,3,4,5,6,7,
   lf_country_list(1:20)='FR','IT','DE','ES','NO','NL','SE','PL','AT','BE','BG','DK','FI','GR','HU','PT','RO','CH','TR','GB',
 
@@ -182,7 +183,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   !Values from lf_src(1) are used for all sources
   lf_src(1)%YEAR = T !average value for full run in output
   lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
-  lf_src(1)%Nvert = 7, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+  lf_src(1)%Nvert = 14, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
 
 !  lf_src(1)%DOMAIN = 370, 420, 270, 320, !which domain to include in lf output. Will save disk, but not CPU to reduce.
 

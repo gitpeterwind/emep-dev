@@ -40,7 +40,7 @@ use Timefactors_mod,   only: &
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_edd, timefac  ! time-factors
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
-use ZchemData_mod,only: rct, rcphot, xn_2d
+use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis
 
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
 
@@ -1085,36 +1085,18 @@ subroutine lf_chem(i,j)
   call Code_timer(tim_before)
   if(isrc_SO2>0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        if(allocated(Dchem))then
-           !if(me==0.and. i==5 .and.j==5)write(*,*)'DCHEM ',Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec,xn_2d(NSPEC_SHL+ix_SO2,k)
-           SO2 = max(0.0,xn_2d(NSPEC_SHL+ix_SO2,k)+Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
-       else
-           SO2 = xn_2d(NSPEC_SHL+ix_SO2,k)
-        endif
         SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
         n_SO4 = lf_src(isrc_SO4)%start
-        
-        !SO2->SO4
-        k1= (AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k)  & !ix_OH is index among all species
-            + AQRCK(ICLRC1,K)  * xn_2d(ix_H2O2,k)  & !ix_H2O2 is index among all species
-            + AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k)  &!ix_O3 is index among advected species
-            + AQRCK(ICLRC3,K) )*dt_advec 
-        d_SO4 = SO2*k1/(1+k1)
-        inv = 1.0/(SO4+d_SO4)
 
-        !second order method
-        !k_OH = AQRCK(ICLOHSO2,K)*2.00e-12 * xn_2d(ix_OH,k) /(1.0+SO2*AQRCK(ICLOHSO2,K)*2.00e-12 * dt_advec)
-        !k_H2O2 = AQRCK(ICLRC1,K) * xn_2d(ix_H2O2,k) /(1.0+SO2*AQRCK(ICLRC1,K)*dt_advec)
-        !k_O3 = AQRCK(ICLRC2,K) * xn_2d(NSPEC_SHL+ix_O3,k) /(1.0+SO2*AQRCK(ICLRC2,K)*dt_advec)
-        !k1 = (k_OH + k_H2O2 + k_O3 + AQRCK(ICLRC3,K) )*dt_advec
-        !d_SO4 = SO2*k1/(1.0+k1)
-        !inv = 1.0/(SO4+d_SO4)
+        !SO4 produced by SO2 , without emitted SO4:
+        d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
+        inv = 1.0/(SO4)
         
-       do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
-          lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*SO4+d_SO4*lf(n_SO2,i,j,k)) * inv
-          n_SO4 = n_SO4 + 1
-       enddo
-       
+        do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
+           lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*(SO4-d_SO4)+d_SO4*lf(n_SO2,i,j,k)) * inv
+           n_SO4 = n_SO4 + 1
+        enddo
+        
     enddo
 
   endif

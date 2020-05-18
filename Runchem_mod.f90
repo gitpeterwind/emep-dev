@@ -186,8 +186,6 @@ subroutine runchem()
 
       call Add_2timing(28,tim_after,tim_before,"Runchem:other setups")
 
-      if(USES%LocalFractions) call lf_chem(i,j)
-
 !     if(DEBUG%RUNCHEM.and.debug_flag) &
 !       call datewrite("RUNCHEM PRE-CHEM",(/xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20)/))
 !     !-------------------------------------------------
@@ -196,10 +194,12 @@ subroutine runchem()
 
       if( .not. USES%NOCHEM) then
         call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
-      else
+      else  
         xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
                                          +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
       end if
+
+      if(USES%LocalFractions) call lf_chem(i,j)
 
       if(DEBUG%RUNCHEM) call check_negs(i,j,'C')
 !     !-------------------------------------------------
