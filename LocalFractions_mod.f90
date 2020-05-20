@@ -88,6 +88,7 @@ integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
 integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3=-1, ix_HO2=-1
 integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
 integer, private, save :: ix_NH4=-1, ix_NH3=-1
+integer, private, save :: ix_NO3=-1, ix_HNO3=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
@@ -273,6 +274,14 @@ contains
               ix=find_index("SO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for SO2 not found')
               lf_src(isrc)%mw(i)=species_adv(ix)%molwt
+           endif
+           if(lf_src(isrc)%species=="nox" .and. lf_src(isrc)%DryDep)then
+              ix=find_index("NO3",species_adv(:)%name)
+              call CheckStop(ix<0,'Index for NO3 not found')
+              ix_NO3=ix
+              ix=find_index("HNO3",species_adv(:)%name)
+              call CheckStop(ix<0,'Index for HNO3 not found')
+              ix_HNO3=ix
            endif
            
            if(lf_src(isrc)%species=="nh3")then
@@ -1259,7 +1268,8 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
         iend = lf_src(isrc)%end
         if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")ffac = ffac*32.0/64.0 !SO2->S
         if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")ffac = ffac* 14.0/17.0!NH3->N
-        
+        if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox")ffac = ffac*14.0/46.0 !NO2->N
+     
         if( ix==ix_SO4 ) then
            !take directly local fractions from SO4 instead of sox
            istart = lf_src(isrc_SO4)%start
@@ -1285,6 +1295,21 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
            idep=idep+1
            loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
         enddo
+        if(lf_src(isrc)%species=="nox" .and. iix==lf_src(isrc)%Nsplit)then
+           !we add also depositions of NO3 and HNO3
+           ix=ix_NO3
+           idep=idep0
+           do n = istart, iend 
+              idep=idep+1
+              loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
+           enddo
+           ix=ix_HNO3
+           idep=idep0
+           do n = istart, iend 
+              idep=idep+1
+              loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
+           enddo
+        endif
      enddo        
      idep0 = idep
   enddo
