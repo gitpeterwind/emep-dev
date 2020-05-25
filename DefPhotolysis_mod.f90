@@ -402,9 +402,10 @@
 
           end if   !  end izen <  90 (daytime)  test
 
-          if(photo_out_ix>0) d_3d(photo_out_ix,i,j,1:num_lev3d,IOU_INST) = &
-               rcphot(IDNO2,lev3d(1:num_lev3d))
-
+          if(photo_out_ix>0)then
+             d_3d(photo_out_ix,i,j,1:num_lev3d,IOU_INST) = &
+               rcphot(IDNO2,max(KCHEMTOP,lev3d(1:num_lev3d))) !WARNING: rcphot defined only up to KCHEMTOP!
+          endif
     end subroutine setup_phot
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

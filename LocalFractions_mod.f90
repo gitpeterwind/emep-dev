@@ -108,7 +108,7 @@ contains
      !Temporary: we keep compatibilty with lf input
      old_format=.true.
      lf_src(:)%dist = uEMEP%dist !Temporary
-     lf_Nvert = uEMEP%Nvert !Temporary
+     lf_src(:)%Nvert = uEMEP%Nvert !Temporary
      do i=1,4
         lf_src(:)%DOMAIN(i) = uEMEP%DOMAIN(i) !Temporary
         if(lf_src(1)%DOMAIN(i)<0)lf_src(:)%DOMAIN(i) = RUNDOMAIN(i)
@@ -399,7 +399,7 @@ contains
      allocate(lf_NH4(KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(lf_NH3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   endif
-
+  
   allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
   lf_src_acc = 0.0
   allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Npoll,Niou_ix))
