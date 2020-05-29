@@ -1,0 +1,20 @@
+# PPM25 splits for EmChem09
+# Key-word, MASS_ASSUMED= 0 by default, 
+# Here we simply split SNAP-2 equally between wood and ffuel. Should
+# be done in more detail
+# D. Simpson, May 2011, loosely based upon IIASA, POMI, CARBOSOL papers
+# change when emissions have artificial mass, e.g. 46 for NOx as NO2
+: MASS_ASSUMED 0 
+ 99, 99,EC_f_new,EC_f_age,#HEADERS
+#DATA
+  0,  1, 80.0, 20.0
+  0,  2, 80.0, 20.0
+  0,  3, 80.0, 20.0
+  0,  4, 80.0, 20.0
+  0,  5, 80.0, 20.0
+  0,  6, 80.0, 20.0
+  0,  7, 80.0, 20.0
+  0,  8, 80.0, 20.0
+  0,  9, 80.0, 20.0
+  0, 10, 80.0, 20.0
+  0, 11, 80.0, 20.0

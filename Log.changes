@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May 2020, Dave
+
+  ZCM_Chem19a-ECf added - for runs with just EC emissions
+     No SOA, SeaSalt, Dust, PM25 etc.
+     Best to switch off FOREST_FIRES; DUST; SEASALT in config.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 May 2020, Dave
 
   AerosolCalls - removed need for SEASALT_f. Use iSeaSalt variable to cope.
