@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May 2020, Dave, Peter
+
+added
+  if ( isec>NSECTORS ) cycle
+in the EmisSplit reading routine, to allow to use GNFR13 with splits defined
+for GNFR19.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 May 2020, Dave
 
   ZCM_Chem19a-ECf added - for runs with just EC emissions
