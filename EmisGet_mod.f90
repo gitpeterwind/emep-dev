@@ -1467,7 +1467,7 @@ end if
            call read_line(IO_EMIS,txtinput,ios)
            if ( ios /=  0 ) exit READ_DATA     ! End of file
            read(unit=txtinput,fmt=*,iostat=ios)  iland_icode, isec, (tmp(i),i=1, nsplit)
-           if ( isec>NSECTORS ) cycle !allows compatibility between GNFR13 and GNFR19
+
            if( MasterProc .and. ios /= 0 ) then
                print *, "ERROR: EmisGet: Failure reading emispslit file"
                print *, "Expecting to split into nsplit=", nsplit

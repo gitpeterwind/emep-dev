@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May 2020, Peter
+
+Reversed the change done 29 May!
+removed "if ( isec>NSECTORS ) cycle"
+"isec" in this context is not the model sector, but the splitfile index (1.. N_SPLIT).
+It is allowed to have a different N_splits and NSECTORS.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 May 2020, Dave, Peter
 
 added
