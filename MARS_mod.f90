@@ -64,25 +64,25 @@ module MARS_mod
       integer, private, save :: MAXNNN1 = 0
       integer, private, save :: MAXNNN2 = 0
 !ds      real        MWNO3            ! molecular weight for NO3
-      real, private, parameter :: MWNO3  = 62.0049 
+      real, private, parameter :: MWNO3  = 62.0!049 
 
 !ds      real        MWHNO3           ! molecular weight for HNO3
-      real, private, parameter :: MWHNO3 = 63.01287       
+      real, private, parameter :: MWHNO3 = 63.0!1287       
 
 !ds      real        MWSO4            ! molecular weight for SO4
-      real, private, parameter :: MWSO4 = 96.0576 
+      real, private, parameter :: MWSO4 = 96.0!576 
 
 !ds      real        MWHSO4           ! molecular weight for HSO4
-      real, private, parameter :: MWHSO4 = MWSO4 + 1.0080
+      real, private, parameter :: MWHSO4 = MWSO4 + 1.0!080
 
 !ds      real        MH2SO4           ! molecular weight for H2SO4
-      real, private, parameter :: MH2SO4 = 98.07354 
+      real, private, parameter :: MH2SO4 = 98.0!7354 
 
 !ds      real        MWNH3            ! molecular weight for NH3
-      real, private, parameter :: MWNH3 = 17.03061 
+      real, private, parameter :: MWNH3 = 17.0!3061 
 
 !ds      real        MWNH4            ! molecular weight for NH4
-      real, private, parameter :: MWNH4 = 18.03858
+      real, private, parameter :: MWNH4 = 18.0!3858
  contains
 
       real function poly4 (a,x)
@@ -1747,13 +1747,13 @@ real  AHSO4 ! Aerosol phase in bisulfate in MICROGRAMS/M**3
 
       ! Molecular weights
       REAL*8, PARAMETER :: MWNACL = 58.44277d0               ! NaCl
-      REAL*8, PARAMETER :: MWNO3  = 62.0049d0                ! NO3
-      REAL*8, PARAMETER :: MWHNO3 = 63.01287d0               ! HNO3
-      REAL*8, PARAMETER :: MWSO4  = 96.0576d0                ! SO4
-      REAL*8, PARAMETER :: MWHSO4 = MWSO4 + 1.0080d0         ! HSO4
-      REAL*8, PARAMETER :: MH2SO4 = 98.07354d0               ! H2SO4
-      REAL*8, PARAMETER :: MWNH3  = 17.03061d0               ! NH3
-      REAL*8, PARAMETER :: MWNH4  = 18.03858d0               ! NH4
+      REAL*8, PARAMETER :: MWNO3  = 62.0!049d0                ! NO3
+      REAL*8, PARAMETER :: MWHNO3 = 63.0!1287d0               ! HNO3
+      REAL*8, PARAMETER :: MWSO4  = 96.0!576d0                ! SO4
+      REAL*8, PARAMETER :: MWHSO4 = MWSO4 + 1.0!080d0         ! HSO4
+      REAL*8, PARAMETER :: MH2SO4 = 98.0!7354d0               ! H2SO4
+      REAL*8, PARAMETER :: MWNH3  = 17.0!3061d0               ! NH3
+      REAL*8, PARAMETER :: MWNH4  = 18.0!3858d0               ! NH4
       REAL*8, PARAMETER :: MWORG  = 16.0d0                   ! Organic Species
       REAL*8, PARAMETER :: MWCL   = 35.453d0                 ! Chloride
       REAL*8, PARAMETER :: MWAIR  = 28.964d0                 ! AIR

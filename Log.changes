@@ -25,6 +25,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th June 2020, Peter
+
+Changed molecular weights from MARS so that they get equal to the rest of the 
+code.
+MWNO3  = 62.0049 -> 62.0
+MWHNO3 = 63.0287 -> 63.0
+MWSO4  = 96.0576 -> 96.0
+MWHSO4 = MWSO4 + 1.0080 -> MWSO4 + 1.0
+MH2SO4 = 98.07354 -> 98.0
+MWNH3  = 17.03061 -> 17.0
+MWNH4  = 18.03858 -> 18.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May 2020, Peter
 
 Reversed the change done 29 May!
