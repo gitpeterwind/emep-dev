@@ -82,8 +82,14 @@
 
 ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 
-SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
-SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
+!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
+!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
+! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
+! inventory assumptions! Here we hav Ref2, which corresponds to
+! TNO's estimate of emissions with condensable organics. Sadly,
+! even the BC emissions are tied to this assumption.
+SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
+SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/missplit_specials_POLL.csv',
 cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt',  
 cmxBiomassBurning_FINNv1p5 = 'ZCMDIR/CMX_BiomassBurning_FINNv1p5.txt',
 cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',

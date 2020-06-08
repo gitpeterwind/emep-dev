@@ -25,6 +25,27 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th June 2020, Dave
+
+New emissplits files added to git system for better tracking. 
+    - uses new .csv style (libreoffice friendly!)
+    - Ref1 and Ref2 versions, to cope with condensables in PM splits
+    - GNFR_CAMS (19 sector splits) provided here
+    - (snap still needs work)
+    - revised NMVOC from CAMS71/Robert/Dave
+    - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
+      to DataDir/ZCMDIRS/EMISSPLITS
+
+config_emep.nml - now points to new files, with .csv format.
+EMISSPLITS directory added to ZD_EXTRA
+ZD_EXTRA/README - modified to reflect update
+
+Note: I will soon add SNAP versions of these. Meanwhile, if you want snap,
+the older systems still work, including the non .csv format. Just make
+sure config_emep.nml matches what you want. 
+
+tag updated to rv4_35, also to cover other changes since rv4_34os.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th June 2020, Peter
 
 Changed molecular weights from MARS so that they get equal to the rest of the 
