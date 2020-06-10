@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th June 2020, Dave
+
+New emissplits in SNAP system. Same data as GNFR below.
+    - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
+      to DataDir/ZCMDIRS/EMISSPLITS
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2020, Dave
 
 New emissplits files added to git system for better tracking. 
