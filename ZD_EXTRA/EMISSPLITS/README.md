@@ -3,7 +3,7 @@ June 2020 revised emissplits::
     - uses new .csv style (libreoffice friendly!)
     - Ref1 and Ref2 versions, to cope with condensables in PM splits
     - GNFR_CAMS (19 sector splits) provided here
-    - (snap still needs work)
+    - SNAP-11 created from these GNFR_CAMS files.
     - revised NMVOC from CAMS71/Robert/Dave 
     - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
       to DataDir/ZCMDIRS/EMISSPLITS
@@ -26,6 +26,9 @@ Directories::
          complete sets of emissplits are given to make it easy in config
          setup. The NMVOC splits are identical for both, and taken from
          the CAMS71-II-scenarios_v1 data set which gave F1, F2, etc.
+
+    /emissplits_snap   - updated system with new .csv style
+                       - as gnfr above, but into SNAP-11
   
     
 For sox, nox, co, nh3 the CAMS_GNFR files were simply reformated from the
