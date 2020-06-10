@@ -6,7 +6,7 @@ June 2020 revised emissplits::
     - SNAP-11 created from these GNFR_CAMS files.
     - revised NMVOC from CAMS71/Robert/Dave 
     - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
-      to DataDir/ZCMDIRS/EMISSPLITS
+      to DataDir/ZCMDIRS/EMISSPLITS (if not already there).
      
 
 Directories::
