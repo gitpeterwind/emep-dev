@@ -1099,7 +1099,7 @@ subroutine lf_chem(i,j)
 
         !SO4 produced by SO2 , without emitted SO4:
         d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
-        inv = 1.0/(SO4)
+        inv = 1.0/(SO4 + 1.0E-20)
         
         do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
            lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*(SO4-d_SO4)+d_SO4*lf(n_SO2,i,j,k)) * inv
