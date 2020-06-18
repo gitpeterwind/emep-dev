@@ -1905,7 +1905,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
                    !Degree days - only SNAP-2 
                    if(USES%DEGREEDAY_FACTORS .and. &
-                        sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                        sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors .and. &
+                        (Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')) then
                       oldtfac = tfac
                       ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                       ! we make use of a baseload even for SNAP2

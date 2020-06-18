@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2020, Peter
+
+Emissions new format: do not apply DegreeDay correction if the emissions are 
+not monthly or yearly (because daily/hourly emissions already should take those 
+variations into acccount).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th June 2020, Peter
 
 Bug in LocalFraction for SO4 when concentration is zero
