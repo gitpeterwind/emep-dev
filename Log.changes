@@ -25,6 +25,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th June 2020, Peter, Agnes
+
+Defined new "Country", AST  = Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
+Country( IC_AST ) = cc(  "AST" ,'-', 96 ,F, 96, 96, -100  , "Asian areas in the EMEP domain" )
+
+Allowed sum of countries for Local Fractions for 
+TMT = TM+TME
+AST = CAS+ARL+ARE+ASM+ASE
+UZT = UZ+UZE
+KZT = KZ+KZE
+RUE = RU+RFE+RUX
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2020, Peter
 
 Emissions new format: do not apply DegreeDay correction if the emissions are 

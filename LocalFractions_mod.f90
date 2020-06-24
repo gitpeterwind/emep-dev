@@ -12,7 +12,9 @@ use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending, MAXSRC,Max_Country_list,Max_Country_sectors, lf_country_sector_list,lf_country_list
-use Country_mod,       only: MAXNLAND,NLAND,Country
+use Country_mod,       only: MAXNLAND,NLAND,Country&
+                             ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
+                             ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
 use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
@@ -1423,7 +1425,14 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(Ncountry_lf>0)then
          !has to store more detailed info
          do ic=1,Ncountry_lf
-            if(country_ix_list(ic)/=iland)cycle
+            if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+            else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+            else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+            else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+            else if(country_ix_list(ic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+            else if(country_ix_list(ic)/=iland)then
+               cycle
+            endif
             do is=1,Nsectors_lf
                if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
                emis = s * dt_advec
