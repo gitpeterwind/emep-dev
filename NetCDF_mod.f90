@@ -205,7 +205,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
   real :: kcoord(KMAXcdf+1)
   real :: Acdf(KMAXcdf),Bcdf(KMAXcdf),Aicdf(KMAXcdf+1),Bicdf(KMAXcdf+1)
   integer,parameter :: MAX_String_length=36
-  character(len=100) :: auxL(4)
+  character(len=TXTLEN_File) :: auxL(4)
   character(len=MAX_String_length) :: metaName,metaType,auxC(NStations)
   integer :: auxI(NStations),ierr
   real :: auxR(NStations)
@@ -286,6 +286,8 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       call wordsplit(trim(MetaData(0,n)),3,auxL,k,ierr,strict_separator=':')
       call CheckStop(3,k,&
         "NetCDF_mod: too short metadata definition "//trim(MetaData(0,n)))
+      call CheckStop(ierr /= 0, &
+        "NetCDF_mod: wordsplit error:: "//trim(MetaData(0,n)))
       select case(auxL(2))
       case("c","C","s","S") ! string/char attribute
         call check(nf90_put_att(ncFileID,nf90_global,trim(auxL(1)),trim(auxL(3))),&
