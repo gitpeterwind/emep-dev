@@ -176,7 +176,7 @@ contains
 !=========================================================================
 subroutine Init_Derived()
   integer :: alloc_err
-  integer :: iddefPMc, i
+  integer :: iddefPMc
   character(len=*), parameter :: dtxt='IniDeriv:' !debug label
   dbg0 = (DEBUG%DERIVED .and. MasterProc )
 
@@ -324,7 +324,6 @@ subroutine Define_Derived()
   character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
-  logical :: found
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -898,7 +897,7 @@ subroutine Setups()
 
          nvoc = nvoc + 1
          voc_index(nvoc) = n
-         voc_carbon(nvoc) = species( NSPEC_SHL+n )%carbons
+         voc_carbon(nvoc) = int(species( NSPEC_SHL+n )%carbons)
       end if
     end do
   !====================================================================
@@ -948,7 +947,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_pm10=-999   ,ind3d_pm10=-999,     &
     ind2d_pm25=-999 
 
-  integer :: imet_tmp, ind, ind_tmp, iadvDep
+  integer :: imet_tmp, ind, iadvDep
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
