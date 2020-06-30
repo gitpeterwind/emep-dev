@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th June 2020, Dave
+
+Derived_mod: surround species%carbons with int to get voc_carbon
+             unused variables removed.
+NetCDF_mod: allowed longer auxL(4) texts - now TXTLEN_File
+SmallUtils_mod: added dtxt and improved error message
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th June 2020, Peter, Agnes
 
 Defined new "Country", AST  = Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
