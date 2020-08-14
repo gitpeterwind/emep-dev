@@ -234,6 +234,9 @@ the end of the map it chose the "wrong side".
 Solution: we force the index to be within range.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Feb 2020, ????
+rv4_34os tag added.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Peter, Qing
 
 Nesting: the number of vertical levels in the BC file is checked before each
@@ -278,6 +281,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Jan 2020, Robert/Dave
 
 Updated EmChem19a and EmChem19p
+
+rv4_34 tag added? (before or after? Need to check)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Jan 2020, Peter
