@@ -25,6 +25,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Massimo, (Peter)
+
+ ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90 
+(was limited to 1000 and giving errors with more than 1000 sources)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Anna, (Peter)
+
+Updated compiler setting in mk.meteoPreProc into a more generic form that works 
+on Nebula  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th July 2020, Peter
 Replace also keyword DataDir for DegreeDayFactorsFile
 
