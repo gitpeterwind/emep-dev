@@ -55,12 +55,13 @@ use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneigh
                             ,SecEmisOut, EmisOut, SplitEmisOut, &
                             isec2SecOutWanted
 use EmisGet_mod,       only: nrcemis,iqrc2itot
+use Functions_mod,      only: Tpot_2_T    ! Conversion function
 use GasParticleCoeffs_mod, only: DDdefs
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
 use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
-                            met, derivmet,  &
+                            met, derivmet,  q, &
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
@@ -81,6 +82,7 @@ use PhysicalConstants_mod, only: PI,KAPPA,ATWAIR,GRAV
 use OrganicAerosol_mod, only :  ORGANIC_AEROSOLS, Reset_3dOrganicAerosol
 use ZchemData_mod,    only: Fpart ! for FSOA work
 use SmallUtils_mod,        only: find_index, LenArray, NOT_SET_STRING, trims
+use Tabulations_mod,      only : tab_esat_Pa
 use TimeDate_mod,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
 use TimeDate_ExtraUtil_mod,only: to_stamp, date_is_reached
@@ -952,10 +954,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem
-  integer :: isec_poll,isec,iisec,ii,ipoll
+  integer :: isec_poll,isec,iisec,ii,ipoll,itemp
   real :: default_frac,tot_frac,loc_frac_corr
   character(len=*), parameter :: dtxt='Deriv:'
-
+  real pp, temp, qsat
+  
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
   timefrac = dt/3600.0
@@ -1998,7 +2001,17 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         case("wind_speed_3D")
            forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
                 d_3d(n,i,j,k,IOU_INST)=sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2)
-           
+        case("RH_3D") !relative humidity
+           do k=1, num_lev3d
+           do j=1, ljmax
+           do i=1, limax
+              pp = A_mid(k) + B_mid(k)*ps(i,i,1)
+              itemp= nint(th(i,i,k,1) * Tpot_2_T(pp))
+              qsat = 0.622 * tab_esat_Pa( itemp ) / pp
+              d_3d(n,i,j,k,IOU_INST)=min(q(i,i,k,1)/qsat,1.0)       
+           end do
+           end do
+           end do
         case default
            if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
            d_3d(n,:,:,:,IOU_INST)=0.0

@@ -25,6 +25,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th  August 2020, Peter
+
+3D relative humidity available as output. in config_emep.nml add in OutputMisc a line such as:
+
+'relative_humidity',  'MET3D', 'RH_3D', '-', 'frac', -99,  -99,   F,   1.0, T, 'YM',
+
+(the first name can be changed: it is the variable name as it will appear in the output file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st  August 2020, Massimo, (Peter)
 
  ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90 
