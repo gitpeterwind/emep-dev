@@ -157,6 +157,7 @@ subroutine Config_Pollen()
     select case(POLLEN_GROUP(g))
       case(BIRCH);n=find_index('POLLb',DDdefs(:)%name)
       case(OLIVE);n=find_index('POLLo',DDdefs(:)%name)
+      case(ALDER);n=find_index('POLLa',DDdefs(:)%name)
       case(RWEED);n=find_index('POLLr',DDdefs(:)%name)
       case(GRASS);n=find_index('POLLg',DDdefs(:)%name)
     end select

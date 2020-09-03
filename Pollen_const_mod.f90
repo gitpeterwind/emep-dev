@@ -28,6 +28,7 @@ real, parameter  :: &
   PREC_MAX = 0.5,             & ! Max cut-off precipitation [mm/h]
   N_TOT_birch = 1.0e9,        & ! Available pollen [grains/m2] birch
   N_TOT_olive = 3.9e8,        & ! Available pollen [grains/m2] olive
+  N_TOT_alder = 1.0e8,        & ! Available pollen [grains/m2] alder
   N_TOT_rweed = 1.7e7,        & ! Available pollen [grains/m2] ragweed
   N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
   RH_LOW   = 0.50,            & ! Min cut-off relative humidity [1]
@@ -43,6 +44,7 @@ real, parameter  :: &
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
   D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
+  D_POLL_alder = 22.0,        & ! Pollen grain diameter [um] alder
   POLL_DENS    = 800e3          ! Pollen density [g/m3]
 
 real, parameter ::            &
@@ -62,30 +64,32 @@ real, parameter ::            &
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
+  ALDER = "POLLEN_ALDER",&
   RWEED = "POLLEN_RWEED",&
   GRASS = "POLLEN_GRASS",&
-  POLLEN_GROUP(4)=[BIRCH,OLIVE,RWEED,GRASS]
+  POLLEN_GROUP(5)=[BIRCH,OLIVE,ALDER,RWEED,GRASS]
 integer, parameter :: &
-  iBIRCH=1,iOLIVE=2,iRWEED=3,iGRASS=4,POLLEN_NUM=size(POLLEN_GROUP)
+  iBIRCH=1,iOLIVE=2,iALDER=3,iRWEED=4,iGRASS=5,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
-  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass],&
+  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass],&
   T_CUTOFF(iBIRCH:iOLIVE)=[T_cutoff_birch,T_cutoff_olive],&
   PROB_IN(iBIRCH:iOLIVE)=[PROB_IN_birch,PROB_IN_olive],&
   PROB_OUT(iBIRCH:iOLIVE)=[PROB_OUT_birch,PROB_OUT_olive]
 
 real, parameter  :: &
-  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
+  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
   grain_wt(POLLEN_NUM) = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0       ! 1 grain weight [g]
 ! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
 ! BIRCH: 4.460e-3, 2686e6
 ! OLIVE: 9.195e-3, 5538e6
+! ALDER: ??
 ! RWEED: 2.443e-3
 ! GRASS: 13.73e-3, 8267e6
 
-private :: N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass,&
+private :: N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass,&
            T_cutoff_birch,T_cutoff_olive,&
            PROB_IN_birch,PROB_IN_olive,PROB_OUT_birch,PROB_OUT_olive,&
-           D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass
+           D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass
 
 contains
 subroutine pollen_check(igrp,uconv_adv)
@@ -134,6 +138,13 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group PROB_IN, "//POLLEN_GROUP(g))
       call CheckStop(PROB_OUT(g)/=PROB_OUT_olive,&
         "pollen_check: Inconsistent POLLEN group PROB_OUT, "//POLLEN_GROUP(g))
+    case(iALDER)
+      call CheckStop(POLLEN_GROUP(g),ALDER,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_alder,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_alder,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
     case(iRWEED)
       call CheckStop(POLLEN_GROUP(g),RWEED,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
