@@ -25,7 +25,7 @@ use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
 use MicroMet_mod,          only: Wind_at_h
 use Config_module,         only: KMAX_MID, DataDir, &
                                  METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                 dt=>dt_advec, &
+                                 dt=>dt_advec, GRID_NAME=>GRID,&
                                  outdate=>NEST_OUTDATE,OUTDATE_NDUMP=>NEST_OUTDATE_NDUMP,&
                                  out_DOMAIN=>NEST_out_DOMAIN,&
                                  MODE_READ=>NEST_MODE_READ,&
@@ -142,9 +142,21 @@ subroutine Config_Pollen()
     write(*,NML=Pollen_config)
   end if
 
-  ! expand DataDir keysword
-  template_read =key2str(template_read ,'DataDir',DataDir)
-  template_write=key2str(template_write,'DataDir',DataDir)
+  ! expand DataDir, YYYY and GRID keywords
+  birch_frac_nc  = key2str(birch_frac_nc ,'DataDir',DataDir)
+  birch_data_nc  = key2str(birch_data_nc ,'DataDir',DataDir)
+  birch_corr_nc  = key2str(birch_corr_nc ,'DataDir',DataDir)
+  birch_corr_nc  = key2str(birch_corr_nc ,'YYYY'   ,current_date%year)
+  olive_data_nc  = key2str(olive_data_nc ,'DataDir',DataDir)
+  olive_data_nc  = key2str(olive_data_nc ,'YYYY'   ,current_date%year)
+  rweed_frac_nc  = key2str(rweed_frac_nc ,'DataDir',DataDir)
+  rweed_frac_nc  = key2str(rweed_frac_nc ,'GRID'   ,GRID_NAME)
+  rweed_data_nc  = key2str(rweed_data_nc ,'DataDir',DataDir)
+  rweed_data_nc  = key2str(rweed_data_nc ,'GRID'   ,GRID_NAME)
+  grass_field_nc = key2str(grass_field_nc,'DataDir',DataDir)
+  grass_time_nc  = key2str(grass_time_nc ,'DataDir',DataDir)
+  template_read  = key2str(template_read ,'DataDir',DataDir)
+  template_write = key2str(template_write,'DataDir',DataDir)
 
   do g=1,POLLEN_NUM
     inat(g) = find_index(POLLEN_GROUP(g),EMIS_BioNat(:))
@@ -259,7 +271,6 @@ subroutine pollen_flux(i,j,debug_flag)
     call ReadField_CDF(birch_data_nc,'h_c',pollen_h_c(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 ! birch: cross_corr for specific year
-    birch_corr_nc=date2string(birch_corr_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(birch_corr_nc,'scale_factor',birch_corr,1, &
         interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
 ! birch: cross_corr default
@@ -267,7 +278,6 @@ subroutine pollen_flux(i,j,debug_flag)
       call ReadField_CDF(birch_data_nc,'cross',birch_corr,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 ! olive
-    olive_data_nc=date2string(olive_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(olive_data_nc,'olive_frac',pollen_frac(:,:,iOLIVE),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',pollen_h_c(:,:,iOLIVE),1, &
@@ -276,9 +286,8 @@ subroutine pollen_flux(i,j,debug_flag)
         interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
     if(.not.found) olive_dH(:,:) = dH_d_olive
 ! ragweed
-    call ReadField_CDF(rweed_frac_nc,'fraction',pollen_frac(:,:,iRWEED),1, &
+   call ReadField_CDF(rweed_frac_nc,'fraction',pollen_frac(:,:,iRWEED),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
-    rweed_data_nc=date2string(rweed_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(rweed_data_nc,'start_th',rweed_start,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(rweed_data_nc,'scale',rweed_corr,1, &
