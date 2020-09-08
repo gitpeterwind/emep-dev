@@ -12,7 +12,8 @@ use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending, MAXSRC,Max_Country_list,Max_Country_sectors, lf_country_sector_list,lf_country_list
-use Country_mod,       only: MAXNLAND,NLAND,Country
+use Country_mod,       only: MAXNLAND,NLAND,Country&
+                             ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX
 use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
@@ -48,6 +49,9 @@ implicit none
 !external advection_mod_mp_vertdiffn_k
 
 private
+
+integer ::IC_AST_EXTRA = 324567,IC_RUT_EXTRA = 324568 !sum of countries which are not defined as countries
+integer ::IC_BIC_EXTRA = 324569
 
 public  :: lf_init
 public  :: lf_out
@@ -89,6 +93,9 @@ integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3=-1, ix_HO2=-1
 integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
 integer, private, save :: ix_NH4=-1, ix_NH3=-1
 integer, private, save :: ix_NO3=-1, ix_HNO3=-1
+integer, private, save :: isrc_EC_f_ffuel_new=-1, isrc_EC_f_ffuel_age=-1, isrc_EC_f_wood_new=-1, isrc_EC_f_wood_age=-1
+integer, private, save :: ix_EC_f_ffuel_new=-1, ix_EC_f_ffuel_age=-1
+integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
@@ -179,6 +186,13 @@ contains
               if(lf_country_list(i) == 'NOTSET') exit
               Ncountry_lf=Ncountry_lf+1
               ix = find_index(trim(lf_country_list(i)) ,Country(:)%code, first_only=.true.)
+              if(ix<0 .and. lf_country_list(i) =='AST')then
+                 ix = IC_AST_EXTRA 
+              else if(ix<0 .and. lf_country_list(i) =='RUT')then
+                 ix = IC_RUT_EXTRA 
+              else if(ix<0 .and. lf_country_list(i) =='BIC')then
+                 ix = IC_BIC_EXTRA 
+              endif 
               call CheckStop(ix<0,'country '//trim(lf_country_list(i))//' not defined. ')        
               country_ix_list(i) = ix
               if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from ',trim(lf_country_list(i))
@@ -246,6 +260,14 @@ contains
         if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
         if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
         if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
+        if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
+        if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
+        if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
+        if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
      else
         !species defines as primary emitted 
         lf_src(isrc)%iem = iem
@@ -256,6 +278,20 @@ contains
            ix=itot-NSPEC_SHL
            lf_src(isrc)%ix(i)=ix
            lf_src(isrc)%mw(i)=species_adv(ix)%molwt
+!           if(lf_src(isrc)%species=="pm25")then
+!              ix=find_index('EC_f_ffuel_new', species(:)%name)
+!              call CheckStop( ix<1, "Local Fractions did not find  ")
+!              ix_EC_f_ffuel_new = ix - NSPEC_SHL!shortcut
+!              ix=find_index('EC_f_ffuel_age', species(:)%name)
+!              call CheckStop( ix<1, "Local Fractions did not find  ")
+!              ix_EC_f_ffuel_age = ix - NSPEC_SHL!shortcut
+!              ix=find_index('isrc_EC_f_wood_new', species(:)%name)
+!              call CheckStop( ix<1, "Local Fractions did not find  ")
+!              ix_isrc_EC_f_wood_new = ix - NSPEC_SHL!shortcut
+!              ix=find_index('isrc_EC_f_wood_age', species(:)%name)
+!              call CheckStop( ix<1, "Local Fractions did not find  ")
+!              ix_isrc_EC_f_wood_age = ix - NSPEC_SHL!shortcut
+!           endif
            if(lf_src(isrc)%species=="voc")then
               isrc_VOC = isrc
               ix=find_index('CH3CO3', species(:)%name)
@@ -1088,10 +1124,35 @@ subroutine lf_chem(i,j)
   real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt,inv
   real :: SO4,SO2, d_SO2, d_SO4
   integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
-  integer :: n_SO2,n_SO4
+  integer :: n_SO2,n_SO4,  n_EC_new, n_EC
   real :: k_OH, k_H2O2, k_O3
+  real ::  d_age
   
   call Code_timer(tim_before)
+
+  if(isrc_EC_f_ffuel_new >0)then
+     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+        ! d_age = amount that has been transformed from EC_f_ffuel_new to EC_f_ffuel_age
+        d_age = rct(96,k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
+        inv = 1.0/( xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age + 1.0E-20)        
+        n_EC_new = lf_src(isrc_EC_f_ffuel_new)%start
+        do n_EC=lf_src(isrc_EC_f_ffuel_age)%start, lf_src(isrc_EC_f_ffuel_age)%end
+           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
+           n_EC_new = n_EC_new + 1
+        enddo
+     enddo
+  endif
+  if(isrc_EC_f_wood_new >0)then
+     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+        d_age = rct(96,k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
+        inv = 1.0/( xn_adv(ix_EC_f_wood_age,i,j,k) + d_age + 1.0E-20)        
+        n_EC_new = lf_src(isrc_EC_f_wood_new)%start
+        do n_EC=lf_src(isrc_EC_f_wood_age)%start, lf_src(isrc_EC_f_wood_age)%end
+           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_wood_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
+           n_EC_new = n_EC_new + 1
+        enddo
+     enddo     
+  endif
   if(isrc_SO2>0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
@@ -1099,7 +1160,7 @@ subroutine lf_chem(i,j)
 
         !SO4 produced by SO2 , without emitted SO4:
         d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
-        inv = 1.0/(SO4)
+        inv = 1.0/(SO4 + 1.0E-20)
         
         do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
            lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*(SO4-d_SO4)+d_SO4*lf(n_SO2,i,j,k)) * inv
@@ -1423,7 +1484,14 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(Ncountry_lf>0)then
          !has to store more detailed info
          do ic=1,Ncountry_lf
-            if(country_ix_list(ic)/=iland)cycle
+            if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+            else if(country_ix_list(ic)==IC_AST_EXTRA.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+            else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+            else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+            else if(country_ix_list(ic)==IC_RUT_EXTRA.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+            else if(country_ix_list(ic)/=iland)then
+               cycle
+            endif
             do is=1,Nsectors_lf
                if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
                emis = s * dt_advec
