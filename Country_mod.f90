@@ -315,10 +315,11 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_AOX ! Extended EMEP-ext. part of Arctic Ocean
 
 ! Divided countries put together
-  integer, public :: IC_RUE   ! Russian Federation in the extended EMEP domain (RU+RFE+RUX, 36, 37, 38, 42, 71, 74)
+  integer, public :: IC_RUE   ! Russian Federation in the extended EMEP domain (RU+RFE+RUX, 61=(36, 37, 38, 42), 71, 74)
   integer, public :: IC_KZT   ! Kazakhstan (KZ+KZE, 53, 75)
   integer, public :: IC_UZT   ! Uzbekistan (UZ+UZE, 76,78)
   integer, public :: IC_TMT   ! Turkmenistan (TM+TME, 77,79)
+  integer, public :: IC_AST   ! Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
 
  !b) Domain x = -16-132 y = -11-0
   integer,  public :: IC_NAX  ! EMEP-external part of North Africa
@@ -821,6 +822,9 @@ Country( IC_UZT ) = cc(  "UZT" ,'-', 94 ,F, 94, 94, -100  , "Uzbekistan (all)" )
 ix=ix+1 
 IC_TMT=ix
 Country( IC_TMT ) = cc(  "TMT" ,'-', 95 ,F, 95, 95, -100  , "Turkmenistan  (all)" )
+ix=ix+1 
+IC_AST=ix
+Country( IC_AST ) = cc(  "AST" ,'-', 96 ,F, 96, 96, -100  , "Asian areas in the EMEP domain" )
 
 ! NH3Emis new land code for NMR-NH3 project
 ix=ix+1 

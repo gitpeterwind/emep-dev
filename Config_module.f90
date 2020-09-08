@@ -939,6 +939,7 @@ subroutine Config_Constants(iolog)
   meteo = key2str(meteo,'GRID',GRID)
   MetDir= key2str(meteo,'meteoYYYYMMDD.nc','./')
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'MetDir',MetDir)
+  DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'DataDir',DataDir)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'YYYY',startdate(1))
   if(MasterProc)then

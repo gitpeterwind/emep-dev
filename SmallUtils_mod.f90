@@ -85,6 +85,8 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
                keep_empty   ! keep empty strings on request
   integer   :: i, is, iw
   character(len=1) ::  c,s(0:3)
+  character(len=*), parameter :: dtxt='Wordsplit:'
+  
 
   errcode = 0
   wasinword = .false.   !To be safe, with spaces at start of line
@@ -106,7 +108,8 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
       is = is + 1
       if ( is> len(wordarray) ) then !DSJJ
          errcode = 2
-         print *, "ERROR in WORDSPLIT IS: ", trim(text(:i))
+         write(*,*) dtxt//"ERROR: too short: ", trim(text(:i))
+         write(*,*) dtxt//"ERROR: too short: ",i, is, len(wordarray)
          exit
       end if
       wordarray(iw)(is:is) = c
@@ -118,8 +121,8 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
       is = 0
       if(iw>nword_max ) then
          errcode = 2
-         print *, "ERROR in WORDSPLIT : Problem at ", text
-         print *,"Too many words"
+         print *,dtxt//"ERROR: Problem at ", text
+         print *,dtxt//"Too many words"
          iw=iw-1
          exit
       end if

@@ -25,6 +25,71 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th  August 2020, Peter
+
+3D relative humidity available as output. in config_emep.nml add in OutputMisc a line such as:
+
+'relative_humidity',  'MET3D', 'RH_3D', '-', 'frac', -99,  -99,   F,   1.0, T, 'YM',
+
+(the first name can be changed: it is the variable name as it will appear in the output file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Massimo, (Peter)
+
+ ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90 
+(was limited to 1000 and giving errors with more than 1000 sources)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Anna, (Peter)
+
+Updated compiler setting in mk.meteoPreProc into a more generic form that works 
+on Nebula  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th July 2020, Peter
+Replace also keyword DataDir for DegreeDayFactorsFile
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th June 2020, Dave
+
+Derived_mod: surround species%carbons with int to get voc_carbon
+             unused variables removed.
+NetCDF_mod: allowed longer auxL(4) texts - now TXTLEN_File
+SmallUtils_mod: added dtxt and improved error message
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th June 2020, Peter, Agnes
+
+Defined new "Country", AST  = Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
+Country( IC_AST ) = cc(  "AST" ,'-', 96 ,F, 96, 96, -100  , "Asian areas in the EMEP domain" )
+
+Allowed sum of countries for Local Fractions for 
+TMT = TM+TME
+AST = CAS+ARL+ARE+ASM+ASE
+UZT = UZ+UZE
+KZT = KZ+KZE
+RUE = RU+RFE+RUX
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2020, Peter
+
+Emissions new format: do not apply DegreeDay correction if the emissions are 
+not monthly or yearly (because daily/hourly emissions already should take those 
+variations into acccount).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th June 2020, Peter
+
+Bug in LocalFraction for SO4 when concentration is zero
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th June 2020, Dave
+
+New emissplits in SNAP system. Same data as GNFR below.
+    - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
+      to DataDir/ZCMDIRS/EMISSPLITS
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2020, Dave
 
 New emissplits files added to git system for better tracking. 
@@ -190,6 +255,9 @@ the end of the map it chose the "wrong side".
 Solution: we force the index to be within range.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Feb 2020, ????
+rv4_34os tag added.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Peter, Qing
 
 Nesting: the number of vertical levels in the BC file is checked before each
@@ -234,6 +302,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Jan 2020, Robert/Dave
 
 Updated EmChem19a and EmChem19p
+
+rv4_34 tag added? (before or after? Need to check)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Jan 2020, Peter
