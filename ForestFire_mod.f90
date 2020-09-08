@@ -182,6 +182,7 @@ subroutine Config_Fire()
   integer :: ios, ne, n, k
   character(len=*), parameter :: dtxt='BB:Config'
 
+  if(.not.first_call) return
   if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
 
   select case(BBMAP)
