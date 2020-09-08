@@ -96,7 +96,9 @@ integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
 integer, private, save :: ix_NH4=-1, ix_NH3=-1
 integer, private, save :: ix_NO3=-1, ix_HNO3=-1
 integer, private, save :: isrc_EC_f_ffuel_new=-1, isrc_EC_f_ffuel_age=-1, isrc_EC_f_wood_new=-1, isrc_EC_f_wood_age=-1
+integer, private, save :: isrc_EC_f_new=-1, isrc_EC_f_age=-1
 integer, private, save :: ix_EC_f_ffuel_new=-1, ix_EC_f_ffuel_age=-1
+integer, private, save :: ix_EC_f_new=-1, ix_EC_f_age=-1
 integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
@@ -262,6 +264,10 @@ contains
         if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
         if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
         if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
+        if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+        if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
+        if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
         if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
         if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
         if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
@@ -1131,6 +1137,19 @@ subroutine lf_chem(i,j)
   real ::  d_age
   
   call Code_timer(tim_before)
+  
+  if(isrc_EC_f_new>0)then
+     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+        ! d_age = amount that has been transformed from EC_f_new to EC_f_age
+        d_age = rct(80,k)*xn_adv(ix_EC_f_new,i,j,k) *dt_advec
+        inv = 1.0/( xn_adv(ix_EC_f_age,i,j,k) + d_age + 1.0E-20)        
+        n_EC_new = lf_src(isrc_EC_f_new)%start
+        do n_EC=lf_src(isrc_EC_f_age)%start, lf_src(isrc_EC_f_age)%end
+           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
+           n_EC_new = n_EC_new + 1
+        enddo
+     enddo
+  endif
 
   if(isrc_EC_f_ffuel_new >0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
