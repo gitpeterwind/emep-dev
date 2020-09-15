@@ -20,6 +20,7 @@ public
 real, parameter  :: &
   T_cutoff_birch = 273.2+3.5, & ! Cut-off temperature [K] birch
   T_cutoff_olive = 273.2,     & ! Cut-off temperature [K] olive
+  T_cutoff_alder = 277.15,    & ! heatsum_cut_off_T: no heat sum accumulation below this temperature
   dH_d_birch     =  50,       & ! Flowering period [degree days] birch
   dH_d_olive     = 275,       & ! Flowering period [degree days] olive
   dH_birch=dH_d_birch*24*3600,& ! Flowering period [degree seconds] birch
@@ -38,6 +39,8 @@ real, parameter  :: &
   PROB_IN_olive  = 0.1,       & ! Probability for flowering to start
   PROB_OUT_olive = 0.1,       & ! Probability for flowering to end
                                 ! (could be assumed to be larger than PROB_IN)
+  PROB_IN_alder = 0.1,        & ! uncertainty_of_heat_sum_threshold_start: start uncertainty for heatsum linear release
+  PROB_OUT_alder = 0.1,       & ! uncertainty_of_total_pollen_amt: end uncertainty for linear releases
   uncert_day_grass = 7,       &
   uncert_tot_grass = 0.2,     & ! end uncertainty for linear releases
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
@@ -72,9 +75,9 @@ integer, parameter :: &
   iBIRCH=1,iOLIVE=2,iALDER=3,iRWEED=4,iGRASS=5,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
   N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass],&
-  T_CUTOFF(iBIRCH:iOLIVE)=[T_cutoff_birch,T_cutoff_olive],&
-  PROB_IN(iBIRCH:iOLIVE)=[PROB_IN_birch,PROB_IN_olive],&
-  PROB_OUT(iBIRCH:iOLIVE)=[PROB_OUT_birch,PROB_OUT_olive]
+  T_CUTOFF(iBIRCH:iALDER)=[T_cutoff_birch,T_cutoff_olive,T_cutoff_alder],&
+  PROB_IN(iBIRCH:iALDER)=[PROB_IN_birch,PROB_IN_olive,PROB_IN_alder],&
+  PROB_OUT(iBIRCH:iALDER)=[PROB_OUT_birch,PROB_OUT_olive,PROB_OUT_alder]
 
 real, parameter  :: &
   D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
@@ -87,8 +90,9 @@ real, parameter  :: &
 ! GRASS: 13.73e-3, 8267e6
 
 private :: N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass,&
-           T_cutoff_birch,T_cutoff_olive,&
-           PROB_IN_birch,PROB_IN_olive,PROB_OUT_birch,PROB_OUT_olive,&
+           T_cutoff_birch,T_cutoff_olive,T_cutoff_alder,&
+           PROB_IN_birch,PROB_IN_olive,PROB_IN_alder,&
+           PROB_OUT_birch,PROB_OUT_olive,PROB_OUT_alder,&
            D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass
 
 contains
@@ -145,6 +149,12 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
       call CheckStop(D_POLL(g)/=D_POLL_alder,&
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+      call CheckStop(T_CUTOFF(g)/=T_cutoff_alder,&
+        "pollen_check: Inconsistent POLLEN group T_cutoff, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_IN(g)/=PROB_IN_alder,&
+        "pollen_check: Inconsistent POLLEN group PROB_IN, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_OUT(g)/=PROB_OUT_alder,&
+        "pollen_check: Inconsistent POLLEN group PROB_OUT, "//POLLEN_GROUP(g))
     case(iRWEED)
       call CheckStop(POLLEN_GROUP(g),RWEED,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
@@ -159,6 +169,8 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
       call CheckStop(D_POLL(g)/=D_POLL_grass,&
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case default
+      call CheckStop("Not implemented "//POLLEN_GROUP(g))
     end select
   end do
   if(present(uconv_adv))then
