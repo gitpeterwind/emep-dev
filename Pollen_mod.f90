@@ -322,8 +322,12 @@ subroutine pollen_flux(i,j,debug_flag)
         grass_end=grass_end+grass_start
     end if
 
+    ! negative fractions as UnDef
+    where(pollen_frac/=UnDef .and. pollen_frac<0) &
+      pollen_frac = UnDef
+
     ! reduce birch from 60 degrees north:
-    forall(ii=1:limax,jj=1:ljmax,glat(ii,jj)>=60.0) &
+    forall(ii=1:limax,jj=1:ljmax,glat(ii,jj)>=60.0 .and. pollen_frac(ii,jj,iBIRCH)/=UnDef) &
       pollen_frac(ii,jj,iBIRCH)=pollen_frac(ii,jj,iBIRCH)&
                        *MAX(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
