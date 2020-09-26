@@ -2,7 +2,6 @@ module LocalFractions_mod
 !
 ! all subroutines for Local Fractions
 !
-use Aqueous_mod,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
@@ -19,7 +18,7 @@ use Country_mod,       only: MAXNLAND,NLAND,Country&
 use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
-                            loc_frac_drydep, &
+                            loc_frac_drydep, loc_frac_wetdep, &
                             nlandcode,landcode,sec2tfac_map,sec2hfac_map, sec2split_map,&
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
@@ -33,7 +32,7 @@ use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_NAME, T
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
-use Chemsolver_mod,    only: Dchem
+!use Chemsolver_mod,    only: Dchem
 use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use Timefactors_mod,   only: &
@@ -63,8 +62,8 @@ public  :: lf_adv_y
 public  :: lf_adv_k
 public  :: lf_diff
 public  :: lf_chem
-public  :: lf_aero_pre,lf_aero_pos 
-public  :: lf_drydep
+public  :: lf_aero_pre, lf_aero_pos 
+public  :: lf_drydep, lf_wetdep
 public  :: lf_emis
 public  :: add_lf_emis
 
@@ -105,6 +104,7 @@ integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Nsectors_lf=0
 integer, private, save :: Ndrydep_lf=0
+integer, private, save :: Nwetdep_lf=0
 
 contains
 
@@ -319,7 +319,7 @@ contains
               call CheckStop(ix<0,'Index for SO2 not found')
               lf_src(isrc)%mw(i)=species_adv(ix)%molwt
            endif
-           if(lf_src(isrc)%species=="nox" .and. lf_src(isrc)%DryDep)then
+           if(lf_src(isrc)%species=="nox" .and. (lf_src(isrc)%DryDep .or. lf_src(isrc)%WetDep))then
               ix=find_index("NO3",species_adv(:)%name)
               call CheckStop(ix<0,'Index for NO3 not found')
               ix_NO3=ix
@@ -403,9 +403,11 @@ contains
   av_fac=0.0
   
   Ndrydep_lf=0
+  Nwetdep_lf=0
   LF_SRC_TOTSIZE = 0
   do isrc = 1, Nsources
      if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + lf_src(isrc)%Npos
+     if(lf_src(isrc)%wetdep) Nwetdep_lf = Nwetdep_lf + lf_src(isrc)%Npos
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
@@ -466,6 +468,12 @@ contains
   else
      allocate(loc_frac_drydep(1,1,1))
   endif
+  if(Nwetdep_lf>0)then
+     allocate(loc_frac_wetdep(LIMAX,LJMAX,Nwetdep_lf))
+     loc_frac_wetdep=0.0
+  else
+     allocate(loc_frac_wetdep(1,1,1))
+  endif
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
 
@@ -476,13 +484,13 @@ subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
   real :: xtot,scale,invtot,t1,t2
-  integer ::i,j,k,n,n1,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1,isrc,iou_ix,iter,iddep
+  integer ::i,j,k,n,n1,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
   character (len=20) ::dimNames(10),dimNames_tot(10)
   type(Deriv) :: def1 ! definition of fields for local fraction
   type(Deriv) :: def2 ! definition of fields for totals
-  type(Deriv) :: def3 ! definition of drydep fields
+  type(Deriv) :: def3 ! definition of dry and wet dep fields
   logical ::overwrite, create_var_only
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_out(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
@@ -616,6 +624,7 @@ subroutine lf_out(iotyp)
 
      pollwritten = .false.
      iddep = 0
+     iwdep = 0
      do isrc = 1, Nsources
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
@@ -684,6 +693,17 @@ subroutine lf_out(iotyp)
                    
                     iddep=iddep+1
                     call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
+
+                 endif
+                 if(lf_src(isrc)%wetdep)then
+                    write(def3%name,"(A)")'WDEP_'//trim(def2%name)
+                    def3%unit='mg/m2'
+                    if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
+                    if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
+                   
+                    iwdep=iwdep+1
+                    call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
 
                  endif
@@ -1178,9 +1198,9 @@ subroutine lf_chem(i,j)
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
         n_SO4 = lf_src(isrc_SO4)%start
-
+        stop
         !SO4 produced by SO2 , without emitted SO4:
-        d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
+        !d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
         inv = 1.0/(SO4 + 1.0E-20)
         
         do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
@@ -1339,6 +1359,7 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   real :: ffac
   integer :: istart,iend
   idep0=0
+  idep=0
   call Code_timer(tim_before)
  
   do isrc=1,Nsources
@@ -1397,6 +1418,78 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 end subroutine lf_drydep
+
+subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
+  integer, intent(in) :: iadv, i,j,k_in
+  real, intent(in) :: loss, fac
+  integer :: n,ix,iix,idep, idep0, isrc, k
+  real :: ffac
+  integer :: istart,iend
+  idep0=0
+  idep=0
+  k = max(k_in,KMAX_MID-lf_Nvert+1) ! for scavenging above the lf window, we assume same fraction as highest level available
+  call Code_timer(tim_before)
+
+  do isrc=1,Nsources
+     if(.not. lf_src(isrc)%WetDep) cycle
+     do iix=1,lf_src(isrc)%Nsplit
+        ix=lf_src(isrc)%ix(iix)
+        if(ix /= iadv) cycle
+        ffac = fac*1.e6*lf_src(isrc)%mw(iix)
+        istart = lf_src(isrc)%start 
+        iend = lf_src(isrc)%end
+        if(isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox") ffac = ffac*32.0/64.0 !SO2->S
+        if(isrc==isrc_SO4) ffac = ffac*32.0/96.0 !SO4->S
+        if(isrc==isrc_NH3 .or. lf_src(isrc)%species=="nh3") ffac = ffac* 14.0/17.0 !NH3->N
+        if(isrc==isrc_NH4) ffac = ffac* 14.0/18.0 !NH4->N
+        if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox") ffac = ffac*14.0/46.0 !NO2->N
+     
+        if( ix==ix_SO4 ) then
+           !take directly local fractions from SO4 instead of sox
+           istart = lf_src(isrc_SO4)%start
+           iend= lf_src(isrc_SO4)%end
+        endif
+        if( ix==ix_SO2 ) then
+           !take directly local fractions from SO2 instead of sox
+           istart = lf_src(isrc_SO2)%start
+           iend= lf_src(isrc_SO2)%end
+        endif
+        
+        if( ix==ix_NH4 ) then
+           istart = lf_src(isrc_NH4)%start
+           iend= lf_src(isrc_NH4)%end
+        endif
+        if( ix==ix_NH3 ) then
+           istart = lf_src(isrc_NH3)%start
+           iend= lf_src(isrc_NH3)%end
+        endif
+        
+        idep=idep0
+        do n = istart, iend 
+           idep=idep+1
+           loc_frac_wetdep(i,j,idep) = loc_frac_wetdep(i,j,idep) + lf(n,i,j,k)*loss*ffac
+!    if(n==istart.and.i_fdom(i)==94.and.j_fdom(j)==119.and.(ix==ix_NH3.or.ix==ix_NH4))write(*,*)'LF ',idep,idep0,k,ix,ix_NH4,loc_frac_wetdep(i,j,idep)
+        enddo
+        if(lf_src(isrc)%species=="nox" .and. iix==lf_src(isrc)%Nsplit)then
+           !we add also depositions of NO3 and HNO3
+           ix=ix_NO3
+           idep=idep0
+           do n = istart, iend 
+              idep=idep+1
+              loc_frac_wetdep(i,j,idep) = loc_frac_wetdep(i,j,idep) + lf(n,i,j,k)*loss*ffac
+           enddo
+           ix=ix_HNO3
+           idep=idep0
+           do n = istart, iend 
+              idep=idep+1
+              loc_frac_wetdep(i,j,idep) = loc_frac_wetdep(i,j,idep) + lf(n,i,j,k)*loss*ffac
+           enddo
+        endif
+     enddo        
+     idep0 = idep0 + lf_src(isrc)%end-lf_src(isrc)%start+1
+  enddo
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+end subroutine lf_wetdep
 
 subroutine lf_emis(indate)
 !include emission contributions to local fractions

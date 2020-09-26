@@ -187,6 +187,7 @@ program emep_Main
 
   call Add_2timing(2,tim_after,tim_before,"Meteo read first record")
 
+
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
   call Init_masks()
@@ -194,9 +195,9 @@ program emep_Main
   call Init_emissions !new format
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
-  
-  if(USES%LocalFractions) call lf_init
 
+  if(USES%LocalFractions) call lf_init
+  
   call MetModel_LandUse(1)   !
 
   call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
