@@ -545,28 +545,43 @@ contains
     real :: fac, gridyear, ccsum,emsum(NEMIS_FILE)
     character(len=TXTLEN_NAME) :: fmt
     TYPE(timestamp)   :: ts1,ts2
-    logical, save ::first_call=.true.
+    logical, save ::first_call = .true.
     real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
-
+    logical :: writeoutsums 
+    logical :: writeout !if something to show and writeoutsums=T
+    
+    writeoutsums = first_call .or. step_main<10 .or. DEBUG%EMISSIONS 
+    writeout = .false. !init
+    
     ts1=make_timestamp(current_date)
     coming_date = current_date
     coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
     gridyear = GRIDWIDTH_M * GRIDWIDTH_M * 3600*24*nydays*1.0E-6!kg/m2/s -> kt/year
 
-    if(first_call)then
-       ! sum emissions per countries
-       allocate(sumemis(NLAND,NEMIS_FILE))
-       sumemis=0.0
-    endif
+    do n = 1, NEmisFile_sources
+       if(writeoutsums .or. EmisFiles(n)%periodicity=='monthly')then
+          writeoutsums = .true.
+          ! sum emissions per countries
+          allocate(sumemis(NLAND,NEMIS_FILE))
+          sumemis = 0.0
+          emsum = 0.0
+          exit
+       end if
+    end do
 
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources     
-       if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-          if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
-               write(*,*)'Emis: update date is reached ',&
+      if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
+          if(me==0 .and. writeoutsums)&
+               write(*,*)'Emis: current date has reached past update date ',&
                EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
+          if(writeoutsums) writeout = .true. ! at least something to write
+          if(writeoutsums .and. .not.allocated(sumemis))then
+             allocate(sumemis(NLAND,NEMIS_FILE))
+             emsum = 0.0
+          endif
           !values are no more valid, fetch new one
-          if(first_call)sumemis=0.0
+          if(writeoutsums)sumemis=0.0
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
                 ix = ix3Dmap(is)
@@ -759,7 +774,7 @@ contains
                 endif
              endif
 
-             if(first_call)then
+             if(writeout)then
                 ! sum emissions per countries (in ktonnes?)
                 itot = Emis_source(is)%species_ix
                 isec = Emis_source(is)%sector
@@ -802,7 +817,7 @@ contains
           endif
 
        endif
-       if(first_call)then
+       if(writeout)then
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
                NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
           if(me==0)then
@@ -824,12 +839,12 @@ contains
           end do
        endif
     enddo
-    if(first_call)then
+    if(writeout)then
        fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
        if(me==0 .and. NEmisFile_sources>0)write(*     ,fmt)'EMTAB', 999,'TOTAL    ',emsum(:)
-       deallocate(sumemis)   
        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
     endif
+    if (allocated(sumemis)) deallocate(sumemis)   
 
     first_call=.false.
 
