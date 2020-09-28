@@ -58,6 +58,10 @@
 !	        sigma_vcd_trop:_FillValue = 1.e+20f ;
 !	        sigma_vcd_trop:units = "1e15 cm**-2" ;
 !	        sigma_vcd_trop:long_name = "Error in the NO2 tropospheric vertical column density" ;
+!	      float sigma_vcd_trop_ak(pixel) ;
+!	        sigma_vcd_trop_ak:_FillValue = 1.e+20f ;
+!	        sigma_vcd_trop_ak:units = "1e15 cm**-2" ;
+!	        sigma_vcd_trop_ak:long_name = "Error in the NO2 tropospheric vertical column density using averaging kernel information (w/o profile error contribution)" ;
 !	      float kernel(pixel, layer) ;
 !	        kernel:units = "1" ;
 !	        kernel:long_name = "averaging kernel" ;

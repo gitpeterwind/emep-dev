@@ -1948,7 +1948,6 @@ contains
         ! info on conversion to target units:
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
                                  needroa=needroa, debug_msg=TRACELINE )
-        IF_NOT_OK_RETURN(status=1)
         ! only partly ..
         fscale = fscale * 0.27
         ! extract from bottom level:
