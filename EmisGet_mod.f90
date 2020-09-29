@@ -567,7 +567,7 @@ contains
           if(EmisFile_in%source(i)%varname == cdfvarname)then
              nn = nn + 1
              source_found(i) = 0 !mark as found
-             call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"NEmis_sourcesMAX exceeded (A)")
+             call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"lf: too many sources. Increase NEmis_sourcesMAX")
              Emis_source(NEmis_sources+nn)%ix_in=i
              if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
           endif
@@ -577,7 +577,7 @@ contains
           ! into different vertical levels)
            do i = 1,max(1,nn)
              !we define a new emission source
-             call CheckStop(NEmis_sources+1 > NEmis_sourcesMAX,"NEmis_sourcesMAX exceeded (B)")
+             call CheckStop(NEmis_sources+1 > NEmis_sourcesMAX,"lf: too many sources. Please, increase NEmis_sourcesMAX")
              NEmis_sources = NEmis_sources + 1
              Emis_source(NEmis_sources)%varname = trim(cdfvarname)
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
