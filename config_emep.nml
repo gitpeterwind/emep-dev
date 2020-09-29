@@ -182,8 +182,11 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 
   lf_src(1)%type='country',
   lf_src(1)%drydep=T !means make country dry deposition maps too
+  lf_src(1)%wetdep=T !means make country wet deposition maps too
   lf_country_sector_list(1:8)=0,1,2,3,4,5,6,7,
   lf_country_list(1:20)='FR','IT','DE','ES','NO','NL','SE','PL','AT','BE','BG','DK','FI','GR','HU','PT','RO','CH','TR','GB',
+  lf_country_group(1)%name='NORDIC', !any name given to the group (used as output name)
+  lf_country_group(1)%list(1:)='NO','DK','SE','FI', ! countries included in the group
 
   !Local Fractions frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
   !Values from lf_src(1) are used for all sources

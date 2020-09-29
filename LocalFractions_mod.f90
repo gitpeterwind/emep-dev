@@ -10,7 +10,9 @@ use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, MAXSRC,Max_Country_list,Max_Country_sectors, lf_country_sector_list,lf_country_list
+                             ,HOURLYFILE_ending, MAXSRC, Max_Country_list, Max_Country_sectors &
+                             ,lf_country_group, Max_Country_groups&
+                             ,lf_country_sector_list,lf_country_list
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
@@ -28,7 +30,8 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
-use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, TXTLEN_NAME, TXTLEN_FILE
+use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, MAX_lf_country_group_size, &
+                             TXTLEN_NAME, TXTLEN_FILE
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
@@ -102,14 +105,15 @@ integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
-integer, private, save :: Nsectors_lf=0
+integer, private, save :: Ncountry_group_lf=0
+integer, private, save :: Ncountrysectors_lf=0
 integer, private, save :: Ndrydep_lf=0
 integer, private, save :: Nwetdep_lf=0
 
 contains
 
   subroutine lf_init
-    integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: i, ic, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
     integer :: found
     character(len=TXTLEN_NAME) :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
 
@@ -183,7 +187,7 @@ contains
         Ndiv2_coarse = max(Ndiv2_coarse,Ndiv_coarse*Ndiv_coarse)
      endif
      if(lf_src(isrc)%type == 'country')then
-        if(lf_country_list(1)/= 'NOTSET')then
+        if(lf_country_list(1)/= 'NOTSET' .or. lf_country_group(1)%name/= 'NOTSET')then
            !list of countries/sectors instead of single country
            Ncountry_lf=0
            do i = 1, Max_Country_list
@@ -201,13 +205,35 @@ contains
               country_ix_list(i) = ix
               if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from ',trim(lf_country_list(i))
            enddo
-           Nsectors_lf=0
+           Ncountry_group_lf=0
+           do i = 1, Max_Country_groups
+              if(lf_country_group(i)%name == 'NOTSET') exit
+              Ncountry_group_lf = Ncountry_group_lf+1
+              do ic = 1, MAX_lf_country_group_size
+                 if(lf_country_group(i)%list(ic) == 'NOTSET') exit
+                 
+                 ix = find_index(trim(lf_country_group(i)%list(ic)) ,Country(:)%code, first_only=.true.)
+                 if(ix<0 .and. lf_country_list(i) =='AST')then
+                    ix = IC_AST_EXTRA 
+                 else if(ix<0 .and. lf_country_list(i) =='RUT')then
+                    ix = IC_RUT_EXTRA 
+                 else if(ix<0 .and. lf_country_list(i) =='BIC')then
+                    ix = IC_BIC_EXTRA 
+                 endif
+                 call CheckStop(ix<0,'country '//trim(lf_country_group(i)%list(ic))//' not defined. ')        
+                 lf_country_group(i)%ix(ic) = ix
+                 if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from '//&
+                      trim(lf_country_group(i)%list(ic))//' as '//trim(lf_country_group(i)%name)
+              enddo
+           enddo
+           Ncountrysectors_lf=0
            do i = 1, Max_Country_sectors
               if(lf_country_sector_list(i) < 0) exit
-              Nsectors_lf=Nsectors_lf+1
+              Ncountrysectors_lf=Ncountrysectors_lf+1
               if(MasterProc)write(*,*)'country sector ',lf_country_sector_list(i)
           enddo
-           lf_src(isrc)%Npos = Ncountry_lf*Nsectors_lf
+          lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
+          if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
         else
            lf_src(isrc)%Npos = 1
            ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
@@ -379,11 +405,10 @@ contains
      endif
         
      if(MasterProc)then
-        write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as '
         if(lf_src(isrc)%iem>0)then
-           write(*,*)'emitted as : ',EMIS_FILE(lf_src(isrc)%iem)
+           write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
         else
-           write(*,*)'not emitted'
+           write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
         endif
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
@@ -456,8 +481,8 @@ contains
   emis_lf = 0.0
   allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
   lf_emis_tot = 0.0
-  if(Ncountry_lf*Nsectors_lf>0)then
-     allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf,Nsectors_lf,Nsources))
+  if(Ncountry_lf*Ncountrysectors_lf>0)then
+     allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf+Ncountry_group_lf,Ncountrysectors_lf,Nsources))
      emis_lf_cntry=0.0
   else
      allocate(emis_lf_cntry(1,1,1,1,1,1))!So can be set to zero etc. without compiler complaining
@@ -609,7 +634,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(3)=dimSizes_tot(3)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
-  allocate(tmp_out_cntry(LIMAX,LJMAX,Ncountry_lf*Nsectors_lf))
+  allocate(tmp_out_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf))
  
   iou_ix = iotyp2ix(iotyp)
 
@@ -657,7 +682,6 @@ subroutine lf_out(iotyp)
                              write(*,*)'tmp_out_cntry is nan ',tmp_out_cntry(i,j,n1),lf_src_acc(n,i,j,k,iou_ix),invtot,trim(lf_src(isrc)%species)
                              stop
                           endif
-  
                        enddo
                     else
                        do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -673,13 +697,19 @@ subroutine lf_out(iotyp)
         
         if(lf_src(isrc)%type == 'country')then
            n1=0
-           do i=1,Ncountry_lf
-              do j=1,Nsectors_lf
+           do i=1,Ncountry_lf+Ncountry_group_lf
+              do j=1,Ncountrysectors_lf
                  n1=n1+1
                  !single cell source
                  isec=lf_country_sector_list(j)
-                 write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
-                 if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
+                 if(i<=Ncountry_lf)then
+                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
+                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
+                 else
+                    !country group
+                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_group(i-Ncountry_lf)%name)
+                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_group(i-Ncountry_lf)%name)                    
+                 endif
                  if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name)
                  def2%unit='ug/m3'
                  scale=1.0
@@ -1468,7 +1498,6 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
         do n = istart, iend 
            idep=idep+1
            loc_frac_wetdep(i,j,idep) = loc_frac_wetdep(i,j,idep) + lf(n,i,j,k)*loss*ffac
-!    if(n==istart.and.i_fdom(i)==94.and.j_fdom(j)==119.and.(ix==ix_NH3.or.ix==ix_NH4))write(*,*)'LF ',idep,idep0,k,ix,ix_NH4,loc_frac_wetdep(i,j,idep)
         enddo
         if(lf_src(isrc)%species=="nox" .and. iix==lf_src(isrc)%Nsplit)then
            !we add also depositions of NO3 and HNO3
@@ -1539,10 +1568,16 @@ subroutine lf_emis(indate)
                iiix=lf_src(isrc)%ix(iix)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
-            if(lf_src(isrc)%type=='country' .and. Ncountry_lf>0)then
+            if(lf_src(isrc)%type=='country' .and. (Ncountry_lf>0 .or. Ncountry_group_lf>0))then
                n0=lf_src(isrc)%start
                do ic=1,Ncountry_lf
-                  do is=1,Nsectors_lf
+                  do is=1,Ncountrysectors_lf
+                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
+                     n0=n0+1
+                 enddo
+               enddo
+               do ic=Ncountry_lf+1,Ncountry_lf+Ncountry_group_lf
+                  do is=1,Ncountrysectors_lf
                      lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
                      n0=n0+1
                   enddo
@@ -1573,8 +1608,9 @@ end subroutine lf_emis
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: n, isrc, k, ipoll,ic,is
-  real emis
+  integer :: n, isrc, k, ipoll,ic,is,ig
+  real :: emis
+  integer :: ngroups, ig2ic(Max_Country_groups)
 
   call Code_timer(tim_before)
 
@@ -1596,48 +1632,71 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
   do isrc = 1, Nsources
      if(lf_src(isrc)%iem /= iem) cycle
      if(Ncountry_lf>0)then
-         !has to store more detailed info
-         do ic=1,Ncountry_lf
-            if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
-            else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
-            else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
-            else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
-            else if(country_ix_list(ic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
-            else if(country_ix_list(ic)/=iland)then
-               cycle
-            endif
-            do is=1,Nsectors_lf
-               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
-               emis = s * dt_advec
-               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
-               do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                  emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
-               enddo
-            enddo
-         enddo
-         if(lf_src(isrc)%iqrc>0)then
-            !sum of all emissions for that species from all countries and sectors
-            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                    * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec
-            enddo
-         endif
-      else
-         if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
-         if(lf_src(isrc)%country_ix>0 .and. lf_src(isrc)%country_ix/=iland) cycle
-         if(lf_src(isrc)%iqrc>0)then
-            !single pollutant, part of emitted group of pollutant
-            ipoll = lf_src(isrc)%poll
-            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                    * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
-            enddo
-         else
-            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-               emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
-            enddo
-         endif
-      endif
+        !has to store more detailed info
+        do ic=1,Ncountry_lf
+           if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+           else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+           else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+           else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+           else if(country_ix_list(ic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+           else if(country_ix_list(ic)/=iland)then
+              cycle
+           endif
+           do is=1,Ncountrysectors_lf
+              if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
+              emis = s * dt_advec
+              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
+              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+              enddo
+           enddo
+        enddo
+     end if
+     if(Ncountry_group_lf>0)then
+        !has to store more detailed info
+        ngroups = 0
+        do ic=1,Ncountry_group_lf
+           !find all groups that include iland
+           if(any(lf_country_group(ic)%ix(:)==iland))then
+              ngroups = ngroups + 1
+              ig2ic(ngroups) = ic + Ncountry_lf
+           endif
+        enddo
+        do ig = 1, ngroups
+           ic = ig2ic(ig) ! index for country_group
+           do is=1,Ncountrysectors_lf
+              if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
+              emis = s * dt_advec
+              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
+              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+              enddo
+           enddo
+        enddo
+     endif
+     if(lf_src(isrc)%iqrc>0 .and. (Ncountry_lf>0.or.Ncountry_group_lf>0))then
+        !sum of all emissions for that species from all countries and sectors
+        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec
+        enddo
+        
+     else
+        if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
+        if(lf_src(isrc)%country_ix>0 .and. lf_src(isrc)%country_ix/=iland) cycle
+        if(lf_src(isrc)%iqrc>0)then
+           !single pollutant, part of emitted group of pollutant
+           ipoll = lf_src(isrc)%poll
+           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
+                   * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
+           enddo
+        else
+           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
+           enddo
+        endif
+     endif
   enddo
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
   
