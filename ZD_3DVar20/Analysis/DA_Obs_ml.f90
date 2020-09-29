@@ -6787,7 +6787,7 @@ contains
       ! extract:
       flon0   = df%longitude(ipix)
       flat0   = df%latitude (ipix)
-      y0      = df%vcd (ipix)
+      y0      = df%vcd      (ipix)
       stddev0 = df%sigma_vcd(ipix)
 
       ! if ouside domain/scope, next record:
@@ -6966,7 +6966,7 @@ contains
         ! extract:
         flon0   = df%longitude(ipix)
         flat0   = df%latitude (ipix)
-        y0      = df%vcd (ipix)
+        y0      = df%vcd      (ipix)
         stddev0 = df%sigma_vcd(ipix)
 
         ! if ouside domain/scope, next record:

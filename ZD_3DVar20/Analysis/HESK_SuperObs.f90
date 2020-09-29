@@ -602,7 +602,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%vcd(ipix) = field2d(ii(ipix),jj(ipix))
+      self%vcd(ipix) = field2d(self%ii(ipix),self%jj(ipix))
     end do
 
     ! read:
@@ -610,7 +610,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%sigma_vcd(ipix) = field2d(ii(ipix),jj(ipix))
+      self%sigma_vcd(ipix) = field2d(self%ii(ipix),self%jj(ipix))
     end do
 
     ! read:
@@ -618,7 +618,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! copy:
     do ipix = 1, self%npixel
-      self%kernel(:,ipix) = field3d(ii(ipix),jj(ipix),:)
+      self%kernel(:,ipix) = field3d(self%ii(ipix),self%jj(ipix),:)
     end do
 
     ! read:
