@@ -25,6 +25,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Sep 2020, Peter
+
+emissions new format: daily timefactor for monthly emissions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28,29th Sep 2020, Peter
 
 Local fractions wet deposition
