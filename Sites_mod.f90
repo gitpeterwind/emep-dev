@@ -27,16 +27,16 @@ use Debug_module,       only: DEBUG   ! -> DEBUG%SITES
 use DerivedFields_mod,  only: f_2d, d_2d  ! not used:, d_3d
 use Functions_mod,      only: Tpot_2_T    ! Conversion function
 use GridValues_mod,     only: lb2ij, i_fdom, j_fdom ,debug_proc &
-                              ,i_local, j_local, A_mid, B_mid
+                              ,i_local, j_local, A_mid, B_mid, z2level_stdatm
 use Io_mod,             only: check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
 use KeyValueTypes,      only : KeyVal, KeyValue, LENKEYVAL
 use MetFields_mod,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
-use MetFields_mod,      only : u_xmj, v_xmi, ps
+use MetFields_mod,      only : u_xmj, v_xmi, ps, model_surf_elevation
 use MPI_Groups_mod,     only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
-                             MPI_MIN, MPI_MAX, MPI_SUM, &
+                             MPI_MIN, MPI_MAX, MPI_SUM, MPI_ANY_SOURCE,&
                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
 use PhysicalConstants_mod,only: ATWAIR
 use NetCDF_mod,         only : Create_CDF_sondes,Out_CDF_sondes,&
@@ -237,9 +237,11 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   !-- Local:
   integer,  dimension (NMAX) :: s_n_recv  ! number in global
 
-  integer           :: nin     ! loop index
+  integer           :: nin, dest! loop index
   integer           :: ix, iy  ! coordinates read in
-  integer           :: lev     ! vertical coordinate (20=ground)
+  integer           :: lev     ! vertical coordinate (20=ground if 20 levels)
+  real              :: z       ! station altitude above sea level in meters
+  real              :: z_topo  ! altitude above sea level of surface, as assumed by meteo
   character(len=20) :: s       ! Name of site read in
   character(len=30) :: comment ! comment on site location
   character(len=40) :: errmsg
@@ -283,6 +285,29 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       if ( ios /= 0 ) exit  ! End of file
       read(unit=txtinput,fmt=*) s, lat, lon, lev
       call lb2ij(lon,lat,ix,iy)
+   else if (trim(KeyValue(KeyValues,"Coords"))=='LatLonZ') then
+      ! Z is given as altitude above sea level
+      call read_line(io_num,txtinput,ios)
+      if ( ios /= 0 ) exit  ! End of file
+      read(unit=txtinput,fmt=*) s, lat, lon, z
+      call lb2ij(lon,lat,ix,iy)
+      if ( ix<RUNDOMAIN(1) .or. ix>RUNDOMAIN(2) .or. &
+           iy<RUNDOMAIN(3) .or. iy>RUNDOMAIN(4) ) then
+         !outside rundomain
+      else
+         if(i_local(ix)>0 .and. i_local(ix)<=LIMAX&
+              .and. j_local(iy)>0 .and. j_local(iy)<=LJMAX ) then
+            z_topo =  model_surf_elevation(i_local(ix),j_local(iy))
+            if( DEBUG%SITES ) write(*,*)me,' ZTOPO =  ',z_topo
+            do dest = 0, NPROC-1 
+               if(dest == me) cycle
+               call MPI_SEND(z_topo, 8, MPI_BYTE, dest, nin, MPI_COMM_CALC,IERROR)
+            enddo
+         else
+            call MPI_RECV(z_topo, 8, MPI_BYTE, MPI_ANY_SOURCE, nin, MPI_COMM_CALC,MPISTATUS,IERROR)          
+         endif
+         call z2level_stdatm(z, z_topo, lev)
+      endif
     else
       call read_line(io_num,txtinput,ios)
       lon=-999.0
@@ -329,8 +354,12 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       end if
 
       s_name(n)  = s !!! remove comments// comment
-      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") dtxt//" s_name : ",&
+      if (DEBUG%SITES.and.MasterProc)then
+         write(6,"(a,i4,a)") dtxt//" s_name : ",&
             n, trim(s_name(n))
+         if (trim(KeyValue(KeyValues,"Coords"))=='LatLonZ') &
+            write(*,*)z,' m height converted to level ',lev,', z_topo=', z_topo
+      endif
     end if
 
   end do SITELOOP
