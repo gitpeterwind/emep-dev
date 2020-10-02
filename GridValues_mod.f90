@@ -15,7 +15,7 @@ Module GridValues_mod
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 use CheckStop_mod,           only: CheckStop,StopAll,check=>CheckNC
-use Functions_mod,           only: great_circle_distance
+use Functions_mod,           only: great_circle_distance, StandardAtmos_km_2_kPa
 use Io_Nums_mod,             only: IO_LOG,IO_TMP
 use MetFields_mod
 use Config_module,      only: &
@@ -84,6 +84,8 @@ public :: extendarea_N ! returns array which includes neighbours from other subd
 public :: set_EuropeanAndGlobal_Config
 public :: remake_vertical_levels_interpolation_coeff
 public :: Read_KMAX
+
+public :: z2level_stdatm
 
 private :: Alloc_GridFields
 private :: GetFullDomainSize
@@ -3154,5 +3156,31 @@ subroutine set_EuropeanAndGlobal_Config()
 !       trim(GLOBAL_settings), USES%EURO_SOILNOX, USES%GLOBAL_SOILNOX, USES%SOILNOX
 
 end subroutine set_EuropeanAndGlobal_Config
+
+subroutine  z2level_stdatm(z, z_topo, lev)
+  !convert height z in meters to the corresponding level
+  !uses meteo topology file to find model height of surface
+  !assumes standard atmosphere for converting between meter height and pressure
+  !returns lowest level for all heights below top of lowest level.
+  real, intent(in) :: z, z_topo
+  integer, intent(out) :: lev
+
+  integer :: k
+  real :: P_at_z, P
+  real :: Psurf_topo !surface pressure assuming standard atmosphere and altitude given by topo
+  Psurf_topo = StandardAtmos_km_2_kPa(z_topo/1000.0)*1000.0
+  P_at_z = StandardAtmos_km_2_kPa(z/1000.0)*1000.0
+
+  !loop through levels until correct pressure is found, starting at top
+  lev = KMAX_MID
+  do k = 1, KMAX_MID
+     P=A_bnd(k)+Psurf_topo*B_bnd(k)
+     if(P>P_at_z)then
+        !we are above top of layer k
+        lev = k
+        exit
+     endif
+  enddo
+end subroutine z2level_stdatm
 
 end module GridValues_mod

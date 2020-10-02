@@ -875,7 +875,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .false.!read once only the first time
   met(ix)%needed           = .false.
   met(ix)%found            => foundtopo
-  allocate(model_surf_elevation(LIMAX,LJMAX))
+  allocate(model_surf_elevation(LIMAX,LJMAX)) !in meters above sea level
   model_surf_elevation=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => model_surf_elevation
   met(ix)%zsize = 1

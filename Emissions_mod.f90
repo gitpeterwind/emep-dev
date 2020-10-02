@@ -1589,7 +1589,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer :: i_Emis_4D, iem_treated
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
- 
+  integer :: iwday
+  real :: daynorm
+  
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
 
@@ -1609,7 +1611,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
       call NewDayFactors(indate)
       if(USES%DEGREEDAY_FACTORS) call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd
       !==========================
-      ! for ROADDUST
       wday=day_of_week(indate%year,indate%month,indate%day)
       if(wday==0)wday=7 ! Sunday -> 7
       oldday = indate%day
@@ -1695,7 +1696,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
-
+              
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,3i4,f8.3)")"EmisSet DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
 
@@ -1852,17 +1853,34 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           if(isec>0)then
              call CheckStop(iqrc<=0,"emitted sector species must belong to one of the splitted species")
              iem = iqrc2iem(iqrc)
+             
+             if(Emis_source(n)%periodicity == 'monthly')then
+                !make normalization factor for daily fac
+                iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
+                iwday = mod(wday-indate%day+35, 7) + 1 !note both indate%day and wday start at 1
+                daynorm = 0.0
+                do i = 1, nmdays(indate%month)
+                   daynorm = daynorm + fac_edd(iland_timefac,iwday,isec,iem)
+                   iwday = iwday + 1
+                   if(iwday>7)iwday = 1
+                enddo
+                daynorm = nmdays(indate%month)/daynorm
+             endif           
+
              do j = 1,ljmax
-                do i = 1,limax
-                   
+                do i = 1,limax                   
                    if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                       !we need to apply hourly factors
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)                      
                       tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
-                         !apply monthly factor on top of hourly factors
+                         !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
-                      endif                      
+                      endif
+                      if(Emis_source(n)%periodicity == 'monthly')then
+                         !apply daily factors, with renormalization to conserve monthly sums
+                         tfac = tfac * fac_edd(iland_timefac,wday,isec,iem) * daynorm
+                      endif
                    else
                       !not monthly or yearly emissions, timefactors must be included in emission values
                       tfac = 1.0
@@ -1897,6 +1915,20 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
           call CheckStop(iem<0, "did not recognize species "//trim(Emis_source(n)%species))
           call CheckStop(Emis_source(n)%sector<=0," sector must be defined for "//trim(Emis_source(n)%varname))
+
+          if(Emis_source(n)%periodicity == 'monthly')then
+             !make normalization factor for daily fac
+             iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
+             iwday = mod(wday-indate%day+35, 7) + 1
+             daynorm = 0.0
+             do i = 1, nmdays(indate%month)
+                daynorm = daynorm + fac_edd(iland_timefac,iwday,isec,iem)
+                iwday = iwday + 1
+                if(iwday>7)iwday = 1
+             enddo
+             daynorm = nmdays(indate%month)/daynorm
+          endif
+          
           do f = 1,emis_nsplit(iem)
              itot = iemsplit2itot(f,iem)
              call CheckStop(itot<0, "did not recognize split "//trim(Emis_source(n)%species))
@@ -1908,8 +1940,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                       tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
-                         !apply monthly factor on top of hourly factors
+                         !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
+                      endif
+                      if(Emis_source(n)%periodicity == 'monthly')then
+                         !apply daily factors, with renormalization to conserve monthly sums
+                         tfac = tfac * fac_edd(iland_timefac,wday,isec,iem) * daynorm
                       endif
                    else
                       !not monthly or yearly emissions, timefactors must be included in emission values

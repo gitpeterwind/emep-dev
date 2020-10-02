@@ -336,6 +336,13 @@ type, public :: lf_sources
   logical     :: HOUR_INST =.false.
 end type lf_sources
 
+integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group
+type, public :: lf_country_group_type
+   character(len=TXTLEN_NAME) :: name = 'NOTSET' !the overall name of the group (for example 'EU')
+   character(len=10), dimension(MAX_lf_country_group_size):: list = 'NOTSET' ! list of countries inside the group
+   integer, dimension(MAX_lf_country_group_size):: ix = -1 ! index of the country as defined in Country_ml (set by model)
+end type lf_country_group_type
+
 contains
 !=========================================================================
 subroutine print_Asc2D(w)
