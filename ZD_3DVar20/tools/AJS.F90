@@ -107,10 +107,12 @@ contains
     write (gol,'(a,": test output message ...")') rname; call goPr
     !write (gol,'(a,": test error  message ...")') rname; call goErr
 
+#ifdef with_ajs
     ! single analysis step only?
 !    call ReadRc( rcF, 'test.da_1step', DEBUG_DA_1STEP, status )
 !    IF_NOT_OK_RETURN(status=1)
     DEBUG_DA_1STEP = .false.
+#endif
 
     ! stop after first hour?
 !    call ReadRc( rcF, 'test.stop_hh', DEBUG%STOP_HH, status )

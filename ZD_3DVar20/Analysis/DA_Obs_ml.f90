@@ -3801,7 +3801,7 @@ contains
         ! integral over layer height is included per level:
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
-          case ( '1e15molec/cm2', '1e15 mlc/cm2' )
+          case ( '1e15molec/cm2', '1e15 mlc/cm2', '1e15 cm**-2' )
             ! [1e15 mlc/cm2]/m = 
             !     (mol tracer)/(mole air)   ! input units
             !     * (kg air)/m3             ! applied later
@@ -3884,7 +3884,7 @@ contains
         ! integral over layer height is included per level:
         select case ( trim(obsData(self%iObsData)%unit) )
           !~
-          case ( '1e15molec/cm2', '1e15 mlc/cm2' )
+          case ( '1e15molec/cm2', '1e15 mlc/cm2', '1e15 cm**-2' )
             ! [1e15 mlc/cm2]/m = 
             !     (mole tracer)/(mole air)   ! input units (ppv)
             !     * (kg air)/m3              ! applied later
