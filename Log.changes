@@ -25,6 +25,50 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th Oct 2020, Dave
+
+Sites_mod.f90:
+
+1. New option for  VertCoords: LatLonHrel
+
+ This builds on Peter's LatLonZ option, though now the user provides Hrel,
+ the relative height in meters. The calculation of z_topo is still used
+ to get the model's grid-average height, but the site is now located
+ at Hrel+z_topo.
+
+ The advantage of Hrel over Z is that the resulting mode level used
+ is independent of the EMEP domain in use.  Hrel as a concept typcally
+ uses height above the lowest terrain  within 5km, and so is a sub-grid
+ phenomena.  This can be calculed from a digitial elevation map, or
+ local knowledge.
+
+2. More info on site location now output to sites.csv, e.g.:
+
+ 42  sites in domain  12 132   1 111 InpCoords: LatLonHrel
+  1 Hours between outputs
+name                                         lat     lon,    ix,    iy,    iz, z_site, ztopo
+DK0012R_Risoe                           ,   55.694,   12,    48,    57,    20,    44,    41
+FI0096G_Pallas_(Sammaltunturi)          ,   67.973,   24,    35,    84,    17,   628,   325
+
+This shows the option chosed (here LatLonHrel), the lat, lon,
+
+ output coordinates (ix,iy) are now for the output RUNDOMAIN, not the
+ full-domain (meteo) coordinates previouslty output. Thus, Risoe here
+ should be locaed at 48, 57 in the output Base_fullrun.nc.
+
+ iz gives the model level used. This is calculated for LatLonZ and LatLonHrel cases.
+ z_site gives the site altitude or rel. altiude as given in inputs (-9999 for LatLon case)
+ ztopo  gives the grid-average altitude.
+
+NB extra outputs for ascii outputs only. 
+ formatting of output still a little tricky. Long station names produce error
+ (easily fixed, but then formats need tweaking.)
+
+ToDo: Would be great to output for exact coordinate, using bilinear
+ interpolation of surrounding cells. For example Birkenes is almost on
+ the edge of two cells in the EECCA domain.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Oct 2020, Peter
 
 SitesLL.dat can give elevations in meters.
