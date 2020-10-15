@@ -77,6 +77,7 @@ integer, public, save, dimension (NSITES_MAX) :: &
        ,site_alt, site_topo         &! LLZ system
        , site_gn                        ! number in global
 real, public, save, dimension (NSITES_MAX) :: &
+  site_glon = -999, site_glat= -999, & ! Same as next line?
   Sites_lon= -999, Sites_lat= -999
 
 integer, private, save, dimension (NSITES_MAX) :: &
@@ -88,6 +89,7 @@ integer, private, save, dimension (NSONDES_MAX) ::  &
        , sonde_x, sonde_y     &        ! local coordinates
        , sonde_gn                       ! number in global
 real, public, save, dimension (NSONDES_MAX) :: &
+  sonde_glon = -999, sonde_glat= -999, & ! Same as next line?
   Sondes_lon= -999, Sondes_lat= -999, ps_sonde=0.0
 
 integer, private :: NSPC_SITE, NOUT_SITE, NOUT_SONDE, NSPC_SONDE
@@ -174,12 +176,14 @@ subroutine sitesdef()
   call Init_sites(SitesFile,IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &
         site_gindex, site_gx, site_gy, site_gz, &
+        site_glat, site_glon, & 
         site_x, site_y, site_z, site_gn, &
         site_name, site_galt, site_gtopo,site_alt,site_topo)
 
   call Init_sites(SondesFile,IO_SONDES,NSONDES_MAX, &
         nglobal_sondes,nlocal_sondes, &
         sonde_gindex, sonde_gx, sonde_gy, sonde_gz, &
+        sonde_glat, sonde_glon, & 
         sonde_x, sonde_y, sonde_z, sonde_gn, &
         sonde_name)
 
@@ -218,8 +222,8 @@ subroutine set_species(adv,shl,xtra,s)
 end subroutine set_species
 !==================================================================== >
 subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
-        s_gindex, s_gx, s_gy, s_gz, s_x, s_y, s_z, s_n, s_name,&
-         s_galt,s_gtopo,s_alt,s_topo)
+        s_gindex, s_gx, s_gy, s_gz, s_glat, s_glon, &
+        s_x, s_y, s_z, s_n, s_name, s_galt,s_gtopo,s_alt,s_topo)
   ! ----------------------------------------------------------------------
   ! Reads the file "sites.dat" and "sondes.dat" to get coordinates of
   ! surface measurement stations or locations where vertical profiles
@@ -242,6 +246,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
                            ,s_x, s_y, s_z      & ! local coordinates
                            ,s_n                  ! number in global
   character(len=*), intent(out), dimension (:) :: s_name
+  real, intent(out), dimension (:) ::  s_glat, s_glon ! lat/lon for output
   integer, intent(out), dimension (:), optional :: &
     s_alt, s_topo, s_galt, s_gtopo ! alt and topography in LonLatZ system
 
@@ -256,7 +261,6 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   real              :: z_inp   ! helper variable
   real              :: z_topo  ! altitude above sea level of surface, as assumed by meteo
   character(len=TXTLEN_SITE) :: s     ! Name of site read in ! currently 64
-  character(len=TXTLEN_SITE) :: s2    ! Seems to be needed for internal-write
   character(len=30) :: comment ! comment on site location
   character(len=40) :: errmsg
   real              :: lat,lon
@@ -345,8 +349,6 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     end if
     ! Didn't work with s here. Not sure why. Go via s2
     call CheckStop(len_trim(adjustl(s)) >= 40, dtxt//'Need longer TXTLEN_SITE for '//trim(s))
-    write(s2,'(a40,2(",",f9.3))') adjustl(s), lat, lon  !! Append lat, lon to site-name for output
-    s=trim(adjustl(s2))
 
     if (lev<0) lev = KMAX_MID
     if(lev>KMAX_MID)then
@@ -377,6 +379,10 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       s_gy(n)   = iy
       s_gz(n)   = lev
 
+      s_glat(n)  = lat
+      s_glon(n)  = lon
+
+
       if ( present(s_gtopo)) then
         if ( z_topo> -888 ) then
           s_galt(n)  = z_inp
@@ -388,7 +394,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       end if
 
       if(trim(fname)==trim(SitesFile))then
-         if(lon>-990)Sites_lon(n) = lon
+         if(lon>-990)Sites_lon(n) = lon  ! QUERY. Same as s_glon??
          if(lat>-990)Sites_lat(n) = lat
       end if
       if(trim(fname)==trim(SondesFile))then
@@ -601,8 +607,8 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
   my_first_call = .false.
   ! collect data into gout on me=0 t
   call siteswrt_out("sites",IO_SITES,NOUT_SITE, FREQ_SITE, &
-                     nglobal_sites,nlocal_sites, &
-                     site_gindex,site_name,site_gx,site_gy,site_gz,&
+                     nglobal_sites,nlocal_sites, site_gindex,site_name,&
+                     site_gx,site_gy,site_gz,site_glat,site_glon, &
                      site_species,out,ps_sonde, &
                      site_galt,site_gtopo)
 end subroutine siteswrt_surf
@@ -794,14 +800,14 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
   ! collect data into gout on me=0 t
 
   call siteswrt_out("sondes",IO_SONDES,NOUT_SONDE, FREQ_SONDE, &
-                     nglobal_sondes,nlocal_sondes, &
-                     sonde_gindex,sonde_name,sonde_gx,sonde_gy,sonde_gy, &
+                     nglobal_sondes,nlocal_sondes, sonde_gindex,sonde_name,&
+                     sonde_gx,sonde_gy,sonde_gy,sonde_glat,sonde_glon, &
                      sonde_species,out,ps_sonde)
 
 end subroutine siteswrt_sondes
 !==================================================================== >
 subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
-     s_gindex,s_name,s_gx,s_gy,s_gz,s_species,out,ps_sonde,s_galt,s_gtopo)
+     s_gindex,s_name,s_gx,s_gy,s_gz,s_glat,s_glon,s_species,out,ps_sonde,s_galt,s_gtopo)
   ! -------------------------------------------------------------------
   ! collects data from local nodes and writes out to sites/sondes.dat
   ! -------------------------------------------------------------------
@@ -812,7 +818,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   integer, intent(in) :: nglobal, nlocal
   integer, intent(in), dimension (0:,:) :: s_gindex  ! index, starts at me=0
   character(len=*), intent(in), dimension (:) ::  s_name    ! site/sonde name
-  integer, intent(in), dimension (:) :: s_gx, s_gy, s_gz    ! coordinates
+  integer, intent(in), dimension (:) :: s_gx, s_gy, s_gz  ! coordinates
+  real, intent(in), dimension (:) :: s_glat,s_glon  ! coordinates
   character(len=*), intent(in), dimension (:) ::  s_species ! Variable names
   real,    intent(in), dimension(:,:) :: out    ! outputs, local node
   real,    intent(in), dimension(:) ::  ps_sonde   ! surface pressure local node
@@ -871,7 +878,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         if ( present(s_gtopo) ) then ! max(s_gtopo>0) then
           if(n==1) write(io_num,'(a4,37x,2(",",a8),5(",",a7))')  'name', &
             'lat', 'lon', 'ix','iy', 'iz', 'z_site', 'ztopo'
-          write(io_num,'(a60,5(",",i7))') adjustl(s_name(n)), &
+          write(io_num,'(a40,2(",",f9.3),5(",",i7))') adjustl(s_name(n)), &
+             s_glat(n), s_glon(n), &
              s_gx(n)-RUNDOMAIN(1)+1, s_gy(n)-RUNDOMAIN(3)+1,s_gz(n), &
              s_galt(n), s_gtopo(n)
         else
