@@ -27,6 +27,16 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Oct 2020, Peter
 
+Changed the interpolation of Kz_met aka eddy_diffusion_coefficient, which is
+used if NWP_Kz is set true. (shouldn't the KzMethod be part of config?)
+Previously Kz_met was not interpolated in time (i.e. the value from the time
+X is used for time X-3 until X). Now Kz_met is interpolated, i.e. the value
+taken from timestamp X is used at time X and progressively taking the value
+between time stamps
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct 2020, Peter
+
 Hourly time factors per country and species.
 
 Usage:

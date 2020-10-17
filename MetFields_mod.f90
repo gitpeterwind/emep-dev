@@ -451,7 +451,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%name             = 'eddy_diffusion_coefficient'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .false.
+  met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .false.
   met(ix)%found            => foundKz_met
