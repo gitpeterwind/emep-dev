@@ -1800,7 +1800,7 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_time
           hour_iland, Country(iland)%timezone
      call datewrite("EmisSet DAY 24x7:", &
           (/ i, iland, wday, wday_loc, hour_iland /), &
-          (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
+          (/ fac_ehh24x7(1,ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
   end if
     
 end subroutine make_iland_for_time

@@ -1081,7 +1081,7 @@ contains
     allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
     e_fact_lonlat=1.0
     if(.not.allocated(timefac))allocate(timefac(NLAND,N_TFAC,NEMIS_FILE))
-    if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7,NLAND))
+    if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(NEMIS_FILE,N_TFAC,24,7,NLAND))
     if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
@@ -1141,7 +1141,7 @@ contains
     CALL MPI_BCAST(fac_cemm,8*12,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
     CALL MPI_BCAST(fac_emm,8*NLAND*12*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
     CALL MPI_BCAST(fac_edd,8*NLAND*7*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-    CALL MPI_BCAST(fac_ehh24x7,8*N_TFAC*24*7*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+    CALL MPI_BCAST(fac_ehh24x7,8*NEMIS_FILE*N_TFAC*24*7*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
     !define fac_min for all processors
     forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
@@ -1590,7 +1590,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
   integer :: iwday
-  real :: daynorm
+  real :: daynorm, roadfac
   
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
@@ -1654,7 +1654,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   if(DEBUG_EMISTIMEFACS.and.MasterProc) &
     write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
-      fac_ehh24x7(ISNAP_TRAF,1,4,1),fac_ehh24x7(ISNAP_TRAF,13,4,1)
+      fac_ehh24x7(1,ISNAP_TRAF,1,4,1),fac_ehh24x7(1,ISNAP_TRAF,13,4,1)
   !..........................................
 
   if(hourchange) then 
@@ -1695,7 +1695,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             do iem = 1, NEMIS_FILE 
 
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
-                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                   * fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
               
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,3i4,f8.3)")"EmisSet DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
@@ -1712,7 +1712,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 ! we make use of a baseload even for SNAP2
                 tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
                      + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                     * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                     * fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
                 if(debug_tfac .and. indate%hour==12 .and. iem==1) &
                   write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
@@ -1793,18 +1793,18 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 hour_iland = 1
                 if(wday_loc==0)wday_loc=7 ! Sunday -> 7
                 if(wday_loc>7 )wday_loc=1 
-              end if
-
+             end if
+             
+              roadfac = 1.0
               if(ANY(iland==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
                  ANY(indate%month==(/3,4,5/)))then        ! spring road dust
-                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)*2.0 ! Doubling in Mar-May (as in TNO model)
-              else
-                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)
+                 roadfac=2.0
               end if
 
               do iem = 1, NROAD_FILES
-                s = tfac * roaddust_emis_pot(i,j,icc,iem)
-                if(DEBUG%ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
+                 tfac = fac_ehh24x7(iem, ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)
+                 s = tfac * roadfac * roaddust_emis_pot(i,j,icc,iem)
+                 if(DEBUG%ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
                   write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
                     iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
 
@@ -1872,7 +1872,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                       !we need to apply hourly factors
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)                      
-                      tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                      tfac = fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
                          !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
@@ -1938,7 +1938,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                       !we need to apply hourly factors
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
-                      tfac = fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                      tfac = fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
                          !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
@@ -1963,7 +1963,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                       ! we make use of a baseload even for SNAP2
                       tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
                            + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                           * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
+                           * fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       
                       if(debug_tfac .and. indate%hour==12 .and. iem==1) &
                            write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &

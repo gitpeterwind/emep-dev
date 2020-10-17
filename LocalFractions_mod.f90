@@ -21,7 +21,7 @@ use DefPhotolysis_mod, only: IDNO2
 use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
                             lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
                             loc_frac_drydep, loc_frac_wetdep, &
-                            nlandcode,landcode,sec2tfac_map,sec2hfac_map, sec2split_map,&
+                            nlandcode,landcode,sec2hfac_map, sec2split_map,&
                             ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
@@ -38,12 +38,6 @@ use SmallUtils_mod,    only: find_index
 !use Chemsolver_mod,    only: Dchem
 use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
-use Timefactors_mod,   only: &
-    DegreeDayFactors       & ! degree-days used for SNAP-2
-    ,Gridded_SNAP2_Factors, gridfac_HDD & 
-    ,GridTfac &!array with monthly gridded time factors
-    ,fac_min,timefactors   &                  ! subroutine
-    ,fac_ehh24x7 ,fac_emm, fac_edd, timefac  ! time-factors
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
 use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis
 
@@ -1537,10 +1531,7 @@ subroutine lf_emis(indate)
   integer, save, dimension(MAXNLAND) ::  localhour(1:MAXNLAND) = 1  ! 1-24 local hour in the different countries
   integer                         ::  hourloc      !  local hour 
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
-  real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s       ! source term (emis) before splitting
-  integer :: iland, iland_timefac, iland_timefac_hour  ! country codes, and codes for timefac 
-  integer :: hour_iland
   integer ::icc_lf, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
