@@ -60,7 +60,7 @@ use GasParticleCoeffs_mod, only: DDdefs
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
-use MetFields_mod,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
+use MetFields_mod,     only: roa,Kz_m2s,th,zen, ustar_nwp, u_ref, hmix,&
                             met, derivmet,  q, &
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
@@ -1176,7 +1176,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "HMIX", "HMIX00", "HMIX12" )
 
       forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = pzpbl(i,j)
+        d_2d( n, i,j,IOU_INST) = hmix(i,j,1)
       end forall
 
       if ( dbgP ) then

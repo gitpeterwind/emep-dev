@@ -25,6 +25,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Oct 2020, Peter, Dave
+
+Copy pzpbl into hmix variable, and interpolate hmix in time.
+When "HMIX" is asked for in output output hmix, i.e. the interpolated value.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Oct 2020, Peter
 
 Hourly time factors per country and species.
