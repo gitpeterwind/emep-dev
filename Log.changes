@@ -25,6 +25,21 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22th Oct 2020, Robert 
+
+Changed NO3 photolysis for mechanisms including IDNO3_NO and/or IDNO3_NO2 (e.g. CRIv2R5Em)
+
+DefPhotolysis_mod.f90 
+Setting:
+            rcphot(IDNO3_NO,:) = 0.127 * rcphot(IDNO3,:)
+            rcphot(IDNO3_NO2,:) = 0.873 * rcphot(IDNO3,:)
+
+The fractions 87.3% NO2-path and 12.7% NO path are based on relative photolysis speeds in MCM.
+
+Earlier version used IDNO3_NO = IDNO3 and IDNO3_NO2 = IDNO3 (which means total NO3 
+photolysis was too fast and the relative fraction of NO product was too large).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Oct 2020, Peter, Dave
 
 Copy pzpbl into hmix variable, and interpolate hmix in time.
