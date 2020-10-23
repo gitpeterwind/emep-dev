@@ -322,7 +322,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       write(*,*) dtxt//'INPUT dbgSite:'//trim(txtinput)
     end if
 
-    if ( coords =='LatLongX' .or. & ! older naming system, deprecated
+    if ( coords =='LatLong' .or. & ! older naming system, deprecated
          coords =='LatLonKdown') then
       read(unit=txtinput,fmt=*) s, lat, lon, lev
       call lb2ij(lon,lat,ix,iy)
