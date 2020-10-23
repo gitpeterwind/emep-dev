@@ -107,6 +107,10 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 ! PANDA=HTAP+MEIC
 ! emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.nc',
 
+!ECLIPSE 2020
+!  EmisDir                 = 'DataDir/Emis_ECLIPSEv6b/',
+!  emis_inputlist(1)%name  = 'EmisDir/emis_ECLIPSEv6b_YYYY_05deg_noINTSHIP.nc',
+!  emis_inputlist(2)%name  = 'DataDir/Emis_ECLIPSEv6a_ships/emis_ECLIPSEv6a_YYYY_05deg_INTSHIP.nc',
 
 !
 !------ NetCDF emissions in TNO7 grid----------
@@ -239,6 +243,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
+!  DEBUG%SITE           = 'Keldsnor',
   DEBUG%SOA             = 0,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
@@ -352,9 +357,10 @@ OutputMisc=
  'met2d_t2m',      'MET2D','temperature_2m',            '-','degK',-99,-99,F,1.0,T,'YM',
  'met2d_rh2m',     'MET2D','relative_humidity_2m',      '-','frac',-99,-99,F,1.0,T,'YM',
  'met2d_u10',      'MET2D','u10',                       '-','frac',-99,-99,F,1.0,T,'YM',
+ 'met2d_ps',       'MET2D','surface_pressure',          '-','hPa',  -99,-99,F,1.0,T,'YM',
 !'SHEAT_WRF',      'MET2D','HFX',                       '-','W/m2',-99,-99,F,1.0,T,'YM',
 !'met2d_LH_Wm2',   'MET2D','surface_flux_latent_heat',  '-','W/m2',-99,-99,F,1.0,T,'YMD',
-!'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
+'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
  'met2d_SMI_deep', 'MET2D','SMI3',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
  'met2d_SMI_uppr', 'MET2D','SMI1',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
 ! careful with precip.
@@ -363,10 +369,9 @@ OutputMisc=
 !
 !'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
  'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
- 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
+! 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
 !====================================================================================
 OutputConcs= 
-      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
       'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,'YM', !
       'SurfAreaPM_um2cm3'  ,'um2/cm3' ,'2d','SurfAreaPM_um2cm3'     ,'MISC' ,'YM', !
       'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,'YM', !!
@@ -385,7 +390,9 @@ OutputConcs=
       'CO',           'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'OH',           'molec/cm2','kmax','COLUMN:SHL','MISC','YMD',
      !----------------------------------------------------------------
+! Some derived met
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
+      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
 ! ug/m3                                                    
@@ -422,6 +429,8 @@ OutputConcs=
       'OXN'                 ,'ppb' ,'2d','AIR_CONCS','GROUP','YMD', !! TEST
       'SO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
       'PAN'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'TOLUENE'             ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'BENZENE'             ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'MPAN'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'CO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -495,8 +504,9 @@ OutputConcs=
       'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'SQT_SOA_NV'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 !      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
-      'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+      'POM_f_ffuel'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+      'POM_f_wood'       ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 !      'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 ! zero for NONVOL:
 !      'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC

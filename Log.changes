@@ -25,6 +25,36 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Oct 2020, Dave/Peter 
+
+Sites_mod:
+     Tightened checks for "Coords" KeyValue.
+     Can now have LatLonKdown, LatLonZm, LatLonHrel or IJKdown.
+     Older LatLong option will now crash with error message.
+
+     Much use of new DEBUG%SITE to reduce excessive outputs
+     Hmix out now enabled
+
+config_emep.nml added Hmix and other outputs for Sites D2D usage
+
+Config_mod:
+   EFFECTIVE_RESISTANCE now set true. (It was accidentally true anyway!)
+
+Debug_mod: Added DEBUG%SITE to give site name (or part of name)
+
+DryDep_mod:
+   Bug-fix: EFFECTIVE_RESISTANCE was effectively set true by default.
+   logic now corrected, but will set .true. in Config_mod. Tests show
+   that effects are only small so far.
+
+SmallUtils_mod:
+   Started to  add more debug to investibate str_replace.
+
+Also: DataDir/sitesLL.dat and sondesLL.dat copied to sitesLLKD.dat and sondesLLKD.dat
+ and Coord names updated.
+     
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22th Oct 2020, Robert 
 
 Changed NO3 photolysis for mechanisms including IDNO3_NO and/or IDNO3_NO2 (e.g. CRIv2R5Em)

@@ -358,10 +358,14 @@ end function find_duplicates
 !============================================================================
 ! Adapted from D. Frank code, string_functions
 ! Replaces 'text' in string s with 'rep'
-function str_replace (s,text,rep)  result(outs)
+function str_replace (s,text,rep,dbg)  result(outs)
   character(len=*)          :: s,text,rep
   character(len=len(s)+100) :: outs     ! provide outs with extra 100 char len
   integer             :: i, nt, nr
+  logical, optional :: dbg
+  logical :: debug = .false.
+
+  if ( present(dbg) ) debug=dbg
 
   outs = s
   nt = len_trim(text)
@@ -369,6 +373,7 @@ function str_replace (s,text,rep)  result(outs)
 
   do
      i = index(outs,text(:nt))
+     !if ( debug) print *, 'STRi ', i, nt, len_trim(outs)
      if (i == 0) exit
      outs = outs(:i-1) // rep(:nr) // outs(i+nt:)
   end do

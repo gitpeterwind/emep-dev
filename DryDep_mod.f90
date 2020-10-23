@@ -633,9 +633,9 @@ contains
       if ( L%is_water ) then
          do icmp = 1, nddep
             if(USES%EFFECTIVE_RESISTANCE)then
-               sea_ratio(icmp) =  Vg_eff(icmp)/Vg_3m(icmp)
-            else
                sea_ratio(icmp) =  Vg_ref(icmp)/Vg_3m(icmp)
+            else
+               sea_ratio(icmp) =  Vg_eff(icmp)/Vg_3m(icmp)
             endif
          end do
       else
@@ -643,10 +643,10 @@ contains
          do icmp = 1, nddep
             if(USES%EFFECTIVE_RESISTANCE)then
                Vg_ratio(icmp) =  Vg_ratio(icmp) &
-                                + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
+                                 + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
             else
                Vg_ratio(icmp) =  Vg_ratio(icmp)&
-                                 + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
+                                + L%coverage * Vg_eff(icmp)/Vg_3m(icmp)
             endif
          end do
       end if
@@ -746,9 +746,9 @@ contains
     do icmp = 1, nddep ! NDRYDEP_CALC
 
        if(USES%EFFECTIVE_RESISTANCE)then
-          vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_Ref(icmp) * dtz ) 
-       else
           vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_eff(icmp) * dtz ) 
+       else
+          vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_Ref(icmp) * dtz ) 
        endif
 
     end do ! icmp
