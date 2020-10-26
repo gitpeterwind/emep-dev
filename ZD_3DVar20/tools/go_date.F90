@@ -58,6 +58,10 @@
 !
 !     t = go_SystemDate()
 !
+!   Read from line:
+!     call subroutine goReadFromLine( '2001-02-03 04:05:06;xxx', t, status, &
+!                                         sep=';', calendar='default' )
+!
 !
 ! FIELD MANIPULATION
 !
@@ -187,17 +191,21 @@
 !
 ! UNIT CONVERSION
 !
+!  Expand time value from number to TDate using the units description;
+!  also 'months' is allowed as step:
+!
+!    call ExpandTime( 2.5, 'hours since 1900-01-01 00:00:0.0', t, status )
+!
 !  Extract ref time and time step from units:
 !
 !    call Extract_Ref_and_Step( 'hours since 1900-01-01 00:00:0.0', t, dt, status,
 !                                 calendar='gregorian' )
 !
-!
-!  Compare 't' of type 'TDate' with a numeric value given its units
+!  Compare 't' of type 'TDate' with a numeric 'value' given its units
 !  ("days since ...") and the calendar ("366_day") ;
 !  return status: -1 if time and value do not match, 0 if match :
 !
-!    call Compare_Date_Num( t, 'days since 0000-01-00 00:00', '366_day', status )
+!    call Compare_Date_Num( t, value, 'days since 0000-01-00 00:00', '366_day', status )
 !    if (status<0) stop 'time does not match with value'
 !
 !
@@ -295,7 +303,7 @@ module GO_Date
 
   public      ::  goReadFromLine
   public      ::  Extract_Ref_and_Step
-  public      ::  Num_to_Date
+  public      ::  ExpandTime
   public      ::  Compare_Date_Num
 
   public      ::  Pretty
@@ -539,6 +547,7 @@ module GO_Date
     module procedure wrtgol_t
     module procedure wrtgol_dt
     module procedure wrtgol_t_dt
+    module procedure wrtgol_tt
     module procedure wrtgol_t1_t2
     module procedure wrtgol_t1_t2_t3
   end interface
@@ -580,8 +589,6 @@ contains
   !
 
   subroutine date_Check( t, status )
-
-    use GO_Print, only : gol, goErr
 
     ! --- in/out ----------------------------------
 
@@ -659,8 +666,6 @@ contains
 
   subroutine incrdate_Check( dt, status )
 
-    use GO_Print, only : gol, goErr
-
     ! --- in/out ----------------------------------
 
     type(TIncrDate), intent(in)    ::  dt
@@ -717,8 +722,6 @@ contains
 
   integer function calc_days_in_month( calendar, year, month )
 
-    use GO_Print, only : gol, goErr
-
     ! --- in/out ---------------------------
 
     character(len=*), intent(in)   ::  calendar
@@ -767,8 +770,6 @@ contains
   ! days per year
 
   integer function calc_days_in_year( calendar, year )
-
-    use GO_Print, only : gol, goErr
 
     ! --- in/out ----------------
 
@@ -837,8 +838,6 @@ contains
   ! ndays( 2000, 12, 31 ) = 366          except every 400 year ...
 
   integer function calc_DayNumber( calendar, year, month, day )
-
-    use GO_Print, only : gol, goErr
 
     ! --- in/out ----------------------------
 
@@ -1450,8 +1449,6 @@ contains
 
   subroutine date_Normalize( t )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(inout)       ::  t
@@ -1543,8 +1540,6 @@ contains
 
   subroutine incrdate_Normalize( dt )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TIncrDate), intent(inout)    :: dt
@@ -1628,8 +1623,6 @@ contains
 
   type(TDate) function t_plus_t( t1, t2 )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(in)       ::  t1
@@ -1684,8 +1677,6 @@ contains
 
   type(TDate) function t_plus_dt( t, dt )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(in)       ::  t
@@ -1731,8 +1722,6 @@ contains
 
 
   type(TIncrDate) function dt_plus_dt( dt1, dt2 )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -1788,8 +1777,6 @@ contains
 
   type(TIncrDate) function t_min_t( t1, t2 )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(in)       ::  t1
@@ -1825,8 +1812,6 @@ contains
   ! *
 
   type(TIncrDate) function t_min_t_work( t1, t2 )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -1901,8 +1886,6 @@ contains
 
   type(TDate) function t_min_dt( t, dt )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(in)       ::  t
@@ -1952,8 +1935,6 @@ contains
 
   type(TIncrDate) function dt_min_dt( dt1, dt2 )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TIncrDate), intent(in)       ::  dt1
@@ -1992,8 +1973,6 @@ contains
   ! use round for fractions
 
   type(TIncrDate) function dt_times_r4( dt, r )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -2052,8 +2031,6 @@ contains
   
 
   type(TIncrDate) function dt_times_r8( dt, r )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -2146,8 +2123,6 @@ contains
 
 
   type(TIncrDate) function dt_div_r( dt, r )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -2242,8 +2217,6 @@ contains
 
   logical function date_eq_date( t1, t2 )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out --------------------------------
 
     type(TDate), intent(in)       ::  t1
@@ -2308,8 +2281,6 @@ contains
 
 
   logical function date_gt_date( t1, t2 )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out --------------------------------
 
@@ -2505,8 +2476,6 @@ contains
 
   real function date_rTotal( t, unit )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out ----------------------------
 
     type(TDate), intent(in)          ::  t
@@ -2647,8 +2616,6 @@ contains
 
   real function incr_rTotal( dt, unit )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out ----------------------------
 
     type(TIncrDate), intent(in)      ::  dt
@@ -2722,8 +2689,6 @@ contains
 
   integer function date_iTotal( t, unit )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out ----------------------------
 
     type(TDate), intent(in)          ::  t
@@ -2767,8 +2732,6 @@ contains
 
 
   real(8) function date_dTotal( t, unit )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out ----------------------------
 
@@ -2910,8 +2873,6 @@ contains
 
   real(8) function incr_dTotal( dt, unit )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out ----------------------------
 
     type(TIncrDate), intent(in)      ::  dt
@@ -2982,8 +2943,6 @@ contains
   ! ***  
   
   integer function incr_iTotal( dt, unit )
-
-    use go_print, only : gol, goErr
 
     ! --- in/out ----------------------------
 
@@ -3058,8 +3017,6 @@ contains
 
   subroutine date_InterpolFractions( t, t1, t2, alfa1, alfa2, status )
 
-    use go_print, only : gol, goErr
-
     ! --- in/out -----------------------------
 
     type(TDate), intent(in)    ::  t
@@ -3124,16 +3081,19 @@ contains
   ! Return interval [tt(1),tt(2)] around t that matches with time resolution;
   ! resolution specified by a step and unit:
   !    3, 'hour'   # 00:00, 03:00, 06:00, ...
+  !   24, 'hour from 12'   # 12:00, 36:00, ...
   ! Interval boundaries are the same if t is exactly on a step.
   !
 
-  subroutine Get_Surrounding_Interval( t, step, units, tt, status )
+  subroutine Get_Surrounding_Interval( t, tref, interpolation, tt, status )
+  
+    use GO_String, only : goReadFromLine, goSplitString
 
     ! --- in/out -----------------------------
 
     type(TDate), intent(in)       ::  t
-    integer, intent(in)           ::  step
-    character(len=*), intent(in)  ::  units
+    type(TDate), intent(in)       ::  tref
+    character(len=*), intent(in)  ::  interpolation
     type(TDate), intent(out)      ::  tt(2)
     integer, intent(out)          ::  status
 
@@ -3143,11 +3103,61 @@ contains
 
     ! --- local ------------------------------
 
-    real          ::  r
-    type(TDate)   ::  t0
+    character(len=64)   ::  line
+    integer             ::  ninterp
+    character(len=64)   ::  interp(2)
+    character(len=32)   ::  units
+    character(len=32)   ::  from, after
+    integer             ::  step
+    integer             ::  offset
+    integer             ::  tchange
+    real                ::  r
+    type(TDate)         ::  t0
 
     ! --- begin ------------------------------
-
+    
+    if ( index(trim(interpolation), ';') > 0 ) then
+      
+      ! different units over time period
+      ! split:
+      call goSplitString( interpolation, ninterp, interp, status, sep=';' )
+      IF_NOTOK_RETURN(status=1)
+      
+      if ( ninterp > 2 ) then
+        write( gol, '("More than 2 time inervals found: not supported")' ) ; call GoErr
+        TRACEBACK;status=1;return
+      end if
+      ! Read second part:
+      ! format: * hour after *
+      ! split at after
+      call goReadFromLine( interp(2), step, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      call goReadFromLine( interp(2), units, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      call goReadFromLine( interp(2), after, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      call goReadFromLine( interp(2), tchange, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      offset = 0
+      
+      ! Check if time is before offset
+      if ( itotal( t - tref, 'hour' ) < tchange ) then
+        ! read first inerpolation part
+        call goReadFromLine( interp(1), step, status, sep=' ' )
+        IF_NOTOK_RETURN(status=1)
+        call goReadFromLine( interp(1), units, status, sep=' ' )
+        IF_NOTOK_RETURN(status=1)
+        offset = 0
+      endif
+    else ! read first inerpolation part
+      line = trim(interpolation)
+      call goReadFromLine( line, step, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      call goReadFromLine( line, units, status, sep=' ' )
+      IF_NOTOK_RETURN(status=1)
+      offset = 0
+    endif
+      
     ! which units ?
     select case ( units )
 
@@ -3155,6 +3165,10 @@ contains
       case ( 'hour' )
         ! begin of day:
         t0 = Get_Begin_Of( t, 'day' )
+        ! add offset:
+        t0 = t0 + IncrDate(hour=offset)
+        ! back one day?
+        if ( t0%hour > t%hour ) t0 = t0 - IncrDate(hour=24)
         ! hour fraction:
         r = rTotal( t - t0, 'hour' )
         ! start of interval:
@@ -3168,7 +3182,7 @@ contains
 
       ! unknown ...
       case default
-        write (gol,'("unsupported units `",a,"`")'); call goErr
+        write (gol,'("unsupported units `",a,"`")') trim(units); call goErr
         TRACEBACK; status=1; return
     end select
 
@@ -3190,6 +3204,7 @@ contains
   subroutine goReadFromLine_t( input, t, status, sep, calendar )
 
     use GO_String, only : goReadFromLine
+    use GO_String, only : goTranslate
 
     ! --- in/out ---------------------------------
 
@@ -3211,25 +3226,29 @@ contains
 
     ! --- begin ----------------------------------
 
-    ! extract::
+    ! extract:
     call goReadFromLine( input, line, status, sep=sep )
+    IF_NOTOK_RETURN(status=1)
+    
+    ! replace seperators:
+    call goTranslate( line, '-/:_TZ', ' ', status )
     IF_NOTOK_RETURN(status=1)
 
     ! extract ref time values:
-    call goReadFromLine( line, year, status, sep='-' )
+    call goReadFromLine( line, year, status, sep=' ' )
     IF_NOTOK_RETURN(status=1)
-    call goReadFromLine( line, month, status, sep='-' )
+    call goReadFromLine( line, month, status, sep=' ' )
     IF_NOTOK_RETURN(status=1)
     call goReadFromLine( line, day, status, sep=' ' )
     IF_NOTOK_RETURN(status=1)
     if ( len_trim(line) > 0 ) then
-      call goReadFromLine( line, hour, status, sep=':' )
+      call goReadFromLine( line, hour, status, sep=' ' )
       IF_NOTOK_RETURN(status=1)
     else
       hour = 0
     end if
     if ( len_trim(line) > 0 ) then
-      call goReadFromLine( line, minu, status, sep=':' )
+      call goReadFromLine( line, minu, status, sep=' ' )
       IF_NOTOK_RETURN(status=1)
     else
       minu = 0
@@ -3323,42 +3342,98 @@ contains
 
   end subroutine Extract_Ref_and_Step
   
-  
-  ! ***
-  
-  
-  ! convert from number with units "seconds since .." to time value
+  ! *
 
-  subroutine Num_to_Date( num, units, t, status )
+  !
+  ! Expand time value using units:
+  !
+  !   hours since 1900-01-01 00:00:0.0
+  !
+  ! Also step 'months' are accepted.
+  !
+
+  subroutine ExpandTime( value, units, calendar, t, status )
+
+    use GO_String, only : goReadFromLine
 
     ! --- in/out ---------------------------------
 
-    real, intent(in)              ::  num
-    character(len=*), intent(in)  ::  units
-    type(TDate), intent(out)      ::  t
-    integer, intent(out)          ::  status
+    real, intent(in)                ::  value
+    character(len=*), intent(in)    ::  units
+    character(len=*), intent(in)    ::  calendar
+    type(TDate), intent(out)        ::  t
+    integer, intent(out)            ::  status
 
     ! --- const ----------------------------------
 
-    character(len=*), parameter  ::  rname = mname//'/Num_to_Date'
+    character(len=*), parameter  ::  rname = mname//'/ExpandTime'
 
     ! --- local ----------------------------------
 
-    type(TDate)           ::  t_ref
-    type(TIncrDate)       ::  t_step
+    character(len=512)    ::  line
+    character(len=32)     ::  steps
+    character(len=32)     ::  dummy
+    type(TDate)           ::  tref
+    integer               ::  nyear, nmonth, nday
+    real                  ::  rmonth
 
     ! --- begin ----------------------------------
 
-    ! extract ref time and step:
-    call Extract_Ref_and_Step( units, t_ref, t_step, status )
+    ! copy:
+    line = trim(units)
+
+    ! extract step units:
+    call goReadFromLine( line, steps, status, sep=' ' )
     IF_NOTOK_RETURN(status=1)
-    ! convert:
-    t = t_ref + t_step * num
+
+    ! extract 'since'
+    call goReadFromLine( line, dummy, status, sep=' ' )
+    IF_NOTOK_RETURN(status=1)
+    ! check ...
+    if ( trim(dummy) /= 'since' ) then
+      write (gol,'("second field should be `since`, not `",a,"`")') trim(dummy); call goPr
+      TRACEBACK; status=1; return
+    end if
+
+    ! extract ref time values:
+    call goReadFromLine( line, tref, status, calendar=calendar )
+    IF_NOTOK_RETURN(status=1)
+
+    ! expand:
+    select case ( trim(steps) )
+    
+      case ( 'month', 'months' )
+        ! number of years and full months:
+        nyear  = int(value/12)
+        rmonth = value - nyear*12
+        nmonth = int(rmonth)
+        ! init result:
+        t = NewDate( year=tref%year+nyear, month=tref%month+nmonth, day=1 )
+        ! month:
+        nday = Days_in_Month( t )
+        ! remaining month fraction:
+        rmonth = rmonth - nmonth
+        ! add rest:
+        t = t + IncrDate( hour=int(rmonth*nday*24) )
+
+      case ( 'day', 'days' )
+        t = tref + IncrDate(day=1) * value
+      case ( 'hour', 'hours' )
+        t = tref + IncrDate(hour=1) * value
+      case ( 'minute', 'minutes' )
+        t = tref + IncrDate(min=1) * value
+      case ( 'second', 'seconds' )
+        t = tref + IncrDate(sec=1) * value
+
+      case default
+        write (gol,'("unsupported steps `",a,"`")') trim(steps); call goPr
+        TRACEBACK; status=1; return
+    end select
 
     ! ok
     status = 0
 
-  end subroutine Num_to_Date
+  end subroutine ExpandTime
 
 
   ! ***
@@ -3374,15 +3449,15 @@ contains
   !   >0    : some error
   !
 
-  subroutine Compare_Date_Num( t, num, units, status, calendar )
+  subroutine Compare_Date_Num( t, num, units, calendar, status )
 
     ! --- in/out ---------------------------------
 
     type(TDate), intent(in)       ::  t
     real, intent(in)              ::  num
     character(len=*), intent(in)  ::  units
+    character(len=*), intent(in)  ::  calendar
     integer, intent(out)          ::  status
-    character(len=*), intent(in), optional  ::  calendar
 
     ! --- const ----------------------------------
 
@@ -3390,25 +3465,19 @@ contains
 
     ! --- local ----------------------------------
 
-    type(TDate)           ::  t_ref
-    type(TIncrDate)       ::  t_step
     type(TDate)           ::  t_rec
 
     ! --- begin ----------------------------------
 
     ! check ...
-    if ( present(calendar) ) then
-      if ( t%calendar /= calendar ) then
-        write (gol,'("calendar of t is `",a,"` instead of `",a,"`")') trim(t%calendar), trim(calendar); call goErr
-        TRACEBACK; status=1; return
-      end if
+    if ( t%calendar /= calendar ) then
+      write (gol,'("calendar of t is `",a,"` instead of `",a,"`")') trim(t%calendar), trim(calendar); call goErr
+      TRACEBACK; status=1; return
     end if
 
-    ! extract ref time and step:
-    call Extract_Ref_and_Step( units, t_ref, t_step, status )
+    ! expand:
+    call ExpandTime( num, units, calendar, t_rec, status )
     IF_NOTOK_RETURN(status=1)
-    ! convert:
-    t_rec = t_ref + t_step * num
     ! compare:
     if ( t_rec /= t ) then
       status = -1; return
@@ -3570,6 +3639,32 @@ contains
     write (gol,'(a,a,a,a)') msg, trim(s), msg2, trim(s2)
 
   end subroutine wrtgol_t_dt
+
+
+  ! *
+
+
+  subroutine wrtgol_tt( msg, tt )
+
+    use go_print, only : gol
+
+    ! --- in/out -----------------------------------
+
+    character(len=*), intent(in)    ::  msg
+    type(TDate), intent(in)         ::  tt(2)
+
+    ! --- local ---------------------------------
+
+    character(len=36)     ::  s1
+    character(len=36)     ::  s2
+
+    ! --- begin -----------------------------------
+
+    s1 = date_Pretty( tt(1) )
+    s2 = date_Pretty( tt(2) )
+    write (gol,'(a,"[",a,",",a,"]")') msg, trim(s1), trim(s2)
+
+  end subroutine wrtgol_tt
 
 
   ! *

@@ -16,7 +16,7 @@
 
 module C3PO_Datafile
 
-  use DA_Util_ml, only : gol, goPr, goErr
+  use GO    , only : gol, goPr, goErr
   use NetCDF, only : NF90_NOERR, NF90_StrError
 
   implicit none
@@ -53,6 +53,7 @@ module C3PO_Datafile
     procedure   ::  EndDef        => C3PO_Datafile_EndDef
     !
     procedure   ::  Get_Dim       => C3PO_Datafile_Get_Dim
+    procedure   ::  Inquire       => C3PO_Datafile_Inquire
     !
     procedure   ::                   C3PO_Datafile_Get_Var_i_2d
     procedure   ::                   C3PO_Datafile_Get_Var_r_1d
@@ -326,6 +327,49 @@ contains
     status = 0
   
   end subroutine C3PO_Datafile_Get_Dim
+
+
+  ! ********************************************************************
+  ! ***
+  ! *** get attr
+  ! ***
+  ! ********************************************************************
+
+
+  subroutine C3PO_Datafile_Inquire( self, status, varname )
+  
+    use NetCDF, only : NF90_Inq_VarID
+  
+    ! --- in/out ---------------------------------
+    
+    class(Datafile), intent(inout)            ::  self
+    integer, intent(out)                      ::  status
+
+    character(len=*), intent(in), optional    ::  varname
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/C3PO_Datafile_Inquire'
+    
+    ! --- local ----------------------------------
+    
+    integer       ::  varid
+    
+    ! --- begin ----------------------------------
+    
+    ! check presence of variable?
+    if ( present(varname) ) then
+      ! try to get variable id:
+      status = NF90_Inq_VarID( self%ncid, trim(varname), varid )
+      if ( status /= NF90_NOERR ) then
+        status = -1 ; return
+      end if
+    end if
+    
+    ! ok
+    status = 0
+  
+  end subroutine C3PO_Datafile_Inquire
 
 
   ! ********************************************************************

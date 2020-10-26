@@ -5,15 +5,17 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19
+    mk.ChemFiles EmChem19a
 
-  [This will copy pre-made files from ZCM_EmChem19. The files in that directory
+  [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
+EmChem19a should be the default chemistry for most emep jobs. This also uses the EmChem19 emissplits though.
+EmChem19p is just EmChem19a + Alvaro's pollen species.
+
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
-the appropriate place, DataDir/ZCM_EmChem16x for old Chemistry or
-(latest) DataDir/ZCM_EmChem19.
+the appropriate place, DataDir/ZCM_EmChem19.
 
 =============================================================================
 !----------------------------------------------------------
@@ -22,6 +24,405 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2020, Dave
+
+EmChem19a, EmChem19p - chemistry updated to match GenChem v1.0
+
+Changes are small, mainly due to re-ordering, but with:
+
+  pNO3 replacing TNO3 for NO3_f + NO3_c
+  skipping terpPeroxy in latest code.
+  new style csv files for emissplits for EmChem19a
+
+tag updated to rv4_36, prior to Oct 2020 OS
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Oct 2020, Dave/Peter 
+
+Sites_mod:
+     Tightened checks for "Coords" KeyValue.
+     Can now have LatLonKdown, LatLonZm, LatLonHrel or IJKdown.
+     Older LatLong option will now crash with error message.
+
+     Much use of new DEBUG%SITE to reduce excessive outputs
+     Hmix out now enabled
+
+config_emep.nml added Hmix and other outputs for Sites D2D usage
+
+Config_mod:
+   EFFECTIVE_RESISTANCE now set true. (It was accidentally true anyway!)
+
+Debug_mod: Added DEBUG%SITE to give site name (or part of name)
+
+DryDep_mod:
+   Bug-fix: EFFECTIVE_RESISTANCE was effectively set true by default.
+   logic now corrected, but will set .true. in Config_mod. Tests show
+   that effects are only small so far.
+
+SmallUtils_mod:
+   Started to  add more debug to investibate str_replace.
+
+Also: DataDir/sitesLL.dat and sondesLL.dat copied to sitesLLKD.dat and sondesLLKD.dat
+ and Coord names updated.
+     
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22th Oct 2020, Robert 
+
+Changed NO3 photolysis for mechanisms including IDNO3_NO and/or IDNO3_NO2 (e.g. CRIv2R5Em)
+
+DefPhotolysis_mod.f90 
+Setting:
+            rcphot(IDNO3_NO,:) = 0.127 * rcphot(IDNO3,:)
+            rcphot(IDNO3_NO2,:) = 0.873 * rcphot(IDNO3,:)
+
+The fractions 87.3% NO2-path and 12.7% NO path are based on relative photolysis speeds in MCM.
+
+Earlier version used IDNO3_NO = IDNO3 and IDNO3_NO2 = IDNO3 (which means total NO3 
+photolysis was too fast and the relative fraction of NO product was too large).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Oct 2020, Peter, Dave
+
+Copy pzpbl into hmix variable, and interpolate hmix in time.
+When "HMIX" is asked for in output output hmix, i.e. the interpolated value.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct 2020, Peter
+
+Hourly time factors per country and species.
+
+Usage:
+In config_emep.nml
+HourlyFacSpecialsFile = '/Path/My_hourlySpecials.POLL',
+
+My_hourlySpecials.pm25:
+
+#Example
+#CC DAY SECTOR 01:00,02:00,03:00,04:00,05:00,06:00,07:00,08:00,09:00,10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00,18:00,19:00,20:00,21:00,22:00,23:00,24:00
+0 0 7 1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0
+60 0 7 12.0,12.0,12.0,12.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+27 0 7 0.0,0.0,0.0,0.0,12.0,12.0,12.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14-15th Oct 2020, Dave
+
+Sites_mod.f90:
+
+1. New option for  VertCoords: LatLonHrel
+
+ This builds on Peter's LatLonZ option, though now the user provides Hrel,
+ the relative height in meters. The calculation of z_topo is still used
+ to get the model's grid-average height, but the site is now located
+ at Hrel+z_topo.
+
+ The advantage of Hrel over Z is that the resulting mode level used
+ is independent of the EMEP domain in use.  Hrel as a concept typcally
+ uses height above the lowest terrain  within 5km, and so is a sub-grid
+ phenomena.  This can be calculed from a digitial elevation map, or
+ local knowledge.
+
+2. More info on site location now output to sites.csv, e.g.:
+
+ 42  sites in domain  12 132   1 111 InpCoords: LatLonHrel
+  1 Hours between outputs
+name                                         lat     lon,    ix,    iy,    iz, z_site, ztopo
+DK0012R_Risoe                           ,   55.694,   12,    48,    57,    20,    44,    41
+FI0096G_Pallas_(Sammaltunturi)          ,   67.973,   24,    35,    84,    17,   628,   325
+
+This shows the option chosed (here LatLonHrel), the lat, lon,
+
+ output coordinates (ix,iy) are now for the output RUNDOMAIN, not the
+ full-domain (meteo) coordinates previouslty output. Thus, Risoe here
+ should be locaed at 48, 57 in the output Base_fullrun.nc.
+
+ iz gives the model level used. This is calculated for LatLonZ and LatLonHrel cases.
+ z_site gives the site altitude or rel. altiude as given in inputs (-9999 for LatLon case)
+ ztopo  gives the grid-average altitude.
+
+NB extra outputs for ascii outputs only. 
+ formatting of output still a little tricky. Long station names produce error
+ (easily fixed, but then formats need tweaking.)
+
+ToDo: Would be great to output for exact coordinate, using bilinear
+ interpolation of surrounding cells. For example Birkenes is almost on
+ the edge of two cells in the EECCA domain.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Oct 2020, Peter
+
+SitesLL.dat can give elevations in meters.
+The header should mention 
+: Coords LatLonZ
+
+and then all heights have to be given in meters (not allowed to mix with levels)
+same filename, but recognize header
+example: 
+
+# "Sites: names, locations, elevations"
+# "Area: EMEP-Europe"
+# "ix: x coordinate"
+# "iy: y coordinate"
+# "z: altitude of station in meters"
+# " Some starting sites...."
+# "Harestua         60.211 10.717    228.0 !Older coords "
+: Units index
+: Coords LatLonZ
+: VertCoords EMEP
+: DomainName NA
+#
+name ix iy lev #HEADERS
+-    index index height #SKIP
+#DATA:
+Harestua_Obs     60.21  10.76     10.0  !Jon/RSS
+Harestua_Obs18   60.21  10.76     200.0  !Jon/RSS, rel ht. 18
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Sep 2020, Peter
+
+emissions new format: daily timefactor for monthly emissions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28,29th Sep 2020, Peter
+
+Local fractions wet deposition
+Local fractions for group of countries
+
+example in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th  August 2020, Peter
+
+3D relative humidity available as output. in config_emep.nml add in OutputMisc a line such as:
+
+'relative_humidity',  'MET3D', 'RH_3D', '-', 'frac', -99,  -99,   F,   1.0, T, 'YM',
+
+(the first name can be changed: it is the variable name as it will appear in the output file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Massimo, (Peter)
+
+ ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90 
+(was limited to 1000 and giving errors with more than 1000 sources)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st  August 2020, Anna, (Peter)
+
+Updated compiler setting in mk.meteoPreProc into a more generic form that works 
+on Nebula  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th July 2020, Peter
+Replace also keyword DataDir for DegreeDayFactorsFile
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th June 2020, Dave
+
+Derived_mod: surround species%carbons with int to get voc_carbon
+             unused variables removed.
+NetCDF_mod: allowed longer auxL(4) texts - now TXTLEN_File
+SmallUtils_mod: added dtxt and improved error message
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th June 2020, Peter, Agnes
+
+Defined new "Country", AST  = Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
+Country( IC_AST ) = cc(  "AST" ,'-', 96 ,F, 96, 96, -100  , "Asian areas in the EMEP domain" )
+
+Allowed sum of countries for Local Fractions for 
+TMT = TM+TME
+AST = CAS+ARL+ARE+ASM+ASE
+UZT = UZ+UZE
+KZT = KZ+KZE
+RUE = RU+RFE+RUX
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2020, Peter
+
+Emissions new format: do not apply DegreeDay correction if the emissions are 
+not monthly or yearly (because daily/hourly emissions already should take those 
+variations into acccount).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th June 2020, Peter
+
+Bug in LocalFraction for SO4 when concentration is zero
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th June 2020, Dave
+
+New emissplits in SNAP system. Same data as GNFR below.
+    - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
+      to DataDir/ZCMDIRS/EMISSPLITS
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th June 2020, Dave
+
+New emissplits files added to git system for better tracking. 
+    - uses new .csv style (libreoffice friendly!)
+    - Ref1 and Ref2 versions, to cope with condensables in PM splits
+    - GNFR_CAMS (19 sector splits) provided here
+    - (snap still needs work)
+    - revised NMVOC from CAMS71/Robert/Dave
+    - now part of emep-dev, in ZD_EXTRA/EMISSPLITS, but should be copied
+      to DataDir/ZCMDIRS/EMISSPLITS
+
+config_emep.nml - now points to new files, with .csv format.
+EMISSPLITS directory added to ZD_EXTRA
+ZD_EXTRA/README - modified to reflect update
+
+Note: I will soon add SNAP versions of these. Meanwhile, if you want snap,
+the older systems still work, including the non .csv format. Just make
+sure config_emep.nml matches what you want. 
+
+tag updated to rv4_35, also to cover other changes since rv4_34os.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th June 2020, Peter
+
+Changed molecular weights from MARS so that they get equal to the rest of the 
+code.
+MWNO3  = 62.0049 -> 62.0
+MWHNO3 = 63.0287 -> 63.0
+MWSO4  = 96.0576 -> 96.0
+MWHSO4 = MWSO4 + 1.0080 -> MWSO4 + 1.0
+MH2SO4 = 98.07354 -> 98.0
+MWNH3  = 17.03061 -> 17.0
+MWNH4  = 18.03858 -> 18.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May 2020, Peter
+
+Reversed the change done 29 May!
+removed "if ( isec>NSECTORS ) cycle"
+"isec" in this context is not the model sector, but the splitfile index (1.. N_SPLIT).
+It is allowed to have a different N_splits and NSECTORS.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May 2020, Dave, Peter
+
+added
+  if ( isec>NSECTORS ) cycle
+in the EmisSplit reading routine, to allow to use GNFR13 with splits defined
+for GNFR19.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May 2020, Dave
+
+  ZCM_Chem19a-ECf added - for runs with just EC emissions
+     No SOA, SeaSalt, Dust, PM25 etc.
+     Best to switch off FOREST_FIRES; DUST; SEASALT in config.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 May 2020, Dave
+
+  AerosolCalls - removed need for SEASALT_f. Use iSeaSalt variable to cope.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 May 2020, Anna, (Peter)
+
+Mace Head 2018
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2020, Dave
+
+Added utils/clean_config.py script - removes trailing comments (which
+  seem to cause problems with some gfortran systems).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12-13th May 2020, Peter
+
+Safer automatic "GLOBAL_settings". Take the (approximatively) the point in the
+middle of the grid in latitude direction and Easternmost in the longitudes, and
+see if it is within "Europe", here defined as the square
+with lon from -32 to 90 and lat from 30 to 70
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th May 2020, Peter
+
+Bug in MARS, rpmares. We assumed that mass of NH3+NH4  (or NO3+HNO3),  is conserved
+while it is only the number of molecules which is conserved. 
+
+old version:
+TNH4 = MAX( 0.0, (NH3 / MWNH3 + NH4 / MWNH4)  )
+TMASSNH3  = MAX(0.0, NH3 +  NH4 )
+
+...
+
+ANH4_High = min( YNH4 * MWNH4, TMASSNH3 )  !ASSUMES NH4 cannot be larger than TMASSNH3!!
+GNH3_High = TMASSNH3   - ANH4_High  !ASSUMES ANH4 + GNH3_High (in kg) is conserved!!
+
+
+Replaced two lines  with:
+
+ANH4_High = min(  YNH4 , TNH4 )* MWNH4
+GNH3_High = max(FLOOR,(TNH4 - YNH4))*MWNH3
+
+Since the mass(NH3)=17, mass(NH4)=18, mass(NO3)=62, mass(NO3)=63, so the error
+is about <6% for NH4 and <1.5% for NO3 
+
+
+(also some additional changes for local fractions)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Apr 2020, Peter, Massimo
+
+More robust sites.dat: allows to use -999 as vertical level for surface (not tested).
+
+Small bug corrected: WriteConfig_to_RunLog was writing into "fort.7" if not MasterProc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Mar 2020, Peter
+
+Renamed uEMEP_mod to LocalFractions_mod and in config use lf_src% instead of
+uEMEP% to set settings.
+Compatibility with old (uEMP) format is kept for input and output, if input
+is in old format.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Mar 2020, Peter
+
+Heavy refactoring of all uEMEP parts. Backward compatibility for now.
+Will allow generalization to remote fractions, land fractions, chemistry etc.
+Will go over to "lf" names instead of uEMEP.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Mar 2020, Peter
+
+Moved EmisSet call (in PhyChem) just before runchem.
+Gives identical results.
+It is better to define emis just before they are used in runchem.
+(this will perhaps be needed by uEMEP later)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Mar 2020, Svetlana, (Peter)
+
+replace in config_emep the old
+  flocdef="DataDir/volcano_location.csv_20160610",
+  femsdef="DataDir/volcano_emission.csv_20160610",
+
+with more relevant
+  flocdef="DataDir/volcano_location.csv_20180321",
+  femsdef="DataDir/volcano_emission.csv_20190606",
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Mar 2020, Peter
+
+EmisDir replaced as keyword in all config names. (not tested)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Feb 2020, Peter
+
+Interpolation failed for GLOBAL_LAInBVOC.nc in GLOBAL05 runs.
+The reason is a combination of many factors:
+both grid have same resolution, but shifted by half a gridcell. The "nearest"
+neighbor (zero order interpolation) is just in between two gridcells, and at
+the end of the map it chose the "wrong side".
+Solution: we force the index to be within range.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Feb 2020, ????
+rv4_34os tag added.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Peter, Qing
 
@@ -67,6 +468,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Jan 2020, Robert/Dave
 
 Updated EmChem19a and EmChem19p
+
+rv4_34 tag added? (before or after? Need to check)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Jan 2020, Peter

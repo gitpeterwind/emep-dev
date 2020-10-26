@@ -23,7 +23,7 @@ SRCS ?=	\
 	Gravset_mod.f90 GridAllocate_mod.f90 GridValues_mod.f90 \
 	InterpolationRoutines_mod.f90 \
 	Io_mod.f90 Io_Nums_mod.f90 Io_Progs_mod.f90 KeyValueTypes.f90  LandDefs_mod.f90 Landuse_mod.f90 \
-	LandPFT_mod.f90 LocalVariables_mod.f90 MARS_mod.f90 MARS_Aero_water_mod.f90 \
+	LandPFT_mod.f90 LocalVariables_mod.f90 LocalFractions_mod.f90 MARS_mod.f90 MARS_Aero_water_mod.f90 \
 	MassBudget_mod.f90 Met_mod.f90 MetFields_mod.f90 EQSAM_mod.f90 MicroMet_mod.f90 \
 	MosaicOutputs_mod.f90 MPI_Groups_mod.f90 AerosolCalls.f90 \
         My_Derived_mod.f90 NetCDF_mod.f90 Nest_mod.f90 NumberConstants.f90 \
@@ -35,7 +35,7 @@ SRCS ?=	\
 	SoilWater_mod.f90 Solver.f90 SeaSalt_mod.f90 StoFlux_mod.f90 \
 	SubMet_mod.f90 Tabulations_mod.f90 TimeDate_mod.f90 TimeDate_ExtraUtil_mod.f90 \
 	Timefactors_mod.f90 Timing_mod.f90 \
-	Trajectory_mod.f90 uEMEP_mod.f90 Units_mod.f90 \
+	Trajectory_mod.f90 Units_mod.f90 \
         YieldModifications_mod.f90 \
 	ZchemData_mod.f90 \
 	global2local.f90 PhyChem_mod.f90 My_3DVar_mod.f90 Pollen_mod.f90 Pollen_const_mod.f90

@@ -46,4 +46,5 @@ character(len=14), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "REMPPM_C      " &
 , "PSO4F         " &
 , "PSO4C         " &
+, "SQT_SOA_NV    " &
 /)

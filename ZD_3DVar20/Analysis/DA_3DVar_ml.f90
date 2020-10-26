@@ -8,6 +8,7 @@
 !
 !*****************************************************************************!
 !
+#define TRACELINE rname//' (__FILE__, line __LINE__)'
 #define TRACEBACK write (gol,'("in ",a," (",a,", line ",i5,")")') rname, __FILE__, __LINE__; call goErr
 #define IF_NOT_OK_RETURN(action) if (status/=0) then; TRACEBACK; action; return; end if
 #define IF_ERROR_RETURN(action)  if (status> 0) then; TRACEBACK; action; return; end if
@@ -16,22 +17,20 @@
 
 module DA_3DVar_mod
 
-#ifdef with_ajs
   use GO, only : gol, goPr, goErr
-  use GO, only : GO_Print_Set
-  !use GO, only : goMem
-  !use Par_mod, only : me
-  !use ChemSpecs_mod , only : species_adv
-  !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
-#else
-  use DA_Util_ml     , only : gol, goPr, goErr
-#endif
-  use TimeDate_mod   , only : date
-  use EMEP_BCovarSqrt, only : T_BCovarSqrt
-  use DA_Util_ml     , only : T_Domains
 
+  use TimeDate_mod   , only : date
+#ifdef with_assim
+  use EMEP_BCovarSqrt, only : T_BCovarSqrt
+  use GO             , only : T_Domains
+#endif  ! with_assim
+
+#ifdef with_ajs
+  use GO, only : GO_Print_Set
+#endif
 
   implicit none
+
 
   ! --- in/out -----------------------------------------
 
@@ -64,6 +63,7 @@ module DA_3DVar_mod
   ! link from observation element to original observation dataset:
   integer, allocatable  ::  iObsData(:)
 
+#ifdef with_assim
   ! Limit dx,du to 500%
   !real, parameter       ::  ANALYSIS_RELINC_MAX = 5.0
   !! testing: unlimitted change:
@@ -83,14 +83,6 @@ module DA_3DVar_mod
   integer               ::  solver_table
   ! counter:
   integer               ::  solver_number
-
-#ifdef with_ajs
-  ! timers:
-  integer               ::  itim_read_obs, itim_innov, itim_swap
-  integer               ::  itim_loop, itim_optimizer, itim_costfunc
-  integer               ::  itim_chi2x, itim_innov_adj, itim_gradient, itim_x2chi
-  integer               ::  itim_post
-#endif
 
   ! lengths:
   integer, parameter    ::  TRACER_NAME_LEN = 32
@@ -134,6 +126,15 @@ module DA_3DVar_mod
   
   ! testing ..
   integer ::  nmemtest = 0
+#endif  ! with_assim
+
+#ifdef with_ajs
+  ! timers:
+  integer               ::  itim_read_obs, itim_innov, itim_swap
+  integer               ::  itim_loop, itim_optimizer, itim_costfunc
+  integer               ::  itim_chi2x, itim_innov_adj, itim_gradient, itim_x2chi
+  integer               ::  itim_post
+#endif
 
 
 contains
@@ -145,19 +146,20 @@ contains
 
   subroutine DA_3DVar_Init( status )
 
-    use DA_Util_ml       , only : DA_Util_Init
 #ifdef with_ajs
     use AJS              , only : AJS_Init
-    use DA_Util_ml       , only : GO_Timer_Def
-    use DA_Util_ml       , only : GO_Print_Set
+    use GO               , only : GO_Timer_Def
+    use GO               , only : GO_Print_Set
 #endif
-    use DA_Util_ml       , only : goGetFU
+
+    use DA_Util_ml       , only : DA_Util_Init
+    use DA_Obs_ml        , only : DA_Obs_Init
+#ifdef with_assim
+    use GO               , only : goGetFU
     use Config_module    , only : masterProc
-    use Config_module    , only : KMAX_MID
     use MPI_Groups_mod   , only : MPI_COMM_CALC
     use Io_Nums_mod      , only : IO_NML
-    use DA_ml            , only : nlev
-    use DA_Obs_ml        , only : DA_Obs_Init
+#endif  ! with_assim
 
     ! --- in/out ---------------------------------
 
@@ -169,13 +171,17 @@ contains
 
     ! --- namelists ------------------------------
 
+#ifdef with_assim
     namelist /DA_CONFIG/ &
       analysis_ndate, analysis_date, &
       solver_scaling,solver_nupdates,solver_maxiter,solver_maxsim,solver_logall
+#endif  ! with_assim
 
     ! --- local ----------------------------------
 
+#ifdef with_assim
     character(len=1024)     ::  fname
+#endif  ! with_assim
 
     ! --- begin ----------------------------------
 
@@ -227,6 +233,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
 #endif
 
+#ifdef with_assim
+
     ! Read settings for:
     ! - analysis date
     ! - solver
@@ -260,13 +268,15 @@ contains
       write (solver_table,'("number,step,J,Jb,Jo,gn")')
     end if
 
-    ! number of levels:
-    nlev = KMAX_MID  ! 20
+#endif  ! with_assim
 
     ! init observations:
     call DA_Obs_Init( status )
     IF_NOT_OK_RETURN(status=1)
-
+    
+    !! testing ...
+    !write (gol,'("BREAK - testing obs oper only")'); call goErr
+    !TRACEBACK; status=1; return
 
     ! ok
     status = 0
@@ -279,9 +289,11 @@ contains
 
   subroutine DA_3DVar_Done( status )
 
-    use DA_Util_ml       , only : DA_Util_Done
-    use Config_module    , only : MasterProc
     use DA_Obs_ml        , only : DA_Obs_Done
+    use DA_Util_ml       , only : DA_Util_Done
+#ifdef with_assim
+    use Config_module    , only : MasterProc
+#endif  ! with_assim
 #ifdef with_ajs
     use AJS              , only : AJS_Done
 #endif
@@ -296,7 +308,9 @@ contains
 
     ! --- local ----------------------------
 
+#ifdef with_assim
     integer     ::  iB
+#endif  ! with_assim
 
     ! --- begin -----------------------------
 
@@ -304,6 +318,7 @@ contains
     call DA_Obs_Done( status )
     IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_assim
     ! loop over covar matrices:
     do iB = 1, nBmat
       ! clear:
@@ -346,6 +361,8 @@ contains
     !call doms_an_fs%Done( status )
     !IF_NOT_OK_RETURN(status=1)
 
+#endif  ! with_assim
+
     ! done with utilities:
     call DA_Util_Done( status )
     IF_NOT_OK_RETURN(status=1)
@@ -361,7 +378,6 @@ contains
 
   end subroutine DA_3DVar_Done
 
-
   ! ***
 
 
@@ -373,13 +389,16 @@ contains
   ! @author M.Kahnert & AMVB
   !-----------------------------------------------------------------------
 
-    use Config_module        , only : ANALYSIS
-    use Config_module        , only : MasterProc
-    use TimeDate_mod         , only : current_date
-    use TimeDate_ExtraUtil_mod,only : date2string,compare_date
-    use DA_ml                , only : dafmt     => da_fmt_msg
-    use DA_ml                , only : DAFMT_DEF => DA_FMT_DEF
-    use DA_ml                , only : debug => DEBUG_DA
+    use Config_module          , only : MasterProc
+    use DA_ml                  , only : dafmt     => da_fmt_msg
+    use DA_ml                  , only : DAFMT_DEF => DA_FMT_DEF
+    use DA_ml                  , only : debug     => DEBUG_DA
+    use TimeDate_mod           , only : current_date
+    use TimeDate_ExtraUtil_mod , only : date2string
+    use TimeDate_ExtraUtil_mod , only : compare_date
+#ifdef with_assim
+    use Config_module          , only : ANALYSIS
+#endif  ! with_assim
 
     ! --- in/out ----------------------------------
 
@@ -397,8 +416,10 @@ contains
 
     ! --- begin --------------------------------------
 
+#ifdef with_assim
     ! not enabled ? then leave:
     if ( .not. ANALYSIS ) return
+#endif  ! with_assim
     
     ! reset format for messages:
     dafmt = date2string(DAFMT_DEF,current_date)
@@ -420,7 +441,11 @@ contains
     endif
 
     ! info ...
-    if(debug.and.MasterProc) print dafmt,'Start analysis'
+#ifdef with_assim
+    write (gol,'(a," - start analysis")') rname; call goPr
+#else
+    write (gol,'(a," - start simulation")') rname; call goPr
+#endif  ! with_assim
     ! run:
     call generic3dvar( current_date, status )
     IF_NOT_OK_RETURN(status=1)
@@ -433,6 +458,7 @@ contains
 
   ! ***
 
+
   !-----------------------------------------------------------------------
   subroutine Init_3DVar( status )
   !-----------------------------------------------------------------------
@@ -441,11 +467,13 @@ contains
   ! @author AMVB
   !-----------------------------------------------------------------------
 
+    use Config_module        , only : KMAX_MID
+    use DA_ml                , only : nlev
+#ifdef with_assim
     use MPIF90               , only : MPIF90_BCast
     use MPI_Groups_mod       , only : MPI_COMM_CALC
     use Config_module        , only : MasterProc, nproc
     use Config_module        , only : RUNDOMAIN
-    use Config_module        , only : KMAX_MID
     use Config_module        , only : KMAX_BND, KCHEMTOP
     use MPI_Groups_mod       , only : MasterPE
     use Par_mod              , only : me
@@ -458,7 +486,7 @@ contains
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : nObsComp, ObsCompInfo
-    use DA_ml                , only : nlev
+#endif  ! with_assim
 
     ! --- in/out ----------------------------------
 
@@ -470,6 +498,7 @@ contains
 
     ! --- local ----------------------------------
 
+#ifdef with_assim
     integer               :: nvar
     integer               :: k
     integer               :: ny_local, iy_offset
@@ -483,16 +512,20 @@ contains
     integer, allocatable                        ::  tracer2B(:)    ! (nChemObs)
     real, allocatable                           ::  Bsigfac(:)     ! (nChemObs)
     integer                                     ::  iB
+#endif  ! with_assim
 
     ! --- begin ------------------------------
 
     ! info ...
     write (gol,'(a,": initalize 3D var variables ...")') rname; call goPr
 
+    ! copy number of levels:
+    nlev = KMAX_MID
+
+#ifdef with_assim
     ! assumed grid shape:
     nx   = RUNDOMAIN(2) - RUNDOMAIN(1) + 1
     ny   = RUNDOMAIN(4) - RUNDOMAIN(3) + 1
-    nlev = kmax_mid
 
     !-----------------------------------------------------------------------
     ! Read covariance matrix
@@ -714,7 +747,7 @@ contains
     ! info ...
     write (gol,'(a,": model decomposition")') rname; call goPr
     do k = 0, nproc-1
-      write (gol,'(a,":   domain ",i2," cells  [",i3,",",i3,"] x [",i3,",",i3,"]")') &
+      write (gol,'(a,":   domain ",i3," cells  [",i3,",",i3,"] x [",i3,",",i3,"]")') &
                rname, k, tgi0(k), tgi1(k), tgj0(k), tgj1(k); call goPr
     end do
 
@@ -765,6 +798,7 @@ contains
                             (/ nx, min(iy_offset+ny_local,ny), nlev, nObsComp /), status )
       IF_NOT_OK_RETURN(status=1)
     end if
+#endif  ! with_assim
 
     ! info ...
     write (gol,'(a,": end")') rname; call goPr
@@ -786,33 +820,39 @@ contains
 
   subroutine generic3dvar( cdate, status )
 
-    use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
-#ifdef with_ajs
-    use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
-#endif
-    use MPI_Groups_mod       , only : MPI_COMM_CALC
     use Config_module        , only : MasterProc, NPROC
     use Config_module        , only : RUNDOMAIN
+    use Par_mod              , only : limax, ljmax
+    use TimeDate_mod         , only : date  ! date/time structure
+    use My_Timing_mod        , only : Code_timer, Add_2timing
+    use ChemFields_mod       , only : xn_adv
+    use DA_ml                , only : debug      => DEBUG_DA
+    use DA_ml                , only : dafmt      => da_fmt_msg
+    use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
+    use MPIF90               , only : MPI_SUM
+    use MPIF90               , only : MPIF90_AllReduce
+    use MPI_Groups_mod       , only : MPI_COMM_CALC
+    use DA_Obs_ml            , only : Read_Obs
+    use DA_Obs_ml            , only : T_ObsOpers
+    use DA_Obs_ml            , only : nObsComp
+    use DA_Obs_ml            , only : ObsCompInfo
+    use DA_ml                , only : nlev
+
+#ifdef with_assim
     use Config_module        , only : KMAX_MID
     use MPI_Groups_mod       , only : MasterPE
-    use My_Timing_mod        , only : Code_timer, Add_2timing
-    use TimeDate_mod         , only : date  ! date/time structure
     use Par_mod              , only : me
     use Par_mod              , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
     use Par_mod              , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
-    use Par_mod              , only : limax, ljmax
     use GridValues_mod       , only : glon, glat
     use ChemDims_mod         , only : NSPEC_ADV
     use MetFields_mod        , only : z_bnd
-    use ChemFields_mod       , only : xn_adv
-    use DA_ml                , only : debug => DEBUG_DA
-    use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : damsg => da_msg
-    use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
-    use DA_Obs_ml            , only : T_ObsOpers
-    use DA_Obs_ml            , only : Read_Obs
-    use DA_Obs_ml            , only : nObsComp, ObsCompInfo
-    use DA_ml                , only : nlev
+#endif  ! with_assim
+
+#ifdef with_ajs
+    use GO                  , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
+#endif
 
     !-----------------------------------------------------------------------
     ! Formal parameters
@@ -831,17 +871,6 @@ contains
     ! Local parameters
     !-----------------------------------------------------------------------
 
-    integer               ::  iout
-    integer, pointer      ::  out_group(:)
-    integer, target       ::  out_group1(1)
-    integer               ::  ispec
-    logical               ::  needroa
-
-    integer               ::  i,j,ilev,ilev0,k,kk,ii, maxobs !, nvar
-    integer               ::  nobs
-    integer               ::  nobs_tot
-    integer               ::  iObsComp
-    
     ! collected observations:
     integer, allocatable            ::  stnid(:)        ! (nobs)
     real, allocatable               ::  flat(:)         ! (nobs)
@@ -851,63 +880,76 @@ contains
     real, allocatable               ::  obsstddev1(:)   ! (nobs)
     character(len=32), allocatable  ::  stncodes(:)     ! (nobs)
     logical, allocatable            ::  obsanalyse(:)   ! (nobs)
+    
+    integer                         ::  maxobs
+    integer                         ::  nobs
+    integer                         ::  nobs_tot
 
-    integer               ::  lnx, lny
-    logical               ::  has_local_domain
+    ! observation operator on model arrays:
+    type(T_ObsOpers)                ::  Hops_m
+    character(len=16), allocatable  ::  xn_obs_units(:)   ! (nObsComp)
+
+    ! extracts (sum?) of surface and 3D model fields:
+    real, allocatable               ::  sf_an (:,:  ,:)     ! (limax,ljmax     ,nObsComp)
+    real, allocatable               ::  xn_an (:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
+    character(len=16), allocatable  ::  xn_adv_units(:)   ! (nspec_adv)
+
+    integer                         ::  iObsComp
+    integer                         ::  itracer
+    
+#ifdef with_assim
+    integer                         ::  iout
+    integer, pointer                ::  out_group(:)
+    integer, target                 ::  out_group1(1)
+    integer                         ::  ispec
+    logical                         ::  needroa
+
+    integer                         ::  i,j,ilev,ilev0,k,kk,ii
+    
+    integer                         ::  lnx, lny
+    logical                         ::  has_local_domain
 
     ! idem operator on model and assimilation decomposition:
-    type(T_ObsOpers)      ::  Hops_m
-    type(T_ObsOpers)      ::  Hops_f
-    type(T_ObsOpers)      ::  Hops_f_B
-    integer               ::  nobs_B
-    integer               ::  nana, nana_tot
+    type(T_ObsOpers)                ::  Hops_f
+    type(T_ObsOpers)                ::  Hops_f_B
+    integer                         ::  nobs_B
+    integer                         ::  nana, nana_tot
 
-    real, allocatable     ::  sf_an (:,:  ,:)     ! (limax,ljmax     ,nObsComp)
-    real, allocatable     ::  xn_an (:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
-    real, allocatable     ::  dx_an (:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
-    real, allocatable     ::  dx_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nObsComp)
-    character(len=16), allocatable    ::  xn_obs_units(:)   ! (nObsComp)
-    character(len=16), allocatable    ::  xn_adv_units(:)   ! (nspec_adv)
-    character(len=16)                 ::  tracer_name
-    character(len=16)                 ::  tracer_units
+    ! analysis increments:
+    real, allocatable               ::  dx_an (:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
+    real, allocatable               ::  dx_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nObsComp)
+    character(len=16)               ::  tracer_name
+    character(len=16)               ::  tracer_units
 
-    real, allocatable     ::  sigma_m(:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
+    real, allocatable               ::  sigma_m(:,:,:,:)     ! (limax,ljmax,nlev,nObsComp)
 
-    integer               ::  iB
-    real, allocatable     ::  dx_loc_B    (:,:,:,:)    ! (lnx  ,lny  ,B_nlev,ntracer)
-    real, allocatable     ::  du_loc_B    (:,:,:,:)    ! (lnx  ,lny  ,nlev  ,ntracer)
-    integer               ::  itracer
-    integer               ::  iobs
-    integer               ::  itime
+    integer                         ::  iB
+    real, allocatable               ::  dx_loc_B    (:,:,:,:)    ! (lnx  ,lny  ,B_nlev,ntracer)
+    real, allocatable               ::  du_loc_B    (:,:,:,:)    ! (lnx  ,lny  ,nlev  ,ntracer)
+    integer                         ::  iobs
+    integer                         ::  itime
+#endif  ! with_assim
 
     !-----------------------------------------------------------------------
     ! begin
     !-----------------------------------------------------------------------
 
-#ifdef with_ajs
-    !! testing ..
-    !call goMem( rname//' - MEMORY begin', status )
-    !IF_NOT_OK_RETURN(status=1)
-#endif
-
     !-----------------------------------------------------------------------
     ! first-guess output
     !-----------------------------------------------------------------------
     
+#ifdef with_assim
     ! fill arrays for requested subclass using concentrations:
     call Fill_Output_xn_adv( '3DVAR_FG', xn_adv, status )
     IF_NOT_OK_RETURN(status=1)
+#endif  ! with_assim
     
-#ifdef with_ajs
-    !! testing ..
-    !call goMem( rname//' - MEMORY 1    ', status )
-    !IF_NOT_OK_RETURN(status=1)
-#endif
 
     !-----------------------------------------------------------------------
     ! local grid
     !-----------------------------------------------------------------------
 
+#ifdef with_assim
     ! extract local grid size for convenience:
     lnx = doms_an_fg%shp(1,me)
     lny = doms_an_fg%shp(2,me)
@@ -924,12 +966,8 @@ contains
       ! info ...
       write (gol,'(a,": no local 3D-var domain")') rname; call goPr
     end if
+#endif  ! with_assim
 
-#ifdef with_ajs
-    !! testing ..
-    !call goMem( rname//' - MEMORY 2a   ', status )
-    !IF_NOT_OK_RETURN(status=1)
-#endif
 
     !-----------------------------------------------------------------------
     ! read observations
@@ -975,7 +1013,11 @@ contains
                      stnid, flat,flon,falt, obs, obsstddev1, stncodes, obsanalyse, &
                      iObsData, nobs, status )
     IF_NOT_OK_RETURN(status=1)
+    
+    ! info ...
+    write (gol,'(a,": local number of observations read : ",i6)') rname, nobs; call goPr
 
+#ifdef with_assim
     ! number of analysed observations:
     if ( nobs > 0 ) then
       ! count:
@@ -983,32 +1025,30 @@ contains
     else
       ! dummy:
       nana = 0
-    end if
-    
+    end if    
     ! info ...
-    write (gol,'(a,": local number of observations read : ",i6," (analysed ",i0,", validation ",i0,")")') &
-                  rname, nobs, nana, nobs-nana; call goPr
-    
+    write (gol,'(a,":   analysed                        : ",i6)') rname, nana; call goPr
+    write (gol,'(a,":   validation                      : ",i6)') rname, nobs-nana; call goPr
+#endif ! with_assim
+
     ! total number of observations over all domains:
     call MPIF90_AllReduce( nobs, nobs_tot, MPI_SUM, MPI_COMM_CALC, status )
-    IF_NOT_OK_RETURN(status=1)
+    IF_NOT_OK_RETURN(status=1)    
+    ! info ...
+    write (gol,'(a,": total number of observations read : ",i6)') rname, nobs_tot; call goPr
+
+#ifdef with_assim
+    ! total number of analyzed observations over all domains:
     call MPIF90_AllReduce( nana, nana_tot, MPI_SUM, MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)
-    
-    ! info ...
-    write (gol,'(a,": total number of observations read : ",i6," (analysed ",i0,", validation ",i0,")")') &
-                   rname, nobs_tot, nana_tot, nobs_tot-nana_tot; call goPr
+    write (gol,'(a,":   analysed                        : ",i6)') rname, nana_tot; call goPr
+    write (gol,'(a,":   validation                      : ",i6)') rname, nobs_tot-nana_tot; call goPr
+#endif ! with_assim
 
 #ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_read_obs, status )
     IF_NOT_OK_RETURN(status=1)
-
-    !! testing ..
-    !call goMem( rname//' - MEMORY 3a   ', status )
-    !IF_NOT_OK_RETURN(status=1)
-    !write (gol,'("WARNING - reset n_obs_tot=0 ...")'); call goErr
-    !nobs_tot = 0
 #endif
 
     ! no observations at all ?
@@ -1017,6 +1057,7 @@ contains
       ! info ...
       if(MasterProc) write (*,'("WARNING: No obserations found")')
 
+#ifdef with_assim
       ! dummy with zeros ...
       allocate( sf_an(limax,ljmax     ,1), stat=status, source=0.0 )
       IF_NOT_OK_RETURN(status=1)
@@ -1046,6 +1087,7 @@ contains
       ! fill arrays for requested subclass using analysed concentrations:
       call Fill_Output_xn_adv( '3DVAR_AN', xn_adv, status )
       IF_NOT_OK_RETURN(status=1)
+#endif ! with_assim
 
     else
 
@@ -1057,8 +1099,14 @@ contains
       !-----------------------------------------------------------------------
 
       ! info ..
-      write (gol,'(a,": collect tracer fields involved in analysis ...")') rname; call goPr
+      write (gol,'(a,": collect tracer fields involved in observation simulation ...")') rname; call goPr
       write (gol,'(a,": limax,ljmax,nlev,nObsComp = ",6i4)') rname, limax,ljmax,nlev,nObsComp; call goPr
+      
+      ! check ...
+      if ( nlev <= 0 ) then
+        write (gol,'("undefined nlev: ",i0)') nlev; call goErr
+        TRACEBACK; status=1; return
+      end if
 
       ! NOTE: This is only needed for not changing 'H_op' too much,
       !       which extracts concentrations from an array with shape:
@@ -1067,12 +1115,9 @@ contains
       !       which is already used in 'H_op' for the indirect observations
 
       ! storage for extract of concentrations involved in analysis:
-      allocate( sf_an(limax,ljmax     ,nObsComp), stat=status )
-      IF_NOT_OK_RETURN(status=1)
       allocate( xn_an(limax,ljmax,nlev,nObsComp), stat=status )
       IF_NOT_OK_RETURN(status=1)
-      ! storage for increments:
-      allocate( dx_an(limax,ljmax,nlev,nObsComp), stat=status )
+      allocate( sf_an(limax,ljmax     ,nObsComp), stat=status )
       IF_NOT_OK_RETURN(status=1)
       ! storage for units:
       allocate( xn_obs_units(nObsComp), stat=status )
@@ -1098,20 +1143,27 @@ contains
                     sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
                     status )
         IF_NOT_OK_RETURN(status=1)
+#ifdef with_assim
         ! store if needed:
         call Fill_Output_sf_xn( '3DVAR_OBS_FG', trim(ObsCompInfo(iObsComp)%name), &
                                    sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), &
                                    trim(ObsCompInfo(iObsComp)%units), status )
         IF_NOT_OK_RETURN(status=1)
+#endif ! with_assim
       end do
 
       !! info ...
       !write (gol,'(a,": xn_an range : ",2e16.6)') rname, minval(xn_an), maxval(xn_an); call goPr
 
 
+#ifdef with_assim
       !-----------------------------------------------------------------------
       ! allocate work arrrays
       !-----------------------------------------------------------------------
+
+      ! storage for increments:
+      allocate( dx_an(limax,ljmax,nlev,nObsComp), stat=status )
+      IF_NOT_OK_RETURN(status=1)
 
       ! local y-slabs ?
       if ( lny > 0 ) then
@@ -1127,12 +1179,7 @@ contains
         allocate( dx_loc(1,1,1,1), stat=status )
         IF_NOT_OK_RETURN(status=1)
       end if
-
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 4a   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
+#endif ! with_assim
 
 
       !-----------------------------------------------------------------------
@@ -1177,6 +1224,7 @@ contains
       call Hops_m%Set_IDs( status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_assim
       ! ...................................
 
       ! info ..
@@ -1278,12 +1326,6 @@ contains
 
       ! ...................................
 
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 5a   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
-
       ! initialize observation operator on analysis decomposition:
       call Hops_f%Init( status )
       IF_NOT_OK_RETURN(status=1)
@@ -1291,6 +1333,8 @@ contains
       ! onto new observation operator (Hops_f) on analysis decomposition (doms_an_fg):
       call Hops_m%Swap( doms_an_m, Hops_f, doms_an_fg, status )
       IF_NOT_OK_RETURN(status=1)
+
+#endif ! with_assim
 
       ! update timer:
       call Add_2timing(41,tim_after,tim_before,'3DVar: Get innovations from observations.')
@@ -1301,18 +1345,13 @@ contains
       IF_NOT_OK_RETURN(status=1)
 #endif
 
+#ifdef with_assim
       !-----------------------------------------------------------------------
       ! perform variational analysis
       !-----------------------------------------------------------------------
 
       ! info ...
       write (gol,'(a,": call var3d ...")') rname; call goPr
-
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 6a   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
 
       ! init array with all increments to zero:
       dx_loc = 0.0
@@ -1421,12 +1460,6 @@ contains
         IF_NOT_OK_RETURN(status=1)
 
       end do ! B matrices
-
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 6b   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
 
 
       !-----------------------------------------------------------------------
@@ -1661,10 +1694,13 @@ contains
 !      end if
 !#endif
 
+#endif ! with_assim
+
       !-----------------------------------------------------------------------
       ! innovations after analysis
       !-----------------------------------------------------------------------
 
+#ifdef with_assim
       ! all advected tracers now analysed ;
       ! fill 'simulated observation' fields 'xn_an' and 'sf_an',
       ! and copy these into output buffers if requested;
@@ -1684,13 +1720,13 @@ contains
         !IF_NOT_OK_RETURN(status=1)
       end do
 
-
       ! info ...
       write (gol,'(a,": evaluate observations after analysis ...")') rname; call goPr
 
       ! evaluate observation operator, store in it's 'xa' field:
       call Hops_m%Evaluate( 'xa', sf_an, xn_an, status )
       IF_NOT_OK_RETURN(status=1)
+#endif ! with_assim
       
       ! info ...
       write (gol,'(a,": write innovations ...")') rname; call goPr
@@ -1698,16 +1734,6 @@ contains
       ! save all:
       call Hops_m%WriteToFile( cdate, status )
       IF_NOT_OK_RETURN(status=1)
-
-#ifdef with_ajs
-      !! testing ..
-      !write (gol,'("break after Hops write")'); call goErr
-      !TRACEBACK; status=1; return
-
-      !! testing ..
-      !call goMem( rname//' - MEMORY 6d   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
 
 
       !-----------------------------------------------------------------------
@@ -1718,27 +1744,7 @@ contains
       write (gol,'(a,": clear analysis arrays ...")') rname; call goPr
 
       ! done with obs operators:
-      call Hops_f%Done( status )
-      IF_NOT_OK_RETURN(status=1)
-
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 5b   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
-
-      ! done with obs operators:
       call Hops_m%Done( status )
-      IF_NOT_OK_RETURN(status=1)
-
-#ifdef with_ajs
-      !! testing ..
-      !call goMem( rname//' - MEMORY 4b   ', status )
-      !IF_NOT_OK_RETURN(status=1)
-#endif
-
-      ! clear:
-      deallocate( dx_loc, stat=status )
       IF_NOT_OK_RETURN(status=1)
 
       ! clear:
@@ -1746,20 +1752,27 @@ contains
       IF_NOT_OK_RETURN(status=1)
       deallocate( xn_an, stat=status  )
       IF_NOT_OK_RETURN(status=1)
-      deallocate( dx_an, stat=status )
-      IF_NOT_OK_RETURN(status=1)
+      ! clear:
       deallocate( xn_obs_units, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+#ifdef with_assim
+      ! done with obs operators:
+      call Hops_f%Done( status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! clear:
+      deallocate( dx_loc, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! clear:
+      deallocate( dx_an, stat=status )
       IF_NOT_OK_RETURN(status=1)
       deallocate( xn_adv_units, stat=status )
       IF_NOT_OK_RETURN(status=1)
+#endif ! with_assim
       
     end if  ! observations present
-
-#ifdef with_ajs
-    !! testing ..
-    !call goMem( rname//' - MEMORY 3b   ', status )
-    !IF_NOT_OK_RETURN(status=1)
-#endif
 
 
     !-----------------------------------------------------------------------
@@ -1791,31 +1804,6 @@ contains
     deallocate( iObsData, stat=status )
     IF_NOT_OK_RETURN(status=1)
 
-#ifdef with_ajs
-    !! testing ..
-    !call goMem( rname//' - MEMORY 2b   ', status )
-    !IF_NOT_OK_RETURN(status=1)
-
-    !! testing ..
-    !call goMem( rname//' - MEMORY end  ', status )
-    !IF_NOT_OK_RETURN(status=1)
-#endif
-
-    !! testing ...
-    !nmemtest = nmemtest + 1
-    !if ( nmemtest >= 5 ) then
-    !  write (gol,'(a," - MEMORY break")') rname; call goPr
-    !  TRACEBACK; status=1; return
-    !end if
-
-!#ifdef with_ajs
-!      if ( dbg_cell ) then
-!        do ispec = 1, size(xn_adv,1)
-!          write (gol,*) 'vvv3 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
-!        end do
-!      end if
-!#endif
-
     ! info ...
     write (gol,'(a,": end")') rname; call goPr
 
@@ -1828,6 +1816,7 @@ contains
   ! ***
 
 
+#ifdef with_assim
 
   subroutine Fill_Output_xn_adv( subclass, xn_adv, status )
 
@@ -1926,14 +1915,8 @@ contains
         ! extract index of specie:
         ispec = out_group(k) - out_offset
         ! info on conversion to target units:
-!#ifdef with_ajs
-!        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-!                                 needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa )
-!#endif
+                                 needroa=needroa, debug_msg=TRACELINE )
         ! extract from bottom level:
         ilev = KMAX_MID
           !! testing ...
@@ -1963,14 +1946,8 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-!#ifdef with_ajs
-!        call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-!                                 needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
         call Units_Scale( f_2d(iout)%unit, ispec, fscale, &
-                                 needroa=needroa )
-!#endif
+                                 needroa=needroa, debug_msg=TRACELINE )
         ! only partly ..
         fscale = fscale * 0.27
         ! extract from bottom level:
@@ -2069,14 +2046,8 @@ contains
           ! extract index of specie:
           ispec = out_group(k) - out_offset
           ! info on conversion to target units:
-!#ifdef with_ajs
-!          call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-!                                  needroa=needroa, status=status )
-!          IF_NOT_OK_RETURN(status=1)
-!#else
           call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                  needroa=needroa )
-!#endif
+                                  needroa=needroa, debug_msg=TRACELINE )
           ! convert using air density?
           if ( needroa ) then
             ! add contribution, multiply with air density:
@@ -2102,14 +2073,8 @@ contains
         ! find index of coarse nitrate:
         ispec = find_index( 'NO3_C', species_adv(:)%name )
         ! info on conversion to target units:
-!#ifdef with_ajs
-!        call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-!                                needroa=needroa, status=status )
-!        IF_NOT_OK_RETURN(status=1)
-!#else
         call Units_Scale( f_3d(iout)%unit, ispec, fscale, &
-                                needroa=needroa )
-!#endif
+                                needroa=needroa, debug_msg=TRACELINE )
         ! only partly ..
         fscale = fscale * 0.27
         ! convert using air density?
@@ -2246,7 +2211,7 @@ contains
     use MPIF90               , only : MPIF90_BCast
     use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
 #ifdef with_ajs
-    use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
+    use GO                   , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
     use Config_module        , only : MasterProc, NPROC
     use MPI_Groups_mod       , only : MasterPE
@@ -2818,6 +2783,8 @@ contains
 
   end subroutine euclid_hcr
 
+#endif ! with_assim
+
 
   ! ***
 
@@ -2837,11 +2804,14 @@ contains
   ! On output, innov contains the innovations.
   ! @author M.Kahnert
   !-----------------------------------------------------------------------
+
+    use DA_Obs_ml            , only : T_ObsOpers
+
+#ifdef with_assim
     use Par_mod              , only : me
     use Config_module        , only : MasterProc
     use GridValues_mod       , only : coord_in_processor
     use DA_ml                , only : debug => DEBUG_DA
-    use DA_Obs_ml            , only : T_ObsOpers
     use DA_Obs_ml            , only : obsData
     use DA_Obs_ml            , only : ANSTAT_ANALYZED, ANSTAT_VALIDATION, ANSTAT_OBSCURE
     !use DA_ml                , only : FGSCALE, FGSCALE_INV
@@ -2850,6 +2820,7 @@ contains
     !use DA_ml                , only : nChemObs
 
     !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
+#endif ! with_assim
     
     ! --- in/out ----------------------------
 
@@ -2878,11 +2849,16 @@ contains
 
     ! --- local -----------------------------
 
-    integer      ::  i,j,l,k,n,ilev,err,ierr
-    integer      ::  ipar
-    real         ::  yn
-    !real         ::  alt(nx,ny,nlev)
-    !real         ::  rho0
+    integer       ::  n
+    real          ::  yn
+#ifdef with_assim
+    integer       ::  i,j,l,k 
+    integer       ::  ilev
+    integer       ::  err, ierr
+    integer       ::  ipar
+    !real          ::  alt(nx,ny,nlev)
+    !real          ::  rho0
+#endif ! with_assim
 
     ! --- begin -----------------------------
 
@@ -2900,8 +2876,6 @@ contains
       ! x,y grid coordinates of observations:
       !-----------------------------------------------------------------------
       do n = 1, nobs
-        ! index in obsdata array:
-        ipar = iObsData(n)
 
         !-----------------------------------------------------------------------
         ! mapping from model to obs-space:
@@ -2917,6 +2891,9 @@ contains
                                yn, status )
         IF_NOT_OK_RETURN(status=1)
 
+        !! testing ...
+        !write (gol,*) rname, '; n = ', n, '; yn = ', yn; call goPr
+
         ! store observation:
         Hops%obs(n)%obs = obs(n)
 
@@ -2924,26 +2901,29 @@ contains
         select case ( trim(state) )
           case ( 'xf' )
             Hops%obs(n)%xf = yn
+#ifdef with_assim
           case ( 'xa' )
             Hops%obs(n)%xa = yn
+#endif ! with_assim
           case default
             write (gol,'("unsupported state `",a,"`")') trim(state); call goErr
             TRACEBACK; status=1; return
         end select
 
+        ! obs.error std.dev.:
+        Hops%obs(n)%obsstddev = obs_stddev(n)
+
+        ! store station code:
+        Hops%obs(n)%stncode = trim(stncodes(n))
+
+#ifdef with_assim
         ! compute innovation:
         Hops%obs(n)%innov = yn - obs(n)
-
-        ! scale obs.error std.dev.:
-        Hops%obs(n)%obsstddev = obs_stddev(n)
 
         !! testing ...
         !write (gol,*) rname//':    yyy1 yn, obs ', n,yn, obs(n); call goPr
         !write (gol,*) rname//':    yyy1 innov   ', n, Hops%obs(n)%innov; call goPr
         !write (gol,*) rname//':    yyy1 stdv    ', n, Hops%obs(n)%obsstddev; call goPr
-
-        ! store station code:
-        Hops%obs(n)%stncode = trim(stncodes(n))
 
         !! testing ...
         !write (gol,*) rname//':     flag1 ', size(obs_analyse), n
@@ -2961,12 +2941,14 @@ contains
         if ( obs_analyse(n) ) then
           ! initialize flag:
           Hops%obs(n)%anstat = ANSTAT_ANALYZED
+          ! index in obsdata array:
+          ipar = iObsData(n)
           ! check range ...
           if ( (obs(n) < obsData(ipar)%min) .or. &
                (obs(n) > obsData(ipar)%max)     ) then
             ! info ...
             write (gol,'("WARNING - observation ",i6," from ",i6," has value ",e16.6," outside accepted value range ",2e16.6)') &
-                     n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goErr
+                     n, ipar, obs(n), obsData(ipar)%min, obsData(ipar)%max; call goPr
             ! do not analyse:
             !Hops%obs(n)%analyse = .false.
             Hops%obs(n)%anstat = ANSTAT_OBSCURE
@@ -2986,6 +2968,7 @@ contains
           write (gol, '("#",I0,2(1X,A3,":",E12.3))') &
                    n, 'Observation', obs(n), 'Model', yn; call goPr
         end if
+#endif ! with_assim
 
       end do  ! observations
 
@@ -3007,6 +2990,7 @@ contains
   ! ***
 
 
+#ifdef with_assim
   !-----------------------------------------------------------------------
   ! @description
   ! Compute the costfunction and its gradient
@@ -3023,7 +3007,7 @@ contains
     use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
     use MPIF90               , only : MPIF90_BCast
 #ifdef with_ajs
-    use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End
+    use GO                   , only : GO_Timer_Start, GO_Timer_End
 #endif
     use MPI_Groups_mod       , only : MPI_COMM_CALC
     use MPI_Groups_mod       , only : MasterPE
@@ -3740,4 +3724,7 @@ contains
 
   end subroutine costFunction
 
+#endif  ! with_assim
+
 end module DA_3DVar_mod
+
