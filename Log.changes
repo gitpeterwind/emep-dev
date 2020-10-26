@@ -27,7 +27,13 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Oct 2020, Dave
 
-EmChem19a - chemistry updated to match GenChem v1.0
+EmChem19a, EmChem19p - chemistry updated to match GenChem v1.0
+
+Changes are small, mainly due to re-ordering, but with:
+
+  pNO3 replacing TNO3 for NO3_f + NO3_c
+  skipping terpPeroxy in latest code.
+  new style csv files for emissplits for EmChem19a
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Oct 2020, Dave/Peter 
