@@ -1,4 +1,4 @@
-vers=rv4.34;year=2020;chem=EmChem19p  # Input version/year/chem flags
+vers=rv4.36;year=2020;chem=EmChem19p  # Input version/year/chem flags
 idir=`dirname ${BASH_SOURCE[0]}`      # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                  # top directory
@@ -15,7 +15,7 @@ echo "Making $cdir"
 #-- 0)  start from a "working" model code
 
 cd $idir
-./mk.ChemFiles $chem
+make $chem
 make -j6
 
 #-- 1)  Code ------------------------------------------------------------------
