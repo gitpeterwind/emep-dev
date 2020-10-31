@@ -147,7 +147,7 @@ contains
         endif
      enddo
   else
-     !separate value do not work properly yet
+     !separate values do not work properly yet
      lf_src(:)%dist = lf_src(1)%dist !Temporary
      do i=1,4
         lf_src(:)%DOMAIN(i) = lf_src(1)%DOMAIN(i) !Temporary
@@ -171,7 +171,7 @@ contains
   iem2Nipoll = 0
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
-     if(lf_src(isrc)%type == 'relative')then
+     if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type=='relative_d')then
         lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
      endif
@@ -739,10 +739,14 @@ subroutine lf_out(iotyp)
               write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_local_fraction'
               if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_local_fraction'
            else
+              def1%unit = ''!default
+              def1%class = ''!default
               write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
               if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
               write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
               if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
+              if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type == 'relative_d')write(def1%unit,fmt='(A)')'fraction'
+              if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type == 'relative_d')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
            endif
            scale=1.0
            call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
@@ -855,7 +859,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
   real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,ii,iix,ix,dx,dy,isrc
+  integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm
 
   if(i==li0)then
      !copy small part (could be avoided, but simpler to copy)
@@ -903,6 +907,49 @@ subroutine lf_adv_x(fluxx,i,j,k)
            do n = lf_src(isrc)%start, lf_src(isrc)%end
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
            enddo
+        endif
+     else if(lf_src(isrc)%type=='relative_d')then
+        !The relative position of the source is either the same for i and incoming lf, or differs by 1
+        dp = 0 ! for left boundary
+        dm = 0 ! for right boundary
+        if(mod(i_fdom(i)-1,lf_src(isrc)%res)==0)dp=1
+        if(mod(i_fdom(i),lf_src(isrc)%res)==0)dm=1
+        if(x>1.E-20)then
+           n = lf_src(isrc)%start
+           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist and dm=1, there are no local fractions to transport
+              if (dm==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n-dm,i+1)*x
+              n=n+1
+              do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,i+1)*x
+                 n=n+1
+              enddo
+           enddo
+
+           if(xx>1.E-20)then
+              n = lf_src(isrc)%start
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx   
+                    n=n+1
+                 enddo
+                 if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx 
+                 n=n+1! when dx=lf_src(isrc)%dist and dp=1 there are no local fractions to transport
+              enddo
+           endif
+        else if (xx>1.E-20)then
+           n = lf_src(isrc)%start
+           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,i-1)*xx 
+                 n=n+1
+              enddo
+              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist  and dp=1 there are no local fractions to transport
+              if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx 
+              n=n+1
+           enddo
+        else
+          !nothing to do if no incoming fluxes
         endif
      else if(lf_src(isrc)%type=='relative')then
         if(x>1.E-20)then
@@ -953,7 +1000,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
   real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,jj,iix,ix,dx,dy,isrc
+  integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm
 
   if(j==lj0)then
      !copy small part (could be avoided, but simpler to copy)
@@ -1002,6 +1049,77 @@ subroutine lf_adv_y(fluxy,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
            enddo
         endif
+     else if(lf_src(isrc)%type=='relative_d')then
+        !The relative position of the source is either the same for j and incoming lf, or differs by 1 (n differs by Ndiv_rel)
+        dp = 0 ! for lower boundary
+        dm = 0 ! for upper boundary
+        if(mod(j_fdom(j)-1,lf_src(isrc)%res)==0)dp=Ndiv_rel
+        if(mod(j_fdom(j),lf_src(isrc)%res)==0)dm=Ndiv_rel
+        if(x>1.E-20)then
+           n = lf_src(isrc)%start
+           if(dm==0)then
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
+                    n=n+1
+                 enddo
+              enddo              
+           else
+              dy = -lf_src(isrc)%dist
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn
+                 n=n+1
+              enddo
+              do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,j+1)*x
+                    n=n+1
+                 enddo
+              enddo
+           endif
+           if(xx>1.E-20)then
+              n = lf_src(isrc)%start
+              if(dp==0)then
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
+                       n=n+1
+                    enddo
+                 enddo
+              else
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,j-1)*xx
+                       n=n+1
+                    enddo
+                 enddo
+              endif
+           endif
+        else if (xx>1.E-20)then
+           n = lf_src(isrc)%start
+           if(dp==0)then
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx 
+                    n=n+1
+                 enddo
+              enddo
+           else
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,j-1)*xx 
+                    n=n+1
+                 enddo
+              enddo
+              dy=lf_src(isrc)%dist
+              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn
+                 n=n+1
+              enddo
+           endif
+        else
+           !nothing to do if no incoming fluxes          
+        endif
      else if(lf_src(isrc)%type=='relative')then
         if(x>1.E-20)then
            n = lf_src(isrc)%start
@@ -1041,7 +1159,6 @@ subroutine lf_adv_y(fluxy,i,j,k)
         else
            !nothing to do if no incoming fluxes          
         endif
-
      else
         if(me==0)write(*,*)'LF type not recognized)'
         stop
@@ -1574,9 +1691,9 @@ subroutine lf_emis(indate)
                   enddo
                enddo
                cycle !only one fraction per country
-            else if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='coarse')then
+            else if(lf_src(isrc)%type=='relative'  .or. lf_src(isrc)%type=='relative_d' .or. lf_src(isrc)%type=='coarse')then
                !Country constraints already included in emis_lf
-               if(lf_src(isrc)%type=='relative') n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
+               if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='relative_d' ) n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
                if(lf_src(isrc)%type=='coarse') n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse 
                lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
             else

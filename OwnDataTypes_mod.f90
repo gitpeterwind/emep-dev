@@ -311,6 +311,7 @@ type, public :: lf_sources
   character(len=TXTLEN_NAME) :: species = 'NONE' !pollutants to include 
   character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
   integer :: dist = -1 ! window dimension, if defined 
+  integer :: res=1     ! half size of the single source square (square size is 2*res+1 x 2*res+1 ) 
   integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
   integer :: sector= -1 ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model)
