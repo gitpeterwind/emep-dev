@@ -2,7 +2,7 @@
   GRID      = 'EMEP0302',
   iyr_trend = 2017,
   runlabel1 = 'Base',
-  runlabel2 = 'rv4_33',
+  runlabel2 = 'rv4_36',
   startdate = 2017,01,01,00,
   enddate   = 2017,01,01,03,
 
@@ -490,7 +490,6 @@ OutputConcs=
     !FSOA new system:
     !ug_PM will trigger use of Fgas and Fpart for semivolatile compounds
     !** Needed if semivolatile components 
-      'PMFINE'           ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
     ! 'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'OM25_BGND'        ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! FSOA tests
       'OM25_BGND'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YM',  ! FSOA tests
