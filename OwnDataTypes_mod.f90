@@ -331,6 +331,7 @@ type, public :: lf_sources
   logical :: WetDep = .false. ! if wetdep is to be outputed
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
+  logical     :: make_fracsum =.false.
   character(len=40)::  MONTH_ENDING = "NOTSET"
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
