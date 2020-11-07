@@ -25,6 +25,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Nov 2020, Peter
+
+Upgrade of local fractions. The size of the sources around the receptor cells
+can be set in config with
+lf_src(1)%res = 5 ! sources are squares of size 5x5 gridcells
+Name of file is now Base_LF_full.nc
+uEMEP_GUI.py is now LF_GUI.py and can show the different source sizes
+(but position can be shifted by up to n-1 gridcells, where n is size of source!)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Oct 2020, Dave
 
 EmChem19a, EmChem19p - chemistry updated to match GenChem v1.0

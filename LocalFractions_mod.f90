@@ -171,7 +171,7 @@ contains
   iem2Nipoll = 0
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
-     if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type=='relative_d')then
+     if(lf_src(isrc)%type == 'relative')then
         lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
      endif
@@ -525,31 +525,31 @@ subroutine lf_out(iotyp)
   call Code_timer(tim_before)
 
   if(iotyp==IOU_HOUR_INST .and. lf_src(1)%HOUR_INST)then
-     fileName = trim(runlabel1)//'_uEMEP_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
+     fileName = trim(runlabel1)//'_LF_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
      if(oldhourlyInstname/=fileName)then
         first_call(iotyp) = .true.
         oldhourlyInstname = fileName
      endif
   else if(iotyp==IOU_HOUR .and. lf_src(1)%HOUR)then
-     fileName = trim(runlabel1)//'_uEMEP_hour'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
+     fileName = trim(runlabel1)//'_LF_hour'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
      if(oldhourlyname/=fileName)then
         first_call(iotyp) = .true.
         oldhourlyname = fileName
      endif
   else if(iotyp==IOU_DAY .and. lf_src(1)%DAY)then
-     fileName=trim(runlabel1)//'_uEMEP_day.nc'
+     fileName=trim(runlabel1)//'_LF_day.nc'
   else if(iotyp==IOU_MON .and. lf_src(1)%MONTH)then
      if(lf_src(1)%MONTH_ENDING /= "NOTSET")then
-        fileName=trim(runlabel1)//'_uEMEP_month'//date2string(trim(lf_src(1)%MONTH_ENDING),current_date,-1.0)
+        fileName=trim(runlabel1)//'_LF_month'//date2string(trim(lf_src(1)%MONTH_ENDING),current_date,-1.0)
         if(oldmonthlyname/=fileName)then
            first_call(iotyp) = .true.
            oldmonthlyname = fileName
         endif
      else
-        fileName=trim(runlabel1)//'_uEMEP_month.nc'
+        fileName=trim(runlabel1)//'_LF_month.nc'
      endif
   else if(iotyp==IOU_YEAR .and. lf_src(1)%YEAR)then
-     fileName=trim(runlabel1)//'_uEMEP_full.nc'
+     fileName=trim(runlabel1)//'_LF_full.nc'
   else
      return
   endif
@@ -560,8 +560,6 @@ subroutine lf_out(iotyp)
   kmax=lf_Nvertout
   scale=1.0
   CDFtype=Real4
-  !  dimSizes(1)=uEMEP%Nsec_poll
-  !  dimNames(1)='sector'
   dimSizes(1)=2*lf_src(1)%dist+1
   dimNames(1)='x_dist'
   dimSizes(2)=2*lf_src(1)%dist+1
@@ -606,7 +604,7 @@ subroutine lf_out(iotyp)
   dimNames(5)='klevel'
   dimSizes_tot(3)=kmax
   dimNames_tot(3)='klevel'
-  def1%class='uEMEP' !written
+  def1%class='LF' !written
   def1%avg=.false.      !not used
   def1%index=0          !not used
   def1%scale=1.0      !not used
@@ -741,19 +739,31 @@ subroutine lf_out(iotyp)
            else
               def1%unit = ''!default
               def1%class = ''!default
-              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
-              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
-              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_'//trim(lf_src(isrc)%type)
-              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_fraction_'//trim(lf_src(isrc)%type)
-              if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type == 'relative_d')write(def1%unit,fmt='(A)')'fraction'
-              if(lf_src(isrc)%type == 'relative' .or. lf_src(isrc)%type == 'relative_d')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              if(lf_src(isrc)%res==0)then
+                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction'
+                 if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fraction'
+                 if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
+                 if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              else
+                 write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+                 if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fraction_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+                 if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
+                 if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              endif
            endif
            scale=1.0
            call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
            overwrite=.false.
-           if(isrc==1)then
+           if(lf_src(isrc)%make_fracsum)then
               def1%name=trim(lf_src(isrc)%species)//'_fracsum'
+              if(lf_src(isrc)%res==1)then
+                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum'
+                 if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fracsum'
+              else
+                 write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+                 if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+             endif
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
            endif           
@@ -908,7 +918,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
            enddo
         endif
-     else if(lf_src(isrc)%type=='relative_d')then
+     else if(lf_src(isrc)%type=='relative')then
         !The relative position of the source is either the same for i and incoming lf, or differs by 1
         dp = 0 ! for left boundary
         dm = 0 ! for right boundary
@@ -916,15 +926,23 @@ subroutine lf_adv_x(fluxx,i,j,k)
         if(mod(i_fdom(i),lf_src(isrc)%res)==0)dm=1
         if(x>1.E-20)then
            n = lf_src(isrc)%start
-           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist and dm=1, there are no local fractions to transport
-              if (dm==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n-dm,i+1)*x
-              n=n+1
-              do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,i+1)*x
-                 n=n+1
+           if (dm==0) then
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
+                    n=n+1
+                 enddo
               enddo
-           enddo
+           else
+              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist and dm=1, there are no local fractions to transport
+                 n=n+1
+                 do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,i+1)*x
+                    n=n+1
+                 enddo
+              enddo
+           endif
 
            if(xx>1.E-20)then
               n = lf_src(isrc)%start
@@ -946,41 +964,6 @@ subroutine lf_adv_x(fluxx,i,j,k)
               enddo
               lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist  and dp=1 there are no local fractions to transport
               if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx 
-              n=n+1
-           enddo
-        else
-          !nothing to do if no incoming fluxes
-        endif
-     else if(lf_src(isrc)%type=='relative')then
-        if(x>1.E-20)then
-           n = lf_src(isrc)%start
-           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist there are no local fractions to transport
-              n=n+1
-              do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-1,i+1)*x
-                 n=n+1
-              enddo
-           enddo
-
-           if(xx>1.E-20)then
-              n = lf_src(isrc)%start
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+1,i-1)*xx   
-                    n=n+1
-                 enddo                
-                 n=n+1! when dx=lf_src(isrc)%dist there are no local fractions to transport
-              enddo
-           endif
-        else if (xx>1.E-20)then
-           n = lf_src(isrc)%start
-           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+1,i-1)*xx 
-                 n=n+1
-              enddo
-              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist there are no local fractions to transport
               n=n+1
            enddo
         else
@@ -1049,7 +1032,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
            enddo
         endif
-     else if(lf_src(isrc)%type=='relative_d')then
+     else if(lf_src(isrc)%type=='relative')then
         !The relative position of the source is either the same for j and incoming lf, or differs by 1 (n differs by Ndiv_rel)
         dp = 0 ! for lower boundary
         dm = 0 ! for upper boundary
@@ -1120,45 +1103,6 @@ subroutine lf_adv_y(fluxy,i,j,k)
         else
            !nothing to do if no incoming fluxes          
         endif
-     else if(lf_src(isrc)%type=='relative')then
-        if(x>1.E-20)then
-           n = lf_src(isrc)%start
-           dy = -lf_src(isrc)%dist
-           do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              lf(n,i,j,k) = lf(n,i,j,k)*xn
-              n=n+1
-           enddo
-           do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-Ndiv_rel,j+1)*x
-                 n=n+1
-              enddo
-           enddo
-           if(xx>1.E-20)then
-              n = lf_src(isrc)%start
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+Ndiv_rel,j-1)*xx
-                    n=n+1
-                 enddo
-              enddo
-           endif
-        else if (xx>1.E-20)then
-           n = lf_src(isrc)%start
-           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+Ndiv_rel,j-1)*xx 
-                 n=n+1
-              enddo
-           enddo
-           dy=lf_src(isrc)%dist
-           do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              lf(n,i,j,k) = lf(n,i,j,k)*xn
-              n=n+1
-           enddo
-        else
-           !nothing to do if no incoming fluxes          
-        endif
      else
         if(me==0)write(*,*)'LF type not recognized)'
         stop
@@ -1183,7 +1127,7 @@ subroutine lf_adv_k(fluxk,i,j)
           loc_frac_src_km1(n,k)=lf(n,i,j,k-1) !NB: k is shifted by 1 in loc_frac_src_km1
        enddo
     enddo
-    !loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1)=0.0!Assume zero local fractions coming from above
+    !loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1)=0.0!Assume zero local fractions coming from above (xx=0.0)
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
@@ -1691,9 +1635,9 @@ subroutine lf_emis(indate)
                   enddo
                enddo
                cycle !only one fraction per country
-            else if(lf_src(isrc)%type=='relative'  .or. lf_src(isrc)%type=='relative_d' .or. lf_src(isrc)%type=='coarse')then
+            else if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='coarse')then
                !Country constraints already included in emis_lf
-               if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='relative_d' ) n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
+               if(lf_src(isrc)%type=='relative') n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
                if(lf_src(isrc)%type=='coarse') n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse 
                lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
             else

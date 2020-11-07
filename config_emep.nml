@@ -176,17 +176,19 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   !Local Fractions pollutants and sectors to include:
   lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(1)%sector=0 !0 means sum of all sectors
+
   lf_src(2)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  lf_src(2)%sector=8 !0 means sum of all sectors
+  lf_src(2)%sector=0 !0 means sum of all sectors
+  lf_src(2)%res=5 ! sources are squares with size 5x5 gridcells
 
   lf_src(3)%species="nox "
   lf_src(3)%sector=0
   lf_src(4)%species="nox "
   lf_src(4)%sector=8
 
-  lf_src(1)%type='country',
   lf_src(1)%drydep=T !means make country dry deposition maps too
   lf_src(1)%wetdep=T !means make country wet deposition maps too
+  lf_src(1)%type='country',
   lf_country_sector_list(1:8)=0,1,2,3,4,5,6,7,
   lf_country_list(1:20)='FR','IT','DE','ES','NO','NL','SE','PL','AT','BE','BG','DK','FI','GR','HU','PT','RO','CH','TR','GB',
   lf_country_group(1)%name='NORDIC', !any name given to the group (used as output name)
