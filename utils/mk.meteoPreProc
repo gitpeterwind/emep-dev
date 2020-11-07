@@ -4,7 +4,14 @@
 
 prog=meteoPreProc    # was DegreeDayFactors
 
-ifort -o $prog  -O3 -r8 meteoPreProc.f90 `nc-config --fflags` `nc-config --flibs`
+#Nebula compilation: mpif90 -o meteoPreProc -O3 -r8 meteoPreProc.f90 `nc-config --fflags` `nc-config --flibs`
+
+#PW 20121105
+#"-Wl,-rpath," gives the libraries to use at runtime.
+ifort -o $prog -O3 -r8 -I/global/apps/netcdf/4.2.1.1/intel/13.0.0/include \
+                       -L/global/apps/netcdf/4.2.1.1/intel/13.0.0/lib \
+                       -Wl,-rpath,/global/apps/netcdf/4.2.1.1/intel/13.0.0/lib \
+                       $prog.f90 -lnetcdf -lnetcdff
 
 #DEBUG 4: ifort meteoPreProc.f90 -o $prog  -r8 -CB -debug-parameters all -traceback -ftrapuv  `nc-config --fflags` `nc-config --flibs`
 
