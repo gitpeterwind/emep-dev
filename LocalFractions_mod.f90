@@ -163,7 +163,13 @@ contains
   lf_Nvert = lf_src(1)%Nvert !Temporary
   Nsources = 0
   do i = 1, MAXSRC
-     if(lf_src(i)%species /= 'NONE') Nsources = Nsources + 1
+     if(lf_src(i)%species == 'NONE') exit
+     Nsources = Nsources + 1
+  enddo
+  do i = Nsources + 1, MAXSRC
+     if(lf_src(i)%species /= 'NONE') then
+        if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species)' not included because source ',Nsources+1,' is missing'
+     end if
   enddo
 
   ipoll=0
@@ -608,7 +614,7 @@ subroutine lf_out(iotyp)
   def1%avg=.false.      !not used
   def1%index=0          !not used
   def1%scale=1.0      !not used
-  def1%name=trim(varName)
+  def1%name='notset'
   def1%unit=''
   def2=def1
   def2%unit='ug/m3'
@@ -739,31 +745,27 @@ subroutine lf_out(iotyp)
            else
               def1%unit = ''!default
               def1%class = ''!default
-              if(lf_src(isrc)%res==0)then
-                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction'
-                 if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fraction'
-                 if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
-                 if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-              else
+              if(lf_src(isrc)%name=='NOTSET')then                 
                  write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fraction_',lf_src(isrc)%res,'x',lf_src(isrc)%res
                  if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fraction_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-                 if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
-                 if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-              endif
+              else
+                 def1%name=trim(lf_src(isrc)%name)
+              end if
+              
+              if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
+              if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
            endif
            scale=1.0
            call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
            overwrite=.false.
            if(lf_src(isrc)%make_fracsum)then
-              def1%name=trim(lf_src(isrc)%species)//'_fracsum'
-              if(lf_src(isrc)%res==1)then
-                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum'
-                 if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fracsum'
+              if(lf_src(isrc)%name/='NOTSET')then                 
+                 def1%name=trim(lf_src(isrc)%name)//'_fracsum'
               else
                  write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
                  if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-             endif
+              end if
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)  
            endif           

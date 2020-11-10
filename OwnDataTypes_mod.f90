@@ -310,6 +310,7 @@ end type uEMEP_type
 type, public :: lf_sources
   character(len=TXTLEN_NAME) :: species = 'NONE' !pollutants to include 
   character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
+  character(len=TXTLEN_NAME) :: name = 'NOTSET' ! name as it appears in output. Only for "relative" type
   integer :: dist = -1 ! window dimension, if defined 
   integer :: res=1     ! half size of the single source square (square size is 2*res+1 x 2*res+1 ) 
   integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow

@@ -25,6 +25,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Nov 2020, Peter
+
+Can set lf_src(1)%name to set the name of the local fractions, as they appear
+in oputput
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Nov 2020, Peter
 
 Upgrade of local fractions. The size of the sources around the receptor cells
