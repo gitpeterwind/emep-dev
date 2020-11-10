@@ -176,10 +176,11 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   !Local Fractions pollutants and sectors to include:
   lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(1)%sector=0 !0 means sum of all sectors
-
+  lf_src(1)%make_fracsum=T,
   lf_src(2)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(2)%sector=0 !0 means sum of all sectors
   lf_src(2)%res=5 ! sources are squares with size 5x5 gridcells
+  lf_src(2)%make_fracsum=T,
 
   lf_src(3)%species="nox "
   lf_src(3)%sector=0
