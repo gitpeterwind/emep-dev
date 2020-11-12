@@ -25,6 +25,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th Nov 2020, Dave/Robert
+
+Added two new chemical scheme directories for testing:
+
+  ZCM_EmChem19X-vbs     = expanded EmChem19a scheme
+  ZCM_CRIv2R5Em-vbs     = CRI-based scheme
+
+(Robert is working on the documentation paper for these.)
+
+Setup_1d_mod.f90 - safer Rn222 treatment, and source of emissions documented
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Nov 2020, Peter
 
 Total per countries *and* sectors outputted if
