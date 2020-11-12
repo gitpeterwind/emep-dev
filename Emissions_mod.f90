@@ -26,7 +26,7 @@ use Config_module,only: &
     EURO_SOILNOX_DEPSCALE,&! one or the other
     FOUND_OCEAN_DMS,&
     NPROC, EmisSplit_OUT,uEMEP,SECTORS_NAME,&
-    SecEmisOutWanted,MaxNSECTORS,&
+    SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask
@@ -547,6 +547,7 @@ contains
     TYPE(timestamp)   :: ts1,ts2
     logical, save ::first_call = .true.
     real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
+    real, allocatable, dimension(:,:,:) :: sumemis_sec ! Sum of emissions per country and sector
     logical :: writeoutsums 
     logical :: writeout !if something to show and writeoutsums=T
     
@@ -563,6 +564,8 @@ contains
           writeoutsums = .true.
           ! sum emissions per countries
           allocate(sumemis(NLAND,NEMIS_FILE))
+          if(SecEmisTotalsWanted)allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE))
+          if(SecEmisTotalsWanted)sumemis_sec = 0.0
           sumemis = 0.0
           emsum = 0.0
           exit
@@ -578,10 +581,12 @@ contains
           if(writeoutsums) writeout = .true. ! at least something to write
           if(writeoutsums .and. .not.allocated(sumemis))then
              allocate(sumemis(NLAND,NEMIS_FILE))
+             if(SecEmisTotalsWanted)allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE))
              emsum = 0.0
           endif
           !values are no more valid, fetch new one
           if(writeoutsums)sumemis=0.0
+          if(writeoutsums .and. SecEmisTotalsWanted)sumemis_sec=0.0
           do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
              if(Emis_source(is)%is3D)then
                 ix = ix3Dmap(is)
@@ -793,6 +798,9 @@ contains
                    do j = 1,ljmax
                       do i = 1,limax                         
                          sumemis(iland,iem) = sumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
+                         if(SecEmisTotalsWanted)&
+                              sumemis_sec(iland,is,iem) = sumemis_sec(iland,is,iem)&
+                              + Emis_source_2D(i,j,is) * gridyear * xmd(i,j)
                       enddo
                    enddo
                 endif
@@ -820,6 +828,8 @@ contains
        if(writeout)then
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
                NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
+          if(SecEmisTotalsWanted)CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis_sec,&
+               NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
           if(me==0)then
              write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
              write(*     ,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)
@@ -831,6 +841,19 @@ contains
                    write(*,     fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
                 end if
              end do
+             if(SecEmisTotalsWanted)then
+                write(*     ,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
+                fmt="(i4,1x,a9,i4,3x,30(f12.2,:))"
+                do ic = 1, NLAND
+                   do is = 1, NSECTORS
+                      ccsum = sum( sumemis_sec(ic,is,:) )
+                      icc=Country(ic)%icode
+                      if ( ccsum > 0.0 )then
+                         write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                      end if
+                   end do
+                end do
+             end if
           end if
 
           !total of emissions from all countries and files into emsum
@@ -845,6 +868,7 @@ contains
        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
     endif
     if (allocated(sumemis)) deallocate(sumemis)   
+    if (allocated(sumemis_sec)) deallocate(sumemis_sec)   
 
     first_call=.false.
 
@@ -856,7 +880,7 @@ contains
     integer, intent(in)   :: year        ! Year ( 4-digit)
 
     !-- local variables
-    integer :: i, j              ! Loop variables
+    integer :: i, j, is          ! Loop variables
     real    :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
     real    :: ccsum             ! Sum of emissions for one country
 
@@ -879,9 +903,10 @@ contains
 
     ! Emission sums (after e_fact adjustments):
     real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
-    real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
+    real, dimension(NLAND,NEMIS_FILE) :: sumemis ! Sum of emissions per country
+    !note: automatic arrays were not accepted for MPI_REDUCE
+    real, allocatable, dimension(:,:,:) :: sumemis_sec, sumemis_local ! Sum of emissions per country and sectors
     real, dimension(NEMIS_FILE) :: sumEU ! Sum of emissions in EU
-
 
     ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
@@ -1057,6 +1082,7 @@ contains
     allocate(nGridEmisCodes(LIMAX,LJMAX))
     allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
     allocate(GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
+    allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE), sumemis_local(NLAND,NSECTORS,NEMIS_FILE))
     call CheckStop(allocerr /= 0, &
          "EmisGet:Allocation error for GridEmis")
     GridEmisCodes = -1   
@@ -1193,8 +1219,9 @@ contains
        if(MasterProc)write(*,38)sub//' reading emis_inputlist ',iemislist,trim(fname)
 
        sumemis=0.0
-       sumemis_local(:,:)=0.0
-
+       sumemis_sec=0.0
+       sumemis_local=0.0
+       
        nin = emis_inputlist(iemislist)%Nincl
        nex = emis_inputlist(iemislist)%Nexcl
 
@@ -1228,9 +1255,11 @@ contains
           end do!NEMIS_FILE
 
           !add together totals from each processor (only me=0 get results)
-          sumemis=0.0
-          CALL MPI_REDUCE(sumemis_local,sumemis,&
-               NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
+          sumemis_sec=0.0
+          if(me==0)write(*,*)me,'sums '
+          CALL MPI_REDUCE(sumemis_local,sumemis_sec,&
+               NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
+          if(me==0)write(*,*)me,'sums finished'
 
        elseif(index(emis_inputlist(iemislist)%name,"Emis_4D.nc")>0)then 
           !under development
@@ -1271,9 +1300,9 @@ contains
           end do
 
           !add together totals from each processor (only me=0 get results)
-          sumemis=0.0
-          CALL MPI_REDUCE(sumemis_local,sumemis,&
-               NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
+          sumemis_sec=0.0
+          CALL MPI_REDUCE(sumemis_local,sumemis_sec,&
+               NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
        else
           if(MasterProc)write(*,*)'WARNING: did not recognize format of '//trim(emis_inputlist(iemislist)%name)
           call StopAll("Emissions file format not recognized ")
@@ -1288,6 +1317,9 @@ contains
           sumEU(:) = 0.0
           fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
           do ic = 1, NLAND
+             do is = 1,NSECTORS
+                sumemis(ic,:) = sumemis(ic,:) + sumemis_sec(ic,is,:)
+             end do
              ccsum = sum( sumemis(ic,:) )
              icc=Country(ic)%icode
              if ( ccsum > 0.0 )then
@@ -1299,6 +1331,25 @@ contains
           if ( sum(sumEU(:))>0.001) then
              write(*     ,fmt) 'EMTAB', 998, "EU", sumEU(:)
              write(IO_LOG,fmt) 'EMTAB', 998, "EU", sumEU(:)
+          end if
+          if(SecEmisTotalsWanted)then
+             write(*,*)
+             write(*,*)"Totals per sectors (only when non zero)"
+             write(*,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
+             write(IO_LOG,*)
+             write(IO_LOG,*)"Totals per sectors"
+             write(IO_LOG,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
+             fmt="(i4,1x,a9,i4,3x,30(f12.2,:))"
+             do ic = 1, NLAND
+                do is = 1, NSECTORS
+                   ccsum = sum( sumemis_sec(ic,is,:) )
+                   icc=Country(ic)%icode
+                   if ( ccsum > 0.0 )then
+                      write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                      write(IO_LOG, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                   end if
+                end do
+             end do
           end if
        end if
 
@@ -1480,6 +1531,8 @@ contains
        call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
     end if
 
+    deallocate(sumemis_sec, sumemis_local)
+    
     !output emissions
     fileName = 'EMIS_OUT.nc'
 !Not ready

@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th Nov 2020, Peter
+
+Total per countries *and* sectors outputted if
+      SecEmisTotalsWanted = T,
+in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Nov 2020, Peter
 
 Can set lf_src(1)%name to set the name of the local fractions, as they appear

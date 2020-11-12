@@ -180,6 +180,7 @@ type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100 
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
+logical, public, save :: SecEmisTotalsWanted = .false.
 
 logical, public, save :: EmisSplit_OUT = .false.
 
@@ -778,6 +779,7 @@ subroutine Config_Constants(iolog)
    ,Emis_sourceFiles      & ! new format
    ,EmisMask              & ! new format
    ,SecEmisOutWanted      & ! sector emissions to include in output
+   ,SecEmisTotalsWanted    & ! give total per sectors and countries
    ,HourlyEmisOut         & ! to output emissions hourly
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX

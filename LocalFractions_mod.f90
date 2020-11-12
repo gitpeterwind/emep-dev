@@ -168,7 +168,7 @@ contains
   enddo
   do i = Nsources + 1, MAXSRC
      if(lf_src(i)%species /= 'NONE') then
-        if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species)' not included because source ',Nsources+1,' is missing'
+        if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if
   enddo
 

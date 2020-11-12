@@ -219,7 +219,7 @@ contains
     integer,intent(inout) ::nEmisCodes(LIMAX,LJMAX)
     integer,intent(inout) ::EmisCodes(LIMAX,LJMAX,NCMAX)
     ! Sum of emissions per country
-    real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local 
+    real,intent(inout), dimension(NLAND,NSECTORS,NEMIS_FILE) :: sumemis_local 
     logical, intent(in) :: use_lonlat_femis,set_mask,use_mask
     logical, intent(in) :: fractionformat
 
@@ -451,7 +451,7 @@ contains
                       EmisCodes(i,j,i_cc)=landcode(i,j,n)
                       Emis(isec,i,j,i_cc,iem_used)=fractions(i,j,n)*cdfemis(i,j)*fac  
                    end if
-                   sumemis_local(ic,iem_used)=sumemis_local(ic,iem_used)&
+                   sumemis_local(ic,isec,iem_used)=sumemis_local(ic,isec,iem_used)&
                         +0.001*fractions(i,j,n)*cdfemis(i,j)*fac  !for diagnostics, mass balance
                 end do
              endif
@@ -654,7 +654,7 @@ contains
     implicit none
     integer, intent(in) ::iem, nin, nex
     character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
-    real,intent(inout), dimension(NLAND,NEMIS_FILE) &
+    real,intent(inout), dimension(NLAND,NSECTORS,NEMIS_FILE) &
         :: sumemis_local ! Sum of emissions per country
     logical, intent(in) :: use_lonlat_femis
     integer ::i,j,ic,CC,isec,i_gridemis,found
@@ -777,8 +777,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 GridEmis(:,i,j,i_gridemis,iem)=e_fact(:,ic,iem) *  tmpsec(:)*lonlat_fac(:)
              end if
             !for diagnostics, mass balance:
-             sumemis_local(ic,iem)=sumemis_local(ic,iem)&
-                  +0.001*sum(e_fact(:,ic,iem)*tmpsec(:)*lonlat_fac(:))
+             sumemis_local(ic,:,iem)=sumemis_local(ic,:,iem)&
+                  +0.001*e_fact(:,ic,iem)*tmpsec(:)*lonlat_fac(:)
 
         end do READEMIS 
         
