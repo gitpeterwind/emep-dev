@@ -533,7 +533,7 @@ subroutine setup_rcemis(i,j)
     inat_RDC = find_index( "Dust_ROAD_c", EMIS_BioNat(:) , any_case=.true. )
     itot_RDF = find_index( "Dust_ROAD_f", species(:)%name  , any_case=.true.  )
     itot_RDC = find_index( "Dust_ROAD_c", species(:)%name  , any_case=.true.  )
-    itot_Rn222=find_index( "RN222", species(:)%name    )
+    itot_Rn222=find_index( "Rn222", species(:)%name, any_case=.true. )
     IC_NH3=find_index( "NH3", species(:)%name    )
     first_call = .false.
   end if 
@@ -723,7 +723,8 @@ subroutine setup_rcemis(i,j)
 
 
   ! Soil Rn222 emissions from non-ice covered land, + water
-  ! at rate of 1 atom/cm2/s
+  ! at rate of 1 atom/cm2/s  over land (cf Hammer et al, JGR, 2007, CARBOSOL project)
+  ! and 0.00182 over sea (cf Schery & Huang, GRL; 2004)
    eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
 
 
