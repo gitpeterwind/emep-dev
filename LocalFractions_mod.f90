@@ -74,7 +74,6 @@ integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
 integer, public, save :: Nsources=0
 integer, public, save :: lf_Nvert=0
 
-
 integer, public, save :: LF_SRC_TOTSIZE
 integer,  public, save :: iotyp2ix(IOU_MAX_MAX)
 integer,  public, save :: av_fac(IOU_MAX_MAX)
@@ -83,6 +82,10 @@ integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
 integer, private, parameter :: MAXIPOLL=16
 integer,  public, save :: iem2ipoll(NEMIS_File,MAXIPOLL) !internal indices of pollutants for that emis file
 integer,  public, save :: ipoll2iqrc(MAXIPOLL)=-1 !-1 for primary pollutant
+
+integer, public, save :: Ndrydep_lf=0
+integer, public, save :: Nwetdep_lf=0
+
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
@@ -101,8 +104,6 @@ integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
 integer, private, save :: Ncountrysectors_lf=0
-integer, private, save :: Ndrydep_lf=0
-integer, private, save :: Nwetdep_lf=0
 
 contains
 
@@ -527,7 +528,7 @@ subroutine lf_out(iotyp)
   real :: fracsum(LIMAX,LJMAX)
   logical :: pollwritten(Npoll_lf_max)
   integer :: ncFileID
-  
+
   call Code_timer(tim_before)
 
   if(iotyp==IOU_HOUR_INST .and. lf_src(1)%HOUR_INST)then
@@ -1575,6 +1576,7 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
      idep0 = idep0 + lf_src(isrc)%end-lf_src(isrc)%start+1
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+
 end subroutine lf_wetdep
 
 subroutine lf_emis(indate)

@@ -1256,10 +1256,8 @@ contains
 
           !add together totals from each processor (only me=0 get results)
           sumemis_sec=0.0
-          if(me==0)write(*,*)me,'sums '
           CALL MPI_REDUCE(sumemis_local,sumemis_sec,&
                NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
-          if(me==0)write(*,*)me,'sums finished'
 
        elseif(index(emis_inputlist(iemislist)%name,"Emis_4D.nc")>0)then 
           !under development

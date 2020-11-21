@@ -3155,6 +3155,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      end if
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
+
         if ( debug )write(*,*)'interpol case ',interpol_used
         
         if(projection=='lon lat')then
@@ -3185,7 +3186,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               ifirst(ig)=floor(ir+0.5+1.E-6)!first i to be treated
               call lb2ij(Rlonmax,0.0,ir,jr)
               ilast(ig)=floor(ir+0.5-1.E-6)!last i to be treated
-              
+      
               !end of the world tests
               if(ilast(ig)>= ifirst(ig))then
                  !no problems with monotonicity
@@ -3195,8 +3196,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                   ilast_corrected=.false.
                  if(ifirst(ig)>=rundomain(1) .and. ifirst(ig)<=rundomain(2))then
                     !inside rundomain
-                    if(i_local(ifirst(ig))>=1 .and. i_local(ifirst(ig))<=limax)then
-                       !inside subdomain. ilast(ig) is wrong, set it at the end of subdomain
+                    if(i_local(ifirst(ig))<=limax)then
+                       !covers some subdomain. ilast(ig) is wrong, set it at the end of subdomain
                        ilast(ig)=i_fdom(limax)
                        !we are done with correction
                        ilast_corrected=.true.
@@ -3204,8 +3205,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  endif
                  if((.not. ilast_corrected) .and. ilast(ig)>=rundomain(1) .and. ilast(ig)<=rundomain(2))then
                     !inside rundomain
-                    if(i_local(ilast(ig))>=1 .and. i_local(ilast(ig))<=limax)then
-                       !inside subdomain. ifirst(ig) is wrong, set it at the start of subdomain
+                    if(i_local(ilast(ig))>=1)then
+                       !covers some subdomain. ifirst(ig) is wrong, set it at the start of subdomain
                        ifirst(ig)=i_fdom(1)
                     endif
                  endif

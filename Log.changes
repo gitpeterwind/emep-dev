@@ -24,6 +24,20 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Nov 2020, Peter, Massimo,
+
+In specific cases the interpolation in ReadField_CDF fails.
+So far the only case found was a 0.011x0.011 degree latlon grid, when DMS
+(1 degree grid) is interpolated ("conservative" interpolation),
+the rightmost part of the domain was showing zero emissions of DMS.
+(Happens when the left side of a DMS gridcell is outside the domain and
+the right side is outside the local subdomain)
+Fixed now. 
+
+Also small optimization of LF
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Nov 2020, Dave/Robert
 
