@@ -176,6 +176,7 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   if(associated(gspec)) deallocate(gspec)
   allocate(gspec(size(chemgroups(hr_out%spec)%specs)))
   gspec=chemgroups(hr_out%spec)%specs-NSPEC_SHL
+  call CheckStop(any(gspec<0), dtxt//trim(dname)//" includes SHL spcs, which are nor supported")
   if(debug) write(*,"(A,'=',30(A,':',I0,:,'+'))") &
     dtxt//trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 
