@@ -335,11 +335,9 @@ subroutine pollen_flux(i,j,debug_flag)
     where(pollen_frac(:,:,iOLIVE:iALDER)/=UnDef) &
       pollen_frac(:,:,iOLIVE:iALDER) = pollen_frac(:,:,iOLIVE:iALDER) / 100.0
 
-    ! alder [dagree hour] --> [degree days]
-    where(pollen_h_c(:,:,iALDER)/=UnDef)&
-      pollen_h_c(:,:,iALDER) = pollen_h_c(:,:,iALDER) / 24.0
+    ! alder [dagree hour]
     where(pollen_dH(:,:,iALDER)/=UnDef)&
-      pollen_dH(:,:,iALDER) = pollen_dH(:,:,iALDER) / 24.0 - pollen_h_c(:,:,iALDER)
+      pollen_dH(:,:,iALDER) = pollen_dH(:,:,iALDER) - pollen_h_c(:,:,iALDER)
 
     ! Set D2D/USET output
     call write_uset()
@@ -381,8 +379,10 @@ subroutine pollen_flux(i,j,debug_flag)
   do g=1,POLLEN_NUM
     if(pollen_out(g)) cycle
     select case(g)
-    case(iBIRCH,iOLIVE,iALDER)
-      call heatsum_calc(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
+    case(iBIRCH,iOLIVE)
+      call heatsum_day(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
+    case(iALDER)
+      call heatsum_hour(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
     case(iRWEED)
       call heatsum_rweed(heatsum(i,j,g),t2_nwp(i,j,1),daylength(glat(i,j)))
     case(iGRASS)
@@ -586,7 +586,9 @@ subroutine write_uset()
       case("heatsum")
         call CheckStop(g,[1,size(heatsum,DIM=3)],&
           "USET: '"//trim(f_2d(n)%subclass)//"' out of bounds!")
-        f_2d(n)%unit="degree day"
+        f_2d(n)%unit="degreedays"
+        if(g==iALDER)&
+          f_2d(n)%unit="degreehours"
         f_2d(n)%scale=1.0
         n2d_heatsum(g)=n
       case("pollen_left")
@@ -617,15 +619,23 @@ subroutine write_uset()
   end do
 end subroutine write_uset
 end subroutine pollen_flux
-subroutine heatsum_calc(hsum,t2,T_cutoff)
+subroutine heatsum_day(hsum,t2,T_cutoff)
 ! The temperature needs to be over the cutoff temperature
   real, intent(inout) :: hsum
   real, intent(in) :: t2,T_cutoff ! degreedays
   real             :: ff
   ff = DIM(t2,T_cutoff) ! same as MAX(t2-T_cutoff,0.0)
   hsum = hsum + ff*dt/(3600*24)      ! seconds to days
-end subroutine heatsum_calc
-subroutine heatsum_rweed(hsum,t2,daylen)
+end subroutine heatsum_day
+subroutine heatsum_hour(hsum,t2,T_cutoff)
+  ! The temperature needs to be over the cutoff temperature
+    real, intent(inout) :: hsum
+    real, intent(in) :: t2,T_cutoff ! degreehours
+    real             :: ff
+    ff = DIM(t2,T_cutoff) ! same as MAX(t2-T_cutoff,0.0)
+    hsum = hsum + ff*dt/3600         ! seconds to hours
+  end subroutine heatsum_hour
+  subroutine heatsum_rweed(hsum,t2,daylen)
   real, intent(inout) :: hsum    ! degreedays
   real, intent(in) :: t2,daylen  ! deg K,date%hours
   real             :: ff
@@ -1039,6 +1049,8 @@ subroutine pollen_dump()
       if(g>size(heatsum,DIM=3))cycle
       def1%class='pollen_out'         ! written
       def1%unit='degreedays'          ! written
+      if(g==iALDER)&
+        def1%unit='degreehours'
       def1%name=trim(spc)//'_heatsum' ! written
       if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,g),1.0,CDFtype=CDFtype,&
