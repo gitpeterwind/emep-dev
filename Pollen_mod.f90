@@ -533,7 +533,7 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT(g))               ! prob. flowering end
   case(ALDER)
     g=iALDER
-    dH_secs = pollen_dH(i,j,g)*86400.0       ! Flowering period [degree seconds]
+    dH_secs = pollen_dH(i,j,g)*3600.0        ! Flowering period [degree seconds]
     scale = scale &
       *(t2_nwp(i,j,1)-T_cutoff(g))/dH_secs &
       *f_in(heatsum(i,j,g),pollen_h_c(i,j,g),PROB_IN(g)) &! prob. flowering start
