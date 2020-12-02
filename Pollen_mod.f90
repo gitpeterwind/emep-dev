@@ -379,9 +379,9 @@ subroutine pollen_flux(i,j,debug_flag)
   do g=1,POLLEN_NUM
     if(pollen_out(g)) cycle
     select case(g)
-    case(iBIRCH,iOLIVE)
+    case(iBIRCH)
       call heatsum_day(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
-    case(iALDER)
+    case(iOLIVE,iALDER)
       call heatsum_hour(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
     case(iRWEED)
       call heatsum_rweed(heatsum(i,j,g),t2_nwp(i,j,1),daylength(glat(i,j)))
@@ -526,7 +526,7 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT(g))               ! prob. flowering end
   case(OLIVE)
     g=iOLIVE
-    dH_secs = pollen_dH(i,j,g)*86400.0       ! Flowering period [degree seconds]
+    dH_secs = pollen_dH(i,j,g)*3600.0        ! Flowering period [degree seconds]
     scale = scale &
       *(t2_nwp(i,j,1)-T_cutoff(g))/dH_secs &
       *f_in(heatsum(i,j,g),pollen_h_c(i,j,g),PROB_IN(g)) &! prob. flowering start
@@ -586,9 +586,9 @@ subroutine write_uset()
       case("heatsum")
         call CheckStop(g,[1,size(heatsum,DIM=3)],&
           "USET: '"//trim(f_2d(n)%subclass)//"' out of bounds!")
-        f_2d(n)%unit="degreedays"
-        if(g==iALDER)&
-          f_2d(n)%unit="degreehours"
+        f_2d(n)%unit="degreehours"
+        if(g==iBIRCH)&
+          f_2d(n)%unit="degreedays"
         f_2d(n)%scale=1.0
         n2d_heatsum(g)=n
       case("pollen_left")
@@ -1048,9 +1048,9 @@ subroutine pollen_dump()
 !------------------------
       if(g>size(heatsum,DIM=3))cycle
       def1%class='pollen_out'         ! written
-      def1%unit='degreedays'          ! written
-      if(g==iALDER)&
-        def1%unit='degreehours'
+      def1%unit='degreehours'         ! written
+      if(g==iBIRCH)&
+        def1%unit='degreedays'
       def1%name=trim(spc)//'_heatsum' ! written
       if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,g),1.0,CDFtype=CDFtype,&
