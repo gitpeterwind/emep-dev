@@ -331,6 +331,10 @@ subroutine pollen_flux(i,j,debug_flag)
       pollen_frac(ii,jj,iBIRCH)=pollen_frac(ii,jj,iBIRCH)&
                        *MAX(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
+    ! olive fraction [%] --> [1/1]
+    where(pollen_frac(:,:,iOLIVE)/=UnDef) &
+      pollen_frac(:,:,iOLIVE) = pollen_frac(:,:,iOLIVE) / 100.0
+
     ! alder [dagree hour]
     where(pollen_dH(:,:,iALDER)/=UnDef)&
       pollen_dH(:,:,iALDER) = pollen_dH(:,:,iALDER) - pollen_h_c(:,:,iALDER)
