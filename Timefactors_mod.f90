@@ -164,17 +164,19 @@ contains
   integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac       ! used in interpolation, testing
   real    :: tmp24(24)          ! used for hourly factors
-  character(len=200) :: inputline
+  character(len=2000) :: inputline ! NB: 24 real number can be many hundred characters long
   real :: fracchange
   real :: Start, Endval, Average, x, buff(12)
+  logical :: found_HourlyFacFile
   
   if (DEBUG) write(unit=6,fmt=*) "into timefactors "
 
    call CheckStop( nydays < 365, &
       "Timefactors: ERR:Call set_nmdays before timefactors?")
 
-   call CheckStop(  N_TFAC /= 11 , &
-      "Timefactors: ERR:Day-Night dimension wrong!")
+!  https://github.com/metno/emep-mscw/issues/179#issuecomment-733757660
+!  call CheckStop(  N_TFAC /= 11 , &
+!     "Timefactors: ERR:Day-Night dimension wrong!")
 
 
    fac_emm(:,:,:,:) = 1.0
@@ -312,139 +314,152 @@ contains
    ! TNO2005 option has 11x24 
    ! EMEP2003 option has very simple day night
 !
-       fname2 = trim(HourlyFacFile) ! From EURODELTA/INERIS/TNO or EMEP2003
-       write(unit=6,fmt=*) "Starting HOURLY-FACS"
-       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
-
-       fac_ehh24x7 = -999.
-
-       n = 0
-       do 
-          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
-          n = n + 1
-          if(DEBUG)write(*,*) "HourlyFacs ", n, trim(inputline)
-          if ( ios <  0 ) exit     ! End of file
-          if( index(inputline,"#")>0 ) then ! Headers
+   fname2 = trim(HourlyFacFile) ! From EURODELTA/INERIS/TNO or EMEP2003
+   write(unit=6,fmt=*) "Starting HOURLY-FACS"
+   call open_file(IO_TIMEFACS,"r",fname2,needed=.false.,iostat=ios)
+   found_HourlyFacFile=(ios==0)
+  
+   fac_ehh24x7 = 1.0
+   if(found_HourlyFacFile)then
+      n = 0
+      do 
+         read(IO_TIMEFACS,"(a)",iostat=ios) inputline
+         n = n + 1
+         if(DEBUG)write(*,*) "HourlyFacs ", n, trim(inputline)
+         if ( ios <  0 ) exit     ! End of file
+         if( index(inputline,"#")>0 ) then ! Headers
             if(n==1) call PrintLog(trim(inputline))
             cycle
-          else
+         else
             read(inputline,fmt=*,iostat=ios) idd, insec, &
-              (tmp24(ihh),ihh=1,24)
+                 (tmp24(ihh),ihh=1,24)
             if( DEBUG ) write(*,*) "HOURLY=> ",idd, insec, tmp24(1), tmp24(13)
-          end if
-
-            if(  idd == 0 ) then ! same values very day
-              do idd2 = 1, 7
-                 do ihh=1,24
+         end if
+         
+         if(  idd == 0 ) then ! same values every day
+            do idd2 = 1, 7
+               do ihh=1,24
                     do iemis = 1, NEMIS_FILE
                        fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
                     end do
                  end do
               end do
-              idd = 1 ! Used later
-            else
-               do ihh=1,24
-                  do iemis = 1, NEMIS_FILE
-                     fac_ehh24x7(iemis,insec,ihh,idd,:) = tmp24(ihh)
-                  end do
-               end do
-            end if
-
-             !(fac_ehh24x7(insec,ihh,idd),ihh=1,24)
-
+           else
+              do ihh=1,24
+                 do iemis = 1, NEMIS_FILE
+                    fac_ehh24x7(iemis,insec,ihh,idd,:) = tmp24(ihh)
+                 end do
+              end do
+           end if
+           
            ! Use sumfac for mean, and normalise within each day/sector
            ! (Sector 10 had a sum of 1.00625)
-           !use first country to compute sumfac, since all countries have same factors here
-           sumfac = sum(fac_ehh24x7(1,insec,:,idd,1))/24.0
-           if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
-              'HOURLY-FACS mean min max', idd, insec, sumfac, &
-                minval(fac_ehh24x7(1,insec,:,idd,1)), &
-                maxval(fac_ehh24x7(1,insec,:,idd,1))
-
-           do iemis = 1, NEMIS_FILE
-              fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) * 1.0/sumfac
-           end do
-
-       !    if ( ios <  0 ) exit     ! End of file
+           if(  idd > 0 ) then !day value defined
+              sumfac = sum(fac_ehh24x7(1,insec,:,idd,1))/24.0
+              if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+                   'HOURLY-FACS mean min max', idd, insec, sumfac, &
+                   minval(fac_ehh24x7(1,insec,:,idd,1)), &
+                   maxval(fac_ehh24x7(1,insec,:,idd,1))
+              
+              do iemis = 1, NEMIS_FILE
+                 fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) * 1.0/sumfac
+              end do
+              
+           else
+              !same value every day
+              sumfac = sum(fac_ehh24x7(1,insec,:,1,1))/24.0
+              do idd2 = 1, 7
+                 do iemis = 1, NEMIS_FILE
+                    fac_ehh24x7(iemis,insec,:,idd2,:) = fac_ehh24x7(iemis,insec,:,idd2,:) * 1.0/sumfac
+                 end do
+              end do
+           end if
        end do
 
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
        call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
 
        close(IO_TIMEFACS)
-
+    end if
 !3.1)Additional country and species specific hourly time factors
-       do iemis = 1, NEMIS_FILE
-          fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
-          write(unit=6,fmt=*) "Starting HOURLY-FACS-SPECIALS"
-          call open_file(IO_TIMEFACS,"r",fname2,needed=.false.,iostat=ios)
-          if(ios==0)then
-             n = 0
-             do 
-                read(IO_TIMEFACS,"(a)",iostat=ios) inputline
-                n = n + 1
-                if(DEBUG)write(*,*) "HourlyFacsSpecials ", n, trim(inputline)
-                if ( ios <  0 ) exit     ! End of file
-                if( index(inputline,"#")>0 ) then ! Headers
-                   if(n==1) call PrintLog(trim(inputline))
-                   cycle
-                else
-                   read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
-                        (tmp24(ihh),ihh=1,24)
-                   icc=find_index(inland,Country(:)%icode)
-                   if( DEBUG ) write(*,*) "HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
-                   
-                   if( icc<0 .and. inland/=0)then
-                      write(*,*)"Warning: HourlyFacsSpecials, country code not recognized", inland
-                      cycle
-                   endif
-                end if
+    write(unit=6,fmt=*) "Starting HOURLY-FACS-SPECIALS"
+    do iemis = 1, NEMIS_FILE
+       fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
+       call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
+       if(ios==0)then
+          n = 0
+          do 
+             read(IO_TIMEFACS,"(a)",iostat=ios) inputline
+             n = n + 1
+             if(DEBUG)write(*,*) "HourlyFacsSpecials ", n, trim(inputline)
+             if ( ios <  0 ) exit     ! End of file
+             if( index(inputline,"#")>0 ) then ! Headers
+                if(n==1) call PrintLog(trim(inputline))
+                cycle
+             else
+                read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
+                     (tmp24(ihh),ihh=1,24)
+                icc=find_index(inland,Country(:)%icode)
+                if( DEBUG ) write(*,*) "HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
                 
-                if(  idd == 0 ) then ! same values very day
-                   do idd2 = 1, 7
-                      do ihh=1,24
-                         if(inland/=0)then
-                            fac_ehh24x7(iemis,insec,ihh,idd2,icc) = tmp24(ihh)
-                         else
-                            fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
-                         endif
-                      end do
-                   end do
-                   idd = 1 ! Used later
-                else
+                if( icc<0 .and. inland/=0)then
+                   write(*,*)"Warning: HourlyFacsSpecials, country code not recognized", inland
+                   cycle
+                endif
+             end if
+             if(  idd == 0 ) then ! same values every day
+                do idd2 = 1, 7
                    do ihh=1,24
                       if(inland/=0)then
                          fac_ehh24x7(iemis,insec,ihh,idd2,icc) = tmp24(ihh)
                       else
                          fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
-                      endif
-                   enddo
-                end if
-                
-                ! Use sumfac for mean, and normalise within each day/sector
-                ! (Sector 10 had a sum of 1.00625)
-                if(inland==0)icc=1
-                sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,icc))/24.0
-                if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
-                     'HOURLY-FACS mean min max', idd, insec, sumfac, &
-                     minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
-                     maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
-                
+                      end if
+                   end do
+                end do
                 if(inland/=0)then
+                   sumfac = sum(fac_ehh24x7(iemis,insec,:,1,icc))/24.0
+                   do idd2 = 1, 7
+                      fac_ehh24x7(iemis,insec,:,idd2,icc) = fac_ehh24x7(iemis,insec,:,idd2,icc) * 1.0/sumfac
+                   end do
+                else
+                   sumfac = sum(fac_ehh24x7(iemis,insec,:,1,1))/24.0
+                   do idd2 = 1, 7
+                      fac_ehh24x7(iemis,insec,:,idd2,:) = fac_ehh24x7(iemis,insec,:,idd2,:) * 1.0/sumfac
+                   end do
+                end if
+             else
+                do ihh=1,24
+                   if(inland/=0)then
+                      fac_ehh24x7(iemis,insec,ihh,idd,icc) = tmp24(ihh)
+                   else
+                      fac_ehh24x7(iemis,insec,ihh,idd,:) = tmp24(ihh)
+                   end if
+                end do
+                if(inland/=0)then
+                   sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,icc))/24.0
                    fac_ehh24x7(iemis,insec,:,idd,icc) = fac_ehh24x7(iemis,insec,:,idd,icc) * 1.0/sumfac
                 else
+                   sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,1))/24.0
                    fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) * 1.0/sumfac
-                endif
-                !    if ( ios <  0 ) exit     ! End of file
-             end do
+                end if
+             end if
              
-             close(IO_TIMEFACS)
-          else
-             if(me==0)write(*,*)'Special hourly factors not found (but not needed): ',trim(fname2)
-          endif
-          
-          
-       end do ! NEMIS_FILE
+             ! Use sumfac for mean, and normalise within each day/sector
+             if(inland==0)icc=1
+             if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+                  'HOURLY-FACS mean min max', idd, insec, sumfac, &
+                  minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
+                  maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
+             
+          end do
+          close(IO_TIMEFACS)
+       else
+          if(me==0) write(*,*)'Special hourly factors not found (but not needed): ',trim(fname2)
+       endif          
+    end do ! NEMIS_FILE
+    if(.not.found_HourlyFacFile)&
+         call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
 
 ! #######################################################################
 ! 4) Normalise the monthly-daily factors. This is needed in order to

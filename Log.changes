@@ -26,6 +26,17 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Dec 2020, Peter, Alvaro
+
+Two bugs in Timefactors in reading hourly factors.
+The "inputline" was only 200 char long, and if this is exceeeded (which can
+be when writing 24 real numbers) the last timefactors would be set to zero.
+The normalization of the factors for daynumber zero (all) was only normalizing
+Monday.
+
+Also updated so that it can handle N_TFAC/=11.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Nov 2020, Peter, Massimo,
 
 In specific cases the interpolation in ReadField_CDF fails.
