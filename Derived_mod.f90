@@ -63,6 +63,7 @@ use Io_Progs_mod,      only: datewrite
 use MetFields_mod,     only: roa,Kz_m2s,th,zen, ustar_nwp, u_ref, hmix,&
                             met, derivmet,  q, &
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
+                            cc3dmax, & ! SEI
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
 use My_Derived_mod, only : &
@@ -337,6 +338,7 @@ subroutine Define_Derived()
 
   Is3D = .false.
   dbgP = ( DEBUG%DERIVED  .and. debug_proc )
+if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
 
 
 ! We process the various combinations of gas-species and ecosystem:
@@ -357,6 +359,10 @@ subroutine Define_Derived()
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YM' )
 
+!CRUDE for SEI Feb 2021:
+!  call AddNewDeriv( "u_ref","u_ref",  "SURF", "-",   "m/s", &
+!               -99,  -99, F, 1.0,  T,  'YM' )
+
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
 
@@ -370,6 +376,8 @@ subroutine Define_Derived()
     outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
     subclass = '-' ! default
     Is3D = .false.
+
+    if ( dbgP)  write(*,*) dtxt//'Field'//trim(outname),trim(outtyp),trim(trim(OutputFields(ind)%txt4))
 
     if(outtyp=="MISC") then ! Simple species
       iout  = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
@@ -779,9 +787,10 @@ Is3D = .true.
     endif
     if(ind>0)then
       f_2d(i) = def_2d(ind)
-      if(dbg0) write(*,"(2(a,i4),3(1x,a))") "Index f_2d ",i,  &
-        " = def "//trim(wanted_deriv2d(i)),ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),&
-        trim(def_2d(ind)%class)
+      if(dbg0) write(*,"(2(a,i4),3(1x,a),2i4)") "Index f_2d ",i,  &
+        " = def:set "//trim(wanted_deriv2d(i)),ind, &
+        trim(def_2d(ind)%name),trim(def_2d(ind)%unit),&
+        trim(def_2d(ind)%class), f_2d(i)%index,  f_2d(i)%f2d
     elseif(MasterProc)then
       print *,dtxt//"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
       print *,dtxt//"OOOPS N,N :", num_deriv2d, Nadded2d
@@ -1131,6 +1140,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = u_ref(i,j)
     end forall
+    if ( dbgP ) call write_debug(n,ind, "PUREF")
 
     case ( "SMI_deep" )
       forall ( i=1:limax, j=1:ljmax )
@@ -1172,6 +1182,20 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = ps(i,j,1)*0.01
         !NOT YET - keep hPa in sites:d_2d( n, i,j,IOU_INST) = ps(i,j,1)
       end forall
+    if ( dbgP ) call write_debug(n,ind, "PPSURF")
+
+    case( "o3_45m" )
+      forall ( i=1:limax, j=1:ljmax )
+         d_2d( n, i,j,IOU_INST) = xn_adv(4,i,j,KMAX_MID) 
+      end forall
+    if ( dbgP ) call write_debug(n,ind, "45mO3")
+
+    case( "CloudFrac" )
+      forall ( i=1:limax, j=1:ljmax )
+         d_2d( n, i,j,IOU_INST) = cc3dmax(i,j,KMAX_MID) 
+      end forall
+    if ( dbgP ) call write_debug(n,ind, "CloudFrac")
+
 
     case ( "HMIX", "HMIX00", "HMIX12" )
 
