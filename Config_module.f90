@@ -58,6 +58,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix 
       ! JcRb = Jericevic/Richardson number method
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
+    real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
   end type PBL_t
   type(PBL_t), public, save :: PBL = PBL_t()
 
@@ -148,6 +149,7 @@ type, public :: emep_useconfig
     ,EtaCOORDINATES   = .true.  &! default since October 2014
     ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
     ,ZREF             = .false. &! testing
+    ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 
  ! If USES%EMISTACKS, need to set:
@@ -592,9 +594,10 @@ real, public :: Zmix_ref = 50.0 !height at which concentration above different l
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in
 !! the _Params array.
-character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
-character(len=15), public, save, dimension(20) :: FLUX_IGNORE=""   ! e.g. Water, desert..
-character(len=15), public, save, dimension(20) :: VEG_2dGS=""
+character(len=TXTLEN_SHORT), public, save, dimension(20) ::  &
+   FLUX_VEGS=""    & ! e.g. WinterWheat
+  ,FLUX_IGNORE=""  & ! e.g. Water, desert..
+  ,VEG_2dGS=""
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_mod
 
@@ -999,6 +1002,7 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
 
+!DS
   OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)
 
   do i = 1, size(Emis_sourceFiles)
@@ -1028,6 +1032,7 @@ subroutine Config_Constants(iolog)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
      InputFiles(i)%filename = &
             key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
+     !if(MasterProc)print *, "DSFILE", i, trim(InputFiles(i)%filename)
     endif
   enddo
   if(trim(fileName_O3_Top)/="NOTSET")then
