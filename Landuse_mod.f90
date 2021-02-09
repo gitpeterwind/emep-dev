@@ -24,13 +24,14 @@ use LandDefs_mod,    only: Init_LandDefs, LandType, LandDefs, &
                           NLANDUSE_EMEP
 use LandPFT_mod,       only: MapPFT_LAI, pft_lai
 use MPI_Groups_mod, only : MPI_INTEGER,MPI_COMM_CALC, IERROR
+use OwnDataTypes_mod, only: TXTLEN_SHORT
 use Par_mod,         only: LIMAX, LJMAX, &
                           limax, ljmax, me
 use SmallUtils_mod,  only: wordsplit, find_index, NOT_FOUND, WriteArray, trims
 use TimeDate_mod,    only: effectivdaynumber, nydays, current_date
 
 use netcdf
-use NetCDF_mod, only  : ReadField_CDF,check,printcdf
+use NetCDF_mod, only  : ReadField_CDF,check,printCDF
 
 implicit none
 private
@@ -50,7 +51,7 @@ private
 ! Inputs.Landuse define the "master-list" of codes for landuse. Each code must
 ! be present in the subsequent data files for phenology and DO3SE.
 
- character(len=20), dimension(NLANDUSEMAX), &
+ character(len=TXTLEN_SHORT), dimension(NLANDUSEMAX), &
            public, save :: Land_codes = " " ! As used
 
  !=============================================
@@ -100,7 +101,7 @@ contains
     integer :: n2dGS, n2dGSpars, i2dGS
     real,dimension(:,:,:),allocatable :: map2dGrowingSeasons
     character(len=len(VEG_2dGS_Params(1))) :: fname
-    character(len=20) :: varname
+    character(len=TXTLEN_SHORT) :: varname
     character(len=*), parameter :: dtxt='InitLanduse:'
     !=====================================
 
@@ -113,7 +114,10 @@ contains
     ! First, check the number of "extra" (fake) vegetation 
     nFluxVegs = 0
     do ilu = 1, size( FLUX_VEGS )
-        if(len_trim(FLUX_VEGS(ilu))>0) nFluxVegs=nFluxVegs+1
+       if(len_trim(FLUX_VEGS(ilu))>0) then
+          nFluxVegs=nFluxVegs+1
+          if(MasterProc) write(*,*) dtxt//" FluxVeg",ilu, nFluxVegs, trim(FLUX_VEGS(ilu))
+       end if
     end do
 
     if(MasterProc) write(*,*) dtxt//" nFluxVegs= ",nFluxVegs
@@ -122,7 +126,7 @@ contains
 
     ! Quick safety check
     ! we check that the length of the land-codes isn't equal to our declared
-    ! length. That is usualyl a sign that the codes are too long and we may
+    ! length. That is usually a sign that the codes are too long and we may
     ! get into truncation worries.
     call CheckStop(maxval( len_trim(Land_codes(:))) >= len(Land_codes(1)),&
           "Land_Codes: increase size of character array" )
@@ -130,7 +134,7 @@ contains
     call CheckStop(.not.filefound,"InitLanduse failed!")
 
     if(MasterProc) then
-        write(*,*)  dtxt//" Into Init_LandDefs ", NLand_codes
+        write(*,*)  dtxt//" NLand_codes ", NLand_codes
         write(*,*)  dtxt//" Codes: ", Land_codes
         write(*,*)  dtxt//" LandCoverInputs: ", LandCoverInputs
     end if
@@ -504,6 +508,13 @@ contains
           end do IAM_VEG
        end do  !j
     end do  !i
+    PRI_VEG: do iam = 1, nFluxVegs !   size( FLUX_VEGS )
+      lu = iam_index(iam)
+      call printCDF('FLUXVEG_'//trim(Land_codes(lu)), landuse_in(:,:,lu),"frac")
+    end do PRI_VEG
+!SEI
+    call printCDF('Latitude', glat(:,:),"degrees")
+    call printCDF('Longitude', glon(:,:),"degrees")
 
 
    !!!!!!!!!!!! Now, convert to more compact arrays for export
