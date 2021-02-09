@@ -26,7 +26,7 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
-use Debug_module,      only: DEBUG   ! -> DEBUG%GRIDVALUES
+use Debug_module,      only: DEBUG, DebugCell  ! -> DEBUG%GRIDVALUES
 use Derived_mod,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_mod, only: d_2d, f_2d
 use DryDep_mod,        only: init_drydep
@@ -36,6 +36,8 @@ use Emissions_mod,     only: EmisSet
 use Gravset_mod,       only: gravset
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
+use Io_Progs_mod,       only: datewrite
+
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
                             zen,coszen,Idirect,Idiffuse
@@ -80,6 +82,8 @@ subroutine phyche()
   real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
+  character(len=*), parameter :: dtxt='phyche:'
+
 
   !------------------------------------------------------------------
   !     physical and  chemical routines.
@@ -88,8 +92,14 @@ subroutine phyche()
   !    using current_date we have already step_main taken into account
   thour = real(current_date%hour) + current_date%seconds/3600.0
 
+  if ( DEBUG%STOFLUX .and. debug_proc .and. first_call ) then
+   write(*,'(a,3i4,2f10.4)')dtxt//"SEIij ", me,debug_li,debug_lj,& 
+     glon(debug_li,debug_lj),glat(debug_li,debug_lj)
+  end if
+
   if(DEBUG%PHYCHEM.and.debug_proc ) then
     if(first_call)  write(*, *) "PhyChe First", me, debug_proc
+
     call debug_concs("PhyChe start ")
 
     if(current_date%hour==12) then
@@ -148,13 +158,36 @@ subroutine phyche()
         zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
 
   call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
+  if(DEBUG%PHYCHEM.and.debug_proc)&
+    print *, 'TXTIN', me, debug_li, debug_lj, thour
+  if(DEBUG%PHYCHEM.and.debug_proc)&
+   call datewrite(dtxt//"testcan-LL ", [me,debug_li,debug_lj], [ &
+     thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
+     zen(debug_li,debug_lj),coszen(debug_li,debug_lj)],&
+     afmt='(TXTDATE,a,3i4,4f9.3,es12.3)')
+
+  if(DEBUG%PHYCHEM.and.debug_proc)&
+   call datewrite(dtxt//"testcan-pA ", -1, [ Idirect(debug_li,debug_lj), &
+     Idiffuse(debug_li,debug_lj), &
+         coszen(debug_li,debug_lj)], afmt='(a,3i3,i5,1x, i2,2f9.3,es12.3)'  )
+
 
   call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
+  if(DEBUG%PHYCHEM.and.debug_proc)&
+   call datewrite(dtxt//"testcan-pB ", -1, [ Idirect(debug_li,debug_lj), &
+     Idiffuse(debug_li,debug_lj), &
+         coszen(debug_li,debug_lj)], afmt='(a,3i3,i5,1x, i2,2f9.3,es12.3)'  )
 
 !WN17
 ! Gets PAR values, W/m2 here
   fCloud = fCloudAtten(cc3dmax(:,:,KMAX_MID))
   call WeissNormanPAR(ps(:,:,1),coszen,fCloud,PARdbh,PARdif)
+  if ( DEBUG%STOFLUX .and. debug_proc ) then
+   call datewrite(dtxt//"SEI ", [me], [ &
+     thour, zen(debug_li,debug_lj),coszen(debug_li,debug_lj),&
+     cc3dmax(debug_li,debug_lj,KMAX_MID) ],&
+     afmt='(TXTDATE,a,i4,2f9.3,2es12.3)')
+  end if
 
   !================
   ! advecdiff_poles considers the local Courant number along a 1D line
