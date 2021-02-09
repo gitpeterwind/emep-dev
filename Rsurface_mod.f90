@@ -15,8 +15,10 @@ use LandDefs_mod,       only: LandDefs, LandType
 use LocalVariables_mod, only : iL, L, G => Grid
 
 use MetFields_mod, only : foundsdepth, foundice
-use MetFields_mod, only : PARdbh, PARdif  ! W/m2
+use MetFields_mod, only : coszen,PARdbh, PARdif  ! W/m2
 use Par_mod,only :me
+use PhysicalConstants_mod, only: DAY_COSZEN
+
 use Radiation_mod, only : CanopyPAR
 use SmallUtils_mod, only: find_index
 use TimeDate_mod,  only : current_date
@@ -208,7 +210,8 @@ contains
   !    g_sto 0 when snow covering canopy
 
    if ( dbg ) then
-     call datewrite(dtxt//"testcan ", iL, [ G%Idirect, L%PARsun, G%sdepth ] )
+     call datewrite(dtxt//"testcan-in ", iL, [ G%Idirect, L%PARsun, G%sdepth,&
+         coszen(i,j), DAY_COSZEN ], afmt='(a,3i3,i5,1x, i2,3f9.3,2es12.3)'  )
    end if
  
    if( leafy_canopy  .and. G%Idirect > 0.001 .and.       &!: daytime
@@ -216,6 +219,10 @@ contains
 
      call CanopyPAR(L%LAI, G%coszen, PARdbh(i,j), PARdif(i,j), &
                     L%PARsun, L%PARshade, L%LAIsunfrac)
+     if ( dbg ) then
+       call datewrite(dtxt//"testcanpar ", iL, [ G%Idirect,&
+          L%PARsun, L%PARshade, L%LAIsunfrac ], afmt='(a,3i3,i5,1x, i2,4f9.3)' )
+     end if
 
      call g_stomatal(iL, debug_flag )
 
