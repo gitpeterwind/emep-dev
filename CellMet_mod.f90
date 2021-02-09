@@ -10,6 +10,7 @@ module CellMet_mod
 !=============================================================================
 
 use CheckStop_mod,     only: CheckStop
+use Config_module,    only: KMAX_MID, KMAX_BND, PT, USES, IOU_INST, PBL
 use DerivedFields_mod, only: d_2d, f_2d
 use GridValues_mod,    only: dA,dB, glat, glon
 use Landuse_mod,       only: LandCover, ice_landcover ! Provides SGS,hveg,LAI,...
@@ -21,7 +22,6 @@ use MetFields_mod,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
                             ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, sst, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
                             coszen, Idirect, Idiffuse
-use Config_module,    only: KMAX_MID, KMAX_BND, PT, USES, IOU_INST
 use PhysicalConstants_mod, only: PI, CP, GRAV, KARMAN
 use SoilWater_mod,     only: fSW
 use SubMet_mod,        only: Get_SubMet, Sub
@@ -128,7 +128,7 @@ if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
 
   ! we limit u* to a physically plausible value
   ! to prevent numerical problems
-  Grid%ustar = max( Grid%ustar, 0.1 )
+  Grid%ustar = max( Grid%ustar, PBL%MIN_USTAR_LAND)
 
   !NB: invL_nwp is already defined, with similar defintion 
   Grid%invL  = -1* KARMAN * GRAV * Grid%Hd & ! -Grid%Hd disliked by gfortran
