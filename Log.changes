@@ -26,6 +26,48 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9 Feb 2021, Dave
+
+RESULTS changing!! Will change tag soon!
+
+1. Changes which modify results a little!
+   - remove calc of Idirect, Idiffuse, and use coszen to define daylight. Completes
+     moved to WiessNorman
+
+ Changes in: PhyChem, Rsurface_mod
+
+vpd calculations :
+  rh2m (from NWP) now used in deposition calculations, instead of latent heat calculation
+  Simplifies the code, and seems more consistent with use of T2m from NWP,
+  and as we have only grid-average LE to work with.
+  Added USES%RH_FROM_NWP in Config_mod for this.
+
+ Changes in: Config_mod, Submet_mod
+
+2. Other changes:
+
+MIN_USTAR_LAND (default 0.1 m/s) moved from BLPhysics to PBL% in Config
+ changed hard-coded Grid%ustar to min 0.1 in CellMet to PBL%MIN_USTAR_LAND  also.
+ CHECK later if sea-values affected by this?
+
+ Changes in: BLPhysics_mod, CellMet_mod, Met_mod
+
+Derived_mod:
+  Added CloudFrac possibility, though using  quck n dirty MISC method
+
+Smaller changes:
+  config_emep.nml -  fixed some comment lines for DEBUG
+  DryDep_mod - tidied debug output
+  Io_Progs - added "afmt" option to datewrite as optional argument. Still
+   needs work, but doesn't affect previous usage.
+  LandDefs - longer name and code strings
+  Landuse_mod - more debug output (for SEI)
+  Radiation_mod - changed comment
+  Setup_1d_mod - removed ancient "use" for S_RiemnerN2O5
+  StoFlux_mod - more debug, using new afmt flag to datewrite.
+  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Dec 2020, Peter, Alvaro
 
 Two bugs in Timefactors in reading hourly factors.
