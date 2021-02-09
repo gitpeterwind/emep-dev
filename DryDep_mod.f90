@@ -162,7 +162,7 @@ contains
          Vg_eff(nddep), Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) ,eff_fac(nddep))
 
      call CheckStop( NLOCDRYDEP_MAX < nddep, &
-        "Need to increase size of NLOCDRYDEP_MAX" )
+        dtxt//"Need to increase size of NLOCDRYDEP_MAX" )
 
      !Need to re-implement one day
      !A2018 nadv = 0
@@ -288,7 +288,7 @@ contains
     dbghh     =  dbg .and. iss == 0 
     dbgBD     =  DEBUG%BIDIR .and. debug_flag .and. iss == 0
     if (dbgBD) print *, "BIDIR TEST ", me, debug_flag
-
+    if (dbg.and.first_ddep ) write(*,*) "DRYDEP DBG ", me, debug_flag
 
 
      inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
@@ -478,10 +478,14 @@ contains
       L = Sub(iL)    ! ! Assign e.g. Sub(iL)ustar to ustar
 
       if ( dbghh ) then
-         write(6,"(a,3i3,f6.1,2i4,3f7.3,i4,9f8.3)") dtxt//"DVEG: ", &
-             nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
+         write(6,"(a30,3i3,f6.1,2i4,3f7.3,i4,9f8.3)") adjustl(dtxt//"DVEG: "// &
+           LandDefs(iL)%code), nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
             L%coverage, L%LAI, L%hveg,daynumber, &
             Grid%sdepth, fSW(i,j),L%fSW,L%t2C
+
+          call datewrite(dtxt//"WHEAT"//LandDefs(iL)%name, &
+              [iL, j, daynumber, L%SGS, L%EGS] , [  L%LAI, glat(i,j),glon(i,j), L%t2C, fSW(i,j),L%fSW,L%t2C ], &
+            afmt="a34,TXTDATE,5i5,4f8.2,20es14.5")  ! just array
 
          write(6,"(a,i4,3f7.2,7es10.2)") dtxt//"DMET SUB", &
            iL, Grid%ustar, L%ustar, L%rh,  Grid%invL, &
@@ -494,8 +498,10 @@ contains
       call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,fsnow)
 
       if(dbghh) call datewrite(dtxt//"STOFRAC "//LandDefs(iL)%name, &
-              iL, [  BL(idcmpO3)%Gsto, BL(idcmpO3)%Rsur, &
-                    BL(idcmpO3)%Gsto*BL(idcmpO3)%Rsur ] )
+              [iL, j] , [  BL(idcmpO3)%Gsto, BL(idcmpO3)%Rsur, &
+                    BL(idcmpO3)%Gsto*BL(idcmpO3)%Rsur ], &
+            afmt="a34,TXTDATE,2i5,20es14.5")  ! just array
+!            afmt="a30,DATE,2i5,20es14.5")  ! just array
 
         !Sub(iL)%g_sto = L%g_sto   ! needed elsewhere
         !Sub(iL)%g_sun = L%g_sun
