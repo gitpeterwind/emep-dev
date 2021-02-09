@@ -380,6 +380,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
                .and. j_local(iy)>0 .and. j_local(iy)<=LJMAX ) then
       write(*,'(a,5i4)') 'CFAC FOUND dbgSite'//trim(s),me,ix,iy,i_local(ix),j_local(iy)
       dbgProc = .true.
+      !debug_proc = .true.
     end if
     ! Didn't work with s here. Not sure why. Go via s2
     call CheckStop(len_trim(adjustl(s)) >= 40, dtxt//'Need longer TXTLEN_SITE for '//trim(s))
@@ -463,7 +464,8 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
 
     ix = s_gx(n) ! global-domain coords
     iy = s_gy(n)
-    dbgSite = ( DEBUG%SITES .and. index(s_name(n), DEBUG%SITE ) > 0 )
+    !dbgSite = ( DEBUG%SITES .and. index(s_name(n), DEBUG%SITE ) > 0 )
+    dbgSite = ( DEBUG%SITES .and. s_name(n) == DEBUG%SITE  )
 
     if ( i_local(ix)>=li0 .and. i_local(ix)<=li1 .and. &
          j_local(iy)>=lj0 .and. j_local(iy)<=lj1 ) then
@@ -483,8 +485,9 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
         write(6,"(a,i3,a,2i3,3i4,a,3i4)") dtxt//" dbgSite on me : ", me, &
          " Nos. ", n, nlocal, s_gx(n), s_gy(n) , s_gz(n), " =>  ", &
           s_x(nlocal), s_y(nlocal), s_z(nlocal)
-        write(6,"(a,i3,a,2i3,4a)") dtxt//'Names?' , me, &
-         " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(s_n(nlocal)))
+        write(6,"(a,i3,a,2i3,5a)") dtxt//'Names?' , me, &
+         " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(s_n(nlocal))),trim(fname)
+        write(*,*)dtxt//'IJ', DEBUG%IJ, debug_proc
       end if
 
      end if
