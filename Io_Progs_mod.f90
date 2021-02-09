@@ -20,8 +20,8 @@ use MPI_Groups_mod,          only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, I
 use KeyValueTypes,           only: KeyVal, KeyValue, LENKEYVAL
 use OwnDataTypes_mod,        only: TXTLEN_NAME
 use Par_mod,                 only: me, limax,ljmax
-use SmallUtils_mod,          only: wordsplit, WriteArray
-use TimeDate_mod,            only: date,current_date
+use SmallUtils_mod,          only: wordsplit, WriteArray, str_replace
+use TimeDate_mod,            only: date,current_date, print_date
 use TimeDate_ExtraUtil_mod,  only: date2string
 implicit none
 
@@ -489,23 +489,32 @@ subroutine Read2DN(fname,Ndata,data2d,CheckValues,HeadersRead)
   end if
 end subroutine Read2DN
 !-------------------------------------------------------------------------
-subroutine datewrite_ia (txt,ii,array,txt_pattern)
+subroutine datewrite_ia (txt,ii,array,txt_pattern,afmt)
   ! to write out date, integer + supplied data array
   character(len=*), intent(in) :: txt
   integer, intent(in) :: ii  ! any old integer. Often needed
   real, dimension(:), intent(in) :: array
   logical, intent(in), optional :: txt_pattern
+  character(len=*), intent(in), optional :: afmt
+  character(len=100):: fmt !  ="(a,3i3,i5,1x, i0, 20es14.5)" ! default
   logical :: use_pattern=.false.
-  use_pattern=.false.;if(present(txt_pattern))use_pattern=txt_pattern
+  use_pattern=.false.
+  if(present(txt_pattern))use_pattern=txt_pattern
+
+  fmt="(a,3i3,i5,1x, i0, 20es14.5)" ! default
   if(use_pattern)then
     write(*,"(a,1x, i0, 20es11.2)") "dw:" // date2string(txt,current_date), &
       ii, array
   else
-    write(*,"(a,3i3,i5,1x, i0, 20es14.5)") "dw:" // trim(txt), &
+    if (present(afmt)) then
+      fmt=afmt
+    end if
+    write(*,fmt) adjustl("dw:" // txt), &
       current_date%month, current_date%day, current_date%hour, &
       current_date%seconds, ii, array
   end if
 end subroutine datewrite_ia
+!-----------------------------------------------------------------------------
 subroutine datewrite_a (txt,array,txt_pattern)
   ! to write out date + supplied data array
   character(len=*), intent(in) :: txt
@@ -522,12 +531,15 @@ subroutine datewrite_a (txt,array,txt_pattern)
       current_date%seconds, array
   end if
 end subroutine datewrite_a
-subroutine datewrite_iia (txt,ii,array,txt_pattern)
+!-----------------------------------------------------------------------------
+subroutine datewrite_iia (txt,ii,array,txt_pattern,afmt)
   ! to write out date, integer + supplied data array
   character(len=*), intent(in) :: txt
   integer,  dimension(:), intent(in) :: ii  ! arrays of integers, max 5
   real, dimension(:), intent(in) :: array
   logical, intent(in), optional :: txt_pattern
+  character(len=*), intent(in), optional :: afmt
+  character(len=100):: fmt="(a,3i3,i5,1x, 5i5, 20es11.2)" ! default
   logical :: use_pattern=.false.
   integer :: Ni
   integer,  dimension(5):: iout ! arrays of integers, max 5
@@ -541,9 +553,18 @@ subroutine datewrite_iia (txt,ii,array,txt_pattern)
     write(*,"(a,1x, 5i5, 20es11.2)") "dw:" // date2string(txt,current_date), &
       iout, array
   else
-    write(*,"(a,3i3,i5,1x, 5i5, 20es11.2)") "dw:" // trim(txt), &
+    if (present(afmt)) then  ! e.f. "a20,DATE,3i3,5f7.2"
+      !fmt="("//trim(str_replace(afmt,"DATE","3i3,i5,1x"))//")"
+      fmt="("//trim(str_replace(afmt,"TXTDATE","a")) //")"
+!print *, 'TXTDATE'//trim(fmt), Ni, iout(1:Ni), array
+      write(*,fmt) adjustl("dw:" // txt), " "//print_date(current_date), iout(1:Ni), array
+    else
+      Ni = 5  ! with no formatting, print all iout
+      write(*,fmt) "dw:" // trim(txt), &
       current_date%month, current_date%day, current_date%hour, &
-      current_date%seconds, iout, array
+      current_date%seconds, iout(1:Ni), array
+    end if
+       
   end if
 end subroutine datewrite_iia
 !-------------------------------------------------------------------------
