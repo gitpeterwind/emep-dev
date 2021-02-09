@@ -6,8 +6,9 @@ module StoFlux_mod
   use Debug_module,          only: DEBUG, DebugCell ! -> DEBUG%GRIDVALUES
   use DO3SE_mod,             only: do3se, nSumVPD, SumVPD_LC
   use GasParticleCoeffs_mod, only: DDspec
-  use Io_Progs_mod,          only: current_date, datewrite
+  use Io_Progs_mod,          only: current_date, datewrite, print_date
   use LandDefs_mod,          only: LandType, STUBBLE, iLC_grass
+  use LandDefs_mod,          only: LandDefs ! WHEAT
   use LocalVariables_mod,    only: L, Grid
   use MicroMet_mod,          only: AerRes, Wind_at_h
   use Par_mod,               only: LIMAX, LJMAX
@@ -91,6 +92,7 @@ contains
     j = Grid%j
     dbg = DEBUG%STOFLUX .and. DebugCell
     dbghh = dbg .and. current_date%seconds == 0
+    if ( dbg ) write(*,*) dtxt//'START'//print_date(), Grid%z_ref
 
     LC_LOOP: do iiL = 1, nLC
       iL = iL_used(iiL) 
@@ -212,9 +214,17 @@ contains
        !                 (rb_leaf/1.6 + 0.0224*(L%t2/273.0) 
 
 
-        if ( dbghh ) call datewrite(dtxt//"VALS ", iL, &
+        if ( dbghh ) then
+           call datewrite(dtxt//"VALS ", iL, &
             [ L%hveg,L%LAI,L%g_sto,L%g_sun,&
               u_hveg, Sub(iL)%cano3_ppb, Sub(iL)%FstO3 ] ) ! skip gvcms
+
+          call datewrite(dtxt//"F12FLUX"//LandDefs(iL)%name, &
+              [iL, L%SGS, L%EGS] , [  L%LAI, L%t2C, L%fSW,L%t2C ], &
+            afmt="a34,TXTDATE,5i5,4f8.2,20es14.5")  ! just array
+        end if
+
+
 
       end if
 
