@@ -51,8 +51,8 @@ end interface Check_LandCoverPresent
 !******   Data to be read from Phenology_inputs.dat:
 
   type, public :: land_input
-     character(len=20) :: name
-     character(len=20) :: code
+     character(len=30) :: name
+     character(len=30) :: code
      character(len=3) :: type   ! Ecocystem type, see headers
      character(len=5) :: LPJtype   ! Simplified LPJ assignment
      real    ::  hveg_max
