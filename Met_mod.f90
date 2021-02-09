@@ -27,10 +27,8 @@ module Met_mod
 
 use BLPhysics_mod,         only: &
    KZ_MINIMUM, KZ_SBL_LIMIT, PIELKE   &
-!NWPHMIX  ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
   , UnstableKzMethod, StableKzMethod, KzMethod  &
   ,USE_MIN_KZ              & ! From old code, is it needed?
-  ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
   ,OB_invL_LIMIT           & !
   ,Test_BLM                & ! Tests all Kz, Hmix routines
   ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
@@ -47,7 +45,7 @@ use BLPhysics_mod,         only: &
 
 use CheckStop_mod,         only: CheckStop
 use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
-     ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
+     ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod, MIN_USTAR_LAND
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
      ,GRID & !HIRHAM,EMEP,EECCA etc.
      ,TEGEN_DATA, USES &
@@ -1117,6 +1115,12 @@ subroutine MeteoRead()
     SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) )
     SoilWater_uppr(:,:,nr) = min(1.0, SoilWater_uppr(:,:,nr))
     SoilWater_deep(:,:,nr) = min(1.0, SoilWater_deep(:,:,nr) )
+    where ( water_fraction > 0.999 )
+      SoilWater_uppr(:,:,nr) = 1.0
+      SoilWater_deep(:,:,nr) = 1.0
+    end where
+    if(MasterProc .and. first_call) write(*,*) 'SEISMI', water_frac_set, &
+          minval(water_fraction), maxval(water_fraction)
 
   end if ! USES%SOILWATER
 
@@ -1536,7 +1540,7 @@ subroutine met_derived(nt)
   where ( mainly_sea )
      ustar_nwp = max( ustar_nwp, 1.0e-5 )
   elsewhere
-     ustar_nwp = max( ustar_nwp, MIN_USTAR_LAND )
+     ustar_nwp = max( ustar_nwp, PBL%MIN_USTAR_LAND )
   end where
 
   forall( i=1:limax, j=1:ljmax )
