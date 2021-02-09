@@ -227,10 +227,10 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 ! Use  T/F or  integers to control debug level:
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
-  DEBUG%BCS             = F,   ! BVOC emissions, etc.
+  DEBUG%BCS             = F,   ! Boundary conditions
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
-  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
-  DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   ! Derived field processing
+  DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
@@ -532,7 +532,7 @@ OutputConcs=
 !      'D3_SIA25'               ,'ug' ,'3d','SIA25'    ,'MISC','YMD',
   'PMFINE'        ,'ug'  ,'3d' ,'AIR_CONCS','GROUP','',! needed by PM25_wet
 !---------------------------------------------
-!      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!      'Rn222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
       'ASH'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
