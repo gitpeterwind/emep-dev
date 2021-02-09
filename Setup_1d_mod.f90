@@ -13,7 +13,6 @@ use Biogenics_mod,    only: EMIS_BioNat, EmisNat
 use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV, NCHEMRATES, NEMIS_File
 use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-use ChemFunctions_mod,only: S_RiemerN2O5
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
 use ChemRates_mod,    only:  setChemrates ! rct, NRCT
 use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
