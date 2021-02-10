@@ -83,7 +83,8 @@ use Par_mod,               only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
 use PhysicalConstants_mod, only: KARMAN, KAPPA, RGAS_KG, CP, GRAV
 use TimeDate_mod,          only: current_date, date,nmdays, &
      add_secs,timestamp, make_timestamp, make_current_date
-use NetCDF_mod,        only: ReadField_CDF,vertical_interpolate,GetCDF_modelgrid,ReadTimeCDF
+use NetCDF_mod,        only: ReadField_CDF,vertical_interpolate,&
+                         GetCDF_modelgrid,ReadTimeCDF,printCDF
 use netcdf
 use TimeDate_ExtraUtil_mod,only: nctime2date,date2string,date2nctime
 
@@ -3118,6 +3119,7 @@ end subroutine Check_Meteo_Date_Type
 subroutine read_surf_elevation(ix)
 
   integer :: ix
+  character(len=10) :: src
 
   call GetCDF_modelgrid(met(ix)%name,TopoFile,met(ix)%field,&
                         1,1,1,1,needed=met(ix)%needed,found=met(ix)%found)
@@ -3128,9 +3130,15 @@ subroutine read_surf_elevation(ix)
           met(ix)%field,1,needed=.true.,interpol='zero_order')
      
      met(ix)%field=1000.0*StandardAtmos_kPa_2_km(0.001*met(ix)%field)
+     src = 'fromP'
   else
      if( me==0 )write(*,*)'Read met topography '//trim(met(ix)%name)//' from '//trim(TopoFile)//', typical value:',met(ix)%field(5,5,1,1)
+     src = 'Topo'
   endif
+  !if(MasterProc.and.DEBUG%MET) write(*,*) 'Elev:'//src,maxval(met(ix)%field(:,:,1,1))
+  if(MasterProc) write(*,*) 'Elev_'//trim(TopoFile),met(ix)%needed,met(ix)%found
+  if(MasterProc) write(*,*) 'Elev_'//src,maxval(met(ix)%field(:,:,1,1))
+  call printCDF('Elev_'//src,met(ix)%field(:,:,1,1),'m')
 
 end subroutine read_surf_elevation
 
