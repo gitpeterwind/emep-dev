@@ -48,8 +48,7 @@ use Landuse_mod,      only: water_fraction, ice_landcover
 use LocalVariables_mod,   only: Grid
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
-use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, &
-                           zen, Idirect, Idiffuse,z_bnd,ws_10m
+use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
 use Par_mod,          only: me,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_mod,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_mod,    only: PARfrac, Wm2_uE

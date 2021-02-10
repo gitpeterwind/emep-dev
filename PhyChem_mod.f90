@@ -40,7 +40,7 @@ use Io_Progs_mod,       only: datewrite
 
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
-                            zen,coszen,Idirect,Idiffuse
+                            zen,coszen !F21 Idirect,Idiffuse
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
                              tim_before, tim_before0, tim_after
 use NetCDF_mod,        only: ReadField_CDF,Real4
@@ -51,7 +51,7 @@ use PhysicalConstants_mod, only : ATWAIR
 use Pollen_mod,        only: pollen_dump,pollen_read
 use Radiation_mod,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
-                            ClearSkyRadn,     &! Idirect, Idiffuse
+                           !F21  ClearSkyRadn,     &! Idirect, Idiffuse
                             WeissNormanPAR,   &! WN17=WeissNorman radn, 2017 work
                             fCloudAtten,      &!
                             CloudAtten         !
@@ -157,26 +157,11 @@ subroutine phyche()
         thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
         zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
 
-  call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
-  if(DEBUG%PHYCHEM.and.debug_proc)&
-    print *, 'TXTIN', me, debug_li, debug_lj, thour
-  if(DEBUG%PHYCHEM.and.debug_proc)&
-   call datewrite(dtxt//"testcan-LL ", [me,debug_li,debug_lj], [ &
-     thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
-     zen(debug_li,debug_lj),coszen(debug_li,debug_lj)],&
-     afmt='(TXTDATE,a,3i4,4f9.3,es12.3)')
-
-  if(DEBUG%PHYCHEM.and.debug_proc)&
-   call datewrite(dtxt//"testcan-pA ", -1, [ Idirect(debug_li,debug_lj), &
-     Idiffuse(debug_li,debug_lj), &
-         coszen(debug_li,debug_lj)], afmt='(a,3i3,i5,1x, i2,2f9.3,es12.3)'  )
-
-
-  call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
-  if(DEBUG%PHYCHEM.and.debug_proc)&
-   call datewrite(dtxt//"testcan-pB ", -1, [ Idirect(debug_li,debug_lj), &
-     Idiffuse(debug_li,debug_lj), &
-         coszen(debug_li,debug_lj)], afmt='(a,3i3,i5,1x, i2,2f9.3,es12.3)'  )
+!F21   call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
+!F21   if(DEBUG%PHYCHEM.and.debug_proc)&
+!F21     print *, 'TXTIN', me, debug_li, debug_lj, thour
+!F21
+!F21  call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
 
 !WN17
 ! Gets PAR values, W/m2 here

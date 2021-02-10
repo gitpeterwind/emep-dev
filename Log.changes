@@ -26,6 +26,25 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Feb 2021, Dave
+rv4_37, since results are different to rv4_36
+
+Completed removal if Idurect usage. Used Grid%zen instead. Used !F21 label
+to indicate changes for now. Will clean up another day
+
+  CellMet_mod
+  DryDep_mod
+  LocalVariables_mod
+  PhyChem_mod
+  Rsurface_mod
+  Setup_1d_mod
+  StoFlux_mod
+
+Also:
+
+  Met_mod - added printCDF output of Topo file:
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9 Feb 2021, Dave
 
 RESULTS changing!! Will change tag soon!

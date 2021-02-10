@@ -210,17 +210,19 @@ contains
   !    g_sto 0 when snow covering canopy
 
    if ( dbg ) then
-     call datewrite(dtxt//"testcan-in ", iL, [ G%Idirect, L%PARsun, G%sdepth,&
+     !F21 call datewrite(dtxt//"testcan-in ", iL, [ G%Idirect, L%PARsun, G%sdepth,&
+     call datewrite(dtxt//"testcan-in ", iL, [ G%Zen, L%PARsun, G%sdepth,&
          coszen(i,j), DAY_COSZEN ], afmt='(a,3i3,i5,1x, i2,3f9.3,2es12.3)'  )
    end if
  
-   if( leafy_canopy  .and. G%Idirect > 0.001 .and.       &!: daytime
+   !if( leafy_canopy  .and. G%Idirect > 0.001 .and.       &!: daytime
+   if( leafy_canopy  .and. G%zen < 89.0 .and.       &!: daytime
                           G%sdepth< (1.0 +Sdmax) ) then   !: above snow 
 
      call CanopyPAR(L%LAI, G%coszen, PARdbh(i,j), PARdif(i,j), &
                     L%PARsun, L%PARshade, L%LAIsunfrac)
      if ( dbg ) then
-       call datewrite(dtxt//"testcanpar ", iL, [ G%Idirect,&
+       call datewrite(dtxt//"testcanpar ", iL, [ G%Zen,&
           L%PARsun, L%PARshade, L%LAIsunfrac ], afmt='(a,3i3,i5,1x, i2,4f9.3)' )
      end if
 
@@ -235,7 +237,7 @@ contains
    end if ! leafy canopy and daytime
 
    if ( dbg ) call datewrite(dtxt//" gsto ", iL, &
-       [ L%LAI, G%Idirect, G%Idiffuse, L%PARsun,  L%g_sto, L%f_env ] )
+       [ L%LAI, G%Zen, L%PARsun, L%PARshade,  L%g_sto, L%f_env ] )
 
 
   !*** Calculate in-canopy resistance,  Rinc (ACPs8.6.1)

@@ -21,7 +21,7 @@ use MicroMet_mod,      only: PsiH, PsiM, AerRes       ! functions
 use MetFields_mod,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
                             ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, sst, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
-                            coszen, Idirect, Idiffuse
+                            coszen !F21, Idirect, Idiffuse
 use PhysicalConstants_mod, only: PI, CP, GRAV, KARMAN
 use SoilWater_mod,     only: fSW
 use SubMet_mod,        only: Get_SubMet, Sub
@@ -102,8 +102,8 @@ subroutine Get_CellMet(i,j,debug_flag)
   Grid%zen = zen(i,j)
   Grid%coszen = coszen(i,j)
   Grid%izen = max( 1, int ( Grid%zen + 0.5 ) )! 1 avoids zero in indices.
-  Grid%Idirect  =  Idirect(i,j)
-  Grid%Idiffuse =  Idiffuse(i,j)
+  !F21 Grid%Idirect  =  Idirect(i,j)
+  !F21 Grid%Idiffuse =  Idiffuse(i,j)
 
   !**  prefer micromet signs and terminology here:
   Grid%Hd    = -fh(i,j,1)       ! Heat flux, *away from* surface

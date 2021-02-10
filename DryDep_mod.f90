@@ -322,7 +322,7 @@ contains
     dtz      = dt_advec/Grid%DeltaZ
 
     if ( dbghh ) call datewrite(dtxt//"DMET ", daynumber, (/ Grid%zen,  &
-         1.0e-5*Grid%psurf, Grid%Idiffuse, Grid%Idirect, &
+         1.0e-5*Grid%psurf, & !F21 Grid%PARsun, Grid%PARshade, &
          Grid%Hd, Grid%LE, Grid%invL, Grid%ustar /) )
       
    !/ Initialise Grid-avg Vg for this grid square:

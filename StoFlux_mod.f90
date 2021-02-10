@@ -65,12 +65,13 @@ contains
      Sub(:)%FstO3 = 0.0
 
     ! resets whole grid at local night
-    if ( Grid%Idirect < 1.0e-6 .and. old_gsun(i,j,1)<1.0e6  ) then
+    if ( Grid%Zen < 90.0  .and. old_gsun(i,j,1)<1.0e6  ) then
+    !F21 if ( Grid%Idirect < 1.0e-6 .and. old_gsun(i,j,1)<1.0e6  ) then
     !if ( Grid%Idirect < 1.0e-6 ) then
         SumVPD(i,j,:)        = 0.0    ! For Critical VPD stuff, wheat
         old_gsun(i,j,:)      = 1.0e99 ! "     "
     end if
-    if ( DebugCell ) call datewrite(dtxt, [Grid%Idirect, old_gsun(i,j,1) ])
+    if ( DebugCell ) call datewrite(dtxt, [Grid%Zen, old_gsun(i,j,1) ])
 
   end subroutine Setup_StoFlux
 

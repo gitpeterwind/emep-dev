@@ -69,9 +69,10 @@ type, public :: GridDat
   real    :: so2nh3ratio24hr  !  for CEH SO2 deposition scheme
   real    ::              & ! some on this set might not be need
      solar     = NOT_SET  & ! => irradiance (W/m^2)
-    ,Idirectn  = NOT_SET  &   ! => irradiance (W/m^2), normal to beam
-    ,Idiffuse  = NOT_SET  & ! => diffuse solar radiation (W/m^2)
-    ,Idirect   = NOT_SET  & ! => total direct solar radiation (W/m^2)
+!F21 no longer used. Weiss & Normal used for PARdbh etc.
+!F21    ,Idirectn  = NOT_SET  &   ! => irradiance (W/m^2), normal to beam
+!F21    ,Idiffuse  = NOT_SET  & ! => diffuse solar radiation (W/m^2)
+!F21    ,Idirect   = NOT_SET  & ! => total direct solar radiation (W/m^2)
     ,zen       = NOT_SET  & !   Zenith angle (degrees)
     ,coszen    = NOT_SET    ! = cos(zen)(= sinB, where B is elevation angle)
   integer :: izen = INOT_SET  ! int(zen)
