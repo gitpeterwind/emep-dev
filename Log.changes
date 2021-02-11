@@ -26,6 +26,16 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th Feb 2021, Qing, Bruce
+
+New KzMethod TRONKz and SILAMKz. TRONKz is used as default.
+New HmixMethod default JcRb_t2m, based on JcRb HmixMethod but change the formulation of the stable condition.
+
+New HmixMethod JcRb_surfT is also available in the code but commented out, as surface/skin temperature is not always in met files. 
+When surface/skin temperature is available, it should replace JcRb_t2m.
+
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Feb 2021, Dave
 rv4_37, since results are different to rv4_36
 

@@ -53,10 +53,12 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
   integer, save, public :: END_OF_EMEPDAY = 6 ! 
 
   type, private :: PBL_t
-    real :: ZiMIN = 100.0                     ! minimum mixing height
+    real :: ZiMIN = 50.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                    ! maximum mixing height
-    character(len=10) :: HmixMethod = "JcRb"  ! Method used for Hmix 
+    character(len=10) :: HmixMethod = "JcRb_t2m"  ! Method used for Hmix 
       ! JcRb = Jericevic/Richardson number method
+      ! JcRb_surfT is the new JcRb using pop T at skin
+      ! JcRb_t2m is new JcRb using pop T at 2m
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
   end type PBL_t

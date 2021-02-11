@@ -32,9 +32,12 @@ use BLPhysics_mod,         only: &
   ,OB_invL_LIMIT           & !
   ,Test_BLM                & ! Tests all Kz, Hmix routines
   ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
+  ,JericevicRiB_Hmix0_surfT  &
   ,SeibertRiB_Hmix_3d      &
   ,BrostWyngaardKz         &
   ,JericevicKz             &
+  ,SILAMKz                 & 
+  ,TROENKz                 &
   ,TI_Hmix                 &
   ,PielkeBlackadarKz       &
   ,O_BrienKz               &
@@ -1742,6 +1745,24 @@ subroutine BLPhysics()
                 z_mid(i,j,:), th(i,j,:,nr),  pzpbl(i,j))
           end do
         end do
+!     elseif ( PBL%HmixMethod == "JcRb_surfT" ) then   
+!        do i=1,limax
+!          do j=1,ljmax
+!            theta2 = tsurf_nwp(i,j,nr) * T_2_Tpot(ps(i,j,nr)) !use tsurf
+!            call JericevicRiB_Hmix0_surfT(&
+!                u_mid(i,j,:), v_mid(i,j,:),  &
+!                z_mid(i,j,:), th(i,j,:,nr), theta2, invL_nwp(i,j), pzpbl(i,j))
+!          end do
+!        end do
+      elseif ( PBL%HmixMethod == "JcRb_t2m" ) then   
+        do i=1,limax
+          do j=1,ljmax
+            theta2 = t2_nwp(i,j,nr) * T_2_Tpot(ps(i,j,nr)) !use t2
+            call JericevicRiB_Hmix0_surfT(& ! call same method but use t2
+                u_mid(i,j,:), v_mid(i,j,:),  &
+                z_mid(i,j,:), th(i,j,:,nr), theta2, invL_nwp(i,j), pzpbl(i,j))
+          end do
+        end do
       elseif ( PBL%HmixMethod == "NWP" ) then ! NWPHMIX
         do i=1,limax
           do j=1,ljmax
@@ -1777,6 +1798,24 @@ subroutine BLPhysics()
           do i=1,limax
             Kz_m2s(i,j,k) = JericevicKz(z_bnd(i,j,k),pzpbl(i,j),&
                                         ustar_nwp(i,j),Kz_m2s(i,j,k))
+          end do
+        end do
+      end do
+    elseif ( KzMethod == "SL" ) then !SILAMKz for both Stable/Unstable  !qingm
+      do k = 2, KMAX_MID
+        do j=1,ljmax
+          do i=1,limax
+            Kz_m2s(i,j,k) = SILAMKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                        ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
+          end do
+        end do
+      end do
+    elseif ( KzMethod == "TR" ) then !TROENKz for both Stable/Unstable  !qingm
+      do k = 2, KMAX_MID
+        do j=1,ljmax
+          do i=1,limax
+            Kz_m2s(i,j,k) = TROENKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                        ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
           end do
         end do
       end do

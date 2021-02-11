@@ -150,6 +150,7 @@ module MetFields_mod
  real,target,public, save,allocatable, dimension(:,:,:) :: &
         ps        &! Surface pressure Pa
        ,t2_nwp    & ! Temp 2 m   deg. K
+!      ,tsurf_nwp & ! skin temp deg K
        ,pbl_nwp   & ! Planetary boundary layer height (m)
        ,fh        & ! surf.flux.sens.heat W/m^2
        ,fl        & ! latent heat flux W/m^2
@@ -254,7 +255,8 @@ module MetFields_mod
       ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
       ix_surface_precip, ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, &
-      ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp
+      ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp 
+! integer, public, save   :: ix_tsurf_nwp
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -670,6 +672,21 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = 1
   met(ix)%msize = NMET
   ix_t2_nwp=ix
+
+!  ix=ix+1
+!  met(ix)%name             = 'skin_temperature'
+!  met(ix)%dim              = 2
+!  met(ix)%frequency        = 3
+!  met(ix)%time_interpolate = .true.
+!  met(ix)%read_meteo       = .true.
+!  met(ix)%needed           = .true.
+!  met(ix)%found            = .false.
+!  allocate(tsurf_nwp(LIMAX,LJMAX,NMET))
+!  tsurf_nwp=1.0
+!  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => tsurf_nwp
+!  met(ix)%zsize = 1
+!  met(ix)%msize = NMET
+!  ix_tsurf_nwp=ix
 
   ix=ix+1
   met(ix)%name             = 'relative_humidity_2m'

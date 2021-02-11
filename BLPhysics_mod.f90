@@ -27,8 +27,10 @@ module BLPhysics_mod
  logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
  logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
   character(len=2), parameter, public :: KzMethod = &
-     "--"   ! Set U, S separately, preferred? :
+     "TR"   ! Set U, S separately, preferred? :
   !   "JG"   ! Jericevic/Grisogono - both unstable + stable
+  !   "SL"   ! SILAM - both unstable + stable  
+  !   "TR"   ! TROEN - both unstable + stable  
   character(len=2), parameter, public :: UnstableKzMethod = &
      "OB"   ! O'Brien
   character(len=2), parameter, public :: StableKzMethod = &
@@ -56,6 +58,7 @@ public :: SeibertRiB_Hmix
 public :: SeibertRiB_Hmix_3d
 public :: JericevicRiB_Hmix
 public :: JericevicRiB_Hmix0  ! Now allow mixing heights based upon surface T
+public :: JericevicRiB_Hmix0_surfT
 public :: Venkatram_Hmix
 public :: VogelezangHoltslag_Hmix
 public :: Zilitinkevich_Hmix
@@ -66,6 +69,8 @@ public :: PielkeBlackadarKz
 public :: BrostWyngaardKz
 public :: JericevicKz
 public :: O_BrienKz
+public :: SILAMKz   
+public :: TROENKz
 
 ! Misc
 public :: fake_zmid
@@ -132,6 +137,69 @@ function JericevicKz(z,h,ustar,Kdef) result(Kz)
 
 end function JericevicKz
 
+function SILAMKz(z,h,ustar,invL,Kdef) result(Kz)
+! Vertical dispersion routine as given in 'simple' routine in SILAM
+
+  real, intent(in) :: z    ! height
+  real, intent(in) :: h    ! Boundary layer depth
+  real, intent(in) :: ustar, invL, Kdef !  u*, 1/L, default Kz
+  real :: Kz
+  real :: wstar
+  real :: phih
+  real :: kappa=0.4
+
+     !Stability parameter for stable conditions (also a function in EMEP I think
+     !but simpler just to write it here)
+     phih=1+4.7*z*invL
+     if ( z < h ) then
+        if (invL < 1.0e-10 ) then
+           wstar=(-ustar**3/kappa*invL*h)**(1./3.)
+           Kz=max(kappa*ustar,kappa*0.65*wstar)*z*(1.-z/h)**2
+        else
+           Kz=kappa*ustar/phih*z*(1.-z/h)**2
+        endif
+     else
+        Kz =  Kdef
+     endif
+
+end function SILAMKz
+
+function TROENKz(z,h,ustar,invL,Kdef) result(Kz)
+!Vertical dispersion routine as described in:
+!Troen, I., & Mahrt, L. (1986). A Simple Model of the Atmospheric Boundary
+!Layer:
+!Sensitivity to Surface Evaporation. Boundary-Layer Meteorology, 37, 129-148.
+!https://doi.org/10.1007/BF00122760
+
+  real, intent(in) :: z    ! height
+  real, intent(in) :: h    ! Boundary layer depth 
+  real, intent(in) :: ustar, invL, Kdef !  u*, 1/L, default Kz
+  real :: Kz
+  real :: ws
+  real :: phih
+  real :: kappa=0.4
+  real :: zsurf
+
+     !Height of the surface layer. Stability function for unstable calculated
+     !here for z>zsurf
+         zsurf=0.1*h
+
+     if ( z < h ) then
+          if ( invL < 0 ) then 
+              !phih=(1-7.*min(z,zsurf)*invL)**(-1./3.) !Original in
+              !Troen and Mahrt for phim, so no Prandtl number
+              phih=(1-16.*min(z,zsurf)*invL)**(-1./2.) !As in Garratt and Obrien for phih, so with Prandtl number
+          else
+              phih=1+5.*z*invL !As in Garratt, Prandtl number is 1 in stable boundary layer
+          endif
+          ws=ustar/phih
+          Kz=kappa*ws*z*(1.-z/h)**2
+
+     else 
+          Kz =  Kdef
+     endif
+
+end function TROENKz
 
 !----------------------------------------------------------------------------
 ! Two Rib-based mixing height methods.
@@ -259,6 +327,46 @@ subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi)
     end do
 
 end subroutine JericevicRiB_Hmix0
+
+subroutine JericevicRiB_Hmix0_surfT (u,v, zm, theta, theta2,inv_L,zi)
+   real, dimension(KMAX_MID), intent(in) :: u,v ! winds
+   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
+   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
+   real, intent(out) :: zi
+   integer :: k
+   real, parameter :: Ric = 0.25  ! critical Ric
+   real :: Rib  ! bulk Richardson number
+   real :: Theta1, z1  ! pot temp  and height of lowest cell
+   real, intent(in)  :: theta2, inv_L  !pot temp of 2m or skin
+
+! Jericevic et al., ACP, 2009, pp1001-,  eqn (17):
+
+   Theta1 = theta(KMAX_MID)
+   z1     = zm(KMAX_MID)
+   zi     = z1  ! start val
+   if (inv_L<0) then    ! unstable same as original JcRb
+           do k=KMAX_MID-1, KWINDTOP, -1
+                Rib =   GRAV * ( zm(k) - z1 ) &
+                     * (theta(k)-Theta1 ) / &
+               ( 0.5*(theta(k)+Theta1) * ( u(k)**2 + v(k)**2 )+EPS )
+               if(Rib >= Ric) then
+                     zi = zm(k)
+                     exit
+               end if
+           end do
+   else                 ! stable using pop T at 2m
+           do k=KMAX_MID, KWINDTOP, -1   ! start from lowest layer
+               Rib =   GRAV * ( zm(k) - z1 ) &
+                     * (theta(k)-Theta2 ) / &
+               ( 0.5*(theta(k)+Theta2) * ( u(k)**2 + v(k)**2 )+EPS )
+               if(Rib >= Ric) then
+                      zi = zm(k)
+                      exit
+               end if
+           end do
+   end if
+
+end subroutine JericevicRiB_Hmix0_surfT
 
 subroutine VogelezangHoltslag_Hmix (u,v, zm, theta, q, ustar, pzpbl)
   real, dimension(KMAX_MID), intent(in) :: u,v ! winds
