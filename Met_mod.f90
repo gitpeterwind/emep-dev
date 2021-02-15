@@ -1801,7 +1801,7 @@ subroutine BLPhysics()
           end do
         end do
       end do
-    elseif ( KzMethod == "SL" ) then !SILAMKz for both Stable/Unstable  !qingm
+    elseif ( KzMethod == "SILAMKz" ) then !SILAMKz for both Stable/Unstable  !qingm
       do k = 2, KMAX_MID
         do j=1,ljmax
           do i=1,limax
@@ -1810,7 +1810,7 @@ subroutine BLPhysics()
           end do
         end do
       end do
-    elseif ( KzMethod == "TR" ) then !TROENKz for both Stable/Unstable  !qingm
+    elseif ( KzMethod == "TRONKz" ) then !TROENKz for both Stable/Unstable  !qingm
       do k = 2, KMAX_MID
         do j=1,ljmax
           do i=1,limax

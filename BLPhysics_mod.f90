@@ -27,10 +27,10 @@ module BLPhysics_mod
  logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
  logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
   character(len=2), parameter, public :: KzMethod = &
-     "TR"   ! Set U, S separately, preferred? :
+     "TRONKz"   ! Set U, S separately, preferred? :
   !   "JG"   ! Jericevic/Grisogono - both unstable + stable
-  !   "SL"   ! SILAM - both unstable + stable  
-  !   "TR"   ! TROEN - both unstable + stable  
+  !   "SILAMKz"   ! SILAM - both unstable + stable  
+  !   "TRONKz"   ! TROEN - both unstable + stable  
   character(len=2), parameter, public :: UnstableKzMethod = &
      "OB"   ! O'Brien
   character(len=2), parameter, public :: StableKzMethod = &
