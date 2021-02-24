@@ -27,8 +27,8 @@ module Met_mod
 
 use BLPhysics_mod,         only: &
    KZ_MINIMUM, KZ_SBL_LIMIT, PIELKE   &
-  , UnstableKzMethod, StableKzMethod, KzMethod  &
-  ,USE_MIN_KZ              & ! From old code, is it needed?
+  !NOW in PBL , UnstableKzMethod, StableKzMethod , KzMethod  &
+  !NOW in PBL ,USE_MIN_KZ              & ! From old code, is it needed?
   ,OB_invL_LIMIT           & !
   ,Test_BLM                & ! Tests all Kz, Hmix routines
   ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
@@ -41,12 +41,12 @@ use BLPhysics_mod,         only: &
   ,TI_Hmix                 &
   ,PielkeBlackadarKz       &
   ,O_BrienKz               &
-  ,NWP_Kz                  & ! Kz from meteo
+  !NOW in PBL , ,NWP_Kz                  & ! Kz from meteo
   ,Kz_m2s_toSigmaKz        &
   ,Kz_m2s_toEtaKz        &
   ,SigmaKz_2_m2s
 
-use CheckStop_mod,         only: CheckStop
+use CheckStop_mod,         only: CheckStop, StopAll
 use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod, MIN_USTAR_LAND
      ,KMAX_BND, KMAX_MID, MasterProc, nmax  &
@@ -57,7 +57,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
      ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
-use Debug_module,       only: DEBUG,DEBUG_BLM, DEBUG_Kz, &
+use Debug_module,       only: DEBUG, &
                               DEBUG_SOILWATER, DEBUG_LANDIFY 
 use FastJ_mod,          only: setup_phot_fastj,rcphot_3D
 use Functions_mod,      only: Exner_tab, Exner_nd
@@ -896,7 +896,7 @@ subroutine MeteoRead()
   end if
 
   ! Kz from meteo
-  if(NWP_Kz) then
+  if(PBL%NWP_Kz) then
     if(foundKz_met)then
       Kz_met=max(0.0,Kz_met)  ! only positive Kz
     elseif(MasterProc.and.first_call)then
@@ -1653,7 +1653,7 @@ subroutine BLPhysics()
   end do
 
 
-  if ( debug_proc .and. DEBUG_Kz) then
+  if ( debug_proc .and. DEBUG%Kz) then
     i = debug_iloc
     j = debug_jloc
     write(*,"(a,i4,2f12.5)") "TESTNR th ",nr,th(i,j,20,[1,nr])
@@ -1665,7 +1665,7 @@ subroutine BLPhysics()
   ! Start choice of Kz and Hmix methods
   !..................................
 
-  if (NWP_Kz .and. foundKz_met ) then  ! read from met data
+  if (PBL%NWP_Kz .and. foundKz_met ) then  ! read from met data
     ! LAter we should remove Kz_met and Kz_m2s
     forall(i=1:limax,j=1:ljmax,k=2:KMAX_MID)
       SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*METSTEP)
@@ -1675,10 +1675,10 @@ subroutine BLPhysics()
 
     if( debug_proc ) Kz_nwp(:) = Kz_m2s(debug_iloc,debug_jloc,:) !for printout
 
-    if( debug_proc .and. DEBUG_Kz)then
+    if( debug_proc .and. DEBUG%Kz)then
       write(6,*) '*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), &
          minval(SigmaKz(:,:,:,nr)), maxval(SigmaKz(:,:,:,nr)), &
-         DEBUG_Kz, 'NWP_Kz:',NWP_Kz, &
+         DEBUG%Kz, 'NWP_Kz:',PBL%NWP_Kz, &
         '*** After convert to z',sum(Kz_m2s(:,:,:)), &
         minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
       write(6,*) 'After Set SigmaKz KTOP', Kz_met(debug_iloc,debug_jloc,1,nr)
@@ -1693,7 +1693,7 @@ subroutine BLPhysics()
     do j=1,ljmax
       do i=1,limax
 
-        debug_flag = ( DEBUG_Kz .and. debug_proc .and. &
+        debug_flag = ( DEBUG%Kz .and. debug_proc .and. &
              i == debug_iloc .and. j == debug_jloc )
 
         call PielkeBlackadarKz ( &
@@ -1792,7 +1792,7 @@ subroutine BLPhysics()
     !======================================================================
     ! Kz choices:
 
-    if ( KzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
+    if ( PBL%KzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
       do k = 2, KMAX_MID
         do j=1,ljmax
           do i=1,limax
@@ -1801,7 +1801,7 @@ subroutine BLPhysics()
           end do
         end do
       end do
-    elseif ( KzMethod == "SILAMKz" ) then !SILAMKz for both Stable/Unstable  !qingm
+    elseif ( PBL%KzMethod == "SILAMKz" ) then !SILAMKz for both Stable/Unstable  !qingm
       do k = 2, KMAX_MID
         do j=1,ljmax
           do i=1,limax
@@ -1810,7 +1810,7 @@ subroutine BLPhysics()
           end do
         end do
       end do
-    elseif ( KzMethod == "TRONKz" ) then !TROENKz for both Stable/Unstable  !qingm
+    elseif ( PBL%KzMethod == "TRONKz" ) then !TROENKz for both Stable/Unstable  !qingm
       do k = 2, KMAX_MID
         do j=1,ljmax
           do i=1,limax
@@ -1821,7 +1821,7 @@ subroutine BLPhysics()
       end do
 
     else ! Specify unstable, stable separately:
-      if ( StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
+      if ( PBL%StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
         do j=1,ljmax
           do i=1,limax
            if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
@@ -1838,7 +1838,7 @@ subroutine BLPhysics()
         if(debug_proc ) then
           i = debug_iloc
           j = debug_jloc
-          if(DEBUG_Kz .and. invL_nwp(i,j) >= OB_invL_LIMIT ) then
+          if(DEBUG%Kz .and. invL_nwp(i,j) >= OB_invL_LIMIT ) then
             do k = 15, KMAX_MID
               print "(a,i3,f7.1,3es11.3)", "DEBUG SKz_m2s",k,&
                 pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
@@ -1846,7 +1846,7 @@ subroutine BLPhysics()
           end if
         end if
 
-      elseif ( StableKzMethod == "BW" ) then
+      elseif ( PBL%StableKzMethod == "BW" ) then
         do k = 2, KMAX_MID
           do j=1,ljmax
             do i=1,limax
@@ -1859,13 +1859,13 @@ subroutine BLPhysics()
           end do
         end do
 
-      else if ( StableKzMethod == "PB" ) then
+      else if ( PBL%StableKzMethod == "PB" ) then
         ! no change (keep Kz from Pielke/BLackadar)
       else
         call CheckStop("Need StableKzMethod")
       end if ! Stable Kz
 
-      if ( UnstableKzMethod == "OB" ) then
+      if ( PBL%UnstableKzMethod == "OB" ) then
         do j=1,ljmax
           do i=1,limax
             if ( invL_nwp(i,j) < OB_invL_LIMIT ) then !neutral and unstable
@@ -1879,7 +1879,7 @@ subroutine BLPhysics()
         if(debug_proc) then
           i = debug_iloc
           j = debug_jloc
-          if(DEBUG_Kz .and. invL_nwp(i,j) <  OB_invL_LIMIT ) then
+          if(DEBUG%Kz .and. invL_nwp(i,j) <  OB_invL_LIMIT ) then
             do k = 15, KMAX_MID
               write(*,"(a,f7.1,3es10.3)") "DEBUG UKz_m2s", &
                 pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
@@ -1904,7 +1904,7 @@ subroutine BLPhysics()
 
   !************************************************************************!
   ! test some alternative options for Kz and Hmix
-  if( DEBUG_BLM .and. debug_proc .and. modulo( current_date%hour, 3)  == 0 &
+  if( DEBUG%BLM .and. debug_proc .and. modulo( current_date%hour, 3)  == 0 &
          .and. current_date%seconds == 0  ) then
 
     i = debug_iloc
@@ -1934,7 +1934,7 @@ subroutine BLPhysics()
 
 
   !***************************************************
-  if ( .not. (NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
+  if ( .not. (PBL%NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
 
     call Kz_m2s_toSigmaKz (Kz_m2s(1:limax,1:ljmax,:),roa(1:limax,1:ljmax,:,nr),&
          ps(1:limax,1:ljmax,nr),SigmaKz(1:limax,1:ljmax,:,nr))

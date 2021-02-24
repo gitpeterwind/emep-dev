@@ -4505,7 +4505,7 @@ subroutine printCDF(name, array,unit)
     fname = "PRINTCDF_" // trim(name) // ".nc"
 
     !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
-    write(*,*)me ,' printcdf'
+    !write(*,*)me ,' printcdf'
     if(MasterProc) write(*,*) "OUTPUTS printCDF :"//trim(fname),  maxval(array)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
            CDFtype=Real4,fileName_given=fname,overwrite=.true.)

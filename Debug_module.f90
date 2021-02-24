@@ -15,12 +15,14 @@ module Debug_module
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & ! Biogenic emissions
     ,BIDIR           = .false. & ! FUTURE Bi-directional exchange
+    ,BLM             = .false. & ! Produces matrix of differnt Kz and Hmix
     ,COLUMN          = .false. & ! Used in Derived_mod for column integration
     ,COLSRC          = .false. & ! Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! 
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,EMISSIONS       = .false. & ! 
+    ,EMISTIMEFACS    = .false. &
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
     ,FORESTFIRE      = .false. &
     ,GETEMIS         = .false. &
@@ -28,6 +30,7 @@ module Debug_module
     ,GRIDVALUES      = .false. &
     ,HOURLY_OUTPUTS  = .false. & !
     ,IOPROG          = .false. &
+    ,Kz              = .false. &
     ,LANDDEFS        = .false. &
     ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
     ,MET             = .false. &
@@ -68,15 +71,12 @@ type(emep_debug), public, save :: DEBUG
 ! Older style, awaiting conversion
 logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
-  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
-  ,DEBUG_Kz             = .false. &
   !!,DEBUG_DRYDEP         = .false. &
     ,DEBUG_MY_DRYDEP    = .false. &
     ,DEBUG_CLOVER       = .false. &
-  ,DEBUG_EMISTIMEFACS   = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_NEST           = .false. &

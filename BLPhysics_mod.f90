@@ -15,28 +15,22 @@ module BLPhysics_mod
 ! real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
 ! real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
 
-!NWPHmix now from Config_emep, NWP%HmixMethod
-!NWPHMIX! Choose one Hmix method here (not needed for NWP?)
-!NWPHMIX character(len=4), parameter, public :: HmixMethod = &
-!NWPHMIX     "JcRb"   ! Jericevic
-!NWPHMIX    !"SbRb"   ! Seibert
-!NWPHMIX    !"TIZi"   ! Original from Trond Iversen tiphysics
-
+!MOVED to Config_mod, PBL:
 ! Choose one Kz method here. Prefered method is likely to use O'brien
 ! in convective, Jericevic in Stable.
- logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
- logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
-  character(len=2), parameter, public :: KzMethod = &
-     "TRONKz"   ! Set U, S separately, preferred? :
-  !   "JG"   ! Jericevic/Grisogono - both unstable + stable
-  !   "SILAMKz"   ! SILAM - both unstable + stable  
-  !   "TRONKz"   ! TROEN - both unstable + stable  
-  character(len=2), parameter, public :: UnstableKzMethod = &
-     "OB"   ! O'Brien
-  character(len=2), parameter, public :: StableKzMethod = &
-     "JG"   ! Jericevic/Grisogono
-    !"BW"   ! Brost Wynngard
-    !"Sb"   ! Seibert
+!TMPA back: logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
+!TMPB back: logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
+!TMPC back: character(len=2), parameter, public :: KzMethod = &
+!    "TRONKz"   ! Set U, S separately, preferred? :
+!  !   "JG"   ! Jericevic/Grisogono - both unstable + stable
+!  !   "SILAMKz"   ! SILAM - both unstable + stable  
+!  !   "TRONKz"   ! TROEN - both unstable + stable  
+!  character(len=2), parameter, public :: UnstableKzMethod = &
+!     "OB"   ! O'Brien
+!  character(len=2), parameter, public :: StableKzMethod = &
+!     "JG"   ! Jericevic/Grisogono
+!    !"BW"   ! Brost Wynngard
+!    !"Sb"   ! Seibert
 
 !Movbed
 !  character(len=4), parameter, public :: FluxPROFILE = &
@@ -539,8 +533,8 @@ subroutine Test_BLM (mm,dd,hh,fH,u,v, zm, zb, pb, exnm, &
   real :: ziSeibert, ziJericevic, ziVenki, ziTI, ziVH
 
     write(*,*)"HmixMETHOD "//PBL%HmixMethod
-    write(*,*)"KzMETHOD "//KzMethod//"-U:"//UnstableKzMethod// &
-              "-S:"//StableKzMethod
+    write(*,*)"KzMETHOD "//PBL%KzMethod//"-U:"//PBL%UnstableKzMethod// &
+              "-S:"//PBL%StableKzMethod
 
     call PielkeBlackadarKz (u,v, zm, zb, th, Kz_PBT, &
               Pielke_flag=.true., debug_flag=.false.)

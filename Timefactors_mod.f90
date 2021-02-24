@@ -68,7 +68,7 @@
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
                             HourlyFacFile,HourlyFacSpecialsFile,&
                             USES
-  use Debug_module,  only:   DEBUG => DEBUG_EMISTIMEFACS
+  use Debug_module,  only:   DEBUG ! => DEBUG%EMISTIMEFACS
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use OwnDataTypes_mod, only: TXTLEN_FILE
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
@@ -134,6 +134,7 @@
   real, allocatable, public, save,  dimension(:,:,:,:):: GridTfac
 
   character(len=100) :: errmsg
+  logical, public, save :: dbgTF = .false. ! shorthand for EMISTIMEFACS
 
 contains
 
@@ -169,7 +170,10 @@ contains
   real :: Start, Endval, Average, x, buff(12)
   logical :: found_HourlyFacFile
   
-  if (DEBUG) write(unit=6,fmt=*) "into timefactors "
+  if (DEBUG%EMISTIMEFACS)  then
+    write(unit=6,fmt=*) "into timefactors "
+    dbgTF = .true.
+  end if
 
    call CheckStop( nydays < 365, &
       "Timefactors: ERR:Call set_nmdays before timefactors?")
@@ -238,7 +242,7 @@ contains
            !defined after renormalization and send to al processors:
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
-           if( DEBUG.and.insec==ISNAP_DOM  ) &
+           if( dbgTF.and.insec==ISNAP_DOM  ) &
               write(*,"(a,3i3,f7.3,a,12f6.2)") "emm tfac ", &
                inland,insec,iemis, fac_min(ic,insec,iemis),&
                  " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
@@ -262,7 +266,7 @@ contains
              fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfac
           end do
        end do
-       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
+       if (dbgTF) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    end do  ! iemis
 
    end if
@@ -304,7 +308,7 @@ contains
        end do
 
        close(IO_TIMEFACS)
-       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
+       if (dbgTF) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
 
   end do  ! NEMIS_FILE
 
@@ -325,7 +329,7 @@ contains
       do 
          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
          n = n + 1
-         if(DEBUG)write(*,*) "HourlyFacs ", n, trim(inputline)
+         if(dbgTF)write(*,*) "HourlyFacs ", n, trim(inputline)
          if ( ios <  0 ) exit     ! End of file
          if( index(inputline,"#")>0 ) then ! Headers
             if(n==1) call PrintLog(trim(inputline))
@@ -333,7 +337,7 @@ contains
          else
             read(inputline,fmt=*,iostat=ios) idd, insec, &
                  (tmp24(ihh),ihh=1,24)
-            if( DEBUG ) write(*,*) "HOURLY=> ",idd, insec, tmp24(1), tmp24(13)
+            if( dbgTF ) write(*,*) "HOURLY=> ",idd, insec, tmp24(1), tmp24(13)
          end if
          
          if(  idd == 0 ) then ! same values every day
@@ -356,7 +360,7 @@ contains
            ! (Sector 10 had a sum of 1.00625)
            if(  idd > 0 ) then !day value defined
               sumfac = sum(fac_ehh24x7(1,insec,:,idd,1))/24.0
-              if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+              if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
                    'HOURLY-FACS mean min max', idd, insec, sumfac, &
                    minval(fac_ehh24x7(1,insec,:,idd,1)), &
                    maxval(fac_ehh24x7(1,insec,:,idd,1))
@@ -376,7 +380,7 @@ contains
            end if
        end do
 
-       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
+       if (dbgTF) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
        call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
 
        close(IO_TIMEFACS)
@@ -391,7 +395,7 @@ contains
           do 
              read(IO_TIMEFACS,"(a)",iostat=ios) inputline
              n = n + 1
-             if(DEBUG)write(*,*) "HourlyFacsSpecials ", n, trim(inputline)
+             if(dbgTF)write(*,*) "HourlyFacsSpecials ", n, trim(inputline)
              if ( ios <  0 ) exit     ! End of file
              if( index(inputline,"#")>0 ) then ! Headers
                 if(n==1) call PrintLog(trim(inputline))
@@ -400,7 +404,7 @@ contains
                 read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
                      (tmp24(ihh),ihh=1,24)
                 icc=find_index(inland,Country(:)%icode)
-                if( DEBUG ) write(*,*) "HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
+                if( dbgTF ) write(*,*) "HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
                 
                 if( icc<0 .and. inland/=0)then
                    write(*,*)"Warning: HourlyFacsSpecials, country code not recognized", inland
@@ -447,7 +451,7 @@ contains
              
              ! Use sumfac for mean, and normalise within each day/sector
              if(inland==0)icc=1
-             if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+             if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
                   'HOURLY-FACS mean min max', idd, insec, sumfac, &
                   minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
                   maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
@@ -473,9 +477,9 @@ contains
 
 !#########################################################################
 !
-    if (DEBUG) write(unit=6,fmt=*) "End of subroutine timefactors"
+    if (dbgTF) write(unit=6,fmt=*) "End of subroutine timefactors"
 
-    if (DEBUG ) then 
+    if (dbgTF ) then 
        write( *,*) " test of time factors, UK: "
        do mm = 1, 12
            write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
@@ -484,7 +488,7 @@ contains
        write(*,"(a,4f8.3)") " day factors traffic 24x7", &
            fac_ehh24x7(1,7,1,4,1),fac_ehh24x7(1,7,13,4,1), &
               minval(fac_ehh24x7), maxval(fac_ehh24x7)
-    end if ! DEBUG
+    end if ! dbgTF
 
  end subroutine timefactors
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -603,6 +607,9 @@ contains
        return
     end if
 
+    if (dbgTF .and. MasterProc ) then
+      write(*,*) 'MFAC DD?', USES%DEGREEDAY_FACTORS,  Gridded_SNAP2_Factors
+    end if
     !===============================================
     if ( .not. Gridded_SNAP2_Factors )  return !
     !===============================================
@@ -626,7 +633,7 @@ contains
          kmax,IRUNBEG,JRUNBEG)
          call CheckStop(errmsg=="field_not_found", "INDegreeDay field not found:")
 
-    if ( DEBUG ) then
+    if ( dbgTF ) then
        ijloc = maxloc( gridfac_HDD(li0:li1,lj0:lj1))
        iii = ijloc(1)+li0-1
        jjj = ijloc(2)+lj0-1
@@ -643,7 +650,7 @@ contains
     end if
 
 
-    if ( DEBUG .and. debug_proc ) then
+    if ( dbgTF .and. debug_proc ) then
        iii = debug_li
        jjj = debug_lj
        write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, gridfac_HDD(iii, jjj)
@@ -669,6 +676,11 @@ contains
      sector_map(3,:)='ind'
      sector_map(4,:)='ind'
      sector_map(7,:)='tra'
+
+    if (dbgTF .and. MasterProc ) then
+      write(*,*) 'MFAC GR?', trim(Monthly_patternsFile)
+    end if
+
 
      if(.not.allocated(GridTfac))then
         allocate(GridTfac(LIMAX,LJMAX,NSECTORS_SNAP,NEMIS_FILE))! only snap sectors defined for GridTfac!
@@ -822,7 +834,7 @@ subroutine yearly_normalize(year)
                  fac_emm(ic,mm,isec,iemis)  =  &
                        fac_emm(ic,mm,isec,iemis) * sumfac
               end do ! mm
-       if ( debug .and. abs(sumfac-1.0)>0.001) &
+       if ( dbgTF .and. abs(sumfac-1.0)>0.001) &
             write(unit=6,fmt=*)  &
            "needed for country, isec, iemis, sumfac = " ,ic, isec, iemis, sumfac
 

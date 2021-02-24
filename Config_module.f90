@@ -53,14 +53,30 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
   integer, save, public :: END_OF_EMEPDAY = 6 ! 
 
   type, private :: PBL_t
+    ! Zi minimum value now generally calculated as z_mid(19), but we
+    !   keep a fixed value for smoothing.  (old comment?)
     real :: ZiMIN = 50.0                     ! minimum mixing height
-    real :: ZiMAX = 3000.0                    ! maximum mixing height
+    real :: ZiMAX = 3000.0                   ! maximum mixing height
     character(len=10) :: HmixMethod = "JcRb_t2m"  ! Method used for Hmix 
       ! JcRb = Jericevic/Richardson number method
       ! JcRb_surfT is the new JcRb using pop T at skin
       ! JcRb_t2m is new JcRb using pop T at 2m
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
+    !
+    ! Moved Feb 2021 from BLPhysics:
+    logical :: NWP_Kz=.false.      ! hb 23.02.2010 Kz from meteo 
+    logical :: USE_MIN_KZ =.false. ! "fix"
+    character(len=9):: &
+      KzMethod = "-"  ! Set U, S separately, default, pre rv4-38
+                      !   (defaulted to OBrien U + Jericevic S
+                      ! "TRONKz"   ! TROEN - U+S New default in testing :-)
+                      ! "SILAMKz"  ! SILAM - U+S  
+                      ! "JG"       ! Jericevic/Grisogono - U+S
+    character(len=2) :: UnstableKzMethod = "OB" ! O'Brien
+    character(len=2) :: StableKzMethod   = "JG" ! Jericevic/Grisogono
+                                                !"BW"   ! Brost Wynngard
+                                                !"Sb"   ! Seibert
   end type PBL_t
   type(PBL_t), public, save :: PBL = PBL_t()
 

@@ -32,8 +32,8 @@ use Config_module,only: &
     startdate, Emis_sourceFiles, EmisMask
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
-use Debug_module,      only: DEBUG, & !DEBUG => DEBUG_EMISSIONS, & 
-                                DEBUG_EMISTIMEFACS
+use Debug_module,      only: DEBUG ! , & !DEBUG => DEBUG_EMISSIONS, & 
+                                !DEBUG%EMISTIMEFACS
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
@@ -1703,7 +1703,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     end if
   end if
 
-  if(DEBUG_EMISTIMEFACS.and.MasterProc) &
+  if(DEBUG%EMISTIMEFACS.and.MasterProc) &
     write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
       fac_ehh24x7(1,ISNAP_TRAF,1,4,1),fac_ehh24x7(1,ISNAP_TRAF,13,4,1)
   !..........................................
@@ -1721,7 +1721,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     do j = 1,ljmax
       do i = 1,limax
         ncc = nlandcode(i,j)            ! No. of countries in grid
-        debug_tfac=(DEBUG_EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
+        debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
         ! find the approximate local time:
         lon = modulo(360+nint(glon(i,j)),360)
         if(lon>180.0)lon=lon-360.0
