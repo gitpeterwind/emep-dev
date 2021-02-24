@@ -37,7 +37,7 @@ Debug_mod: more variables moved from _XXX to %XXX system: BL, Kz, EMISTIMEFACS
 
 NetCDF_mod - reduced printout from all nodes
 
-(MOVING towards rv4.38, which will have Qin+Bruce's Troen as default)
+(MOVING towards rv4.38, which will have Qing+Bruce's Troen as default)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2021, Qing, Bruce
 
