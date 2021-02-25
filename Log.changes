@@ -24,6 +24,18 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th Feb 2021, Dave
+
+Met_mod, Config_mod:
+
+Small modification for PBL%KzMethod: use "Mixed" and not "-"  to get previous
+default. This is to avoid incorrect names (e.g. "TR") dropping through the
+if-tests without the user being aware. Now, anything which isn't defined
+results in a call to StopAll.
+
+Also recoded this section to use select case PBL%KzMethod rather than
+if-tests. (Seemed neater.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Feb 2021, Dave

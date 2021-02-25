@@ -65,11 +65,11 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
     !
     ! Moved Feb 2021 from BLPhysics:
-    logical :: NWP_Kz=.false.      ! hb 23.02.2010 Kz from meteo 
+    logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
-      KzMethod = "-"  ! Set U, S separately, default, pre rv4-38
-                      !   (defaulted to OBrien U + Jericevic S
+      KzMethod = "Mixed"  ! Set U, S separately, default, pre rv4-38
+                      !   (defaulted to OBrien U + Jericevic S)
                       ! "TRONKz"   ! TROEN - U+S New default in testing :-)
                       ! "SILAMKz"  ! SILAM - U+S  
                       ! "JG"       ! Jericevic/Grisogono - U+S

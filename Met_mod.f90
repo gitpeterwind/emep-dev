@@ -1623,12 +1623,13 @@ subroutine BLPhysics()
   real, dimension(KMAX_MID) :: Kz_nwp
   real    :: Kz_min, stab_h
 
-  integer i,j,k,nr
+  integer i,j,k,nr, ii, jj
   real :: theta2
   logical :: debug_flag
   logical,save :: first_call = .true.
+  character(len=*), parameter :: dtxt='MetBL:'
 
-  call CheckStop(KZ_SBL_LIMIT < 1.01*KZ_MINIMUM, "SBLlimit too low! in Met_mod")
+  call CheckStop(KZ_SBL_LIMIT < 1.01*KZ_MINIMUM, dtxt//"SBLlimit too low! in Met_mod")
 
   ! Preliminary definitions
   nr = 2
@@ -1653,12 +1654,14 @@ subroutine BLPhysics()
   end do
 
 
+  ii=-999; jj= -999 ! shorthands for debug_i(j)loc 
   if ( debug_proc .and. DEBUG%Kz) then
-    i = debug_iloc
-    j = debug_jloc
-    write(*,"(a,i4,2f12.5)") "TESTNR th ",nr,th(i,j,20,[1,nr])
-    write(*,"(a,i4,2f12.5,es10.2)") "TESTNR fh ",nr,fh(i,j,[1,nr]),invL_nwp(i,j)
-    write(*,"(a,i4,2es10.2)") "TESTNR ps ",nr,ps(i,j,[1,nr])
+    ii = debug_iloc
+    jj = debug_jloc
+    write(*,"(a,i4,2f12.5)") dtxt//"TESTNR th ",nr,th(ii,jj,20,[1,nr])
+    write(*,"(a,i4,2f12.5,es10.2)") dtxt//"TESTNR fh ",&
+       nr, fh(ii,jj,[1,nr]),invL_nwp(ii,jj)
+    write(*,"(a,i4,2es10.2)") dtxt//"TESTNR ps ",nr,ps(ii,jj,[1,nr])
   end if
 
   !..................................
@@ -1676,12 +1679,12 @@ subroutine BLPhysics()
     if( debug_proc ) Kz_nwp(:) = Kz_m2s(debug_iloc,debug_jloc,:) !for printout
 
     if( debug_proc .and. DEBUG%Kz)then
-      write(6,*) '*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), &
+      write(6,*) dtxt//'*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), &
          minval(SigmaKz(:,:,:,nr)), maxval(SigmaKz(:,:,:,nr)), &
          DEBUG%Kz, 'NWP_Kz:',PBL%NWP_Kz, &
         '*** After convert to z',sum(Kz_m2s(:,:,:)), &
         minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
-      write(6,*) 'After Set SigmaKz KTOP', Kz_met(debug_iloc,debug_jloc,1,nr)
+      write(6,*) dtxt//'After Set SigmaKz KTOP', Kz_met(ii,jj,1,nr)
     end if
 
   else   ! Not NWP Kz. Must calculate
@@ -1769,10 +1772,10 @@ subroutine BLPhysics()
              pzpbl(i,j) = pbl_nwp(i,j,1)
           end do
         end do
-        if ( DEBUG%MET .and. debug_proc) call datewrite("NWP HMIX: ", &
-           [ pbl_nwp(debug_li,debug_lj,1),pbl_nwp(debug_li,debug_lj,2) ] )
+        if ( DEBUG%MET .and. debug_proc) call datewrite(dtxt//"NWP HMIX: ", &
+           [ pbl_nwp(ii,jj,1),pbl_nwp(ii,jj,2) ] )
       else
-        call CheckStop("Need HmixMethod")
+        call CheckStop(dtxt//"Need HmixMethod")
       end if ! end of newer methods
 
      ! Set limits on Zi
@@ -1785,113 +1788,118 @@ subroutine BLPhysics()
     !..spatial smoothing of new zi: Need fixed minimum here. 100 or 50 m is okay
     !  First, we make sure coastal areas had "land-like" values.
 
-    if(LANDIFY_MET) &
-         call landify(pzpbl,"pzbpl")
-     call smoosp(pzpbl,PBL%ZiMIN,PBL%ZiMAX)
+    if(LANDIFY_MET)  call landify(pzpbl,"pzbpl")
+
+    call smoosp(pzpbl,PBL%ZiMIN,PBL%ZiMAX)
 
     !======================================================================
-    ! Kz choices:
+    ! Kz choices for stable (S) and unstable (U):
 
-    if ( PBL%KzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
-      do k = 2, KMAX_MID
-        do j=1,ljmax
-          do i=1,limax
-            Kz_m2s(i,j,k) = JericevicKz(z_bnd(i,j,k),pzpbl(i,j),&
-                                        ustar_nwp(i,j),Kz_m2s(i,j,k))
-          end do
-        end do
-      end do
-    elseif ( PBL%KzMethod == "SILAMKz" ) then !SILAMKz for both Stable/Unstable  !qingm
-      do k = 2, KMAX_MID
-        do j=1,ljmax
-          do i=1,limax
-            Kz_m2s(i,j,k) = SILAMKz(z_bnd(i,j,k),pzpbl(i,j),&
-                                        ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
-          end do
-        end do
-      end do
-    elseif ( PBL%KzMethod == "TRONKz" ) then !TROENKz for both Stable/Unstable  !qingm
-      do k = 2, KMAX_MID
-        do j=1,ljmax
-          do i=1,limax
-            Kz_m2s(i,j,k) = TROENKz(z_bnd(i,j,k),pzpbl(i,j),&
-                                        ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
-          end do
-        end do
-      end do
+    select case ( PBL%KzMethod )
 
-    else ! Specify unstable, stable separately:
-      if ( PBL%StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
-        do j=1,ljmax
-          do i=1,limax
-           if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
-             do k = 2, KMAX_MID
-               if( z_bnd(i,j,k) <  pzpbl(i,j) ) then
-                 Kz_m2s(i,j,k) = JericevicKz(z_bnd(i,j,k),pzpbl(i,j),&
-                                             ustar_nwp(i,j),Kz_m2s(i,j,k))
-               !else: keep Kz from Pielke/BLackadar
-               end if
-             end do
-           end if
-          end do
-        end do
-        if(debug_proc ) then
-          i = debug_iloc
-          j = debug_jloc
-          if(DEBUG%Kz .and. invL_nwp(i,j) >= OB_invL_LIMIT ) then
-            do k = 15, KMAX_MID
-              print "(a,i3,f7.1,3es11.3)", "DEBUG SKz_m2s",k,&
-                pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
-             end do
-          end if
-        end if
-
-      elseif ( PBL%StableKzMethod == "BW" ) then
+      case( "JG" )  ! Jericevic/Grisogono for both S/U
         do k = 2, KMAX_MID
           do j=1,ljmax
             do i=1,limax
-              if ( invL_nwp(i,j) > 1.0e-10 ) then !stable ! leaves gap near zero
-                Kz_m2s(i,j,k) = BrostWyngaardKz(z_bnd(i,j,k),pzpbl(i,j),&
+              Kz_m2s(i,j,k) = JericevicKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                        ustar_nwp(i,j),Kz_m2s(i,j,k))
+            end do
+          end do
+        end do
+
+      case( "SILAMKz" )  !SILAMKz for both S/U !qingm
+        do k = 2, KMAX_MID
+          do j=1,ljmax
+            do i=1,limax
+              Kz_m2s(i,j,k) = SILAMKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                 ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
+            end do
+          end do
+        end do
+
+      case ( "TRONKz" ) 
+        do k = 2, KMAX_MID
+          do j=1,ljmax
+            do i=1,limax
+              Kz_m2s(i,j,k) = TROENKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                 ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
+            end do
+          end do
+        end do
+
+      case ( "Mixed" ) ! Specify unstable, stable separately:
+
+        if ( PBL%StableKzMethod == "JG" ) then !Jericevic/Grisogono for both S/U
+          do j=1,ljmax
+            do i=1,limax
+              if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
+                do k = 2, KMAX_MID
+                  if( z_bnd(i,j,k) <  pzpbl(i,j) ) then
+                    Kz_m2s(i,j,k) = JericevicKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                             ustar_nwp(i,j),Kz_m2s(i,j,k))
+                    !else: keep Kz from Pielke/BLackadar
+                  end if
+                end do !k
+              end if ! invL
+            end do !i
+          end do !j
+          if(debug_proc ) then
+            if(DEBUG%Kz .and. invL_nwp(ii,jj) >= OB_invL_LIMIT ) then
+              do k = 15, KMAX_MID
+                write(*,"(a,i3,f7.1,3es11.3)")dtxt//" SKz_m2s",k, pzpbl(ii,jj),&
+                   invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
+               end do
+            end if
+          end if
+
+        elseif ( PBL%StableKzMethod == "BW" ) then
+          do k = 2, KMAX_MID
+            do j=1,ljmax
+              do i=1,limax
+                if ( invL_nwp(i,j) > 1.0e-10 ) then !stable ! leaves gap near zero
+                  Kz_m2s(i,j,k) = BrostWyngaardKz(z_bnd(i,j,k),pzpbl(i,j),&
                                 ustar_nwp(i,j),invL_nwp(i,j),Kz_m2s(i,j,k))
               !else: keep Kz from Pielke/BLackadar
+                end if
+              end do
+            end do
+          end do
+
+        else if ( PBL%StableKzMethod == "PB" ) then
+        ! no change (keep Kz from Pielke/BLackadar)
+        else
+          call CheckStop(dtxt//"Need StableKzMethod")
+        end if ! Stable Kz
+
+        if ( PBL%UnstableKzMethod == "OB" ) then
+          do j=1,ljmax
+            do i=1,limax
+              if ( invL_nwp(i,j) < OB_invL_LIMIT ) then !neutral and unstable
+                call O_BrienKz ( &     ! Original EMEP method
+                  pzpbl(i,j),  z_bnd(i,j,:),  &
+                  ustar_nwp(i,j),  invL_nwp(i,j),  &
+                  Kz_m2s(i,j,:), .false.)
               end if
             end do
           end do
-        end do
-
-      else if ( PBL%StableKzMethod == "PB" ) then
-        ! no change (keep Kz from Pielke/BLackadar)
-      else
-        call CheckStop("Need StableKzMethod")
-      end if ! Stable Kz
-
-      if ( PBL%UnstableKzMethod == "OB" ) then
-        do j=1,ljmax
-          do i=1,limax
-            if ( invL_nwp(i,j) < OB_invL_LIMIT ) then !neutral and unstable
-              call O_BrienKz ( &     ! Original EMEP method
-                pzpbl(i,j),  z_bnd(i,j,:),  &
-                ustar_nwp(i,j),  invL_nwp(i,j),  &
-                Kz_m2s(i,j,:), .false.)
+          if(debug_proc) then
+            if(DEBUG%Kz .and. invL_nwp(ii,jj) <  OB_invL_LIMIT ) then
+              do k = 15, KMAX_MID
+                write(*,"(a,f7.1,3es10.3)") "DEBUG UKz_m2s", pzpbl(ii,jj),&
+                 invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
+              end do
             end if
-          end do
-        end do
-        if(debug_proc) then
-          i = debug_iloc
-          j = debug_jloc
-          if(DEBUG%Kz .and. invL_nwp(i,j) <  OB_invL_LIMIT ) then
-            do k = 15, KMAX_MID
-              write(*,"(a,f7.1,3es10.3)") "DEBUG UKz_m2s", &
-                pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
-            end do
           end if
+
+        else ! PBL%UnstableKzMethod /= "OB" 
+          call StopAll(dtxt//"Need UnstableKzMethod")
         end if
 
-      else
-        call CheckStop("Need UnstableKzMethod")
-      end if
+      case default
+         call StopAll(dtxt//"Undefined KzMethod:"//PBL%KzMethod)
 
-    end if  ! Specify unstable, stable separately:
+    end select ! PBL%KzMethod
+
   end if ! NWP_Kz .and. foundKz_met
 
   forall(i=1:limax,j=1:ljmax)
@@ -1907,28 +1915,27 @@ subroutine BLPhysics()
   if( DEBUG%BLM .and. debug_proc .and. modulo( current_date%hour, 3)  == 0 &
          .and. current_date%seconds == 0  ) then
 
-    i = debug_iloc
-    j = debug_jloc
-    p_bnd(:) = A_bnd(:)+B_bnd(:)*ps(i,j,nr)
+    p_bnd(:) = A_bnd(:)+B_bnd(:)*ps(ii,jj,nr)
 
   !************************************************************************!
   ! We test all the various options here. Pass in  data as keyword arguments
   ! to avoid possible errors!
 
     call Test_BLM( mm=current_date%month, dd=current_date%day, &
-           hh=current_date%hour, fH=fh(i,j,nr), &
-           u=u_mid(i,j,:),v=v_mid(i,j,:), zm=z_mid(i,j,:), &
-           zb=z_bnd(i,j,:), exnm=exnm(i,j,:), Kz=Kz_m2s(i,j,:), &
-           Kz_nwp=Kz_nwp(:), invL=invL_nwp(i,j), &
-           q=q(i,j,:,nr),  & ! TEST Vogel
-           ustar=ustar_nwp(i,j), th=th(i,j,:,nr), pb=p_bnd(:), zi=pzpbl(i,j))
+           hh=current_date%hour, fH=fh(ii,jj,nr), &
+           u=u_mid(ii,jj,:),v=v_mid(ii,jj,:), zm=z_mid(ii,jj,:), &
+           zb=z_bnd(ii,jj,:), exnm=exnm(ii,jj,:), Kz=Kz_m2s(ii,jj,:), &
+           Kz_nwp=Kz_nwp(:), invL=invL_nwp(ii,jj), &
+           q=q(ii,jj,:,nr),  & ! TEST Vogel
+           ustar=ustar_nwp(ii,jj), th=th(ii,jj,:,nr),&
+           pb=p_bnd(:), zi=pzpbl(ii,jj))
   !************************************************************************!
-    hs = z_bnd(i,j,KMAX_MID)
+    hs = z_bnd(ii,jj,KMAX_MID)
 
-    stab_h = min( PsiH(hs*invL_nwp(i,j)), 0.9 )
-    Kz_min = ustar_nwp(i,j)*KARMAN*hs /( 1 - stab_h  )
-    write(*,"(a,10f10.3)") "PSIH ", stab_h, fh(i,j,nr), invL_nwp(i,j), &
-             PsiH(hs*invL_nwp(i,j)),Kz_min
+    stab_h = min( PsiH(hs*invL_nwp(ii,jj)), 0.9 )
+    Kz_min = ustar_nwp(ii,jj)*KARMAN*hs /( 1 - stab_h  )
+    write(*,"(a,10f10.3)") "PSIH ", stab_h, fh(ii,jj,nr), &
+       invL_nwp(ii,jj), PsiH(hs*invL_nwp(ii,jj)),Kz_min
 
   end if ! end of debug extra options
 
@@ -1936,10 +1943,12 @@ subroutine BLPhysics()
   !***************************************************
   if ( .not. (PBL%NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
 
-    call Kz_m2s_toSigmaKz (Kz_m2s(1:limax,1:ljmax,:),roa(1:limax,1:ljmax,:,nr),&
-         ps(1:limax,1:ljmax,nr),SigmaKz(1:limax,1:ljmax,:,nr))
+    call Kz_m2s_toSigmaKz (Kz_m2s(1:limax,1:ljmax,:),&
+      roa(1:limax,1:ljmax,:,nr), ps(1:limax,1:ljmax,nr), &
+      SigmaKz(1:limax,1:ljmax,:,nr))
     call Kz_m2s_toEtaKz (Kz_m2s(1:limax,1:ljmax,:),roa(1:limax,1:ljmax,:,nr),&
-         ps(1:limax,1:ljmax,nr),EtaKz(1:limax,1:ljmax,:,nr),Eta_mid,A_mid,B_mid)
+      ps(1:limax,1:ljmax,nr),EtaKz(1:limax,1:ljmax,:,nr),&
+      Eta_mid,A_mid,B_mid)
 
   end if
   !***************************************************
@@ -2568,7 +2577,7 @@ subroutine tkediff (nr)
 
       ! Calculate PBL height according to Holtslag et al. (1993)
       pblht(i,j)=0.
-      if(k.ne.KMAX_MID) then
+      if(k /= KMAX_MID) then
         fract1=(RIC-rib(k+1))/(rib(k)-rib(k+1))
         fract2=1.-fract1
         apbl=z_mid(i,j,k)*fract1
@@ -2586,7 +2595,7 @@ subroutine tkediff (nr)
         iblht(i,j)=KMAX_MID
       end if
 
-      if(pblht(i,j).le.100.) then              !Minimum of PBL height
+      if(pblht(i,j) <= 100.) then              !Minimum of PBL height
         pblht(i,j)=100.
       end if
 
@@ -2709,8 +2718,8 @@ subroutine tkediff (nr)
         eddyz(i,j,k)=eddyz(i,j,k)*((sigma_mid(k)-sigma_mid(    k-1))/   &
               (    z_mid(i,j,k)-z_mid(i,j,k-1)))**2.
       end do
-     ENDDO
-  ENDDO ! long loop
+     end do
+  end do ! long loop
 
   !     Store diffusivity coefficients into skh(i,j,k,nr) array
   do k=2,KMAX_MID
