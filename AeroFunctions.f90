@@ -73,12 +73,17 @@ module AeroFunctions_mod
   !! Calculates fraction of aerosol mass below given diameter Dp, for a given
   !! MMD of Dpg and sigma sig. Uses eqn 7.46 for Fn from Seinfeld + Pandis
 
- function LogNormFracBelow(Dpg,sig,Dp) result(Fn)
+ function LogNormFracBelow(Dpg,sig,Dp,rho_gcm3) result(Fn)
    real, intent(in) :: Dpg, sig, Dp
+   real, intent(in), optional :: rho_gcm3 ! to get aerodynamic diameter
    real :: Fn, erf
-   real, parameter :: sqrt_two = sqrt(2.0)
+   real, parameter :: SQRT_TWO = sqrt(2.0)
+   real :: d
+   d=Dpg
+  ! Convert to aerodynamic diameters
+   if (present(rho_gcm3) ) d  = d * sqrt(rho_gcm3)
 
-      Fn =  0.5 + 0.5 * erf( (log(Dp)-log(Dpg)) / ( sqrt_two * log(sig) ))
+      Fn =  0.5 + 0.5 * erf( (log(Dp)-log(d)) / ( SQRT_TWO * log(sig) ))
 
   end function LogNormFracBelow
 
@@ -729,17 +734,20 @@ module AeroFunctions_mod
   !---------------------------------------------------------------------
 
   subroutine self_test_fracs
-    real :: Dpg, sig, Dp, FnR, FnA, fA
+    real :: Dpg, sig, Dp, FnR, FnA, rho
 
-   print *, "Give   Dpg, sigma,   Dp "
+   print *, "Give   Dpg, sigma,  rho(g/cm3)  Dp(e.g. 2.5 for PM2.5) "
    do
-     read(*,*) Dpg, sig, Dp
+     read(*,*) Dpg, sig, rho,  Dp
 
      FnR =  LogNormFracBelow(Dpg,sig,Dp)
-   ! Aeodynamic ?
-     fA = sqrt(1.6)    ! 1.6g/cm3 - check Seinfeld ch. 8 
-     FnA =  LogNormFracBelow(Dpg*fA,sig,Dp)
-     print "(2f4.1,2f8.2)", Dp, Dpg,  FnR, FnA
+
+   ! Aeodynamic diameter is defined as that of a sphere, whose
+   ! density is 1g/cm3. Thus, for a 
+
+     !fA = sqrt(1.6)    ! 1.6g/cm3 - check Seinfeld ch. 8 
+     FnA =  LogNormFracBelow(Dpg,sig,Dp, rho_gcm3=rho)
+     print "(3f4.1,2f8.2)", Dp, Dpg, rho, FnR, FnA
    end do
 
   end subroutine self_test_fracs
@@ -747,6 +755,6 @@ end module AeroFunctions_mod
 !TSTEMX program tstr
 !TSTEMX use AeroFunctions_mod, only : self_test, self_test_fracs
 !TSTEMX implicit none
-!TSTEMX call self_test()
-!TSTEMX !call self_test_fracs()
+!TSTEMX !call self_test()
+!TSTEMX call self_test_fracs()
 !TSTEMX end program tstr

@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th March 2021, Dave
+
+AeroFunctions.f90
+  Added rho_gcm3 optional argument to  LogNormFracBelow function.
+  Also modified TSTEMX bit to just call "self_test_fracs" for now,
+  while exloring these functions.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th Feb 2021, Dave
 
 Met_mod, Config_mod:
