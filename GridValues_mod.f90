@@ -959,7 +959,13 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       !WRF  format
       call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_VX", varID=varID))
       call nf90_get_var_extended(ncFileID,varID,xm_i_ext,-1,LIMAX+2,-1,LJMAX+2,&
-        jshift_in=1) !NB:shift j by 1 since wrf start at bottom face
+           jshift_in=1) !NB:shift j by 1 since wrf start at bottom face
+      !WRF sets the mapping factors to zero at poles, while they are infinite. We try to correct for that here:
+      do j=0,LJMAX+1
+         do i=0,LIMAX+1
+            if(xm_i_ext(i,j) < 1.E-6) xm_i_ext(i,j) = 1.0E25;
+         end do
+      end do
     end if
     
     status=nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID)
