@@ -44,7 +44,7 @@ include Makefile.conf
 	$(F77) -c -o $@ $(FFLAGS) $(INCS) $<
 	@echo ' '
 
-../NetCDF_ml.o: FFLAGS += -fpe-all=3
+../NetCDF_mod.o: FFLAGS += -fpe-all=3
 
 # ------------------------------------------------
 # rules

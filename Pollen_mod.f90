@@ -967,7 +967,7 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
 contains
 real function rate(a,x)
   real, intent(in) :: a,x
-  rate=a*sum(scales*(x-timesRel)**powers,MASK=(x>timesRel))
+  rate=a*sum(scales*DIM(x,timesRel)**powers,MASK=(x>timesRel))
 end function rate
 end function f_gamma_w_tails
 function f_wind(u,wstar) result(ff)
