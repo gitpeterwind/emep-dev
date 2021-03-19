@@ -1843,14 +1843,17 @@ subroutine BLPhysics()
               end if ! invL
             end do !i
           end do !j
-          if(debug_proc ) then
-            if(DEBUG%Kz .and. invL_nwp(ii,jj) >= OB_invL_LIMIT ) then
-              do k = 15, KMAX_MID
-                write(*,"(a,i3,f7.1,3es11.3)")dtxt//" SKz_m2s",k, pzpbl(ii,jj),&
-                   invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
-               end do
-            end if
-          end if
+          !DS BUGS: outisde i,j loop, and orig used ii,jj
+          !if(debug_proc ) then
+           
+            !DSif(DEBUG%Kz .and. invL_nwp(i,j) >= OB_invL_LIMIT ) then
+            !DS if(DEBUG%Kz .and. invL_nwp(ii,jj) >= OB_invL_LIMIT ) then
+            !DS   do k = 15, KMAX_MID
+            !DS     write(*,"(a,i3,f7.1,3es11.3)")dtxt//" SKz_m2s",k, pzpbl(ii,jj),&
+            !DS        invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
+            !DS   end do
+           !DS end if
+          !DSend if
 
         elseif ( PBL%StableKzMethod == "BW" ) then
           do k = 2, KMAX_MID
@@ -1882,14 +1885,15 @@ subroutine BLPhysics()
               end if
             end do
           end do
-          if(debug_proc) then
-            if(DEBUG%Kz .and. invL_nwp(ii,jj) <  OB_invL_LIMIT ) then
-              do k = 15, KMAX_MID
-                write(*,"(a,f7.1,3es10.3)") "DEBUG UKz_m2s", pzpbl(ii,jj),&
-                 invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
-              end do
-            end if
-          end if
+          !DS BUGS: outisde i,j loop, and orig used ii,jj
+          !if(debug_proc) then
+          !  if(DEBUG%Kz .and. invL_nwp(ii,jj) <  OB_invL_LIMIT ) then
+          !    do k = 15, KMAX_MID
+          !      write(*,"(a,f7.1,3es10.3)") "DEBUG UKz_m2s", pzpbl(ii,jj),&
+          !       invL_nwp(ii,jj), ustar_nwp(ii,jj), Kz_m2s(ii,jj,k)
+          !    end do
+          !  end if
+          !end if
 
         else ! PBL%UnstableKzMethod /= "OB" 
           call StopAll(dtxt//"Need UnstableKzMethod")

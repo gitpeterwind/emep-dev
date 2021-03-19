@@ -168,6 +168,7 @@ type, public :: emep_useconfig
     ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
     ,ZREF             = .false. &! testing
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
+    ,TIMEZONEMAP      = .false. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 
  ! If USES%EMISTACKS, need to set:
@@ -721,7 +722,9 @@ character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/Soi
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/AircraftEmis_FL.nc'
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
-character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
+!character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
+!2021: added ECLIPSE6b-based factors for non-European areas
+character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
@@ -757,6 +760,7 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
+character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
 !----------------------------------------------------------------------------
 contains
@@ -849,6 +853,7 @@ subroutine Config_Constants(iolog)
    ,DustFile&
    ,TopoFile&
    ,Monthly_patternsFile&
+   ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
    ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
    ,BBMODE,BBverbose,persistence,fire_year&
@@ -1012,6 +1017,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DustFile)
   call associate_File(TopoFile)
   call associate_File(Monthly_patternsFile)
+  call associate_File(Monthly_timezoneFile)
   call associate_File(fileName_O3_Top)
   call associate_File(fileName_CH4_ibcs)
   call associate_File(NEST_template_read_3D)

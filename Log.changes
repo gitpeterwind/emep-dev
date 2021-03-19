@@ -25,6 +25,31 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th March 2021, Dave
+
+1. Default MonthlyFacFile now DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POL
+
+   - which merges non-European facrors derived fro ECLIPSE6b with European from Jun2012
+
+2.  Timezone handling improved - uses Monthly_timezoneFile =
+   'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
+
+  USES%TIMEZONEMAP       = T,
+
+Sets "proper" timezones for countries which have -100 flag. Also takes care of
+summer time for e.g. Europe for all countries.
+
+Changes in:
+  Config_module
+  EmisGet_mod
+  Emissions_mod
+  Timefactors_mod
+
+Also commented out some debug code in Met_mod: was failing when make DEBUG=yes was used.
+
+RESULTS WILL CHANGE, hence rv4_38
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th March 2021, Peter
 
 Typo for SplitSpecialsFile in config_emep.nml, did not exist!

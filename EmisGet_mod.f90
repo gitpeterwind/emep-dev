@@ -49,7 +49,7 @@ use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod, only     : date
 use TimeDate_ExtraUtil_mod, only : nctime2date,date2nctime, date2string
-use Timefactors_mod,   only: fac_ehh24x7 
+use Timefactors_mod,   only: fac_ehh24x7, timezones
 
 implicit none
 private
@@ -212,7 +212,6 @@ contains
     !Emis, nEmisCodes and nEmisCodes
     !NB: landcode and nlandcode arrays are local
 
-    implicit none
     integer, intent(in) ::iem, nin, nex,nstart
     character(len=*),intent(in) :: fname, incl(*),excl(*),pollName(*),type
     real,intent(inout) ::Emis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
@@ -477,7 +476,6 @@ contains
 
     !read in emissions from one file and set parameters
 
-    implicit none
     character(len=*),intent(in) :: names_in(*)
     type(Emis_sourceFile_id_type),intent(in) :: EmisFile_in
     type(EmisFile_id_type),intent(inout) ::  EmisFile
@@ -650,8 +648,7 @@ contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine EmisGetASCII(iem, fname, emisname, sumemis_local, incl, nin, excl, nex, &
-                           	use_lonlat_femis)
-    implicit none
+                           use_lonlat_femis)
     integer, intent(in) ::iem, nin, nex
     character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
     real,intent(inout), dimension(NLAND,NSECTORS,NEMIS_FILE) &
@@ -1761,25 +1758,63 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end subroutine RoadDustGet
 
 
-subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
+     iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
   ! make iland_timefac,hour_iland,wday_loc,iland_timefac_hour
-  implicit none
   logical, intent(in):: debug_tfac
   type(date), intent(in):: indate
   integer, intent(in):: i,j,iland, wday
   integer, intent(out):: iland_timefac,hour_iland,wday_loc,iland_timefac_hour
+  character(len=*), parameter:: dtxt='EmGet:mkitime:'
+  integer :: lon, itJan, itz
 
-  integer :: lon
   iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
   iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
+
+  ! iland_timefacs are country codes for time factors.
+  if (debug_tfac) write(*,'(a,3i6)') dtxt//'TZLAND', iland, &
+     iland_timefac, iland_timefac_hour
+
+!if (Country(iland)%icode ==223)then
+! write(*,*) 'TIMEZONE NZ', i_fdom(i),j_fdom(j),debug_tfac
+!nd if
+
+  itz = -999 ! if not set with USES%TIMEZONEMAP
+
+  if ( USES%TIMEZONEMAP ) then
+     itJan = timezones%Jan(i,j)   ! Values -12 to +12
+     itz   = timezones%map(i,j)
+     if(debug_tfac)then
+      write(*,"(a,i3,f7.1,3i5)")dtxt//"TIMEZONE:"//trim(Country(iland)%code),&
+         indate%month,  glon(i,j),timezones%map(i,j), itJan, itz
+     end if
+  end if ! USES%TIMEZONEMAP
+
   if(Country(iland)%timezone==-100)then
-     ! find the approximate local time:
-     lon = modulo(360+nint(glon(i,j)),360)
-     if(lon>180.0)lon=lon-360.0
-     hour_iland= mod(nint(indate%hour+24*(lon/360.0)),24) + 1   ! add 1 to get 1..24 
-  else
-     hour_iland = indate%hour + Country(iland)%timezone + 1! add 1 to get 1..24 
+    if ( USES%TIMEZONEMAP ) then  ! can use tz directly
+      hour_iland = indate%hour + itz
+    else ! approximate local time from longitude:
+      lon = modulo(360+nint(glon(i,j)),360)
+      if(lon>180.0)lon=lon-360.0
+      hour_iland= mod(nint(indate%hour+24*(lon/360.0)),24)
+      if(debug_tfac) write(*,"(a,i3,f7.1,3i5)")dtxt//"TIME-100:"//trim(Country(iland)%code),&
+        indate%month,  glon(i,j),hour_iland
+    end if
+
+  else ! we use the country-specified time-zones, but add summer-time from grid
+
+     hour_iland = indate%hour + Country(iland)%timezone
+     if ( USES%TIMEZONEMAP ) then ! we can add summertime :-)
+       hour_iland = hour_iland + timezones%inc(i,j)
+       if(debug_tfac) write(*,"(a,2i6)") dtxt//"TIMEDST:",&
+          Country(iland)%timezone, hour_iland, timezones%inc(i,j)
+     end if
   end if
+
+  hour_iland = hour_iland + 1 !add 1 to get 1..24
+
+  if(debug_tfac) write(*,"(a,L2,5i7)") dtxt//"TIMECALC:", USES%TIMEZONEMAP, &
+      Country(iland)%timezone,indate%hour, hour_iland, itz+1
   wday_loc=wday 
   if(hour_iland>24) then
      hour_iland = hour_iland - 24
@@ -1794,12 +1829,12 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_time
      if(wday_loc>7 )wday_loc=1 
   end if
   
-  if(debug_tfac) then 
-     write(*,"(a,2i3,i5,3x,4i3)") "EmisSet DAYS times ", &
+  if(debug_tfac .or. hour_iland < -24) then 
+     write(*,"(a,2i3,i5,3x,5i5,i4)") dtxt//"DAYS times ", &
           wday, wday_loc, iland,&
-          hour_iland, Country(iland)%timezone
-     call datewrite("EmisSet DAY 24x7:", &
-          (/ i, iland, wday, wday_loc, hour_iland /), &
+          hour_iland, Country(iland)%timezone, i,j, itz
+     call datewrite(dtxt//"DAY 24x7:", &
+          (/ iland, wday, wday_loc, hour_iland /), &
           (/ fac_ehh24x7(1,ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
   end if
     

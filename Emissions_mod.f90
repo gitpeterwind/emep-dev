@@ -120,6 +120,7 @@ use Timefactors_mod,   only: &
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_cemm, fac_edd, timefac & ! time-factors
     ,Read_monthly_emis_grid_fac &
+    ,Read_monthly_timezones & 
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
 use LocalFractions_mod, only : add_lf_emis
@@ -1642,6 +1643,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   TYPE(timestamp)   :: ts1,ts2
   integer :: iwday
   real :: daynorm, roadfac
+  character(len=*), parameter:: dtxt='EmisSet:'
   
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
@@ -1655,6 +1657,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   ! at midnight every day. 
 
   hourchange = (indate%hour/=oldhour).or.(indate%day/=oldday)
+!BUG  hour_iland = -9999
   if(hourchange) then
     oldhour = indate%hour
     if(indate%day/=oldday)then
@@ -1672,24 +1675,24 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
       Emis_4D = 0.0 !default value, must be set to zero when no values are found
       NTime_Read=-1 !read all times    
       call ReadTimeCDF(emis_inputlist(Found_Emis_4D)%Name,TimesInDays,NTime_Read)
-      call CheckStop(NTime_Read>size(TimesInDays), "Emissions_mod: increase size of TimesInDays ")
+      call CheckStop(NTime_Read>size(TimesInDays), dtxt//"Emissions_mod: increase size of TimesInDays ")
       !if(MasterProc)write(*,*)('found date ',i,TimesInDays(i),i=1,NTime_Read)
       !write(*,*)'compare  ',ts1,ts2
       ts1=make_timestamp(indate)
       do i=1,NTime_Read
         call nctime2date(ts2,TimesInDays(i))   
         if(nint(tdif_secs(ts1,ts2))==0)then
-          if(MasterProc)write(*,*)'Emis_4D: found matching date ',i,TimesInDays(i)
+          if(MasterProc)write(*,*)dtxt//'Emis_4D: found matching date ',i,TimesInDays(i)
           nstart=i
           exit
         end if
       end do
       if(i>NTime_Read )then
         if(MasterProc)then
-          write(*,*)'Emis_4D: WARNING DID NOT FIND ANY MATCHING DATE '
-          write(*,*)'Emis_4D: first date found ',TimesInDays(1)
-          write(*,*)'Emis_4D: last date found ',TimesInDays(NTime_Read)
-          write(*,*)'Emis_4D: difference to last date ',tdif_secs(ts1,ts2)/3600,' hours'
+          write(*,*)dtxt//'Emis_4D: WARNING DID NOT FIND ANY MATCHING DATE '
+          write(*,*)dtxt//'Emis_4D: first date found ',TimesInDays(1)
+          write(*,*)dtxt//'Emis_4D: last date found ',TimesInDays(NTime_Read)
+          write(*,*)dtxt//'Emis_4D: difference to last date ',tdif_secs(ts1,ts2)/3600,' hours'
         end if
       else
         do i_Emis_4D=1,N_Emis_4D
@@ -1699,12 +1702,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,&
             Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
         end do
-      end if
-    end if
-  end if
+      end if !i
+    end if !Found_Emis_4D>0
+  end if ! hourchange
 
   if(DEBUG%EMISTIMEFACS.and.MasterProc) &
-    write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
+    write(*,"(a,i4,2f8.3)") dtxt//" traffic? 24x7", N_TFAC, &
       fac_ehh24x7(1,ISNAP_TRAF,1,4,1),fac_ehh24x7(1,ISNAP_TRAF,13,4,1)
   !..........................................
 
@@ -1733,7 +1736,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do icc = 1, ncc
           !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-          call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+
+          call make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
+                 iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+
+          !if ( hour_iland<1) print *, dtxt//'TZWRONGA', iland, hour_iland
+          !if ( hour_iland<1) print *, dtxt//'TZWRONGZ', iland, hour_iland
 
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
@@ -1748,8 +1756,11 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
               
-              if(debug_tfac.and.iem==1) &
-                write(*,"(a,3i4,f8.3)")"EmisSet DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
+              if(debug_tfac.and.iem==1) then
+                if (isec==1) write(*,"(a,i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
+                     iland, glon(i,j), glat(i,j), Country(iland)%timezone
+                write(*,"(a,3i4,f8.3)")dtxt//"DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
+              end if
 
               !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
               !in order not to access the array and waste cache if not necessary
@@ -1833,18 +1844,28 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               !iland = road_landcode(i,j,icc)
               iland = find_index(road_landcode(i,j,icc),Country(:)%icode)
               iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
-              if(Country(iland)%timezone==-100)then
-                hour_iland=mod(nint(indate%hour+24*(lon/360.0)),24) + 1
-              else
-                hour_iland=indate%hour + Country(iland)%timezone + 1! add 1 to get 1..24 
-              end if
+!print *, 'ROAD ', icc, ncc, iland, hour_iland
+             ! Needed here since can be called without hour change
+          call make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
+                 iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+              !if ( USES%TIMEZONEMAP ) then
+              !  hour_iland = 
+              !end if
+              !DS belpw not needed. We have calld make_iland_for_time which gives wday_loc
+              !DS and iland_hour already. 
+              !if(Country(iland)%timezone==-100)then
+              !  hour_iland=mod(nint(indate%hour+24*(lon/360.0)),24) + 1
+              !else
+              !  hour_iland=indate%hour + Country(iland)%timezone + 1! add 1 to get 1..24 
+              !end if
 
-              wday_loc = wday ! DS added here also, for fac_ehh24x7
-              if( hour_iland > 24 ) then
-                hour_iland = 1
-                if(wday_loc==0)wday_loc=7 ! Sunday -> 7
-                if(wday_loc>7 )wday_loc=1 
-             end if
+              !wday_loc = wday ! DS added here also, for fac_ehh24x7
+              !if( hour_iland > 24 ) then
+              !  hour_iland = 1
+              !  if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+              !  if(wday_loc>7 )wday_loc=1 
+              !end if
+              !DS END commented out
              
               roadfac = 1.0
               if(ANY(iland==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
@@ -1852,11 +1873,16 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                  roadfac=2.0
               end if
 
+if ( hour_iland<1) then
+    print *, dtxt//'HOURCHANGE', hourchange
+    print *, dtxt//'TZWRONGB', iland, hour_iland 
+    print '(a,9i5)', 'ROAD TFAC :', iland, iem, Country(iland)%timezone, hour_iland
+end if
               do iem = 1, NROAD_FILES
                  tfac = fac_ehh24x7(iem, ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)
                  s = tfac * roadfac * roaddust_emis_pot(i,j,icc,iem)
                  if(DEBUG%ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
-                  write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
+                  write(*,*)dtxt//"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
                     iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
 
                 gridrcroadd0(QROADDUST_FI,i,j)=gridrcroadd0(QROADDUST_FI,i,j) &
@@ -1865,7 +1891,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                      +(1.-ROADDUST_FINE_FRAC)*s
 
                 if(all([DEBUG%ROADDUST,debug_proc,i==debug_li,j==debug_lj]))then
-                  write(*,*)"gridrcroadfine"  ,gridrcroadd0(QROADDUST_FI,i,j)
+                  write(*,*)dtxt//"gridrcroadfine"  ,gridrcroadd0(QROADDUST_FI,i,j)
                   write(*,*)"gridrcroadcoarse",gridrcroadd0(QROADDUST_CO,i,j)
                 end if
               end do ! nroad files
@@ -1902,7 +1928,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !the species is directly defined (no splits)
           iqrc = itot2iqrc(itot)
           if(isec>0)then
-             call CheckStop(iqrc<=0,"emitted sector species must belong to one of the splitted species")
+             call CheckStop(iqrc<=0,dtxt// &
+               "emitted sector species must be one of the splitted species")
              iem = iqrc2iem(iqrc)
              
              if(Emis_source(n)%periodicity == 'monthly')then
@@ -1922,6 +1949,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 do i = 1,limax                   
                    if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                       !we need to apply hourly factors
+                      debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)                      
                       tfac = fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
@@ -1945,7 +1973,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    totemadd(itot) = totemadd(itot) &
                         + s * dtgrid * xmd(i,j)
 
-                   if(USES%LocalFractions .and. me==0) write(*,*)'WARNING: single emitted species not implemented in uEMEP yet'
+                   if(USES%LocalFractions .and. me==0) write(*,*)dtxt//&
+                    'WARNING: single emitted spec not implemented in uEMEP yet'
                    
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID
@@ -1964,8 +1993,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
        else
           !the species is defined as a sector emission
           iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
-          call CheckStop(iem<0, "did not recognize species "//trim(Emis_source(n)%species))
-          call CheckStop(Emis_source(n)%sector<=0," sector must be defined for "//trim(Emis_source(n)%varname))
+          call CheckStop(iem<0, dtxt//"did not recognize species "//trim(Emis_source(n)%species))
+          call CheckStop(Emis_source(n)%sector<=0,dtxt//" sector must be defined for "//trim(Emis_source(n)%varname))
 
           if(Emis_source(n)%periodicity == 'monthly')then
              !make normalization factor for daily fac
@@ -1986,6 +2015,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              iqrc = itot2iqrc(itot)
              do j = 1,ljmax
                 do i = 1,limax
+                   debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
                    if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                       !we need to apply hourly factors
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
@@ -2017,7 +2047,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                            * fac_ehh24x7(iem,sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
                       
                       if(debug_tfac .and. indate%hour==12 .and. iem==1) &
-                           write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
+                           write(*,"(a,3i3,2i4,7f8.3)") dtxt//"SNAPHDD tfac ",  &
                            isec, sec2tfac_map(isec),iland, daynumber, indate%hour, &
                            timefac(iland_timefac,sec2tfac_map(isec),iem), t2_nwp(i,j,2)-273.15, &
                            fac_min(iland,sec2tfac_map(isec),iem),  gridfac_HDD(i,j), tfac
@@ -2066,7 +2096,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   if(USES%ROADDUST)THEN
     if(DEBUG%ROADDUST.and.debug_proc) &
-      write(*,*)"Before the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
+      write(*,*)dtxt//"Before the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
     do j = 1,ljmax
       do i = 1,limax
         ehlpcom= roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
@@ -2077,7 +2107,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
       end do   ! i
     end do     ! j
     if(DEBUG%ROADDUST.and.debug_proc) &
-      write(*,*)"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
+      write(*,*)dtxt//"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
   end if
 end subroutine EmisSet
 !***********************************************************************
@@ -2125,6 +2155,10 @@ subroutine newmonth
 
   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)&
     call Read_monthly_emis_grid_fac(current_date%month)
+
+  if(USES%TIMEZONEMAP)then
+     call Read_monthly_timezones(current_date%month)
+  end if
 
   if(USES%AIRCRAFT_EMIS)then
     airn = 0.0

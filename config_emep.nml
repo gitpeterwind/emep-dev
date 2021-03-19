@@ -23,6 +23,10 @@
 
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
+!MFAC:
+MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
+!Vertical_levelsFile = 'DataDir/Vertical_levels20.txt',
+
 
 
 ! changes March-April 2017
@@ -40,6 +44,7 @@
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
+  USES%TIMEZONEMAP       = T,
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,            ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
@@ -225,6 +230,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 !DEBUG system started June 2013 -------------------
 ! Only partially implemented. See ModelConstants_ml
 ! Use  T/F or  integers to control debug level:
+  DEBUG%EMISTIMEFACS    = F, 
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BCS             = F,   ! Boundary conditions
@@ -255,6 +261,8 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 ! DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
+ DEBUG%IJ              = 117, 110,       ! Cabauw in EMEP0302
+! DEBUG%IJ              =  85, 127,       ! USA i GLOBAL
   DEBUG%SPEC            = 'OH',
 
 !------------------------------
