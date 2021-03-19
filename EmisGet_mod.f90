@@ -1471,6 +1471,11 @@ end if
                print *, "reading this record:", trim(txtinput)
               call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
            end if
+           if(.not. defaults .and. isec > N_SPLIT) then
+              write(*,*)'emissplit.specials defined for sector out of range ',isec,'>',N_SPLIT
+              call CheckStop(  isec  >  N_SPLIT, &
+                   "ERROR: EmisGet: emissplit.specials defined for sector out of range" )
+           end if
            if(iland_icode==0)then
               iland=0!special meaning
            else

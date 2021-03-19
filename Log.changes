@@ -25,6 +25,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th March 2021, Peter
+
+Error message when wrong sector is used in emissplit-special.
+
+Added "if(DEBUG%SETUP_1DCHEM) to some debug printouts.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th March 2021, Dave
 
 1. Default MonthlyFacFile now DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POL

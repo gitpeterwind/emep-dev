@@ -393,7 +393,7 @@ contains
               end if
           end if
 
-          if ( DebugCell .and. k==KMAX_MID ) then
+          if ( DebugCell .and. k==KMAX_MID .and. DEBUG%SETUP_1DCHEM ) then
             write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
             ugpmf, ugSSaltC, ugDustC
             do iw = 1, NSAREA_CALC
