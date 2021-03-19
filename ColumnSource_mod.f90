@@ -174,6 +174,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   real, intent(in), optional :: REDUCE_VOLCANO
   real, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID) :: emiss
   logical, save :: first_call=.true.
+  logical :: has_new_ash
   character(len=SLEN)::&  ! Time strings in SDATE_FMT format
     sbeg=SDATE_FMT,&      ! Begin
     snow=SDATE_FMT,&      ! Now (current date)
@@ -182,7 +183,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   real    :: uconv
   integer, save          :: iSO2=-1
   integer, pointer, save :: iASH(:)=>null()
-  real :: Ncells, frac
+  real :: frac, f
 !----------------------------!
 !
 !----------------------------!
@@ -252,33 +253,25 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       uconv=uconv*AVOG/species(itot)%molwt                              ! --> molecules/s/cm3
 
       if(USES%PreADV)then ! spread emissions in case of strong winds
+        has_new_ash = .false.
         do k=k1,k0
-          ! only a fraction of the emission is used in each reachable gridcell
-          ! test if in range. NB: Winds have sign
-          if(Winds(k,1,v)>=0.0 .and. ((i-locdef(v)%iloc)>floor(Winds(k,1,v)) .or. (i-locdef(v)%iloc)<0))cycle
-          if(Winds(k,1,v)<=0.0 .and. ((i-locdef(v)%iloc)<floor(Winds(k,1,v)) .or. (i-locdef(v)%iloc)>0))cycle
-          if(Winds(k,2,v)>=0.0 .and. ((j-locdef(v)%jloc)>floor(Winds(k,2,v)) .or. (j-locdef(v)%jloc)<0))cycle
-          if(Winds(k,2,v)<=0.0 .and. ((j-locdef(v)%jloc)<floor(Winds(k,2,v)) .or. (j-locdef(v)%jloc)>0))cycle
+          frac = 0.0
+          do f=0.0,1.0,0.1 ! distribute along 11 steps along wind-line
+            if (nint(locdef(v)%iloc+f*Winds(k,1,v))==i .and. nint(locdef(v)%jloc+f*Winds(k,2,v))==j) then
+              frac = frac + 1./11.
+            end if
+          end do
+          if (frac <= 0.0) cycle
 
-          ! test if along the line of wind, i.e. i/j = Winds(:,1,v)/Winds(:,2,v)
-          if(abs(Winds(k,1,v))>1.E-6)then
-            if(nint((i-locdef(v)%iloc)*Winds(k,2,v)/Winds(k,1,v))/=j-locdef(v)%jloc) cycle
-          end if
+          has_new_ash = .true.
 
-          if(DEBUG%COLSRC)write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
+          if(DEBUG%COLSRC)write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j",k,"k", &
+            Winds(k,1,v), "xwind", Winds(k,2,v), "ywind", frac, "frac"
+          if(DEBUG%COLSRC)write(*,*)'including fraction ',frac,' for ',i,j,k,v,locdef(v)%iloc,locdef(v)%jloc 
 
-          Ncells=max(abs(Winds(k,1,v)),abs(Winds(k,2,v))) ! NB: not an integer
-          if(Ncells<=1.0)then
-            emiss(itot,k)=emiss(itot,k)+emsdef(v,e)%rate*uconv
-          else
-            frac=1.0/Ncells
-            if(abs(i-locdef(v)%iloc)-floor(abs(Winds(k,1,v)))==0 .and. &
-               abs(j-locdef(v)%jloc)-floor(abs(Winds(k,2,v)))==0)frac=frac*mod(Ncells,1.0) ! last cell take only what is left
-            if(DEBUG%COLSRC)write(*,*)'including fraction ',frac,' for ',i,j,k,v,locdef(v)%iloc,locdef(v)%jloc 
-
-            emiss(itot,k)=emiss(itot,k)+frac*emsdef(v,e)%rate*uconv        
-           end if
+          emiss(itot,k)=emiss(itot,k)+frac*emsdef(v,e)%rate*uconv        
         end do
+        if (.not. has_new_ash) cycle doLOC
       else
         emiss(itot,k1:k0)=emiss(itot,k1:k0)+emsdef(v,e)%rate*uconv
       end if
