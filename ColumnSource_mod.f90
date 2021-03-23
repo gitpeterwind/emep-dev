@@ -179,7 +179,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
     sbeg=SDATE_FMT,&      ! Begin
     snow=SDATE_FMT,&      ! Now (current date)
     send=SDATE_FMT        ! End
-  integer :: v,e,itot,k1,k0,k
+  integer :: v,e,itot,k1,k0,k,lf
   real    :: uconv
   integer, save          :: iSO2=-1
   integer, pointer, save :: iASH(:)=>null()
@@ -256,7 +256,8 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
         has_new_ash = .false.
         do k=k1,k0
           frac = 0.0
-          do f=0.0,1.0,0.1 ! distribute along 11 steps along wind-line
+          do lf=0,10,1 ! distribute along 11 steps along wind-line
+            f=real(lf)/10.
             if (nint(locdef(v)%iloc+f*Winds(k,1,v))==i .and. nint(locdef(v)%jloc+f*Winds(k,2,v))==j) then
               frac = frac + 1./11.
             end if
