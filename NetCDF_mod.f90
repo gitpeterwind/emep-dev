@@ -4984,9 +4984,9 @@ end subroutine vertical_interpolate
 
    cdfstatus=nf90_open(path = trim(filename), mode = nf90_nowrite, ncid = ncFileID)
    if(cdfstatus == nf90_noerr)then
-      cdfstatus=nf90_get_att(ncFileID,nf90_global,'SECTORS_NAME',sector_name)
+      cdfstatus = nf90_get_att(ncFileID,nf90_global,'SECTORS_NAME',sector_name)
       call check(nf90_close(ncFileID))
-      if(cdfstatus == nf90_noerr)cdf_sector_name=trim(sector_name)
+      if (cdfstatus == nf90_noerr) cdf_sector_name = trim(sector_name)
    end if
 
  end subroutine ReadSectorName

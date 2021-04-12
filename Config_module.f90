@@ -14,6 +14,7 @@ use Debug_module,          only: DEBUG, DebugCell
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEMEP_type, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
+                                 Sector_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  TXTLEN_DERIV, Emis_mask_type, &
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4
@@ -195,6 +196,8 @@ type(emep_useconfig), public, save :: USES
 logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
+integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read from config
+type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
 type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
@@ -797,6 +800,7 @@ subroutine Config_Constants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
+   ,SECTORS_ADD           & ! additional definitions of sectors
    ,EMIS_OUT, emis_inputlist, EmisDir&
    ,EmisSplit_OUT         & ! Output of species emissions
    ,ZCMDIR                & ! location of emissplit and CMXfiles

@@ -19,7 +19,7 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                           ! NMR-NH3 specific variables (for FUTURE )
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
                             NROADDUST, &
-                            gnfr2snap,snap2gnfr&
+                            snap2gnfr&
                             ,cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes&
                             ,GridEmis,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
@@ -258,7 +258,6 @@ contains
        nVariables = NSECTORS*NEMIS_FILE !in fraction format we loop over all species and sectors
     endif
 
-    mappingGNFR2SNAP = .false.
     do varid=1,nVariables
        sec_ix = 1
 762    continue !if several GNFR counterparts to one SNAP
@@ -333,14 +332,11 @@ contains
           isec=mod((varid-1),NSECTORS)+1
           iem_used=(varid-1)/NSECTORS+1
           if(SECTORS_NAME=='GNFR'.and.type == "SNAPsectors")then
-             if(gnfr2snap(isec)<=0)cycle                   
-             write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',gnfr2snap(isec)
-             if(me==0.and.iem_used==1)write(*,*)'WARNING, mapping snap sector ',gnfr2snap(isec),'onto gnfr',isec
+             if(me==0.and.iem_used==1)write(*,*)'cannot  use snap sector if SECTORS_NAME is GNFR'
+             stop
           else if(SECTORS_NAME=='SNAP'.and.type == "GNFRsectors")then
-             mappingGNFR2SNAP = .true.
-             if(snap2gnfr(isec,sec_ix)<=0)cycle
-             if(me==0.and.iem_used==1)write(*,*)'WARNING, mapping gnfr sector ',snap2gnfr(isec,sec_ix),'onto snap',isec
-             write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',snap2gnfr(isec,sec_ix)
+             if(me==0.and.iem_used==1)write(*,*)'cannot use gnfr sector if SECTORS_NAME is SNAP'
+             stop
           else
              write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
           endif
@@ -456,16 +452,7 @@ contains
              endif
           end do
        end do
-                
-       if(mappingGNFR2SNAP)then
-          !some SNAP sectors have several GNFR counterparts. Must take all of them
-          if(sec_ix<3)then
-             if(snap2gnfr(isec,sec_ix+1)>0)then
-                sec_ix = sec_ix + 1
-                goto 762 
-             endif
-          endif
-       endif
+   
      enddo
     if(.not.fractionformat) call check(nf90_close(ncFileID))
 

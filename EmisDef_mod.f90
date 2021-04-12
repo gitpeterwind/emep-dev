@@ -36,7 +36,8 @@
 !_____________________________________________________________________________
 use ChemDims_mod,     only : NEMIS_File
 use OwnDataTypes_mod, only : TXTLEN_NAME,TXTLEN_FILE, Emis_id_type, &
-                             EmisFile_id_type, Emis_mask_type
+                             EmisFile_id_type, Emis_mask_type, &
+                             Sector_type
 
 implicit none
 private
@@ -46,36 +47,88 @@ private
     !  between different  model versions - e.g. the size and characteristics!
     !  of emission files and sector splits.                                 !
     !-----------------------------------------------------------------------!
-    ! Note that the names of the emission files are given in My_Emis_mod
-    ! and often change from run to run.
 
+integer i, j
 
-    ! SNAP sectors:
-    ! ----------------------
-    ! SNAP1  =  Combustion in energy and transformation industries,
-    !           e.g.  public power stations, 150m nat gas
-    ! SNAP2  =  Non-industrial combustion
-    ! SNAP3  =  Industrial combustion  !60m nat gas
-    ! SNAP4  =  Production processes
-    ! SNAP5  =  Extraction and distribution of fossil fuels
-    ! SNAP6  =  Solvent use
-    ! SNAP7  =  Road traffic
-    ! SNAP8  =  Other mobile sources (trains, planes, ships)
-    ! SNAP9  =  Waste treatment and disposal
-    ! SNAP10 =  Agriculture
-    ! SNAP11 =  Nature
+! Sector specific information
+integer, parameter, public :: NSECTORS_MAX =  50  ! Max. total number of sector included
+integer, save, public :: NSECTORS ! Number of sectors actually included (<= NSECTORS_MAX)
 
+!Predefine Emission heights distributions
+integer, public, parameter :: Emis_Nlevel_MAX=25 ! Max Number of vertical emission levels definable
+integer, public :: Emis_Nlevel=7 ! Actual Number of total vertical emission levels (can change according to config settings)
+integer, public, parameter :: Emis_Nlevel_pre=7 ! Number of vertical emission levels predefined
+integer, public, parameter :: Emis_heights_sec_MAX=25 ! Max Number of vertical emission distributions definable
+integer, public :: Emis_heights_sec=6 ! Actual Number of vertical emission distributions (can change according to config settings)
+integer, public, parameter :: Emis_heights_sec_pre=6 ! Actual Number of vertical emission distributions predefined
 
+!pressure at top of emission levels
+real, public :: Emis_Plevels(Emis_Nlevel_MAX) = &
+     (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, & 
+     (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
 
-  ! First, define here the characteristics of the EMEP/CORINAIR
-  ! SNAP sector emissions data-bases:
+!Fraction released in each vertical level predefined values:
+real, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
+     (reshape((/ &
+      0.0,      0.00,     0.0025,   0.1475,   0.40,     0.30,     0.15, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 1 High
+      1.0,      0.00,     0.00,     0.00,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 2 Surface
+      0.06,     0.16,     0.75,     0.03,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 3 = SNAP3
+      0.05,     0.15,     0.70,     0.10,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 4 = SNAP4
+      0.02,     0.08,     0.60,     0.30,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
+      0.0,      0.00,     0.41,     0.57,     0.02,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
+      (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h)))
+  
+ ! predefine SNAP sectors from EMEP/CORINAIR (NB: splits indices are supposed to be generated from GNFR setup)
+   integer, public, parameter :: &
+          NSECTORS_SNAP  = 11    ! Number of sectors defined in GNFR emissions
+   type(Sector_type), public :: SNAP_SECTORS(NSECTORS_SNAP) = &
+        (/ &
+!        general name,  longname, netcdf_name timefac index, height index, split index, description, species
+   Sector_type('SNAP', 'SNAP1 ',  'sec01',      1,           1,             1,       'Combustion in energy and transformation industries', 'ALL'),&
+   Sector_type('SNAP', 'SNAP2 ',  'sec02',      2,           2,             3,       'Non-industrial combustion', 'ALL'),&
+   Sector_type('SNAP', 'SNAP3 ',  'sec03',      3,           3,             2,       'Industrial combustion', 'ALL'),&
+   Sector_type('SNAP', 'SNAP4 ',  'sec04',      4,           4,             4,       'Production processes', 'ALL'),&
+   Sector_type('SNAP', 'SNAP5 ',  'sec05',      5,           5,            13,       'Extraction and distribution of fossil fuels', 'ALL'),&
+   Sector_type('SNAP', 'SNAP6 ',  'sec06',      6,           2,             5,       'Solvent use', 'ALL'),&
+   Sector_type('SNAP', 'SNAP7 ',  'sec07',      7,           2,             6,       'Road traffic', 'ALL'),&
+   Sector_type('SNAP', 'SNAP8 ',  'sec08',      8,           2,             7,       'Other mobile sources (trains, planes, ships)', 'ALL'),&
+   Sector_type('SNAP', 'SNAP9 ',  'sec09',      9,           6,            10,       'Waste treatment and disposal', 'ALL'),&
+   Sector_type('SNAP', 'SNAP10',  'sec10',     10,           2,            11,       'Agriculture', 'ALL'),&
+   Sector_type('SNAP', 'SNAP11',  'sec11',     11,           2,            13,       'Nature', 'ALL') /)
+
+! predefine GNFR CAMS sectors
+   integer, public, parameter :: &
+          NSECTORS_GNFR_CAMS  = 19    ! Number of sectors defined in GNFR CAMS emissions
+   type(Sector_type), public, parameter:: GNFR_CAMS_SECTORS(NSECTORS_GNFR_CAMS ) = & ! mapping between sector names and what they mean
+        (/ &
+!           general name,  longname, netcdf_name timefac index, height index, split index, description, species
+   Sector_type('GNFR_CAMS', 'GNFR_A',  'sec01',      1,            1,            1,       'Public Power', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_C',  'sec03',      2,            2,            3,       'OtherStationaryComb', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      4,            4,            4,       'Fugitive', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_F',  'sec06',      7,            2,            6,       'RoadTransport', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_G',  'sec07',      8,            2,            7,       'Shipping', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_H',  'sec08',      8,            2,            8,       'Aviation', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_I',  'sec09',      8,            2,            9,       'Offroad', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_J',  'sec10',      9,            6,           10,       'Waste', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_K',  'sec11',     10,            2,           11,       'AgriLivestock', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_L',  'sec12',     10,            2,           12,       'AgriOther', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_M',  'sec13',      5,             5,          13,       'Other', 'ALL') ,&
+   !additional subsectors defined for CAMS
+   Sector_type('GNFR_CAMS', 'GNFR_A1',  'sec14',      1,            1,           1,       'PublicPower_Point', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_A2',  'sec15',      1,            3,           1,       'PublicPower_Area', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_F1',  'sec16',      7,            2,          16,       'RoadTransportExhaustGasoline', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_F2',  'sec17',      7,            2,          17,       'RoadTransportExhaustDiesel', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_F3',  'sec18',      7,            2,          18,       'RoadTransportExhaustLPGgas', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_F4',  'sec19',      7,            2,          19,       'RoadTransportNonExhaustOther', 'ALL')/)
+
+   type(Sector_type), public:: SECTORS(NSECTORS_MAX) ! all sectors used during the run (set by model)
 
 
 
    integer, public, parameter :: NCMAX  =  14  ! Max. No. countries per grid point
 
-  ! Sector specific information
-   integer, save, public :: NSECTORS   ! Number of sectors used in emissions
 
    integer, save, public :: & !must be compatible with:
       ! timefac, fac_ehh24x7, fac_edd, fac_emm, fac_min, GridTfac, ISNAP_DOM, ISNAP_TRAF
@@ -92,8 +145,6 @@ private
    integer, save, pointer, dimension(:), public :: sec2split_map => null()! mapping of sector to speciation class
 
 !SNAP specific definitions
-   integer, public, parameter :: &
-          NSECTORS_SNAP  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
    integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to time factor class
         SNAP_sec2tfac_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
@@ -106,23 +157,8 @@ private
                                                           ,-1,-1,-1,-1,-1,-1,-1,9,-1,-1,-1 &
                                                           ],shape(snap2gnfr))
 
-!GNFR  specific definitions
-   integer, public, parameter :: &
-          NSECTORS_GNFR  = 13    ! Number of sectors defined in GNFR emissions
-   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to time factor class
-        GNFR_sec2tfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
-        GNFR_sec2hfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
-        GNFR_sec2split_map = [1,3,2,4,6,7,8,8,8,9,10,10,5] !values must be <= N_SPLIT
-
-   integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-8,-8,9,10,-10,5/)
-
-
 !GNFR_CAMS  specific definitions (used with CAMS v2.2.1 and  v3.1 emissions from November 2019)
-!GNFR A_PublicPower and F_RoadTransport are splitted into sub-sectors (14-15 and 16-19, respectively)  
-   integer, public, parameter :: &
-          NSECTORS_GNFR_CAMS  = 19    ! Number of sectors defined in CAMS v2.2.1 and v3.1 emissions
+!GNFR A_PublicPower and F_RoadTransport are splitted into sub-sectors (14-15 and 16-19, respectively)
    integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to time factor class
         GNFR_CAMS_sec2tfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5,1,1,7,7,7,7] !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to height distribution class
@@ -130,7 +166,7 @@ private
    integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to emission split class
         GNFR_CAMS_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11,12,13,1,1,16,17,18,19] !values must be <= N_SPLIT
 
-   
+
 !TEST to try own defintions
    integer, public, parameter:: &
           NSECTORS_TEST  = 11 ! Number of sectors defined. Must match the sizes of the maps below
@@ -138,9 +174,9 @@ private
       ! mapping of sector to time factor class. values must be <= N_TFAC
         TEST_sec2tfac_map  = [1,2,3,4,5,6,7,8,9,10,11] &
       ! mapping of sector to height distribution class. vals must be <= N_HFAC
-       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11] & 
+       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11] &
       ! mapping of sector to height distribution class ! must be<=N_SPLIT
-       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11] 
+       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11]
 
 
 !The sectors defined here are always SNAP sectors. Should NOT be changed if other
@@ -160,16 +196,16 @@ private
    integer, public, parameter ::  NROADDUST   = 2 &   ! number of road dust size modes
                                  ,QROADDUST_FI = 1 &   ! production of fine road dust
                                  ,QROADDUST_CO = 2     ! production of coarse road dust
-   real, public, parameter    ::  ROADDUST_FINE_FRAC = 0.1 ! PM2.5 fraction of PM10-road dust emission  
+   real, public, parameter    ::  ROADDUST_FINE_FRAC = 0.1 ! PM2.5 fraction of PM10-road dust emission
 
    !Pollen
 !  integer, public, parameter ::  NPOL  = 1 &   ! number of dust size modes
-!                                ,QPOL  = 1 
+!                                ,QPOL  = 1
 
-   !Volcanos. 
-   logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes 
-                                                         ! from VolcanoesLL.dat 
-                                                         ! and disregard them 
+   !Volcanos.
+   logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes
+                                                         ! from VolcanoesLL.dat
+                                                         ! and disregard them
                                                          ! from gridSOx
 
 !
@@ -198,7 +234,7 @@ logical, public, save,  allocatable,dimension(:,:) :: Emis_mask !old format
 logical,  public, save :: Emis_mask_allocate = .false.
 real,  public, parameter :: MASK_LIMIT = 1.0E-20
 ! land-code information in each grid square - needed to know which country
-! is emitting.                        
+! is emitting.
 ! nlandcode = No. countries in grid square
 ! landcode  = Country codes for that grid square
 integer, public, save, allocatable, dimension(:,:)   :: nlandcode
@@ -222,7 +258,7 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
   secemis      ! main emission arrays, in kg/m2/s
 
 real, public, allocatable, dimension(:,:,:,:), save :: &
-! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
+! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing)
   roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
@@ -242,7 +278,7 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_acc ! accumulated local fraction over time periods
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_tot ! concentrations of pollutants used for Local Fractions
-     
+
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: emis_lf_cntry
 real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
@@ -275,12 +311,12 @@ type, public :: Ocean
   integer :: index
 end type Ocean
 
-type(Ocean), public, save:: O_NH3, O_DMS 
+type(Ocean), public, save:: O_NH3, O_DMS
 
-!used for EEMEP 
+!used for EEMEP
 real, allocatable, save, dimension(:,:,:,:), public       ::  Emis_4D !(i,j,k,pollutant)
 integer, save, public ::N_Emis_4D=0 !number of pollutants to read
-integer, public, save :: Found_Emis_4D = 0 
+integer, public, save :: Found_Emis_4D = 0
 
 integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile + 1
 
@@ -298,10 +334,10 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
 
 
  ! FUTURE work
- ! NMR-NH3 project specific variables                         
- ! NH3 emissions set by meteorology and special activity data                 
-    logical, public, parameter :: NH3EMIS_VAR = .false.   
-    real, public, save  :: dknh3_agr ! reported nh3emis (IC_NMR) 
+ ! NMR-NH3 project specific variables
+ ! NH3 emissions set by meteorology and special activity data
+    logical, public, parameter :: NH3EMIS_VAR = .false.
+    real, public, save  :: dknh3_agr ! reported nh3emis (IC_NMR)
                                      ! read from gridXXfile
 
   integer, parameter, public :: MAXFEMISLONLAT = 10!max number of lines with lonlat reductions
