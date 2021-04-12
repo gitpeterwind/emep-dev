@@ -26,7 +26,8 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             ,femis_lonlat_internal & 
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
-                            ,NEmis_sourcesMAX
+                            ,NEmis_sourcesMAX&
+                            ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Plevels_pre
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
@@ -1091,54 +1092,67 @@ end if
    !        This is because nemis_hprofile is used to define KEMISTOP, which 
    !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
 
-   !use old format
-   call open_file(IO_EMIS,"r",EmisHeightsFile,needed=.true.)
-
-
-   do
-      call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
-
-      if(me==1) write(*,fmt='(A)') "read from "//trim(EmisHeightsFile)//": " // trim(txtinput)
-      if ( ios <  0 ) exit     ! End of file
-      if( index(txtinput,"#")>0 ) then ! Headers
-         call PrintLog(trim(txtinput),MasterProc)
-         cycle
-      else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
-         read(txtinput,fmt=*,iostat=ios)  txt1, nemis_hprofile
-         call PrintLog(trim(txtinput),MasterProc)
-         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
-         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
-         emis_P_level=0.0
-         call CheckStop(allocerr, "Allocation error for emis_P_level")
-         emis_hprofile(:,:) = -999.9 
-         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-         cycle
-      else if( index(txtinput,"Plevels")>0 ) then ! Pressure levels 
-         read(txtinput,fmt=*,iostat=ios)  txt1, (emis_P_level(k),k=1, nemis_hprofile)
-         call PrintLog(trim(txtinput),MasterProc)
-         call CheckStop(allocerr, "Allocation error for emis_kprofile")
-         emis_hprofile(:,:) = -999.9 
-         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-         cycle
-      else
-         read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
-         if(snap > N_HFAC)then
-            if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
-            call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
+   if(.true.)then
+      nemis_hprofile = Emis_Nlevel_pre
+      N_HFAC = Emis_heights_sec_pre
+      allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+      emis_hprofile(:,:) = -999.9 
+      emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+      emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h_pre(1:nemis_hprofile,1:Emis_heights_sec_pre)
+      allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+      emis_P_level=0.0
+      emis_P_level(0)=Pref
+      emis_P_level(1:nemis_hprofile) = Emis_Plevels_pre(1:Emis_Nlevel_pre)
+   else
+      !use old format
+      call open_file(IO_EMIS,"r",EmisHeightsFile,needed=.true.)
+      
+      
+      do
+         call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
+         
+         if(me==1) write(*,fmt='(A)') "read from "//trim(EmisHeightsFile)//": " // trim(txtinput)
+         if ( ios <  0 ) exit     ! End of file
+         if( index(txtinput,"#")>0 ) then ! Headers
+            call PrintLog(trim(txtinput),MasterProc)
+            cycle
+         else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
+            read(txtinput,fmt=*,iostat=ios)  txt1, nemis_hprofile
+            call PrintLog(trim(txtinput),MasterProc)
+            allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+            allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+            emis_P_level=0.0
+            call CheckStop(allocerr, "Allocation error for emis_P_level")
+            emis_hprofile(:,:) = -999.9 
+            emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+            cycle
+         else if( index(txtinput,"Plevels")>0 ) then ! Pressure levels 
+            read(txtinput,fmt=*,iostat=ios)  txt1, (emis_P_level(k),k=1, nemis_hprofile)
+            call PrintLog(trim(txtinput),MasterProc)
+            call CheckStop(allocerr, "Allocation error for emis_kprofile")
+            emis_hprofile(:,:) = -999.9 
+            emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+            cycle
+         else
+            read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
+            if(snap > N_HFAC)then
+               if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
+               call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
+            end if
+            if( DEBUG%GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
+            emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
          end if
-         if( DEBUG%GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
-         emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
-      end if
-   end do
-
-   call CheckStop(nemis_hprofile < 1,"EmisGet: No EmisHeights set!!")
-   call CheckStop( any( emis_hprofile(:,:) < 0 ), "EmisHeight read failure" )
-
-   close(IO_EMIS)
-
-   !Pressure boundaries for emission levels defined in EmisHeightsFile
-   !NB in emis_P_level, k increase means higher up, i.e. smaller P (opposite as emep)
-   emis_P_level(0)=Pref
+      end do
+      
+      call CheckStop(nemis_hprofile < 1,"EmisGet: No EmisHeights set!!")
+      call CheckStop( any( emis_hprofile(:,:) < 0 ), "EmisHeight read failure" )
+      
+      close(IO_EMIS)
+      !Pressure boundaries for emission levels defined in EmisHeightsFile
+      !NB in emis_P_level, k increase means higher up, i.e. smaller P (opposite as emep)
+      emis_P_level(0)=Pref
+   end if
+      
 
    !can hardcode/override the values here. do not write more than nemis_kprofile (7?)
    !examples emep sigma levels:

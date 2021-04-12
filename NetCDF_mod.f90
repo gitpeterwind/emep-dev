@@ -1909,7 +1909,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   if(status == nf90_noerr) then
     if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
   else
-    print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+    print *, 'variable does not exist: ',trim(varname)
     nfetch=0
     call CheckStop(fileneeded, "NetCDF_mod : variable needed but not found")
     return
@@ -2058,7 +2058,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
     if(present(found))found=.true.
   else
     if(MasterProc .and. DEBUG_NETCDF) &
-      write(*,*)'variable does not exist: ',trim(varname),trim(nf90_strerror(status))
+      write(*,*)'variable does not exist: ',trim(varname)
     call CheckStop(fileneeded, "NetCDF_mod : variable needed but not found "&
          //trim(varname)//' '//trim(fileName))
     call check(nf90_close(ncFileID))
@@ -2548,7 +2548,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   else
     !     nfetch=0
     if(fileneeded)then
-      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+      print *, 'variable does not exist: ',trim(varname)
       call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
 !     if(MasterProc)&
 !       write(*,*)'variable does not exist: ',trim(varname),' set to ',UnDef_local
@@ -2556,7 +2556,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 !     return
     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
-             trim(varname),nf90_strerror(status)
+             trim(varname)
         if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
         if(present(found))found=.false.
         if(present(validity))validity=field_not_found
@@ -4234,12 +4234,11 @@ end subroutine ReadField_CDF
     if(debug) write(*,*) 'ReadCDF variable exists: ',trim(varname)
   else
     if(fileneeded)then
-      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+      print *, 'variable does not exist: ',trim(varname)
       call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
-
     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
-             trim(varname),nf90_strerror(status)
+             trim(varname)
           call check(nf90_close(ncFileID))
           Rvar(1:LIMAX*LJMAX*(KMAX_MID-2))=0.0
         return

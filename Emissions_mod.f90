@@ -381,41 +381,41 @@ contains
               trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
           endif
 
-          !Add the relevant sector in SECTORS
-          !look if it is already defined
-          found = 0
-          do isec_idx = 1, NSECTORS
-             if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = 1
-             if (found > 0) exit
-          end do
-          if (found == 0) then
-             !add this sector in SECTORS
-             do isec_idx = 1, NSECTORS_ADD_MAX
-                if(SECTORS_ADD(i)%name ==  trim(EmisFiles(i)%sectorsName)) then
-                   NSECTORS = NSECTORS + 1
-                   call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
-                   SECTORS(NSECTORS) = SECTORS_ADD(isec_idx)
-                   found = 1
-                end if
-             end do
-             if (found == 0 .and. trim(EmisFiles(i)%sectorsName) == 'GNFR_CAMS') then ! note that default values are used only if not defined in config
-                do isec_idx = 1, NSECTORS_GNFR_CAMS
-                   NSECTORS = NSECTORS + 1
-                   call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
-                   SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(isec_idx)               
-                end do
-             end if
-             if (found == 0 .and. trim(EmisFiles(i)%sectorsName) == 'SNAP') then ! note that default values are used only if not defined in config
-                do isec_idx = 1, NSECTORS_SNAP
-                   NSECTORS = NSECTORS + 1
-                   call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
-                   SECTORS(NSECTORS) = SNAP_SECTORS(isec_idx)               
-                end do
-             end if
-          end if
-          
           if (Emis_source(ii)%sector>0) then
-             !we must find the corresponding index in SECTORS
+             !Add the relevant sector in SECTORS
+             !look if it is already defined
+             found = 0
+             do isec_idx = 1, NSECTORS
+                if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = 1
+                if (found > 0) exit
+             end do
+             if (found == 0) then
+                !add this sector in SECTORS
+                do isec_idx = 1, NSECTORS_ADD_MAX
+                   if(SECTORS_ADD(i)%name ==  trim(EmisFiles(i)%sectorsName)) then
+                      NSECTORS = NSECTORS + 1
+                      call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+                      SECTORS(NSECTORS) = SECTORS_ADD(isec_idx)
+                      found = 1
+                   end if
+                end do
+                if (found == 0 .and. trim(EmisFiles(i)%sectorsName) == 'GNFR_CAMS') then ! note that default values are used only if not defined in config
+                   do isec_idx = 1, NSECTORS_GNFR_CAMS
+                      NSECTORS = NSECTORS + 1
+                      call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+                      SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(isec_idx)               
+                   end do
+                end if
+                if (found == 0 .and. trim(EmisFiles(i)%sectorsName) == 'SNAP') then ! note that default values are used only if not defined in config
+                   do isec_idx = 1, NSECTORS_SNAP
+                      NSECTORS = NSECTORS + 1
+                      call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+                      SECTORS(NSECTORS) = SNAP_SECTORS(isec_idx)               
+                   end do
+                end if
+             end if
+             
+             !save the corresponding index in SECTORS
              found = 0
              do isec_idx = 1, NSECTORS
                 if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = isec_idx
@@ -1021,27 +1021,31 @@ contains
           emis_inputlist(iemislist)%sector = 'GNFR_CAMS'
        else
           ! the sector type must be read from the file
-         if (cdf_sector_name ==  'NOTSET' .and. MasterProc) then
-             write(*,*)'Sector name must be defined either in the emission file or in config_emep.nml!'
-             call StopAll(trim(emis_inputlist(iemislist)%name)//' has no sector name defined')
+          if (cdf_sector_name /=  'NOTSET') then
+ 
+             if (cdf_sector_name == 'GNFR') cdf_sector_name = 'GNFR_CAMS' ! GNFR is a subset of GNFR_CAMS
+             if (cdf_sector_name == 'GNFR_CAMS') emis_inputlist(iemislist)%type = "GNFR_CAMSsectors"
+             if (cdf_sector_name == 'SNAP') emis_inputlist(iemislist)%type = "SNAPsectors"                    
+             emis_inputlist(iemislist)%sector = trim(cdf_sector_name)
           end if
-          if (cdf_sector_name == 'GNFR') cdf_sector_name = 'GNFR_CAMS' ! GNFR is a subset of GNFR_CAMS
-          if (cdf_sector_name == 'GNFR_CAMS') emis_inputlist(iemislist)%type = "GNFR_CAMSsectors"
-          if (cdf_sector_name == 'SNAP') emis_inputlist(iemislist)%type = "SNAPsectors"                    
-          emis_inputlist(iemislist)%sector = trim(cdf_sector_name)
        end if
        
        if (MasterProc) then
           if (trim(cdf_sector_name) /= emis_inputlist(iemislist)%sector) then
              write(*,*)'WARNING: using '//trim(emis_inputlist(iemislist)%sector)//' sectors even if '//trim(cdf_sector_name)//' is defined in '//trim(emis_inputlist(iemislist)%name)
           else
-             write(*,*)trim(emis_inputlist(iemislist)%sector)//' sectors defined for '//trim(emis_inputlist(iemislist)%name)
+             if(emis_inputlist(iemislist)%sector /= "NOTSET") then
+                write(*,*)trim(emis_inputlist(iemislist)%sector)//' sectors defined for '//trim(emis_inputlist(iemislist)%name)
+             else
+                write(*,*)trim(emis_inputlist(iemislist)%name)//' not considered as sectors type emissions '
+             end if
           end if
        end if
 
        !Add the relevant sector in SECTORS
        !look if it is already defined
        found = 0
+       if(emis_inputlist(iemislist)%sector == "NOTSET") found = 1 !not a sector type emissions (i.e. DMS etc.)
        do i = 1, NSECTORS
           if(SECTORS(i)%name ==  trim(emis_inputlist(iemislist)%sector)) found = 1
        end do
@@ -1050,6 +1054,7 @@ contains
           do i = 1, NSECTORS_ADD_MAX
              if(SECTORS_ADD(i)%name ==  trim(emis_inputlist(iemislist)%sector)) then
                 NSECTORS = NSECTORS + 1
+                if(MasterProc) write(*,*)'adding sector  ',trim(SECTORS_ADD(i)%longname)
                 call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                 SECTORS(NSECTORS) = SECTORS_ADD(i)
                 found = 1
@@ -1058,10 +1063,12 @@ contains
           if (found == 0 .and. (trim(emis_inputlist(iemislist)%sector) == 'GNFR_CAMS' &
                .or. trim(emis_inputlist(iemislist)%sector) == 'GNFR')) then ! note that default values are used only if not defined in config
              do i = 1, NSECTORS_GNFR_CAMS
-                NSECTORS = NSECTORS + 1
+                NSECTORS = NSECTORS + 1                
                 call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                 SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(i)               
-             end do         
+             end do
+             if(MasterProc) write(*,*)'including GNFR_CAMS sectors ', NSECTORS
+             found = 1
           end if
           if (found == 0 .and. trim(emis_inputlist(iemislist)%sector) == 'SNAP') then ! note that default values are used only if not defined in config
              do i = 1, NSECTORS_SNAP
@@ -1069,9 +1076,10 @@ contains
                 call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                 SECTORS(NSECTORS) = SNAP_SECTORS(i)               
              end do         
+             found = 1
           end if
        end if
-       call CheckStop(found == 0, 'Sector name not recognized: '//trim(emis_inputlist(iemislist)%sector))       
+       call CheckStop(found == 0, 'Sector name not recognized: '//trim(emis_inputlist(iemislist)%sector))   
  
        if(IsCDFfractionFormat(trim(fname))) emis_inputlist(iemislist)%format='fractions'
        if(emis_inputlist(iemislist)%set_mask.or.emis_inputlist(iemislist)%use_mask)Emis_mask_allocate = .true.
@@ -1125,31 +1133,26 @@ contains
     endif
 
     ! init_sectors
-    if(USES%SECTORS_NAME /='NOTSET')then
-       SECTORS_NAME = trim(USES%SECTORS_NAME)
-       call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'GNFR_CAMS' .and. SECTORS_NAME /= 'SNAP' .and. SECTORS_NAME /= 'TEST'), &
-            'Only SNAP and GNFR and GNFR_CAMS (and TEST) can be defined as sector names, not '//trim(SECTORS_NAME))
-       if(Masterproc)write(*,*)"Forcing sector categories to ",trim(SECTORS_NAME)          
-       if(Masterproc .and. SECTORS_NAME == 'TEST')write(*,*)"WARNING: TEST sectors, requires to define sectors consistently yourself"
-    endif
+    call CheckStop((USES%SECTORS_NAME /='NOTSET'),"SECTORS_NAME not in use anymore! see manual")
+
+
+    !Now we always assume GNFR_CAMS
+    SECTORS_NAME='GNFR_CAMS'
 
     if(SECTORS_NAME=='SNAP')then
        !11 sectors defined in emissions
-       NSECTORS = NSECTORS_SNAP
        !map timefactors onto SNAP map
        sec2tfac_map => SNAP_sec2tfac_map
        sec2hfac_map => SNAP_sec2hfac_map
        sec2split_map => SNAP_sec2split_map
     else  if(SECTORS_NAME=='GNFR_CAMS' .or. SECTORS_NAME=='GNFR')then
        !19 sectors defined in emissions
-       NSECTORS = NSECTORS_GNFR_CAMS
        !map timefactors onto GNFR map
        sec2tfac_map => GNFR_CAMS_sec2tfac_map
        sec2hfac_map => GNFR_CAMS_sec2hfac_map
        sec2split_map => GNFR_CAMS_sec2split_map  
     else  if(SECTORS_NAME=='TEST')then
        !11 sectors defined in emissions
-       NSECTORS = NSECTORS_TEST
        !map timefactors onto TEST map
        sec2tfac_map => TEST_sec2tfac_map
        sec2hfac_map => TEST_sec2hfac_map
@@ -1834,7 +1837,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! NB: "isec" is just an indice and not necessarily meaningful (i.e isec=1 does not always mean "industry" or so, but just the first sector defined in SECTORS)
             ! Calculate emission rates from secemis, time-factors, emis heights
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
-            do iem = 1, NEMIS_FILE 
+            do iem = 1, NEMIS_FILE
                if (SECTORS(isec)%species /='ALL' .and. SECTORS(isec)%species /= EMIS_FILE(iem)) cycle
                tfac_idx = SECTORS(isec)%timefac
                emish_idx = SECTORS(isec)%height

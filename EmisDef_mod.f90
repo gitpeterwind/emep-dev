@@ -52,7 +52,7 @@ integer i, j
 
 ! Sector specific information
 integer, parameter, public :: NSECTORS_MAX =  50  ! Max. total number of sector included
-integer, save, public :: NSECTORS ! Number of sectors actually included (<= NSECTORS_MAX)
+integer, save, public :: NSECTORS = 0 ! Number of sectors actually included (<= NSECTORS_MAX)
 
 !Predefine Emission heights distributions
 integer, public, parameter :: Emis_Nlevel_MAX=25 ! Max Number of vertical emission levels definable
@@ -63,12 +63,12 @@ integer, public :: Emis_heights_sec=6 ! Actual Number of vertical emission distr
 integer, public, parameter :: Emis_heights_sec_pre=6 ! Actual Number of vertical emission distributions predefined
 
 !pressure at top of emission levels
-real, public :: Emis_Plevels(Emis_Nlevel_MAX) = &
+real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
      (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, & 
      (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
 
 !Fraction released in each vertical level predefined values:
-real, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
+real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
      (reshape((/ &
       0.0,      0.00,     0.0025,   0.1475,   0.40,     0.30,     0.15, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 1 High
       1.0,      0.00,     0.00,     0.00,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 2 Surface
@@ -76,7 +76,7 @@ real, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
       0.05,     0.15,     0.70,     0.10,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 4 = SNAP4
       0.02,     0.08,     0.60,     0.30,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
       0.0,      0.00,     0.41,     0.57,     0.02,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
-      (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h)))
+      (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
   
  ! predefine SNAP sectors from EMEP/CORINAIR (NB: splits indices are supposed to be generated from GNFR setup)
    integer, public, parameter :: &

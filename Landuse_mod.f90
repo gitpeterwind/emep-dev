@@ -167,7 +167,7 @@ contains
            call ReadField_CDF(fname,varname, map2dGrowingSeasons(1,1,i2dGS),&
              1,interpol='zero_order',needed=.true.,debug_flag=.false.)  
 
-           if( debug_proc ) write(*,"(a20,5i5)") '2dGS '//trim(varname),ilu,&
+           if( debug_proc .and. DEBUG%LANDUSE) write(*,"(a20,5i5)") '2dGS '//trim(varname),ilu,&
               debug_li,debug_lj, i2dGS, &
                nint( map2dGrowingSeasons(debug_li,debug_lj,i2dGS) )
 
@@ -393,7 +393,7 @@ contains
             Land_codes(ilu) = ewords(2)    ! Landuse code found on file
           end if
 
-          if(debug_proc) write(*,'(a,i3,1x,2f8.2,a)') dtxt//'IFILE', ifile,&
+          if(debug_proc .and. DEBUG%LANDUSE) write(*,'(a,i3,1x,2f8.2,a)') dtxt//'IFILE', ifile,&
               glat(debug_li,debug_lj), glon(debug_li,debug_lj),' '//trim(varname)
 
           call ReadField_CDF(trim(fName),varname,& 
@@ -409,7 +409,7 @@ contains
                landuse_glob(:,:,lu) = landuse_tmp ! will merge below
           end if
  
-          if ( debug_proc ) then
+          if ( debug_proc .and. DEBUG%LANDUSE) then
                write(*,"(a,3i4,4es12.3,1x,a)") "F1 ", ifile,lu, ilu, &
                     landuse_tmp(debug_li,debug_lj), &
                     landuse_tot(debug_li,debug_lj), maxval(landuse_tmp(:,:)), &
