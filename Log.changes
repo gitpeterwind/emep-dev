@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th April 2021, Alvaro
+
+Add USES%NO_3DPRECIP option to ignore 3D precipitation fields.
+The model will use 2D precipitations even if the meteorology has 3D fields.
+This option is meant to emulate operational IFS meteorology (used on CAMS50/71 forecasts),
+which does not have 3D precipitation fields.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23th March 2021, Heiko
 
 fix ColumnSource do-loop compatibility with gcc
