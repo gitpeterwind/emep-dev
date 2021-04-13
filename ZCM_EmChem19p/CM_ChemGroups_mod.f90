@@ -13,7 +13,7 @@ module ChemGroups_mod
   ! Assignment of groups from GenIn_Species.csv
   public :: Init_ChemGroups
   
-  type(typ_sp), dimension(305), public, save :: chemgroups
+  type(typ_sp), dimension(308), public, save :: chemgroups
   type(typ_factors), dimension(2), public, save :: chemgroups_factors
   type(typ_maps), dimension(1), public, save :: chemgroups_maps
   
@@ -1158,22 +1158,43 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_FFUELECFINE_GROUP = (/ EC_f_ffuel_new, EC_f_ffuel_age /)
   
-  integer, public, target, save, dimension (5) :: &
+  integer, public, target, save, dimension (10) :: &
     POLLEN_GROUP = (/  &
       POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
-      POLLEN_GRASS  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
-  integer, public, target, save, dimension (5) :: &
+  integer, public, target, save, dimension (10) :: &
     WDEP_POLLEN_GROUP = (/  &
       POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
-      POLLEN_GRASS  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
+    /)
+  
+  integer, public, target, save, dimension (10) :: &
+    DDEP_POLLEN_GROUP = (/  &
+      POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
   integer, public, target, save, dimension (5) :: &
-    DDEP_POLLEN_GROUP = (/  &
-      POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
-      POLLEN_GRASS  &
+    MUGWORT_GROUP = (/  &
+      POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
+      POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
+    /)
+  
+  integer, public, target, save, dimension (5) :: &
+    WDEP_MUGWORT_GROUP = (/  &
+      POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
+      POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
+    /)
+  
+  integer, public, target, save, dimension (5) :: &
+    DDEP_MUGWORT_GROUP = (/  &
+      POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
+      POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
   integer, public, target, save, dimension (20) :: &
@@ -2144,6 +2165,15 @@ contains
     
     chemgroups(305)%name="DDEP_POLLEN"
     chemgroups(305)%specs=>DDEP_POLLEN_GROUP
+    
+    chemgroups(306)%name="MUGWORT"
+    chemgroups(306)%specs=>MUGWORT_GROUP
+    
+    chemgroups(307)%name="WDEP_MUGWORT"
+    chemgroups(307)%specs=>WDEP_MUGWORT_GROUP
+    
+    chemgroups(308)%name="DDEP_MUGWORT"
+    chemgroups(308)%specs=>DDEP_MUGWORT_GROUP
     
     chemgroups_factors(1)%name="CSTAR"
     chemgroups_factors(1)%species=>CSTAR_GROUP

@@ -109,69 +109,74 @@ module ChemSpecs_mod
       POLLEN_ALDER=  81  &
     , POLLEN_RWEED=  82  &
     , POLLEN_GRASS=  83  &
-    , ASOC_ng1e2  =  84  &
-    , ASOC_ug1    =  85  &
-    , ASOC_ug10   =  86  &
-    , ASOC_ug1e2  =  87  &
-    , ASOC_ug1e3  =  88  &
-    , non_C_ASOA_ng1e2=  89  &
-    , non_C_ASOA_ug1=  90
+    , POLLEN_MUGWORT1=  84  &
+    , POLLEN_MUGWORT2=  85  &
+    , POLLEN_MUGWORT3=  86  &
+    , POLLEN_MUGWORT4=  87  &
+    , POLLEN_MUGWORT5=  88  &
+    , ASOC_ng1e2  =  89  &
+    , ASOC_ug1    =  90
   
   integer, public, parameter :: &
-      non_C_ASOA_ug10=  91  &
-    , non_C_ASOA_ug1e2=  92  &
-    , non_C_ASOA_ug1e3=  93  &
-    , BSOC_ng1e2  =  94  &
-    , BSOC_ug1    =  95  &
-    , BSOC_ug10   =  96  &
-    , BSOC_ug1e2  =  97  &
-    , BSOC_ug1e3  =  98  &
-    , non_C_BSOA_ng1e2=  99  &
-    , non_C_BSOA_ug1= 100
+      ASOC_ug10   =  91  &
+    , ASOC_ug1e2  =  92  &
+    , ASOC_ug1e3  =  93  &
+    , non_C_ASOA_ng1e2=  94  &
+    , non_C_ASOA_ug1=  95  &
+    , non_C_ASOA_ug10=  96  &
+    , non_C_ASOA_ug1e2=  97  &
+    , non_C_ASOA_ug1e3=  98  &
+    , BSOC_ng1e2  =  99  &
+    , BSOC_ug1    = 100
   
   integer, public, parameter :: &
-      non_C_BSOA_ug10= 101  &
-    , non_C_BSOA_ug1e2= 102  &
-    , non_C_BSOA_ug1e3= 103  &
-    , SO4         = 104  &
-    , NH3         = 105  &
-    , NO3_f       = 106  &
-    , NO3_c       = 107  &
-    , NH4_f       = 108  &
-    , OM25_bgnd   = 109  &
-    , OM25_p      = 110
+      BSOC_ug10   = 101  &
+    , BSOC_ug1e2  = 102  &
+    , BSOC_ug1e3  = 103  &
+    , non_C_BSOA_ng1e2= 104  &
+    , non_C_BSOA_ug1= 105  &
+    , non_C_BSOA_ug10= 106  &
+    , non_C_BSOA_ug1e2= 107  &
+    , non_C_BSOA_ug1e3= 108  &
+    , SO4         = 109  &
+    , NH3         = 110
   
   integer, public, parameter :: &
-      ffire_OM    = 111  &
-    , ffire_BC    = 112  &
-    , ffire_remPPM25= 113  &
-    , ffire_c     = 114  &
-    , SeaSalt_f   = 115  &
-    , SeaSalt_c   = 116  &
-    , Ash_f       = 117  &
-    , Ash_c       = 118  &
-    , POM_f_wood  = 119  &
-    , POM_c_wood  = 120
+      NO3_f       = 111  &
+    , NO3_c       = 112  &
+    , NH4_f       = 113  &
+    , OM25_bgnd   = 114  &
+    , OM25_p      = 115  &
+    , ffire_OM    = 116  &
+    , ffire_BC    = 117  &
+    , ffire_remPPM25= 118  &
+    , ffire_c     = 119  &
+    , SeaSalt_f   = 120
   
   integer, public, parameter :: &
-      POM_f_ffuel = 121  &
-    , POM_c_ffuel = 122  &
-    , EC_f_wood_new= 123  &
-    , EC_f_wood_age= 124  &
-    , EC_c_wood   = 125  &
-    , EC_f_ffuel_new= 126  &
-    , EC_f_ffuel_age= 127  &
-    , EC_c_ffuel  = 128  &
-    , pSO4f       = 129  &
-    , pSO4c       = 130
+      SeaSalt_c   = 121  &
+    , Ash_f       = 122  &
+    , Ash_c       = 123  &
+    , POM_f_wood  = 124  &
+    , POM_c_wood  = 125  &
+    , POM_f_ffuel = 126  &
+    , POM_c_ffuel = 127  &
+    , EC_f_wood_new= 128  &
+    , EC_f_wood_age= 129  &
+    , EC_c_wood   = 130
   
   integer, public, parameter :: &
-      remPPM25    = 131  &
-    , remPPM_c    = 132
+      EC_f_ffuel_new= 131  &
+    , EC_f_ffuel_age= 132  &
+    , EC_c_ffuel  = 133  &
+    , pSO4f       = 134  &
+    , pSO4c       = 135  &
+    , remPPM25    = 136  &
+    , remPPM_c    = 137
   
   !+ Defines indices for ADV : Advected species
   integer, public, parameter :: FIRST_ADV=16, &
-                                 LAST_ADV=132
+                                 LAST_ADV=137
   
   integer, public, parameter :: &
       IXADV_RO2POOL     =   1  &
@@ -254,65 +259,72 @@ module ChemSpecs_mod
     , IXADV_POLLEN_ALDER=  66  &
     , IXADV_POLLEN_RWEED=  67  &
     , IXADV_POLLEN_GRASS=  68  &
-    , IXADV_ASOC_ng1e2  =  69  &
-    , IXADV_ASOC_ug1    =  70
+    , IXADV_POLLEN_MUGWORT1=  69  &
+    , IXADV_POLLEN_MUGWORT2=  70
   
   integer, public, parameter :: &
-      IXADV_ASOC_ug10   =  71  &
-    , IXADV_ASOC_ug1e2  =  72  &
-    , IXADV_ASOC_ug1e3  =  73  &
-    , IXADV_non_C_ASOA_ng1e2=  74  &
-    , IXADV_non_C_ASOA_ug1=  75  &
-    , IXADV_non_C_ASOA_ug10=  76  &
-    , IXADV_non_C_ASOA_ug1e2=  77  &
-    , IXADV_non_C_ASOA_ug1e3=  78  &
-    , IXADV_BSOC_ng1e2  =  79  &
-    , IXADV_BSOC_ug1    =  80
+      IXADV_POLLEN_MUGWORT3=  71  &
+    , IXADV_POLLEN_MUGWORT4=  72  &
+    , IXADV_POLLEN_MUGWORT5=  73  &
+    , IXADV_ASOC_ng1e2  =  74  &
+    , IXADV_ASOC_ug1    =  75  &
+    , IXADV_ASOC_ug10   =  76  &
+    , IXADV_ASOC_ug1e2  =  77  &
+    , IXADV_ASOC_ug1e3  =  78  &
+    , IXADV_non_C_ASOA_ng1e2=  79  &
+    , IXADV_non_C_ASOA_ug1=  80
   
   integer, public, parameter :: &
-      IXADV_BSOC_ug10   =  81  &
-    , IXADV_BSOC_ug1e2  =  82  &
-    , IXADV_BSOC_ug1e3  =  83  &
-    , IXADV_non_C_BSOA_ng1e2=  84  &
-    , IXADV_non_C_BSOA_ug1=  85  &
-    , IXADV_non_C_BSOA_ug10=  86  &
-    , IXADV_non_C_BSOA_ug1e2=  87  &
-    , IXADV_non_C_BSOA_ug1e3=  88  &
-    , IXADV_SO4         =  89  &
-    , IXADV_NH3         =  90
+      IXADV_non_C_ASOA_ug10=  81  &
+    , IXADV_non_C_ASOA_ug1e2=  82  &
+    , IXADV_non_C_ASOA_ug1e3=  83  &
+    , IXADV_BSOC_ng1e2  =  84  &
+    , IXADV_BSOC_ug1    =  85  &
+    , IXADV_BSOC_ug10   =  86  &
+    , IXADV_BSOC_ug1e2  =  87  &
+    , IXADV_BSOC_ug1e3  =  88  &
+    , IXADV_non_C_BSOA_ng1e2=  89  &
+    , IXADV_non_C_BSOA_ug1=  90
   
   integer, public, parameter :: &
-      IXADV_NO3_f       =  91  &
-    , IXADV_NO3_c       =  92  &
-    , IXADV_NH4_f       =  93  &
-    , IXADV_OM25_bgnd   =  94  &
-    , IXADV_OM25_p      =  95  &
-    , IXADV_ffire_OM    =  96  &
-    , IXADV_ffire_BC    =  97  &
-    , IXADV_ffire_remPPM25=  98  &
-    , IXADV_ffire_c     =  99  &
-    , IXADV_SeaSalt_f   = 100
+      IXADV_non_C_BSOA_ug10=  91  &
+    , IXADV_non_C_BSOA_ug1e2=  92  &
+    , IXADV_non_C_BSOA_ug1e3=  93  &
+    , IXADV_SO4         =  94  &
+    , IXADV_NH3         =  95  &
+    , IXADV_NO3_f       =  96  &
+    , IXADV_NO3_c       =  97  &
+    , IXADV_NH4_f       =  98  &
+    , IXADV_OM25_bgnd   =  99  &
+    , IXADV_OM25_p      = 100
   
   integer, public, parameter :: &
-      IXADV_SeaSalt_c   = 101  &
-    , IXADV_Ash_f       = 102  &
-    , IXADV_Ash_c       = 103  &
-    , IXADV_POM_f_wood  = 104  &
-    , IXADV_POM_c_wood  = 105  &
-    , IXADV_POM_f_ffuel = 106  &
-    , IXADV_POM_c_ffuel = 107  &
-    , IXADV_EC_f_wood_new= 108  &
-    , IXADV_EC_f_wood_age= 109  &
-    , IXADV_EC_c_wood   = 110
+      IXADV_ffire_OM    = 101  &
+    , IXADV_ffire_BC    = 102  &
+    , IXADV_ffire_remPPM25= 103  &
+    , IXADV_ffire_c     = 104  &
+    , IXADV_SeaSalt_f   = 105  &
+    , IXADV_SeaSalt_c   = 106  &
+    , IXADV_Ash_f       = 107  &
+    , IXADV_Ash_c       = 108  &
+    , IXADV_POM_f_wood  = 109  &
+    , IXADV_POM_c_wood  = 110
   
   integer, public, parameter :: &
-      IXADV_EC_f_ffuel_new= 111  &
-    , IXADV_EC_f_ffuel_age= 112  &
-    , IXADV_EC_c_ffuel  = 113  &
-    , IXADV_pSO4f       = 114  &
-    , IXADV_pSO4c       = 115  &
-    , IXADV_remPPM25    = 116  &
-    , IXADV_remPPM_c    = 117
+      IXADV_POM_f_ffuel = 111  &
+    , IXADV_POM_c_ffuel = 112  &
+    , IXADV_EC_f_wood_new= 113  &
+    , IXADV_EC_f_wood_age= 114  &
+    , IXADV_EC_c_wood   = 115  &
+    , IXADV_EC_f_ffuel_new= 116  &
+    , IXADV_EC_f_ffuel_age= 117  &
+    , IXADV_EC_c_ffuel  = 118  &
+    , IXADV_pSO4f       = 119  &
+    , IXADV_pSO4c       = 120
+  
+  integer, public, parameter :: &
+      IXADV_remPPM25    = 121  &
+    , IXADV_remPPM_c    = 122
   
   !+ Defines indices for SHL : Short-lived (non-advected) species
   integer, public, parameter :: FIRST_SHL=1, &
@@ -338,8 +350,8 @@ module ChemSpecs_mod
     , IXSHL_TERPO2      =  15
   
   !+ Defines indices for SEMIVOL : Semi-volatile organic aerosols
-  integer, public, parameter :: FIRST_SEMIVOL=84, &
-                                 LAST_SEMIVOL=103
+  integer, public, parameter :: FIRST_SEMIVOL=89, &
+                                 LAST_SEMIVOL=108
   
   integer, public, parameter :: &
       IXSOA_ASOC_ng1e2  =   1  &
@@ -495,6 +507,11 @@ contains
     species(POLLEN_ALDER) = Chemical("POLLEN_ALDER",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_RWEED) = Chemical("POLLEN_RWEED",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_GRASS) = Chemical("POLLEN_GRASS",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(POLLEN_MUGWORT1) = Chemical("POLLEN_MUGWORT1",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(POLLEN_MUGWORT2) = Chemical("POLLEN_MUGWORT2",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(POLLEN_MUGWORT3) = Chemical("POLLEN_MUGWORT3",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(POLLEN_MUGWORT4) = Chemical("POLLEN_MUGWORT4",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(POLLEN_MUGWORT5) = Chemical("POLLEN_MUGWORT5",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(ASOC_ng1e2  ) = Chemical("ASOC_ng1e2  ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ASOC_ug1    ) = Chemical("ASOC_ug1    ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ASOC_ug10   ) = Chemical("ASOC_ug10   ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )

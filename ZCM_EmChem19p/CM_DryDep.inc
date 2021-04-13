@@ -96,4 +96,9 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("POLLEN_ALDER", "POLLa     ", -999.0 ) &
 , dep_t("POLLEN_RWEED", "POLLr     ", -999.0 ) &
 , dep_t("POLLEN_GRASS", "POLLg     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT1", "POLLg     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT2", "POLLg     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT3", "POLLg     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT4", "POLLg     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT5", "POLLg     ", -999.0 ) &
 /)
