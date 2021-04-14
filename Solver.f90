@@ -39,6 +39,7 @@
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
+    use TimeDate_mod,  only: print_date ! for debug
     use ZchemData_mod, only: rcemis,        & ! photolysis, emissions
                              rct, rcbio, rcphot,   &
                              xn_2d,         &
@@ -83,16 +84,19 @@ contains
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
     integer ::  k, ichem, iter,n    ! Loop indices
     integer, save ::  nchem         ! No chem time-steps
-    real(kind=dp)    ::  dt2
+    real(kind=dp)    ::  dt2, accdt2, accdt
     real(kind=dp)    ::  P, L                ! Production, loss terms
     real(kind=dp)    :: xextrapol   !help variable
     character(len=15) :: runlabel
+    character(len=*), parameter :: dtxt='chem:'
 
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
 
     real(kind=dp), dimension(nchemMAX), save :: &
                         dti             ! variable timestep*(c+1)/(c+2)
+    real(kind=dp), dimension(nchemMAX), save :: &
+                        dtchem          ! for DSKz
     real(kind=dp), dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
     ! Test of precision
@@ -104,7 +108,7 @@ contains
     if ( first_call ) then
        allocate( Dchem(NSPEC_TOT,KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
        Dchem=0.0
-       call makedt(dti,nchem,coeff1,coeff2,cc)
+       call makedt(dti,nchem,coeff1,coeff2,cc,dtchem)
        if ( MasterProc ) then
            write(IO_LOG,*) "PRECISION TEST ", pi
            write(IO_LOG,"(a,i4)") 'Chem dts: nchemMAX: ', nchemMAX
@@ -143,6 +147,7 @@ contains
     do k = 2, KMAX_MID
 
        DebugCell = debug_flag .and. k==KMAX_MID
+       if ( DebugCell .and. DEBUG%VERT_DIFF) write(*,'(a,es12.3)') 'DSKzChem', xn_2d(19,20)
 
        xnew(:) = xn_2d(:,k)
 
@@ -159,13 +164,20 @@ contains
           call doYieldModifications('init')
        end if
 
+       if( DebugCell ) then
+         accdt2 = 0.0
+         accdt  = 0.0
+         write(*,'(a,f8.1)') dtxt//'DSKz date:'//print_date(), dt_advec
+         write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv 
+       end if
 
        do ichem = 1, nchem
 
           do n=1,NSPEC_TOT
 
              if ( x(n) < 0.0  .or. xnew(n) < 0.0 ) then
-               print '(a,3i4,a10,3es12.3)', 'NCHEM', me,  n, ichem, species(n)%name, x(n), xnew(n), Dchem(n,k,i,j)
+               print '(a,3i4,a10,3es12.3)', 'NCHEM', me,  n, ichem,&
+                 species(n)%name, x(n), xnew(n), Dchem(n,k,i,j)
                call StopAll('NCHEM')
              end if
 
@@ -178,6 +190,12 @@ contains
           end do
 
           dt2  =  dti(ichem) !*(1.0+cc(ichem))/(1.0+2.0*cc(ichem))
+          if ( DEBUG%RUNCHEM .and. DebugCell )  then
+            accdt2 = accdt2 + dt2
+            accdt  = accdt  + dtchem(ichem)
+            write(*,'(a,4f9.2,2i4)')dtxt//'DSKz dts:', dt2,&
+               accdt2,dtchem(ichem),accdt, ichem, nchem
+          end if
 
           where ( xnew(:) < CPINIT  )
              xnew(:) = CPINIT
@@ -247,7 +265,7 @@ contains
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
+subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt)
 
 !=====================================================================
 ! Makes coefficients for two-step (written by Peter Wind, Febr. 2003)
@@ -261,10 +279,11 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
 
  implicit none
 
- real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc
+ !DSKz real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc
+ real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc, dt
  integer,                  intent(out) :: nchem
 
- real    :: ttot, dt(nchemMAX)
+ real    :: ttot !DSKz, dt(nchemMAX)
  real :: dt_init   ! time (seconds) with initially short time-steps
  integer :: i
 !_________________________
