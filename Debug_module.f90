@@ -50,6 +50,7 @@ module Debug_module
     ,SOILNOX         = .false. &
     ,SOLVER          = .false. &
     ,STOFLUX         = .false. &
+    ,VERT_DIFF       = .false. &
     ,VDS             = .false.
   ! integer debug options allow different levels of verbosity
    integer               :: &

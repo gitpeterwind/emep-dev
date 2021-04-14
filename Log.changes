@@ -25,6 +25,21 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th April 2021, Dave
+
+VerticalDiffusion_mod.f90 - NEW - vertdiffn and other (older) diffusion codes
+   extracted from Advection_mod.f90.
+
+Changes in:
+
+ Advection_mod.f90
+ Debug_module.f90  (DEBUG%VERT_DIFF)
+ Makefile.SRCS
+
+Also, small changes in
+ Solver.f90 - more output for testing time-steps
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th April 2021, Alvaro
 
 Add USES%NO_3DPRECIP option to ignore 3D precipitation fields.

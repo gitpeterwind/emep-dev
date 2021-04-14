@@ -39,6 +39,7 @@ use SmallUtils_mod,    only: find_index
 use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
+use VerticalDiffusion_mod, only: vertdiffn
 use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis
 
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
@@ -1179,20 +1180,22 @@ subroutine lf_adv_k(fluxk,i,j)
     call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_k")
   end subroutine lf_adv_k
  
-  subroutine lf_diff(i,j,ds3,ds4,ndiff)
+  subroutine lf_diff(i,j,dt_diff,ndiff)
+  !DSKz subroutine lf_diff(i,j,ds3,ds4,ndiff) !ds3,ds4 now calc in vertdiffn
     
     implicit none
-    interface 
-       subroutine vertdiffn(xn_k,NSPEC,Nij,KMIN_in,SigmaKz,ds3,ds4,ndiff)
-         real,intent(inout) :: xn_k(NSPEC,0:*)!dummy
-         real,intent(in)::  SigmaKz(*)!dummy
-         real,intent(in)::  ds3(*),ds4(*)!dummy
-         integer,intent(in)::  NSPEC,ndiff,Nij,KMIN_in
-       end subroutine vertdiffn
-    end interface
+!DSKZ    interface 
+!DSKZ       subroutine vertdiffn(xn_k,NSPEC,Nij,KMIN_in,SigmaKz,ds3,ds4,ndiff)
+!DSKZ         real,intent(inout) :: xn_k(NSPEC,0:*)!dummy
+!DSKZ         real,intent(in)::  SigmaKz(*)!dummy
+!DSKZ         real,intent(in)::  ds3(*),ds4(*)!dummy
+!DSKZ         integer,intent(in)::  NSPEC,ndiff,Nij,KMIN_in
+!DSKZ       end subroutine vertdiffn
+!DSKZ    end interface
 
-    real, intent(in) :: ds3(2:KMAX_MID),ds4(2:KMAX_MID)
+!DSKz    real, intent(in) :: ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     integer, intent(in) :: i,j,ndiff
+    real, intent(in) :: dt_diff
     real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x
     integer ::isec_poll1,isrc
     integer ::k,n,ix,iix,dx,dy
@@ -1220,7 +1223,9 @@ subroutine lf_adv_k(fluxk,i,j)
       enddo
     enddo
 
-    call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-lf_Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+    !DSKz call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-lf_Nvert-KUP,EtaKz(i,j,1,1),ds3,ds4,ndiff)
+    !DSKz retains dt_advec for LF so far
+    call vertdiffn(xn_k,LF_SRC_TOTSIZE+Npoll,1,KMAX_MID-lf_Nvert-KUP,EtaKz(i,j,1,1),dt_advec,ndiff) !DSKz
  
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
      do isrc=1,Nsources

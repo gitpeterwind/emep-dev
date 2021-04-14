@@ -36,6 +36,7 @@ SRCS ?=	\
 	SubMet_mod.f90 Tabulations_mod.f90 TimeDate_mod.f90 TimeDate_ExtraUtil_mod.f90 \
 	Timefactors_mod.f90 Timing_mod.f90 \
 	Trajectory_mod.f90 Units_mod.f90 \
+	VerticalDiffusion_mod.f90 \
         YieldModifications_mod.f90 \
 	ZchemData_mod.f90 \
 	global2local.f90 PhyChem_mod.f90 My_3DVar_mod.f90 Pollen_mod.f90 Pollen_const_mod.f90
