@@ -25,6 +25,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th April 2021, Peter, Massimo
+
+Bug: tag for mpi could overflow. The mpi tag has a max value which is guaranteed
+to be at least 32767, but is in practice much larger (millions). Some installation
+had max set to 524287, and then if lots of things are outputted (for example nesting
+hourly), this could get too large, and the code crashes.
+
+Also removed some unused "include mpif.h", and put a default case in Makefile
+for gfortran installations (ubuntu etc.).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th April 2021, Dave
 
 VerticalDiffusion_mod.f90 - NEW - vertdiffn and other (older) diffusion codes
@@ -128,7 +139,7 @@ Moved various PBL param definitions from BLPhysics to Config_mod PBL type:
 
 
 Debug_mod: more variables moved from _XXX to %XXX system: BL, Kz, EMISTIMEFACS
-           -> changes in Config_mod, Emissions_mod, Timefactors_mod, 
+           -> changes in Config_mod, Emissions_mod, Timefactors_mod,
 
 NetCDF_mod - reduced printout from all nodes
 
@@ -137,17 +148,17 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2021, Qing, Bruce
 
 New KzMethod TRONKz and SILAMKz. TRONKz is used as new default.
-You can set KzMethod="TRONKz" in BLPhysics_mod.f90. 
+You can set KzMethod="TRONKz" in BLPhysics_mod.f90.
 Previous default is KzMethod="--" (different KzMethod in stable and unstable conditions).
 
 New HmixMethod default JcRb_t2m, based on JcRb HmixMethod but change the formulation of the stable condition.
 You can set HmixMethod = "JcRb_t2m" in Config_module.f90.
 Previous default is HmixMethod = "JcRb".
 
-New HmixMethod JcRb_surfT is also available in the code but commented out, as surface/skin temperature is not always in met files. 
+New HmixMethod JcRb_surfT is also available in the code but commented out, as surface/skin temperature is not always in met files.
 When surface/skin temperature is available, it should replace JcRb_t2m.
 
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Feb 2021, Dave
 rv4_37, since results are different to rv4_36
@@ -207,7 +218,7 @@ Smaller changes:
   Radiation_mod - changed comment
   Setup_1d_mod - removed ancient "use" for S_RiemnerN2O5
   StoFlux_mod - more debug, using new afmt flag to datewrite.
-  
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Dec 2020, Peter, Alvaro
@@ -229,7 +240,7 @@ So far the only case found was a 0.011x0.011 degree latlon grid, when DMS
 the rightmost part of the domain was showing zero emissions of DMS.
 (Happens when the left side of a DMS gridcell is outside the domain and
 the right side is outside the local subdomain)
-Fixed now. 
+Fixed now.
 
 Also small optimization of LF
 
@@ -284,7 +295,7 @@ Changes are small, mainly due to re-ordering, but with:
 
 tag updated to rv4_36, prior to Oct 2020 OS
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23rd Oct 2020, Dave/Peter 
+23rd Oct 2020, Dave/Peter
 
 Sites_mod:
      Tightened checks for "Coords" KeyValue.
@@ -311,21 +322,21 @@ SmallUtils_mod:
 
 Also: DataDir/sitesLL.dat and sondesLL.dat copied to sitesLLKD.dat and sondesLLKD.dat
  and Coord names updated.
-     
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-22th Oct 2020, Robert 
+22th Oct 2020, Robert
 
 Changed NO3 photolysis for mechanisms including IDNO3_NO and/or IDNO3_NO2 (e.g. CRIv2R5Em)
 
-DefPhotolysis_mod.f90 
+DefPhotolysis_mod.f90
 Setting:
             rcphot(IDNO3_NO,:) = 0.127 * rcphot(IDNO3,:)
             rcphot(IDNO3_NO2,:) = 0.873 * rcphot(IDNO3,:)
 
 The fractions 87.3% NO2-path and 12.7% NO path are based on relative photolysis speeds in MCM.
 
-Earlier version used IDNO3_NO = IDNO3 and IDNO3_NO2 = IDNO3 (which means total NO3 
+Earlier version used IDNO3_NO = IDNO3 and IDNO3_NO2 = IDNO3 (which means total NO3
 photolysis was too fast and the relative fraction of NO product was too large).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -387,7 +398,7 @@ This shows the option chosed (here LatLonHrel), the lat, lon,
  z_site gives the site altitude or rel. altiude as given in inputs (-9999 for LatLon case)
  ztopo  gives the grid-average altitude.
 
-NB extra outputs for ascii outputs only. 
+NB extra outputs for ascii outputs only.
  formatting of output still a little tricky. Long station names produce error
  (easily fixed, but then formats need tweaking.)
 
@@ -399,12 +410,12 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Oct 2020, Peter
 
 SitesLL.dat can give elevations in meters.
-The header should mention 
+The header should mention
 : Coords LatLonZ
 
 and then all heights have to be given in meters (not allowed to mix with levels)
 same filename, but recognize header
-example: 
+example:
 
 # "Sites: names, locations, elevations"
 # "Area: EMEP-Europe"
@@ -449,14 +460,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st  August 2020, Massimo, (Peter)
 
- ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90 
+ ix3Dmap(NEmis_sourcesMAX) in EmisDef_mod.f90
 (was limited to 1000 and giving errors with more than 1000 sources)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st  August 2020, Anna, (Peter)
 
-Updated compiler setting in mk.meteoPreProc into a more generic form that works 
-on Nebula  
+Updated compiler setting in mk.meteoPreProc into a more generic form that works
+on Nebula
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th July 2020, Peter
@@ -476,7 +487,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Defined new "Country", AST  = Asian areas in the EMEP domain (CAS+ARL+ARE+ASM+ASE, 80,82,83,84,85,)
 Country( IC_AST ) = cc(  "AST" ,'-', 96 ,F, 96, 96, -100  , "Asian areas in the EMEP domain" )
 
-Allowed sum of countries for Local Fractions for 
+Allowed sum of countries for Local Fractions for
 TMT = TM+TME
 AST = CAS+ARL+ARE+ASM+ASE
 UZT = UZ+UZE
@@ -486,8 +497,8 @@ RUE = RU+RFE+RUX
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2020, Peter
 
-Emissions new format: do not apply DegreeDay correction if the emissions are 
-not monthly or yearly (because daily/hourly emissions already should take those 
+Emissions new format: do not apply DegreeDay correction if the emissions are
+not monthly or yearly (because daily/hourly emissions already should take those
 variations into acccount).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -505,7 +516,7 @@ New emissplits in SNAP system. Same data as GNFR below.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2020, Dave
 
-New emissplits files added to git system for better tracking. 
+New emissplits files added to git system for better tracking.
     - uses new .csv style (libreoffice friendly!)
     - Ref1 and Ref2 versions, to cope with condensables in PM splits
     - GNFR_CAMS (19 sector splits) provided here
@@ -520,13 +531,13 @@ ZD_EXTRA/README - modified to reflect update
 
 Note: I will soon add SNAP versions of these. Meanwhile, if you want snap,
 the older systems still work, including the non .csv format. Just make
-sure config_emep.nml matches what you want. 
+sure config_emep.nml matches what you want.
 
 tag updated to rv4_35, also to cover other changes since rv4_34os.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th June 2020, Peter
 
-Changed molecular weights from MARS so that they get equal to the rest of the 
+Changed molecular weights from MARS so that they get equal to the rest of the
 code.
 MWNO3  = 62.0049 -> 62.0
 MWHNO3 = 63.0287 -> 63.0
@@ -587,7 +598,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th May 2020, Peter
 
 Bug in MARS, rpmares. We assumed that mass of NH3+NH4  (or NO3+HNO3),  is conserved
-while it is only the number of molecules which is conserved. 
+while it is only the number of molecules which is conserved.
 
 old version:
 TNH4 = MAX( 0.0, (NH3 / MWNH3 + NH4 / MWNH4)  )
@@ -605,7 +616,7 @@ ANH4_High = min(  YNH4 , TNH4 )* MWNH4
 GNH3_High = max(FLOOR,(TNH4 - YNH4))*MWNH3
 
 Since the mass(NH3)=17, mass(NH4)=18, mass(NO3)=62, mass(NO3)=63, so the error
-is about <6% for NH4 and <1.5% for NO3 
+is about <6% for NH4 and <1.5% for NO3
 
 
 (also some additional changes for local fractions)
@@ -680,7 +691,7 @@ parameters.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th Jan 2020, Robert
 
-Added missing deposition parameters for an EmChem19X species + minor update of 
+Added missing deposition parameters for an EmChem19X species + minor update of
 some (di)carbonyl dry deposition parameters
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -694,7 +705,7 @@ the model grid")
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Jan 2020, Peter
 
-Country array was not initialized correctly (looped over NLAND, with NLAND 
+Country array was not initialized correctly (looped over NLAND, with NLAND
 undefined).
 
 nvoc was uninitialized in Derived_mod
@@ -735,7 +746,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Jan 2020, Peter
 
 Added "pblh" in the list of possible HMIX names. (tested on EECCA)
-More robust interpolation from Polar Stereo to lat lon 
+More robust interpolation from Polar Stereo to lat lon
 (EECCA was crashing on Logan interpolation!)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -745,7 +756,7 @@ StoFlux - logic improved to use night rather than daynumber to reset SumVPD etc.
           Should work better in non-European locations
           Also, hard-coded 8.0 replaced by VPDcrit
 
-DryDep_mod  - call to Setup_StoFlux modified 
+DryDep_mod  - call to Setup_StoFlux modified
 
 RunChem_mod - DebugCell definition now separate from DEBUG%RUNCHEM
 
@@ -774,17 +785,17 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Dec 2019, Peter
 
 Small bug in interpolation routine: in the case of zero order interpolation,
-lat lon, and the data does not cover the entire model grid, the results may 
+lat lon, and the data does not cover the entire model grid, the results may
 be dependent on the number of CPUs.
 This does not happen with standard inputs.
-Now values are set to Undef in this case. (Earlier it would take in practice a 
+Now values are set to Undef in this case. (Earlier it would take in practice a
 random point within the defined values)
 
-New emission format: the combination GNFR new emissions with SNAP sector 
-defintions did not work properly. Redefined gnfr2snap, where values are 
-negative if repeated. In loops over "all sectors" (read all sectors) only 
-positive values are taken, so that nothing is used twice. If values are 
-added (convert from gnfr to snap), the absolute value is taken. 
+New emission format: the combination GNFR new emissions with SNAP sector
+defintions did not work properly. Redefined gnfr2snap, where values are
+negative if repeated. In loops over "all sectors" (read all sectors) only
+positive values are taken, so that nothing is used twice. If values are
+added (convert from gnfr to snap), the absolute value is taken.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Dec 2019, Dave
@@ -811,7 +822,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 The code has been modified in various places to cope with the new GenChem
 system. The largest changes are:
 
-*** NEW ** 
+*** NEW **
 Use of text (not .inc) files for boundary and BiomassBurning now
 replaces older .inc files. Main advantage is that one can simply
 append series of files from different mechanisms, eg adding
@@ -869,8 +880,8 @@ Config_module:
 
   Output of full ModelConfig namelist to RunLog.out commented out.
   Could be sent elsewhere (config.out maybe?), but a RunLog of 35000 lines
-  was not readable, and this did not show if USES varuables had been 
-  changed. 
+  was not readable, and this did not show if USES varuables had been
+  changed.
 
   I would prefer that we build up a tidy output of the ModelConfig, but
   it isn't obvious how to do it yet. Might just need hard-coded lines to
@@ -880,7 +891,7 @@ Config_module:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Nov 2019, Peter
 
-Bug in loop for Gridded monhly factor. No consequences in pratice now, but could 
+Bug in loop for Gridded monhly factor. No consequences in pratice now, but could
 be prpblematic in other configurations.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -919,29 +930,29 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Added EmChem19a chemistry scheme -- a slightly revised version of EmChem19
 
-Main difference: MACR is used to represent both methacrolein (MACR) and methyl 
+Main difference: MACR is used to represent both methacrolein (MACR) and methyl
 vinyl ketone (MVK).
 [The first EmChem19 had both, but the treatment was a bit inconsistent]
 
-Minor updates of reaction rates for APINENE+O3 and APINENE+OH (the second rate 
+Minor updates of reaction rates for APINENE+O3 and APINENE+OH (the second rate
 was inconsistent in the previous version).
 
 Bug fix for wet deposition parameters for gas phase fraction of VBS-species.
-[previous version had WD-parameter set to PMf, which gave much more efficient 
+[previous version had WD-parameter set to PMf, which gave much more efficient
 in-cloud scavenging]
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Oct 2019, Robert
 
-Bug (sort of) in YieldModifications_mod.f90 fixed. 
+Bug (sort of) in YieldModifications_mod.f90 fixed.
 
-The SOA yields for benzene and toluene were inconsistent with the SOA yields 
-for other VOCs (including OXYL) when using YieldModifications = 'VBS-T10'. 
+The SOA yields for benzene and toluene were inconsistent with the SOA yields
+for other VOCs (including OXYL) when using YieldModifications = 'VBS-T10'.
 
-The yields for benzene and toluene were too large (based on Hodzic et al., 2016) 
+The yields for benzene and toluene were too large (based on Hodzic et al., 2016)
 when including SOA aging (which is included in the "standard" model version).
 
-If anyone for some reason want to use the old (erroneous/inconsistent) SOA yields 
+If anyone for some reason want to use the old (erroneous/inconsistent) SOA yields
 it can still be done by setting
 YieldModifications = 'VBS-T10old'
 in the config file
@@ -959,8 +970,8 @@ the left most gridcells of the emissions would not always be included.
 
 Small cleanups:
 Timestep for chemistry was buggy (crash) if dt_advec=150.
-In a global run, if there are too many MPI, so that the domain cannot be cutted 
-in small enough pieces in the lon direction, then the lat dimension is cut in 
+In a global run, if there are too many MPI, so that the domain cannot be cutted
+in small enough pieces in the lon direction, then the lat dimension is cut in
 more than two parts (which was imposed until now).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -976,7 +987,7 @@ cannot cross -180, if not the entire globe is included).
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Oct 2019, Peter
 
-Bug in setup_1d: aero_fss, aero_fdust, aero_fbc, aero_fom could be 0/0, giving 
+Bug in setup_1d: aero_fss, aero_fdust, aero_fbc, aero_fom could be 0/0, giving
 Nan in reaction rates.
 
 kg/m2 added in Units_mod
@@ -1005,10 +1016,10 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Complete deep revision of convection.
 The method is now mostly rewritten and base on mixing ratios.
 It does not try to keep the sigma coordinate formalism.
-There were probably bugs in the old version. (subsidence counted twice? and 
+There were probably bugs in the old version. (subsidence counted twice? and
 wrong flux limitations)
 
-It should be stable and safe now, however the CONVECTION_FACTOR should be 
+It should be stable and safe now, however the CONVECTION_FACTOR should be
 redefined.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1031,11 +1042,11 @@ Bug in nesting: the last record was saved twice.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Sep 2019, Peter, Svetlana
 
-When a new variable 'ps' is defined by user, it can mess with the 'PS' already defined, 
-see Issue #160. Now the variable is first looked for with case sensitive search, 
+When a new variable 'ps' is defined by user, it can mess with the 'PS' already defined,
+see Issue #160. Now the variable is first looked for with case sensitive search,
 then case insensitive if not found.
 
-Bug in find_index: any_case=.true. and any_case=.false. had same effect, since 
+Bug in find_index: any_case=.true. and any_case=.false. had same effect, since
 only presence was tested.
 
 New output: pressure_3D. for 3D pressure output set for instance in config:
@@ -1045,11 +1056,11 @@ New output: pressure_3D. for 3D pressure output set for instance in config:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 Sep 2019, Peter, Agnes
 
-The pollName restrictions for emission was not working correctly (worked only 
+The pollName restrictions for emission was not working correctly (worked only
 if "sox" was among pollNames!).
 
-The bugfix had implications for the "non fraction" cases, and it has not been 
-tested for that cases. 
+The bugfix had implications for the "non fraction" cases, and it has not been
+tested for that cases.
 (The hope is that this all get deleted once the new formats take over :) )
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1061,17 +1072,17 @@ Derived_mod - BUG fix on column calculations of OM25. Now  avoids ik=1, and
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Sep 2019, Dave
 
-Config_module - enabled use of DataDir  as part of OwnInputDir 
+Config_module - enabled use of DataDir  as part of OwnInputDir
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 July 2019, Robert
 
 Bug fix -- Derived_mod.f90
 
-           Earlier version (from 30 May?) store erroneous (too large) 
-           concentrations when using the unit ugC_PM (e.g. for storing total 
-           particulate OC-concentrations or BSOA (BSOC) in ug C / m3). The 
-           gas-phase fractions of semi-volatile OC were included. 
+           Earlier version (from 30 May?) store erroneous (too large)
+           concentrations when using the unit ugC_PM (e.g. for storing total
+           particulate OC-concentrations or BSOA (BSOC) in ug C / m3). The
+           gas-phase fractions of semi-volatile OC were included.
            Total OM was ok (if stored using ug_PM).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1084,7 +1095,7 @@ Just cleaning:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 June 2019, Peter
 
-Bug in Emission new formats. Periodicity not read correctly from file 
+Bug in Emission new formats. Periodicity not read correctly from file
 Effect is that no timefactor is applied for those emissions.
 (Note that it will be correct if periodicity is read form config).
 
@@ -1104,7 +1115,7 @@ Case insensitive Nest variable mappings for IC/BC files
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June 2019, Peter, Dave
 
-USES%MonthlyNH3 set to 'LOTOS' automatically when european and not global grid 
+USES%MonthlyNH3 set to 'LOTOS' automatically when european and not global grid
 is detected.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1172,13 +1183,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 rv4_33beta tag started ... results will change over coming days...
 
 
-Derived_mod - calls Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
+Derived_mod - calls Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25
               Fixes problem found by Hilde that OM25_p >= ugPM_OM25, by
               more conistent cfac usage, and now produces mixed-phase
               outputs if ug_PM not specified.
               All very messy though, and old semivol usage not working so
               well. Should consider getting rid of OM25_p.
-              
+
               Also more dtxt, changed 'index' to 'ind' (index is a fortran
               function, so good to avoid).
 
@@ -1186,8 +1197,8 @@ Derived_mod - calls Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25
 
               (Could do with a little more testing.)
 
-SOA_mod.f90 - added Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25 
-              before Derived outouts are calculated. 
+SOA_mod.f90 - added Reset_3dOrganic to harmonise OM25_p and SURF_ugPM_OM25
+              before Derived outouts are calculated.
               Also tidy up and more dtxt
 
 Units_mod.f90 - some dtxt added
@@ -1217,9 +1228,9 @@ Sondes and sites species can be defined in config_emep.nml
 It should be compatible with different Chemical schemes in the sense
 that unexisting species are accepted, but not outputted.
 All the "extras" are still hardcoded in Config_module.
-It was heavy to refactorize, because arrays are "merged" and everything was 
+It was heavy to refactorize, because arrays are "merged" and everything was
 hardcoded.
-It would be good to simplify the multitude of arrays 
+It would be good to simplify the multitude of arrays
 (SITE_SHL,SITE_ADV, XTRA_SITE_MISC, XTRA_SITE_D2D, etc..)
 Also merge with normal outputs would simplify (could simply have a new flag in our output).
 
@@ -1263,7 +1274,7 @@ Config_module:
       DataDir is set correctly. (See EEEEEE bits)
    - added LAST_CONFIG_LINE - a variable which can be added to the end of
       configs (or actually anywhere), to allow the user to check that
-      the full config was actually read. 
+      the full config was actually read.
       (Very useful if also debugging use of ExtraConfig)
    - added associate_File usage for NEST_MET_inner, to allow DataDir
 
@@ -1281,7 +1292,7 @@ Biogenics_mod      - tidy up
 
 Config_module      - added logtxt to write out USE_SOILNOx settings
 
-DO3SE_mod          - added BUGGY to highlight current bug. 
+DO3SE_mod          - added BUGGY to highlight current bug.
                      *** FIX before release (->rv4.33)
                      plus tidy up
 
@@ -1289,7 +1300,7 @@ DryDep_mod         - tidy up
 
 GridValues_mod     - added fname to error message (it helps!)
 
-LocalVariables_mod - added units to PAR 
+LocalVariables_mod - added units to PAR
 
 Rsurface_mod       - tidy up
 
@@ -1308,7 +1319,7 @@ StoFlux_mod        - tidy up (Massimo's query inspired). FOUND BUG - for global
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 May 2019, Peter
 
-Nest options have changed. The "OUTDATE_NDUMP" is now decoupled from the "MODE" 
+Nest options have changed. The "OUTDATE_NDUMP" is now decoupled from the "MODE"
 options and both can be used simultaneously.
 
 The "NEST_outdate" option (dump at given dates) is now chosen by:
@@ -1331,8 +1342,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 May 2019, Peter
 
 New format emissions: automatic GNFR/SNAP sectors mapping.
-SNAP is default. If sectors in an emission file are defined as GNFR (values 
-from 1 to 13), it should have an attribute sectorsName= 'GNFRsectors' 
+SNAP is default. If sectors in an emission file are defined as GNFR (values
+from 1 to 13), it should have an attribute sectorsName= 'GNFRsectors'
 (or it can be set in config file)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1360,7 +1371,7 @@ timezone=100 instead of -100.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14 May 2019, Dave
 
-Derived_mod: SIA25 added, for 2d and 3d. 
+Derived_mod: SIA25 added, for 2d and 3d.
              plus small tidy-up
 
 config_emep.nml - added example SIA25 lines
@@ -1370,14 +1381,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Nest stops if Met_inner not found (was only a warning before)
 
-uEMEP: local fraction "completeness" diagnostic. Outputs a value for each 
+uEMEP: local fraction "completeness" diagnostic. Outputs a value for each
 gridcell that sums all the local fractions. 1.0-> all sources have been found.
 
 new format emissions: accept unit kt (and kt/year, kt/m2, kt/m2/year/).
 and corrected bug when units where mg/s or mg/m2/s (were factor 1000 too small)
 
-number of vertical levels in meteo file are checked each time a new meteofile 
-is read. If it has changed (happens in CAMS?), the vertical interpolations coefficients are recalculated. 
+number of vertical levels in meteo file are checked each time a new meteofile
+is read. If it has changed (happens in CAMS?), the vertical interpolations coefficients are recalculated.
 Maybe a bug when not starting the run at hour=0 corrected (nrec was set to 1 at first call in meteoread)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1406,7 +1417,7 @@ Most nest config variables renamed with a "NEST_" in front of variable.
 Some cleaning for consistency.
 Did *not* merge ExternalBICs_bc config
 
-Also OutputConcs_config, OutputDep_config and OutputSize_config are now 
+Also OutputConcs_config, OutputDep_config and OutputSize_config are now
 part of  Model_config
 
 Removed OutputMisc_config from config_emep.nml, as I could not see it was used.
@@ -1415,7 +1426,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6 May 2019, Peter
 
 Merged Columns and ForestFire config namelists into ModelConstants_config
-NB: some BB variables have changed name: 
+NB: some BB variables have changed name:
 MODE->BBMODE
 need_file->BBneed_file
 need_date->BBneed_date
@@ -1428,7 +1439,7 @@ ExtraConfigFile(2)='OwnInputDir/MyVerySpecialConfig.nml',
 
 The definition of the last namelist is used if variables are set several times.
 
-Also replaced k20 with kmax in config, since we do not necessarily use 20 
+Also replaced k20 with kmax in config, since we do not necessarily use 20
 levels.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1441,18 +1452,18 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Topography is read from HGT in case WRF meteo. It will automatically redefine
 Topofile (cannot be defined from config then!)
-Also more robust GetCDF_modelgrid when dimensions are incompatible (will now 
+Also more robust GetCDF_modelgrid when dimensions are incompatible (will now
 stop only if the file is "needed")
 
 The emis_inputlist%PollName functionality was broken (since May 2018?). Repaired.
 
-USES%AOD removed. Instead AOD_WANTED is set to true if any AOD or EXT variable 
+USES%AOD removed. Instead AOD_WANTED is set to true if any AOD or EXT variable
 are requested in outputs
 
 Landuse files, fileName_O3_Top and fileName_CH4_ibcs are now set in the general
 config file treatments (i.e. DataDir and OwnInputDir are replaced).
 
-Met_inner for nesting tries to replace datadir and dates if not found 
+Met_inner for nesting tries to replace datadir and dates if not found
 (but not GRID, as it should be another grid usually) (not tested)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1477,7 +1488,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 mapping factor not allowed to be 0.0 at poles (lon lat only). (wrf problems otherwise).
 
-DryDep: added a "if(dbg)" for  'DBGXNO2 WRONG' . Please check: is this just a 
+DryDep: added a "if(dbg)" for  'DBGXNO2 WRONG' . Please check: is this just a
 warning or not allowed? (it is triggered when USES%EURO_SOILNOX=F and USES%GLOBAL_SOILNOx=F).
 Note also that the "first_ddep" never gets .false. (it is not saved).
 
@@ -1488,14 +1499,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 * Added ZCM_EmChem16z directory -- for updated chemistry scheme
 
-* Some find_index changed to case insensitive (to avoid problems with some old 
+* Some find_index changed to case insensitive (to avoid problems with some old
 model versions using capital F instead of f for "fine" particle components etc.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Apr 2019, Peter
 
-The model will output also part of monthes if startdate or enddateare not at 
-start/end of the month. 
+The model will output also part of monthes if startdate or enddateare not at
+start/end of the month.
 The timestamps should always point to the middle of the period.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1514,13 +1525,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Apr 2019, Peter
 
 Replaced nstep by step_main. It is slightly different, now it always increase.
-The results can be slightly different, because mod(nstep,2) which is used to alternate 
-in the timesplitting, is not alternating every nmax, if nmax is odd. 
-(Now it does always alternating). 
-You choose nmax by setting dt_advec in config. For example dt_advec=900.0 will 
-give nmax=12 and identical results. 
+The results can be slightly different, because mod(nstep,2) which is used to alternate
+in the timesplitting, is not alternating every nmax, if nmax is odd.
+(Now it does always alternating).
+You choose nmax by setting dt_advec in config. For example dt_advec=900.0 will
+give nmax=12 and identical results.
 
-Reduced the writings of 'dividing each gridcell...' and some new emission comments. 
+Reduced the writings of 'dividing each gridcell...' and some new emission comments.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 Apr 2019, Dave
@@ -1528,13 +1539,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Small problem-fixes:
 
 
-Config_module: OwnInputDir enabled for EmisMask 
+Config_module: OwnInputDir enabled for EmisMask
 
 Emissions_mod: Added filename to error message from EmisMask
 
 Landuse_mod:  Allow longer and more ewords to cope with complex fName
 
-SmallUtils_mod:  Extra error message if eword too long 
+SmallUtils_mod:  Extra error message if eword too long
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Apr 2019, Dave
@@ -1544,27 +1555,27 @@ config_emep.nml. Comments added about Emis_source. FMI stuff commented out.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Apr 2019, Dave
 
-Cleanup. A2018 comments and old lines removed. 
+Cleanup. A2018 comments and old lines removed.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4 Apr 2019, Peter
 
-Forest Fire emissions distributed evenly taking into account layer thickness 
-(measured in pressure difference). (Precedent version would double emissions 
+Forest Fire emissions distributed evenly taking into account layer thickness
+(measured in pressure difference). (Precedent version would double emissions
 into a layer if the layer is cut in two!)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 Apr 2019, Peter
 
-PS is added to hourly files iftey are 3D. This is required to define the 
-vertical levels. 
-Sorry for very heavy implementation, but I really struggle with following the 
+PS is added to hourly files iftey are 3D. This is required to define the
+vertical levels.
+Sorry for very heavy implementation, but I really struggle with following the
 logic of the outputting routines.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 Apr 2019, Peter
 
-FirestFire_mod must now take both BiomassBurningMapping_FINN.inc and 
+FirestFire_mod must now take both BiomassBurningMapping_FINN.inc and
 BiomassBurningMapping_GFAS.inc
 The choice of which one to use is set in config.
 
@@ -1641,7 +1652,7 @@ EmisGet_mod -  uses femis_lonlat_internal flag for in or out exclusion
                use PrintLog and MasterProc instead of IO_LOG and me==0
 
 Emissions_mod - uses DEBUG%EMISSIONS, and extra debug changes
-          
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Feb 2019, Peter
 
@@ -1660,7 +1671,7 @@ Biogenics_mod.f90  - removed warning (DAVE PLEASE CHECK). Looks okay.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 Jan 2019, Peter
 
-The timestamp (i.e. value of time variable) of the Base_fullrun.nc is set to 
+The timestamp (i.e. value of time variable) of the Base_fullrun.nc is set to
 the middle of the run period (also if less than one year is run).
 The attribute is also set to "time at middle of period", so you can know which file is new or old.
 (Background: some scripts had problems since the time for a 2016 run
@@ -1675,16 +1686,16 @@ DefPhotolysis_mod.f90:     Bug fix IDMEK now set = IDCH3COX (was IDCH3O2H)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Jan 2019, Peter
 
-ForestFire is now a "normal" module: it does not need to be specially integrated 
-in the genchem and compilation process. One can switch between GFAS and FINN using 
-BBMAP in the config file. The existence of the relevant species are tested before 
+ForestFire is now a "normal" module: it does not need to be specially integrated
+in the genchem and compilation process. One can switch between GFAS and FINN using
+BBMAP in the config file. The existence of the relevant species are tested before
 they are used and only the one existing are included.
 
 The module can still be defined with something like "if(OM25_ix>0)then..."
 for other types of chemical schemes. But it will always compile and use the
 species available from the default chemistry.
 
-NBB_DEFS and NEMEPSPECS are set automatically. 
+NBB_DEFS and NEMEPSPECS are set automatically.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 Dec 2018, Dave
@@ -1731,13 +1742,13 @@ Can inject into individual levels (only case 3), individual species without sect
 
 e_fact (femis) is applied through the source%factor in Emis_init_GetCdf
 
-New format for FMI ship emissions included in config_emep.nml. 
+New format for FMI ship emissions included in config_emep.nml.
 All attributes can specified and overwritten by the config (see example for EC).
 NB: this has different definitions, as the old method corrected REMPPM25 and
 POM_f_FFUEL for molecular weights, but should not (emissions in kg, not moles. to be confirmed by Jan Eiof?)
 
 Note on units "as SO2":
-if the sector is defined, units are defined "as SO2" and SO4 must include the 
+if the sector is defined, units are defined "as SO2" and SO4 must include the
 factor 0.6666 to be right. If sector is defined as zero, no factor is required.
 
 METSTEP settable in config
@@ -1753,7 +1764,7 @@ Met_mod
    in testing - enabled NWP Hmix, for now with GLOBAL05 variable 'blh'.
 
 Config_module
-   in testing - added OwnInputDir 
+   in testing - added OwnInputDir
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1765,7 +1776,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Nov 2018, Peter
 
 On going... new format for emissions.
-The goal is to be able to read any emission file, without having to modify it, 
+The goal is to be able to read any emission file, without having to modify it,
 simply by describing the main parameters in the config file.
 
 General structure as follows:
@@ -1832,7 +1843,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 GasParticleCoeffs_mod:
 
 BUG fix for problem triggered by 4th Sep version. The bug (using len(defnames)
-instead of size(defnames) has been around for months. 
+instead of size(defnames) has been around for months.
 
 Some problems caught by gfortran:
   My_Derived - removed NEMIS_FILE from use EmisDef_mod. Is in CM_ChemDims_mod
@@ -1854,7 +1865,7 @@ Emissions_mod:  uses e_fact to modify NOX emissions (only nox possible)
 Setup_1d_mod:   extra debug printout
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th Sep 2018, Robert
-Added some more deposition classes for dry and wet deposition -- mainly for 
+Added some more deposition classes for dry and wet deposition -- mainly for
 EmChem18 but also for updated versions of EmChem16x.
 
 GasParticleCoeffs_mod.f90
@@ -1868,7 +1879,7 @@ rv4.31 can be associated with the (untested) NWP Hmix possibility
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Sep 2018, Peter
 
-Big bug when femis and non-fraction emissions are used (introduced 22 May 2018). 
+Big bug when femis and non-fraction emissions are used (introduced 22 May 2018).
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1886,7 +1897,7 @@ EmisGet_mod    - moved GETEMIS and ROADDUST to DEBUG% system. Also some formatti
 Emissions_mod  - moved GETEMIS and ROADDUST to DEBUG% system. Also some formatting to get < 78 char lines
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28 Aug 2018, Dave, based upon Matthieu, Peter code 
+28 Aug 2018, Dave, based upon Matthieu, Peter code
 
 Incomplete introduction of NWP as an option for Hmix
 Not tested yet since PBLH isn't in EECCA or EMEP01 standard data.
@@ -1900,14 +1911,14 @@ Not tested yet since PBLH isn't in EECCA or EMEP01 standard data.
  MetFields_mod.f90
     - added use of pbl_nwp. Set as needed if PBL%HmixMethod set at NWP
 
- Met_mod.f90 
+ Met_mod.f90
     - NWP option uses pbl_nwp
     - Also some tidy-ups (lines should be less than 78 chars wide)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Aug 2018, Robert
 
-Added deposition parameters for some semi-volatile VBS-species (extending the 
+Added deposition parameters for some semi-volatile VBS-species (extending the
 "Wesely Table") in GasParticleCoeffs_mod.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1965,7 +1976,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Aug 2018, Dave
 
 ZCM_EmChem16x
-BiomassBurningMapping_FINNv1.5_to_EmChem16x.inc - added back PM 
+BiomassBurningMapping_FINNv1.5_to_EmChem16x.inc - added back PM
 CM_* files: Added new style Yield Modification equations to match rv4.17master
 
 
@@ -1983,8 +1994,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ReadField_CDF: Return zero (or Undef) when file or field not found and not needed
 (returned unchanged array before)
 
-ForestFire: replaced allocatable array rdemis and xrdemis by automatic arrays 
-(this is more efficient memorywise). Also set xrdemis to zero (was not done but 
+ForestFire: replaced allocatable array rdemis and xrdemis by automatic arrays
+(this is more efficient memorywise). Also set xrdemis to zero (was not done but
 possibly is done automatically when the array is allocated).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2005,10 +2016,10 @@ config_EMEPSTD.nml - added GLOBAL/EURO settings comments and DEBUG%STOFLUX
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th  July 2018, Peter
 
-Change chunk size of 2D output to 300 ,130 (i,j) to speed up the verification 
+Change chunk size of 2D output to 300 ,130 (i,j) to speed up the verification
 script (recommended by Heiko)
 
-Changed the test for GLOBAL_setting with minlat=19 instead of 28 (EECCA was set 
+Changed the test for GLOBAL_setting with minlat=19 instead of 28 (EECCA was set
 as global!) and East limit to -40
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2072,11 +2083,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Small bugs in landuse (affect performance only)
 old_month was not reset -> recalculate pftmaps each iteration
 my_first_call was not saved -> may allocate an allocatable array.
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2018, Peter, Svetlana
 
-Made the file   DataDir/CLIM/EMEP_BC.nc 
+Made the file   DataDir/CLIM/EMEP_BC.nc
 Which is produced from 2012-2016 GLOBAL05 runs averaged monthly and to 1x1 degrees.
 Covers slighlty more than the EMEP01 grid
 
@@ -2084,7 +2095,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2018, Peter
 
 Nest  out_DOMAIN=RUNDOMAIN default
-Was 
+Was
   if(.not.FORECAST)then
     out_DOMAIN=RUNDOMAIN+[1,-1,1,-1]
   else
@@ -2095,9 +2106,9 @@ But we do not remember the reason for avoiding the boundaries
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2018, Peter
 
-Automatic global settings in subroutine set_EuropeanAndGlobal_Config 
+Automatic global settings in subroutine set_EuropeanAndGlobal_Config
 (GridValues_mod.f90)
-The code will find out by itself if the rundomain is global (meaning not only 
+The code will find out by itself if the rundomain is global (meaning not only
 Europe is covered) or not
 
   !If the file is GLOBAL:
@@ -2108,7 +2119,7 @@ Europe is covered) or not
   !If the file is EUROPEAN:
   !nothing happens for now
 
-Degreeday file is not required to exist for wrf users, for others, by default 
+Degreeday file is not required to exist for wrf users, for others, by default
 it is required for non-global runs (code will stop if not found).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2127,7 +2138,7 @@ Can now start and end run at any hour (must be one that is available in the metd
 The method to setup the meteo reading is much modified, so it might be that
 some new meteo format will not fit (will stop the code).
 METSTEP is now set in Check_Meteo_Date_Type (was set in GetFullDomainSize)
-The method relies on the ReadTimeCDF routine to be able to interpret times in 
+The method relies on the ReadTimeCDF routine to be able to interpret times in
 the meteo file.
 All meteo files are assumed to have the same number of records (this could
 probably be upgraded if needed)
@@ -2144,7 +2155,7 @@ new year is reached.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018,  Peter
 
-Monthly save for nest allowed. 
+Monthly save for nest allowed.
 set MODE_SAVE = 'MONTH'. Will not output for 1st of January.
 
 Bug in ChecStop that made the error message not come out.
@@ -2153,7 +2164,7 @@ Bug in ChecStop that made the error message not come out.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2018, Svetlana, Peter
 
-In Aqueous_n_WetDep_mod there was a return which was never reached. 
+In Aqueous_n_WetDep_mod there was a return which was never reached.
 Some unnnecessary calculations, but no effect on results
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2210,21 +2221,21 @@ sector emissions. Works also with monthly emissions.
 A new format is allowed, which is an extension of the "country" style format.
 The emissions can have names with format
 Emis:FR:snap:7:spec:sox:fac:1.0
-where the name after "spec:" specifies the species, and the number after 
+where the name after "spec:" specifies the species, and the number after
 "fac:" gives a scaling factor
 
 A completely new (internal) format for emissions is introduced.
 Will be generalized in the future.
-In the new format, a new emission is read into Emis_field(i,j,n) where n defines the identity of the field. 
+In the new format, a new emission is read into Emis_field(i,j,n) where n defines the identity of the field.
 the structure "Emis_id" will then identify for each id the actions to be taken (splits, time factors, emission heights etc.)
 It is a kind of generalized sector, and sectors emissions will be attempted put there in the future.
-For now it can already handle the "SpecialShips" from FMI if the names are redefined (updated file defined in config_emep.nml). 
-There was a difficulty with old setup, since the FMIship emissions do not use our standard emitted species and splits. 
+For now it can already handle the "SpecialShips" from FMI if the names are redefined (updated file defined in config_emep.nml).
+There was a difficulty with old setup, since the FMIship emissions do not use our standard emitted species and splits.
 The new format can use emissions for any species in CM_ChemSpec.
 
 "flat" emissions removed. (were not even used anymore!)
 
-There was also a bug in the SecEmisOut maps (output): the map namess did not match the 
+There was also a bug in the SecEmisOut maps (output): the map namess did not match the
 species (introduced 30 April 2018)
 
 And a bug for ship emissions: NTime_Read was not reinitialized. As a consequence "special
@@ -2240,20 +2251,20 @@ NB: the ship used special molecular weights, therefore, the factors are not inte
       mw=42.4 for Ash
       mw=12.01 for EC
       mw=17.32 for OC
-! Comments from Jukka-Pekka Jalkanen at FMI 
+! Comments from Jukka-Pekka Jalkanen at FMI
 
-!   The composition of Ash can be taken from Jana’s paper 
-!   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to 
-!   that, the composition by weight is: C (11.1%), O (5.7%), S (4.9%), 
-!   V (30.7%), Ni (20.9%), Ca (26.7%). This composition was determined for 
-!   fuel with 1.9% sulphur and it will not be directly applicable to fuels 
-!   used in the Baltic Sea during 2015. However, that is the only reference 
+!   The composition of Ash can be taken from Jana’s paper
+!   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to
+!   that, the composition by weight is: C (11.1%), O (5.7%), S (4.9%),
+!   V (30.7%), Ni (20.9%), Ca (26.7%). This composition was determined for
+!   fuel with 1.9% sulphur and it will not be directly applicable to fuels
+!   used in the Baltic Sea during 2015. However, that is the only reference
 !   I could find which reports the elemental composition of Ash.
 
-! All primary PM emitted should be assigned to PM2.5 fraction since the PM 
-! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
-! to >2.5 microns in the timescale used by the regional models is not known 
-! to me at this point.        
+! All primary PM emitted should be assigned to PM2.5 fraction since the PM
+! size of fresh exhaust is less than 100 nm. Whether this grows fast enough
+! to >2.5 microns in the timescale used by the regional models is not known
+! to me at this point.
 
 !nco commando for making the new names:
 ncrename -v CO,Emis:SHIP_CO:snap:8:spec:CO:fac:0.001 FMIGlobShip2015mon.nc
@@ -2337,7 +2348,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Moved uEMEP diffusion into uEMEP_mod.f90 and more optimization.
 Now vertical advection is done only up to 2 layers above uEMEP%Nvert
-Since all local fraction are zero above uEMEP%Nvert, this gives almost the same 
+Since all local fraction are zero above uEMEP%Nvert, this gives almost the same
 result. Less than 0.001 differences in locfrac, except sometimes over sea, because
 ship emission are higher up and need to come down to diminish locfrac
 Also bug fix, that could make localfractions nan at the northern boundary.
@@ -2366,13 +2377,13 @@ More efficient diffusion for uEMEP. Was very slow.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd May 2018, Peter
 
-To output local fraction corrected groups or primary components, set the subclass 
+To output local fraction corrected groups or primary components, set the subclass
 as 'Local_Correct', in config, for instance:
       'NO'       ,'ppb' ,'Local_Correct','AIR_CONCS','SPEC' ,'YMH',
       'PPM25'    ,'ug'  ,'Local_Correct','AIR_CONCS','GROUP','YMH',
 
-(note that not all 'Local_Correct' will make sense, since they will take local 
-correction for all parts. PMFINE, for instance will also correct the SIA, using 
+(note that not all 'Local_Correct' will make sense, since they will take local
+correction for all parts. PMFINE, for instance will also correct the SIA, using
 PPM local fractions.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2383,10 +2394,10 @@ Corrected aerosol dencities for coarse sea salt (2200 kg/m3) and dust (2600 kg/m
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 April 2018, Peter
 
-Now sector emissions are included in output by default, as part of 
+Now sector emissions are included in output by default, as part of
 the ... sector emissisons.
 Individual sector emissions can be added by setting for example:
-  SecEmisOutWanted(2) = T,	
+  SecEmisOutWanted(2) = T,
   SecEmisOutWanted(7) = T,
 
 for separate output of sector 2 and 7 (in addition to the default "all").
@@ -2414,7 +2425,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Removed gridrcemis0 (again!). Tested. multiplication by roa/(dA(k)+dB(k)*ps(i,j,1))
 is done in setup_rcemis.
-gridrcemis0 is a very large array, so it saves memory (and probably make the code 
+gridrcemis0 is a very large array, so it saves memory (and probably make the code
 more efficient)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2446,19 +2457,19 @@ Setup_1d_mod
 
 ChemFields
   Allocate rcphot with NRCPHOTextended!
-  
+
 
 NEW ROUTINES
 
   CheckStop_mod: checkValidArray to check eg all rct
   SmallUtils_mod: num2str for simple conversions
-  
+
 FUTURE -need to check/implement HONO and NRCTPHOTextented in FastJ
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 April 2018, Peter
 
-All "very important messages" at head of Log.changes removed, as most of them where 
+All "very important messages" at head of Log.changes removed, as most of them where
 outdated, and just make people think that nothing is valid.
 
 Updated link to emissplit in Config_module.f90. Can be overridden by config
@@ -2491,7 +2502,7 @@ ZCM_OLD - new directory.
 
 Aero2017nx reactions added to ZCM_EmChem16x
 
-AeroConstants_mod: NEW - to store AERO and NSAREA_DEF and avoid 
+AeroConstants_mod: NEW - to store AERO and NSAREA_DEF and avoid
   circularity
 
 Radiation_mod: needed to declare real hour
@@ -2511,7 +2522,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 AeroFunctions_mod
 
    *BUG* found in old code. SS2 and SS3 were mixed up for Gerber calculations
-   
+
 Config_module - changes in AERO
 
 Derived_mod - changed DpgV to umDpgV
@@ -2549,7 +2560,7 @@ Biogenics_mod - now use 'NATBIO' type, so we have NATBIO%C5H8 etc. This can
   in GenIn_Reactions.txt. The disadvantage is that this term won't appear
   as emissions in the mass budget of eg APINENE. Needs more thought....
 
-  BUG in OLD code? Didn't find rcemis for SOILNO in GLOBAL case. Maybe 
+  BUG in OLD code? Didn't find rcemis for SOILNO in GLOBAL case. Maybe
    elsewhere? Added StopAll until this is resolved.
 
 ChemFields_mod - needed hard-coded size 4 for rcbio. Needed to avoid circularity with
@@ -2628,7 +2639,7 @@ EmisDef_mod and Emissions_mod.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9 April 2018, Peter
 
-Small bug in "day of the week": the local hour West  UTC was always positive, 
+Small bug in "day of the week": the local hour West  UTC was always positive,
 giving possible wrong day of the week a few hours each day.
 
 Introduction of "automatic mask" for emissions. In config set for instance:
@@ -2668,8 +2679,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 08 Mar 2018, Peter
 
 Allow separate files for hourly outputs. Use the config keyword, for example:
-  HOURLYFILE_ending	= 'JJJ.nc',	
-(note that compared to earlier versions, "hour" is always added by the model, 
+  HOURLYFILE_ending	= 'JJJ.nc',
+(note that compared to earlier versions, "hour" is always added by the model,
  and should not be part of the keyword)
 
 removed the deprecated Output_hourly.f90 (excellent to be able to clean something!)
@@ -2741,11 +2752,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13-14th Feb 2018, Peter
 
 Removed the two 2d and one 3d "specials" for uEMEP outputs, and replace them
-by "USET" outputs (example in config_emep.pl and config_Outputs_NORWAY.nml 
-Redefined slightly is_water is_ice and is_allsea; several water or ice categories 
+by "USET" outputs (example in config_emep.pl and config_Outputs_NORWAY.nml
+Redefined slightly is_water is_ice and is_allsea; several water or ice categories
 can in principle be defined.
-For 3d output, also subclass can start by 'D3', instead of name (to allow more 
-freedom in names as they appearin the output). 
+For 3d output, also subclass can start by 'D3', instead of name (to allow more
+freedom in names as they appearin the output).
 
 New config flag HourlyEmisOut = .false., to output snap and sector emissions hourly
 This is set automatically if uEMEP hourly output are requested.
@@ -2761,7 +2772,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2018, Peter
 
 Snowdepth multiplied by 5 by default (not for WRF metdata). This is because
-IFS snowdepth is given in water equivalent, while the model needs meters of 
+IFS snowdepth is given in water equivalent, while the model needs meters of
 snow.
 Added SplitSpecialsFile and BiDirInputFile under NAMELIST /ModelConstants_config/
 (were missing)
@@ -2825,8 +2836,8 @@ Config_module.f90
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Feb 2018, Matthieu, Alvaro, Peter
 
-Special outputs for uEMEP. Only temporary. 
-Tee "specials" (special2d, special3d) should be put into USET, and the "H" in 
+Special outputs for uEMEP. Only temporary.
+Tee "specials" (special2d, special3d) should be put into USET, and the "H" in
 Derived_ml must be revised.
 
 Edit: these changes are removed 14th Feb
@@ -2834,7 +2845,7 @@ Edit: these changes are removed 14th Feb
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2018 Peter, John
 
-Corrected bug in wrf met reading for snow. Was using SNOWNC which is accumulated since 
+Corrected bug in wrf met reading for snow. Was using SNOWNC which is accumulated since
 the start of the run, while SNOWH should have been used.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2843,8 +2854,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 A specific sector category (SNAP or GNFR) can be forced in config for example:
 USE_SECTORS_NAME = 'SNAP',
 
-Even if the emissions are defined in GNFR, they will be mapped over to SNAP, so 
-that everything looks like SNAP was used. The concentrations should be identical, 
+Even if the emissions are defined in GNFR, they will be mapped over to SNAP, so
+that everything looks like SNAP was used. The concentrations should be identical,
 because so far we haven't introduce any specific parametrization for GNFR.
 
 Also removed the Emis_SOURCE and Emis_TEST flags, that were no more in use.
@@ -2979,12 +2990,12 @@ Country_ml
    Fixed --100 to -100 for HT1015   ! BUG!!
    More length to country name
    Extra tests in self_test
-   
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Nov     2017  Peter, Massimo
 
 There was a bug when the lon lat grid is defined in such a way that the transition
-from negative to positive longitudes is on the same processor. 
+from negative to positive longitudes is on the same processor.
 This does never happen if the grid starts at -180, such as our GLOBAL or GLOBAL05 grids.
 The model could then crash in the landuse (explains Massimo's issue).
 
@@ -2993,7 +3004,7 @@ Also changed the lib path in utils/uEMEP_GUI.py , so that it works on Stallo.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Nov     2017  Peter
 
-GetEuroBVOC() uses hardcoded landuse (CF,DF...). If these where not defined 
+GetEuroBVOC() uses hardcoded landuse (CF,DF...). If these where not defined
 the index (ibvoc) gets negative, and values are written in a random part of memory.
 This might be the reason why the code crash when glc2000.nc was defined for both
 landuse files.
@@ -3004,7 +3015,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 All files (except config) can be linked through config.
 Only Unimod and config_emep.nml are needed.
-Just run from any directory; copy Unimod (executable) and config_emep.pl and: 
+Just run from any directory; copy Unimod (executable) and config_emep.pl and:
 mpirun Unimod
 (you should of course do this from a compute-node or in a script)
 
@@ -3051,7 +3062,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th Oct     2017  Peter
 
 Country code column in the "lonlat" lines in femis.dat.
-If the code is zero, all countries within the lonlat rectangle will be reduced; 
+If the code is zero, all countries within the lonlat rectangle will be reduced;
 otherwise only the country corresponding toi the code will be reduced.
 
 There is backward compatibility, in the sense that it will work if the country code
@@ -3076,14 +3087,14 @@ ModelConstants_ml, Met_ml, ColumnSource_ml, ForestFire_ml, ZD_Pollen/Pollen_ml:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Oct     2017  Peter
 
-Allow to switch off (i.e. not take into account) femis for specific emissions 
+Allow to switch off (i.e. not take into account) femis for specific emissions
 files. Only the lines with "lonlat" format are switched off.
-To switch off femis-lonlat for the emissions specified in emis_inputlist(1), 
-add this in config file:  
+To switch off femis-lonlat for the emissions specified in emis_inputlist(1),
+add this in config file:
 emis_inputlist(1)%use_lonlat_femis = F,
 
-uEMEP: output only lowest level (can be modified to different number of levels, 
-but hardcoded for now)  
+uEMEP: output only lowest level (can be modified to different number of levels,
+but hardcoded for now)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct     2017  Dave
@@ -3129,7 +3140,7 @@ ForestFire_ml,Nest_ml,Pollen_ml,run.pl,config_$exp_name.nml
 - use DataDir/GRID keywords on Fire_config,Nest_config,Pollen_config (#63)
 
 NetCDF_ml:
-- improve missing file error message 
+- improve missing file error message
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Sep  2017  Dave
@@ -3144,7 +3155,7 @@ ForestFire_ml.f90
 
    (A preliminary 10-year data set from FINNv1.5 can be found in
     /global/work/mifads/FFIRE_TESTS/gRemapMonthly10yr.nc.  Also need to
-    set ${'FINN'} in run.pl to use, along with modified MODE in 
+    set ${'FINN'} in run.pl to use, along with modified MODE in
     config Fire_config. )
 
    - changed function newFFrecord to be subroutine, since (a) I don't
@@ -3156,18 +3167,18 @@ ForestFire_ml.f90
   - harmonised treatement of ReadField_CDF across different BB sources
   - Extra documentation
   - Modified debug, though this is still somewhat confusing
-     
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Sep  2017 Alvaro
 
 OPEN-SOURCE RELEASE (tag rv4_15os)
- 
+
 The open source release contains some commits between rv4_15_1 and this point.
 The list of commit included can be found on issue #52.
 
 The release is based on master after cleanUp2017 (PR #56, #61 & #62).
 It contains some additional clean up, intended only for the open source release.
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th   Sep  2017 Alvaro
 

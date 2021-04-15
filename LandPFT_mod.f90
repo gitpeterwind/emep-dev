@@ -1,7 +1,7 @@
 !> <LandPFT_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!! *************************************************************************! 
+!! *************************************************************************!
 !! Reads LAI maps from Global LPJ-GUESS model
-!! Data provided by Guy Schurgers & Almut Arneth (Lund University) 
+!! Data provided by Guy Schurgers & Almut Arneth (Lund University)
 !! and normalised to LAI factors for EMEP usage (DS)
 
 module LandPFT_mod
@@ -23,17 +23,14 @@ private
   public :: MapPFT_LAI
   public :: MapPFT_BVOC
 
-
- INCLUDE 'mpif.h'
-
- real, public, allocatable :: pft_lai(:,:,:) 
- real, public, allocatable :: pft_bvoc(:,:,:,:) 
+ real, public, allocatable :: pft_lai(:,:,:)
+ real, public, allocatable :: pft_bvoc(:,:,:,:)
 
  ! PFTs available from smoothed LPJ fields
 
   integer, public, parameter :: N_PFTS = 6
   character(len=5),public, parameter, dimension(N_PFTS) :: PFT_CODES = &
-        (/ "CF   ", "DF   ", "NF   ", "BF   ", "C3PFT", "C4PFT" /) 
+        (/ "CF   ", "DF   ", "NF   ", "BF   ", "C3PFT", "C4PFT" /)
 
    ! Variables available:
 
@@ -73,11 +70,11 @@ contains
 !call GetMEGAN_BVOC()
 
      end if
-         
+
     ! Get LAI data:
 
      do pft =1, N_PFTS
-           varname = trims( "Normed_" // LAI_VAR // PFT_CODES(pft) ) 
+           varname = trims( "Normed_" // LAI_VAR // PFT_CODES(pft) )
 
            call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.false.)
@@ -116,21 +113,21 @@ contains
     character(len=20) :: varname
 
     ! Ebvoc already includes monthly LAI changes - might be wrong?
-    
+
 return ! JAN31TEST
      if ( my_first_call ) then
          allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,nbvoc) )
          my_first_call = .false.
      end if
-         
+
     ! Get BVOC data. Code assumes that we want isoprene first, then
     !    apinene if provided. Multiple terpenes not considered yet,
     !    but we have just Emt anyway.
 
 
      do pft =1, N_PFTS
-       do ivar =1, nbvoc ! size( BVOC_USED ) 
-           varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft)) 
+       do ivar =1, nbvoc ! size( BVOC_USED )
+           varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft))
 
            call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)

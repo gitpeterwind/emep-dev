@@ -54,8 +54,6 @@
   private
   public  :: chemistry        ! Runs chemical solver
 
-  INCLUDE 'mpif.h'
-  
   integer, parameter:: nchemMAX=15
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for
@@ -160,7 +158,7 @@ contains
        !*************************************
        if ( first_call .or. YieldModificationsInUse ) then
           cell_tinv = tinv(k)
-          if( DebugCell ) write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv 
+          if( DebugCell ) write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv
           call doYieldModifications('init')
        end if
 
@@ -168,7 +166,7 @@ contains
          accdt2 = 0.0
          accdt  = 0.0
          write(*,'(a,f8.1)') dtxt//'DSKz date:'//print_date(), dt_advec
-         write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv 
+         write(*,*) 'YIELD INIT ', me, k, 1/cell_tinv
        end if
 
        do ichem = 1, nchem
