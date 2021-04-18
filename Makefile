@@ -25,37 +25,6 @@ ifeq ($(MACHINE),fram)
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpiifort
-else ifeq ($(MACHINE),stallo)
-  MODULES = netCDF-Fortran/4.4.4-intel-2016b
-  LDFLAGS +=  $(shell nc-config --flibs)
-  F90FLAGS += $(shell nc-config --cflags)
-  MAKEDEPF90=/home/mifapw/bin/makedepf90
-  OPT_FLAGS = -O2 -ftz
-  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-  F90=mpiifort
-else ifeq ($(MACHINE),gstallo)
-  # Needs module swap intel gcc/4.7.2
-  MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
-  F90FLAGS = -fbacktrace -fdefault-real-8 -O3 -Wall \
-    -ffixed-line-length-none -ffree-line-length-none \
-    -fbounds-check -pedantic -fimplicit-none
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS+= $(shell nc-config --cflags)
-  MAKEDEPF90=/home/mifapw/bin/makedepf90
-  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-  DEBUG_FLAGS =
-  OPT_FLAGS =
-  FC=mpif90
-  LD=mpif90
-else ifeq ($(MACHINE),vilje)
-  MODULES ?= intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0 # fftw/3.3.3
-# MODULES ?= intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1 # fftw/3.3.4
-# MODULES ?= intelcomp/15.0.1 mpt/2.10 netcdf/4.3.2 # fftw/3.3.4
-# MODULES ?= intelcomp/16.0.1 mpt/2.13 netcdf/4.4.0 # fftw/3.3.4
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS+= $(shell nc-config --cflags)
-  MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
-  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),byvind)
   MODULES = intel/12.1.0 openmpi/1.4.1-i101011 netcdf/4.1.2-i1210
   LIBS += -lnetcdf -lnetcdff
@@ -87,7 +56,13 @@ else ifeq ($(MACHINE),abel)
   INCL += $(NETCDF)/include $(INTEL)/include/intel64
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
-else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
+else ifeq ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
+  MAKEDEPF90=makedepf90
+  OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+else # default ubuntu etc.
   # sudo apt-get install makedepf90 libmpich-dev libnetcdf-dev libnetcdff-dev
   F90FLAGS = -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
   LDFLAGS += $(shell nf-config --flibs)
@@ -96,12 +71,6 @@ else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
-else ifeq ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
-  LDFLAGS +=  $(shell nc-config --flibs)
-  F90FLAGS += $(shell nc-config --cflags)
-  MAKEDEPF90=makedepf90
-  OPT_FLAGS = -O2 -ftz
-  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
@@ -150,9 +119,9 @@ TEST:
 # eEMP Default Scenarios: Vents, NPPs & NUCs
 Emergency: VENTS ?= DefaultVolcano
 #Eyjafjoll,Vesuvius,Etna,Kr.suv.k,Katla,Askja
-Emergency: NPPAS ?= 
+Emergency: NPPAS ?=
 #Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-Emergency: NUCXS ?= 
+Emergency: NUCXS ?=
 #NorthKorea,Tehran
 Emergency:
 	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS)

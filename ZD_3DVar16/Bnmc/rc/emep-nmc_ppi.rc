@@ -94,10 +94,15 @@ nmc.variables   :  PM10
 !
 
 ! filename template:
+my.domain       : ${DOMAIN}
+#if "${my.domain}".lower() == "macc14"
 #if "${my.runid}".startswith("PM")
 my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}-%{yyyy}_hourInst.nc
 #else
 my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
+#endif
+#else
+my.files : /lustre/storeB/users/${USER}/Bnmc/${my.domain}/NMC/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
 #endif
 
 ! run with '00' meteo:
@@ -120,30 +125,24 @@ nmc.run.12.var.PM10   :  D3_ug_PM10_wet
 
 
 ! time range in days:
-nmc.timerange.t1      :  2010-01-01
-nmc.timerange.t2      :  2010-12-31
+nmc.timerange.t1      :  2010-01-02
+nmc.timerange.t2      :  2010-11-30
 
 ! which hours ?
-nmc.hours             :  06 12 18 24
+nmc.hours             :  00 06 12 18
 
 
 !-------------------------------------------------
 ! padding
 !-------------------------------------------------
 
-!!~ no padding:
-!nmc.spectral.padding.301   :  301
 !~ current:
 nmc.spectral.padding.301   :  349
-!~ lon extend to 360
-!nmc.spectral.padding.301   :  $(( 2**3 * 3**2 * 5 ))
+nmc.spectral.padding.601   :  697
 
-!!~ no padding:
-!nmc.spectral.padding.369   :  369
 !~ current:
 nmc.spectral.padding.369   :  465
-!!~ lat extend to 432
-!nmc.spectral.padding.369   :  $(( 2**4 * 3**3 ))
+nmc.spectral.padding.737   :  929
 
 
 !-------------------------------------------------
@@ -228,7 +227,7 @@ nmc.sample-B.filename            :  ${output.dir}/nmc-eps-B-point.nc
 ! to be compared with output in gridpoint file.
 
 ! apply ?
-nmc.approx-B                  :  T
+nmc.approx-B                  :  F
 
 ! correlation output?
 nmc.approx-B.correlation      :  T

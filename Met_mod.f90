@@ -667,6 +667,10 @@ subroutine MeteoRead()
 
   lwc = 0.6e-6*cc3d
 
+  if(foundprecip .and. USES%NO_3DPRECIP)then
+    call PrintLog("WARNING: ignoring 3D precipitations", MasterProc)
+    foundprecip=.false.
+  end if
   if(.not.foundprecip)then
     !Will construct 3D precipitations from 2D precipitations
     if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
