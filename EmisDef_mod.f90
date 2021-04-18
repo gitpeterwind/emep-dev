@@ -66,6 +66,7 @@ integer, public, parameter :: Emis_heights_sec_pre=6 ! Actual Number of vertical
 real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
      (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, & 
      (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
+real, public :: Emis_Plevels(Emis_Nlevel_MAX) ! used if set by config_emep.nml
 
 !Fraction released in each vertical level predefined values:
 real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
@@ -77,6 +78,8 @@ real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
       0.02,     0.08,     0.60,     0.30,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
       0.0,      0.00,     0.41,     0.57,     0.02,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
       (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
+
+real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set by config_emep.nml
   
  ! predefine SNAP sectors from EMEP/CORINAIR (NB: splits indices are supposed to be generated from GNFR setup)
    integer, public, parameter :: &

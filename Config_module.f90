@@ -11,6 +11,7 @@ use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
+use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Plevels, Emis_h_pre
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEMEP_type, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
@@ -827,7 +828,8 @@ subroutine Config_Constants(iolog)
    ,fileName_CH4_ibcs&
    ,femisFile&
    ,Vertical_levelsFile&
-   ,EmisHeightsFile&
+!   ,EmisHeightsFile&
+   ,Emis_h&
    ,SoilTypesFile&
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
@@ -884,7 +886,8 @@ subroutine Config_Constants(iolog)
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default
-
+  Emis_h = -1.0 ! to mark as not set
+  Emis_Plevels = -1.0 ! to mark as not set
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file

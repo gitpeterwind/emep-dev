@@ -27,7 +27,8 @@ use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, &
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
                             ,NEmis_sourcesMAX&
-                            ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Plevels_pre
+                            ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Plevels_pre&
+                            ,Emis_h, Emis_Plevels, Emis_heights_sec_MAX, Emis_Nlevel_MAX
 use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
@@ -1079,7 +1080,7 @@ end if
    character(len=20) :: txt1
 
 
-   integer :: k_up
+   integer :: k_up, i
    real,allocatable:: emis_P_level(:)
    real :: P_emep,frac,sum
    integer :: isec,k_ext,k1_ext(KMAX_BND),nemis_hprofile
@@ -1093,21 +1094,46 @@ end if
    !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
 
    if(.true.)then
-      nemis_hprofile = Emis_Nlevel_pre
-      N_HFAC = Emis_heights_sec_pre
-      allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
-      emis_hprofile(:,:) = -999.9 
-      emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-      emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h_pre(1:nemis_hprofile,1:Emis_heights_sec_pre)
-      allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
-      emis_P_level=0.0
-      emis_P_level(0)=Pref
-      emis_P_level(1:nemis_hprofile) = Emis_Plevels_pre(1:Emis_Nlevel_pre)
+      if (Emis_h(1,1)>-1E-5) then
+         !Emission release heights have been defined in config_emep.nml. Use them
+         !find the sizes of the arrays. We assume that all values >0 are to be used
+         nemis_hprofile = 0
+         do i=1, Emis_Nlevel_MAX
+            if (Emis_h(1,i)>-1E-5) nemis_hprofile = nemis_hprofile + 1
+            call CheckStop(Emis_Plevels(i)<-1E-5,'Emis_Plevels level not defined in config_emep.nml')
+            if (Emis_h(1,i)<-1E-5) exit
+         end do
+         N_HFAC = 0
+         do i=1, Emis_heights_sec_MAX
+            if (Emis_h(i,1)>-1E-5) N_HFAC = N_HFAC + 1            
+            if (Emis_h(i,1)<-1E-5) exit
+         end do
+            
+         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+         emis_hprofile(:,:) = -999.9 
+         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+         emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h(1:nemis_hprofile,1:N_HFAC)
+         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+         emis_P_level=0.0
+         emis_P_level(0)=Pref
+         emis_P_level(1:nemis_hprofile) = Emis_Plevels(1:nemis_hprofile)
+      else
+         !use the default predefined values
+         nemis_hprofile = Emis_Nlevel_pre
+         N_HFAC = Emis_heights_sec_pre
+         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+         emis_hprofile(:,:) = -999.9 
+         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+         emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h_pre(1:nemis_hprofile,1:Emis_heights_sec_pre)
+         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+         emis_P_level=0.0
+         emis_P_level(0)=Pref
+         emis_P_level(1:nemis_hprofile) = Emis_Plevels_pre(1:Emis_Nlevel_pre)
+      end if
    else
       !use old format
       call open_file(IO_EMIS,"r",EmisHeightsFile,needed=.true.)
-      
-      
+            
       do
          call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
          
