@@ -214,7 +214,7 @@ type, public :: Emis_id_type
    character(len=TXTLEN_NAME) :: units = 'NOTSET'!units AFTER netcdf values are multiplied by factor
    character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   integer :: sector = -1 !sector as defined in current model, according to USE_SECTORS_NAME
+   integer :: sector = -1 !sector as defined in this file
    integer :: sector_idx = -1 ! internal index used in SECTORS (set by model)
    integer :: species_ix = -1 ! internal index for species
    integer :: injection_k = -1 !which model k level to put emissions into. Only for individual species

@@ -6,20 +6,19 @@ use ChemSpecs_mod,     only: species
 use Config_module,     only: NPROC, MasterProc,USES,step_main,&
                              KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, &
+                             IIFULLDOM,JJFULLDOM, &
                              SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile,&
                              startdate
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR,IC_DUMMY 
 use Debug_module,      only: DEBUG
-use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, & 
+use EmisDef_mod,       only: NSECTORS, NCMAX, & 
                             N_HFAC,N_SPLIT, N_SPLITMAX, EMIS_FILE, & 
                             VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )
-                            NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
-                            NROADDUST, &
-                            snap2gnfr&
+                            NH3EMIS_VAR,dknh3_agr,TFAC_IDX_AGR,TFAC_IDX_TRAF, &
+                            NROADDUST &
                             ,cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes&
                             ,GridEmis,gridrcemis, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat &   
@@ -249,13 +248,6 @@ contains
        call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
        nlandcode=1
        fractions=1.0
-       if(SECTORS_NAME=='GNFR'.and.type == "SNAPsectors")then
-          call CheckStop('GNFR sector cannot mix with SNAP sectors for this format')
-       else if(SECTORS_NAME=='SNAP'.and.type == "GNFRsectors")then
-          call CheckStop('SNAP sector cannot mix with GNFR sectors for this format')
-       else
-          !only case implemented for not fractions
-       endif
     else
        nVariables = NSECTORS*NEMIS_FILE !in fraction format we loop over all species and sectors
     endif
@@ -333,15 +325,8 @@ contains
           !fraction format
           isec=mod((varid-1),NSECTORS)+1
           iem_used=(varid-1)/NSECTORS+1
-          if(SECTORS_NAME=='GNFR'.and.type == "SNAPsectors")then
-             if(me==0.and.iem_used==1)write(*,*)'cannot  use snap sector if SECTORS_NAME is GNFR'
-             stop
-          else if(SECTORS_NAME=='SNAP'.and.type == "GNFRsectors")then
-             if(me==0.and.iem_used==1)write(*,*)'cannot use gnfr sector if SECTORS_NAME is SNAP'
-             stop
-          else
-             write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
-          endif
+          
+          write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
           
           if(pollName(1)/='NOTSET')then
              cdfemis = 0.0 ! safety, shouldn't be needed though
@@ -1023,11 +1008,8 @@ end if
        elseif (isec==100) then    ! Anthropogenic scenario
           !if you need this option, then just uncomment and check that
           !ANTROP_SECTORS is set according to your categories (10 for SNAP)
-          call CheckStop(SECTORS_NAME/='SNAP',&
-                "Anthropogenic not compatible with non-SNAP")
-          isec1 = 1
-          isec2 = ANTROP_SECTORS
-       else                       ! one sector: isec
+          call CheckStop(isec==100, "Anthropogenic sectors no more implemented!")
+      else                       ! one sector: isec
           isec1 = isec
           isec2 = isec
        end if
@@ -1867,7 +1849,7 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
           hour_iland, Country(iland)%timezone, i,j, itz
      call datewrite(dtxt//"DAY 24x7:", &
           (/ iland, wday, wday_loc, hour_iland /), &
-          (/ fac_ehh24x7(1,ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
+          (/ fac_ehh24x7(1,TFAC_IDX_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
   end if
     
 end subroutine make_iland_for_time

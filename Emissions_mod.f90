@@ -26,7 +26,7 @@ use Config_module,only: &
     SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
     FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,uEMEP,SECTORS_NAME,&
+    NPROC, EmisSplit_OUT,uEMEP,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
@@ -38,8 +38,10 @@ use Debug_module,      only: DEBUG ! , & !DEBUG => DEBUG_EMISSIONS, &
 use EmisDef_mod,       only: &
       EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
-     ,ISNAP_DOM     & ! snap index for domestic/resid emis
-     ,ISNAP_TRAF    & ! snap index for road-traffic (SNAP7)
+     ,TFAC_IDX_POW  & ! tfac index for public power emis
+     ,TFAC_IDX_DOM  & ! tfac index for domestic/resid emis
+     ,TFAC_IDX_TRAF & ! tfac index for road-traffic (SNAP7)
+     ,TFAC_IDX_AGR  & ! tfac index for agriculture
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
      ,NROADDUST     & ! No. road dust components 
@@ -58,11 +60,7 @@ use EmisDef_mod,       only: &
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
-     ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
      ,Nneighbors & !used for uemep/loc_frac
-     ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
-     ,NSECTORS_GNFR_CAMS, GNFR_CAMS_sec2tfac_map, GNFR_CAMS_sec2hfac_map, GNFR_CAMS_sec2split_map&!GNFR_CAMS specific mapping
-     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,NSECTORS_GNFR_CAMS, GNFR_CAMS_SECTORS, NSECTORS_SNAP, SNAP_SECTORS, NSECTORS_MAX, SECTORS&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT & !old format
@@ -960,6 +958,7 @@ contains
     integer :: emis_inputlist_NEMIS_FILE!number of files for each emis_inputlist(i)
     real :: buffer(LIMAX,LJMAX)
     logical country_owner_map(NLAND,NPROC)
+    integer largestsplit !used only here to check value
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -1079,6 +1078,7 @@ contains
              found = 1
           end if
        end if
+
        call CheckStop(found == 0, 'Sector name not recognized: '//trim(emis_inputlist(iemislist)%sector))   
  
        if(IsCDFfractionFormat(trim(fname))) emis_inputlist(iemislist)%format='fractions'
@@ -1122,7 +1122,39 @@ contains
           write(*,*)"emissions from "//trim(fname)//" will not be included"
        endif
     end do ! iemislist
-
+    i=0
+    N_TFAC = 0
+    N_HFAC = 0
+    largestsplit = 0
+    do isec = 1, NSECTORS
+       if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM) then
+          i=1
+          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          if(USES%DEGREEDAY_FACTORS) then
+             if (MasterProc) write(*,*)', will be used with the Degree-Days method'
+          else
+             if (MasterProc) write(*,*)', will be recognized as a domestic sector'
+          end if
+       end if
+       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_AGR) then
+          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          write(*,*)', will be recognized as an agricultur sector'
+       end if
+       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_TRAF) then
+          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          write(*,*)', will be recognized as a traffic sector'
+       end if
+       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_POW) then
+          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          write(*,*)', will be recognized as a Public Power sector'
+       end if
+       
+       N_TFAC  = max(N_TFAC, SECTORS(isec)%timefac)
+       N_HFAC  = max(N_HFAC, SECTORS(isec)%height)
+       largestsplit = max(largestsplit, SECTORS(isec)%split)
+    end do
+    call CheckStop(USES%DEGREEDAY_FACTORS .and. i==0," did not find any sector corresponding to domestic")    
+    
     if(Emis_mask_allocate)then
        if(.not.allocated(Emis_mask))then
           allocate(Emis_mask(LIMAX,LJMAX))
@@ -1133,33 +1165,7 @@ contains
     endif
 
     ! init_sectors
-    call CheckStop((USES%SECTORS_NAME /='NOTSET'),"SECTORS_NAME not in use anymore! see manual")
 
-
-    !Now we always assume GNFR_CAMS
-    SECTORS_NAME='GNFR_CAMS'
-
-    if(SECTORS_NAME=='SNAP')then
-       !11 sectors defined in emissions
-       !map timefactors onto SNAP map
-       sec2tfac_map => SNAP_sec2tfac_map
-       sec2hfac_map => SNAP_sec2hfac_map
-       sec2split_map => SNAP_sec2split_map
-    else  if(SECTORS_NAME=='GNFR_CAMS' .or. SECTORS_NAME=='GNFR')then
-       !19 sectors defined in emissions
-       !map timefactors onto GNFR map
-       sec2tfac_map => GNFR_CAMS_sec2tfac_map
-       sec2hfac_map => GNFR_CAMS_sec2hfac_map
-       sec2split_map => GNFR_CAMS_sec2split_map  
-    else  if(SECTORS_NAME=='TEST')then
-       !11 sectors defined in emissions
-       !map timefactors onto TEST map
-       sec2tfac_map => TEST_sec2tfac_map
-       sec2hfac_map => TEST_sec2hfac_map
-       sec2split_map => TEST_sec2split_map
-    else
-       call StopAll("Sectors not defined")
-    end if
     call CheckStop(NSECTORS>MaxNSECTORS, "redefine larger MaxNSECTORS")
 
     allocate(Emis_field(LIMAX,LJMAX,10))
@@ -1240,6 +1246,7 @@ contains
     end if
     !=========================
     call EmisSplit()    ! In EmisGet_mod, => emisfrac
+    call CheckStop(largestsplit>N_SPLIT," split index not defined ")
     !=========================
     !Must first call EmisSplit, to get nrcemis defined
     if(EmisSplit_OUT)then
@@ -1260,7 +1267,7 @@ contains
     forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
          fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
     if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
-         fac_min(:,ISNAP_DOM,:) = 0.
+         fac_min(:,TFAC_IDX_DOM,:) = 0.
 
     ! 4) Read emission files 
 
@@ -1794,7 +1801,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   if(DEBUG%EMISTIMEFACS.and.MasterProc) &
     write(*,"(a,i4,2f8.3)") dtxt//" traffic? 24x7", N_TFAC, &
-      fac_ehh24x7(1,ISNAP_TRAF,1,4,1),fac_ehh24x7(1,ISNAP_TRAF,13,4,1)
+      fac_ehh24x7(1,TFAC_IDX_TRAF,1,4,1),fac_ehh24x7(1,TFAC_IDX_TRAF,13,4,1)
   !..........................................
 
   if(hourchange) then 
@@ -1857,7 +1864,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               !Degree days - only SNAP-2 
               if(USES%DEGREEDAY_FACTORS .and. &
-                tfac_idx==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                tfac_idx==TFAC_IDX_DOM .and. Gridded_SNAP2_Factors) then
                 oldtfac = tfac
                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                 ! we make use of a baseload even for SNAP2
@@ -1968,7 +1975,7 @@ if ( hour_iland<1) then
     print '(a,9i5)', 'ROAD TFAC :', iland, iem, Country(iland)%timezone, hour_iland
 end if
               do iem = 1, NROAD_FILES
-                 tfac = fac_ehh24x7(iem, ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)
+                 tfac = fac_ehh24x7(iem, TFAC_IDX_TRAF,hour_iland,wday_loc,iland_timefac_hour)
                  s = tfac * roadfac * roaddust_emis_pot(i,j,icc,iem)
                  if(DEBUG%ROADDUST.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)&
                   write(*,*)dtxt//"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
@@ -2117,7 +2124,7 @@ end if
                       tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
                       if(Emis_source(n)%periodicity == 'yearly')then
                          !apply monthly and daily factor on top of hourly factors
-                         tfac = tfac * timefac(iland_timefac,sec2tfac_map(isec),iem)                         
+                         tfac = tfac * timefac(iland_timefac,tfac_idx,iem)                         
                       endif
                       if(Emis_source(n)%periodicity == 'monthly')then
                          !apply daily factors, with renormalization to conserve monthly sums
@@ -2132,7 +2139,7 @@ end if
 
                    !Degree days - only SNAP-2 
                    if(USES%DEGREEDAY_FACTORS .and. &
-                        tfac_idx==ISNAP_DOM .and. Gridded_SNAP2_Factors .and. &
+                        tfac_idx==TFAC_IDX_DOM .and. Gridded_SNAP2_Factors .and. &
                         (Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')) then
                       oldtfac = tfac
                       ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise

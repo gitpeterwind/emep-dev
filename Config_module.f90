@@ -176,7 +176,6 @@ type, public :: emep_useconfig
 
  ! If USES%EMISTACKS, need to set:
   character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"
-  character(len=40) :: SECTORS_NAME = 'NOTSET' ! eg 
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
@@ -213,8 +212,6 @@ logical, public, save :: EmisSplit_OUT = .false.
 logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD requested in output
 
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
-
-character(len=40), public, save   :: SECTORS_NAME='SNAP'
 
 !Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
 character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
@@ -828,7 +825,6 @@ subroutine Config_Constants(iolog)
    ,fileName_CH4_ibcs&
    ,femisFile&
    ,Vertical_levelsFile&
-!   ,EmisHeightsFile&
    ,Emis_h&
    ,SoilTypesFile&
    ,SurfacePressureFile&

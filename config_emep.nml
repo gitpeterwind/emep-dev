@@ -104,7 +104,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 
  !Good EECCA default:
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
-  EmisDir                 = 'DataDir/emis01deg_EMEP/',
+  EmisDir                 = 'DataDir/emis01deg_EMEP',
   emis_inputlist(1)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
 
 !  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.

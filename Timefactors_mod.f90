@@ -57,8 +57,8 @@
   use CheckStop_mod, only: CheckStop
   use ChemDims_mod,  only: NEMIS_File 
   use Country_mod,   only: NLAND,Country
-  use EmisDef_mod,   only: EMIS_FILE, ISNAP_DOM, NSECTORS_SNAP,N_TFAC
-  use GridValues_mod    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
+  use EmisDef_mod,   only: EMIS_FILE, TFAC_IDX_DOM, TFAC_IDX_POW, NSECTORS_SNAP,N_TFAC
+  use GridValues_mod, only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_mod, only : Averageconserved_interpolate
   use Met_mod,       only: Getmeteofield
   use Config_module, only: MasterProc
@@ -225,7 +225,6 @@ contains
 
    if( INERIS_SNAP1 ) fac_cemm(:) = 1.0
 
-
    do iemis = 1, NEMIS_FILE
 
        fname2 = key2str(MonthlyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
@@ -238,7 +237,6 @@ contains
        do 
            read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
                 (buff(mm),mm=1,12)
-!             (fac_emm(inland,mm,insec,iemis),mm=1,12)
            if ( ios <  0 ) exit     ! End of file
            ic=find_index(inland,Country(:)%icode)
            if(ic<1.or.ic>NLAND)then
@@ -246,6 +244,7 @@ contains
                   "Monthlyfac code not used",inland
               cycle
            end if
+           if(insec > N_TFAC) cycle
            fac_emm(ic,1:12,insec,iemis)=buff(1:12)
 
            ! Temporary and crude implementation for BIDIR tests:
@@ -256,7 +255,7 @@ contains
            !defined after renormalization and send to al processors:
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
-           if( dbgTF.and.insec==ISNAP_DOM.and.iemis==1  ) &
+           if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
               write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac ", &
                inland,insec,iemis, fac_min(ic,insec,iemis),&
                  " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
@@ -268,16 +267,16 @@ contains
 
        close(IO_TIMEFACS)
 
-      ! Apply change in monthly factors for SNAP 1
+      ! Apply change in monthly factors for PUBLIC POWER (SNAP 1)
        do ic = 1, NLAND
           sumfac=0.0
           do mm=1,12
-               fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*fac_cemm(mm)
-               sumfac=sumfac+fac_emm(ic,mm,1,iemis)
+             fac_emm(ic,mm,TFAC_IDX_POW,iemis)=fac_emm(ic,mm,TFAC_IDX_POW,iemis)*fac_cemm(mm)
+             sumfac=sumfac+fac_emm(ic,mm,TFAC_IDX_POW,iemis)
           end do
           ! normalize
           do mm=1,12
-             fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfac
+             fac_emm(ic,mm,TFAC_IDX_POW,iemis)=fac_emm(ic,mm,TFAC_IDX_POW,iemis)*12./sumfac
           end do
        end do
        if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, " records from ", trim(fname2) 
@@ -291,7 +290,6 @@ contains
   fac_edd(:,:,:,:) = 1.0
 
   do iemis = 1, NEMIS_FILE
-
        fname2 = key2str(DailyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
@@ -300,14 +298,14 @@ contains
        n = 0
        do
          read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
-              (buff(i),i=1,7)
-             !(fac_edd(inland,i,insec,iemis),i=1,7)
+              (buff(i),i=1,7)         
            if ( ios <  0 ) exit   ! End of file
            ic=find_index(inland,Country(:)%icode)
            if(ic<1.or.ic>NLAND)then
               if(me==0.and.insec==1.and.iemis==1)write(*,*)dtxt//"Dailyfac code not used",inland
               cycle
            end if
+           if(insec > N_TFAC) cycle
            fac_edd(ic,1:7,insec,iemis)=buff(1:7)
            call CheckStop( ios, dtxt//" Read error in Dailyfac")
 
@@ -354,7 +352,8 @@ contains
             if( dbgTF ) write(*,"(a,2i3,24f5.2)") dtxt//"HOURLY=> ",&
                  idd, insec, tmp24(:) !(1), tmp24(13)
          end if
-         
+         if(insec > N_TFAC) cycle
+        
          if(  idd == 0 ) then ! same values every day
             do idd2 = 1, 7
                do ihh=1,24

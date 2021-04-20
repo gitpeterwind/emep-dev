@@ -106,8 +106,8 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
         (/ &
 !           general name,  longname, netcdf_name timefac index, height index, split index, description, species
    Sector_type('GNFR_CAMS', 'GNFR_A',  'sec01',      1,            1,            1,       'Public Power', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_C',  'sec03',      2,            2,            3,       'OtherStationaryComb', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),& 
+   Sector_type('GNFR_CAMS', 'GNFR_C',  'sec03',      2,            2,            3,       'OtherStationaryComb', 'ALL'),& !NB: used for domestic/degree-day
    Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      4,            4,            4,       'Fugitive', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_F',  'sec06',      7,            2,            6,       'RoadTransport', 'ALL'),&
@@ -134,61 +134,23 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
 
 
    integer, save, public :: & !must be compatible with:
-      ! timefac, fac_ehh24x7, fac_edd, fac_emm, fac_min, GridTfac, ISNAP_DOM, ISNAP_TRAF
-          N_TFAC  = 11  ! Number of timefactor classes defined
-   integer, save, pointer, dimension(:), public :: sec2tfac_map => null()! mapping of sector to time factor class
+      ! timefac, fac_ehh24x7, fac_edd, fac_emm, fac_min, GridTfac, TFAC_IDX_DOM, TFAC_IDX_TRAF
+          N_TFAC  = 0  ! Actual number of timefactor classes defined 
    integer, save, public :: & !must be compatible with:
-          N_HFAC  = 11  ! Number of height distribution classes defined
-         !DSHK N_HFAC  = 12  ! Number of height distribution classes defined
-   integer, save, pointer, dimension(:), public :: sec2hfac_map => null()! mapping of sector to height distribution class
+          N_HFAC  = 0  ! Actual Nnumber of height distribution classes defined
    integer, save, public :: & !must be compatible with: emisfrac
           N_SPLITMAX  = 30  ! Max number of speciation classes defined
    integer,  save, public :: & !must be compatible with: emisfrac
           N_SPLIT = 0  ! Actual number of speciation classes defined as defined in SplitDefaultFile
    integer, save, pointer, dimension(:), public :: sec2split_map => null()! mapping of sector to speciation class
 
-!SNAP specific definitions
-   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to time factor class
-        SNAP_sec2tfac_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
-        SNAP_sec2hfac_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
-        SNAP_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11] !values must be <= N_SPLIT
-!   integer, save, dimension(NSECTORS_SNAP) ::snap2gnfr=(/1,3,2,4,13,5,6,7,10,11,-1/)
-   integer, save, dimension(NSECTORS_SNAP,3), public ::snap2gnfr=reshape([1,3,2,4,13,5,6,7,10,11,-1 &
-                                                          ,-1,-1,-1,-1,-1,-1,-1,8,-1,12,-1 &
-                                                          ,-1,-1,-1,-1,-1,-1,-1,9,-1,-1,-1 &
-                                                          ],shape(snap2gnfr))
 
-!GNFR_CAMS  specific definitions (used with CAMS v2.2.1 and  v3.1 emissions from November 2019)
-!GNFR A_PublicPower and F_RoadTransport are splitted into sub-sectors (14-15 and 16-19, respectively)
-   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to time factor class
-        GNFR_CAMS_sec2tfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5,1,1,7,7,7,7] !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to height distribution class
-        GNFR_CAMS_sec2hfac_map = [1,3,2,4,6,7,8,8,8,9,10,10,5,1,3,7,7,7,7] !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_GNFR_CAMS), public :: & ! mapping of sector to emission split class
-        GNFR_CAMS_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11,12,13,1,1,16,17,18,19] !values must be <= N_SPLIT
-
-
-!TEST to try own defintions
-   integer, public, parameter:: &
-          NSECTORS_TEST  = 11 ! Number of sectors defined. Must match the sizes of the maps below
-   integer, save, target, dimension(NSECTORS_TEST), public :: &
-      ! mapping of sector to time factor class. values must be <= N_TFAC
-        TEST_sec2tfac_map  = [1,2,3,4,5,6,7,8,9,10,11] &
-      ! mapping of sector to height distribution class. vals must be <= N_HFAC
-       ,TEST_sec2hfac_map  = [1,2,3,4,5,6,7,8,9,10,11] &
-      ! mapping of sector to height distribution class ! must be<=N_SPLIT
-       ,TEST_sec2split_map = [1,2,3,4,5,6,7,8,9,10,11]
-
-
-!The sectors defined here are always SNAP sectors. Should NOT be changed if other
-!categories (for instance GNFR) are used!
+!The indices defined here are the one used for timefactors indices
    integer, public, parameter :: &
-          ANTROP_SECTORS=10, &   ! Non-natural sectors
-          ISNAP_DOM  =  2,   &   ! Domestic/residential, for degree-day Timefactors
-          ISNAP_AGR  = 10,   &   ! Note that flat emissions do NOT necessarily
-          ISNAP_TRAF = 7         ! belong to the same SNAP sector
+          TFAC_IDX_POW  =  1,   &   ! Power for winter/summer change
+          TFAC_IDX_DOM  =  2,   &   ! Domestic/residential, for degree-day Timefactors
+          TFAC_IDX_AGR  = 10,   &   !
+          TFAC_IDX_TRAF = 7         !
 
    !Dust
 !   integer, public, parameter ::  NDU   = 2 &   ! number of dust size modes

@@ -18,11 +18,11 @@ use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
 
 use DefPhotolysis_mod, only: IDNO2
-use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,&
-                            lf_src_acc,lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,EMIS_FILE, &
+use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_src_1d,lf_src_acc,&
+                            lf_src_tot,lf_src_full,loc_tot_full, NSECTORS,SECTORS,EMIS_FILE, &
                             loc_frac_drydep, loc_frac_wetdep, &
-                            nlandcode,landcode,sec2hfac_map, sec2split_map,&
-                            ISNAP_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
+                            nlandcode,landcode,&
+                            TFAC_IDX_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                             NEmis_sources, Emis_source_2D, Emis_source
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
@@ -1669,23 +1669,25 @@ end subroutine lf_emis
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: n, isrc, k, ipoll,ic,is,ig
+  integer :: n, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
   real :: emis
   integer :: ngroups, ig2ic(Max_Country_groups)
 
   call Code_timer(tim_before)
 
+  emish_idx = SECTORS(isec)%height
+  split_idx = SECTORS(isec)%split
   do n=1,iem2Nipoll(iem)
      ipoll = iem2ipoll(iem,n)
      if(ipoll2iqrc(ipoll)>0)then
         !only extract that single pollutant
         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emisfrac(ipoll2iqrc(ipoll),sec2split_map(isec),iland)&
-                * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total over all sectors and countries for each pollutant
+           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emisfrac(ipoll2iqrc(ipoll),split_idx,iland)&
+                * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec!total over all sectors and countries for each pollutant
         enddo
      else
         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec!total for each pollutant
+           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec!total for each pollutant
         enddo
      endif
   enddo
@@ -1706,9 +1708,9 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            do is=1,Ncountrysectors_lf
               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
               emis = s * dt_advec
-              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
+              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
               do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
               enddo
            enddo
         enddo
@@ -1728,9 +1730,9 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            do is=1,Ncountrysectors_lf
               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
               emis = s * dt_advec
-              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland)
+              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
               do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
+                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
               enddo
            enddo
         enddo
@@ -1738,8 +1740,8 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(lf_src(isrc)%iqrc>0 .and. (Ncountry_lf>0.or.Ncountry_group_lf>0))then
         !sum of all emissions for that species from all countries and sectors
         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec
+           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) &
+                * emisfrac(lf_src(isrc)%iqrc,split_idx,iland) *dt_advec
         enddo
         
      else
@@ -1749,12 +1751,12 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            !single pollutant, part of emitted group of pollutant
            ipoll = lf_src(isrc)%poll
            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
-                   * emisfrac(lf_src(isrc)%iqrc,sec2split_map(isec),iland) *dt_advec       
+              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) &
+                   * emisfrac(lf_src(isrc)%iqrc,split_idx,iland) *dt_advec       
            enddo
         else
            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) * dt_advec
+              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec
            enddo
         endif
      endif
