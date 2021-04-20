@@ -1126,6 +1126,12 @@ contains
     N_TFAC = 0
     N_HFAC = 0
     largestsplit = 0
+    if (MasterProc) write(*,*)NSECTORS,' sectors defined in total'
+       if (MasterProc) write(*,*)"   name,   longname, cdfname, timefac,height,split, description"
+    do isec = 1, NSECTORS
+       91 format(A10,A10,A10,3I7,A)
+       if (MasterProc) write(*,91)trim(SECTORS(isec)%name),trim(SECTORS(isec)%longname),trim(SECTORS(isec)%cdfname),SECTORS(isec)%timefac,SECTORS(isec)%height,SECTORS(isec)%split,' '//trim(SECTORS(isec)%description)
+    end do
     do isec = 1, NSECTORS
        if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM) then
           i=1

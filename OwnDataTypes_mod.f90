@@ -299,7 +299,7 @@ type, public :: emis_in
                                         !with with incl/excl, so those are not affected
   logical :: set_mask = .false.  !if T, set mask for each (i,j) where non zero emission is found
   logical :: use_mask = .false.  !if T, do not include emission where mask is set
-  character(len=40) ::  sector = "NOTSET" !put emissions into a specific sector (not yet implemented)
+  character(len=40) ::  sector = "NOTSET" ! e.g. GNFR_CAMS
   real ::  scale = 1.0 ! multiply by scale (not yet implemented)
 end type emis_in
 

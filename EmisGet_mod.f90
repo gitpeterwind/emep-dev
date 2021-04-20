@@ -1081,16 +1081,17 @@ end if
          !find the sizes of the arrays. We assume that all values >0 are to be used
          nemis_hprofile = 0
          do i=1, Emis_Nlevel_MAX
-            if (Emis_h(1,i)>-1E-5) nemis_hprofile = nemis_hprofile + 1
+            if (Emis_h(i,1)>-1E-5) nemis_hprofile = nemis_hprofile + 1
+            if (Emis_h(i,1)<-1E-5) exit
             call CheckStop(Emis_Plevels(i)<-1E-5,'Emis_Plevels level not defined in config_emep.nml')
-            if (Emis_h(1,i)<-1E-5) exit
          end do
          N_HFAC = 0
          do i=1, Emis_heights_sec_MAX
-            if (Emis_h(i,1)>-1E-5) N_HFAC = N_HFAC + 1            
-            if (Emis_h(i,1)<-1E-5) exit
+            if (Emis_h(1,i)>-1E-5) N_HFAC = N_HFAC + 1            
+            if (Emis_h(1,i)<-1E-5) exit
          end do
-            
+         if (MasterProc) write(*,*)N_HFAC,' emis height distributions defined'
+         if (MasterProc) write(*,*)nemis_hprofile,' emis height P levels defined'
          allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
          emis_hprofile(:,:) = -999.9 
          emis_hprofile(1:nemis_hprofile+1,:) = 0.0
@@ -1275,7 +1276,7 @@ end if
       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that output from different CPU does not get mixed up
       
       if(MasterProc)then
-         write(*,*)'Distribution of emission into levels:'
+         write(*,*)'Redistribution of emission into levels:'
          do isec=1,N_HFAC! could put inside but easier for debugging to put here now
             write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
          end do

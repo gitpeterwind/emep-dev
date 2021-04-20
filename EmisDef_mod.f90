@@ -128,8 +128,6 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
 
    type(Sector_type), public:: SECTORS(NSECTORS_MAX) ! all sectors used during the run (set by model)
 
-
-
    integer, public, parameter :: NCMAX  =  14  ! Max. No. countries per grid point
 
 

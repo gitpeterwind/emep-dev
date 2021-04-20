@@ -825,6 +825,7 @@ subroutine Config_Constants(iolog)
    ,fileName_CH4_ibcs&
    ,femisFile&
    ,Vertical_levelsFile&
+   ,Emis_Plevels&
    ,Emis_h&
    ,SoilTypesFile&
    ,SurfacePressureFile&
@@ -888,7 +889,6 @@ subroutine Config_Constants(iolog)
   read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
-
   
   USES%SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
