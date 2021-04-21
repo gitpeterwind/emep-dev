@@ -25,6 +25,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st April 2021, Peter
+
+Heavy refactoring of the sectors setups.
+GNFR_CAMS is now the default normally. Although the "SECTOR_NAME" is removed
+from code, since it is open to really mix sectors if one wants (i.e. without
+necessarily mapping sectors to either SNAP or GNFR).
+One can easily add new sectors through config_emep.nml, see documentation.
+
+The EmisHeights.txt file is removed, now included in the code. It can also be
+set in config_emep.nml, see documentation.
+
+Although a lot has changed, the results should be the same, if used correctly.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th April 2021, Peter, Massimo
 
 Bug: tag for mpi could overflow. The mpi tag has a max value which is guaranteed

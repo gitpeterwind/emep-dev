@@ -53,7 +53,7 @@ use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
                             ,SecEmisOut, EmisOut, SplitEmisOut, &
-                            isec2SecOutWanted
+                            isec2SecOutWanted,SECTORS
 use EmisGet_mod,       only: nrcemis,iqrc2itot
 use Functions_mod,      only: Tpot_2_T    ! Conversion function
 use GasParticleCoeffs_mod, only: DDdefs
@@ -696,7 +696,7 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
   do isec=1,NSECTORS
      if(SecEmisOutWanted(isec))then
         do  i = 1, NEMIS_File
-           write(dname,"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           write(dname,"(A)")trim(SECTORS(isec)%longname)//"_Emis_mgm2_"//trim(EMIS_FILE(i))
            isec_poll = (isec)*(NEMIS_File) + i
            if(HourlyEmisOut)then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &

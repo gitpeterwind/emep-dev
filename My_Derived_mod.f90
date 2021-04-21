@@ -49,7 +49,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             lev3d_from_surface,&
                             MAX_NUM_DERIV2D,OutputVegO3
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, Nneighbors
+use EmisDef_mod,       only: NSECTORS, SECTORS,EMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML
@@ -273,7 +273,7 @@ subroutine Init_My_Deriv()
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
      do isec=1,NSECTORS
         if(SecEmisOutWanted(isec))then
-           write(tag_name(1),"(A,I0,A)")"Sec",isec,"_Emis_mgm2_"//trim(EMIS_FILE(i))
+           write(tag_name(1),"(A)")trim(SECTORS(isec)%longname)//"_Emis_mgm2_"//trim(EMIS_FILE(i))
            call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
         endif
      end do

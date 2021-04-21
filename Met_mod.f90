@@ -3192,9 +3192,9 @@ subroutine read_surf_elevation(ix)
      src = 'Topo'
   endif
   !if(MasterProc.and.DEBUG%MET) write(*,*) 'Elev:'//src,maxval(met(ix)%field(:,:,1,1))
-  if(MasterProc) write(*,*) 'Elev_'//trim(TopoFile),met(ix)%needed,met(ix)%found
-  if(MasterProc) write(*,*) 'Elev_'//src,maxval(met(ix)%field(:,:,1,1))
-  call printCDF('Elev_'//src,met(ix)%field(:,:,1,1),'m')
+  if(MasterProc.and.DEBUG%MET) write(*,*) 'Elev_'//trim(TopoFile),met(ix)%needed,met(ix)%found
+  if(MasterProc.and.DEBUG%MET) write(*,*) 'Elev_'//src,maxval(met(ix)%field(:,:,1,1))
+  if(MasterProc.and.DEBUG%MET) call printCDF('Elev_'//src,met(ix)%field(:,:,1,1),'m')
 
 end subroutine read_surf_elevation
 
