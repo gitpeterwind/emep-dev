@@ -93,8 +93,8 @@ module Biogenics_mod
   ! We hard-code these indices, but only calculate emissions if needed
   ! Must match order of NATBIO to start with 
   integer, parameter, public ::  NEMIS_BioNat  = 23
-  character(len=15), save, dimension(NEMIS_BioNat), public:: &
-      EMIS_BioNat = [character(len=15):: &
+  character(len=16), save, dimension(NEMIS_BioNat), public:: &
+      EMIS_BioNat = [character(len=16):: &
              "C5H8       " &
            , "TERP       " &
            , "NO         " &
