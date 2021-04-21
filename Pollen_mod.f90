@@ -219,7 +219,7 @@ subroutine Config_Pollen()
   if(MasterProc)write(*,"(A,10(' adv#',I3,'=',A,1X,es10.3,:))") &
     "Pollen: ",(iadv(g),POLLEN_GROUP(g),grain_wt(g),g=1,POLLEN_NUM)
 
-  allocate(heatsum(LIMAX,LJMAX,POLLEN_NUM-1),&     ! Grass does not need heatsum
+  allocate(heatsum(LIMAX,LJMAX,POLLEN_NUM-6),&     ! Grass+mugwort* does not need heatsum
            R(LIMAX,LJMAX,POLLEN_NUM))
   heatsum(:,:,:) = 0.00
   R(:,:,:) = 0.0
@@ -342,6 +342,11 @@ subroutine pollen_flux(i,j,debug_flag)
     allocate(birch_corr(LIMAX,LJMAX),pollen_dH(LIMAX,LJMAX,iOLIVE:IALDER))
     allocate(rweed_start(LIMAX,LJMAX),rweed_corr(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
+    allocate(mugwort1_start(LIMAX,LJMAX),mugwort1_end(LIMAX,LJMAX))
+    allocate(mugwort2_start(LIMAX,LJMAX),mugwort2_end(LIMAX,LJMAX))
+    allocate(mugwort3_start(LIMAX,LJMAX),mugwort3_end(LIMAX,LJMAX))
+    allocate(mugwort4_start(LIMAX,LJMAX),mugwort4_end(LIMAX,LJMAX))
+    allocate(mugwort5_start(LIMAX,LJMAX),mugwort5_end(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(birch_data_nc,'h_c',pollen_h_c(:,:,iBIRCH),1, &
