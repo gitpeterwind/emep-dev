@@ -26,6 +26,7 @@ info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st April 2021, Peter
+NEW TAG: rv4.39
 
 Heavy refactoring of the sectors setups.
 GNFR_CAMS is now the default normally. Although the "SECTOR_NAME" is removed
