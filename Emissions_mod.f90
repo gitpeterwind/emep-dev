@@ -1349,7 +1349,7 @@ contains
                   emis_inputlist(iemislist)%use_lonlat_femis,&
                   emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask,&
                   emis_inputlist(iemislist)%pollName,&
-                  fractionformat,emis_inputlist(iemislist)%type)
+                  fractionformat,emis_inputlist(iemislist)%sector)
 
           end do!NEMIS_FILE
 

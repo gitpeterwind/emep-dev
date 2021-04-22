@@ -25,7 +25,7 @@ use EmisDef_mod,       only: NSECTORS, NCMAX, &
                             ,femis_lonlat_internal & 
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
-                            ,NEmis_sourcesMAX&
+                            ,NEmis_sourcesMAX, SECTORS&
                             ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Plevels_pre&
                             ,Emis_h, Emis_Plevels, Emis_heights_sec_MAX, Emis_Nlevel_MAX
 use GridAllocate_mod,  only: GridAllocate
@@ -207,14 +207,14 @@ contains
   subroutine EmisGetCdf(iem, fname, sumemis_local, &
        Emis, EmisCodes, nEmisCodes, nstart,&
        incl, nin, excl, nex, use_lonlat_femis, &
-       set_mask,use_mask,pollName, fractionformat, type)
+       set_mask,use_mask,pollName, fractionformat, sector)
 
     !read in emissions in fraction format and add results into
     !Emis, nEmisCodes and nEmisCodes
     !NB: landcode and nlandcode arrays are local
 
     integer, intent(in) ::iem, nin, nex,nstart
-    character(len=*),intent(in) :: fname, incl(*),excl(*),pollName(*),type
+    character(len=*),intent(in) :: fname, incl(*),excl(*),pollName(*),sector
     real,intent(inout) ::Emis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE)
     integer,intent(inout) ::nEmisCodes(LIMAX,LJMAX)
     integer,intent(inout) ::EmisCodes(LIMAX,LJMAX,NCMAX)
@@ -325,19 +325,21 @@ contains
           !fraction format
           isec=mod((varid-1),NSECTORS)+1
           iem_used=(varid-1)/NSECTORS+1
-          
-          write(varname,"(A,I2.2)")trim(EMIS_FILE(iem_used))//'_sec',isec
+
+          write(varname,"(A)")trim(EMIS_FILE(iem_used))//'_'//trim(SECTORS(isec)%cdfname)
           
           if(pollName(1)/='NOTSET')then
              cdfemis = 0.0 ! safety, shouldn't be needed though
              if(all(pollName(1:20)/=trim(EMIS_FILE(iem_used))))cycle      
              if(Masterproc.and.isec==1)write(*,"(A)")'reading '//trim(EMIS_FILE(iem_used))//' from '//trim(fname)
           end if
+          if (trim(sector) /= trim(SECTORS(isec)%name)) cycle
           Reduc=e_fact(isec,:,iem_used)          
           call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=nstart,&
                interpol='mass_conservative',fractions_out=fractions,&
                CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.false.,debug_flag=.false.,&
                Undef=0.0)
+          
        endif
        !end reading of data
 
