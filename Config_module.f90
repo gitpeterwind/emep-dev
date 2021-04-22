@@ -144,6 +144,7 @@ type, public :: emep_useconfig
     ,DUST             = .false. &! Experimental
     ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
     ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
+    ,CAMS81_SOILNOX   = .false. &! Need to design better switch
     ,SOILNOX          = .true.  & ! DO NOT ALTER: Set after config
     ,OCEAN_DMS        = .false. &!set automatically true if found.
     ,OCEAN_NH3        = .false. &!set automatically true if found
@@ -724,6 +725,7 @@ character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/Soi
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/AircraftEmis_FL.nc'
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
+character(len=TXTLEN_FILE), target, save, public :: nox_emission_cams81File = 'DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
 !character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
 !2021: added ECLIPSE6b-based factors for non-European areas
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
@@ -831,6 +833,7 @@ subroutine Config_Constants(iolog)
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
    ,nox_emission_1996_2005File&
+   ,nox_emission_cams81File&
    ,MonthlyFacFile&
    ,DailyFacFile&
    ,HourlyFacFile&
@@ -995,6 +998,7 @@ subroutine Config_Constants(iolog)
   call associate_File(SurfacePressureFile)
   call associate_File(AircraftEmis_FLFile)
   call associate_File(nox_emission_1996_2005File)
+  call associate_File(nox_emission_cams81File)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
   call associate_File(HourlyFacFile)

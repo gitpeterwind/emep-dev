@@ -58,6 +58,11 @@ MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/Mont
   USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,            ! 
+!UNCOMMENT for new CAMS81 SOILNOX
+!  USES%EURO_SOILNOX = F,
+!  USES%GLOBAL_SOILNOX = T,
+!  USES%CAMS81_SOILNOX = T,
+!  USES%SOILNOX = T,
 !------------------------------ 
   USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
   USES%SKIP_INCOMPLETE_OUTPUT = F,       ! skip daily/montly/fullrun output for runs under 1/28/181 days
@@ -254,6 +259,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
   DEBUG%SITES           = F,
 !  DEBUG%SITE           = 'Keldsnor',
   DEBUG%SOA             = 0,
+!  DEBUG%SOILNOX         = T,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)

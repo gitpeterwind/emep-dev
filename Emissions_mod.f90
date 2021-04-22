@@ -28,7 +28,7 @@ use Config_module,only: &
     FOUND_OCEAN_DMS,&
     NPROC, EmisSplit_OUT,uEMEP,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
-    AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
+    AircraftEmis_FLFile,nox_emission_1996_2005File, nox_emission_cams81File, RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
@@ -2329,6 +2329,15 @@ subroutine newmonth
 
     SoilNOx(:,:)=0.0      
     buffer(:,:)=0.0      
+    
+    if ( USES%CAMS81_SOILNOX ) then
+      nstart=(current_date%year-2000)*12 + current_date%month
+      call ReadField_CDF(nox_emission_cams81File,'TotalSoilEmis',SoilNOx,&
+             nstart=nstart,interpol='conservative',known_projection="lon lat",&
+             needed=.true.,debug_flag=.false.,UnDef=0.0)
+      if(DEBUG%SOILNOX.and.debug_proc) &
+        write(*,*) "CAMS81 SOILNO ", current_date%year, nstart, maxval(SoilNOx)
+    else
     nstart=(current_date%year-1996)*12 + current_date%month
     if(nstart>0.and.nstart<=120)then
       !the month is defined
@@ -2357,6 +2366,7 @@ subroutine newmonth
       end do
       SoilNOx=SoilNOx/Nyears
     end if ! nstart test
+    end if ! CAMS81
 
      if(DEBUG%SOILNOX.and.debug_proc) then
         write(*,"(a,i3,3es10.3)") "After Global SOILNO ",&
@@ -2369,10 +2379,18 @@ subroutine newmonth
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
-  !convert from g/m2/day into kg/day
   if(USES%GLOBAL_SOILNOX) then 
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
+    ! CAMS uses kg(N)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle
+    if ( USES%CAMS81_SOILNOX ) then ! have kg(NO)/m2/s
+      do j=1,ljmax
+        do i=1,limax      
+          SoilNOx(i,j) = SoilNOx(i,j) * 14./30 * 1000.0 * 24*3600 ! from kg(NO) to g(N)
+        end do
+      end do
+    end if ! CAMS81 test
+   !convert from g(N)/m2/day into kg/day
     do j=1,ljmax
       do i=1,limax      
         SumSoilNOx=SumSoilNOx+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
