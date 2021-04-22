@@ -49,7 +49,7 @@ real, parameter  :: &
   PROB_OUT_alder = 0.1,       & ! uncertainty_of_total_pollen_amt: end uncertainty for linear releases
   uncert_day_grass = 7,       &
   uncert_tot_grass = 0.2,     & ! end uncertainty for linear releases
-  uncert_day_mugwort = 10,    &
+  uncert_day_mugwort = 0,     & !   flowering_map_shift = 0 day
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
