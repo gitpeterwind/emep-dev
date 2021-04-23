@@ -25,6 +25,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd April 2021, Peter
+
+Changes to allow reading of the CAMS aircraft nox emission files.
+Now all input file go through a keyword replacement for YYYY
+
+Allow cdfnames in SECTORS for fraction format (neede if mixing sectors?)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st April 2021, Peter
 
 Heavy refactoring of the sectors setups.

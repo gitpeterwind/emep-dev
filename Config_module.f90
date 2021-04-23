@@ -1060,7 +1060,7 @@ subroutine Config_Constants(iolog)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
      InputFiles(i)%filename = &
             key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
-     !if(MasterProc)print *, "DSFILE", i, trim(InputFiles(i)%filename)
+     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'YYYY',startdate(1))
     endif
   enddo
   if(trim(fileName_O3_Top)/="NOTSET")then

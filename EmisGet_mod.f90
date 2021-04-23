@@ -338,8 +338,7 @@ contains
           call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=nstart,&
                interpol='mass_conservative',fractions_out=fractions,&
                CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.false.,debug_flag=.false.,&
-               Undef=0.0)
-          
+               Undef=0.0)          
        endif
        !end reading of data
 

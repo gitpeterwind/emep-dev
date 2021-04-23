@@ -4170,6 +4170,7 @@ end subroutine ReadField_CDF
   logical, optional, intent(in) :: debug_flag
 
   integer :: ncFileID,VarID,lonVarID,latVarID,status,ndims,dimids(NF90_MAX_VAR_DIMS),xtype,nAtts
+  integer :: dimsin(NF90_MAX_VAR_DIMS),dimidlon(3),dimidlat(3),dimidlev(3),levVarID
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
   integer :: startvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
@@ -4183,11 +4184,11 @@ end subroutine ReadField_CDF
   logical ::fileneeded, debug,data3D
   character(len = TXTLEN_NAME) :: interpol_used, data_projection="",name
   real :: Grid_resolution
-  integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
+  integer, parameter ::NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
-
+  integer ::NFL !23 or 25
   real :: Pcounted
-  logical :: Flight_Levels
+  logical :: Flight_Levels, is_CAMS
   integer :: k_FL,k_FL2
 
   !_______________________________________________________________________________
@@ -4225,24 +4226,24 @@ end subroutine ReadField_CDF
   if(present(interpol))then
      interpol_used=interpol
   end if
-  call CheckStop(interpol_used/='mass_conservative',&
-       'interpolation method for FL not recognized')
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status == nf90_noerr) then
-    if(debug) write(*,*) 'ReadCDF variable exists: ',trim(varname)
-  else
-    if(fileneeded)then
-      print *, 'variable does not exist: ',trim(varname)
-      call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
-    else
+     if(debug) write(*,*) 'ReadCDF variable exists: ',trim(varname)
+     is_CAMS=.false.
+     if (trim(varname)=='avi') is_CAMS=.true.
+  else     
+     if(fileneeded)then
+        print *, 'variable does not exist: ',trim(varname)
+        call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
+     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
              trim(varname)
-          call check(nf90_close(ncFileID))
-          Rvar(1:LIMAX*LJMAX*(KMAX_MID-2))=0.0
+        call check(nf90_close(ncFileID))
+        Rvar(1:LIMAX*LJMAX*(KMAX_MID-2))=0.0
         return
-    end if
+     end if
   end if
 
   data3D=.true.
@@ -4265,22 +4266,53 @@ end subroutine ReadField_CDF
   dims=0
   do i=1,ndims
      call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i), &
-          len=dims(i)),"GetDims")
+          len=dimsin(i)),"GetDims")
      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   end do
 
   data_projection = "lon lat"
 
-     allocate(Rlon(dims(1)), stat=alloc_err)
-     allocate(Rlat(dims(2)), stat=alloc_err)
-
-
   call check(nf90_inq_varid(ncid = ncFileID, name='lon', varID = lonVarID))
-  call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
-
+  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID, dimIDs=dimidlon))
+  do i=1,ndims
+     if(dimidlon(1) == dimids(i)) then
+        dims(1) = dimsin(i)
+      exit
+     end if
+  end do
   call check(nf90_inq_varid(ncid = ncFileID, name='lat', varID = latVarID))
+  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = latVarID, dimIDs=dimidlat))
+  do i=1,ndims
+     if(dimidlat(1) == dimids(i)) then
+        dims(2) = dimsin(i)
+       exit
+     end if
+  end do
+  
+  allocate(Rlon(dims(1)), stat=alloc_err)
+  allocate(Rlat(dims(2)), stat=alloc_err)
+
+  call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
   call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
 
+  status = nf90_inq_varid(ncid = ncFileID, name = 'FL', varID = levVarID)
+  if(status /= nf90_noerr) then
+     status = nf90_inq_varid(ncid = ncFileID, name = 'level', varID = levVarID)    
+     call CheckStop(status /= nf90_noerr,'did not find number of vertical levels in '//trim(fileName))
+  endif
+  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = levVarID, dimIDs=dimidlev))
+  do i=1,ndims
+     if(dimidlev(1) == dimids(i)) then
+        NFL = dimsin(i)
+        exit
+     end if
+  end do
+  dims(3)=NFL
+
+  if(me==0) write(*,*) NFL,' vertical levels found in '//trim(fileName),dims(1),dims(2),dims(3)
+
+  call CheckStop(interpol_used/='mass_conservative' .and. (is_cams .and. interpol_used/='conservative') ,&
+             "only mass_conservative interpolation implemented for Flight Levels or conservative for CAMS_FL")
   !_______________________________________________________________________________
   !
   !2)        Coordinates conversion and interpolation
@@ -4289,7 +4321,7 @@ end subroutine ReadField_CDF
 
   if(trim(data_projection)=="lon lat")then
      call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-     call CheckStop(trim(name)/='FL','expected Flight Levels')
+     call CheckStop(trim(name)/='FL' .and. trim(name)/='level','expected Flight Levels '//trim(name))
         !special vertical levels for Aircrafts
         !make table for conversion Flight Level -> Pressure
         !Hard coded because non-standard anyway. 610 meters layers
@@ -4298,8 +4330,6 @@ end subroutine ReadField_CDF
         end do
         P_FL0=P_FL(0)
         Flight_Levels=.true.
-        call CheckStop(interpol_used/='mass_conservative',&
-             "only mass_conservative interpolation implemented for Flight Levels")
 
         !need average surface pressure for the current month
         !montly average is needed, not instantaneous pressure
@@ -4368,7 +4398,7 @@ end subroutine ReadField_CDF
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
-
+     
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
         !conserves integral (almost, does not take into account local differences in mapping factor)
         !takes weighted average over gridcells covered by model gridcell
@@ -4448,7 +4478,6 @@ end subroutine ReadField_CDF
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
 
-
                  if(Ivalues(ijk)<=0.)then
                        write(*,"(a,a,4i4,6f10.3,2i6,6f10.3)") &
                             'ERROR, NetCDF_mod no values found!', &
@@ -4465,7 +4494,10 @@ end subroutine ReadField_CDF
                        !used for example for emissions in kg (or kg/s)
                        Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
                     else
-                       call CheckStop("interpol choice not supported")
+                       !used for example for emissions in kg/m2 (or kg/m2/s)
+                       ! integral is approximately conserved
+                       Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
+                       !call CheckStop("interpol choice not supported")
                     end if
                  end if
               end do
