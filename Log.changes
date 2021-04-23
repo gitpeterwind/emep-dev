@@ -33,7 +33,30 @@ Now all input file go through a keyword replacement for YYYY
 Allow cdfnames in SECTORS for fraction format (neede if mixing sectors?)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd April 2021, Dave
+
+Enabled CAMS81 soil NOx for testing. Not yet default, but can be enabled with
+  config settings:
+
+ config_emep.nml - added explicit:
+  !UNCOMMENT for new CAMS81 SOILNOX
+  !  USES%EURO_SOILNOX = F,
+  !  USES%GLOBAL_SOILNOX = T,
+  !  USES%CAMS81_SOILNOX = T,
+  !  USES%SOILNOX = T,
+
+IMPORTANT: Careful with above. More safety checks will be added in future, and USES%EURO_SOILNOX
+
+Biogenics_mod - added hourlySoilFac for global SOILNOx
+
+Config_module - added nox_emission_cams81File: DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
+  code is basically a copy of nox_emission_1996_2005File
+
+Emissions_mod - added USES%CAMS81_SOILNOX section. Similar to previous global treatment
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st April 2021, Peter
+NEW TAG: rv4.39
 
 Heavy refactoring of the sectors setups.
 GNFR_CAMS is now the default normally. Although the "SECTOR_NAME" is removed

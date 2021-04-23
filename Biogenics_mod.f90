@@ -61,7 +61,7 @@ module Biogenics_mod
   use OwnDataTypes_mod,   only: Deriv, TXTLEN_SHORT
 !  use Paleo_mod, only : PALEO_modai, PALEO_miso, PALEO_mmon
   use Par_mod,            only: MSG_READ1,me, limax, ljmax
-  use PhysicalConstants_mod,  only:  AVOG, GRAV
+  use PhysicalConstants_mod,  only:  AVOG, GRAV, PI
   use Radiation_mod,      only: PARfrac, Wm2_uE
   use SmallUtils_mod,     only: find_index
   use TimeDate_mod,       only: current_date, daynumber
@@ -80,6 +80,8 @@ module Biogenics_mod
 
   !/-- subroutines for soil NO
   public :: Set_SoilNOx
+  integer :: h
+  real, dimension(24), parameter :: hourlySoilFac = [ (1.0 + 0.4 * cos(2*PI*(h-13)/24.0), h=0,23) ]
 
   integer, public, parameter ::   NBVOC = 3
   character(len=4),public, save, dimension(NBVOC) :: &
@@ -557,7 +559,7 @@ module Biogenics_mod
   integer, intent(in) ::  i,j
 
   character(len=*), parameter :: dtxt='BioModSetup:' 
-  integer :: it2m
+  integer :: it2m, loc_hour
   real    :: E_ISOP, E_MTP, E_MTL
 
 ! To get from ug/m2/h to molec/cm3/s
@@ -633,13 +635,14 @@ module Biogenics_mod
     !FUTURE? rcbio(NATBIO%NO,KG) =
          SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-  else if ( USES%GLOBAL_SOILNOX ) then !TEST
-    ! BUG WAS MISSING FROM OLD::::::!
-   ! call StopAll(dtxt//'OLD BUG? SOIL NO NOT CHECKED YET')
-    !rcbio(NATBIO%NO,KG)    =  SoilNOx(i,j) !LIKELY WRONG. TO BE FIXED
-    ! from OLD: write(*,*)'DAVE PLEASE CHECK THIS!'
+  else if ( USES%GLOBAL_SOILNOX ) then !emissions should be in molecules/cm3/s
+
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
-    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + SoilNOx(i,j)!email from Dave 7jan2019
+    loc_hour = int(current_date%hour + Grid%longitude/15)
+    if (loc_hour>24)  loc_hour = loc_hour - 24
+    if (loc_hour< 1)  loc_hour = loc_hour + 24
+    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
+         SoilNOx(i,j) * hourlySoilFac(loc_hour)
   end if
 
     !EXPERIMENTAL
