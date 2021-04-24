@@ -64,9 +64,10 @@ integer, public, parameter :: Emis_heights_sec_pre=6 ! Actual Number of vertical
 
 !pressure at top of emission levels
 real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
-     (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, & 
+     (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, &
      (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
 real, public :: Emis_Plevels(Emis_Nlevel_MAX) ! used if set by config_emep.nml
+real, public :: Emis_Zlevels(Emis_Nlevel_MAX) ! used if set by config_emep.nml
 
 !Fraction released in each vertical level predefined values:
 real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
@@ -80,7 +81,7 @@ real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
       (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
 
 real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set by config_emep.nml
-  
+
  ! predefine SNAP sectors from EMEP/CORINAIR (NB: splits indices are supposed to be generated from GNFR setup)
    integer, public, parameter :: &
           NSECTORS_SNAP  = 11    ! Number of sectors defined in GNFR emissions
@@ -106,7 +107,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
         (/ &
 !           general name,  longname, netcdf_name timefac index, height index, split index, description, species
    Sector_type('GNFR_CAMS', 'GNFR_A',  'sec01',      1,            1,            1,       'Public Power', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),& 
+   Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_C',  'sec03',      2,            2,            3,       'OtherStationaryComb', 'ALL'),& !NB: used for domestic/degree-day
    Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      4,            4,            4,       'Fugitive', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
@@ -133,7 +134,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
 
    integer, save, public :: & !must be compatible with:
       ! timefac, fac_ehh24x7, fac_edd, fac_emm, fac_min, GridTfac, TFAC_IDX_DOM, TFAC_IDX_TRAF
-          N_TFAC  = 0  ! Actual number of timefactor classes defined 
+          N_TFAC  = 0  ! Actual number of timefactor classes defined
    integer, save, public :: & !must be compatible with:
           N_HFAC  = 0  ! Actual Nnumber of height distribution classes defined
    integer, save, public :: & !must be compatible with: emisfrac
