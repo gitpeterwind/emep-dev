@@ -124,6 +124,10 @@ module AeroFunctions_mod
    ind = 1 ! default = rural
    if ( present(pmtype) ) ind = pmtype
 
+!QUERY1. Gerber eqn [32] has rg(S)/rg(0.8)
+!QUERY2. Gerber Table 2- range of validity to 99 -- 99.99%
+!QUERY3. FanToon suugest gerber can't be used beyond 98%!
+
    f = ( (C7(ind)-fRH)/(C8(ind)*(1-fRH)) )**THIRD
    rwet = rdry * f
 !   print *, "gerber simplified ", f, rdry, rwet
@@ -616,6 +620,7 @@ module AeroFunctions_mod
    integer :: ind, iRH, iTK, i
    real, dimension(10) :: ugPM, S_m2m3, Kn2o5
    integer, parameter :: io1=20,io2=22 ! TMP stallo gfortran doesn't handle newunit :-(
+   character(len=50)::fmt
 
    cn2o5 = cMolSpeed( 298.0, 108.0)
    print *, "Speed N2O5 ", cn2o5
@@ -627,9 +632,14 @@ module AeroFunctions_mod
 
    ! Test Gerber's eqns (NB Units MUST be m, DpgN must be number)
    rdry=0.5*DpgN
+   fmt='(a,es12.3,f8.3)'
    print *, "Gerber's full scheme: rwet(rdry for RpgNd ", rdry
-   print *, " 98%rh  ->Rw(nm)", wetrad(rdry, fRH=0.98, pmtype=1)/rdry
-   print *, " 99.9%rh->Rw(nm)", wetrad(rdry, fRH=0.999, pmtype=1)/rdry
+   print fmt, " 98%rh  ->Rw(nm)", rdry, wetrad(rdry, fRH=0.98, pmtype=1)/rdry
+   print fmt, " 99.9%rh->Rw(nm)", rdry, wetrad(rdry, fRH=0.999, pmtype=1)/rdry
+   print fmt, " 100.%rh->Rw(nm)", rdry, wetrad(rdry, fRH=1.0, pmtype=1)/rdry
+   print fmt, " 99.9%rh->Rw(nm),SS", rdry, wetrad(rdry, fRH=0.999, pmtype=2)/rdry
+   print fmt, " 100.%rh->Rw(nm),SS", rdry, wetrad(0.11e-5, fRH=1.0, pmtype=2)/rdry
+   return ! TEST
 
    !print *, "Gerber simp", wetradS(rdry=0.5*DpgN, fRH=0.98, pmtype=1) ! m
 
@@ -755,6 +765,6 @@ end module AeroFunctions_mod
 !TSTEMX program tstr
 !TSTEMX use AeroFunctions_mod, only : self_test, self_test_fracs
 !TSTEMX implicit none
-!TSTEMX !call self_test()
-!TSTEMX call self_test_fracs()
+!TSTEMX call self_test()
+!TSTEMX !call self_test_fracs()
 !TSTEMX end program tstr

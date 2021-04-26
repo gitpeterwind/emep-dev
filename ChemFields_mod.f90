@@ -45,9 +45,9 @@ private
      xn_adv(:,:,:,:)  &
     ,xn_shl(:,:,:,:)  &
     ,xn_bgn(:,:,:,:) &
-    ,PM25_water(:,:,:) &  !3D PM water
+    ,PM25_water(:,:,:) &      !3D PM water
     ,PM25_water_rh50(:,:) &   !gravimetric PM water
-    ,Gerber_water(:,:,:)   !3D PM water from GERBER
+    ,pmH2Ogb(:,:,:)           !2D PM water from GERBER, for fine & coarse
 
   real, save, allocatable, public :: &
     SurfArea_um2cm3(:,:,:)  !2D  aerosol surface area, um2/cm3  (n,i,j)
@@ -128,8 +128,8 @@ contains
 
     allocate(surfarea_um2cm3(NSAREA_DEF,LIMAX,LJMAX))
     SurfArea_um2cm3=0.0
-    allocate(Gerber_water(LIMAX,LJMAX,KMAX_MID))
-    Gerber_water=0.0
+    allocate(pmH2Ogb(LIMAX,LJMAX,2))
+    pmH2Ogb=0.0
 
    ! wet DpgN and defaults from dry values
     allocate(DpgNw(NSAREA_DEF, KCHEMTOP:KMAX_MID))

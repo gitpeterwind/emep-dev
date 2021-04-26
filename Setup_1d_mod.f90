@@ -6,12 +6,14 @@ module Setup_1d_mod
 !-----------------------------------------------------------------------!
 
 use AeroConstants_mod,only: AERO,NSAREA_DEF   ! for aerosol surface area
-use AeroFunctions_mod,only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AeroFunctions_mod,only: WetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AeroFunctions_mod,only: pmH2O_gerber  ! H2O from Gerber
 use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
 use Biogenics_mod,    only: SoilNOx
 use Biogenics_mod,    only: EMIS_BioNat, EmisNat  
 use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV, NCHEMRATES, NEMIS_File
 use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
+                             pmH2Ogb, & !pH2O TMP
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
 use ChemRates_mod,    only:  setChemrates ! rct, NRCT
@@ -114,9 +116,12 @@ contains
     real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter. 
     integer :: iw, ipm ! for wet rad
    ! if rates are wanted for d_2d output, we use these indices:
-    integer, dimension(20), save :: d2index, id2rct 
-    integer, save :: nd2d
+    integer, dimension(20), save :: d2index, id2rct, id2pmH2O 
+    integer, save :: nd2d, npmH2O
     integer :: itmp
+   ! if pmH2O are wanted for d_2d output:
+    logical, save :: pmH2O_wanted = .false.
+    real :: rhS  ! rh for WetRad calcs
 
    ! local
 
@@ -254,6 +259,9 @@ contains
         if ( USES%SURF_AREA ) then ! GERBER
 
             S_m2m3(:,k) = 0.0  !! Allow max 6000 um2/cm3
+            rhS = rh(k)
+            if (USES%SURF_AREA_RHLIMITS >0) rhS= &
+               min(rh(k),0.01*USES%SURF_AREA_RHLIMITS)
 
            !ispec=NO3_c ! CRUDE HARD CODE for now, but NO3 is special
 
@@ -294,12 +302,6 @@ contains
                if(is_dust ) ugDustC  = ugDustC   +  ugtmp
                if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
-!          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
-            !if ( MasterProc .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
-            !if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,3L3,9es10.3)") &
-            !   'AREACHECK0: '//trim(species(ispec)%name), ispec, &
-            !      is_finepm, is_ssalt, is_dust, ugtmp, ugpmF,ugSIApm, ugSSaltF, ugDustF
- 
 
              if (  species(ispec)%name == 'SO4' ) then
                ugSO4 = ugSO4  +  ugtmp
@@ -321,86 +323,111 @@ contains
            end do ! ipm
 
 
-
          ! FRACTIONS used for N2O5 hydrolysis
          ! We use mass fractions, since we anyway don't have MW for OM, dust,
          !  ugRemF will include OM, EC, PPM, Treat as OM 
 
-          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
+           ugRemF = ugpmF - ugSIApm -ugSSaltF -ugDustF -ugBCf
 
-          ugRemF = ugRemF  -ugBCf  ! kHet BC added 24/10/2015
-
-          aero_fss(k)     = ugSSaltF/(ugpmF+1.E-30)
-          aero_fdust(k)   = ugDustF/(ugpmF+1.E-30)
-          aero_fbc(k)     = ugBCf/(ugpmF+1.E-30)
-          aero_fom(k)     = max(0.0, ugRemF)/(ugpmF+1.E-30)
+           aero_fss(k)     = ugSSaltF/(ugpmF+1.E-30)
+           aero_fdust(k)   = ugDustF/(ugpmF+1.E-30)
+           aero_fbc(k)     = ugBCf/(ugpmF+1.E-30)
+           aero_fom(k)     = max(0.0, ugRemF)/(ugpmF+1.E-30)
 
           ! GERBER equations for wet radius
-          ! New approach to Gerber. We use masses above. 
-          ! STILL CRUDE :-( NOT SURE THIS IS BEST APPROACH but
-          ! hopefully works 'okay', maybe??!
-          ! NOTE: There was a bug anyway in Gerber Table, but we recode
+          ! NOTE: There was a bug in Gerber Table, but we recode
           ! now to avoid need for Inddry index
 
-          do iw = 1, NSAREA_CALC ! Skips PM=7 which is sum
+           pmH2Ogb(i,j,:) = 0.0
+           do iw = 1, NSAREA_CALC ! Skips PM=7 which is sum
 
-            ipm= aeroDDspec(iw)
+             ipm= aeroDDspec(iw)
 
-            if ( ipm < 1 ) then
+             if ( ipm < 1 ) then
                if ( debug_flag .and. k == KMAX_MID) &
                    write(*,"(a,i0)") dtxt//'CHECK:iPMNEG:',ipm
                CYCLE ! Component missing !
-            end if
+             end if
 
-            Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
+             Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
 
-            if ( DDspec(ipm)%Gb > 0 ) then
-              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), DDspec(ipm)%Gb ) 
-            else
-              DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
-            end if
+             if ( DDspec(ipm)%Gb > 0 ) then
+               DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rhS, DDspec(ipm)%Gb ) 
+             else
+               DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
+             end if
 
-            if ( iw == AERO%PM_F )  ugtmp = ugpmF
-            if ( iw == AERO%SS_F )  ugtmp = ugSSaltF
-            if ( iw == AERO%DU_F )  ugtmp = ugDustF
-            if ( iw == AERO%SS_C )  ugtmp = ugSSaltC
-            if ( iw == AERO%DU_C )  ugtmp = ugDustC
+             if ( iw == AERO%PM_F )  ugtmp = ugpmF
+             if ( iw == AERO%SS_F )  ugtmp = ugSSaltF
+             if ( iw == AERO%DU_F )  ugtmp = ugDustF
+             if ( iw == AERO%SS_C )  ugtmp = ugSSaltC
+             if ( iw == AERO%DU_C )  ugtmp = ugDustC
 
-            S_m2m3(iw,k) = pmSurfArea(ugtmp,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+           ! MISSES optional sigma=1.8) !,sigmaFac:
+
+             S_m2m3(iw,k) = pmSurfArea(ugtmp,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                   rho_kgm3=DDspec(ipm)%rho_p )
 
-            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,3i5,4es10.3)") &
-              "AREACHECK: "//trim(DDspec(ipm)%name), iw, ipm, &
-             DDspec(ipm)%Gb, &
-               Ddry(iw),DpgNw(iw,k),ugtmp,S_m2m3(iw,k)
+             if ( k==KMAX_MID .and. pmH2O_wanted ) then 
 
-            S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+              ! MISSES optional sigma=1.8) !,sigmaFac:
 
-          end do ! iw
+                if ( iw == AERO%PM_F .or. iw == AERO%SS_F) then
+                  pmH2Ogb(i,j,1) = pmH2Ogb(i,j,1) + pmH2O_gerber(ugtmp,&
+                    rho_kgm3=DDspec(ipm)%rho_p,Dp=Ddry(iw),Dpw=DpgNw(iw,k))
+                else if ( iw == AERO%SS_C ) then
+                  pmH2Ogb(i,j,2) = pmH2Ogb(i,j,2) + pmH2O_gerber(ugtmp,&
+                    rho_kgm3=DDspec(ipm)%rho_p,Dp=Ddry(iw),Dpw=DpgNw(iw,k))
+                end if
+                !if ( pmH2Ogb(i,j,2) > 1000.0 ) then
+                !  print '(a,4i4,9g12.2)', "XXXH2O "//trim(DDspec(ipm)%name),me,i,j,iw, &
+                !   pmH2Ogb(i,j,2),  ugtmp, Ddry(iw), DpgNw(iw,k),&
+                !   DDspec(ipm)%rho_p, pmH2O_gerber(ugtmp,&
+                !    rho_kgm3=DDspec(ipm)%rho_p,Dp=Ddry(iw),Dpw=DpgNw(iw,k)), rh(k)
+!XXXH2O SSc  91   7   1   4    0.23E+05     4.2        0.11E-05    0.26E-04    0.22E+04    0.23E+05 1.0
+
+
+                !  call StopAll('XXXH2O')
+                !end if
+
+                if ( debug_flag ) write(*,"(a,3i5,9es10.3)") "pmH2OCHECK: "//&
+                   trim(DDspec(ipm)%name), iw, ipm,&
+                   DDspec(ipm)%Gb, Ddry(iw),DpgNw(iw,k), ugtmp, pmH2Ogb(i,j,:)
+                
+             end if ! KMAX
+
+             if ( k==KMAX_MID .and. debug_flag ) &
+                write(*,"(a,3i5,4es10.3)") "AREACHECK: "//&
+                   trim(DDspec(ipm)%name), iw, ipm, &
+                   DDspec(ipm)%Gb, Ddry(iw),DpgNw(iw,k),ugtmp,S_m2m3(iw,k)
+
+             S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+
+           end do ! iw
 
           ! Add all areas (misses some BC_c etc)
-          iw=NSAREA_DEF
-          S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
-          if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,4es10.3)") &
-             "AREACHECK: "//"SUM", iw, ugpmf,ugSSaltC,ugDustC,S_m2m3(iw,k)
+           iw=NSAREA_DEF
+           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
+           if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,4es10.3)") &
+             "AREACHECK: "//"SUM", iw, ugpmF,ugSSaltC,ugDustC,S_m2m3(iw,k)
 
-
-          if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
+ 
+           if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
              if( aero_fom(k) > 1.0 .or. ugRemF < -1.0e-9 ) then
                 print "(a,i4,99es12.3)", dtxt//"AERO-F ", k, &
                   aero_fom(k), ugRemF,ugpmF, ugSSaltF, ugDustF, ugBCf
                 call CheckStop(dtxt//"AERO-F problem " )
               end if
-          end if
+           end if
 
-          if ( DebugCell .and. k==KMAX_MID .and. DEBUG%SETUP_1DCHEM ) then
-            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
-            ugpmf, ugSSaltC, ugDustC
-            do iw = 1, NSAREA_CALC
-             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
-            end do
-          end if
-
+           if ( DebugCell .and. k==KMAX_MID .and. DEBUG%SETUP_1DCHEM ) then
+             write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
+               ugpmF, ugSSaltC, ugDustC
+             do iw = 1, NSAREA_CALC
+              write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), 1.0e6*S_m2m3(iw,k)
+             end do
+           end if
+ 
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
               do iw = 1, NSAREA_DEF  !J2018 bug:CALC
@@ -408,9 +435,7 @@ contains
               end do
            end if
 
-          end if ! GERBER
-
-      ! End Surf Area
+          end if ! GERBER Surf Area
     
    end do ! k
 
@@ -488,6 +513,17 @@ contains
            end if
      end do
 
+     ! Do water after rct
+     npmH2O = 0
+     do itmp = 1, size(f_2d)
+       if ( f_2d(itmp)%subclass == 'pmH2O' ) then
+          pmH2O_wanted = .true.
+          npmH2O = npmH2O + 1
+          d2index(nd2d+npmH2O)= itmp
+          id2pmH2O(npmH2O) = f_2d(itmp)%index  !index of aerosol type
+          if(MasterProc) write(*,*) 'pmH2O SET', itmp, npmH2O,id2pmH2O(npmH2O)
+       end if
+     end do
      first_call = .false.
    end if ! first_call
 
@@ -498,6 +534,15 @@ contains
            trim(f_2d(d2index(itmp))%name), me,i,j,itmp,&
            d2index(itmp),id2rct(itmp), d_2d(d2index(itmp),i,j,IOU_INST)
        end if
+   end do
+   do ipm = 1, npmH2O
+     itmp = nd2d + ipm
+     d_2d(d2index(itmp),i,j,IOU_INST) =  pmH2Ogb(i,j,id2pmH2O(ipm))
+     if( debug_flag ) then
+        write(*,"(a,6i5,es12.3)") dtxt//"OUTH2O "//&
+         trim(f_2d(d2index(itmp))%name), me,i,j,itmp,&
+         d2index(itmp),id2rct(itmp), d_2d(d2index(itmp),i,j,IOU_INST)
+     end if
    end do
 
 

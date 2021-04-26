@@ -174,6 +174,7 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TIMEZONEMAP      = .false. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
+   real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
 
  ! If USES%EMISTACKS, need to set:
   character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"

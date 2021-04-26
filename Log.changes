@@ -24,6 +24,23 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th April 2021, Dave
+
+Added pmH2O outputs from from Gerber system, and added USES%SURF_AREA_RHLIMITS
+to restrict RH range of Gerber cals to goven RH (in %). Use of -1 (default) or 100 
+equivalent to current system, but will need changing soon!
+
+** PROBLEM identified: coarse sea-salt can generate enormous (>1000 ug/m3)
+  pmH2O at 100% RH.  Need to decide if 98 or 99% will be best thresholds.
+
+AeroFunctions: modified self_test and some QUERY comments 
+ChemFields_mod: use now pmH2Ogb for Gerber water for f and c (LIMAX*LJMAX*2)
+Config_module: Added SURF_AREA_RHLIMITS  = -1; will be set to 98 or 99 soon!
+Setup_1d_mod:  use and output of pmH2O and USES%SURF_AREA_RHLIMITS. Also tidy up
+               and one QUERY added.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd April 2021, Peter
 
