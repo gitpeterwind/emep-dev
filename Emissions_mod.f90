@@ -2325,7 +2325,7 @@ subroutine newmonth
              e_fact(TFAC_IDX_POW,iFemis,iemNOx)
     end if
 
-    if (index(AircraftEmis_FLFile,'CAMS')>0) then
+    if (index(AircraftEmis_FLFile,'CAMS-GLOB-AIR')>0) then
        !assumes the CAMS aircraft emissions (NO in kg/m2/s)
         call ReadField_CDF_FL(AircraftEmis_FLFile,'avi',airn,&
             current_date%month,kstart,kend,&
