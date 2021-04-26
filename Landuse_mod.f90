@@ -1,14 +1,14 @@
 !> <Landuse_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!! ************************************************************************! 
+!! ************************************************************************!
 
 module Landuse_mod
 
 use CheckStop_mod,   only: CheckStop,StopAll
 use Config_module,   only: NLANDUSEMAX, SEA_LIMIT, USES,  &
-                            FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
-                            VEG_2dGS, VEG_2dGS_Params, & 
+                            FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, &
+                            VEG_2dGS, VEG_2dGS_Params, &
                             NPROC, IIFULLDOM, JJFULLDOM, &
-                            MasterProc, LandCoverInputs 
+                            MasterProc, LandCoverInputs
 use Debug_module,    only: DEBUG   ! -> DEBUG%LANDUSE
 use DO3SE_mod,       only: fPhenology, Init_DO3SE
 use GridAllocate_mod,only: GridAllocate
@@ -47,7 +47,7 @@ private
  integer, public, parameter :: NLUMAX = 30 ! max no. landuse per grid
  integer, private, save :: NLand_codes = 0 ! no. landuse in input files
 
-! The LC: entries in the netcdf landuse, or the headers read from 
+! The LC: entries in the netcdf landuse, or the headers read from
 ! Inputs.Landuse define the "master-list" of codes for landuse. Each code must
 ! be present in the subsequent data files for phenology and DO3SE.
 
@@ -63,7 +63,7 @@ private
          ,EGS       &! End of growing season (days)
          ,Anth      &! Anthesis. For wheat
          ,Astart    &! Start photosynthetic activity, for DO3SE
-         ,Aend       ! 
+         ,Aend       !
    real,   dimension(NLUMAX) :: &
           fraction  &! (coverage)
          ,LAI       &! Leaf-area-index (m2/m2)
@@ -80,10 +80,10 @@ private
  !=============================================
 
 
- logical, public,save, allocatable,dimension(:,:) :: likely_coastal 
- logical, public,save, allocatable,dimension(:,:) :: mainly_sea 
+ logical, public,save, allocatable,dimension(:,:) :: likely_coastal
+ logical, public,save, allocatable,dimension(:,:) :: mainly_sea
 
- real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover 
+ real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover
  logical,public,save :: water_frac_set = .false.
 
  character(len=200), private :: errmsg
@@ -111,7 +111,7 @@ contains
     allocate(mainly_sea(LIMAX,LJMAX) )
     allocate(water_fraction(LIMAX,LJMAX), ice_landcover(LIMAX,LJMAX))
 
-    ! First, check the number of "extra" (fake) vegetation 
+    ! First, check the number of "extra" (fake) vegetation
     nFluxVegs = 0
     do ilu = 1, size( FLUX_VEGS )
        if(len_trim(FLUX_VEGS(ilu))>0) then
@@ -142,7 +142,7 @@ contains
     call Init_LandDefs(LandCoverInputs%LandDefs,NLand_codes, &
             Land_codes(1:NLand_codes))  ! => LandType, LandDefs
 
-    !------ 2D maps of growing season, if set in config ----------------------- 
+    !------ 2D maps of growing season, if set in config -----------------------
 
      n2dGS    = count( VEG_2dGS(:) /= "" )
 
@@ -155,26 +155,26 @@ contains
        fname = VEG_2dGS_Params(1)
        if(MasterProc) write(*,*) "CRU GS MAP ", trim(fname), n2dGS, n2dGSpars
 
-       i2dGS = 0 
+       i2dGS = 0
        do ilu = 1, n2dGS
          do ipar = 2, n2dGSpars+1
 
            varname = trims (&
                VEG_2dGS(ilu) // "_" // VEG_2dGS_Params(ipar) // ".txt" )
 
-           i2dGS = i2dGS + 1 
+           i2dGS = i2dGS + 1
 
            call ReadField_CDF(fname,varname, map2dGrowingSeasons(1,1,i2dGS),&
-             1,interpol='zero_order',needed=.true.,debug_flag=.false.)  
+             1,interpol='zero_order',needed=.true.,debug_flag=.false.)
 
-           if( debug_proc .and. DEBUG%LANDUSE) write(*,"(a20,5i5)") '2dGS '//trim(varname),ilu,&
+           if( debug_proc .and. DEBUG%LANDUSE>0) write(*,"(a20,5i5)") '2dGS '//trim(varname),ilu,&
               debug_li,debug_lj, i2dGS, &
                nint( map2dGrowingSeasons(debug_li,debug_lj,i2dGS) )
 
          end do ! ipar
        end do ! ilu
     end if
-    !------  End 2D maps of growing season ------------------------------------- 
+    !------  End 2D maps of growing season -------------------------------------
 
 
     ! effectiv daynumber to shift 6 month when in southern hemisphere
@@ -185,7 +185,7 @@ contains
     !          (for Rn emissions)
 
     water_fraction(:,:) = 0.0
-    ice_landcover(:,:)  = 0.0  !for Pb210 
+    ice_landcover(:,:)  = 0.0  !for Pb210
     likely_coastal(:,:) = .false.
     mainly_sea(:,:)     = .false.
 
@@ -198,9 +198,9 @@ contains
              call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
                   "SetLandUse out of range" )
 
-             if ( LandDefs(lu)%SGS50 > 0 ) then ! need to set growing seasons 
+             if ( LandDefs(lu)%SGS50 > 0 ) then ! need to set growing seasons
 
-                call Growing_season( lu,abs(glat(i,j)),&  
+                call Growing_season( lu,abs(glat(i,j)),&
                      LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu) )
              else
                 LandCover(i,j)%SGS(ilu) =  LandDefs(lu)%SGS50
@@ -233,8 +233,8 @@ contains
 
              if ( LandType(lu)%is_bulk ) then
                 LandCover(i,j)%hveg(ilu) =  LandDefs(lu)%hveg_max
-                LandCover(i,j)%LAI(ilu)  =  0.0          
-                LandCover(i,j)%fphen(ilu) =  0.0          
+                LandCover(i,j)%LAI(ilu)  =  0.0
+                LandCover(i,j)%fphen(ilu) =  0.0
              end if
 
              if ( LandType(lu)%is_water ) water_fraction(i,j) = &
@@ -264,16 +264,16 @@ contains
     end do ! i
 
     water_frac_set = .true.  ! just to inform other routines
-    
+
   end subroutine InitLanduse
 
  !============================================================================
- 
+
   subroutine ReadLanduse_CDF(filefound)
     ! Read data in other grid and interpolate to present grid
     !
     logical :: filefound
-    integer :: i,j,lu, ilu, index_lu, maxlufound, iam, ifile, nFiles 
+    integer :: i,j,lu, ilu, index_lu, maxlufound, iam, ifile, nFiles
     real :: sumfrac
     integer, save :: ncalls=0
 
@@ -283,10 +283,10 @@ contains
     integer :: nwords, err, xtype,ndims, status
     character(len=90) :: ewords(20)    ! LC:CF:EMEP, or /globa.../xxx/yyy
     logical :: fexist=.false.!file exist flag
-  
+
     real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
     real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_glob  ! CLM crude
-    real, dimension(LIMAX,LJMAX):: landuse_tot ! CLM 
+    real, dimension(LIMAX,LJMAX):: landuse_tot ! CLM
     real, dimension(LIMAX,LJMAX):: landuse_tmp ! tmp, with all data
     real    :: dbgsum, sum_veg
 
@@ -294,9 +294,9 @@ contains
     integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
     integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
     integer, dimension(size(FLUX_VEGS)):: iam_index = -1  !
-    logical, dimension(NLANDUSEMAX)  :: is_veg 
+    logical, dimension(NLANDUSEMAX)  :: is_veg
     character(len=*), parameter :: dtxt='RdLanduseCDF:'
-    logical, save :: mydbg=.false.  ! will set for debug_li, debug_lj 
+    logical, save :: mydbg=.false.  ! will set for debug_li, debug_lj
     logical :: dbgij
 
     nFiles = find_index("NOTSET", LandCoverInputs%MapFile(:) ) - 1
@@ -311,7 +311,7 @@ contains
     end if
     if( DEBUG%LANDUSE>0 .and. debug_proc )  mydbg = .true.
 
-    maxlufound = 0   
+    maxlufound = 0
 
     landuse_ncodes(:,:)   = 0     !***  initialise  ***
     landuse_codes(:,:,:)  = 0     !***  initialise  ***
@@ -324,16 +324,16 @@ contains
     ! Typically, we will read a fine-scale map for the inner area (e.g.
     ! 'Landuse_PS_5km_LC.nc') and then a global map to make sure the
     ! full domain is covered, e.g. 'glc2000mCLM.nc'
- 
-    !1)check that file exists 
+
+    !1)check that file exists
     !  (note that every processor opens/reads the same file)
 
-    ilu=0 
+    ilu=0
 
     FILELOOP: do ifile = 1, nFiles
 
       fName = LandCoverInputs%MapFile(ifile)
-     
+
       call wordsplit(fName,30,ewords,nwords,err,separator="/")
       fshort= '.../' //  ewords(nwords)    ! e.g. '.../Landuse_PS_5km.nc'
       status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
@@ -351,7 +351,7 @@ contains
          timeDimID))
       ! All the inquire functions are inexpensive to use and require no I/O,
       ! since the information they provide is stored in memory when a netCDF
-      ! dataset is first opened.   
+      ! dataset is first opened.
 
       VARIDLOOP1: do varid=1,nVariables ! all variables in file
 
@@ -378,7 +378,7 @@ contains
           !=========================
 
          !CHECK HERE to see if we already have this landcode:...
-          lu = find_index( ewords(2), Land_codes(:) ) 
+          lu = find_index( ewords(2), Land_codes(:) )
           if (  lu > 0 ) then
             if ( mydbg ) write(*,'(a,2i4)') &
                dtxt//"Already have"//ewords(2), ifile, lu
@@ -387,29 +387,29 @@ contains
             call CheckStop( ilu>NLANDUSEMAX , dtxt//&
             "NLANDUSEMAX smaller than number of landuses defined in file "//&
             trim(fname) )
-            lu  = ilu  
+            lu  = ilu
             if ( mydbg ) write(*,'(a,3i4)') &
                 dtxt//"Adding code"//ewords(2), ifile, ilu
             Land_codes(ilu) = ewords(2)    ! Landuse code found on file
           end if
 
-          if(debug_proc .and. DEBUG%LANDUSE) write(*,'(a,i3,1x,2f8.2,a)') dtxt//'IFILE', ifile,&
+          if(debug_proc .and. DEBUG%LANDUSE>0) write(*,'(a,i3,1x,2f8.2,a)') dtxt//'IFILE', ifile,&
               glat(debug_li,debug_lj), glon(debug_li,debug_lj),' '//trim(varname)
 
-          call ReadField_CDF(trim(fName),varname,& 
+          call ReadField_CDF(trim(fName),varname,&
                landuse_tmp,1,interpol='conservative', &
-               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
+               needed=.true.,debug_flag=.false.,UnDef=-9.9E19)
 
           if ( ifile == 1 ) then
              where ( landuse_tmp > 0.0 )
                landuse_in(:,:,lu) = landuse_tmp
                landuse_tot(:,:) = landuse_tot(:,:) + landuse_tmp
-             end where 
+             end where
           else
                landuse_glob(:,:,lu) = landuse_tmp ! will merge below
           end if
- 
-          if ( debug_proc .and. DEBUG%LANDUSE) then
+
+          if ( debug_proc .and. DEBUG%LANDUSE>0) then
                write(*,"(a,3i4,4es12.3,1x,a)") "F1 ", ifile,lu, ilu, &
                     landuse_tmp(debug_li,debug_lj), &
                     landuse_tot(debug_li,debug_lj), maxval(landuse_tmp(:,:)), &
@@ -431,8 +431,8 @@ contains
                     limax, ljmax, debug_li, debug_lj
       do j = 1, ljmax
          do i = 1, limax
-            !landuse_tmp can be numerically larger than 1.0 (1E-15 larger). 
-            dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj ) 
+            !landuse_tmp can be numerically larger than 1.0 (1E-15 larger).
+            dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj )
 
             if(landuse_tot(i,j)< 0.99999 ) then
               landuse_in(i,j,:)= 0.0  ! Will overwrite all PS stuff
@@ -469,7 +469,7 @@ contains
       end if
     end do
 
-  !!!!!!!!!!!! ADD IAM_VEG 
+  !!!!!!!!!!!! ADD IAM_VEG
   ! Some "IAM" veg species can be defined for calculations of ozone fluxes.
   ! These are assigned very small land-area, using the mask which the IAM_VEG
   ! species gives.  We divide the area  by the nFluxVegs to keep the total area
@@ -480,7 +480,7 @@ contains
        NLand_codes = NLand_codes + 1
        call CheckStop( NLand_codes>NLANDUSEMAX , dtxt//&
             " flux vegs makes NLANDUSEMAX smaller than number of landuses defined")
-       Land_codes(NLand_codes) = FLUX_vegs(iam) 
+       Land_codes(NLand_codes) = FLUX_vegs(iam)
        iam_index(iam) = NLand_codes
        if ( mydbg ) write(*,*) dtxt//'IAM veg:'//trim(FLUX_VEGS(iam)), &
           iam, iam_index(iam)
@@ -488,11 +488,11 @@ contains
 
     do i = 1, limax
        do j = 1, ljmax
-          dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj ) 
+          dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj )
           sum_veg = 0.0
           do lu = 1, NLand_codes
              if ( is_veg(lu) .and. landuse_in(i,j,lu)  > 0.0 ) then
-                sum_veg = sum_veg + landuse_in(i,j,lu) 
+                sum_veg = sum_veg + landuse_in(i,j,lu)
              end if
              if ( dbgij ) write(*,'(a,4i5,a13,L2,es12.3)') dtxt//'IAM add?', &
                   me,ncalls,i,j, trim(Land_codes(lu)), is_veg(lu), sum_veg
@@ -520,7 +520,7 @@ contains
    !!!!!!!!!!!! Now, convert to more compact arrays for export
     do i = 1, limax
        do j = 1, ljmax
-          dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj ) 
+          dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj )
           do lu = 1, NLand_codes
              if ( dbgij ) then
                 write(*,*) dtxt//'preGridAll', lu,NLand_codes, landuse_in(i,j,lu)
@@ -532,7 +532,7 @@ contains
                 landuse_data(i,j,index_lu) = &
                      landuse_data(i,j,index_lu) + landuse_in(i,j,lu)!already in fraction unit
                 if ( dbgij ) then
-                  write(*,*) dtxt//'GridAll', lu, index_lu,& 
+                  write(*,*) dtxt//'GridAll', lu, index_lu,&
                      landuse_data(i,j,index_lu),  landuse_in(i,j,lu)
                 end if
              end if
@@ -592,9 +592,9 @@ contains
     character (len=60) :: dnam !mainly for debug
 
 ! Treatment of growing seasons in the southern hemisphere:
-!   all the static definitions (SGS,EGS...) refer to northern hemisphere, 
+!   all the static definitions (SGS,EGS...) refer to northern hemisphere,
 !   but the actual simulation dates are shifted by 6 months in the southern
-!   hemisphere by using uses effectivdaynumber and 
+!   hemisphere by using uses effectivdaynumber and
 !   mod(current_date%month+5,12)+1 in southern hemis
 
 
@@ -606,11 +606,11 @@ contains
 
        !read in data from file
         my_first_call   = .false.
-        
+
         call InitLanduse(daynumber)
 
        ! The DO3SE params are needed for the call to fPhenology
-      
+
         call Init_DO3SE(IO_DO3SE, LandCoverInputs%Do3seDefs, &
              NLand_codes, Land_codes, errmsg)
         call CheckStop(errmsg, "Reading DO3SE ")
@@ -634,12 +634,12 @@ contains
 
     if ( USES%PFT_MAPS ) then !- Check for LPJ-derived data -
          if (MasterProc) write(*,*) dtxt//"New PFTMAPS ", month, old_month
-         if ( month /= old_month ) then 
+         if ( month /= old_month ) then
            call MapPFT_LAI( month )
            old_month = month
          end if
     end if
-    
+
 !PALEO LANDUSE
 !    if( PALEO_TEST ) then
 !     call SetPaleo(daynumber, month)
@@ -656,9 +656,9 @@ contains
 
         effectivdaynumber=daynumber
        ! effectiv daynumber to shift 6 months when in southern hemisphere
-        if(glat(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
+        if(glat(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1
 
-        dbgij = ( debugProc .and. i == debug_li .and. j == debug_lj ) 
+        dbgij = ( debugProc .and. i == debug_li .and. j == debug_lj )
 
         if ( dbgij ) then
            write(*,"(a,i3,9i6)") dtxt//" debug DATE ", &
@@ -676,7 +676,7 @@ contains
           if ( LandType(lu)%is_bulk ) then
             LandCover(i,j)%LAI(ilu) = 0.0
             LandCover(i,j)%SAI(ilu) = 0.0
-            cycle    
+            cycle
           end if!else Growing veg present:
 
           if ( LandDefs(lu)%name == "MED_OAK" .or.  &
@@ -860,14 +860,14 @@ result (Poly)
     integer :: jday ! day of year, after any co-ordinate change
     integer ::    S ! start day
     integer ::    E ! end day
-    
+
     jday = jdayin
     E = Eday
     S = Sday
 
   ! Here we removed a lot of code associated with the leaf-age
-  ! version of g_pot. 
-       
+  ! version of g_pot.
+
     if ( jday  <  S .or. jday >  E ) then
        Poly = Ymin
        return
@@ -876,7 +876,7 @@ result (Poly)
 
     if (jday <=  S+LenS  .and. LenS > 0 ) then
 
-        Poly = (Ymax-Ystart) * (jday-S)/LenS  + Ystart 
+        Poly = (Ymax-Ystart) * (jday-S)/LenS  + Ystart
 
     else if ( jday >=  E-LenE .and. LenE > 0.0 ) then   !d1.1 test for LenE
 
@@ -887,7 +887,7 @@ result (Poly)
         Poly =Ymax
 
     end if
-    
+
 
  end function Polygon
 

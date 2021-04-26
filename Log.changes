@@ -43,6 +43,17 @@ Setup_1d_mod:  use and output of pmH2O and USES%SURF_AREA_RHLIMITS. Also tidy up
 config_emep.nml - added pmH2O outputs
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th April 2021, Peter
+
+More fundamental definitions of the "special sectors": DOM, POW, TRAF, IND
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th April 2021, Peter
+
+Emission height can be given in meters.
+gfortran compatibility.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd April 2021, Peter
 
 Changes to allow reading of the CAMS aircraft nox emission files.

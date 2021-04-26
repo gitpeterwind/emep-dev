@@ -57,7 +57,9 @@
   use CheckStop_mod, only: CheckStop
   use ChemDims_mod,  only: NEMIS_File 
   use Country_mod,   only: NLAND,Country
-  use EmisDef_mod,   only: EMIS_FILE, TFAC_IDX_DOM, TFAC_IDX_POW, NSECTORS_SNAP,N_TFAC
+  use EmisDef_mod,   only: EMIS_FILE, TFAC_IDX_DOM, TFAC_IDX_TRAF, TFAC_IDX_AGR,&
+                           IS_POW,IS_AGR,IS_TRAF,IS_DOM,IS_IND,&
+                           TFAC_IDX_POW, SECTORS, NSECTORS, N_TFAC
   use GridValues_mod, only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_mod, only : Averageconserved_interpolate
   use Met_mod,       only: Getmeteofield
@@ -180,7 +182,7 @@ contains
   character(len=2000) :: inputline ! NB: 24 real number can be many hundred characters long
   real :: fracchange
   real :: Start, Endval, Average, x, buff(12)
-  logical :: found_HourlyFacFile
+  logical :: found_HourlyFacFile, found
   character(len=*), parameter:: dtxt='tfacs'
   integer :: maxidx = 0
   
@@ -218,9 +220,13 @@ contains
    fracchange=0.005*(iyr_trend -1990)
    fracchange=max(0.0,fracchange) !do not change before 1990
    fracchange=min(0.1,fracchange) !stop change after 2010 
-                                  !equal 1.1/0.9=1.22 summer/winter change
-   write(unit=6,fmt=*) dtxt//"Change summer/winter ratio in SNAP1 by ", fracchange
-
+   !equal 1.1/0.9=1.22 summer/winter change
+   do i = 1, NSECTORS
+      if(IS_POW(i)) then
+         write(unit=6,fmt=*) dtxt//"Change summer/winter ratio in "//&
+              trim(SECTORS(i)%longname)//" by ", fracchange
+      end if
+   end do
    do mm=1,12
       !Assume max change for august and february
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
@@ -276,14 +282,21 @@ contains
 
       ! Apply change in monthly factors for PUBLIC POWER (SNAP 1)
        do ic = 1, NLAND
-          sumfac=0.0
-          do mm=1,12
-             fac_emm(ic,mm,TFAC_IDX_POW,iemis)=fac_emm(ic,mm,TFAC_IDX_POW,iemis)*fac_cemm(mm)
-             sumfac=sumfac+fac_emm(ic,mm,TFAC_IDX_POW,iemis)
-          end do
-          ! normalize
-          do mm=1,12
-             fac_emm(ic,mm,TFAC_IDX_POW,iemis)=fac_emm(ic,mm,TFAC_IDX_POW,iemis)*12./sumfac
+          do i = 1, N_TFAC !must loop only once over each timefac index
+             found = .false. 
+             do isec=1,NSECTORS
+                if(SECTORS(isec)%timefac == i .and. IS_POW(isec)) found = .true.
+             end do
+             if (.not. found) cycle
+             sumfac=0.0
+             do mm=1,12
+                fac_emm(ic,mm,i,iemis)=fac_emm(ic,mm,i,iemis)*fac_cemm(mm)
+                sumfac=sumfac+fac_emm(ic,mm,i,iemis)
+             end do
+             ! normalize
+             do mm=1,12
+                fac_emm(ic,mm,i,iemis)=fac_emm(ic,mm,i,iemis)*12./sumfac
+             end do
           end do
        end do
        if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, " records from ", trim(fname2) 
@@ -731,19 +744,28 @@ contains
 
      implicit none
      integer, intent(in) ::month
-     integer ::iemis,isec
-     character(len=20) ::sector_map(NSECTORS_SNAP,NEMIS_FILE),name
-! sector_map(sector,emis) = name_in_netcdf_file
+     integer ::iemis,isec, i
+     character(len=20) ::sector_map(NSECTORS,NEMIS_FILE),name
+     
+     call CheckStop(N_TFAC/=11, "Only snap timefactors implemented for gridded timefactors")
+
+     ! sector_map(sector,emis) = name_in_netcdf_file
      sector_map(:,:)='default'
-     sector_map(2,:)='dom'
-     sector_map(1,:)='ene'
-     sector_map(10,:)='agr'
-     do iemis=1,NEMIS_FILE
-        if(trim(EMIS_File(iemis))=='nh3')sector_map(10,iemis)='agr_NH3'
+     do i = 1, NSECTORS
+        if(IS_POW(i)) sector_map(i,:)='ene'
+        if(IS_DOM(i)) sector_map(i,:)='dom'
+        if(IS_TRAF(i)) sector_map(i,:)='tra'
+        if(IS_AGR(i)) then
+           sector_map(i,:)='agr'
+           do iemis=1,NEMIS_FILE
+              if(trim(EMIS_File(iemis))=='nh3')sector_map(i,iemis)='agr_NH3'
+           end do
+        end if
+!SNAP        sector_map(3,:)='ind'
+!SNAP        sector_map(4,:)='ind'
+        if(IS_IND(i)) sector_map(i,:)='ind'
+
      end do
-     sector_map(3,:)='ind'
-     sector_map(4,:)='ind'
-     sector_map(7,:)='tra'
 
     if (dbgTF .and. MasterProc ) then
       write(*,*) 'MFAC GR?', trim(Monthly_patternsFile)
@@ -751,12 +773,12 @@ contains
 
 
      if(.not.allocated(GridTfac))then
-        allocate(GridTfac(LIMAX,LJMAX,NSECTORS_SNAP,NEMIS_FILE))! only snap sectors defined for GridTfac!
+        allocate(GridTfac(LIMAX,LJMAX,NSECTORS,NEMIS_FILE))! only snap sectors defined for GridTfac!
         GridTfac=dble(nmdays(month))/nydays !default, multiplied by inverse later!!
      end if
 
      name='none'
-     do isec=1,NSECTORS_SNAP! only snap sectors defined for GridTfac!
+     do isec=1,NSECTORS! only snap timefactors defined for GridTfac!
         do iemis=1,NEMIS_FILE
 
            if(sector_map(isec,iemis)=='default')then
@@ -810,8 +832,6 @@ subroutine yearly_normalize(year)
 !    years have different numbers of e.g. Saturdays/Sundays. 
 !    Here we execute the same interpolations which are later done
 !    in "NewDayFactors", and scale efac_mm if necessary.
-
-
   
    if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
       write(*,*)'Normalizing monthly emission time factors'

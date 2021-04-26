@@ -11,7 +11,8 @@ use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
-use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Plevels, Emis_h_pre
+use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Plevels, &
+                                 Emis_Zlevels, Emis_h_pre
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEMEP_type, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
@@ -52,14 +53,14 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 
 ! EMEP daily measurements end at 6am, hence we typically adjust
 ! for that. For global though, zero would be more normal
-  integer, save, public :: END_OF_EMEPDAY = 6 ! 
+  integer, save, public :: END_OF_EMEPDAY = 6 !
 
   type, private :: PBL_t
     ! Zi minimum value now generally calculated as z_mid(19), but we
     !   keep a fixed value for smoothing.  (old comment?)
     real :: ZiMIN = 50.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                   ! maximum mixing height
-    character(len=10) :: HmixMethod = "JcRb_t2m"  ! Method used for Hmix 
+    character(len=10) :: HmixMethod = "JcRb_t2m"  ! Method used for Hmix
       ! JcRb = Jericevic/Richardson number method
       ! JcRb_surfT is the new JcRb using pop T at skin
       ! JcRb_t2m is new JcRb using pop T at 2m
@@ -73,7 +74,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
       KzMethod = "Mixed"  ! Set U, S separately, default, pre rv4-38
                       !   (defaulted to OBrien U + Jericevic S)
                       ! "TRONKz"   ! TROEN - U+S New default in testing :-)
-                      ! "SILAMKz"  ! SILAM - U+S  
+                      ! "SILAMKz"  ! SILAM - U+S
                       ! "JG"       ! Jericevic/Grisogono - U+S
     character(len=2) :: UnstableKzMethod = "OB" ! O'Brien
     character(len=2) :: StableKzMethod   = "JG" ! Jericevic/Grisogono
@@ -112,7 +113,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 
   character(len=100), save, public :: YieldModifications = 'VBS-T10' ! Default for EmChem16mt
 
-  
+
   type, private :: LandCoverInputs_t
     character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
@@ -129,7 +130,7 @@ logical, private, parameter :: F = .false.
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   !
-   ! emissions 
+   ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
     ,EMIS             = .false. &! Uses ESX
     ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
@@ -138,8 +139,8 @@ type, public :: emep_useconfig
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
     ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
-    ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual 
-    ,LIGHTNING_EMIS   = .true.  &! 
+    ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
+    ,LIGHTNING_EMIS   = .true.  &!
     ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
     ,DUST             = .false. &! Experimental
     ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
@@ -150,7 +151,7 @@ type, public :: emep_useconfig
     ,OCEAN_NH3        = .false. &!set automatically true if found
     ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
-    ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
+    ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong
     ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,PROGRESS_FILES   = .false. &! write to file.msg for each output in file.nc
@@ -163,7 +164,7 @@ type, public :: emep_useconfig
     ,FASTJ            = .false. & ! use FastJ_mod for computing rcphot
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
-    ,PFT_MAPS         = .false. &! 
+    ,PFT_MAPS         = .false. &!
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
@@ -205,7 +206,7 @@ type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
 type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
-integer, public, parameter :: MaxNSECTORS = 100 
+integer, public, parameter :: MaxNSECTORS = 100
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
 logical, public, save :: SecEmisTotalsWanted = .false.
 
@@ -279,7 +280,7 @@ integer, public, save :: &
 ! Methane background:
 !  -1 gives defaults in BoundaryConditions_mod
 !  -26,-45 or -85 gives RC26, P45, 85 for iyr_trend
-  real, public, save :: BGND_CH4 = -1  
+  real, public, save :: BGND_CH4 = -1
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
@@ -376,7 +377,7 @@ integer, public, parameter :: &
   ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
   ,NSHL_SITE_MAX  =    10     & ! No. short-lived species
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-  ,NXTRA_SITE_D2D  =   18       ! No.  params from d_2d fields 
+  ,NXTRA_SITE_D2D  =   18       ! No.  params from d_2d fields
 integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
 integer, private :: isite              ! To assign arrays, if needed
@@ -413,7 +414,7 @@ character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D=[character(len=24):: &
-    "HMIX", & !Hmix is interpolated in time, unlike NWP version 
+    "HMIX", & !Hmix is interpolated in time, unlike NWP version
     "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatTERP",&
     "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
     'WDEP_PREC',&!''SNratio',&
@@ -439,7 +440,7 @@ type, private :: sites_t
   integer :: nshl = 0
   integer :: nd2d = 0
   integer :: nmisc = 0
-  integer, allocatable, dimension(:) :: adv 
+  integer, allocatable, dimension(:) :: adv
   integer, allocatable, dimension(:) :: shl
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
@@ -458,7 +459,7 @@ type(O3cl_t), public, save, dimension(MAXNVO3) :: OutputVegO3 = O3cl_t()
 
 ! Depositions
 type(typ_s1ind), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
-  DDEP_ECOS = typ_s1ind("-",'-') ! e.g. "Grid","YMD", 
+  DDEP_ECOS = typ_s1ind("-",'-') ! e.g. "Grid","YMD",
 
 type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
   DDEP_WANTED = typ_s3('-','-','-'), & ! e.g. typ_s3("SO2",SPEC,"mgS"),
@@ -477,13 +478,13 @@ type(typ_s5ind), public, save, dimension(MAX_NUM_NEWMOS) :: &
 
 ! For met-data and canopy concs/fluxes ...
 character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSCONCS) :: &
-  MOSAIC_METCONCS = '-' ! = [character(len=TXTLEN_DERIV):: & 
+  MOSAIC_METCONCS = '-' ! = [character(len=TXTLEN_DERIV):: &
      !,"VPD","FstO3","EVAP","Gsto" ,"USTAR","INVL"/)
 ! "USTAR","LAI","CanopyO3","FstO3"] ! SKIP CanopyO3
 ! "g_sto" needs more work - only set as L%g_sto
 
 character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSLCS) :: &
-  MET_LCS = '-' 
+  MET_LCS = '-'
 ! [character(len=TXTLEN_DERIV)::  "DF","GR","BF","TC","IAM_DF","IAM_CR"]
 
 character(len=10), public, save ::  Mosaic_timefmt='YM'  ! eg 'YMD'
@@ -562,7 +563,7 @@ CHARACTER(LEN=3), public, save :: &
 
 ! We have one variable, to say if we are on master-processor
 ! or not: (kept here to avoid too many dependencies for box-model
-! codes which don't need Par_mod. 
+! codes which don't need Par_mod.
 ! See also DebugCell from Debug_mod
 
 logical, public, save ::  MasterProc = .true.
@@ -571,7 +572,7 @@ logical, public, save ::  MasterProc = .true.
 ! Some flags for model setup
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
-! logical, public, parameter :: PALEO_TEST = .false. 
+! logical, public, parameter :: PALEO_TEST = .false.
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -612,7 +613,7 @@ integer, public, parameter ::  &
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
 integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but can be reset by metdata
-real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal 
+real, public :: Zmix_ref = 50.0 !height at which concentration above different landuse are considered equal
 
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in
@@ -782,10 +783,10 @@ subroutine Config_Constants(iolog)
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
-   ,USES   & ! 
+   ,USES   & !
    ,AERO   & ! for aerosol equilibrium scheme
-   ,PBL    & ! 
-   ,EmBio  & ! 
+   ,PBL    & !
+   ,EmBio  & !
    ,YieldModifications &  ! Allows dynamic change of chemical yields
    ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
@@ -821,13 +822,14 @@ subroutine Config_Constants(iolog)
    ,JUMPOVER29FEB, HOURLYFILE_ending  &
    ,dt_advec              & ! can be set to override dt_advec
    ,METSTEP &
-   ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
-   ,EUROPEAN_settings & ! The domain covers Europe -> 
+   ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection
+   ,EUROPEAN_settings & ! The domain covers Europe ->
    ,GLOBAL_settings & ! The domain cover other regions too -> Convection
    ,fileName_O3_Top&
    ,fileName_CH4_ibcs&
    ,femisFile&
    ,Vertical_levelsFile&
+   ,Emis_Zlevels&
    ,Emis_Plevels&
    ,Emis_h&
    ,SoilTypesFile&
@@ -889,18 +891,19 @@ subroutine Config_Constants(iolog)
   DataPath(1) = '.'!default
   Emis_h = -1.0 ! to mark as not set
   Emis_Plevels = -1.0 ! to mark as not set
+  Emis_Zlevels = -1.0 ! to mark as not set
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=Model_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
-  
+
   USES%SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
     write(logtxt,'(a,L2)') dtxt//'USES%SOILNOX ', USES%SOILNOX
     write(*,*) trim(logtxt), IOLOG
     write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
   end if
- 
+
   USES%LocalFractions = USES%LocalFractions .or. USES%uEMEP !for backward compatibility
 
   ! Convert DEBUG%SPEC to index
@@ -1081,7 +1084,7 @@ subroutine Config_Constants(iolog)
 
 end subroutine Config_Constants
 
-! PRELIM. Just writes out USES so far. 
+! PRELIM. Just writes out USES so far.
 subroutine WriteConfig_to_RunLog(iolog)
   integer, intent(in) :: iolog ! for Log file
   NAMELIST /OutUSES/ USES
@@ -1096,7 +1099,7 @@ subroutine associate_File(FileName)
   character(len=*), target ::FileName
   ix = ix+1
   call CheckStop(ix > size(InputFiles) , "Config_module: Size_InputFiles too small")
-  InputFiles(ix)%filename => FileName  
+  InputFiles(ix)%filename => FileName
 end subroutine associate_File
 
 end module Config_module
