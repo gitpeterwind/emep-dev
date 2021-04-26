@@ -40,6 +40,7 @@ ChemFields_mod: use now pmH2Ogb for Gerber water for f and c (LIMAX*LJMAX*2)
 Config_module: Added SURF_AREA_RHLIMITS  = -1; will be set to 98 or 99 soon!
 Setup_1d_mod:  use and output of pmH2O and USES%SURF_AREA_RHLIMITS. Also tidy up
                and one QUERY added.
+config_emep.nml - added pmH2O outputs
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd April 2021, Peter

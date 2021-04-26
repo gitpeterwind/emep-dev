@@ -44,6 +44,7 @@ MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/Mont
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
+!  USES%SURF_AREA_RHLIMITS = -1,  ! FOR NEAR FUTURE CHANGE 
   USES%TIMEZONEMAP       = T,
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,            ! Reads PointSources file
@@ -226,6 +227,7 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 ! RUNDOMAIN =  60, 180, 12, 184,      ! TNO07 test
 ! RUNDOMAIN =  70, 110, 72, 110,      ! TNO28 test
 !!  RUNDOMAIN =  60, 140, 70, 150,      ! EMEP0302 NW Europe
+! RUNDOMAIN =   1, 230, 10, 200,       ! EMEP0302 WEUR
 ! RUNDOMAIN =  36, 167, 12, 122,      ! EMEP domain in PARLAM
 ! RUNDOMAIN =   1, 132,  1, 111,      ! EECCA, rep09
 ! RUNDOMAIN =   1, 132,  1, 159,      ! EECCA, rep10
@@ -362,6 +364,9 @@ OutputMisc=
 !'rcGammaN2O5',   'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 'YM',
  ! For EmChem09soa, rc75 is GammaN2O5, but we hide the name to make the user check:
  'rc75',          'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 'YM',
+!PM-water from Gerber. Use 1 for fine, 2 for coarse
+ 'ugm3_pmH2O_f',  'USET', 'pmH2O',   'pmH2O_f', 'ug',   1, -1,       F,   1.0, T, 'YM',
+ 'ugm3_pmH2O_c',  'USET', 'pmH2O',   'pmH2O_x', 'ug',   2, -1,       F,   1.0, T, 'YM',
  !------------------------------------------------------------------------------------
  ! For meteo fields defined in "met%". Set subclass as met%name defined in MetFields_ml:
  !3D use MET3D
