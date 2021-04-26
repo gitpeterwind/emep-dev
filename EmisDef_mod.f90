@@ -145,12 +145,19 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
 
 
 !The indices defined here are the one used for timefactors indices
-   integer, public, parameter :: &
-          TFAC_IDX_POW  =  1,   &   ! Power for winter/summer change
-          TFAC_IDX_DOM  =  2,   &   ! Domestic/residential, for degree-day Timefactors
-          TFAC_IDX_AGR  = 10,   &   !
-          TFAC_IDX_TRAF = 7         !
+   integer, public, save :: &
+          TFAC_IDX_POW,   &   ! Power for winter/summer change
+          TFAC_IDX_DOM,   &   ! Domestic/residential, for degree-day Timefactors
+          TFAC_IDX_AGR,   &   !
+          TFAC_IDX_TRAF       !
 
+! Special sectors that need special timefactors corrections. Could be set by config?
+ logical, public, save:: IS_POW(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_AGR(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_TRAF(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_DOM(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_IND(NSECTORS_MAX) = .false.
+   
    !Dust
 !   integer, public, parameter ::  NDU   = 2 &   ! number of dust size modes
 !                                 ,QDUFI = 1 &   ! production of fine dust

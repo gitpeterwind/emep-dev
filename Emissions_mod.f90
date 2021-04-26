@@ -42,6 +42,7 @@ use EmisDef_mod,       only: &
      ,TFAC_IDX_DOM  & ! tfac index for domestic/resid emis
      ,TFAC_IDX_TRAF & ! tfac index for road-traffic (SNAP7)
      ,TFAC_IDX_AGR  & ! tfac index for agriculture
+     ,IS_POW,IS_AGR,IS_TRAF,IS_DOM,IS_IND & ! Also used for special sector managment
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
      ,NROADDUST     & ! No. road dust components
@@ -1120,6 +1121,16 @@ contains
           write(*,*)"emissions from "//trim(fname)//" will not be included"
        endif
     end do ! iemislist
+    if (NSECTORS==0) then
+       !the code does not work if no sectors are defined. TODO: find why (zero size arrays? no TFAC_IDX_XXX?)
+       do i = 1, NSECTORS_GNFR_CAMS
+          NSECTORS = NSECTORS + 1
+          call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+          SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(i)
+       end do
+       if(MasterProc) write(*,*)'including default GNFR_CAMS sectors ', NSECTORS
+    end if
+    
     i=0
     N_TFAC = 0
     N_HFAC = 0
@@ -1130,8 +1141,33 @@ contains
        91 format(A10,A10,A10,3I7,A)
        if (MasterProc) write(*,91)trim(SECTORS(isec)%name),trim(SECTORS(isec)%longname),trim(SECTORS(isec)%cdfname),SECTORS(isec)%timefac,SECTORS(isec)%height,SECTORS(isec)%split,' '//trim(SECTORS(isec)%description)
     end do
+    ! find indices for special sectors
+    do isec = NSECTORS, 1, -1 !reverse order so that TFAC_IDX get value from the lowest (= most "fundamental")
+       if (SECTORS(isec)%longname(1:6) == 'GNFR_A' .or. trim(SECTORS(isec)%longname) == 'SNAP1') then
+          IS_POW(isec) = .true.
+          TFAC_IDX_POW = SECTORS(isec)%timefac
+       end if
+       if (SECTORS(isec)%longname(1:6) == 'GNFR_C' .or. trim(SECTORS(isec)%longname) == 'SNAP2') then
+          IS_DOM(isec) = .true.
+          TFAC_IDX_DOM = SECTORS(isec)%timefac
+       end if
+       if (SECTORS(isec)%longname(1:6) == 'GNFR_F' .or. trim(SECTORS(isec)%longname) == 'SNAP7') then
+          IS_TRAF(isec) = .true.        
+          TFAC_IDX_TRAF = SECTORS(isec)%timefac
+       end if
+       if (SECTORS(isec)%longname(1:6) == 'GNFR_K' .or. trim(SECTORS(isec)%longname) == 'SNAP10') then
+           IS_AGR(isec) = .true.                 
+           TFAC_IDX_AGR = SECTORS(isec)%timefac
+       end if
+       if (SECTORS(isec)%longname(1:6) == 'GNFR_B' .or. SECTORS(isec)%longname(1:6) == 'GNFR_D' .or.&
+            trim(SECTORS(isec)%longname) == 'SNAP3' .or. trim(SECTORS(isec)%longname) == 'SNAP4') then
+          IS_IND(isec) = .true.
+       end if
+    end do
+
     do isec = 1, NSECTORS
-       if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM) then
+       if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM .or. IS_DOM(isec)) then
+          IS_DOM(isec) = .true.  
           i=1
           if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
           if(USES%DEGREEDAY_FACTORS) then
@@ -1140,17 +1176,22 @@ contains
              if (MasterProc) write(*,*)', will be recognized as a domestic sector'
           end if
        end if
-       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_AGR) then
-          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-          write(*,*)', will be recognized as an agricultur sector'
+       if (SECTORS(isec)%timefac ==  TFAC_IDX_AGR .or. IS_AGR(isec)) then
+          IS_AGR(isec) = .true.
+          if (MasterProc) then
+             write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+             write(*,*)', will be recognized as an agricultur sector'
+          end if
        end if
-       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_TRAF) then
-          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-          write(*,*)', will be recognized as a traffic sector'
+       if (SECTORS(isec)%timefac ==  TFAC_IDX_TRAF .or. IS_TRAF(isec)) then
+          IS_TRAF(isec) = .true.
+          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          if (MasterProc) write(*,*)', will be recognized as a traffic sector'
        end if
-       if (MasterProc .and. SECTORS(isec)%timefac ==  TFAC_IDX_POW) then
-          write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-          write(*,*)', will be recognized as a Public Power sector'
+       if (SECTORS(isec)%timefac ==  TFAC_IDX_POW .or. IS_POW(isec)) then
+          IS_POW(isec) = .true.
+          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          if (MasterProc) write(*,*)', will be recognized as a Public Power sector'
        end if
 
        N_TFAC  = max(N_TFAC, SECTORS(isec)%timefac)
@@ -1270,9 +1311,13 @@ contains
     !define fac_min for all processors
     forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
          fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
-    if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
-         fac_min(:,TFAC_IDX_DOM,:) = 0.
-
+    if(INERIS_SNAP2) then
+       !  INERIS do not use any base-line for SNAP2
+       do isec = 1, NSECTORS
+          if (IS_DOM(isec)) fac_min(:,isec,:) = 0.
+       end do
+     end if
+      
     ! 4) Read emission files
 
     ! allocate for MasterProc (me:=0) only:
@@ -1867,9 +1912,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,tfac_idx,iem)
 
               !Degree days - only SNAP-2
-              if(USES%DEGREEDAY_FACTORS .and. &
-                tfac_idx==TFAC_IDX_DOM .and. Gridded_SNAP2_Factors) then
-                oldtfac = tfac
+              if(USES%DEGREEDAY_FACTORS .and. IS_DOM(isec) .and. Gridded_SNAP2_Factors) then
+                 oldtfac = tfac
                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                 ! we make use of a baseload even for SNAP2
                 tfac = ( fac_min(iland,tfac_idx,iem) & ! constant baseload
@@ -2143,7 +2187,7 @@ end if
 
                    !Degree days - only SNAP-2
                    if(USES%DEGREEDAY_FACTORS .and. &
-                        tfac_idx==TFAC_IDX_DOM .and. Gridded_SNAP2_Factors .and. &
+                        IS_DOM(isec_idx) .and. Gridded_SNAP2_Factors .and. &
                         (Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')) then
                       oldtfac = tfac
                       ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise

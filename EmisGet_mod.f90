@@ -1078,7 +1078,6 @@ end if
    !        This is because nemis_hprofile is used to define KEMISTOP, which
    !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
 
-   if(.true.)then
       if (Emis_h(1,1)>-1E-5) then
          !Emission release heights have been defined in config_emep.nml. Use them
          !find the sizes of the arrays. We assume that all values >0 are to be used
@@ -1103,13 +1102,14 @@ end if
          if(Emis_Plevels(1)<-1E-5)then
             do i=1, nemis_hprofile
                Emis_Plevels(i) = 1000*StandardAtmos_km_2_kPa(Emis_Zlevels(i)/1000)
-               if(MasterProc)write(*,*)'converted level ',i,Emis_Zlevels(i),'m to',Emis_Plevels(i),'Pa'
+               39 FORMAT(A17,i4,F13.5,A7,F13.5,A3)
+               if(MasterProc)write(*,39)'converted level ',i,Emis_Zlevels(i),'m to',Emis_Plevels(i),'Pa'
             end do
          else
             !not used, but nice to have heights in meters
             do i=1, nemis_hprofile
                Emis_Zlevels(i) = 1000*StandardAtmos_kPa_2_km(Emis_Plevels(i)/1000)
-               if(MasterProc)write(*,*)'level ',i,Emis_Zlevels(i),' m ',Emis_Plevels(i),'Pa'
+               if(MasterProc)write(*,39)'level ',i,Emis_Zlevels(i),' m ',Emis_Plevels(i),'Pa'
             end do
          end if
          emis_P_level=0.0
@@ -1127,92 +1127,12 @@ end if
          emis_P_level=0.0
          emis_P_level(0)=Pref
          emis_P_level(1:nemis_hprofile) = Emis_Plevels_pre(1:Emis_Nlevel_pre)
-      end if
-   else
-      !use old format
-      call open_file(IO_EMIS,"r",EmisHeightsFile,needed=.true.)
-
-      do
-         call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
-
-         if(me==1) write(*,fmt='(A)') "read from "//trim(EmisHeightsFile)//": " // trim(txtinput)
-         if ( ios <  0 ) exit     ! End of file
-         if( index(txtinput,"#")>0 ) then ! Headers
-            call PrintLog(trim(txtinput),MasterProc)
-            cycle
-         else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
-            read(txtinput,fmt=*,iostat=ios)  txt1, nemis_hprofile
-            call PrintLog(trim(txtinput),MasterProc)
-            allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
-            allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
-            emis_P_level=0.0
-            call CheckStop(allocerr, "Allocation error for emis_P_level")
-            emis_hprofile(:,:) = -999.9
-            emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-            cycle
-         else if( index(txtinput,"Plevels")>0 ) then ! Pressure levels
-            read(txtinput,fmt=*,iostat=ios)  txt1, (emis_P_level(k),k=1, nemis_hprofile)
-            call PrintLog(trim(txtinput),MasterProc)
-            call CheckStop(allocerr, "Allocation error for emis_kprofile")
-            emis_hprofile(:,:) = -999.9
-            emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-            cycle
-         else
-            read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
-            if(snap > N_HFAC)then
-               if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
-               call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
-            end if
-            if( DEBUG%GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
-            emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
-         end if
-      end do
-
-      call CheckStop(nemis_hprofile < 1,"EmisGet: No EmisHeights set!!")
-      call CheckStop( any( emis_hprofile(:,:) < 0 ), "EmisHeight read failure" )
-
-      close(IO_EMIS)
-      !Pressure boundaries for emission levels defined in EmisHeightsFile
-      !NB in emis_P_level, k increase means higher up, i.e. smaller P (opposite as emep)
-      emis_P_level(0)=Pref
-   end if
-
-
-   !can hardcode/override the values here. do not write more than nemis_kprofile (7?)
-   !examples emep sigma levels:
-   !  emis_P_level=0.0
-   !  emis_P_level(1)=0.988 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(2)=0.976 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(3)=0.958 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(4)=0.933 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(5)=0.901 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(6)=0.862 * (Pref-PT_EMEP)+PT_EMEP
-   !  emis_P_level(7)=0.816 * (Pref-PT_EMEP)+PT_EMEP
-   !!  emis_P_level(8)=0.763 * (Pref-PT_EMEP)+PT_EMEP
-   !!  emis_P_level(9)=0.703 * (Pref-PT_EMEP)+PT_EMEP
-   !!  emis_P_level(10)=0.636 * (Pref-PT_EMEP)+PT_EMEP
-
-   if(emis_P_level(1)<1.0)then
-      !the levels were not found in file. Assume lowest model levels
-      if(me==1)write(*,*)'emission heights: assuming model levels'
-      k_up=0
-      do k=KMAX_BND-1,KMAX_BND-nemis_hprofile,-1
-         k_up=k_up+1
-         emis_P_level(KMAX_BND-k)=A_bnd(k)+B_bnd(k)*Pref !not used
-      end do
-      nemis_kprofile=nemis_hprofile
-      allocate(emis_kprofile(nemis_kprofile,N_HFAC),stat=allocerr)
-      emis_kprofile(1:nemis_kprofile,:)=emis_hprofile(1:nemis_hprofile,:)
-
-   else
-
-      if(Masterproc)then
-         write(*,*)'emission heights: defined from pressure levels'
-         do k=0,nemis_hprofile
-            write(*,*)'P emis levels : ',k,emis_P_level(k)
+         do i=1, nemis_hprofile
+            Emis_Zlevels(i) = 1000*StandardAtmos_kPa_2_km(Emis_P_level(i)/1000)
+            if(MasterProc)write(*,39)'level ',i,Emis_Zlevels(i),' m ',Emis_P_level(i),'Pa'
          end do
       end if
-      !stop
+   
       !find highest level used
       nemis_kprofile = 0
       do k=KMAX_BND-1,1,-1
@@ -1297,7 +1217,7 @@ end if
          end do
       end if
 
-   end if
+
 
 !check normalization of distributions:
    do isec=1,N_HFAC
