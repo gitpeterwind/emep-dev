@@ -26,6 +26,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th April 2021, Peter
+
+Big bug in aircraft emissions: they were 1000000 times too small.
+Has been wrong for at least 12 years.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th April 2021, Dave
 
 Added pmH2O outputs from from Gerber system, and added USES%SURF_AREA_RHLIMITS

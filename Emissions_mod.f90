@@ -5,7 +5,7 @@ module Emissions_mod
 !  with the 3D model.
 !_____________________________________________________________________________
 
-use AirEmis_mod, only : airn
+use AirEmis_mod, only : airn, TotAircraftEmis
 use Biogenics_mod,     only: SoilNOx, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
@@ -2325,28 +2325,31 @@ subroutine newmonth
              e_fact(TFAC_IDX_POW,iFemis,iemNOx)
     end if
 
+    TotAircraftEmis = 0.0
     if (index(AircraftEmis_FLFile,'CAMS-GLOB-AIR')>0) then
-       !assumes the CAMS aircraft emissions (NO in kg/m2/s)
+      !assumes the CAMS aircraft emissions (NO in kg/m2/s)
         call ReadField_CDF_FL(AircraftEmis_FLFile,'avi',airn,&
             current_date%month,kstart,kend,&
             interpol='conservative', needed=.true.,debug_flag=.false.)
        ! convert from kg(NO)/m2/s into molecules/cm3/s. mw(NO)=30.0
-       ! from kg to molecules: 0.001*AVOG/30,
+       ! from kg to molecules: 1000*AVOG/30,
        ! 1e-6 for m-3->cm-3
        ! use roa to find dz for consistency with other emissions
        ! (otherwise could have used z_bnd directly)
        ! dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
 
-        conv=0.001*AVOG/30.0*GRAV*1.0e-6&
+        conv=1000*AVOG/30.0*GRAV*1.0e-6&
              * e_fact(TFAC_IDX_POW,iFemis,iemNOx)  ! sector is assumed to be the same as for "POWER"
         do k=KCHEMTOP,KMAX_MID
           do j=1,ljmax
              do i=1,limax
+                TotAircraftEmis = TotAircraftEmis + airn(k,i,j)*xmd(i,j)
                 airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))&
                /(dA(k)+dB(k)*ps(i,j,1))
              end do
           end do
        end do
+       TotAircraftEmis = TotAircraftEmis /30.0*46.0*gridwidth_m**2*(nmdays(current_date%month)*24*3600)
     else
        !assumes NO2 in kg/month
        call ReadField_CDF_FL(AircraftEmis_FLFile,'NOx',airn,&
@@ -2354,27 +2357,33 @@ subroutine newmonth
             interpol='mass_conservative', needed=.true.,debug_flag=.false.)
 
        ! convert from kg(NO2)/month into molecules/cm3/s
-       ! from kg to molecules: 0.001*AVOG/species(NO2)%molwt
+       ! from kg to molecules: 1000*AVOG/species(NO2)%molwt
        ! use roa to find dz for consistency with other emissions
        ! (otherwise could have used z_bnd directly)
        ! dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
        ! dV=dz*dx*dy=dz*gridwidth**2/xm**2 *1e6 (1e6 for m3->cm3)
        ! from month to seconds: ndaysmonth*24*3600
 
-       conv=0.001*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6&
+       conv=1000*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6&
             /(nmdays(current_date%month)*24*3600)
 
        do k=KCHEMTOP,KMAX_MID
           do j=1,ljmax
              do i=1,limax
+                TotAircraftEmis = TotAircraftEmis + airn(k,i,j)
                 airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))&
-                     * e_fact(TFAC_IDX_POW,iFemis,iemNOx) &  ! sec1, emis1 AIRCRAFT
-               /(dA(k)+dB(k)*ps(i,j,1))*xm2(i,j)
+                    * e_fact(TFAC_IDX_POW,iFemis,iemNOx) &  ! sec1, emis1 AIRCRAFT
+                     /(dA(k)+dB(k)*ps(i,j,1))*xm2(i,j)
              end do
           end do
        end do
     end if
-  end if
+
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,TotAircraftEmis,1,MPI_DOUBLE_PRECISION, &
+       MPI_SUM,MPI_COMM_CALC,IERROR)
+    if (MasterProc) write(*,*) "Total NOx emissions from aircraft for coming month:"
+    if (MasterProc) write(*,*) TotAircraftEmis," kg(NO2)/month"
+ end if
 
   if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????"
     if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions

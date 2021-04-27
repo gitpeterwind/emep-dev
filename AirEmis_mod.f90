@@ -61,6 +61,7 @@ module AirEmis_mod
  
    integer,private ,parameter :: ILEV=18
    logical, parameter :: MY_DEBUG = .false.
+   real, public :: TotAircraftEmis, TotLightningEmis !totals/month in kg NO2
 
  contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
