@@ -419,13 +419,13 @@ contains
                 if (found > 0) exit; ! we want the first entry
              end do
              if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//': sectorsName not recognized!')
-             Emis_source(n)%sector_idx = found -1 + Emis_source(ii)%sector !TODO: make more robust (use names, not indices)
+             Emis_source(ii)%sector_idx = found -1 + Emis_source(ii)%sector !TODO: make more robust (use names, not indices)
           end if
 
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
           if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
-          if(MasterProc) write(*,'(a,i2,a)')'including '//trim(Emis_source(ii)%varname)//' as '//&
-               trim(Emis_source(ii)%species)//' sector ',SECTORS(Emis_source(n)%sector_idx)%longname,' country '//trim(Emis_source(ii)%country_ISO)
+          if(MasterProc) write(*,'(a,a,a)')'including '//trim(Emis_source(ii)%varname)//' as '//&
+               trim(Emis_source(ii)%species)//' sector ',trim(SECTORS(Emis_source(n)%sector_idx)%longname),' country '//trim(Emis_source(ii)%country_ISO)
        enddo
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
 !            //trim(Emis_sourceFiles(n)%filename)
@@ -2069,8 +2069,8 @@ end if
        isec = Emis_source(n)%sector
        isec_idx = Emis_source(n)%sector_idx !index in SECTORS
        tfac_idx = SECTORS(isec_idx)%timefac
-       emish_idx = SECTORS(isec)%height
-       split_idx = SECTORS(isec)%split
+       emish_idx = SECTORS(isec_idx)%height
+       split_idx = SECTORS(isec_idx)%split
 
        iland = Emis_source(n)%country_ix
        if(itot>0)then
@@ -2227,22 +2227,6 @@ end if
        endif
     enddo
  end if ! hourchange
-
-
-
-  ! We now scale gridrcemis to get emissions in molecules/cm3/s
-!MOVED to setup_1d
-!  do k= KEMISTOP, KMAX_MID
-!    do j = 1,ljmax
-!      do i = 1,limax
-!        ehlpcom= roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-!        !RB: This should also be done for the road dust emissions
-!        do iqrc =1, NRCEMIS
-!          gridrcemis(iqrc,k,i,j) =  gridrcemis0(iqrc,k,i,j)* ehlpcom
-!        end do ! iqrc
-!      end do   ! i
-!    end do     ! j
-!  end do       ! k
 
   if(USES%ROADDUST)THEN
     if(DEBUG%ROADDUST.and.debug_proc) &

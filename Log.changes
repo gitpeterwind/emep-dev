@@ -28,6 +28,11 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th April 2021, Peter
 
+Corrected incompatibilities with the emissions in "new format"
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th April 2021, Peter
+
 Big bug in aircraft emissions: they were 1000000 times too small.
 Has been wrong for at least 12 years.
 
