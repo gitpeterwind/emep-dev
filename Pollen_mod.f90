@@ -203,11 +203,7 @@ subroutine Config_Pollen()
       case(ALDER);n=find_index('POLLa',DDdefs(:)%name)
       case(RWEED);n=find_index('POLLr',DDdefs(:)%name)
       case(GRASS);n=find_index('POLLg',DDdefs(:)%name)
-      case(MUGWORT1);n=find_index('POLLmw1',DDdefs(:)%name)
-      case(MUGWORT2);n=find_index('POLLmw2',DDdefs(:)%name)
-      case(MUGWORT3);n=find_index('POLLmw3',DDdefs(:)%name)
-      case(MUGWORT4);n=find_index('POLLmw4',DDdefs(:)%name)
-      case(MUGWORT5);n=find_index('POLLmw5',DDdefs(:)%name)
+      case(MUGWORT1:MUGWORT5);n=find_index('POLLm',DDdefs(:)%name)
       case default
         call CheckStop("Not implemented "//POLLEN_GROUP(g))
       end select
