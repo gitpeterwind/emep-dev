@@ -1020,11 +1020,12 @@ contains
        else
           ! the sector type must be read from the file
           if (cdf_sector_name /=  'NOTSET') then
-
              if (cdf_sector_name == 'GNFR') cdf_sector_name = 'GNFR_CAMS' ! GNFR is a subset of GNFR_CAMS
              if (cdf_sector_name == 'GNFR_CAMS') emis_inputlist(iemislist)%type = "GNFR_CAMSsectors"
              if (cdf_sector_name == 'SNAP') emis_inputlist(iemislist)%type = "SNAPsectors"
              emis_inputlist(iemislist)%sector = trim(cdf_sector_name)
+          else if (emis_inputlist(iemislist)%type=="sectors") then
+             call CheckStop(emis_inputlist(iemislist)%type=="sectors", "Did not find sector name in config or in file"//trim(emis_inputlist(iemislist)%name))
           end if
        end if
 
@@ -1291,6 +1292,7 @@ contains
     end if
     !=========================
     call EmisSplit()    ! In EmisGet_mod, => emisfrac
+    call CheckStop(N_SPLIT == 19 .and. largestsplit<=11," Cannot use GNFR_CAMS splits together with SNAP sector split settings")
     call CheckStop(largestsplit>N_SPLIT," split index not defined ")
     !=========================
     !Must first call EmisSplit, to get nrcemis defined

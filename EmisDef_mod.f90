@@ -89,16 +89,16 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
         (/ &
 !        general name,  longname, netcdf_name timefac index, height index, split index, description, species
    Sector_type('SNAP', 'SNAP1 ',  'sec01',      1,           1,             1,       'Combustion in energy and transformation industries', 'ALL'),&
-   Sector_type('SNAP', 'SNAP2 ',  'sec02',      2,           2,             3,       'Non-industrial combustion', 'ALL'),&
-   Sector_type('SNAP', 'SNAP3 ',  'sec03',      3,           3,             2,       'Industrial combustion', 'ALL'),&
+   Sector_type('SNAP', 'SNAP2 ',  'sec02',      2,           2,             2,       'Non-industrial combustion', 'ALL'),&
+   Sector_type('SNAP', 'SNAP3 ',  'sec03',      3,           3,             3,       'Industrial combustion', 'ALL'),&
    Sector_type('SNAP', 'SNAP4 ',  'sec04',      4,           4,             4,       'Production processes', 'ALL'),&
-   Sector_type('SNAP', 'SNAP5 ',  'sec05',      5,           5,            13,       'Extraction and distribution of fossil fuels', 'ALL'),&
-   Sector_type('SNAP', 'SNAP6 ',  'sec06',      6,           2,             5,       'Solvent use', 'ALL'),&
-   Sector_type('SNAP', 'SNAP7 ',  'sec07',      7,           2,             6,       'Road traffic', 'ALL'),&
-   Sector_type('SNAP', 'SNAP8 ',  'sec08',      8,           2,             7,       'Other mobile sources (trains, planes, ships)', 'ALL'),&
-   Sector_type('SNAP', 'SNAP9 ',  'sec09',      9,           6,            10,       'Waste treatment and disposal', 'ALL'),&
-   Sector_type('SNAP', 'SNAP10',  'sec10',     10,           2,            11,       'Agriculture', 'ALL'),&
-   Sector_type('SNAP', 'SNAP11',  'sec11',     11,           2,            13,       'Nature', 'ALL') /)
+   Sector_type('SNAP', 'SNAP5 ',  'sec05',      5,           5,             5,       'Extraction and distribution of fossil fuels', 'ALL'),&
+   Sector_type('SNAP', 'SNAP6 ',  'sec06',      6,           2,             6,       'Solvent use', 'ALL'),&
+   Sector_type('SNAP', 'SNAP7 ',  'sec07',      7,           2,             7,       'Road traffic', 'ALL'),&
+   Sector_type('SNAP', 'SNAP8 ',  'sec08',      8,           2,             8,       'Other mobile sources (trains, planes, ships)', 'ALL'),&
+   Sector_type('SNAP', 'SNAP9 ',  'sec09',      9,           6,             9,       'Waste treatment and disposal', 'ALL'),&
+   Sector_type('SNAP', 'SNAP10',  'sec10',     10,           2,            10,       'Agriculture', 'ALL'),&
+   Sector_type('SNAP', 'SNAP11',  'sec11',     11,           2,            11,       'Nature', 'ALL') /)
 
 ! predefine GNFR CAMS sectors
    integer, public, parameter :: &
