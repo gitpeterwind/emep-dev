@@ -499,17 +499,7 @@ subroutine pollen_flux(i,j,debug_flag)
       call heatsum_hour(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
     case(iRWEED)
       call heatsum_rweed(heatsum(i,j,g),t2_nwp(i,j,1),daylength(glat(i,j)))
-    case(iGRASS)
-      ! nothing to do
-    case(iMUGW1)
-      ! nothing to do
-    case(iMUGW2)
-      ! nothing to do
-    case(iMUGW3)
-      ! nothing to do
-    case(iMUGW4)
-      ! nothing to do
-    case(iMUGW5)
+    case(iGRASS,iMUGW1:iMUGW5)
       ! nothing to do
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))
@@ -595,23 +585,7 @@ subroutine pollen_flux(i,j,debug_flag)
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH)                            & ! too humid
         .or.(prec>prec_max)                               ! too rainy
-    case(iMUGW1)! Mugwort1 specific emission inhibitors
-      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
-        .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
-        .or.(prec>prec_max)                               ! too rainy
-    case(iMUGW2)! Mugwort2 specific emission inhibitors
-      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
-        .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
-        .or.(prec>prec_max)                               ! too rainy
-    case(iMUGW3)! Mugwort3 specific emission inhibitors
-      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
-        .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
-        .or.(prec>prec_max)                               ! too rainy
-    case(iMUGW4)! Mugwort4 specific emission inhibitors
-      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
-        .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
-        .or.(prec>prec_max)                               ! too rainy
-    case(iMUGW5)! Mugwort5 specific emission inhibitors
+    case(iMUGW1:iMUGW5)! Mugwort specific emission inhibitors
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
         .or.(prec>prec_max)                               ! too rainy
