@@ -2313,9 +2313,16 @@ subroutine newmonth
 
     TotAircraftEmis = 0.0
     if (index(AircraftEmis_FLFile,'CAMS-GLOB-AIR')>0) then
-      !assumes the CAMS aircraft emissions (NO in kg/m2/s)
-        call ReadField_CDF_FL(AircraftEmis_FLFile,'avi',airn,&
-            current_date%month,kstart,kend,&
+       !assumes the CAMS aircraft emissions (NO in kg/m2/s)
+       if(startdate(1)<2000)then
+          AircraftEmis_FLFile = key2str(AircraftEmis_FLFile,'YYYY',2000)
+       else if(startdate(1)>2020)then
+          AircraftEmis_FLFile = key2str(AircraftEmis_FLFile,'YYYY',2020)
+       else
+          AircraftEmis_FLFile = key2str(AircraftEmis_FLFile,'YYYY',startdate(1))
+       end if
+       call ReadField_CDF_FL(AircraftEmis_FLFile,'avi',airn,&
+            current_date%month,kstart,kend,USES%zero_below3000ft,&
             interpol='conservative', needed=.true.,debug_flag=.false.)
        ! convert from kg(NO)/m2/s into molecules/cm3/s. mw(NO)=30.0
        ! from kg to molecules: 1000*AVOG/30,
@@ -2339,7 +2346,7 @@ subroutine newmonth
     else
        !assumes NO2 in kg/month
        call ReadField_CDF_FL(AircraftEmis_FLFile,'NOx',airn,&
-            current_date%month,kstart,kend,&
+            current_date%month,kstart,kend,USES%zero_below3000ft,&
             interpol='mass_conservative', needed=.true.,debug_flag=.false.)
 
        ! convert from kg(NO2)/month into molecules/cm3/s

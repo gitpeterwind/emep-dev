@@ -4155,7 +4155,7 @@ end subroutine ReadField_CDF
 
 !The "flight levels" are so specific, that we prefer to have an ad-hoc routine rather
 !than to pollute otehr routine with special cases.
- subroutine ReadField_CDF_FL(fileName,varname,Rvar,nstart,kstart,kend,interpol,needed,debug_flag)
+ subroutine ReadField_CDF_FL(fileName,varname,Rvar,nstart,kstart,kend,zero_below3000ft,interpol,needed,debug_flag)
 
   use netcdf
 
@@ -4165,6 +4165,7 @@ end subroutine ReadField_CDF
   integer,intent(in) :: nstart
   integer, intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
   integer, intent(in) :: kend!largest k to read. Default: assume 2D field
+  logical, intent(in) :: zero_below3000ft !set the first and half of the second levels to zero
   character(len = *), optional,intent(in) :: interpol
   logical, optional, intent(in) :: needed
   logical, optional, intent(in) :: debug_flag
@@ -4245,7 +4246,8 @@ end subroutine ReadField_CDF
         return
      end if
   end if
-
+  if(zero_below3000ft .and. MasterProc) write(*,*)' Aircraft emissions: will set emissions to zero in first 1.5 levels'
+  
   data3D=.true.
 
   !Check first that variable has data covering the relevant part of the grid:
@@ -4398,6 +4400,16 @@ end subroutine ReadField_CDF
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
+
+     if(zero_below3000ft)then
+        do igjgk=1,dims(2)*dims(1) !lowest level
+           Rvalues(igjgk)=0.0
+        end do
+        do igjg=1,dims(2)*dims(1)
+           igjgk=igjg+dims(1)*dims(2)!next lowest level
+           Rvalues(igjgk)=0.5*Rvalues(igjgk)
+        end do
+     endif
      
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
         !conserves integral (almost, does not take into account local differences in mapping factor)

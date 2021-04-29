@@ -24,6 +24,20 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th April 2021, Michael/Peter
+
+New aircraft emission default:
+DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
+
+The emissions in the lowest flight level are set to zero, and the next lowest
+flight level are multiplied by 0.5.
+This can be steered by 
+USES%zero_below3000ft  = F,
+or
+USES%zero_below3000ft  = T, !default
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th April 2021, Michael/Dave
 

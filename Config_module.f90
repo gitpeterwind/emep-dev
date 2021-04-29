@@ -149,6 +149,7 @@ type, public :: emep_useconfig
     ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
+    ,zero_below3000ft = .true.  &! set aircraft emissions to zero below ca 3000ft
     ,LIGHTNING_EMIS   = .true.  &!
     ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
     ,DUST             = .false. &! Experimental
@@ -184,7 +185,7 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TIMEZONEMAP      = .false. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
-   real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
+  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
 
  ! If USES%EMISTACKS, need to set:
   character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"
@@ -209,7 +210,7 @@ type(emep_useconfig), public, save :: USES
 logical,  public, save :: &
       FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
-integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read from config
+integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read froms config
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
@@ -734,7 +735,7 @@ character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataD
 character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/EmisHeights.txt'
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
-character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/AircraftEmis_FL.nc'
+character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_cams81File = 'DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
 !character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
@@ -1076,10 +1077,11 @@ subroutine Config_Constants(iolog)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'EmisDir',EmisDir)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
      InputFiles(i)%filename = &
-            key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
-     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'YYYY',startdate(1))
+          key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)
+     !note: YYYY is not replaced, because not all year exist for input files, and special treatment is need for each
     endif
   enddo
+
   if(trim(fileName_O3_Top)/="NOTSET")then
      fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
      if(MasterProc)then
