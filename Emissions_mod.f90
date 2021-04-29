@@ -25,7 +25,7 @@ use Config_module,only: &
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
-    FOUND_OCEAN_DMS,&
+    DMS,&
     NPROC, EmisSplit_OUT,uEMEP,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,nox_emission_1996_2005File, nox_emission_cams81File, RoadMapFile,&
@@ -2612,7 +2612,7 @@ subroutine newmonth
             needed=.true.,debug_flag=.false.,UnDef=0.0)
 
        USES%OCEAN_DMS=.true.
-       FOUND_OCEAN_DMS=.true.
+       DMS%FileFound =.true.
 
        !from nanomol/l -> mol/cm3
        O_DMS%emis=O_DMS%emis*1.0e-12

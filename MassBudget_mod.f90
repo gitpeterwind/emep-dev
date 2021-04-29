@@ -11,7 +11,7 @@ use Config_module,    only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d field
                               MasterProc,       & ! Master processor
                               dt_advec,         & ! time-step
                               PT,               & ! Pressure at top
-                              USES, FOUND_OCEAN_DMS,&
+                              USES, DMS,&
                               EXTENDEDMASSBUDGET
 use Debug_module,     only: DEBUG_MASS
 use EmisDef_mod,      only: O_NH3, O_DMS
@@ -385,7 +385,7 @@ subroutine massbudget()
      close(iomb)
   end if  ! MasterProc
 
-  if(FOUND_OCEAN_DMS)then
+  if(DMS%FileFound)then
      ! update dms budgets
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
           MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)

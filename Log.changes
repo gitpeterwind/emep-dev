@@ -24,6 +24,20 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th April 2021, Michael/Dave
+
+New DMS methods and input introduced:
+
+Config_module, config_emep.nml:
+   Added DMS_t to allow change between new and old (DMS%KzNew, DMS%ScNew)
+   DMS%FileFound replaces OCEAN_DMS_FOUND
+
+Emissions_mod, MassBudget_mod - use of DMS%FileFound
+Setup_1d_mod: New equations added
+
+RESULTS WILL CHANGE with new defaults. Use KzNew=F, ScNew=F, emis from DMS.nc
+ to retrieve old system.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th April 2021, Peter

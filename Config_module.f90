@@ -55,6 +55,15 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 ! for that. For global though, zero would be more normal
   integer, save, public :: END_OF_EMEPDAY = 6 !
 
+  type, private :: DMS_t
+    logical :: KwNew = .true.   ! T = Nightingale2000', F =Tarrason1995
+    logical :: ScNew = .true.   ! T = Wanninkhof', F =LissMerlivat1986
+  !NB: *FileFound is internal variable. Cannot be set manually.
+    logical :: FileFound = .false. ! Set to T if found
+  end type DMS_t
+  type(DMS_t), public, save :: DMS = DMS_t()
+  
+
   type, private :: PBL_t
     ! Zi minimum value now generally calculated as z_mid(19), but we
     !   keep a fixed value for smoothing.  (old comment?)
@@ -275,7 +284,7 @@ integer, public, save :: &
   real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
-  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
+!See DMS_t  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
 
 ! Methane background:
 !  -1 gives defaults in BoundaryConditions_mod

@@ -27,7 +27,7 @@ use Config_module,    only:  &
   ,MasterProc                   & 
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
-  ,FOUND_OCEAN_DMS&
+  ,DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP & ! Upper layer (k), upper level, and k for 1d fields
@@ -665,35 +665,64 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! Ocean DMS -> SO2
-  if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
+  if(DMS%FileFound)then!temporarily always compute budgets if file found
      !keep separated from snapemis/rcemis in order to be able to include more
-     ! advanced processes
-     k=KMAX_MID
+     !advanced processes
+     !
      !convert from mol/cm3 into molecules/cm3/s . 
      !Kw in cm/hour after Leonor Tarrason (1995), after Liss and Merlivat (1986)
      !assumes 20 degrees C
-    !NB: misprint in gbc1385.pdf!
-     SST_C=max(0.0,min(30.0,(SST(i,j,1)-T0))) !the formula uses degrees C
-     SC_DMS=2674 -147.12*SST_C + 3.726*SST_C*SST_C - 0.038 * SST_C*SST_C*SST_C
-     SC_DMS=SC_DMS/600.0
-     SC_DMS_m23=SC_DMS**(-2.0/3.0)
+     !NB: misprint in gbc1385.pdf!
 
-     SC_DMS_msqrt=sqrt(1./SC_DMS)
-     if(ws_10m(i,j,1)<=3.6)then
-        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23
-     elseif(ws_10m(i,j,1)<=13.0)then
-        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt
-     else
-        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+ &
+!XXXX NEW CHOICES to match MG METHOD. Will clean up once notation
+! settled
+
+     k=KMAX_MID
+
+
+     if (DMS%ScNew ) then ! uses  Wanninkhof2014'
+       SST_C=max(-2.0,min(40.0,(SST(i,j,1)-T0))) !the formula uses degrees C
+       SC_DMS=2855.7-177.63*SST_C+6.0438*SST_C*SST_C- &
+          0.11645*SST_C*SST_C*SST_C+0.00094743*SST_C*SST_C*SST_C*SST_C
+     else    ! LissMerlivat1986 as in "old" 
+       SST_C=max(0.0,min(30.0,(SST(i,j,1)-T0))) !the formula uses degrees C
+       SC_DMS=2674 -147.12*SST_C + 3.726*SST_C*SST_C - 0.038 * SST_C*SST_C*SST_C
+     end if
+
+     SC_DMS=SC_DMS/600.0
+
+
+     !----------------------------------------------------------
+     ! choose Tarrason (1995) or Nightingale et al. (2000) --vvv
+
+     if ( DMS%KwNew ) then ! Nightingale2000
+
+        Kw=(0.222*ws_10m(i,j,1)*ws_10m(i,j,1)+0.333*ws_10m(i,j,1))* &
+          SC_DMS**(-0.5)
+
+     else     !Tarrason1995, orig
+
+       SC_DMS_m23=SC_DMS**(-2.0/3.0)
+
+       SC_DMS_msqrt=sqrt(1./SC_DMS)
+       if(ws_10m(i,j,1)<=3.6)then
+          Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23
+       elseif(ws_10m(i,j,1)<=13.0)then
+          Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt
+       else
+          Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+ &
            2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt+ &
            3.05*(ws_10m(i,j,1)-13)*SC_DMS_msqrt
-     end if
+       end if
+
+     end if ! Tarrason/Nightingale
+
      Kw=Kw/3600!cm/hour -> cm/s
 
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
      if(USES%OCEAN_DMS)then
-      rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ &
-      0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
+        rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ &
+          0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
                            (dA(k)+dB(k)*ps(i,j,1)) *AVOG 
      end if
      !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * ...
@@ -706,8 +735,6 @@ subroutine setup_rcemis(i,j)
      O_DMS%map(i,j)=O_DMS%emis(i,j)*Kw *1.e4*62.13*1.0E3  
 
   end if
-
-
 
   if(Found_Emis_4D>0)then
      do i_Emis_4D=1,N_Emis_4D

@@ -39,6 +39,12 @@ MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/Mont
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
 ! EmBio%IsopFac           =  1.0,
+!
+! DMS methods updated by MG Apr 2021. Set F here, and change emisfile from
+!  DMS_SOLAS.nc to DMS.nc below to get older methods
+! DMS%KzNew = T,   ! Updated methods, 2021 by MG
+! DMS%ScNew = T,   ! Updated 2021 by MG
+!
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
 !USES system started June 2013
@@ -132,7 +138,8 @@ cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
 !**#######################################################
 !
 !Ocean emissions
-  emis_inputlist(2)%name  = 'DataDir/DMS.nc',    !Global DMS in Oceans
+!OLD:  emis_inputlist(2)%name  = 'DataDir/DMS.nc',    !Global DMS in Oceans
+  emis_inputlist(2)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
   emis_inputlist(2)%type  = 'DMS',    ! Needs ad-hoc treatment
 !  emis_inputlist(3)%name  = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc',    ! Ocean NH3
 !  emis_inputlist(3)%type  = 'OceanNH3',    ! Needs ad-hoc treatment
