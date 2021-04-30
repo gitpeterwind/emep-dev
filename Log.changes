@@ -26,6 +26,25 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th April 2021, Michael/Peter/Dave
+
+GNFR_H, Aviation, are now outputted into a new vertical distribution, with
+50% below 50 m, and the rest evenly distributed up to 1106 m.
+
+The Emission heights levels are now defined in meters, and the default levels
+are rounded to zero decimals:
+     Emis level    1         20.0 m      101085.0 Pa
+     Emis level    2         50.0 m      100725.8 Pa
+     Emis level    3         92.0 m      100224.7 Pa
+     Emis level    4        184.0 m       99134.0 Pa
+     Emis level    5        324.0 m       97492.8 Pa
+     Emis level    6        522.0 m       95209.3 Pa
+     Emis level    7        781.0 m       92287.8 Pa
+     Emis level    8       1106.0 m       88725.0 Pa
+
+NB: those will slightly change concentrations (but not total emission columns)!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th April 2021, Michael/Peter
 
 New aircraft emission default:

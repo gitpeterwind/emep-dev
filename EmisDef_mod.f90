@@ -56,29 +56,31 @@ integer, save, public :: NSECTORS = 0 ! Number of sectors actually included (<= 
 
 !Predefine Emission heights distributions
 integer, public, parameter :: Emis_Nlevel_MAX=25 ! Max Number of vertical emission levels definable
-integer, public :: Emis_Nlevel=7 ! Actual Number of total vertical emission levels (can change according to config settings)
-integer, public, parameter :: Emis_Nlevel_pre=7 ! Number of vertical emission levels predefined
+integer, public :: Emis_Nlevel=8 ! Actual Number of total vertical emission levels (can change according to config settings)
+integer, public, parameter :: Emis_Nlevel_pre=8 ! Number of vertical emission levels predefined
 integer, public, parameter :: Emis_heights_sec_MAX=25 ! Max Number of vertical emission distributions definable
-integer, public :: Emis_heights_sec=6 ! Actual Number of vertical emission distributions (can change according to config settings)
-integer, public, parameter :: Emis_heights_sec_pre=6 ! Actual Number of vertical emission distributions predefined
+integer, public :: Emis_heights_sec=7 ! Actual Number of vertical emission distributions (can change according to config settings)
+integer, public, parameter :: Emis_heights_sec_pre=7 ! Actual Number of vertical emission distributions predefined
 
 !pressure at top of emission levels
-real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
-     (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, &
-     (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
-real, public :: Emis_Plevels(Emis_Nlevel_MAX) ! used if set by config_emep.nml
+!real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
+!     (/101084.9, 100229.1, 99133.2, 97489.35, 95206.225, 92283.825, 88722.15, &
+!     (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
+real, public :: Emis_Zlevels_pre(Emis_Nlevel_MAX) = &
+  (/20.0,   50.0,   92.0,  184.0,  324.0,  522.0,  781.0, 1106.0, (0.0, i = 1,Emis_Nlevel_MAX-Emis_Nlevel_pre)/)
 real, public :: Emis_Zlevels(Emis_Nlevel_MAX) ! used if set by config_emep.nml
 
 !Fraction released in each vertical level predefined values:
 real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
      (reshape((/ &
-      0.0,      0.00,     0.0025,   0.1475,   0.40,     0.30,     0.15, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 1 High
-      1.0,      0.00,     0.00,     0.00,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 2 Surface
-      0.06,     0.16,     0.75,     0.03,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 3 = SNAP3
-      0.05,     0.15,     0.70,     0.10,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 4 = SNAP4
-      0.02,     0.08,     0.60,     0.30,     0.00,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
-      0.0,      0.00,     0.41,     0.57,     0.02,     0.00,     0.0 , (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
-      (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
+   0.000,  0.000,  0.000,  0.003,  0.147,  0.400,  0.300,  0.150, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 1 High
+   1.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 2 Surface
+  0.0600,  0.067,  0.093,  0.750,  0.030,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 3 = SNAP3
+  0.0500,  0.063,  0.087,  0.700,  0.100,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 4 = SNAP4
+  0.0200,  0.034,  0.046,  0.600,  0.300,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
+   0.000,  0.000,  0.000,  0.410,  0.570,  0.020,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
+   0.200,  0.300,  0.020,  0.044,  0.066,  0.094,  0.123,  0.153, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 7 = LTO
+    (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
 
 real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set by config_emep.nml
 
@@ -113,12 +115,12 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
    Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_F',  'sec06',      7,            2,            6,       'RoadTransport', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_G',  'sec07',      8,            2,            7,       'Shipping', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_H',  'sec08',      8,            2,            8,       'Aviation', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_H',  'sec08',      8,            7,            8,       'Aviation', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_I',  'sec09',      8,            2,            9,       'Offroad', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_J',  'sec10',      9,            6,           10,       'Waste', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_K',  'sec11',     10,            2,           11,       'AgriLivestock', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_L',  'sec12',     10,            2,           12,       'AgriOther', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_M',  'sec13',      5,             5,          13,       'Other', 'ALL') ,&
+   Sector_type('GNFR_CAMS', 'GNFR_M',  'sec13',      5,            5,           13,       'Other', 'ALL') ,&
    !additional subsectors defined for CAMS
    Sector_type('GNFR_CAMS', 'GNFR_A1',  'sec14',      1,            1,           1,       'PublicPower_Point', 'ALL') ,&
    Sector_type('GNFR_CAMS', 'GNFR_A2',  'sec15',      1,            3,           1,       'PublicPower_Area', 'ALL') ,&

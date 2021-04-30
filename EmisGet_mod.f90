@@ -26,8 +26,8 @@ use EmisDef_mod,       only: NSECTORS, NCMAX, &
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
                             ,NEmis_sourcesMAX, SECTORS&
-                            ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Plevels_pre&
-                            ,Emis_h, Emis_Plevels, Emis_Zlevels &
+                            ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Zlevels_pre&
+                            ,Emis_h, Emis_Zlevels &
                             ,Emis_heights_sec_MAX, Emis_Nlevel_MAX
 use Functions_mod,     only: StandardAtmos_kPa_2_km, StandardAtmos_km_2_kPa
 use GridAllocate_mod,  only: GridAllocate
@@ -1063,77 +1063,66 @@ end if
    real :: tmp(KMAX_MID)  ! values
    character(len=200) :: txtinput               ! For read-in
    character(len=20) :: txt1
-
-
    integer :: k_up, i
    real,allocatable:: emis_P_level(:)
    real :: P_emep,frac,sum
    integer :: isec,k_ext,k1_ext(KMAX_BND),nemis_hprofile
 
-   !emis_hprofile are read from file.
+   !emis_hprofile are defined in "emission levels".
    !emis_kprofile are the fraction values converted into model levels
 
    !REMARK: if you only change nemis_hprofile, but keep exactely the same
    !        emissions, the results will still be sligthly changed.
    !        This is because nemis_hprofile is used to define KEMISTOP, which
    !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
-
-      if (Emis_h(1,1)>-1E-5) then
-         !Emission release heights have been defined in config_emep.nml. Use them
-         !find the sizes of the arrays. We assume that all values >0 are to be used
-         nemis_hprofile = 0
-        do i=1, Emis_Nlevel_MAX
-            if (Emis_h(i,1)>-1E-5) nemis_hprofile = nemis_hprofile + 1
-            if (Emis_h(i,1)<-1E-5) exit
-            call CheckStop(Emis_Plevels(i)<-1E-5 .and. Emis_Zlevels(i)<-1E-5 ,'Emis_Plevels level not defined in config_emep.nml')
-         end do
-         N_HFAC = 0
-         do i=1, Emis_heights_sec_MAX
-            if (Emis_h(1,i)>-1E-5) N_HFAC = N_HFAC + 1
-            if (Emis_h(1,i)<-1E-5) exit
-         end do
-         if (MasterProc) write(*,*)N_HFAC,' emis height distributions defined'
-         if (MasterProc) write(*,*)nemis_hprofile,' emis height P levels defined'
-         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
-         emis_hprofile(:,:) = -999.9
-         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-         emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h(1:nemis_hprofile,1:N_HFAC)
-         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
-         if(Emis_Plevels(1)<-1E-5)then
-            do i=1, nemis_hprofile
-               Emis_Plevels(i) = 1000*StandardAtmos_km_2_kPa(Emis_Zlevels(i)/1000)
-               39 FORMAT(A17,i4,F13.5,A7,F13.5,A3)
-               if(MasterProc)write(*,39)'converted level ',i,Emis_Zlevels(i),'m to',Emis_Plevels(i),'Pa'
-            end do
-         else
-            !not used, but nice to have heights in meters
-            do i=1, nemis_hprofile
-               Emis_Zlevels(i) = 1000*StandardAtmos_kPa_2_km(Emis_Plevels(i)/1000)
-               if(MasterProc)write(*,39)'level ',i,Emis_Zlevels(i),' m ',Emis_Plevels(i),'Pa'
-            end do
-         end if
-         emis_P_level=0.0
-         emis_P_level(0)=Pref
-         emis_P_level(1:nemis_hprofile) = Emis_Plevels(1:nemis_hprofile)
-      else
-         !use the default predefined values
-         nemis_hprofile = Emis_Nlevel_pre
-         N_HFAC = Emis_heights_sec_pre
-         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
-         emis_hprofile(:,:) = -999.9
-         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
-         emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h_pre(1:nemis_hprofile,1:Emis_heights_sec_pre)
-         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
-         emis_P_level=0.0
-         emis_P_level(0)=Pref
-         emis_P_level(1:nemis_hprofile) = Emis_Plevels_pre(1:Emis_Nlevel_pre)
-         do i=1, nemis_hprofile
-            Emis_Zlevels(i) = 1000*StandardAtmos_kPa_2_km(Emis_P_level(i)/1000)
-            if(MasterProc)write(*,39)'level ',i,Emis_Zlevels(i),' m ',Emis_P_level(i),'Pa'
-         end do
-      end if
    
-      !find highest level used
+   if (Emis_h(1,1)>-1E-5) then
+      !Emission release heights have been defined in config_emep.nml. Use them
+      !find the sizes of the arrays. We assume that all values >0 are to be used
+      nemis_hprofile = 0
+      do i=1, Emis_Nlevel_MAX
+         if (Emis_h(i,1)>-1E-5) nemis_hprofile = nemis_hprofile + 1
+         if (Emis_h(i,1)<-1E-5) exit
+         call CheckStop(Emis_Zlevels(i)<-1E-5 ,'Emis_Zlevels level not defined in config_emep.nml')
+      end do
+      N_HFAC = 0
+      do i=1, Emis_heights_sec_MAX
+         if (Emis_h(1,i)>-1E-5) N_HFAC = N_HFAC + 1
+         if (Emis_h(1,i)<-1E-5) exit
+      end do
+      if (MasterProc) write(*,*)N_HFAC,' emis height distributions defined'
+      if (MasterProc) write(*,*)nemis_hprofile,' emis height P levels defined'
+      allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+      emis_hprofile(:,:) = -999.9
+      emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+      emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h(1:nemis_hprofile,1:N_HFAC)
+      allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+      emis_P_level=0.0
+      emis_P_level(0)=Pref
+      do i=1, nemis_hprofile
+         Emis_P_level(i) = 1000*StandardAtmos_km_2_kPa(Emis_Zlevels(i)/1000)
+         if(MasterProc)write(*,39)'Using Emis level',i,Emis_Zlevels(i),' m ',Emis_P_level(i),'Pa'
+         39 FORMAT(A16,i4,F13.1,A3,F13.1,A3)
+      end do      
+   else
+      !use the default predefined values
+      nemis_hprofile = Emis_Nlevel_pre
+      N_HFAC = Emis_heights_sec_pre
+      allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
+      emis_hprofile(:,:) = -999.9
+      emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+      emis_hprofile(1:nemis_hprofile,1:N_HFAC) = Emis_h_pre(1:nemis_hprofile,1:Emis_heights_sec_pre)
+      allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+      emis_P_level=0.0
+      emis_P_level(0)=Pref
+      do i=1, nemis_hprofile
+         Emis_P_level(i) = 1000*StandardAtmos_km_2_kPa(Emis_Zlevels_pre(i)/1000)
+         Emis_Zlevels(i) = Emis_Zlevels_pre(i)
+         if(MasterProc)write(*,39)'Emis level ',i,Emis_Zlevels(i),' m ',Emis_P_level(i),'Pa'
+      end do
+   end if
+   
+   !find highest level used
       nemis_kprofile = 0
       do k=KMAX_BND-1,1,-1
          nemis_kprofile = nemis_kprofile + 1
@@ -1213,11 +1202,9 @@ end if
       if(MasterProc)then
          write(*,*)'Redistribution of emission into levels:'
          do isec=1,N_HFAC! could put inside but easier for debugging to put here now
-            write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
+            write(*,fmt="(A,I3,A,20F6.3)")'emis distribution index',isec,', fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
          end do
       end if
-
-
 
 !check normalization of distributions:
    do isec=1,N_HFAC
@@ -1232,6 +1219,7 @@ end if
         end if
       end if
    end do
+   deallocate(emis_P_level)
 
  end subroutine EmisHeights
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
