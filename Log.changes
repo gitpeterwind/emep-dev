@@ -26,6 +26,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd May 2021, Peter
+
+Print out also height in meters of model levels
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th April 2021, Michael/Peter/Dave
 
 GNFR_H, Aviation, are now outputted into a new vertical distribution, with

@@ -15,7 +15,8 @@ Module GridValues_mod
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 use CheckStop_mod,           only: CheckStop,StopAll,check=>CheckNC
-use Functions_mod,           only: great_circle_distance, StandardAtmos_km_2_kPa
+use Functions_mod,           only: great_circle_distance, StandardAtmos_kPa_2_km,&
+                                   StandardAtmos_km_2_kPa
 use Io_Nums_mod,             only: IO_LOG,IO_TMP
 use MetFields_mod
 use Config_module,      only: &
@@ -1118,10 +1119,10 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     end do
     sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
     
-    if(MasterProc)write(*,*)"Model pressure at level boundaries:"
+    if(MasterProc)write(*,*)"Model pressure and height at level boundaries: (assuming standard atmosphere)"
     do k=1,KMAX_MID+1
-44    FORMAT(i4,10F12.2)
-      if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k)
+44    FORMAT(i4,F12.2,A3,F12.2,A3)
+      if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k),'Pa',1000*StandardAtmos_kPa_2_km((A_bnd(k)+P0*B_bnd(k))/1000),'m '
     end do
     !test if the top is within the height defined in the meteo files
     if(MasterProc.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)+0.01<A_bnd_met(1)+P0*B_bnd_met(1)))then
