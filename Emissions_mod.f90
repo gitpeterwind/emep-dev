@@ -389,7 +389,7 @@ contains
              if (found == 0) then
                 !add this sector in SECTORS
                 do isec_idx = 1, NSECTORS_ADD_MAX
-                   if(SECTORS_ADD(i)%name ==  trim(EmisFiles(i)%sectorsName)) then
+                   if(SECTORS_ADD(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) then
                       NSECTORS = NSECTORS + 1
                       call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                       SECTORS(NSECTORS) = SECTORS_ADD(isec_idx)
@@ -1124,12 +1124,23 @@ contains
     end do ! iemislist
     if (NSECTORS==0) then
        !the code does not work if no sectors are defined. TODO: find why (zero size arrays? no TFAC_IDX_XXX?)
-       do i = 1, NSECTORS_GNFR_CAMS
-          NSECTORS = NSECTORS + 1
-          call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
-          SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(i)
+       !first see if some are defined by config
+       do i = 1, NSECTORS_ADD_MAX
+          if(SECTORS_ADD(i)%name /=  'NOTSET') then
+             NSECTORS = NSECTORS + 1
+             call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+             SECTORS(NSECTORS) = SECTORS_ADD(i)
+             found = 1
+          end if
        end do
-       if(MasterProc) write(*,*)'including default GNFR_CAMS sectors ', NSECTORS
+       if (NSECTORS==0) then          
+          do i = 1, NSECTORS_GNFR_CAMS
+             NSECTORS = NSECTORS + 1
+             call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+             SECTORS(NSECTORS) = GNFR_CAMS_SECTORS(i)
+          end do
+          if(MasterProc) write(*,*)'including default GNFR_CAMS sectors ', NSECTORS
+       end if
     end if
     
     i=0
