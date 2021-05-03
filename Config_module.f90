@@ -57,7 +57,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 
   type, private :: DMS_t
     logical :: KwNew = .true.   ! T = Nightingale2000', F =Tarrason1995
-    logical :: ScNew = .true.   ! T = Wanninkhof', F =LissMerlivat1986
+    logical :: ScNew = .true.   ! T = Wanninkhof2014', F =LissMerlivat1986
   !NB: *FileFound is internal variable. Cannot be set manually.
     logical :: FileFound = .false. ! Set to T if found
   end type DMS_t
