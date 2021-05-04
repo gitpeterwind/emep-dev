@@ -26,6 +26,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4rd May 2021, Anna 6 Alvaro
+
+Add mugwort poillen for CAMS50 U4
+
+- implement mugwort pollen on Pollen_const_mod and Pollen_mod
+- add 5 mugwort pollen tracers to ZCM_EmChem19p
+- small changes to Biogenics_mod and Derived_mod
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May 2021, Peter
 
 Print out also height in meters of model levels
