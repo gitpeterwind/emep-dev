@@ -320,7 +320,7 @@ subroutine Define_Derived()
   logical :: volunit,semivol  ! set true for volume units (e.g. ppb),group with semivol
   !FAILED logical :: outmm, outdd  ! sets time-intervals
 
-  character(len=30) :: dname, class
+  character(len=31) :: dname, class
   character(len=10) :: unittxt
   character(len=TXTLEN_SHORT) :: outname, outunit, outtyp, outdim, subclass
   character(len=*), parameter:: dtxt="DefDerived:"

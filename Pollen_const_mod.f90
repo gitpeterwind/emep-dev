@@ -32,8 +32,10 @@ real, parameter  :: &
   N_TOT_alder = 1.0e8,        & ! Available pollen [grains/m2] alder
   N_TOT_rweed = 1.7e7,        & ! Available pollen [grains/m2] ragweed
   N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
+  N_TOT_mugwort = 3.0e7,      & ! Available pollen [grains/m2] mugwort*
   RH_LOW   = 0.50,            & ! Min cut-off relative humidity [1]
   RH_HIGH  = 0.80,            & ! Max cut-off relative humidity [1]
+  RH_HIGH_MUGW = 0.90,        & ! Max cut-off relative humidity mugwort*
   PROB_IN_birch  = 0.2,       & ! Probability for flowering to start
   PROB_OUT_birch = 0.2,       & ! Probability for flowering to end
   PROB_IN_olive  = 0.1,       & ! Probability for flowering to start
@@ -43,10 +45,12 @@ real, parameter  :: &
   PROB_OUT_alder = 0.1,       & ! uncertainty_of_total_pollen_amt: end uncertainty for linear releases
   uncert_day_grass = 7,       &
   uncert_tot_grass = 0.2,     & ! end uncertainty for linear releases
+  uncert_day_mugwort = 0,     & !   flowering_map_shift = 0 day
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
   D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
+  D_POLL_mugwort = 18.0,      & ! Pollen grain diameter [um] mugwort*
   D_POLL_alder = 22.0,        & ! Pollen grain diameter [um] alder
   POLL_DENS    = 800e3          ! Pollen density [g/m3]
 
@@ -63,24 +67,29 @@ real, parameter ::            &
   uncert_day_rweed =  30.0,   &  ! 30 days (fUncertainty_CD_days_start)
   EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
 
-! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,rweed,grass
+! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,alder,rweed,grass,mugwort1,mugwort2,mugwort3,mugwort4,mugwort5
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
   ALDER = "POLLEN_ALDER",&
   RWEED = "POLLEN_RWEED",&
   GRASS = "POLLEN_GRASS",&
-  POLLEN_GROUP(5)=[BIRCH,OLIVE,ALDER,RWEED,GRASS]
+  MUGWORT1 = "POLLEN_MUGWORT1",&
+  MUGWORT2 = "POLLEN_MUGWORT2",&
+  MUGWORT3 = "POLLEN_MUGWORT3",&
+  MUGWORT4 = "POLLEN_MUGWORT4",&
+  MUGWORT5 = "POLLEN_MUGWORT5",&
+  POLLEN_GROUP(10)=[BIRCH,OLIVE,ALDER,RWEED,GRASS,MUGWORT1,MUGWORT2,MUGWORT3,MUGWORT4,MUGWORT5]
 integer, parameter :: &
-  iBIRCH=1,iOLIVE=2,iALDER=3,iRWEED=4,iGRASS=5,POLLEN_NUM=size(POLLEN_GROUP)
+  iBIRCH=1,iOLIVE=2,iALDER=3,iRWEED=4,iGRASS=5,iMUGW1=6,iMUGW2=7,iMUGW3=8,iMUGW4=9,iMUGW5=10,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
-  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass],&
+  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass,N_TOT_mugwort,N_TOT_mugwort,N_TOT_mugwort,N_TOT_mugwort,N_TOT_mugwort],&
   T_CUTOFF(iBIRCH:iALDER)=[T_cutoff_birch,T_cutoff_olive,T_cutoff_alder],&
   PROB_IN(iBIRCH:iALDER)=[PROB_IN_birch,PROB_IN_olive,PROB_IN_alder],&
   PROB_OUT(iBIRCH:iALDER)=[PROB_OUT_birch,PROB_OUT_olive,PROB_OUT_alder]
 
 real, parameter  :: &
-  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
+  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass,D_POLL_mugwort,D_POLL_mugwort,D_POLL_mugwort,D_POLL_mugwort,D_POLL_mugwort], & ! pollen diameter
   grain_wt(POLLEN_NUM) = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0       ! 1 grain weight [g]
 ! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
 ! BIRCH: 4.460e-3, 2686e6
@@ -88,12 +97,13 @@ real, parameter  :: &
 ! ALDER: ??
 ! RWEED: 2.443e-3
 ! GRASS: 13.73e-3, 8267e6
+! MUGW*: ??
 
-private :: N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass,&
+private :: N_TOT_birch,N_TOT_olive,N_TOT_alder,N_TOT_rweed,N_TOT_grass,N_TOT_mugwort,&
            T_cutoff_birch,T_cutoff_olive,T_cutoff_alder,&
            PROB_IN_birch,PROB_IN_olive,PROB_IN_alder,&
            PROB_OUT_birch,PROB_OUT_olive,PROB_OUT_alder,&
-           D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass
+           D_POLL_birch,D_POLL_olive,D_POLL_alder,D_POLL_rweed,D_POLL_grass,D_POLL_mugwort
 
 contains
 subroutine pollen_check(igrp,uconv_adv)
@@ -168,6 +178,41 @@ subroutine pollen_check(igrp,uconv_adv)
       call CheckStop(N_TOT(g)/=N_TOT_grass,&
         "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
       call CheckStop(D_POLL(g)/=D_POLL_grass,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iMUGW1)
+      call CheckStop(POLLEN_GROUP(g),MUGWORT1,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_mugwort,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_mugwort,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iMUGW2)
+      call CheckStop(POLLEN_GROUP(g),MUGWORT2,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_mugwort,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_mugwort,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iMUGW3)
+      call CheckStop(POLLEN_GROUP(g),MUGWORT3,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_mugwort,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_mugwort,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iMUGW4)
+      call CheckStop(POLLEN_GROUP(g),MUGWORT4,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_mugwort,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_mugwort,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iMUGW5)
+      call CheckStop(POLLEN_GROUP(g),MUGWORT5,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_mugwort,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_mugwort,&
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))

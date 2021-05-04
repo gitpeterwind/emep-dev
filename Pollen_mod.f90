@@ -62,7 +62,8 @@ real, public,save , allocatable, dimension(:,:,:)::&
   AreaPOLL,     & ! emission of pollen
   R               ! pollen released so far
 
-! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
+! pollen arrays indexing, order must match with POLLEN_GROUP:
+! birch,olive,grass,mugwort1, mugwort2,mugwort3,mugwort4,mugwort5
 integer, save, dimension(POLLEN_NUM) :: &
   inat=-1,iadv=-1,itot=-1
 
@@ -82,10 +83,13 @@ integer, save, dimension(POLLEN_NUM) :: &
 !   grass_start     grass_time_nc   grass_start
 !   grass_end       grass_time_nc   grass_end
 !   grass_end       grass_time_nc   grass_length+grass_start if grass_end not found
+!   pollen_frac     mugwort*_data_nc   mugwort*_frac    *=1,..,5
+!   mugwort*_start  mugwort*_data_nc   mugwort*_start
+!   mugwort*_end    mugwort*_data_nc   mugwort*_end
 ! Variables write/read from dump/restart Files
 ! pollen_dump/pollen_read   pollen ype (SPC)    NetCDF var
-!   xn_adv(i,:,:,:)         BIRCH,OLIVE,GRASS   SPC
-!   N_TOT(i)-R(:,:,i)       BIRCH,OLIVE,GRASS   SPC//'_rest'
+!   xn_adv(i,:,:,:)         BIRCH,OLIVE,GRASS,MUGWT   SPC
+!   N_TOT(i)-R(:,:,i)       BIRCH,OLIVE,GRASS,MUGWT   SPC//'_rest'
 !   heatsum(:,:,i)          BIRCH,OLIVE         SPC//'_heatsum'
 character(len=TXTLEN_FILE), save :: &
   birch_frac_nc ='birch_frac.nc',         &
@@ -98,6 +102,12 @@ character(len=TXTLEN_FILE), save :: &
   grass_field_nc='grass_frac.nc',         &
   grass_time_nc ='grass_time.nc',         &
   grass_mode    ='linear',      & ! 'linear' (old) | 'gamma' (new)
+  mugwort1_data_nc='mugwort1_data.nc',         &
+  mugwort2_data_nc='mugwort2_data.nc',         &
+  mugwort3_data_nc='mugwort3_data.nc',         &
+  mugwort4_data_nc='mugwort4_data.nc',         &
+  mugwort5_data_nc='mugwort5_data.nc',         &
+  mugwort_mode    ='gamma',      & ! 'linear' (old) | 'gamma' (new)
   template_read ='POLLEN_IN.nc',& ! dump/restart input
   template_write='POLLEN_OUT.nc'  ! dump/restart output
 logical,save:: &
@@ -108,11 +118,21 @@ type(date), parameter :: &
   date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch,&
   date_first_alder=date_first_olive,date_last_alder=date_last_birch
 type(date), save :: & ! will be updated when grass_time.nc is read
-  date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0)
+  date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0),&
+  date_first_mugwort1=date(-1,2,7,0,0),date_last_mugwort1=date(-1,9,23,0,0),&
+  date_first_mugwort2=date(-1,2,7,0,0),date_last_mugwort2=date(-1,9,23,0,0),&
+  date_first_mugwort3=date(-1,2,7,0,0),date_last_mugwort3=date(-1,9,23,0,0),&
+  date_first_mugwort4=date(-1,2,7,0,0),date_last_mugwort4=date(-1,9,23,0,0),&
+  date_first_mugwort5=date(-1,2,7,0,0),date_last_mugwort5=date(-1,9,23,0,0)
 
 real, save, allocatable, dimension(:,:) :: &
   rweed_start,        & ! day when daylight length goes below 14.5h (StartCDThr)
-  grass_start,grass_end ! Stard/End day of grass, read in
+  grass_start,grass_end, & ! Stard/End day of grass, read in
+  mugwort1_start,mugwort1_end, & ! Start/End day mugwort
+  mugwort2_start,mugwort2_end, & ! Start/End day mugwort
+  mugwort3_start,mugwort3_end, & ! Start/End day mugwort
+  mugwort4_start,mugwort4_end, & ! Start/End day mugwort
+  mugwort5_start,mugwort5_end  ! Start/End day mugwort
 
 logical, parameter :: DEBUG_NC=.false.
 
@@ -126,6 +146,8 @@ subroutine Config_Pollen()
     birch_frac_nc,birch_data_nc,birch_corr_nc,&
     olive_data_nc,alder_data_nc,rweed_frac_nc,rweed_data_nc,&
     grass_field_nc,grass_time_nc,grass_mode,&
+    mugwort1_data_nc,mugwort2_data_nc,mugwort3_data_nc,&
+    mugwort4_data_nc,mugwort5_data_nc,mugwort_mode,&   
     template_read,template_write,overwrite
 
   if(.not.first_call)return
@@ -159,6 +181,16 @@ subroutine Config_Pollen()
   rweed_data_nc  = key2str(rweed_data_nc ,'GRID'   ,GRID_NAME)
   grass_field_nc = key2str(grass_field_nc,'DataDir',DataDir)
   grass_time_nc  = key2str(grass_time_nc ,'DataDir',DataDir)
+  mugwort1_data_nc = key2str(mugwort1_data_nc,'DataDir',DataDir)
+  mugwort1_data_nc = key2str(mugwort1_data_nc,'GRID'   ,GRID_NAME)
+  mugwort2_data_nc = key2str(mugwort2_data_nc,'DataDir',DataDir)
+  mugwort2_data_nc = key2str(mugwort2_data_nc,'GRID'   ,GRID_NAME)
+  mugwort3_data_nc = key2str(mugwort3_data_nc,'DataDir',DataDir)
+  mugwort3_data_nc = key2str(mugwort3_data_nc,'GRID'   ,GRID_NAME)
+  mugwort4_data_nc = key2str(mugwort4_data_nc,'DataDir',DataDir)
+  mugwort4_data_nc = key2str(mugwort4_data_nc,'GRID'   ,GRID_NAME)
+  mugwort5_data_nc = key2str(mugwort5_data_nc,'DataDir',DataDir)
+  mugwort5_data_nc = key2str(mugwort5_data_nc,'GRID'   ,GRID_NAME)
   template_read  = key2str(template_read ,'DataDir',DataDir)
   template_write = key2str(template_write,'DataDir',DataDir)
 
@@ -176,6 +208,7 @@ subroutine Config_Pollen()
       case(ALDER);n=find_index('POLLa',DDdefs(:)%name)
       case(RWEED);n=find_index('POLLr',DDdefs(:)%name)
       case(GRASS);n=find_index('POLLg',DDdefs(:)%name)
+      case(MUGWORT1:MUGWORT5);n=find_index('POLLm',DDdefs(:)%name)
       case default
         call CheckStop("Not implemented "//POLLEN_GROUP(g))
       end select
@@ -187,7 +220,7 @@ subroutine Config_Pollen()
   if(MasterProc)write(*,"(A,10(' adv#',I3,'=',A,1X,es10.3,:))") &
     "Pollen: ",(iadv(g),POLLEN_GROUP(g),grain_wt(g),g=1,POLLEN_NUM)
 
-  allocate(heatsum(LIMAX,LJMAX,POLLEN_NUM-1),&     ! Grass does not need heatsum
+  allocate(heatsum(LIMAX,LJMAX,POLLEN_NUM-6),&     ! Grass+mugwort* does not need heatsum
            R(LIMAX,LJMAX,POLLEN_NUM))
   heatsum(:,:,:) = 0.00
   R(:,:,:) = 0.0
@@ -209,6 +242,16 @@ function checkdates(nday,spc,i,j) result(ok)
     day(0,iRWEED)=FLOOR(HS_startday_rweed)
     day(0,iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
                  -FLOOR(uncert_day_grass)
+    day(0,iMUGW1)=day_of_year(current_date%year,date_first_mugwort1%month,date_first_mugwort1%day)&
+                 -FLOOR(uncert_day_mugwort)
+    day(0,iMUGW2)=day_of_year(current_date%year,date_first_mugwort2%month,date_first_mugwort2%day)&
+                 -FLOOR(uncert_day_mugwort)
+    day(0,iMUGW3)=day_of_year(current_date%year,date_first_mugwort3%month,date_first_mugwort3%day)&
+                 -FLOOR(uncert_day_mugwort)
+    day(0,iMUGW4)=day_of_year(current_date%year,date_first_mugwort4%month,date_first_mugwort4%day)&
+                 -FLOOR(uncert_day_mugwort)
+    day(0,iMUGW5)=day_of_year(current_date%year,date_first_mugwort5%month,date_first_mugwort5%day)&
+                 -FLOOR(uncert_day_mugwort)
     day(0,iPOLLEN)=MINVAL(day(0,:POLLEN_NUM))
 
     day(1,iBIRCH)=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
@@ -217,6 +260,16 @@ function checkdates(nday,spc,i,j) result(ok)
     day(1,iRWEED)=CEILING(EndCDThr_rweed)
     day(1,iGRASS)=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)&
                  +CEILING(uncert_day_grass)
+    day(1,iMUGW1)=day_of_year(current_date%year,date_last_mugwort1%month,date_last_mugwort1%day)&
+                 +CEILING(uncert_day_mugwort)
+    day(1,iMUGW2)=day_of_year(current_date%year,date_last_mugwort2%month,date_last_mugwort2%day)&
+                 +CEILING(uncert_day_mugwort)
+    day(1,iMUGW3)=day_of_year(current_date%year,date_last_mugwort3%month,date_last_mugwort3%day)&
+                 +CEILING(uncert_day_mugwort)
+    day(1,iMUGW4)=day_of_year(current_date%year,date_last_mugwort4%month,date_last_mugwort4%day)&
+                 +CEILING(uncert_day_mugwort)
+    day(1,iMUGW5)=day_of_year(current_date%year,date_last_mugwort5%month,date_last_mugwort5%day)&
+                 +CEILING(uncert_day_mugwort)
     day(1,iPOLLEN)=MAXVAL(day(1,:POLLEN_NUM))
     first_call = .false.
   end if
@@ -224,7 +277,17 @@ function checkdates(nday,spc,i,j) result(ok)
     day(0,iRWEED)=MIN(day(0,iRWEED),FLOOR(rweed_start(i,j)-uncert_day_rweed))
     day(0,iGRASS)=MIN(day(0,iGRASS),FLOOR(grass_start(i,j)-uncert_day_grass))
     day(1,iGRASS)=MAX(day(1,iGRASS),CEILING(grass_end(i,j)+uncert_day_grass))
-  end if
+    day(0,iMUGW1)=MIN(day(0,iMUGW1),FLOOR(mugwort1_start(i,j)-uncert_day_mugwort))
+    day(1,iMUGW1)=MAX(day(1,iMUGW1),CEILING(mugwort1_end(i,j)+uncert_day_mugwort))
+    day(0,iMUGW2)=MIN(day(0,iMUGW2),FLOOR(mugwort2_start(i,j)-uncert_day_mugwort))
+    day(1,iMUGW2)=MAX(day(1,iMUGW2),CEILING(mugwort2_end(i,j)+uncert_day_mugwort))
+    day(0,iMUGW3)=MIN(day(0,iMUGW3),FLOOR(mugwort3_start(i,j)-uncert_day_mugwort))
+    day(1,iMUGW3)=MAX(day(1,iMUGW3),CEILING(mugwort3_end(i,j)+uncert_day_mugwort))
+    day(0,iMUGW4)=MIN(day(0,iMUGW4),FLOOR(mugwort4_start(i,j)-uncert_day_mugwort))
+    day(1,iMUGW4)=MAX(day(1,iMUGW4),CEILING(mugwort4_end(i,j)+uncert_day_mugwort))
+    day(0,iMUGW5)=MIN(day(0,iMUGW5),FLOOR(mugwort5_start(i,j)-uncert_day_mugwort))
+    day(1,iMUGW5)=MAX(day(1,iMUGW5),CEILING(mugwort5_end(i,j)+uncert_day_mugwort)) 
+ end if
   select case(spc)
     case("POLLEN","P","p","pollen");g=iPOLLEN
     case(BIRCH,"B","b","birch");g=iBIRCH
@@ -232,6 +295,11 @@ function checkdates(nday,spc,i,j) result(ok)
     case(ALDER,"A","a","alder");g=iALDER
     case(RWEED,"R","r","rweed");g=iRWEED
     case(GRASS,"G","g","grass");g=iGRASS
+    case(MUGWORT1,"M1","m1","mugwort1");g=iMUGW1
+    case(MUGWORT2,"M2","m2","mugwort2");g=iMUGW2
+    case(MUGWORT3,"M3","m3","mugwort3");g=iMUGW3
+    case(MUGWORT4,"M4","m4","mugwort4");g=iMUGW4
+    case(MUGWORT5,"M5","m5","mugwort5");g=iMUGW5
     case default; call CheckStop("Unknown pollen type: "//trim(spc))
   end select
   ok=(day(0,g)<=nday).and.(nday<=day(1,g))
@@ -253,7 +321,7 @@ subroutine pollen_flux(i,j,debug_flag)
   real :: scale,heatsum_min,heatsum_max,rcpoll,n2m(POLLEN_NUM),u10,prec,relhum
 
   real, save, allocatable, dimension(:,:,:) :: &
-    pollen_frac,   &  ! fraction of pollen (birch/olive/alder/rweed/grass), read in
+    pollen_frac,   &  ! fraction of pollen (birch/olive/alder/rweed/grass/mugwort*), read in
     pollen_h_c,    &  ! temperature treshold (birch/olive/alder), read in
     pollen_dH         ! flowering period [degree seconds] (olive/alder)
   real, save, allocatable, dimension(:,:) :: &
@@ -275,6 +343,11 @@ subroutine pollen_flux(i,j,debug_flag)
     allocate(birch_corr(LIMAX,LJMAX),pollen_dH(LIMAX,LJMAX,iOLIVE:IALDER))
     allocate(rweed_start(LIMAX,LJMAX),rweed_corr(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
+    allocate(mugwort1_start(LIMAX,LJMAX),mugwort1_end(LIMAX,LJMAX))
+    allocate(mugwort2_start(LIMAX,LJMAX),mugwort2_end(LIMAX,LJMAX))
+    allocate(mugwort3_start(LIMAX,LJMAX),mugwort3_end(LIMAX,LJMAX))
+    allocate(mugwort4_start(LIMAX,LJMAX),mugwort4_end(LIMAX,LJMAX))
+    allocate(mugwort5_start(LIMAX,LJMAX),mugwort5_end(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(birch_data_nc,'h_c',pollen_h_c(:,:,iBIRCH),1, &
@@ -321,6 +394,42 @@ subroutine pollen_flux(i,j,debug_flag)
       where(grass_end/=UnDef.and.grass_start/=UnDef)&
         grass_end=grass_end+grass_start
     end if
+! mugwort1
+    call ReadField_CDF(mugwort1_data_nc,'mugwort1_frac',pollen_frac(:,:,iMUGW1),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort1_data_nc,'mugwort1_start',mugwort1_start,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort1_data_nc,'mugwort1_end',mugwort1_end,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+! mugwort2
+    call ReadField_CDF(mugwort2_data_nc,'mugwort2_frac',pollen_frac(:,:,iMUGW2),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort2_data_nc,'mugwort2_start',mugwort2_start,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort2_data_nc,'mugwort2_end',mugwort2_end,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+! mugwort3
+    call ReadField_CDF(mugwort3_data_nc,'mugwort3_frac',pollen_frac(:,:,iMUGW3),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort3_data_nc,'mugwort3_start',mugwort3_start,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort3_data_nc,'mugwort3_end',mugwort3_end,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+! mugwort4
+    call ReadField_CDF(mugwort4_data_nc,'mugwort4_frac',pollen_frac(:,:,iMUGW4),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort4_data_nc,'mugwort4_start',mugwort4_start,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort4_data_nc,'mugwort4_end',mugwort4_end,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+! mugwort5
+    call ReadField_CDF(mugwort5_data_nc,'mugwort5_frac',pollen_frac(:,:,iMUGW5),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort5_data_nc,'mugwort5_start',mugwort5_start,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(mugwort5_data_nc,'mugwort5_end',mugwort5_end,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+
 
     ! negative fractions as UnDef
     where(pollen_frac/=UnDef .and. pollen_frac<0) &
@@ -361,6 +470,16 @@ subroutine pollen_flux(i,j,debug_flag)
       pollen_out(g)=any([pollen_frac(i,j,g),rweed_start(i,j),rweed_corr(i,j)]==UnDef)
     case(iGRASS)
       pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)
+    case(iMUGW1)
+      pollen_out(g)=any([pollen_frac(i,j,g),mugwort1_start(i,j),mugwort1_end(i,j)]==UnDef)
+    case(iMUGW2)
+      pollen_out(g)=any([pollen_frac(i,j,g),mugwort2_start(i,j),mugwort2_end(i,j)]==UnDef)
+    case(iMUGW3)
+      pollen_out(g)=any([pollen_frac(i,j,g),mugwort3_start(i,j),mugwort3_end(i,j)]==UnDef)
+    case(iMUGW4)
+      pollen_out(g)=any([pollen_frac(i,j,g),mugwort4_start(i,j),mugwort4_end(i,j)]==UnDef)
+    case(iMUGW5)
+      pollen_out(g)=any([pollen_frac(i,j,g),mugwort5_start(i,j),mugwort5_end(i,j)]==UnDef)
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))
     end select
@@ -385,7 +504,7 @@ subroutine pollen_flux(i,j,debug_flag)
       call heatsum_hour(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
     case(iRWEED)
       call heatsum_rweed(heatsum(i,j,g),t2_nwp(i,j,1),daylength(glat(i,j)))
-    case(iGRASS)
+    case(iGRASS,iMUGW1:iMUGW5)
       ! nothing to do
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))
@@ -471,6 +590,10 @@ subroutine pollen_flux(i,j,debug_flag)
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH)                            & ! too humid
         .or.(prec>prec_max)                               ! too rainy
+    case(iMUGW1:iMUGW5)! Mugwort specific emission inhibitors
+      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
+        .or.(relhum>RH_HIGH_MUGW)                       & ! too humid
+        .or.(prec>prec_max)                               ! too rainy
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))
     end select
@@ -492,6 +615,16 @@ subroutine pollen_flux(i,j,debug_flag)
       scale=scale_factor(POLLEN_GROUP(g))
     case(iGRASS);
       scale=scale_factor(GRASS//trim(grass_mode))
+    case(iMUGW1);
+      scale=scale_factor(MUGWORT1//trim(mugwort_mode))
+    case(iMUGW2);
+      scale=scale_factor(MUGWORT2//trim(mugwort_mode))
+    case(iMUGW3);
+      scale=scale_factor(MUGWORT3//trim(mugwort_mode))
+    case(iMUGW4);
+      scale=scale_factor(MUGWORT4//trim(mugwort_mode))
+    case(iMUGW5);
+      scale=scale_factor(MUGWORT5//trim(mugwort_mode))
     case default
       call CheckStop("Not implemented "//POLLEN_GROUP(g))
     end select
@@ -563,6 +696,41 @@ function scale_factor(spc) result(scale)
     seasLen = grass_end(i,j)-grass_start(i,j)       ! season length in days
     scale = f_gamma_w_tails(                      &
       (real(daynumber)-grass_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
+    scale = scale/dt                                ! emited fration over dt to emission rate
+  case(MUGWORT1//'gamma')    ! assume the modified "taily" Gamma distribution of the season
+    g=iMUGW1
+    seasLen = mugwort1_end(i,j)-mugwort1_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-mugwort1_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
+    scale = scale/dt                                ! emited fration over dt to emission rate
+  case(MUGWORT2//'gamma')    ! assume the modified "taily" Gamma distribution of the season
+    g=iMUGW2
+    seasLen = mugwort2_end(i,j)-mugwort2_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-mugwort2_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
+    scale = scale/dt                                ! emited fration over dt to emission rate
+  case(MUGWORT3//'gamma')    ! assume the modified "taily" Gamma distribution of the season
+    g=iMUGW3
+    seasLen = mugwort3_end(i,j)-mugwort3_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-mugwort3_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
+    scale = scale/dt                                ! emited fration over dt to emission rate
+  case(MUGWORT4//'gamma')    ! assume the modified "taily" Gamma distribution of the season
+    g=iMUGW4
+    seasLen = mugwort4_end(i,j)-mugwort4_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-mugwort4_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
+    scale = scale/dt                                ! emited fration over dt to emission rate
+  case(MUGWORT5//'gamma')    ! assume the modified "taily" Gamma distribution of the season
+    g=iMUGW5
+    seasLen = mugwort5_end(i,j)-mugwort5_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-mugwort5_start(i,j))/seasLen, & ! days since season start/season length
       (dt/86400.0)/seasLen)                         ! timestep in days/season length
     scale = scale/dt                                ! emited fration over dt to emission rate
   case default
