@@ -26,6 +26,16 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th May 2021, Dave
+
+EmisDef_mod - now shipping emissions in bottom 2 layers, 20:80%. SMALL CHANGE in
+results (near shipping lanes or rivers only)
+
+Emissions_mod - cleaner soil NO debug
+
+GridValues_mod: added CAMS81_SOILNOx override here
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th May 2021, Peter
 
 Different treatment of accumulated precipitation for AROME.
