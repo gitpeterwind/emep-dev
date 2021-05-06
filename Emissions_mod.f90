@@ -2264,7 +2264,7 @@ subroutine newmonth
 !   Reads in natural DMS emissions at start of each month. Update
 !   landcode and nlandcode arrays as needed.
 !
-!   Reads in snow cover at start of each month.
+!   Reads in snow cover and global soil NOx  at start of each month.
 !
 !   April 2010: read monthly aircraft NOx emissions
 !----------------------------------------------------------------------!
@@ -2277,7 +2277,7 @@ subroutine newmonth
   logical , save :: first_call=.true.
 
   ! For now, only the global runs use the Monthly files
-  integer :: kstart,kend,nstart,Nyears
+  integer :: kstart,kend,nstart,Nyears,mm
   real :: buffer(LIMAX,LJMAX),SumSoilNOx,ccsum
   real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
@@ -2287,12 +2287,13 @@ subroutine newmonth
   character(len=125) ::fileName
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat,icc
-  real :: lonlat_fac, mw
+  real :: lonlat_fac, mw, dbgVal
   logical :: use_lonlat_femis, monthlysectoremisreset, Cexist
   logical :: fractionformat
   integer :: emis_inputlist_NEMIS_FILE!number of files for each emis_inputlist(i)
  ! For AIRCRAFT femis work
   integer, save  :: iFemis, iemNOx
+  character(len=*), parameter :: dtxt='Emis:newmonth:'
 
   monthlysectoremisreset =.false.
 
@@ -2387,23 +2388,22 @@ subroutine newmonth
        MPI_SUM,MPI_COMM_CALC,IERROR)
     if (MasterProc) write(*,*) "Total NOx emissions from aircraft for coming month:"
     if (MasterProc) write(*,*) TotAircraftEmis," kg(NO2)/month"
- end if
+  end if ! USES%AIRCRAFT_EMIS
 
   if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????"
-    if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions
-    if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX START"
+  if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions
 
-    ! read in map of annual N-deposition produced from pre-runs of EMEP model
-    ! with script mkcdo.annualNdep
-    call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
+      ! read in map of annual N-deposition produced from pre-runs of EMEP model
+      ! with script mkcdo.annualNdep
+      call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
           interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
 
-    if(DEBUG%SOILNOX.and.debug_proc)&
-      write(*,"(a,4es12.3)") "Emissions_mod: SOILNOX AnnualDEBUG ", &
+      if(DEBUG%SOILNOX.and.debug_proc)&
+        write(*,"(a,4es12.3)") dtxt//" SOILNOX AnnualDEBUG ", &
         AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
 
-    call CheckStop(USES%GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
-    ! We then calculate SoulNOx in Biogenics_mod
+      call CheckStop(USES%GLOBAL_SOILNOX, dtxt//"SOILNOX - cannot use global with Euro")
+      ! We then calculate SoilNOx in Biogenics_mod
 
   elseif(USES%GLOBAL_SOILNOX) then ! Global soil NOx
 
@@ -2411,58 +2411,63 @@ subroutine newmonth
     buffer(:,:)=0.0
 
     if ( USES%CAMS81_SOILNOX ) then
+
+      ! tmp checks. Will sort out climatological case later
+      call CheckStop(current_date%year>2018,dtxt//'CAMS81 soil>2018')
+      call CheckStop(current_date%year<2000,dtxt//'CAMS81 soil<2000')
+
       nstart=(current_date%year-2000)*12 + current_date%month
+
       call ReadField_CDF(nox_emission_cams81File,'TotalSoilEmis',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
-      if(DEBUG%SOILNOX.and.debug_proc) &
-        write(*,*) "CAMS81 SOILNO ", current_date%year, nstart, maxval(SoilNOx)
+      if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt//"CAMS81 SOILNO ", &
+        current_date%year, nstart, maxval(SoilNOx)
     else
-    nstart=(current_date%year-1996)*12 + current_date%month
-    if(nstart>0.and.nstart<=120)then
-      !the month is defined
-      call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',SoilNOx,&
+      nstart=(current_date%year-1996)*12 + current_date%month
+      if(nstart>0.and.nstart<=120)then
+        !the month is defined
+        call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
-      if(DEBUG%SOILNOX.and.debug_proc) &
-        write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
-    else
-      !the year is not defined; average over all years
-      Nyears=10 !10 years defined
-      do iyr=1,Nyears
-        nstart=12*(iyr-1) + current_date%month
-        call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',buffer,&
+        if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt// &
+          "PROPER YEAR of SOILNO ", current_date%year, nstart
+      else
+        !the year is not defined; average over all years
+        Nyears=10 !10 years defined
+        do iyr=1,Nyears
+          nstart=12*(iyr-1) + current_date%month
+          call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',buffer,&
               nstart=nstart,interpol='conservative',known_projection="lon lat",&
               needed=.true.,debug_flag=.false.,UnDef=0.0)
-        do j=1,ljmax
-          do i=1,limax
-            SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
+          do j=1,ljmax
+            do i=1,limax
+              SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
+            end do
           end do
-        end do
-        if(DEBUG%SOILNOX.and.debug_proc) &
-          write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
-            1995+(iyr-1), nstart,SoilNOx(debug_li, debug_lj), &
-            "max: ", maxval(buffer), maxval(SoilNOx)
-      end do
-      SoilNOx=SoilNOx/Nyears
-    end if ! nstart test
+          if(DEBUG%SOILNOX.and.debug_proc) &
+            write(*,"(a,2i6,es10.3,a,2es10.3)") dtxt//&
+             "Averaging SOILNO  inputs", 1995+(iyr-1), nstart,&
+              SoilNOx(debug_li,debug_lj),"max: ",maxval(buffer),maxval(SoilNOx)
+        end do !iyr
+        SoilNOx=SoilNOx/Nyears
+      end if ! nstart test
     end if ! CAMS81
 
      if(DEBUG%SOILNOX.and.debug_proc) then
-        write(*,"(a,i3,3es10.3)") "After Global SOILNO ",&
+       write(*,"(a,i3,3es10.3)") dtxt//"After Global SOILNO ",&
              me,maxval(SoilNOx),SoilNOx(debug_li,debug_lj)
-       !write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3)
      end if
   else ! no soil NO
     if(DEBUG%SOILNOX.and.debug_proc) &
-      write(*,*) "Emissions DEBUG_SOILNOX - none"
+      write(*,*) dtxt//"Emissions DEBUG_SOILNOX - none"
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
   if(USES%GLOBAL_SOILNOX) then
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
-    ! CAMS uses kg(N)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle
+    ! CAMS uses kg(NO)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle
     if ( USES%CAMS81_SOILNOX ) then ! have kg(NO)/m2/s
       do j=1,ljmax
         do i=1,limax
@@ -2478,10 +2483,14 @@ subroutine newmonth
     end do
     CALL MPI_ALLREDUCE(SumSoilNOx,mpi_out,1,MPI_DOUBLE_PRECISION, &
          MPI_SUM,MPI_COMM_CALC,IERROR)
+
     SumSoilNOx = mpi_out
+
+    mm= current_date%month
     if(MasterProc)&
-      write(*,*)'GLOBAL SOILNOX emissions this month within domain',&
-        SumSoilNOx,' kg per day'
+     write(*,'(a,i3,2(g12.3,a))') dtxt//&
+       'GLOBAL SOILNOX emissions within domain, month:', mm, &
+        SumSoilNOx, ' kg/day', SumSoilNOx*1.0e-9*nmdays(mm), ' Tg per month'
 
     ! convert from g(N)/m2/day into molecules/cm3/s from g to molecules:
     !  AVOG/14  14=molweight N, use roa to find dz for consistency with other
@@ -2489,6 +2498,7 @@ subroutine newmonth
     !  dP=dA(k) + dB(k)*ps(i,j,1) dV=dz*1e6 (1e6 for m3->cm3) from month to
     !  seconds: ndaysmonth*24*3600
     conv=AVOG/14.0*GRAV*1.0e-6/(24*3600)
+    if ( debug_proc) dbgVal = SoilNOx(debug_li,debug_lj)
     k=KMAX_MID!surface
     do j=1,ljmax
       do i=1,limax
