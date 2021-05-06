@@ -83,4 +83,9 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("POLLEN_ALDER", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_RWEED", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_GRASS", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT1", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT2", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT3", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT4", "POLLw     ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT5", "POLLw     ", -999.0 ) &
 /)

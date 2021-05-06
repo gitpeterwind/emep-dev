@@ -1335,3 +1335,48 @@
   xnew(POLLEN_GRASS) = xold(POLLEN_GRASS) + dt2 * P
 
 
+!-> POLLEN_MUGWORT1
+
+  P = rcemis(POLLEN_MUGWORT1,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_MUGWORT1) = xold(POLLEN_MUGWORT1) + dt2 * P
+
+
+!-> POLLEN_MUGWORT2
+
+  P = rcemis(POLLEN_MUGWORT2,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_MUGWORT2) = xold(POLLEN_MUGWORT2) + dt2 * P
+
+
+!-> POLLEN_MUGWORT3
+
+  P = rcemis(POLLEN_MUGWORT3,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_MUGWORT3) = xold(POLLEN_MUGWORT3) + dt2 * P
+
+
+!-> POLLEN_MUGWORT4
+
+  P = rcemis(POLLEN_MUGWORT4,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_MUGWORT4) = xold(POLLEN_MUGWORT4) + dt2 * P
+
+
+!-> POLLEN_MUGWORT5
+
+  P = rcemis(POLLEN_MUGWORT5,k)
+  
+  ! L = 0.0
+  
+  xnew(POLLEN_MUGWORT5) = xold(POLLEN_MUGWORT5) + dt2 * P
+
+

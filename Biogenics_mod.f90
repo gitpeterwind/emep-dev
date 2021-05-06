@@ -94,9 +94,9 @@ module Biogenics_mod
 
   ! We hard-code these indices, but only calculate emissions if needed
   ! Must match order of NATBIO to start with 
-  integer, parameter, public ::  NEMIS_BioNat  = 18
-  character(len=13), save, dimension(NEMIS_BioNat), public:: &
-      EMIS_BioNat = [character(len=13):: &
+  integer, parameter, public ::  NEMIS_BioNat  = 23
+  character(len=16), save, dimension(NEMIS_BioNat), public:: &
+      EMIS_BioNat = [character(len=16):: &
              "C5H8       " &
            , "TERP       " &
            , "NO         " &
@@ -114,6 +114,11 @@ module Biogenics_mod
            , "POLLEN_ALDER"&
            , "POLLEN_RWEED"&
            , "POLLEN_GRASS"&
+           , "POLLEN_MUGWORT1"&
+           , "POLLEN_MUGWORT2"&
+           , "POLLEN_MUGWORT3"&
+           , "POLLEN_MUGWORT4"&
+           , "POLLEN_MUGWORT5"&
            , "RN222      " ]
 
   integer, public, parameter :: &

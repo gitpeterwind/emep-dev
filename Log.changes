@@ -34,6 +34,15 @@ New treatment use the metdata precipitaion directly if "negative precipitations"
 are found, i.e. restart accumulation from zero.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4rd May 2021, Anna 6 Alvaro
+
+Add mugwort poillen for CAMS50 U4
+
+- implement mugwort pollen on Pollen_const_mod and Pollen_mod
+- add 5 mugwort pollen tracers to ZCM_EmChem19p
+- small changes to Biogenics_mod and Derived_mod
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May 2021, Peter
 
 Print out also height in meters of model levels
@@ -1771,7 +1780,6 @@ OutputChem_mod, Config_module and config_*.nml:
   and modelrun.finished at the end of the run.
 
 Note: The pollen modules are broken since c22db23 (Apr 2018)
->>>>>>> 3da5efa1db9aeb810ed653fec6a395a9685e1f66
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 Mar 2019, Peter
