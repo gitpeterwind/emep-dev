@@ -59,8 +59,8 @@ integer, public, parameter :: Emis_Nlevel_MAX=25 ! Max Number of vertical emissi
 integer, public :: Emis_Nlevel=8 ! Actual Number of total vertical emission levels (can change according to config settings)
 integer, public, parameter :: Emis_Nlevel_pre=8 ! Number of vertical emission levels predefined
 integer, public, parameter :: Emis_heights_sec_MAX=25 ! Max Number of vertical emission distributions definable
-integer, public :: Emis_heights_sec=7 ! Actual Number of vertical emission distributions (can change according to config settings)
-integer, public, parameter :: Emis_heights_sec_pre=7 ! Actual Number of vertical emission distributions predefined
+integer, public :: Emis_heights_sec=8 ! Actual Number of vertical emission distributions (can change according to config settings)
+integer, public, parameter :: Emis_heights_sec_pre=8 ! Actual Number of vertical emission distributions predefined
 
 !pressure at top of emission levels
 !real, public :: Emis_Plevels_pre(Emis_Nlevel_MAX) = &
@@ -80,6 +80,7 @@ real, public :: Emis_h_pre(Emis_heights_sec_MAX,Emis_Nlevel_MAX) = &
   0.0200,  0.034,  0.046,  0.600,  0.300,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 5 = SNAP5
    0.000,  0.000,  0.000,  0.410,  0.570,  0.020,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 6 = SNAP9
    0.200,  0.300,  0.020,  0.044,  0.066,  0.094,  0.123,  0.153, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 7 = LTO
+   0.200,  0.800,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000, (0.0, i=1,Emis_Nlevel_MAX-Emis_Nlevel_pre),  &  ! 8 = Shipping
     (0.0, i=1,Emis_Nlevel_MAX*(Emis_heights_sec_MAX-Emis_heights_sec_pre))/), shape(Emis_h_pre)))
 
 real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set by config_emep.nml
@@ -114,7 +115,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
    Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      4,            4,            4,       'Fugitive', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_F',  'sec06',      7,            2,            6,       'RoadTransport', 'ALL'),&
-   Sector_type('GNFR_CAMS', 'GNFR_G',  'sec07',      8,            2,            7,       'Shipping', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_G',  'sec07',      8,            8,            7,       'Shipping', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_H',  'sec08',      8,            7,            8,       'Aviation', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_I',  'sec09',      8,            2,            9,       'Offroad', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_J',  'sec10',      9,            6,           10,       'Waste', 'ALL'),&
