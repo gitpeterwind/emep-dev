@@ -3027,8 +3027,8 @@ subroutine set_EuropeanAndGlobal_Config()
   !If the file is GLOBAL:
   !1) USES%PFT_MAPS = .true. (can be overridden by FORCE_PFT_MAPS_FALSE)
   !2) USES%DEGREEDAY_FACTORS = .false.
-  !3) USES%EURO_SOILNOX = .false.
-  !4) USES%GLOBAL_SOILNOX = .true.
+  !3) USES%EURO_SOILNOX = .false.  ! May 2021 DEPRECATED!
+  !4) USES%GLOBAL_SOILNOX = .true., April 2021 added USES%CAMS81_SOILNOX
   !
   !If the file is EUROPEAN:
   !nothing happens for now
