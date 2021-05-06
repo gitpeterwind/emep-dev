@@ -708,10 +708,10 @@ subroutine MeteoRead()
        CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
             MPI_MIN, MPI_COMM_CALC, IERROR)
        minprecip=x_out
-       if(minprecip<-10)then
+       if(minprecip<-1)then
           if(me==0)write(*,*)'WARNING: found negative precipitations. '&
-             ,'set precipitations to zero!',minprecip
-          surface_precip = 0.0
+             ,' accumulated precipitations restarted!',minprecip
+          surface_precip = max(0.0,surface_precip*0.001/(METSTEP*3600))
        else
           surface_precip = max(0.0, & ! get only the variation. mm ->m/s
              (surface_precip - surface_precip_old))*0.001/(METSTEP*3600)

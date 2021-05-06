@@ -26,6 +26,14 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th May 2021, Peter
+
+Different treatment of accumulated precipitation for AROME.
+The meteo2021MMDD_00.nc restarted the accumulation of precipitation at midnight.
+New treatment use the metdata precipitaion directly if "negative precipitations"
+are found, i.e. restart accumulation from zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May 2021, Peter
 
 Print out also height in meters of model levels
