@@ -319,7 +319,7 @@ subroutine MeteoRead()
   integer :: INFO,i_large,j_large
   logical, save:: ps_in_hPa = .true.
   logical, save:: precip_accumulated = .false.
-  
+  logical, save:: rh2m_in_percent  = .true.
   if(.not. first_call)then
      if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
   endif
@@ -912,7 +912,17 @@ subroutine MeteoRead()
   ndim=2
 
   if(foundrh2m)then
-    rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction
+     ! correct for rh2m in  % units or fraction
+     if(first_call)then
+        if(maxval(rh2m)<1.1)then
+           rh2m_in_percent = .false.
+           if(write_now)write(*,*)'Asuming rh2m in fraction units'
+        else
+           if(write_now)write(*,*)'Asuming rh2m in percent units'
+           rh2m_in_percent = .true.
+        endif
+     endif
+    if (rh2m_in_percent) rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction
   else
     if(MasterProc.and.first_call)&
       write(*,*)'WARNING: relative_humidity_2m not found'

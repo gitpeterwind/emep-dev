@@ -26,6 +26,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th May 2021, Peter
+
+Accept 2m relative humidity (rh2m) from meteo files in both % and fraction units.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th May 2021, Dave
 
 EmisDef_mod - now shipping emissions in bottom 2 layers, 20:80%. SMALL CHANGE in
