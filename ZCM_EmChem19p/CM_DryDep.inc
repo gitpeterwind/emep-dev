@@ -91,14 +91,14 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("remPPM25  ", "PMf       ", -999.0 ) &
 , dep_t("remPPM_c  ", "PMc       ", -999.0 ) &
 , dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
-, dep_t("POLLEN_BIRCH", "POLLb     ", -999.0 ) &
-, dep_t("POLLEN_OLIVE", "POLLo     ", -999.0 ) &
-, dep_t("POLLEN_ALDER", "POLLa     ", -999.0 ) &
-, dep_t("POLLEN_RWEED", "POLLr     ", -999.0 ) &
-, dep_t("POLLEN_GRASS", "POLLg     ", -999.0 ) &
-, dep_t("POLLEN_MUGWORT1", "POLLm     ", -999.0 ) &
-, dep_t("POLLEN_MUGWORT2", "POLLm     ", -999.0 ) &
-, dep_t("POLLEN_MUGWORT3", "POLLm     ", -999.0 ) &
-, dep_t("POLLEN_MUGWORT4", "POLLm     ", -999.0 ) &
-, dep_t("POLLEN_MUGWORT5", "POLLm     ", -999.0 ) &
+, dep_t("POLLEN_BIRCH", "POLL22    ", -999.0 ) &
+, dep_t("POLLEN_OLIVE", "POLL28    ", -999.0 ) &
+, dep_t("POLLEN_ALDER", "POLL22    ", -999.0 ) &
+, dep_t("POLLEN_RWEED", "POLL18    ", -999.0 ) &
+, dep_t("POLLEN_GRASS", "POLL32    ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT1", "POLL18    ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT2", "POLL18    ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT3", "POLL18    ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT4", "POLL18    ", -999.0 ) &
+, dep_t("POLLEN_MUGWORT5", "POLL18    ", -999.0 ) &
 /)
