@@ -1180,19 +1180,19 @@ module ChemGroups_mod
     /)
   
   integer, public, target, save, dimension (5) :: &
-    MUGWORT_GROUP = (/  &
+    POLLEN_MWORT_GROUP = (/  &
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
       POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
   integer, public, target, save, dimension (5) :: &
-    WDEP_MUGWORT_GROUP = (/  &
+    WDEP_POLLEN_MWORT_GROUP = (/  &
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
       POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
   integer, public, target, save, dimension (5) :: &
-    DDEP_MUGWORT_GROUP = (/  &
+    DDEP_POLLEN_MWORT_GROUP = (/  &
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
       POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
@@ -2166,14 +2166,14 @@ contains
     chemgroups(305)%name="DDEP_POLLEN"
     chemgroups(305)%specs=>DDEP_POLLEN_GROUP
     
-    chemgroups(306)%name="MUGWORT"
-    chemgroups(306)%specs=>MUGWORT_GROUP
+    chemgroups(306)%name="POLLEN_MWORT"
+    chemgroups(306)%specs=>POLLEN_MWORT_GROUP
     
-    chemgroups(307)%name="WDEP_MUGWORT"
-    chemgroups(307)%specs=>WDEP_MUGWORT_GROUP
+    chemgroups(307)%name="WDEP_POLLEN_MWORT"
+    chemgroups(307)%specs=>WDEP_POLLEN_MWORT_GROUP
     
-    chemgroups(308)%name="DDEP_MUGWORT"
-    chemgroups(308)%specs=>DDEP_MUGWORT_GROUP
+    chemgroups(308)%name="DDEP_POLLEN_MWORT"
+    chemgroups(308)%specs=>DDEP_POLLEN_MWORT_GROUP
     
     chemgroups_factors(1)%name="CSTAR"
     chemgroups_factors(1)%species=>CSTAR_GROUP

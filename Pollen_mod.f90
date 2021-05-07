@@ -203,12 +203,14 @@ subroutine Config_Pollen()
 
     ! check gravitational setling params
     select case(POLLEN_GROUP(g))
-      case(BIRCH);n=find_index('POLLb',DDdefs(:)%name)
-      case(OLIVE);n=find_index('POLLo',DDdefs(:)%name)
-      case(ALDER);n=find_index('POLLa',DDdefs(:)%name)
-      case(RWEED);n=find_index('POLLr',DDdefs(:)%name)
-      case(GRASS);n=find_index('POLLg',DDdefs(:)%name)
-      case(MUGWORT1:MUGWORT5);n=find_index('POLLm',DDdefs(:)%name)
+      case(RWEED,MUGWORT1:MUGWORT5)
+        n=find_index('POLL18',DDdefs(:)%name)
+      case(BIRCH,ALDER)
+        n=find_index('POLL22',DDdefs(:)%name)
+      case(OLIVE)
+        n=find_index('POLL28',DDdefs(:)%name)
+      case(GRASS)
+        n=find_index('POLL32',DDdefs(:)%name)
       case default
         call CheckStop("Not implemented "//POLLEN_GROUP(g))
       end select
