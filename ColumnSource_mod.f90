@@ -21,7 +21,8 @@ use EmisDef_mod,           only: VOLCANOES_LL
 use GridValues_mod,        only: xm2,sigma_bnd,GridArea_m2,&
                                 GRIDWIDTH_M,&
                                 coord_in_processor,coord_in_gridbox
-use Io_mod,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
+use Io_mod,                only: open_file,read_line,IO_NML,IO_TMP
+use Io_RunLog_mod,         only: PrintLog
 use MetFields_mod,         only: roa, z_bnd, u_xmj, v_xmi, foundtopo, model_surf_elevation
 use NetCDF_mod,            only: GetCDF_modelgrid
 use MPI_Groups_mod

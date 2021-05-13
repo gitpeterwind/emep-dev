@@ -34,7 +34,7 @@ public :: open_file     !  checks that file exists and opens if required
 public :: Read_Headers  !  Reads header information from input files
 public :: Read2D        !  Reads x,y,z data for simple case
 public :: Read2DN       !  Reads x,y,z1...z2 data for simple case
-public :: PrintLog      !  writes message to both RunLog and unit 6
+!public :: PrintLog      !  writes message to both RunLog and unit 6
 public :: datewrite     ! writes date then data - helper sub
 private :: datewrite_ia,&   ! int, array vesion
            datewrite_iia,&  !  array of ints and reals version
@@ -54,21 +54,21 @@ end interface datewrite
 
 contains
 !-------------------------------------------------------------------------
-subroutine PrintLog(txt,OutputProc,ioOption)
-  character(len=*), intent(in) :: txt
-  logical, intent(in), optional :: OutputProc  !typically MasterProc, me==0
-  integer, intent(in), optional :: ioOption    !use for other files
-  logical :: ok2print
-  integer :: io
-  ok2print = .true.
-  if ( present(OutputProc) ) ok2print = OutputProc
-  if ( ok2print) then
-    io = IO_LOG
-    if ( present(ioOption) ) io = ioOption
-    write(*,fmt='(A)')  trim(txt)
-    write(io,fmt='(A)')  trim(txt)
-  end if
-end subroutine PrintLog
+!subroutine PrintLog(txt,OutputProc,ioOption)
+!  character(len=*), intent(in) :: txt
+!  logical, intent(in), optional :: OutputProc  !typically MasterProc, me==0
+!  integer, intent(in), optional :: ioOption    !use for other files
+!  logical :: ok2print
+!  integer :: io
+!  ok2print = .true.
+!  if ( present(OutputProc) ) ok2print = OutputProc
+!  if ( ok2print) then
+!    io = IO_LOG
+!    if ( present(ioOption) ) io = ioOption
+!    write(*,fmt='(A)')  trim(txt)
+!    write(io,fmt='(A)')  trim(txt)
+!  end if
+!end subroutine PrintLog
 !-------------------------------------------------------------------------
 subroutine read_line(io_in,txt,status,label,printif)
 !  Reads one line of input on host (MasterProc), broadcasts to other processors

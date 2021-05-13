@@ -34,8 +34,9 @@ use GridAllocate_mod,  only: GridAllocate
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local
 use GridValues_mod,    only: glon, glat, A_bnd, B_bnd,j_local
 use Io_mod,            only: open_file, NO_FILE, ios, IO_EMIS, &
-                             Read_Headers, read_line, PrintLog
+                             Read_Headers, read_line
 use Io_Progs_mod,      only: datewrite
+use Io_RunLog_mod,     only: PrintLog
 use KeyValueTypes,     only: KeyVal
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM&
                              , MPI_INTEGER, MPI_COMM_CALC, IERROR

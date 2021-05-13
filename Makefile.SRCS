@@ -22,7 +22,8 @@ SRCS ?=	\
         GasParticleCoeffs_mod.f90 \
 	Gravset_mod.f90 GridAllocate_mod.f90 GridValues_mod.f90 \
 	InterpolationRoutines_mod.f90 \
-	Io_mod.f90 Io_Nums_mod.f90 Io_Progs_mod.f90 KeyValueTypes.f90  LandDefs_mod.f90 Landuse_mod.f90 \
+	Io_mod.f90 Io_Nums_mod.f90 Io_Progs_mod.f90 Io_RunLog_mod.f90 \
+	KeyValueTypes.f90  LandDefs_mod.f90 Landuse_mod.f90 \
 	LandPFT_mod.f90 LocalVariables_mod.f90 LocalFractions_mod.f90 MARS_mod.f90 MARS_Aero_water_mod.f90 \
 	MassBudget_mod.f90 Met_mod.f90 MetFields_mod.f90 EQSAM_mod.f90 MicroMet_mod.f90 \
 	MosaicOutputs_mod.f90 MPI_Groups_mod.f90 AerosolCalls.f90 \

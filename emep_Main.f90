@@ -49,7 +49,8 @@ program emep_Main
   use GridValues_mod,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles,&
                               DefDebugProc, GridRead, set_EuropeanAndGlobal_Config
   use Io_mod,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
-  use Io_Progs_mod,      only: read_line, PrintLog
+  use Io_Progs_mod,      only: read_line
+  use Io_RunLog_mod,     only: PrintLog
   use Landuse_mod,       only: InitLandUse, SetLanduse
   use MassBudget_mod,    only: Init_massbudget, massbudget
   use Met_mod,           only: metfieldint, MetModel_LandUse, Meteoread

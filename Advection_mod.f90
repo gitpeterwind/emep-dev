@@ -82,7 +82,7 @@
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
                                 extendarea_N
   use Io_mod,             only: datewrite
-  use Io_Progs_mod,       only: PrintLog
+  use Io_RunLog_mod,      only: PrintLog
   use MetFields_mod,      only: ps,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
   use MassBudget_mod,     only: fluxin_top,fluxout_top,fluxin,fluxout

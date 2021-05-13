@@ -81,8 +81,8 @@
   use Io_mod,        only:            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
-                     PrintLog,        &
                      ios,  IO_TIMEFACS  ! i/o error number, i/o label
+  use Io_RunLog_mod, only: PrintLog
   use TimeDate_mod,  only:            &  ! subroutine, sets:
                      date,           &  ! date-type definition
                      nmdays, nydays, &  ! days per month (12), days per year

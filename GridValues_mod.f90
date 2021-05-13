@@ -18,6 +18,7 @@ use CheckStop_mod,           only: CheckStop,StopAll,check=>CheckNC
 use Functions_mod,           only: great_circle_distance, StandardAtmos_kPa_2_km,&
                                    StandardAtmos_km_2_kPa
 use Io_Nums_mod,             only: IO_LOG,IO_TMP
+use Io_RunLog_mod,           only: PrintLog, logtxt
 use MetFields_mod
 use Config_module,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
@@ -3040,6 +3041,10 @@ subroutine set_EuropeanAndGlobal_Config()
   real:: x1,x2,x3,x4,y1,y2,y3,y4,lon,lat,ir,jr
   character(len=*), parameter :: dtxt='EurGlobSettings:'
   integer :: EastProc
+  logical :: dbgEG = .false.
+
+  dbgEG = DEBUG%GRIDVALUES .and. MasterProc ! mainly for printLog
+
   if(EUROPEAN_settings == 'NOTSET')then
      !No value set in config input, use grid to see if it covers Europe
      !Test approximatively if any European country is included in rundomain
@@ -3049,6 +3054,7 @@ subroutine set_EuropeanAndGlobal_Config()
      if(gbacmax>35 .and. glacmin<40 .and. glacmax>-32)then
         
         if(MasterProc)write(*,*) dtxt//'assuming EUROPEAN_settings'
+        call PrintLog(dtxt//'assuming EUROPEAN_settings',MasterProc)
         EUROPEAN_settings = 'YES' 
      else
         
@@ -3062,15 +3068,18 @@ subroutine set_EuropeanAndGlobal_Config()
 18      format(A,2F6.1,A)
         if(inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat))then
            EUROPEAN_settings = 'YES' 
-           if(MasterProc)write(*,18) dtxt//'assuming EUROPEAN_settings: lon,lat ',lon,lat,' within Europe'
         else
            EUROPEAN_settings = 'NO' !default
-           if(MasterProc)write(*,18) dtxt//'Not assuming EUROPEAN_settings: lon,lat ',lon,lat,' outside Europe'
         endif
+        write(logtxt,'(a,a4,2f6.1)')  dtxt//'EUROPEAN_settings? ', &
+           EUROPEAN_settings, lon,lat
+        call PrintLog(dtxt//'assuming EUROPEAN_settings',MasterProc)
 
      endif 
   else
-    if(MasterProc) write(*,*) dtxt//'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
+    !if(MasterProc) write(*,*) dtxt//'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
+    write(logtxt,'(a,2L2)')  dtxt//'settings from config , EUR GLOB ', EUROPEAN_settings, GLOBAL_settings
+    call PrintLog(dtxt//'assuming EUROPEAN_settings',MasterProc)
   endif
 
   if(GLOBAL_settings == 'NOTSET')then
@@ -3079,9 +3088,10 @@ subroutine set_EuropeanAndGlobal_Config()
      !Note that it should also allow for PS projection which can cover the North Pole, i.e. any longitude
      GLOBAL_settings = 'NO' !default
      !find if lat < 19 are included within the domain
+     !XX
      if(gbacmin<19.0)then
         GLOBAL_settings = 'YES' !default
-        if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain extends below 19 degrees latitudes'
+        write(logtxt,'(a,2f6.1,a)') 'Assuming GLOBAL_settings because rundomain extends below 19 degN latitudes'
      else
         !test the Eastern point at approximatively middle in the Y direction
         EastProc = NPROCY/2 *NPROCX+NPROCX-1
@@ -3092,31 +3102,35 @@ subroutine set_EuropeanAndGlobal_Config()
         x1=-32;x2=90;x3=x2;x4=x1;y1=30;y2=y1;y3=70;y4=y3
         if(.not. inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,lon,lat) )then
            GLOBAL_settings = 'YES' 
-           if(MasterProc)write(*,18) dtxt//'assuming GLOBAL_settings: lon lat ',lon,lat,' outside Europe'
+           write(logtxt,'(a,2f6.1,a)') 'assuming GLOBAL_settings: lon lat ',lon,lat,' outside Europe'
         else           
            !find if the point with lon = -40 and lat = 45 is within the domain
            call lb2ij(-40.0,45.0,ir,jr)
            if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
               GLOBAL_settings = 'YES' !default
-              if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
+              write(logtxt,'(a)') 'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
+              !if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=-40 at lat=45'
            else 
               !find if the point with lon = 92 and lat = 45 is within the domain
               call lb2ij(92.0,45.0,ir,jr)
               if(ir>=RUNDOMAIN(1).and.ir<=RUNDOMAIN(2).and.jr>=RUNDOMAIN(3).and.jr<=RUNDOMAIN(4))then
                  GLOBAL_settings = 'YES' !default
-                 if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
+                 write(logtxt,'(a)') 'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
+                 !if(MasterProc)write(*,*)dtxt//'Assuming GLOBAL_settings because rundomain contains lon=92 at lat=45'
               else
-                 if(MasterProc)write(*,*)dtxt//'Not assuming GLOBAL_settings'
+                 write(logtxt,'(a)') 'Not assuming GLOBAL_settings'
+                 !if(MasterProc)write(*,*)dtxt//'Not assuming GLOBAL_settings'
               endif
            endif
         endif
      endif
+     call PrintLog(dtxt//logtxt,MasterProc)
   endif
 
   if(EUROPEAN_settings == 'YES') then
      if(USES%MonthlyNH3  == 'NOTSET' .and. GLOBAL_settings /= 'YES')then
         USES%MonthlyNH3  = 'LOTOS'
-        if(MasterProc)write(*,*)dtxt//' MonthlyNH3 set to '//trim(USES%MonthlyNH3)
+        call PrintLog(dtxt//'MonthlyNH3 set to '//trim(USES%MonthlyNH3), MasterProc)
      endif
   endif
 
@@ -3148,19 +3162,21 @@ subroutine set_EuropeanAndGlobal_Config()
      endif
 
      if(USES%MonthlyNH3  == 'LOTOS')then
-        if(MasterProc)write(*,*)dtxt//'WARNING: MonthlyNH3=LOTOS is not advised outside Europe'
+       if(MasterProc)write(*,*)dtxt//'WARNING: MonthlyNH3=LOTOS is not advised outside Europe'
      endif
 
   endif
-  if(MasterProc)write(*,'(a,3(a,L))')dtxt//'Final settings, EUR = '//trim(EUROPEAN_settings)&
-       //', GLOB = '//trim(GLOBAL_settings)&
-       //', MonthlyNH3 = '//trim(USES%MonthlyNH3)&
-       ,', E-SNOx = ',USES%EURO_SOILNOX&
-       ,', G-SNOx = ',USES%GLOBAL_SOILNOX&
-       ,', USES%SOILNOx= ',USES%SOILNOX
 
-!  trim(EUROPEAN_settings)//','//&
-!       trim(GLOBAL_settings), USES%EURO_SOILNOX, USES%GLOBAL_SOILNOX, USES%SOILNOX
+  write(logtxt,'(4a,9(a,L))') dtxt//' Final settings,'   &
+       ,'  EUR = '//trim(EUROPEAN_settings) &
+       ,'; GLOB = '//trim(GLOBAL_settings)&
+       ,'; MonthlyNH3 = '//trim(USES%MonthlyNH3)&
+       ,'; PFT_MAPS ',USES%PFT_MAPS&
+       ,'; E-SNOx = ',USES%EURO_SOILNOX&
+       ,'; G-SNOx = ',USES%GLOBAL_SOILNOX&
+       ,'; CAMS81-SNOx = ',USES%CAMS81_SOILNOX&
+       ,'; USES%SOILNOx= ',USES%SOILNOX
+   call PrintLog(logtxt, MasterProc)
 
 end subroutine set_EuropeanAndGlobal_Config
 

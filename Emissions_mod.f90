@@ -93,7 +93,8 @@ use GridValues_mod,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,debug_proc,debug_li,debug_lj &
                            ,xmd,dA,dB,i_fdom,j_fdom,glon,glat
 use Io_Nums_mod,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
-use Io_Progs_mod,      only: ios, open_file, datewrite, PrintLog
+use Io_Progs_mod,      only: ios, open_file, datewrite
+use Io_RunLog_mod,     only: PrintLog
 use MetFields_mod,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_mod,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
 use MPI_Groups_mod

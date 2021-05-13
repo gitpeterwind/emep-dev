@@ -69,7 +69,8 @@ use GridValues_mod,     only: glat, xm_i, xm_j, xm2         &
        ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle&
        ,Read_KMAX,remake_vertical_levels_interpolation_coeff
 
-use Io_mod ,            only: ios, datewrite, PrintLog, IO_LOG
+use Io_mod ,            only: ios, datewrite, IO_LOG
+use Io_RunLog_mod,      only: PrintLog
 use Landuse_mod,        only: water_fraction, water_frac_set, &
                                 likely_coastal, mainly_sea
 use MetFields_mod

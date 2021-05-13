@@ -24,6 +24,24 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th May 2021, Dave
+NEW MODULE: Io_RunLog_mod.f90
+
+Simple move of PrintLog routine from the Io_Progs_mod, to avoid
+circularity problems in some other modules, plus addition of logtxt
+variable to help internal-write usage in calling routines. (Io_Progs_mod
+had grown beyond its intended simple routines, and all the dependencies
+were causing problems.
+
+Changes in all modules that had "use Io_Progs_mod" for PrintLog.
+
+Most code changes in GridValues:
+
+  adding output of USES%CAMS81_SOILNOx and PFT_MAPS to final settings.
+  use of logtxt for internal-writes before call to PrintLog
+
+Plus PrintLog commented out in Io_Progs_mod. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2021, Dave

@@ -50,7 +50,8 @@ use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
 use Debug_module,          only: DEBUG   ! -> DEBUG%FORESTFIRES
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M, A_bnd,B_bnd
-use Io_mod,                only: PrintLog, datewrite, IO_NML, IO_TMP, open_file, ios
+use Io_mod,                only: datewrite, IO_NML, IO_TMP, open_file, ios
+use Io_RunLog_mod,         only: PrintLog
 use MetFields_mod,         only: z_bnd
 use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_mod,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&

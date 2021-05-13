@@ -20,7 +20,7 @@
  use Config_module,         only: KMAX_MID, KMAX_BND, USES, MasterProc
  use Debug_module,          only: DEBUG  ! -> DEBUG%SEASALT
  use GridValues_mod,        only: glat, glon, i_fdom, j_fdom 
- use Io_Progs_mod,          only: PrintLog
+ use Io_RunLog_mod,         only: PrintLog
  use Landuse_mod,           only: LandCover, water_fraction
  use LocalVariables_mod,    only: Grid
  use MetFields_mod,         only: u_ref, z_bnd, z_mid, sst,  &

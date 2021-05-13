@@ -29,7 +29,8 @@
  use ChemSpecs_mod,      only: species
  use GridValues_mod,     only: glat, glon, i_fdom, j_fdom 
  use GridValues_mod,     only: debug_proc, debug_li, debug_lj
- use Io_mod,             only: PrintLog, datewrite
+ use Io_mod,             only: datewrite
+ use Io_RunLog_mod,      only: PrintLog
  use Landuse_mod,        only: LandCover, NLUMAX 
  use Landuse_mod,        only: water_fraction
  use LandDefs_mod,       only:  LandType

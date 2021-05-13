@@ -49,7 +49,8 @@ module Biogenics_mod
                            NATBIO, EmBio, EMEP_EuroBVOCFile
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
-  use Io_mod,             only: IO_FORES, open_file, ios, PrintLog, datewrite
+  use Io_mod,             only: IO_FORES, open_file, ios, datewrite
+  use Io_RunLog_mod,      only: PrintLog
   use KeyValueTypes,      only: KeyVal,KeyValue
   use LandDefs_mod,       only: LandType, LandDefs
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai

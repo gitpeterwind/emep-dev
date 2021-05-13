@@ -18,6 +18,8 @@ use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
 use GasParticleCoeffs_mod, only: DDdefs
 use Functions_mod,         only: heaviside
 use GridValues_mod ,       only: glon, glat, debug_proc, debug_li, debug_lj
+use Io_mod,                only: IO_NML
+use Io_RunLog_mod,         only: PrintLog
 use Landuse_mod,           only: LandCover
 use LocalVariables_mod,    only: Grid
 use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
@@ -45,7 +47,6 @@ use SmallUtils_mod,        only: find_index,key2str
 use SubMet_mod,            only: Sub
 use TimeDate_mod,          only: current_date,daynumber,date,day_of_year
 use TimeDate_ExtraUtil_mod,only: date2string,compare_date,date2nctime
-use Io_mod,                only: IO_NML, PrintLog
 use MPI_Groups_mod,        only: MasterPE,IERROR,MPI_COMM_WORLD,MPI_COMM_CALC,&
                                  MPI_INTEGER,MPI_LOGICAL,MPI_DOUBLE_PRECISION,&
                                  MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE

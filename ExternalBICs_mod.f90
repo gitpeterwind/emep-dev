@@ -9,7 +9,8 @@ use ChemSpecs_mod,          only: species_adv
 use Config_module,          only: MasterProc, BC_DAYS,&
      USE_EXTERNAL_BIC,EXTERNAL_BIC_NAME,EXTERNAL_BIC_VERSION,TOP_BC,filename_eta
 use Debug_module,           only: DEBUG=>DEBUG_NEST_ICBC
-use Io_mod,                 only: PrintLog,IO_NML
+use Io_mod,                 only: IO_NML
+use Io_RunLog_mod,          only: PrintLog
 use OwnDataTypes_mod,       only: TXTLEN_SHORT
 use SmallUtils_mod,         only: find_index
 use TimeDate_mod,           only: date

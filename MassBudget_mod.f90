@@ -17,7 +17,8 @@ use Debug_module,     only: DEBUG_MASS
 use EmisDef_mod,      only: O_NH3, O_DMS
 use GridValues_mod,   only: xmd, &  
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
-use Io_mod,           only: IO_LOG, PrintLog, datewrite
+use Io_mod,           only: IO_LOG, datewrite
+use Io_RunLog_mod,    only: PrintLog
 use MetFields_mod,    only: ps            ! surface pressure
 ! do not use "only", because MPI_IN_PLACE does not behave well on certain
 ! versions of gfortran(?), and MPI stuff clearly inidcated anyway

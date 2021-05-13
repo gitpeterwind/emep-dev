@@ -49,8 +49,9 @@ use Functions_mod,         only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_mod,        only: glon, glat   & ! full domain lat, long
                             ,debug_proc, debug_li, debug_lj & ! debugging
                             ,i_fdom, j_fdom,A_mid,B_mid  !
-use Io_mod,                only: open_file, ios, IO_TMP
-use Io_Progs_mod,          only: datewrite, PrintLog, ios
+use Io_mod,                only: open_file, IO_TMP ! May2021 ios weas here too
+use Io_Progs_mod,          only: datewrite, ios
+use Io_RunLog_mod,         only: PrintLog
 use Landuse_mod,           only: mainly_sea
 use LocalVariables_mod,    only: Grid
 use MetFields_mod,         only: roa

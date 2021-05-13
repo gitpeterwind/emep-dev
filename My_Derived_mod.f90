@@ -53,7 +53,7 @@ use EmisDef_mod,       only: NSECTORS, SECTORS,EMIS_FILE, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML
-use Io_Progs_mod,      only: PrintLog
+use Io_RunLog_mod,     only: PrintLog
 use MosaicOutputs_mod, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
                             Init_MosaicMMC,  Add_MosaicMetConcs, &
                             Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP

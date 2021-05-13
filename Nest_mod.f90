@@ -47,7 +47,8 @@ use ChemDims_mod,            only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,           only: species_adv
 use GridValues_mod,          only: A_mid,B_mid, glon, glat, i_fdom, j_fdom, &
      RestrictDomain, Read_KMAX
-use Io_mod,                  only: open_file,IO_TMP,PrintLog
+use Io_mod,                  only: open_file,IO_TMP
+use Io_RunLog_mod,           only: PrintLog
 use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_mod,           only: roa
 use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&

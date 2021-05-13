@@ -30,7 +30,7 @@ module SoilWater_mod
  use Debug_module,       only: DEBUG_SOILWATER
  use GridValues_mod,     only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => glon
- use Io_Progs_mod,       only: PrintLog
+ use Io_RunLog_mod,      only: PrintLog
  use Landuse_mod,        only: water_fraction
  use LocalVariables_mod, only: Grid
  use Met_mod,            only: extendarea
