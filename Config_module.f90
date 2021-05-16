@@ -146,7 +146,7 @@ type, public :: emep_useconfig
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
-    ,SEASALT          = .true.  &!
+    ,SEASALT          = .true.  &! See also SEASALT_fFrac
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
     ,zero_below3000ft = .true.  &! set aircraft emissions to zero below ca 3000ft
@@ -155,7 +155,7 @@ type, public :: emep_useconfig
     ,DUST             = .false. &! Experimental
     ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
     ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
-    ,CAMS81_SOILNOX   = .false. &! Need to design better switch
+    ,CAMS81_SOILNOX   = .false. &! Need to design better switch. See SOILNOX_METHOD below
     ,SOILNOX          = .true.  & ! DO NOT ALTER: Set after config
     ,OCEAN_DMS        = .false. &!set automatically true if found.
     ,OCEAN_NH3        = .false. &!set automatically true if found
@@ -186,6 +186,7 @@ type, public :: emep_useconfig
     ,TIMEZONEMAP      = .false. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
   real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
+  real :: SEASALT_fFrac = 0.0       ! 0 = "< rv4_39", 0.3 = new suggestion
 
  ! If USES%EMISTACKS, need to set:
   character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"
@@ -201,8 +202,9 @@ type, public :: emep_useconfig
   character(len=15) :: WHITECAPS  = 'Callaghan'
 ! In development
    logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
-   character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
-   character(len=20)      :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
+   character(len=20) :: BiDirMethod = 'NOTSET'  ! FUTURE
+   character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
+   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
 end type emep_useconfig
 
 type(emep_useconfig), public, save :: USES
@@ -739,8 +741,14 @@ character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataD
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
 character(len=TXTLEN_FILE), target, save, public :: nox_emission_cams81File = 'DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
 !character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
+!
 !2021: added ECLIPSE6b-based factors for non-European areas
+!MAY 2021: CAREFUL - set MonthlyFacFile consistent with MonthlyFacBasis
+!NEEDS THOUGHT BY USER!!! ECLIPSE or GENEMIS coded so far
+! (though code will crudely check)
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
+character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
+!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
@@ -847,6 +855,7 @@ subroutine Config_Constants(iolog)
    ,nox_emission_1996_2005File&
    ,nox_emission_cams81File&
    ,MonthlyFacFile&
+   ,MonthlyFacBasis&
    ,DailyFacFile&
    ,HourlyFacFile&
    ,HourlyFacSpecialsFile&
