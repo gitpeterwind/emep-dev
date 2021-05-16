@@ -25,6 +25,60 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th May 2021, Dave/Svetlana
+
+SeaSalt, SoilNOx, Emissions changes
+
+1. Sea-Salt: 
+
+ Config_mod, SeaSalt_mod
+
+  USES%SEASALT_fFrac  added to split 7th emission mode into fine & coarse
+  Set to zero to capty´ure "old" method. New default will be 0.5
+  Also, git didn't like the å in Mårtenson, so I used aa instead. (From
+  some Windows encoding maybe?)
+
+2. SoilNOx:
+
+ This is COMPLICATED. CAMS81_SOILNOX provides monthly soil NOx from 4
+ types of emissions source, of which one of fertilizer-induced. Such
+ emissions are included in some inventories (EMEP!, ECLIPSEv6), but not
+ others (CAMS_REG_ANT, ECLIPSEv5). Thus, the user needs to know and set
+ properly!
+
+ Config_mod, Emissions_mod
+
+  USES%SOILNOX_METHOD - needs user decision!
+    CAMS_NoFert  - for EMEP, ECLIPSEv6
+    NOTSET       - ok for CAMS_REG_ANT, ECLIPSEv5
+  (will likely change NOTSET to "wFert" for these latter emissions, to force
+   the user to make a choice.)
+
+ Emissions_mod
+   Use of USES%SOILNOX_METHOD to get either all CAMS81 emissions or just
+   the non-Fertilizer ones.
+
+3. MonthlyFactors
+
+ Config_mod, Timefactors.f90
+
+  1. New ECLIPSE-based MonthlyFac files created and stored on DataDir
+  2. MonthlyFacBasis added to Config system. Set as GENEMIS for "old"
+     MonthlyFacs, or "ECLIPSE" for new.
+  3. MonthlyFacBasis is used in  Timefactors to prevent summer/winter
+    ratio scaling for ECLIPSE case. (The GENEMIS data were from 1994,
+    so needed scaling to get to year 2000-ish ratios. ECLIPSE data should
+    not be scaled like this.
+
+4. EmisDef_mod
+
+    made SNAP8 height index same as for GNFR - giving more elevated ship
+    (+train/plane!) emissions
+
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2021, Dave
 NEW MODULE: Io_RunLog_mod.f90
 
