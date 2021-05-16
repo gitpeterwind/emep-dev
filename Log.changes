@@ -24,6 +24,15 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th May 2021, Peter
+
+Bug in DryDep for treatment of vg_eff. Sub(0)%Vg_eff was not properly initialized.
+There is an initialization in CellMet_mod.f90, Sub(:)          = ResetSub
+However ResetSub does not explicitely set value of Vg_eff. However since ResetSub
+is defined by compiler, it is likely to be zero(?).
+I did not notice any change in results.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th May 2021, Dave/Svetlana
 

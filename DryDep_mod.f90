@@ -337,6 +337,7 @@ contains
     Sub(0)%Gsur = 0.0
     Sub(0)%Gsto = 0.0
     !Sub(0)%Gns  = 0.0
+    Sub(0)%Vg_eff  = 0.0
     Sub(0)%Vg_Ref  = 0.0
     Sub(0)%Vg_3m   = 0.0
  
