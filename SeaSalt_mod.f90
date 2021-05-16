@@ -84,6 +84,8 @@
    real, save  ::   moleccm3s_2_kgm2h 
    real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
    real    :: rcss(NSS)
+  ! rv4.40 Fracs of 7th mode in fine vs coarse
+   real, save :: frac_f, frac_c
 !//---------------------------------------------------
  
   if ( my_first_call ) then 
@@ -112,6 +114,10 @@
         call init_seasalt()
     end if
     
+    ! rv4.40 Fracs of 7th mode in fine vs coarse
+    frac_f = USES%SEASALT_fFrac
+    frac_c = 1.0 - USES%SEASALT_fFrac
+
     ! For EmisNat, need kg/m2/h from molec/cm3/s
     moleccm3s_2_kgm2h =   Grid%DeltaZ * 1.0e6 * 3600.0  &! /cm3/s > /m2/hr
                           /AVOG * 1.0e-6  ! kg  after *MW
@@ -212,7 +218,7 @@
 
 ! ====    Calculate sea salt fluxes in size bins  [part/m2/s] ========
          total_flux = 0.0
-!... Fluxes of small aerosols for each size bin (Mårtensson etal,2004)
+!... Fluxes of small aerosols for each size bin (Maartensson etal,2004)
           do ii = 1, SS_MAAR
 
                flux_help  = a(ii) * Tw + b(ii)
@@ -269,9 +275,18 @@
             if(DEBUG%SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii), rcss( iSSFI ) !ESX SS_prod(QSSFI,i,j)
           end do
+!.. Split 8-th section between fine and coarse
+               rcss( iSSFI) = rcss( iSSFI)  &
+                                  !DS+ 0.3* ss_flux(NFIN+1) * d3(NFIN+1) * n2m   &
+                                  + frac_f * ss_flux(NFIN+1) * d3(NFIN+1) * n2m   &
+                                  * water_fraction(i,j)
+               rcss( iSSCO ) = rcss( iSSCO )  &
+                                  !DS + 0.7* ss_flux(NFIN+1) * d3(NFIN+1) * n2m   &
+                                  + frac_c * ss_flux(NFIN+1) * d3(NFIN+1) * n2m   &
+                                  * water_fraction(i,j)
 
 !..Coarse particles emission [molec/cm3/s]
-          do ii = NFIN+1, NFIN+NCOA
+          do ii = NFIN+2, NFIN+NCOA
                rcss( iSSCO ) = rcss( iSSCO )  &
                  !!ESX SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
