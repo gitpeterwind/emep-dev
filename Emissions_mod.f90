@@ -2411,6 +2411,7 @@ subroutine newmonth
     SoilNOx(:,:)=0.0
     buffer(:,:)=0.0
 
+    write(*,*)' CAMS xFert?', me, trim( USES%SOILNOX_METHOD )
     if ( USES%CAMS81_SOILNOX ) then
 
       ! tmp checks. Will sort out climatological case later
@@ -2422,6 +2423,17 @@ subroutine newmonth
       call ReadField_CDF(nox_emission_cams81File,'TotalSoilEmis',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
+      !if ( debug_proc) write(*,*)' CAMS xFertP', trim( USES%SOILNOX_METHOD )
+      if ( USES%SOILNOX_METHOD == 'CAMS_NoFert' ) then
+        if ( debug_proc) write(*,*)' CAMS xFertA', SoilNOx(debug_li,debug_lj), minval(SoilNOx)
+        call ReadField_CDF(nox_emission_cams81File,'FertEmis',buffer,&
+             nstart=nstart,interpol='conservative',known_projection="lon lat",&
+             needed=.true.,debug_flag=.false.,UnDef=0.0)
+        SoilNOx = SoilNOx - buffer
+        if ( debug_proc) write(*,*)' CAMS xFertB', SoilNOx(debug_li,debug_lj), minval(SoilNOx)
+        SoilNOx = max(SoilNOx, 0.0) ! in case of any small negs
+        
+      end if
       if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt//"CAMS81 SOILNO ", &
         current_date%year, nstart, maxval(SoilNOx)
     else
