@@ -98,7 +98,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
    Sector_type('SNAP', 'SNAP5 ',  'sec05',      5,           5,             5,       'Extraction and distribution of fossil fuels', 'ALL'),&
    Sector_type('SNAP', 'SNAP6 ',  'sec06',      6,           2,             6,       'Solvent use', 'ALL'),&
    Sector_type('SNAP', 'SNAP7 ',  'sec07',      7,           2,             7,       'Road traffic', 'ALL'),&
-   Sector_type('SNAP', 'SNAP8 ',  'sec08',      8,           2,             8,       'Other mobile sources (trains, planes, ships)', 'ALL'),&
+   Sector_type('SNAP', 'SNAP8 ',  'sec08',      8,           8,             8,       'Other mobile sources (trains, planes, ships)', 'ALL'),&
    Sector_type('SNAP', 'SNAP9 ',  'sec09',      9,           6,             9,       'Waste treatment and disposal', 'ALL'),&
    Sector_type('SNAP', 'SNAP10',  'sec10',     10,           2,            10,       'Agriculture', 'ALL'),&
    Sector_type('SNAP', 'SNAP11',  'sec11',     11,           2,            11,       'Nature', 'ALL') /)
