@@ -54,7 +54,7 @@
 !  for differences in number of days in the month
 !_____________________________________________________________________________
 
-  use CheckStop_mod, only: CheckStop
+  use CheckStop_mod, only: CheckStop, StopAll
   use ChemDims_mod,  only: NEMIS_File 
   use Country_mod,   only: NLAND,Country
   use EmisDef_mod,   only: EMIS_FILE, TFAC_IDX_DOM, TFAC_IDX_TRAF, TFAC_IDX_AGR,&
@@ -68,6 +68,7 @@
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
+                            MonthlyFacBasis, & ! ECLIPSE or other
                             monthly_timezoneFile, &
                             HourlyFacFile,HourlyFacSpecialsFile,&
                             USES
@@ -183,7 +184,7 @@ contains
   real :: fracchange
   real :: Start, Endval, Average, x, buff(12)
   logical :: found_HourlyFacFile, found
-  character(len=*), parameter:: dtxt='tfacs'
+  character(len=*), parameter:: dtxt='tfacs:'
   integer :: maxidx = 0
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
@@ -215,23 +216,39 @@ contains
 !       sector emissions, in order to cancel subsequent application of fac_emm, 
 !       but keep the fac_cemm variations
 
-  ! Summer/winter SNAP1 ratios reduced from 1990 to 2010:
+  ! Summer/winter SNAP1 ratios reduced from 1990 to 2010 when using "older"
+  ! MonthlyFacs (e.g. GENEMIS were from 1994-era).
+  ! Follows data presented in Grennfelt & Hov, Ambio, 2005, see Simpson et al 2012
    fac_cemm(:) = 1.0
-   fracchange=0.005*(iyr_trend -1990)
-   fracchange=max(0.0,fracchange) !do not change before 1990
-   fracchange=min(0.1,fracchange) !stop change after 2010 
-   !equal 1.1/0.9=1.22 summer/winter change
-   do i = 1, NSECTORS
+
+   if(MasterProc) write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
+   if ( MonthlyFacBasis == 'ECLIPSE' ) then
+print *, dtxt//' COMP MonthlyFacBasis ', index(MonthlyFacFile,'eclipse'), trim(MonthlyFacFile)
+      call CheckStop(index(MonthlyFacFile,'eclipse')<1, &
+         dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
+
+   else if ( MonthlyFacBasis == 'GENEMIS' ) then ! check eclipse not in FacFile
+     call CheckStop(index(MonthlyFacFile,'eclipse')>0, &
+         dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
+
+     fracchange=0.005*(iyr_trend -1990)
+     fracchange=max(0.0,fracchange) !do not change before 1990
+     fracchange=min(0.1,fracchange) !stop change after 2010 
+     !equal 1.1/0.9=1.22 summer/winter change
+     do i = 1, NSECTORS
       if(IS_POW(i)) then
          write(unit=6,fmt=*) dtxt//"Change summer/winter ratio in "//&
               trim(SECTORS(i)%longname)//" by ", fracchange
       end if
-   end do
-   do mm=1,12
+     end do
+     do mm=1,12
       !Assume max change for august and february
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
       write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") dtxt//"Change in fac_cemm ", mm,fac_cemm(mm)
-   end do
+     end do
+   else
+      call StopAll(dtxt//'ERROR MonthlyFac:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
+   end if ! MonthlyFacBasis
    write(*,"(a,f8.4)") dtxt//"Mean fac_cemm ", sum( fac_cemm(:) )/12.0
    
    if( INERIS_SNAP1 ) fac_cemm(:) = 1.0
