@@ -223,12 +223,11 @@ contains
 
    if(MasterProc) write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
    if ( MonthlyFacBasis == 'ECLIPSE' ) then
-print *, dtxt//' COMP MonthlyFacBasis ', index(MonthlyFacFile,'eclipse'), trim(MonthlyFacFile)
-      call CheckStop(index(MonthlyFacFile,'eclipse')<1, &
+      call CheckStop(index(MonthlyFacFile,'may2021')<1, & !CRUDE and TMP!
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
 
    else if ( MonthlyFacBasis == 'GENEMIS' ) then ! check eclipse not in FacFile
-     call CheckStop(index(MonthlyFacFile,'eclipse')>0, &
+     call CheckStop(index(MonthlyFacFile,'xJun2012')<1, &
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
 
      fracchange=0.005*(iyr_trend -1990)
