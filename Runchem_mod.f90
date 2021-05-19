@@ -45,7 +45,7 @@ module RunChem_mod
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use PointSource_mod,    only: pointsources, get_pointsources
   use SeaSalt_mod,       only: SeaSalt_flux
-  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d
+  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis
   use ZchemData_mod,only: first_call, &
                               M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
@@ -185,6 +185,8 @@ subroutine runchem()
       if(DEBUG%RUNCHEM) call check_negs(i,j,'B')
 
       call Add_2timing(28,tim_after,tim_before,"Runchem:other setups")
+
+      call sum_rcemis(i,j)
 
 !     if(DEBUG%RUNCHEM.and.debug_flag) &
 !       call datewrite("RUNCHEM PRE-CHEM",(/xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20)/))

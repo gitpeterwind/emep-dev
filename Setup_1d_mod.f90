@@ -79,7 +79,8 @@ private
 public :: setup_1d     ! Extracts results for i,j column from 3-D fields
 public :: setup_rcemis ! Emissions in i,j column
 public :: reset_3d     ! Exports final results from i,j column to 3-D fields
-                       ! (and XNCOL outputs if asked for)
+! (and XNCOL outputs if asked for)
+public :: sum_rcemis   ! sum all emissions (also natural) for output
 
 ! Indices for the species defined in this routine. Only set if found
 ! Hard-coded for 2 specs just now. Could extend and allocate.
@@ -603,8 +604,6 @@ subroutine setup_rcemis(i,j)
        endif
     enddo
 
-
-
   ! Volcanic emissions (SO2 and ASH),
   ! and Contribution from Emergeny scenarios
   if(VOLCANO_SR)then
@@ -643,9 +642,9 @@ subroutine setup_rcemis(i,j)
     if(burning(i,j))call Fire_rcemis(i,j)
   end if
 
-  ! Soil NOx
+  ! Soil NOx is accounted for in setup_bio!!
   if(USES%GLOBAL_SOILNOX)then
-    rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
+     ! rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   end if
 
   ! Emissions from GEIA, was use for Aerocom NO3 experiment
@@ -764,33 +763,6 @@ subroutine setup_rcemis(i,j)
     end if
   end do
 
-  if(EmisSplit_OUT)then
-    !put all added emissions in EmisSplit_OUT, also natural emissions
-    SplitEmisOut(i,j,:)=0.0
-    do k=KCHEMTOP, KMAX_MID
-      do iqrc=1,nrcemis
-        !give unit mg/m2/s dt_advec multiplied in Derived_mod 
-        itot=iqrc2itot(iqrc)
-        SplitEmisOut(i,j,iqrc) = SplitEmisOut(i,j,iqrc)&
-          +rcemis(itot,k)*species(itot)%molwt &
-          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
-      end do
-    end do
-  end if
-
-  iqrc = 0 
-  do iem = 1, NEMIS_FILE   
-     EmisOut(i,j,iem) = 0.0
-     do f = 1,emis_nsplit(iem)
-        iqrc = iqrc + 1
-        itot = iqrc2itot(iqrc)
-        do k=KCHEMTOP, KMAX_MID
-           EmisOut(i,j,iem) = EmisOut(i,j,iem) + rcemis(itot,k)/emis_masscorr(iqrc) &
-          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
-        enddo
-     enddo
-  enddo
-
 
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s  over land (cf Hammer et al, JGR, 2007, CARBOSOL project)
@@ -805,6 +777,51 @@ subroutine setup_rcemis(i,j)
 
 end subroutine setup_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+subroutine sum_rcemis(i,j)
+!-------------------------------------------------------------------
+!    DESCRIPTION:
+!    Extracts emissions in column from gridrcemis, for input to chemistry
+!    routines. Results in "rcemis" array with unts: molecule/cm3/s
+!-------------------------------------------------------------------
+  !-- arguments
+  implicit none
+  integer, intent(in) ::  i,j     ! coordinates of column
+
+  !  local
+  integer :: iqrc, k, itot, iem ,f
+
+  iqrc = 0 
+  do iem = 1, NEMIS_FILE   
+     EmisOut(i,j,iem) = 0.0
+     do f = 1,emis_nsplit(iem)
+        iqrc = iqrc + 1
+        itot = iqrc2itot(iqrc)
+        do k=KCHEMTOP, KMAX_MID
+           EmisOut(i,j,iem) = EmisOut(i,j,iem) + rcemis(itot,k)/emis_masscorr(iqrc) &
+          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
+        enddo
+     enddo
+  enddo
+  
+  if(EmisSplit_OUT)then
+    !put all added emissions in EmisSplit_OUT, also natural emissions
+    SplitEmisOut(i,j,:)=0.0
+    do k=KCHEMTOP, KMAX_MID
+      do iqrc=1,nrcemis
+        !give unit mg/m2/s dt_advec multiplied in Derived_mod 
+        itot=iqrc2itot(iqrc)
+        SplitEmisOut(i,j,iqrc) = SplitEmisOut(i,j,iqrc)&
+          +rcemis(itot,k)*species(itot)%molwt &
+          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
+      end do
+    end do
+  end if
+
+
+end subroutine sum_rcemis
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 subroutine reset_3d(i,j)
   integer, intent(in) :: i,j
   integer :: k, n, ispec    ! loop variables

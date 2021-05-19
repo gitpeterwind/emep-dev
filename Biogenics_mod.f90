@@ -641,14 +641,13 @@ module Biogenics_mod
     !FUTURE? rcbio(NATBIO%NO,KG) =
          SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-  else if ( USES%GLOBAL_SOILNOX ) then !emissions should be in molecules/cm3/s
-
-    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
+  else if ( USES%GLOBAL_SOILNOX ) then !emissions should be in molecules/m2/s (NB: not molecules/cm3/s!)
+    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)/biofac_SOILNO * 1.0e-15/3600.0 !molecules/m2/s -> kg/m2/h ?
     loc_hour = int(current_date%hour + Grid%longitude/15)
     if (loc_hour>24)  loc_hour = loc_hour - 24
     if (loc_hour< 1)  loc_hour = loc_hour + 24
-    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
-         SoilNOx(i,j) * hourlySoilFac(loc_hour)
+    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + & 
+         SoilNOx(i,j) /Grid%DeltaZ * 1.0e-6 * hourlySoilFac(loc_hour) !molecules/m2/s -> molecules/cm3/s
   end if
 
     !EXPERIMENTAL

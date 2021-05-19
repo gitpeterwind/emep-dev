@@ -2505,20 +2505,18 @@ subroutine newmonth
        'GLOBAL SOILNOX emissions within domain, month:', mm, &
         SumSoilNOx, ' kg/day', SumSoilNOx*1.0e-9*nmdays(mm), ' Tg per month'
 
-    ! convert from g(N)/m2/day into molecules/cm3/s from g to molecules:
-    !  AVOG/14  14=molweight N, use roa to find dz for consistency with other
-    !  emissions (otherwise could have used z_bnd directly) dz=dP/(roa*GRAV)
-    !  dP=dA(k) + dB(k)*ps(i,j,1) dV=dz*1e6 (1e6 for m3->cm3) from month to
-    !  seconds: ndaysmonth*24*3600
-    conv=AVOG/14.0*GRAV*1.0e-6/(24*3600)
+    ! convert from g(N)/m2/day into molecules/m2/s 
+    !  from g to molecules: AVOG/14  14=molweight N,
+    !  from /day to /seconds : 24*3600
+    conv=AVOG/14.0/(24*3600)
     if ( debug_proc) dbgVal = SoilNOx(debug_li,debug_lj)
     k=KMAX_MID!surface
     do j=1,ljmax
       do i=1,limax
-        SoilNOx(i,j)=SoilNOx(i,j)*conv*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
+        SoilNOx(i,j)=SoilNOx(i,j)*conv
       end do
-    end do
-  end if
+   end do
+end if
 
   ! DMS
   !   Units:

@@ -4311,7 +4311,7 @@ end subroutine ReadField_CDF
   end do
   dims(3)=NFL
 
-  if(me==0) write(*,*) NFL,' vertical levels found in '//trim(fileName),dims(1),dims(2),dims(3)
+  if(me==0) write(*,*) NFL,' vertical levels found in ',trim(fileName),dims(1),dims(2),dims(3)
 
   call CheckStop(interpol_used/='mass_conservative' .and. (is_cams .and. interpol_used/='conservative') ,&
              "only mass_conservative interpolation implemented for Flight Levels or conservative for CAMS_FL")
