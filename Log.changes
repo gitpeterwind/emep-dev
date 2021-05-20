@@ -15,7 +15,7 @@ EmChem19a should be the default chemistry for most emep jobs. This also uses the
 EmChem19p is just EmChem19a + Alvaro's pollen species.
 
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
-the appropriate place, DataDir/ZCM_EmChem19.
+the appropriate place, DataDir/ZCM_DIRS/ZCM_EmChem19.
 
 =============================================================================
 !----------------------------------------------------------
@@ -24,6 +24,13 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th May 2021, Dave
+
+Biogenic_mod:  small additions to help printouts
+Config_module: small additions to help testing
+Derived_mod: added fPMc_specs NO3 test line
+SubMet_mod: added use of PBL%NEUTRAL_USTAR_START for SEI testing
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th May 2021, Peter/Dave
 
@@ -37,13 +44,6 @@ setup_bio.
 Also moved the sumation of emissions into a new routine sum_rcemis, so that it
 contains also the emission set by setup_bio
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-18th May 2021, Dave
-
-Biogenic_mod:  small additions to help printouts
-Config_module: small additions to help testing
-Derived_mod: added fPMc_specs NO3 test line
-SubMet_mod: added use of PBL%NEUTRAL_USTAR_START for SEI testing
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th May 2021, Dave
 
