@@ -38,6 +38,13 @@ Also moved the sumation of emissions into a new routine sum_rcemis, so that it
 contains also the emission set by setup_bio
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th May 2021, Dave
+
+Biogenic_mod:  small additions to help printouts
+Config_module: small additions to help testing
+Derived_mod: added fPMc_specs NO3 test line
+SubMet_mod: added use of PBL%NEUTRAL_USTAR_START for SEI testing
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th May 2021, Dave
 
 Timefactors_mod, config_emep.nml

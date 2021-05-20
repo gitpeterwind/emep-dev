@@ -75,6 +75,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
       ! JcRb_t2m is new JcRb using pop T at 2m
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
+    logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler? 
     !
     ! Moved Feb 2021 from BLPhysics:
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
@@ -187,6 +188,11 @@ type, public :: emep_useconfig
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
   real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.0       ! 0 = "< rv4_39", 0.3 = new suggestion
+
+!DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
+!Species where we want to include "tail" of  course mode into PM25
+! outputs, as calculated in Derived_mod
+  character(len=TXTLEN_SHORT), public, dimension(2) :: fPMc_specs = '-'
 
  ! If USES%EMISTACKS, need to set:
   character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"

@@ -249,6 +249,8 @@ subroutine Init_Derived()
     case default
       call StopAll(dtxt//' cannot set fracPM25')
   end select
+  if ( USES%fPMc_specs(1) == 'NO3' ) fracPM25=0.0  
+
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
     iddefPMc, fracPM25, nint(10* DDdefs(iddefPMc)%umDpgV )
 

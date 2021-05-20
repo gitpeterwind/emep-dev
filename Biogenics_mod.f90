@@ -566,7 +566,7 @@ module Biogenics_mod
 
   character(len=*), parameter :: dtxt='BioModSetup:' 
   integer :: it2m, loc_hour
-  real    :: E_ISOP, E_MTP, E_MTL
+  real    :: E_ISOP, E_MTP, E_MTL, sFac
 
 ! To get from ug/m2/h to molec/cm3/s
 ! ug -> g  1.0e-6; m2-> cm2 1e-4, g -> mole / MW; x AVOG
@@ -641,6 +641,8 @@ module Biogenics_mod
     !FUTURE? rcbio(NATBIO%NO,KG) =
          SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
+    loc_hour = -999 ! just for dbg printout
+
   else if ( USES%GLOBAL_SOILNOX ) then !emissions should be in molecules/m2/s (NB: not molecules/cm3/s!)
     EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)/biofac_SOILNO * 1.0e-15/3600.0 !molecules/m2/s -> kg/m2/h ?
     loc_hour = int(current_date%hour + Grid%longitude/15)
@@ -664,14 +666,18 @@ module Biogenics_mod
  
     if ( dbg .and. current_date%seconds==0 ) then 
 
+      !molecules/m2/s -> molecules/cm3/s
+      sFac = 1/Grid%DeltaZ * 1.0e-6 * hourlySoilFac(loc_hour)
+
       call datewrite(dtxt//" env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
-      call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
-             E_MTP, E_MTL, SoilNOx(i,j), SoilNH3(i,j) /) ) 
-      if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
+      call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", [ loc_hour ], &
+       [ E_ISOP, E_MTP, E_MTL, hourlySoilFac(loc_hour), SoilNOx(i,j) * sFac ] ) 
+      if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j) * sFac,&
+                                      SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
       call datewrite(dtxt//" rcemisL ", (/ &
             rcbio(NATBIO%C5H8,KG), rcbio(NATBIO%TERP,KG) /))
-      call datewrite(dtxt//" EmisNat ", EmisNat(:,i,j) )
+      call datewrite(dtxt//" EmisNat1:8 ", EmisNat(1:8,i,j) )
 
      end if
 

@@ -227,6 +227,11 @@ if ( dbg) write(*,*) 'SUBB CellH', iL, Grid%Hd
 
    else if ( FluxPROFILE == "Iter" ) then
 
+if ( PBL%NEUTRAL_USTAR_START ) then
+        Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+         (log( Sub(iL)%z_refd/Sub(iL)%z0 ))
+end if
+
     do iter = 1, NITER 
 
         ! ****
