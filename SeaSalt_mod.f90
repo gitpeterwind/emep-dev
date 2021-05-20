@@ -391,8 +391,12 @@
             + D3(3)*dp2(6:7)*MKM2   + D3(4)*DP(6:7)   *MKM + D3(5)
 
 !//====== For  Monahan et al. (1986) parameterisation  =====
+! nb ... as a rule of thumb, r0 is approximately twice r80"
+! Andreas, E. L.: A new sea spray generation function for wind
+!speeds up to 32 m s −1 , J. Phys. Oceanogr., 28, 2175–2184, 1998.
 
-     rdry(1) = 0.8    ! Diameter at 80% ca. 3.1
+
+     rdry(1) = 0.8    ! Diameter at 80% ca. 3.2
      rdry(2) = 1.5    !                     6.3
      rdry(3) = 2.5    !                     10.6
  !.. can be extended 
@@ -410,23 +414,17 @@
         !Gb          log10(0.8))+RLIM(i)**3) ** third
 
         !ds now use Gerber functions
-!STbug        radSS(i) = umWetRad(rdry(i), 0.8, GbSeaSalt)
-!STbug        lim1     = umWetRad(rlim(i+1), 0.8, GbSeaSalt)
-!STbug        lim2     = umWetRad(rlim(i), 0.8, GbSeaSalt)
         radSS(i) = cmWetRad(rdry(i), 0.8, GbSeaSalt)
         lim1     = cmWetRad(rlim(i+1), 0.8, GbSeaSalt)
         lim2     = cmWetRad(rlim(i), 0.8, GbSeaSalt)
         Rrange(i) = lim1 - lim2       ! bin size intervals 
 
        if( DEBUG%SEASALT ) then
-         ! WetRad takes radius in m
+         ! cmWetRad takes radius in um, WetRad takes radius in m
         write(*,"(a,i4,9g10.3)") "SSALT WETRAD ", i, radSS(i), lim1, lim2 !,  &
 !          WetRad(rdry(i)*MKM, 0.8, GbSeaSalt)/MKM,&
 !          WetRad(RLIM(i+1)*MKM, 0.8, GbSeaSalt)/MKM,&
 !          WetRad(RLIM(i)*MKM, 0.8, GbSeaSalt)/MKM, &
-!          umWetRad(rdry(i), 0.8, GbSeaSalt),&
-!          umWetRad(RLIM(i+1), 0.8, GbSeaSalt),&
-!          umWetRad(RLIM(i), 0.8, GbSeaSalt)
        end if
      end do
 
