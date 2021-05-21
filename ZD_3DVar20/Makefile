@@ -3,7 +3,7 @@
 # ------------------------------------------------
 
 # target:
-PROG ?= Unimod_3DVar
+PROG ?= emepctm
 
 # ------------------------------------------------
 # compiler and flags
@@ -102,7 +102,7 @@ SRCS := $(addprefix ../,$(filter-out My_3DVar_mod.f90,$(SRCS))) \
 #
 # Create dependencies for all source files, do not add rule for main program:
 Makefile.deps: $(SRCS)
-	$(MAKEDEPF90) $(SRCS) $(DFLAGS) > $@
+	$(MAKEDEPF90) $(DFLAGS) $(SRCS) > $@
 
 # object files from sources that are no modules, the dependencies on this are not trapped by makedepf90 ...
 XOBJ  = ../global2local.o

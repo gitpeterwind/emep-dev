@@ -22,7 +22,7 @@ module DA_Obs_ml
   use ChemDims_mod          , only : NSPEC_ADV
   use ChemSpecs_mod         , only : species_adv
   use ChemGroups_mod        , only : chemgroups
-  use Io_Progs_mod          , only : PrintLog
+  use Io_RunLog_mod         , only : PrintLog
   use Config_module         , only : MasterProc,runlabel1
   use SmallUtils_mod        , only : find_index
   use DA_ml                 , only : debug => DEBUG_DA
