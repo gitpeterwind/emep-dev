@@ -17,6 +17,7 @@ module Derived_mod
 !---------------------------------------------------------------------------
 
 use AeroConstants_mod, only: AERO
+use AeroFunctions_mod, only: LogNormFracBelow !=> Frac Mass below Dp
 use AOD_PM_mod,        only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use AOTx_mod,          only: Calc_GridAOTx
@@ -243,12 +244,18 @@ subroutine Init_Derived()
   call Setups()  ! just for VOC now
 
   iddefPMc = find_index('PMc',DDdefs(:)%name, any_case=.true.)
-  select case(nint(DDdefs(iddefPMc)%umDpgV*10))
-    case(25);fracPM25=0.37
-    case(30);fracPM25=0.27
-    case default
-      call StopAll(dtxt//' cannot set fracPM25')
-  end select
+  associate ( D=> DDdefs(iddefPMc) )
+    fracPM25 = LogNormFracBelow(D%umDpgV, D%sigma, 0.001*D%rho_p, 2.5)
+    if(MasterProc) write(*,*) dtxt//"fracPM25 ", D%umDpgV, trim(D%name), fracPM25
+  end associate ! D=> DDdefs(iddefPMc) )
+
+!  select case(nint(DDdefs(iddefPMc)%umDpgV*10))
+!    case(25);fracPM25=0.37
+!    case(30);fracPM25=0.27
+!end if
+!    case default
+!      call StopAll(dtxt//' cannot set fracPM25')
+!  end select
   if ( USES%fPMc_specs(1) == 'NO3' ) fracPM25=0.0  
 
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
