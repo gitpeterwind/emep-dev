@@ -6,7 +6,7 @@ module Setup_1d_mod
 !-----------------------------------------------------------------------!
 
 use AeroConstants_mod,only: AERO,NSAREA_DEF   ! for aerosol surface area
-use AeroFunctions_mod,only: WetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AeroFunctions_mod,only: GerberWetRad, pmSurfArea, cMolSpeed, UptakeRate
 use AeroFunctions_mod,only: pmH2O_gerber  ! H2O from Gerber
 use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
 use Biogenics_mod,    only: SoilNOx
@@ -122,7 +122,6 @@ contains
     integer :: itmp
    ! if pmH2O are wanted for d_2d output:
     logical, save :: pmH2O_wanted = .false.
-    real :: rhS  ! rh for WetRad calcs
 
    ! local
 
@@ -260,9 +259,6 @@ contains
         if ( USES%SURF_AREA ) then ! GERBER
 
             S_m2m3(:,k) = 0.0  !! Allow max 6000 um2/cm3
-            rhS = rh(k)
-            if (USES%SURF_AREA_RHLIMITS >0) rhS= &
-               min(rh(k),0.01*USES%SURF_AREA_RHLIMITS)
 
            !ispec=NO3_c ! CRUDE HARD CODE for now, but NO3 is special
 
@@ -353,7 +349,7 @@ contains
              Ddry(iw) =  DDspec(ipm)%DpgN  ! (m)
 
              if ( DDspec(ipm)%Gb > 0 ) then
-               DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rhS, DDspec(ipm)%Gb ) 
+               DpgNw(iw,k)  = 2*GerberWetRad( 0.5*Ddry(iw), rh(k), DDspec(ipm)%Gb ) 
              else
                DpgNw(iw,k)  = Ddry(iw) ! for dust, we keep dry
              end if
