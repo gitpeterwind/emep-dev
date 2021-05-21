@@ -13,7 +13,8 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use AeroFunctions_mod,     only: WetRad, cmWetRad, GbSeaSalt
+ !use AeroFunctions_mod,     only: WetRad, cmWetRad, GbSeaSalt, GerberWetRad
+ use AeroFunctions_mod,     only: GbSeaSalt, GerberWetRad
  use Biogenics_mod,         only: EMIS_BioNat, EmisNat  
  use CheckStop_mod,         only: StopAll
  use ChemSpecs_mod,         only: species
@@ -327,8 +328,6 @@
   ! Assignments and calculations of some help-parameters
   !------------------------------------------------------------
 
-  implicit none
-
   integer :: i
   real    :: a1, a2
   real, dimension(SS_MONA) :: Rrange, rdry
@@ -345,7 +344,7 @@
 
 !=== mikrometer in powers
   real, parameter :: MKM  = 1.e-6,  MKM2 = 1.e-12 ,  &  
-                     MKM3 = 1.e-18, MKM4 = 1.e-24 
+                     MKM3 = 1.e-18, MKM4 = 1.e-24 , invMKM = 1.0e6
  
 !//.. Size bins for Maartinsson's parameterisation (dry diameters):
   real, parameter, dimension(SS_MAAR)::    &
@@ -414,14 +413,17 @@
         !Gb          log10(0.8))+RLIM(i)**3) ** third
 
         !ds now use Gerber functions
-        radSS(i) = cmWetRad(rdry(i), 0.8, GbSeaSalt)
-        lim1     = cmWetRad(rlim(i+1), 0.8, GbSeaSalt)
-        lim2     = cmWetRad(rlim(i), 0.8, GbSeaSalt)
+        !radSS(i) = cmWetRad(rdry(i), 0.8, GbSeaSalt)
+        !lim1     = cmWetRad(rlim(i+1), 0.8, GbSeaSalt)
+        !lim2     = cmWetRad(rlim(i), 0.8, GbSeaSalt)
+        radSS(i) = GerberWetRad(rdry(i)*MKM, 0.8, GbSeaSalt) * invMKM
+        lim1     = GerberWetRad(rlim(i+1)*MKM, 0.8, GbSeaSalt) * invMKM
+        lim2     = GerberWetRad(rlim(i)*MKM, 0.8, GbSeaSalt) * invMKM
         Rrange(i) = lim1 - lim2       ! bin size intervals 
 
        if( DEBUG%SEASALT ) then
          ! cmWetRad takes radius in um, WetRad takes radius in m
-        write(*,"(a,i4,9g10.3)") "SSALT WETRAD ", i, radSS(i), lim1, lim2 !,  &
+        write(*,"(a,i4,9g10.3)") "SSALT WETRAD ", i, radSS(i), lim1, lim2, 1.0e6*GerberWetRad(1.0e-6*rdry(i),0.8,GbSeaSalt) !,  &
 !          WetRad(rdry(i)*MKM, 0.8, GbSeaSalt)/MKM,&
 !          WetRad(RLIM(i+1)*MKM, 0.8, GbSeaSalt)/MKM,&
 !          WetRad(RLIM(i)*MKM, 0.8, GbSeaSalt)/MKM, &
