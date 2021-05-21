@@ -23,10 +23,10 @@ module AeroFunctions_mod
 
   ! Gerber functions used to get wet radius
   public :: pmH2O_gerber
-  public :: WetRad
-  public :: umWetRad
-  public :: cmWetRad
-  public :: WetRadS
+  public :: GerberWetRad
+! public :: WetRad
+! public :: cmWetRad
+!  public :: WetRadS
 
   integer, public, parameter :: GbRural=1, GbSeaSalt=2, GbUrban=3, GbAmmSO4=4
 
@@ -104,50 +104,53 @@ module AeroFunctions_mod
   !---------------------------------------------------------------------
 !  elemental
 
- function WetRadS(rdry,fRH,pmtype) result (rwet)
-   real, intent(in) :: rdry                 !< UNITS, any, but same as rwet
-   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
-   integer, intent(in), optional :: pmtype  !< Type of aerosol
-   real             :: rwet                 !< 
+!function WetRadS(rdry,fRH,pmtype) result (rwet)
+!  real, intent(in) :: rdry                 !< UNITS, any, but same as rwet
+!  real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
+!  integer, intent(in), optional :: pmtype  !< Type of aerosol
+!  real             :: rwet                 !< 
 
-   ! Gerber, TAble 2, simplified for ext,. coeffs.
-   real, parameter, dimension(4) :: &
-     !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
-      C7 =  (/ 1.17, 1.28, 1.83, 1.97 /) &
-     ,C8 =  (/ 1.87, 2.41, 5.13, 5.83 /)
-     ! BUG C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
-     ! BUG ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
-   real, parameter :: THIRD = 1.0/3.0
-   real :: f
-   integer :: ind  
+!  ! Gerber, TAble 2, simplified for ext,. coeffs.
+!  real, parameter, dimension(4) :: &
+!    !          R    U     SS2    SS3    ! NAM types, TAble 2, Gerber
+!     C7 =  (/ 1.17, 1.28, 1.83, 1.97 /) &
+!    ,C8 =  (/ 1.87, 2.41, 5.13, 5.83 /)
+!    ! BUG C7 =  (/ 1.17, 1.28, 1.97, 1.83 /) &
+!    ! BUG ,C8 =  (/ 1.87, 2.41, 5.83, 5.13 /)
+!  real, parameter :: THIRD = 1.0/3.0
+!  real :: f
+!  integer :: ind  
 
-   ind = 1 ! default = rural
-   if ( present(pmtype) ) ind = pmtype
+!  ind = 1 ! default = rural
+!  if ( present(pmtype) ) ind = pmtype
 
-!QUERY1. Gerber eqn [32] has rg(S)/rg(0.8)
-!QUERY2. Gerber Table 2- range of validity to 99 -- 99.99%
-!QUERY3. FanToon suugest gerber can't be used beyond 98%!
 
-   f = ( (C7(ind)-fRH)/(C8(ind)*(1-fRH)) )**THIRD
-   rwet = rdry * f
+!  f = ( (C7(ind)-fRH)/(C8(ind)*(1-fRH)) )**THIRD
+!  rwet = rdry * f
 !   print *, "gerber simplified ", f, rdry, rwet
-  end function wetradS 
+! end function wetradS 
 
   !---------------------------------------------------------------------
+  ! Gerber had 2 sea-salts, NAM2 with rgd=2.46e-7, NAM3 with rgd 1.79e-6
+  ! We use NAM3 for RH limit here.
+  !QUERY. Gerber eqn [32] has rg(S)/rg(0.8)
+  !QUERY. FanToon suugest gerber can't be used beyond 98%!
 
-  elemental function WetRad(rdry,fRH,pmtype) result (rwet)
+  elemental function GerberWetRad(rdry,fRH,pmtype) result (rwet)
    real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
    real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
    integer, intent(in), optional :: pmtype  !< Type of aerosol
    real             :: rwet                 !< m
 
    ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
-   real, parameter, dimension(4,4) :: K = reshape(  &
-      (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
-        , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
-        , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
-        , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
-        ,(/4,4/) )
+   ! PLus RH limits from Gerber
+   !      C1     C2    C3        C4     RHlim
+   real, parameter, dimension(5,2) :: K = reshape(  &
+      [   0.2789,3.115,5.415e-11,-1.399,0.99     &  ! rural, default
+        , 0.7674,3.079,2.573e-11,-1.424,0.9999   &  ! sea-salt NAM 2,3, rh from 3
+  !      , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
+  !      , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
+      ],(/5,2/) )
    real, parameter :: THIRD = 1.0/3.0, cm2m = 1.0e-2
    real :: rd, mrh
    integer :: ind
@@ -156,110 +159,67 @@ module AeroFunctions_mod
    if ( present(pmtype) ) ind = pmtype
 
    mrh = max(0.01,fRH)
+   mrh = min(mrh,K(5,ind))
    rd = rdry * 1.0e2  ! m -> cm
    rwet = cm2m * ( K(1,ind)*rd**K(2,ind) / &
      (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
-  end function WetRad 
+  end function GerberWetRad 
   !---------------------------------------------------------------------
 
-  elemental function umWetRad(rdry,fRH,pmtype) result (rwet)
-   real, intent(in) :: rdry                 !< um !NOTE UNITS DO MATTER!
-   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
-   integer, intent(in), optional :: pmtype  !< Type of aerosol
-   real             :: rwet                 !< um
+! elemental function WetRad(rdry,fRH,pmtype) result (rwet)
+!  real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
+!  real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
+!  integer, intent(in), optional :: pmtype  !< Type of aerosol
+!  real             :: rwet                 !< m
 
-   ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
-   real, parameter, dimension(4,4) :: K = reshape(  &
-      (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
-        , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
-        , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
-        , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
-        ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0
-   integer :: ind  
+!  ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
+!  real, parameter, dimension(4,4) :: K = reshape(  &
+!     (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
+!       , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
+!       , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
+!       , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
+!       ,(/4,4/) )
+!  real, parameter :: THIRD = 1.0/3.0, cm2m = 1.0e-2
+!  real :: rd, mrh
+!  integer :: ind
 
-   ind = 1 ! default = rural
-   if ( present(pmtype) ) ind = pmtype
+!  ind = 1 ! default = rural
+!  if ( present(pmtype) ) ind = pmtype
 
-   rwet = ( K(1,ind)*rdry**K(2,ind) / &
-     (K(3,ind) *rdry**K(4,ind) - log10(fRH))+rdry**3) ** THIRD
+!  mrh = max(0.01,fRH)
+!  rd = rdry * 1.0e2  ! m -> cm
+!  rwet = cm2m * ( K(1,ind)*rd**K(2,ind) / &
+!    (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
+! end function WetRad 
+! !---------------------------------------------------------------------
 
-   ! to stop huge wet particles...
-   rwet = min( rwet, 10*rdry)
-  end function umWetRad 
+! elemental function cmWetRad(rdry,fRH,pmtype) result (rwet)
+!  real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
+!  real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
+!  integer, intent(in), optional :: pmtype  !< Type of aerosol
+!  real             :: rwet                 !< m
+
+!  ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
+!  real, parameter, dimension(4,4) :: K = reshape(  &
+!     (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
+!       , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
+!       , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
+!       , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
+!       ,(/4,4/) )
+!  real, parameter :: THIRD = 1.0/3.0, um2cm = 1.0e-4, cm2um = 1.0e4
+!  real :: rd, mrh
+!  integer :: ind  
+
+!  ind = 1 ! default = rural
+!  if ( present(pmtype) ) ind = pmtype
+
+!  mrh = max(0.01,fRH)
+!  rd = rdry * um2cm ! um -> cm
+!  rwet = cm2um * ( K(1,ind)*rd**K(2,ind) / &
+!    (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
+! end function cmWetRad 
  !---------------------------------------------------------------------
 
-  elemental function cmWetRad(rdry,fRH,pmtype) result (rwet)
-   real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
-   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
-   integer, intent(in), optional :: pmtype  !< Type of aerosol
-   real             :: rwet                 !< m
-
-   ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
-   real, parameter, dimension(4,4) :: K = reshape(  &
-      (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
-        , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
-        , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
-        , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
-        ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0, um2cm = 1.0e-4, cm2um = 1.0e4
-   real :: rd, mrh
-   integer :: ind  
-
-   ind = 1 ! default = rural
-   if ( present(pmtype) ) ind = pmtype
-
-   mrh = max(0.01,fRH)
-   rd = rdry * um2cm ! um -> cm
-   rwet = cm2um * ( K(1,ind)*rd**K(2,ind) / &
-     (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
-  end function cmWetRad 
-  !---------------------------------------------------------------------
-
-!OLD:
-! N2O5 -> nitrate calculation
-!===========================================================================
-! N2O5 -> nitrate calculation. Some constants for
-! calculation of volume fraction of sulphate aerosol, and rate of uptake
-! 
-!
-! The first order reaction coefficient K (corrected for gas phase diffusion, 
-! Schwartz, 1986) is given by
-!
-! K= A* alpha* v/4
-!    alpha=sticking coeff. for N2O5 =0.02
-!    v=mean molecular speed for N2O5
-!    A=aerosol surfac
-!
-! The surface area of the aerosols can be calculated as
-! 
-! A = V * surface/volume of aerosols
-!     V=volume fraction of sulphate (cm3 aerosol/cm3 air)
-!     (similar for nitrate and ammonium):
-!
-! The surface/volume ratio is calculated using Whitby particle distribution
-! with number mean radius r=0.5*DpgN  and standars deviation (Sigma, eg 2). 
-!OLD Then surface/volume=3/r *  exp( -5/2 *(lnSigma)^2)=26.54 
-!OLD 3* exp( -5/2 *(lnSigma)^2)=0.90236
-!OLD (monodisperse aerosols; 4*pi*r^2/(4/3 pi*r^3)= 3/r =88.2)
-!
-! According to Riemer et al, 2003, we weight the reaction probability
-! according to the composition of the aerosol
-!
-! alpha(N2O5)=f*alpha1 +(1-f)alpha2
-!   alpha1=0.02
-!   alpha2=0.002
-!   f= Mso4/(Mso4+Mno3), M=aerosol mass concentration
- 
-! N2O5 -> aerosol based upon  based on Riemer 2003 and
-! (May 2011) updated based upon results shown in Riemer et al., 2009.
-! We do not attempt to model OC, but simply reduce the rate by
-! a factor of two to loosely account for this effect. 
-! J08 - changed from use of more accurate xnew to xn_2d, since
-! surface area won't change so much, and anyway the uncertainties
-! are large. (and xn_2d leads to fewer dependencies)
-
-  !---------------------------------------------------------------------
   !> FUNCTION SurfArea_Mono
   !! Mainly as sanity check for comparisons - simple spheres of diameter Dp
 
@@ -634,14 +594,18 @@ module AeroFunctions_mod
    rdry=0.5*DpgN
    fmt='(a,es12.3,f8.3)'
    print *, "Gerber's full scheme: rwet(rdry for RpgNd ", rdry
-   print fmt, " 98%rh  ->Rw(nm)", rdry, wetrad(rdry, fRH=0.98, pmtype=1)/rdry
-   print fmt, " 99.9%rh->Rw(nm)", rdry, wetrad(rdry, fRH=0.999, pmtype=1)/rdry
-   print fmt, " 100.%rh->Rw(nm)", rdry, wetrad(rdry, fRH=1.0, pmtype=1)/rdry
-   print fmt, " 99.9%rh->Rw(nm),SS", rdry, wetrad(rdry, fRH=0.999, pmtype=2)/rdry
-   print fmt, " 100.%rh->Rw(nm),SS", rdry, wetrad(0.11e-5, fRH=1.0, pmtype=2)/rdry
+   print fmt, " 50%rh  ->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.50, pmtype=1)/rdry
+   print fmt, " 98%rh  ->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.98, pmtype=1)/rdry
+   print fmt, " 99.9%rh->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.999, pmtype=1)/rdry
+   print fmt, " 100.%rh->Rw(nm)", rdry, GerberWetRad(rdry, fRH=1.0, pmtype=1)/rdry
+   print fmt, " 50.0%rh->Rw(nm),SS", rdry, GerberWetRad(rdry, fRH=0.50, pmtype=2)/rdry
+   print fmt, " 99.9%rh->Rw(nm),SS", rdry, GerberWetRad(rdry, fRH=0.999, pmtype=2)/rdry
+   print fmt, " 100.%rh->Rw(nm),SS", rdry, GerberWetRad(0.11e-5, fRH=1.0, pmtype=2)/rdry
+!   print *, "Test cmWetRad"
+!   print fmt, " 99.9%rh->Rw(nm),SS", rdry, cmWetrad(rdry*1.0e2, fRH=0.999, pmtype=2)/rdry
    return ! TEST
 
-   !print *, "Gerber simp", wetradS(rdry=0.5*DpgN, fRH=0.98, pmtype=1) ! m
+   !print *, "Gerber simp", GerberWetRadS(rdry=0.5*DpgN, fRH=0.98, pmtype=1) ! m
 
  ! Start with methods based on emepctm-like xn calcs
  ! 1 ppb SO4 ~ 4 ug/m3
@@ -652,29 +616,29 @@ module AeroFunctions_mod
    print *, "Surf Mono 1 ppb SO4 (from cm2) ", cm2cm3toum2cm3*Smono 
    print *, "Surf Poly 1 p_Polypb SO4 (from m3) ",  m2m3toum2cm3*Sdry
 
-   !print *, "RH98:",   wetrad( rdry=1.0e-6, fRH=98.0, pmtype=2)/rdry  !ssalt
+   !print *, "RH98:",   GerberWetRad( rdry=1.0e-6, fRH=98.0, pmtype=2)/rdry  !ssalt
    rdry = 1.0e-6 ! UNITS=m !! cf Fan & Toon examples QUERY!
    print *, "Gerber's full scheme: RpgNd, rdry=1um, -> rwet/rdry"   
-   print *, "SS RH0.80:", wetrad( rdry, fRH=0.80, pmtype=2)/rdry !ssalt
-   print *, "SS RH0.98:", wetrad( rdry, fRH=0.98, pmtype=2)/rdry !ssalt
-   print *, "R  RH0.98:", wetrad( rdry, fRH=0.98, pmtype=1)/rdry !rural
-   print *, "Rx2RH0.98:", wetrad( 2*rdry, fRH=0.98, pmtype=1)/(2*rdry) !rural
-   print *, "R  RH0.999:", wetrad( rdry, fRH=0.999, pmtype=1)/rdry !rural
-   print *, "Rx2RH0.999:", wetrad( 2*rdry, fRH=0.999, pmtype=1)/(2*rdry) !rural
+   print *, "SS RH0.80:", GerberWetRad( rdry, fRH=0.80, pmtype=2)/rdry !ssalt
+   print *, "SS RH0.98:", GerberWetRad( rdry, fRH=0.98, pmtype=2)/rdry !ssalt
+   print *, "R  RH0.98:", GerberWetRad( rdry, fRH=0.98, pmtype=1)/rdry !rural
+   print *, "Rx2RH0.98:", GerberWetRad( 2*rdry, fRH=0.98, pmtype=1)/(2*rdry) !rural
+   print *, "R  RH0.999:", GerberWetRad( rdry, fRH=0.999, pmtype=1)/rdry !rural
+   print *, "Rx2RH0.999:", GerberWetRad( 2*rdry, fRH=0.999, pmtype=1)/(2*rdry) !rural
    rdry = 0.5 * DpgN  ! back to EMEP aero
    print *, "Try EMEP RpgN, um:", rdry*1.0e6
-   print *, "R  RH0.999:", wetrad( rdry, fRH=0.999, pmtype=1)/rdry !rural
-   print *, "Rx2RH0.999:", wetrad( 2*rdry, fRH=0.999, pmtype=1)/(2*rdry) !rural
+   print *, "R  RH0.999:", GerberWetRad( rdry, fRH=0.999, pmtype=1)/rdry !rural
+   print *, "Rx2RH0.999:", GerberWetRad( 2*rdry, fRH=0.999, pmtype=1)/(2*rdry) !rural
    print *, "=> Conclusion: rd/rw not very sensitive to rd"
 
    rdry = 0.5 * DpgN  ! back to EMEP aero
-   rwet = wetrad( rdry, fRH=0.98, pmtype=1)  !seasalt
+   rwet = GerberWetRad( rdry, fRH=0.98, pmtype=1)  !seasalt
    print "(a,3f12.5)" , "Rd,w(um),w/d, EMEP RH0.98:", rdry*nm, rwet*nm, rwet/rdry
-   rwet = wetrad( rdry, fRH=0.999, pmtype=1)  !seasalt
+   rwet = GerberWetRad( rdry, fRH=0.999, pmtype=1)  !seasalt
    print "(a,3f12.5)" , "Rd,w(um),w/d, EMEP RH0.999:", rdry*nm, rwet*nm, rwet/rdry
-   rwet = wetrad( rdry, fRH=0.9999, pmtype=1)  !seasalt
+   rwet = GerberWetRad( rdry, fRH=0.9999, pmtype=1)  !seasalt
    print "(a,3f12.5)" , "Rd,w(um),w/d, EMEP RH0.9999:", rdry*nm, rwet*nm, rwet/rdry
-   rwet = wetrad( rdry, fRH=1.0, pmtype=1)  !seasalt
+   rwet = GerberWetRad( rdry, fRH=1.0, pmtype=1)  !seasalt
    print "(a,3f12.5)" , "Rd,w(um),w/d, EMEP RH1.0:", rdry*nm, rwet*nm, rwet/rdry
 
    rdry = 0.5 * DpgN  ! back to EMEP aero
@@ -683,7 +647,7 @@ module AeroFunctions_mod
    print "(a,4f7.2)", " -------------- " !, 1.0e6*rdry, 1.0e6*rwet, Sdry*m2m3toum2cm3, Swet*m2m3toum2cm3
    do iRH = 80, 99, 2
 
-     rwet   = wetrad( rdry, fRH=0.01*iRH, pmtype=ind)      ! m
+     rwet   = GerberWetRad( rdry, fRH=0.01*iRH, pmtype=ind)      ! m
 !print *, "RH rwet/rdry", iRH, rdry, rwet/rdry, 2*rwet/DpgN
      Swet   = SurfArea_Poly(2.55e10,Dp=DpgN,Dpw=2*rwet)  ! xn-based approach
 !print *, "Swet= ", Swet
@@ -706,7 +670,7 @@ module AeroFunctions_mod
    ugPM = (/(1.0*i*i, i=1,size(ugPM)) /)
    do iRH = 100, 0, -10
      frh = min(99.9, 0.01*iRH)
-     rwet = wetrad( rdry, 0.01*iRH )
+     rwet = GerberWetRad( rdry, 0.01*iRH )
      S_m2m3  = pmSurfArea(ugPM,Dp=2*rdry,Dpw=2*rwet)
      Kn2o5 = UptakeRate(cn2o5,gam=0.01,S=S_m2m3,rad=rwet)    ! Using wet radius, wet S 
 ! print *, 'High RH', frh, rwet/rdry, S_m2m3(:)*um2
@@ -720,7 +684,7 @@ module AeroFunctions_mod
 
    rdry = 0.05853 ! um
    frh  = 0.8943
-   rwet = umWetRad( rdry, frh, pmtype=1 )
+   rwet = GerberWetRad( rdry*1.0e-6, frh, pmtype=1 )
    Spm    = pmSurfArea(dry_ug=0.3820,Dp=2.0e-6*rdry,Dpw=2.0e-6*rwet)    ! mass based
    print *, "EMEP COMP ", 2.0e-6*rdry, 2.0e-6*rwet, rwet/rdry, Spm*1.0e6
 
