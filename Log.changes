@@ -1,5 +1,5 @@
 =============================================================================
-IMPORTANT NOTE:
+IMPORTANT NOTES:
 
 After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
@@ -17,6 +17,16 @@ EmChem19p is just EmChem19a + Alvaro's pollen species.
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
 the appropriate place, DataDir/ZCM_DIRS/ZCM_EmChem19.
 
+Soil NOx - NOW COMPLICATED since some inventories include already
+
+  USES%SOILNOX_METHOD - needs user decision!
+    CAMS_NoFert  - for EMEP, ECLIPSEv6
+    NOTSET       - ok for CAMS_REG_ANT, ECLIPSEv5
+
+  (will likely change NOTSET to "wFert" for these latter emissions, to force
+   the user to make a choice.)
+
+
 =============================================================================
 !----------------------------------------------------------
 CLEAN-UP: all code should be checked to remove old comments before
@@ -25,11 +35,39 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st May 2021, Dave
+NEW TAG: rv4.41
+
+1. AeroFunctions_mod, SeaSalt_mod, Setup_1d_mod:
+
+   Merged WetRad calcs into GerberWetRad, and added RH limits for different PM types.
+   Simplified tab to 2 pm types.
+   (changes results a little, but mainly pmH2O)
+
+2. Changed default config options
+
+ Config_module:
+  Defaults changed:
+    TIMEZONEMAP      = .true.
+    SEASALT_fFrac = 0.5
+
+  Removed: SURF_AREA_RHLIMITS
+
+ config_emep.nml
+  Removed: SURF_AREA_RHLIMITS completely
+
+3. fracPM25 now changed to use LogNormFrac below. Reduced from 27% to 13%, so
+   small reduction in PM25, but only really affects NO3_c
+
+4. Log.changes - added Soil NOx comments to IMPORTANT NOTES above
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th May 2021, Dave
 
 Biogenic_mod:  small additions to help printouts
 Config_module: small additions to help testing
 Derived_mod: added fPMc_specs NO3 test line
+SeaSalt_mod: small tidy p and added Andreas ref (from Svetlana)
 SubMet_mod: added use of PBL%NEUTRAL_USTAR_START for SEI testing
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th May 2021, Peter/Dave
@@ -78,6 +116,7 @@ SeaSalt, SoilNOx, Emissions changes
   USES%SOILNOX_METHOD - needs user decision!
     CAMS_NoFert  - for EMEP, ECLIPSEv6
     NOTSET       - ok for CAMS_REG_ANT, ECLIPSEv5
+
   (will likely change NOTSET to "wFert" for these latter emissions, to force
    the user to make a choice.)
 
