@@ -17,16 +17,23 @@
 
 module DA_3DVar_mod
 
-  use GO, only : gol, goPr, goErr
+  use GO              , only : gol, goPr, goErr
 
-  use TimeDate_mod   , only : date
+  use TimeDate_mod    , only : date
 #ifdef with_assim
-  use EMEP_BCovarSqrt, only : T_BCovarSqrt
-  use GO             , only : T_Domains
+  use EMEP_BCovarSqrt , only : T_BCovarSqrt
+  use GO              , only : T_Domains
 #endif  ! with_assim
 
 #ifdef with_ajs
-  use GO, only : GO_Print_Set
+  use GO              , only : GO_Print_Set
+#endif
+
+#ifdef with_cso
+  use CSO             , only : T_CSO
+  use CSO             , only : T_CSO_RcFile
+  use CSO             , only : T_CSO_Listing
+  use DA_Obs_ml       , only : T_EMEP_GridMapping
 #endif
 
   implicit none
@@ -50,7 +57,14 @@ module DA_3DVar_mod
   ! timing parameters:
   integer, parameter  ::  NTIMING_3DVAR = 0
   integer, parameter  ::  T_3DVAR       = 0
-  
+
+  ! atomic weights:  
+  real, parameter        ::  xm_H     =    1.00790e-3     ! kg/mol
+  real, parameter        ::  xm_N     =   14.00670e-3     ! kg/mol
+  real, parameter        ::  xm_C     =   12.01115e-3     ! kg/mol
+  real, parameter        ::  xm_S     =   32.06400e-3     ! kg/mol
+  real, parameter        ::  xm_O     =   15.99940e-3     ! kg/mol
+
 
   ! --- local ----------------------------------------
 
@@ -90,7 +104,7 @@ module DA_3DVar_mod
 
   ! info on assim with single covar:
   type T_BInfo
-    ! short description
+    ! source file
     character(len=FILE_NAME_LEN)      ::  name
     ! level selection:
     integer                           ::  nlev_all
@@ -128,6 +142,23 @@ module DA_3DVar_mod
   integer ::  nmemtest = 0
 #endif  ! with_assim
 
+#ifdef with_cso
+  ! maximum number of sets:
+  integer, parameter        ::  maxcso = 4
+  ! main object for CSO data:  
+  type(T_CSO)               ::  csod
+  ! settings:
+  type(T_CSO_RcFile)        ::  cso_rcf
+  character(len=32)         ::  cso_keys(maxcso)
+  integer                   ::  ncso
+  ! observed tracer:
+  character(len=32)         ::  cso_tracer(maxcso)
+  ! listing of satellite fiels:
+  type(T_CSO_Listing)       ::  cso_listing(maxcso)
+  ! tool for mapping regular grid to footprint:
+  type(T_EMEP_GridMapping)  ::  emep_grid_mapping
+#endif
+
 #ifdef with_ajs
   ! timers:
   integer               ::  itim_read_obs, itim_innov, itim_swap
@@ -154,6 +185,7 @@ contains
 
     use DA_Util_ml       , only : DA_Util_Init
     use DA_Obs_ml        , only : DA_Obs_Init
+
 #ifdef with_assim
     use GO               , only : goGetFU
     use Config_module    , only : masterProc
@@ -180,7 +212,7 @@ contains
     ! --- local ----------------------------------
 
 #ifdef with_assim
-    character(len=1024)     ::  fname
+    character(len=1024)       ::  fname
 #endif  ! with_assim
 
     ! --- begin ----------------------------------
@@ -243,7 +275,7 @@ contains
     ! read using namelist:
     read (unit=IO_NML,nml=DA_CONFIG,iostat=status)
     if ( status /= 0 ) then
-      write (gol,'(a,": reading namelist DA_CONFIG from: config_emep.nml")') rname; call goErr
+      write (gol,'(a,": reading namelist `DA_CONFIG` from: config_emep.nml")') rname; call goErr
       TRACEBACK; status=1; return
     end if
 
@@ -273,7 +305,7 @@ contains
     ! init observations:
     call DA_Obs_Init( status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     !! testing ...
     !write (gol,'("BREAK - testing obs oper only")'); call goErr
     !TRACEBACK; status=1; return
@@ -308,11 +340,32 @@ contains
 
     ! --- local ----------------------------
 
+#ifdef with_cso
+    integer     ::  icso
+#endif
 #ifdef with_assim
     integer     ::  iB
-#endif  ! with_assim
+#endif
 
     ! --- begin -----------------------------
+
+#ifdef with_cso
+    ! done with grid mapping:
+    call emep_grid_mapping%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+    ! loop over datasets:
+    do icso = 1, ncso
+      ! done with listing:
+      call cso_listing(icso)%Done( status )
+      IF_NOT_OK_RETURN(status=1)
+    end do
+    ! done with CSO settings:
+    call cso_rcf%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+    ! done with CSO:
+    call csod%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+#endif ! cso
 
     ! done with observations:
     call DA_Obs_Done( status )
@@ -466,6 +519,30 @@ contains
   ! Initialise 3dvar variables.
   ! @author AMVB
   !-----------------------------------------------------------------------
+    
+#ifdef with_cso
+#ifdef with_ajs
+    use GO               , only : GO_Print_Get
+#endif
+!        ! testing ...
+!        use cso_comm, only : csoc
+!        use MPI, only : MPI_INTEGER
+!        !use MPI, only : MPI_Gather
+!        use MPI_F08, only : MPI_F08_INTEGER => MPI_INTEGER
+!        use MPI_F08, only : MPI_F08_GatherV => MPI_GatherV
+
+    use CSO              , only : CSO_SplitString
+    use CSO              , only : T_NcFile
+    use CSO              , only : LonLatRectangleArea
+    use DA_Obs_ml        , only : cso_rcfile
+    use MPI_Groups_mod   , only : MPI_COMM_CALC
+    use Par_mod          , only : limax, ljmax         ! local  cell range:  (1:limax,1:ljmax)
+    use Par_mod          , only : gi0, gi1, gj0, gj1   ! global cell range:  (gi0:gi1,gj0:gj1)
+    use GridValues_mod   , only : glon       ! (1:limax,0:ljmax)   longitude of gridcell centers
+    use GridValues_mod   , only : glat       ! (1:limax,0:ljmax)   latitude  of gridcell centers
+    use GridValues_mod   , only : gl_stagg   ! (0:limax,0:ljmax)   longitude of gridcell corners
+    use GridValues_mod   , only : gb_stagg   ! (0:limax,0:ljmax)   latitude  of gridcell corners
+#endif
 
     use Config_module        , only : KMAX_MID
     use DA_ml                , only : nlev
@@ -497,14 +574,30 @@ contains
     character(len=*), parameter  ::  rname = mname//'/Init_3DVar'
 
     ! --- local ----------------------------------
+    
+#ifdef with_cso
+#ifdef with_ajs
+    integer                   ::  logfu
+#endif
+    character(len=1024)       ::  cso_line
+    integer                   ::  icso
+    type(T_NcFile)            ::  GridFile
+    integer                   ::  ivar_lon, ivar_lat, ivar_area
+    real, allocatable         ::  cell_lon(:)     ! (limax)
+    real, allocatable         ::  cell_lat(:)     ! (ljmax)
+    real, allocatable         ::  cell_area(:,:)  ! (limax,ljmax)
+    integer                   ::  i, j
+    character(len=1024)       ::  cso_listing_filename
+    integer                   ::  cso_mapping_levels
+#endif
 
 #ifdef with_assim
-    integer               :: nvar
-    integer               :: k
-    integer               :: ny_local, iy_offset
+    integer                   ::  nvar
+    integer                   ::  k
+    integer                   ::  ny_local, iy_offset
 
-    integer               ::  nx, ny
-    integer               ::  itracer
+    integer                   ::  nx, ny
+    integer                   ::  itracer
 
     integer                                     ::  iObsComp
     character(len=FILE_NAME_LEN), allocatable   ::  Bname(:)       ! (nChemObs)
@@ -514,10 +607,240 @@ contains
     integer                                     ::  iB
 #endif  ! with_assim
 
+!        ! testing ...
+!        integer, allocatable  ::  ival(:), ivals(:)
+!        integer, allocatable  ::  recvcounts(:)
+!        integer, allocatable  ::  rdispls(:)
+!        integer               ::  qp
+
     ! --- begin ------------------------------
 
     ! info ...
     write (gol,'(a,": initalize 3D var variables ...")') rname; call goPr
+
+#ifdef with_cso
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! CSO
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! info ...
+    write (gol,'(a,": initialize CSO ...")') rname; call goPr
+    ! init CSO module including MPI communication:
+    call csod%Init( status, icomm=MPI_COMM_CALC )
+    IF_NOT_OK_RETURN(status=1)
+
+#ifdef with_ajs
+    ! logfile unit:
+    call GO_Print_Get( status, unit=logfu )
+    IF_NOT_OK_RETURN(status=1)
+    ! redirect CSO messages to same unit:
+    call csod%SetLogging( status, unit=logfu, root_only=.false. )
+    IF_NOT_OK_RETURN(status=1)
+#endif
+
+    ! info ...
+    write (gol,'(a,": CSO settings file: ",a)') rname, trim(cso_rcfile); call goPr
+    ! read:
+    call cso_rcf%Init( cso_rcfile, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! list with rckey prefixes:
+    call cso_rcf%Get( 'cso.keys', cso_line, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! split:
+    call CSO_SplitString( cso_line, ncso, cso_keys, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! loop over keys:
+    do icso = 1, ncso
+    
+      ! observed tracer:
+      call cso_rcf%Get( trim(cso_keys(icso))//'.tracer', cso_tracer(icso), status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! listing file:
+      call cso_rcf%Get( trim(cso_keys(icso))//'.listing', cso_listing_filename, status )
+      IF_NOT_OK_RETURN(status=1)
+      ! info ...
+      write (gol,'(a,": read CSO listing file: ",a)') rname, trim(cso_listing_filename); call goPr
+      ! read listing file:
+      call cso_listing(icso)%Init( cso_listing_filename, status )
+      IF_NOT_OK_RETURN(status=1)
+      
+    end do ! cso sets
+
+    ! * grid properties
+
+    ! storage for grid cell centers:
+    allocate( cell_lon(limax), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( cell_lat(ljmax), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! storage for grid cell area:
+    allocate( cell_area(limax,ljmax), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! copy 1D coordinates from 2D arrays:
+    cell_lon = glon(:,1)
+    cell_lat = glat(1,:)
+    ! loop over cells:
+    do j = 1, ljmax
+      do i = 1, limax
+        ! use area computation from CSO to ensure that areas 
+        ! are as similar as possible:
+        cell_area(i,j) = LonLatRectangleArea( &
+             (/gl_stagg(i-1,j-1),gl_stagg(i,j-1),gl_stagg(i,j),gl_stagg(i-1,j)/), &
+             (/gb_stagg(i-1,j-1),gb_stagg(i,j-1),gb_stagg(i,j),gb_stagg(i-1,j)/)    )
+      end do ! i
+    end do ! j
+
+    ! create file with grid description, used for postprocessing ...
+    call GridFile%Init( 'CSO_grid.nc', status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! global attributes:
+    call GridFile%Set_Attr( 0, 'conventions', 'CF-1.7', status )
+    IF_NOT_OK_RETURN(status=1)
+    call GridFile%Set_Attr( 0, 'title', 'CSO Tutorial grid properties', status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! add dimensions, provide local size and offset in global grid:
+    call GridFile%Def_Dim( 'longitude', limax, status, offset=gi0-1 )
+    IF_NOT_OK_RETURN(status=1)
+    call GridFile%Def_Dim( 'latitude', ljmax, status, offset=gj0-1 )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! variable, get internal index back:
+    call GridFile%Def_Var( 'longitude', (/'longitude'/), status, ivar=ivar_lon )
+    IF_NOT_OK_RETURN(status=1)
+    !~ add attributes:
+    call GridFile%Set_Attr( ivar_lon, 'standard_name', 'longitude', status )
+    IF_NOT_OK_RETURN(status=1)
+    call GridFile%Set_Attr( ivar_lon, 'units', 'degrees_east', status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! variable, get internal index back:
+    call GridFile%Def_Var( 'latitude', (/'latitude'/), status, ivar=ivar_lat )
+    IF_NOT_OK_RETURN(status=1)
+    !~ add attributes:
+    call GridFile%Set_Attr( ivar_lat, 'standard_name', 'latitude', status )
+    IF_NOT_OK_RETURN(status=1)
+    call GridFile%Set_Attr( ivar_lat, 'units', 'degrees_north', status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! variable, get internal index back:
+    call GridFile%Def_Var( 'cell_area', (/'longitude','latitude '/), status, ivar=ivar_area )
+    IF_NOT_OK_RETURN(status=1)
+    !~ add attributes:
+    call GridFile%Set_Attr( ivar_area, 'standard_name', 'area', status )
+    IF_NOT_OK_RETURN(status=1)
+    call GridFile%Set_Attr( ivar_area, 'units', 'm2', status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! define:
+    call GridFile%EndDef( status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! write 1D array, gathered on root from first processor row:
+    call GridFile%Put_Var( ivar_lon, cell_lon, status, empty=(gj0 > 1) )
+    IF_NOT_OK_RETURN(status=1)
+    ! write 1D array, gathered on root from first processor column:
+    call GridFile%Put_Var( ivar_lat, cell_lat, status, empty=(gi0 > 1) )
+    IF_NOT_OK_RETURN(status=1)
+    ! write 2D array, gathered on root:
+    call GridFile%Put_Var2D( ivar_area, cell_area, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! close:
+    call GridFile%Done( status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! done with grid description:
+    deallocate( cell_lon, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( cell_lat, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( cell_area, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ..................................
+    
+!    write (gol,*) 'aaa1 testing gather'; call goPr
+!    allocate( ival(10), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    allocate( ivals(size(ival)*csoc%npes), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    write (gol,*) 'aaa1 ival ', size(ival); call goPr
+!    write (gol,*) 'aaa1 ivals', size(ivals); call goPr
+    
+!    write (gol,*) '--bbb1 gather'; call goPr
+!    call MPI_Gather( ival, size(ival), MPI_INTEGER, &
+!                     ivals, size(ival), MPI_INTEGER, &
+!                     0, MPI_COMM_CALC, status )
+!    write (gol,*) '--bbb1 status', status; call goPr
+    
+!    write (gol,*) '--bbb2 recvcounts'; call goPr
+!    allocate( recvcounts(csoc%npes), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    allocate( rdispls(csoc%npes), stat=status )
+!    IF_NOT_OK_RETURN(status=1)
+!    recvcounts = size(ival)
+!    rdispls(1) = 0
+!    do qp = 2, csoc%npes
+!      rdispls(qp) = rdispls(qp-1) + recvcounts(qp-1)
+!    end do
+    
+!    write (gol,*) '--bbb2 gatherv'; call goPr
+!    call MPI_GatherV( ival, size(ival), MPI_INTEGER, &
+!                     ivals, recvcounts, rdispls, MPI_INTEGER, &
+!                     0, MPI_COMM_CALC, status )
+!    write (gol,*) '--bbb2 status', status; call goPr
+    
+!    write (gol,*) '--bbb3 gatherv'; call goPr
+!    call MPI_GatherV( ival, size(ival), MPI_INTEGER, &
+!                     ivals, recvcounts, rdispls, MPI_INTEGER, &
+!                     0, csoc%comm, status )
+!    write (gol,*) '--bbb3 status', status; call goPr
+!    
+!    write (gol,*) '--bbb4 gatherv'; call goPr
+!    call MPI_F08_GatherV( ival, size(ival), MPI_F08_INTEGER, &
+!                           ivals, recvcounts, rdispls, MPI_F08_INTEGER, &
+!                           0, csoc%comm, ierror=status )
+!    write (gol,*) '--bbb4 status', status; call goPr
+    
+    
+!!    write (gol,*) '--bbb9 clear'; call goPr
+!!    deallocate( recvcounts, stat=status )
+!!    IF_NOT_OK_RETURN(status=1)
+!!    deallocate( rdispls, stat=status )
+!!    IF_NOT_OK_RETURN(status=1)
+!!    write (gol,*) '--bbb9 end'; call goPr
+
+!    ! gather on root:
+!    write (gol,*) 'aaa1 gather'; call goPr
+!    call csoc%GatherV( ival, ivals, status )!, nloc=size(ival) )
+!    IF_NOT_OK_RETURN(status=1)
+!    write (gol,*) 'aaa1 end'; call goPr
+!    !write (gol,*) 'aaa1 break'; call goPr
+!    !TRACEBACK; status=1; return
+
+    ! *
+
+    ! mapping level:
+    call cso_rcf%Get( 'cso.mapping.levels', cso_mapping_levels, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! info ...
+    write (gol,'(a,": define CSO grid mapping:")') rname; call goPr
+    write (gol,'(a,":   global cell range : [",i3,",",i3,"] x [",i3,",",i3,"]")') rname, gi0, gi1, gj0, gj1; call goPr
+    write (gol,'(a,":   local domain shape: ",i4," x ",i4)') rname, limax, ljmax; call goPr
+    ! init grid mapping using:
+    ! - local grid shape
+    ! - recursion level
+    call emep_grid_mapping%Init( limax, ljmax, cso_mapping_levels, status )
+    IF_NOT_OK_RETURN(status=1)
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! end cso
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#endif
 
     ! copy number of levels:
     nlev = KMAX_MID
@@ -581,14 +904,14 @@ contains
         ! use B with model levels?
         select case ( trim(ObsCompInfo(iObsComp)%deriv) )
           !~ 2D operators:
-          case ( '2D-ML-SFC', '2D-OBS-SFC', '3D-ML-K1', '3D-ML-K2' )
+          case ( '2D-ML-SFC', '2D-OBS-SFC', '3D-ML-K1', '3D-ML-K2', 'cso' )
             Bml(nBmat) = .false.
           !~ 3D operators:
           case ( '3D-ML', '3D-ML-SFC', '3D-ML-TC', '3D-ML-K' )
             Bml(nBmat) = .true.
           !~
           case default
-            write (gol,'("unsupported deriv: ",a)') trim(ObsCompInfo(iObsComp)%deriv); call goErr
+            write (gol,'("unsupported deriv `",a,"`")') trim(ObsCompInfo(iObsComp)%deriv); call goErr
             TRACEBACK; status=1; return
         end select
         ! assign index:
@@ -685,9 +1008,14 @@ contains
       ! init covariance structure,
       ! setup mapping to the subset of tracers
       ! and subset of observed levels:
+      !call Bmats(iB)%BCovarSqrt%Init( trim(Bmats(iB)%filename), status, &
+      !                                 tracers=Bmats(iB)%tracers, &
+      !                                 obs_levels=Bmats(iB)%levels, &
+      !                                 comm=MPI_COMM_CALC )
+      !IF_NOT_OK_RETURN(status=1)
+      ! only 2D covars ...
       call Bmats(iB)%BCovarSqrt%Init( trim(Bmats(iB)%filename), status, &
                                        tracers=Bmats(iB)%tracers, &
-                                       obs_levels=Bmats(iB)%levels, &
                                        comm=MPI_COMM_CALC )
       IF_NOT_OK_RETURN(status=1)
 
@@ -727,11 +1055,18 @@ contains
 
     ! *
 
+    ! init grid info:
+    iy_offset = 0
+    ny_local  = 0
+
     ! loop over B matrices:
     do iB = 1, nBmat
 
-      ! check ...
-      call Bmats(iB)%BCovarSqrt%Check( status, nlon=nx, nlat=ny, nlev=nlev )
+      !! check ...
+      !call Bmats(iB)%BCovarSqrt%Check( status, nlon=nx, nlat=ny, nlev=nlev )
+      !IF_NOT_OK_RETURN(status=1)
+      ! 2D covar:
+      call Bmats(iB)%BCovarSqrt%Check( status, nlon=nx, nlat=ny, nlev=1 )
       IF_NOT_OK_RETURN(status=1)
 
       ! extract info on grid and decomposition used by covariance:
@@ -854,6 +1189,30 @@ contains
     use GO                  , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
 #endif
 
+#ifdef with_cso
+    use CSO                   , only : T_CSO_DateTime, T_CSO_TimeDelta
+    use CSO                   , only : CSO_DateTime, CSO_TimeDelta
+    use CSO                   , only : Pretty
+    use CSO                   , only : operator(+), operator(-), operator(*), operator(>=)
+    use CSO                   , only : T_CSO_Sat_Data
+    use CSO                   , only : T_CSO_Sat_State
+    use CSO                   , only : T_ProfileMapping
+    use Par_mod               , only : gi0, gj0
+    use GridValues_mod        , only : coord_in_domain
+    use GridValues_mod        , only : A_bnd, B_bnd
+    use MetFields_mod         , only : ps
+    use MetFields_mod         , only : roa
+    use ChemSpecs_mod         , only : species_adv
+    use SmallUtils_mod        , only : find_index
+    use Units_mod             , only : Units_Scale
+    use PhysicalConstants_mod , only : GRAV
+    
+    ! testing ..
+    use CSO_Comm, only : csoc
+    use GridValues_mod   , only : gl_stagg   ! (0:limax,0:ljmax)   longitude of gridcell corners
+    use GridValues_mod   , only : gb_stagg   ! (0:limax,0:ljmax)   latitude  of gridcell corners          write (gol,*) 'corners: ', ncrnr; call goPr
+#endif
+
     !-----------------------------------------------------------------------
     ! Formal parameters
     !-----------------------------------------------------------------------
@@ -880,7 +1239,81 @@ contains
     real, allocatable               ::  obsstddev1(:)   ! (nobs)
     character(len=32), allocatable  ::  stncodes(:)     ! (nobs)
     logical, allocatable            ::  obsanalyse(:)   ! (nobs)
-    
+
+    integer                         ::  cso_npix
+#ifdef with_cso
+    type(T_CSO_DateTime)            ::  cso_t1, cso_t2
+    type(T_CSO_DateTime)            ::  cso_t
+    type(T_CSO_TimeDelta)           ::  cso_dt
+    integer                         ::  icso
+    character(len=1024)             ::  cso_orbit_filename(maxcso)
+    character(len=1024)             ::  cso_output_filename
+    type(T_CSO_Sat_Data)            ::  cso_sdata(maxcso)
+    type(T_CSO_Sat_State)           ::  cso_sstate(maxcso)
+    integer                         ::  nglb
+    real, pointer                   ::  glb_lon(:)       ! (nglb)
+    real, pointer                   ::  glb_lat(:)       ! (nglb)
+    real, pointer                   ::  glb_clons(:,:)   ! (nglb,4)
+    real, pointer                   ::  glb_clats(:,:)   ! (nglb,4)
+    logical, pointer                ::  glb_select(:)    ! (nglb)
+    integer                         ::  iglb
+    integer                         ::  ncrnr, icrnr
+#ifdef with_assim
+    type(T_CSO_Sat_Data)            ::  cso_sdata_f
+    type(T_CSO_Sat_State)           ::  cso_sstate_f
+#endif
+  
+    ! mapping arrays:
+    real, pointer                     ::  areas(:)
+    integer, pointer                  ::  ii(:), jj(:)
+    real, pointer                     ::  ww(:)
+    integer, pointer                  ::  iw0(:), nw(:)
+    ! mapping index:
+    integer                           ::  iw
+
+    ! user defined dimensions:
+    integer                           ::  nudim
+    integer                           ::  iudim
+    character(len=32)                 ::  udimname
+
+    ! user defined variables:
+    integer                           ::  nuvar
+    integer                           ::  iuvar
+    character(len=64), allocatable    ::  uvarnames(:)  ! (nuvar)
+    character(len=64), allocatable    ::  uvarunits(:)  ! (nuvar)
+
+    ! pixel counter and index:
+    integer                           ::  npix
+    integer                           ::  ipix 
+    ! pixel footprints:
+    real, pointer                     ::  lons(:), lats(:)         ! (npix)
+    real, pointer                     ::  clons(:,:), clats(:,:)   ! (ncorner,npix)
+    ! pixel arrays:
+    real, pointer                     ::  data0(:)          ! (npix)
+    real, pointer                     ::  data1(:,:)        ! (:,npix)
+
+!    integer                         ::  ipix
+!    integer                         ::  nlayer
+!    real, pointer                   ::  pix_lon, pix_lat
+!    real, pointer                   ::  pix_clons(:), pix_clats(:)
+!    real                            ::  pix_area
+!    integer, pointer                ::  ii(:), jj(:)
+!    real, pointer                   ::  ww(:)
+!    integer                         ::  nw
+!    integer                         ::  iw
+!    real, pointer                   ::  pix_hp(:)  ! (nlayer+1)
+!    character(len=32)               ::  p_units
+!    character(len=32)               ::  y_units
+
+    real                            ::  fscale
+!    real                            ::  xm
+!    character(len=32)               ::  mod_conc_units
+!    real, allocatable               ::  mod_conc(:)  ! (nlev+1)
+!    real, allocatable               ::  mod_hp(:)  ! (0:nlev+1)
+!    real, allocatable               ::  hx(:)  ! (nlayer)
+!    type(T_ProfileMapping)          ::  pmap
+#endif
+
     integer                         ::  maxobs
     integer                         ::  nobs
     integer                         ::  nobs_tot
@@ -897,14 +1330,15 @@ contains
     integer                         ::  iObsComp
     integer                         ::  itracer
     
+    integer                         ::  ispec
+    logical                         ::  needroa
+
 #ifdef with_assim
     integer                         ::  iout
     integer, pointer                ::  out_group(:)
     integer, target                 ::  out_group1(1)
-    integer                         ::  ispec
-    logical                         ::  needroa
 
-    integer                         ::  i,j,ilev,ilev0,k,kk,ii
+    integer                         ::  ilev
     
     integer                         ::  lnx, lny
     logical                         ::  has_local_domain
@@ -928,6 +1362,7 @@ contains
     real, allocatable               ::  du_loc_B    (:,:,:,:)    ! (lnx  ,lny  ,nlev  ,ntracer)
     integer                         ::  iobs
     integer                         ::  itime
+    character(len=256)              ::  loglabel
 #endif  ! with_assim
 
     !-----------------------------------------------------------------------
@@ -1017,6 +1452,321 @@ contains
     ! info ...
     write (gol,'(a,": local number of observations read : ",i6)') rname, nobs; call goPr
 
+    ! init sum over all cso sets:
+    cso_npix = 0
+#ifdef with_cso
+    ! time range half-hour before/after current time:
+    cso_t  = CSO_DateTime( year=cdate%year, month=cdate%month, day=cdate%day, hour=cdate%hour )
+    cso_dt = CSO_TimeDelta( hour=1 )
+    cso_t1 = cso_t - 0.5 * cso_dt
+    cso_t2 = cso_t + 0.5 * cso_dt
+    ! info ...
+    write (gol,'(a,": CSO target time : ",a)') rname, trim(Pretty(cso_t)); call goPr
+    
+    ! loop ..
+    do icso = 1, ncso
+      ! info ...
+      write (gol,'(a,": CSO set `",a,"` ..")') rname, trim(cso_keys(icso)); call goPr
+
+      ! get name of CSO file for orbit with time average
+      ! in interval around current time:
+      call cso_listing(icso)%SearchFile( cso_t1, cso_t2, 'aver', cso_orbit_filename(icso), status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! orbit file found for this time?
+      if ( len_trim(cso_orbit_filename(icso)) > 0 ) then
+
+        ! info ..
+        write (gol,'(a,": CSO orbit file : ",a)') rname, trim(cso_orbit_filename(icso)); call goPr
+
+        ! ~ orbit data
+
+        ! inititalize orbit data,
+        ! read all footprints available in file:
+        call cso_sdata(icso)%Init( cso_rcF, cso_keys(icso), cso_orbit_filename(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! obtain from the orbit:
+        ! - number of footprints (global, all pixels in file)
+        ! - pointers to arrays with footprint corners
+        ! - pointer to to selection flags, should be used to select pixels overlapping with local domain
+        call cso_sdata(icso)%Get( status, nglb=nglb, &
+                                 glb_clons=glb_clons, glb_clats=glb_clats, &
+                                 glb_select=glb_select )
+        IF_NOT_OK_RETURN(status=1)
+        ! number of corners:
+        ncrnr = size(glb_clons,1)
+
+        ! select pixels that overlap with local domain;
+        ! loop over global pixels:
+        do iglb = 1, nglb
+          !!~ testing, select all:
+          !glb_select(1:nglb) = .true.
+          !!~ deceide if pixel center is part of local domain:
+          !glb_select(iglb) = coord_in_domain( 'local', glb_lon(iglb), glb_lat(iglb) )
+          !~ check if footprint overlaps (partly) with domain:
+          glb_select(iglb) = .false.
+          do icrnr = 1, ncrnr
+            glb_select(iglb) = glb_select(iglb) .or. &
+                coord_in_domain( 'local' , glb_clons(icrnr,iglb), glb_clats(icrnr,iglb) )
+          end do ! icrnr
+          ! ... and if it is entirely in global domain:
+          do icrnr = 1, ncrnr
+            glb_select(iglb) = glb_select(iglb) .and. &
+                coord_in_domain( 'global', glb_clons(icrnr,iglb), glb_clats(icrnr,iglb) )
+          end do ! icrnr
+        end do ! iglb
+
+        ! read orbit, locally store only pixels that are flagged in 'glb_select'
+        ! as having overplap with this domain:
+        call cso_sdata(icso)%Read( cso_rcF, cso_keys(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+      
+        ! obtain info on track:
+        !  - number of local pixels
+        call cso_sdata(icso)%Get( status, npix=npix )
+        IF_NOT_OK_RETURN(status=1)
+        ! info ..
+        write (gol,'(a,":   number of local pixels: ",i0)') rname, npix; call goPr
+      
+        ! initialize simulation state;
+        ! optional arguments:
+        !   description='long name'    : used for output attributes
+        call cso_sstate(icso)%Init( cso_sdata(icso), cso_rcF, cso_keys(icso), status, &
+                                      description='simulated retrievals' )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! number of user defined dimensions:
+        call cso_sstate(icso)%Get( status, nudim=nudim )
+        IF_NOT_OK_RETURN(status=1)
+        ! loop:
+        do iudim = 1, nudim
+          ! get dimension name to be defined:
+          call cso_sstate(icso)%GetDim( iudim, status, name=udimname )
+          IF_NOT_OK_RETURN(status=1)
+          ! switch:
+          select case ( trim(udimname) )
+            !~ model layers:
+            case ( 'model_layer' )
+              ! define number of model layers, one extra for strato:
+              call cso_sstate(icso)%SetDim( udimname, nlev+1, status )
+              IF_NOT_OK_RETURN(status=1)
+            !~ model layer interfaces:
+            case ( 'model_layeri' )
+              ! define:
+              call cso_sstate(icso)%SetDim( udimname, nlev+2, status )
+              IF_NOT_OK_RETURN(status=1)
+            !~ unknown ...
+            case default
+              write (*,'("unsupported dimension `",a,"`")') trim(udimname)
+              TRACEBACK; status=1; return
+          end select
+        end do ! idim
+
+        ! dimension defined, allocate storage:
+        call cso_sstate(icso)%EndDef( status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! any pixels?
+        if ( npix > 0 ) then
+
+          ! pointers to (*,pixel) arrays:
+          ! - footprint centers  (not used, for inspiration ..)
+          ! - footprint corners
+          ! - half level pressure profiles
+          call cso_sdata(icso)%Get( status, lons=lons, lats=lats, clons=clons, clats=clats )
+          IF_NOT_OK_RETURN(status=1)
+
+          ! info ...
+          write (gol,'(a,": compute mapping weights ...")') rname; call goPr
+          ! get pointers to mapping arrays for all pixels:
+          ! - areas(1:npix)            : pixel area [m2]
+          ! - iw0(1:npix), nw(1:npix)  : offset and number of elements in ii/jj/ww
+          ! - ii(:), jj(:), ww(:)      : cell and weight arrays for mapping to footprint,
+          call emep_grid_mapping%GetWeights( clons, clats, &
+                                              areas, iw0, nw, ii, jj, ww, status )
+          IF_NOT_OK_RETURN(status=1)
+
+          ! info ...
+          write (gol,'(a,":   store ...")') rname; call goPr
+          ! store mapping weights, might be saved and used to create gridded averages;
+          ! cell indices ii/jj need to be the global index numbers;
+          ! here use that (gi0,gj0) is 1-based index of the lower-left cell 
+          ! in the global index space:
+          call cso_sdata(icso)%SetMapping( areas, nw, &
+                                            gi0-1+ii, gj0-1+jj, ww, &
+                                            status )
+          IF_NOT_OK_RETURN(status=1)
+
+          ! number of user defined variables:
+          call cso_sstate(icso)%Get( status, nuvar=nuvar )
+          IF_NOT_OK_RETURN(status=1)
+          ! any user defined?
+          if ( nuvar > 0 ) then
+
+            ! storage for variable names and units:
+            allocate( uvarnames(nuvar), stat=status )
+            IF_NOT_OK_RETURN(status=1)
+            allocate( uvarunits(nuvar), stat=status )
+            IF_NOT_OK_RETURN(status=1)
+            ! fill:
+            call cso_sstate(icso)%Get( status, uvarnames=uvarnames, uvarunits=uvarunits )
+            IF_NOT_OK_RETURN(status=1)
+
+            ! loop over variables:
+            do iuvar = 1, nuvar
+              ! info ..
+              write (gol,'(a,": user defined variable: ",a)') rname, trim(uvarnames(iuvar)); call goPr
+              ! switch:
+              select case ( trim(uvarnames(iuvar)) )
+
+                !~ model concentrations
+                case ( 'mod_conc' )
+
+                  ! info ..
+                  write (gol,'(a,": CSO tracer name  : ",a)') rname, trim(cso_tracer(icso)); call goPr
+                  write (gol,'(a,": CSO tracer units : ",a)') rname, trim(uvarunits(iuvar)); call goPr
+
+                  ! find index of tracer:
+                  ispec = find_index( cso_tracer(icso), species_adv(:)%name )
+
+                  ! conversion factor, multipication with air density?
+                  call Units_Scale( uvarunits(iuvar), ispec, fscale, &
+                                           needroa=needroa, debug_msg=TRACELINE )
+
+                  ! get pointer to target array with shape (nlev+1,npix):
+                  call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data1=data1 )
+                  IF_NOT_OK_RETURN(status=1)
+                  ! loop over pixels:
+                  do ipix = 1, npix
+                    ! any source contributions?
+                    if ( nw(ipix) > 0 ) then
+                      ! init sum, strato in 1 (top down order!) will remain zero:
+                      data1(:,ipix) = 0.0
+                      ! loop over source contributions:
+                      do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
+                        ! convert concentrations using air density?
+                        if ( needroa ) then
+                          data1(2:nlev+1,ipix) = data1(2:nlev+1,ipix) &
+                                                   + xn_adv(ispec,ii(iw),jj(iw),:) &
+                                                       * roa(ii(iw),jj(iw),:,1) &
+                                                       * fscale * ww(iw)/areas(ipix)
+                        else
+                          data1(2:nlev+1,ipix) = data1(2:nlev+1,ipix) &
+                                                   + xn_adv(ispec,ii(iw),jj(iw),:) &
+                                                       * fscale * ww(iw)/areas(ipix)
+                        end if ! need roa
+                      end do ! iw
+                    end if ! nw > 0
+                  end do ! ipix
+
+                !~ model half-level pressures:
+                case ( 'mod_hp' )
+                  ! check units:
+                  if ( trim(uvarunits(iuvar)) /= 'Pa' ) then
+                    write (*,'(a,": variable `",a,"` requires conversion to `",a,"` from `",a,"`")') &
+                            rname, trim(uvarnames(iuvar)), trim(uvarunits(iuvar)), 'Pa'
+                  end if
+                  ! get pointer to target array with shape (nlev,npix):
+                  call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data1=data1 )
+                  IF_NOT_OK_RETURN(status=1)
+                  ! loop over pixels:
+                  do ipix = 1, npix
+                    ! any source contributions?
+                    if ( nw(ipix) > 0 ) then
+                      ! init sum, top of atmosphere in 1 (top down order!) will remain zero:
+                      data1(:,ipix) = 0.0
+                      ! loop over source contributions:
+                      do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
+                        ! add contribution,
+                        ! comppute half level pressures using hybride coeff;
+                        ! first record of surface pressure is said to be the correct one ..
+                        data1(2:nlev+2,ipix) = data1(2:nlev+2,ipix) + (A_bnd + B_bnd * ps(ii(iw),jj(iw),1)) * ww(iw)/areas(ipix)
+                      end do ! iw
+                    end if ! nw > 0
+                  end do ! ipix
+
+                !~
+                case default
+                  write (*,'("unsupported variable name `",a,"`")') trim(uvarnames(iuvar))
+                  TRACEBACK; status=1; return
+              end select
+
+            end do ! user defined variables
+
+            ! info ...
+            write (gol,'("end ...")'); call goPr
+
+            ! any user defined?
+            if ( nuvar > 0 ) then
+              ! clear:
+              deallocate( uvarnames, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              deallocate( uvarunits, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+            end if  ! nuvar > 0
+
+          end if ! nuvar > 0
+
+        end if ! npix > 0
+        
+        ! ~ formula
+
+        ! inquire info on pixels covering multiple domains,
+        ! setup exchange parameters:
+        call cso_sdata(icso)%SetupExchange( status )
+        IF_NOT_OK_RETURN(status=1)
+        ! exchange simulations:
+        call cso_sstate(icso)%Exchange( cso_sdata(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! apply formula: kernel convolution etc:
+        call cso_sstate(icso)%ApplyFormulas( cso_sdata(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! ~ put out
+
+        ! target file for selected data:
+        write (cso_output_filename,'("CSO_output_",i4.4,2i2.2,"_",2i2.2,"_",a,"_data.nc")') &
+                   cso_t%year, cso_t%month, cso_t%day, cso_t%hour, cso_t%minute, &
+                   trim(cso_keys(icso))
+        ! setup output arrays and output weights:
+        call cso_sdata(icso)%PutOut( cso_output_filename, status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! target file for simulation state:
+        write (cso_output_filename,'("CSO_output_",i4.4,2i2.2,"_",2i2.2,"_",a,"_state.nc")') &
+                   cso_t%year, cso_t%month, cso_t%day, cso_t%hour, cso_t%minute, &
+                   trim(cso_keys(icso))
+        ! write:
+        call cso_sstate(icso)%PutOut( cso_sdata(icso), cso_output_filename, status )
+        IF_NOT_OK_RETURN(status=1)
+        
+        !! testing ..        
+        !write (gol,'("break after first cso simulations ...")'); call goErr
+        !TRACEBACK; status=1; return
+
+        ! ~ clear
+
+        ! clear:
+        nullify( glb_lon )
+        nullify( glb_lat )
+        nullify( glb_select )
+
+      else
+
+        ! no pixels:
+        npix = 0
+
+      end if  ! orbit found in listing
+      
+      !~ testing, skip ana ...
+      !! increase sum:
+      !cso_npix = cso_npix + npix
+
+    end do ! cso sets
+#endif  ! cso
+
 #ifdef with_assim
     ! number of analysed observations:
     if ( nobs > 0 ) then
@@ -1025,14 +1775,16 @@ contains
     else
       ! dummy:
       nana = 0
-    end if    
+    end if
+    ! also cso:
+    nana = nana + cso_npix
     ! info ...
     write (gol,'(a,":   analysed                        : ",i6)') rname, nana; call goPr
-    write (gol,'(a,":   validation                      : ",i6)') rname, nobs-nana; call goPr
+    write (gol,'(a,":   validation                      : ",i6)') rname, nobs+cso_npix-nana; call goPr
 #endif ! with_assim
 
     ! total number of observations over all domains:
-    call MPIF90_AllReduce( nobs, nobs_tot, MPI_SUM, MPI_COMM_CALC, status )
+    call MPIF90_AllReduce( nobs+cso_npix, nobs_tot, MPI_SUM, MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)    
     ! info ...
     write (gol,'(a,": total number of observations read : ",i6)') rname, nobs_tot; call goPr
@@ -1158,7 +1910,7 @@ contains
 
 #ifdef with_assim
       !-----------------------------------------------------------------------
-      ! allocate work arrrays
+      ! allocate work arrays
       !-----------------------------------------------------------------------
 
       ! storage for increments:
@@ -1333,6 +2085,14 @@ contains
       ! onto new observation operator (Hops_f) on analysis decomposition (doms_an_fg):
       call Hops_m%Swap( doms_an_m, Hops_f, doms_an_fg, status )
       IF_NOT_OK_RETURN(status=1)
+      
+#ifdef with_cso
+!      ! create swapped CSO operators:
+!      call cso_sdata_f%InitSwap( cso_sdata(icso), doms_an_fg, status )
+!      IF_NOT_OK_RETURN(status=1)
+!      call cso_sstate_f%InitSwap( cso_sstate, doms_an_fg, status )
+!      IF_NOT_OK_RETURN(status=1)
+#endif ! cso
 
 #endif ! with_assim
 
@@ -1399,6 +2159,8 @@ contains
           dx_loc_B = 0.0
           du_loc_B = 0.0
 
+          ! adhoc label ...
+          loglabel = ''
           ! check units in B; loop over observed components:
           do iObsComp = 1, size(Bmats(iB)%itracer)
             ! mapping to tracer in this covariance:
@@ -1414,13 +2176,21 @@ contains
                   trim(tracer_name), trim(tracer_units), trim(xn_obs_units(iObsComp)); call goErr
               TRACEBACK; status=1; return
             end if
+            ! store:
+            if ( iObsComp == 1 ) then
+              loglabel = trim(tracer_name)
+            else
+              loglabel = trim(loglabel)//' '//trim(tracer_name)
+            end if
+            ! testing ...
+            write (gol,*) 'xxx loglabel="'//trim(loglabel)//'"'
           end do  ! observed components
 
           ! perform analysis, all processes involved for operations with H;
           ! only the tracer values assigned to this B matrix are changed;
           ! dx might have only 1 level (sfc, or total column),
           ! but du is the update on all levels according to vertical correlations:
-          call var3d( cdate, Hops_f_B, Bmats(iB), dx_loc_B, status, &
+          call var3d( loglabel, cdate, Hops_f_B, Bmats(iB), dx_loc_B, status, &
                          du_loc=du_loc_B )
           IF_NOT_OK_RETURN(status=1)
           
@@ -1578,7 +2348,7 @@ contains
 
           ! dx contains 3D update
           ! (but only lowest layer might be used)
-          case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1', '3D-ML-K2' )
+          case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC', '3D-ML-K1', '3D-ML-K2', 'cso' )
 
             ! copy 'observation analysis' fields into output buffers ;
             ! update 3D field, set surface to zero:
@@ -1761,6 +2531,14 @@ contains
       call Hops_f%Done( status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_cso      
+!      ! done with swapped CSO operators:
+!      call sdata_f%Done( status )
+!      IF_NOT_OK_RETURN(status=1)
+!      call sstate_f%Done( status )
+!      IF_NOT_OK_RETURN(status=1)
+#endif ! cso
+
       ! clear:
       deallocate( dx_loc, stat=status )
       IF_NOT_OK_RETURN(status=1)
@@ -1803,6 +2581,28 @@ contains
     ! clear:
     deallocate( iObsData, stat=status )
     IF_NOT_OK_RETURN(status=1)
+
+#ifdef with_cso
+    ! loop over cso sets
+    do icso = 1, ncso
+      ! orbit file found for this time?
+      if ( len_trim(cso_orbit_filename(icso)) > 0 ) then
+
+        ! done with state:
+        call cso_sstate(icso)%Done( cso_sdata(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! done with data:
+        call cso_sdata(icso)%Done( status )
+        IF_NOT_OK_RETURN(status=1)
+
+        !! testing ...
+        !write (gol,'("break after first orbit")'); call goErr
+        !TRACEBACK; status=1; return
+
+      end if  ! orbit found in listing
+    end do ! cso sets
+#endif  /* cso */
 
     ! info ...
     write (gol,'(a,": end")') rname; call goPr
@@ -2200,7 +3000,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine var3d( cdate, Hops, Bmat, dx_loc, status, &
+  subroutine var3d( loglabel, cdate, Hops, Bmat, dx_loc, status, &
                        du_loc )
   !-----------------------------------------------------------------------
   ! @description
@@ -2232,6 +3032,7 @@ contains
     ! Formal parameters
     !-----------------------------------------------------------------------
 
+    character(len=*), intent(in)      ::  loglabel
     type(date), intent(in)            ::  cdate
     type(T_ObsOpers), intent(inout)   ::  Hops
     type(T_BInfo), intent(inout)      ::  Bmat
@@ -2272,8 +3073,6 @@ contains
     ! ~ same value, but parameterized here:
     real(kind=8), parameter       ::  dxmin = 1e0/2**22
 
-    character(len=*),parameter :: LOGFILE="YYYYMMDDhh-PPP_m1qn3.log"
-
     !-----------------------------------------------------------------------
     ! Local parameters
     !-----------------------------------------------------------------------
@@ -2293,6 +3092,7 @@ contains
     real                      ::  gradnorm_loc, gradnorm
 
     ! m1qn3 variables:
+    character(len=1024)       ::  logfile
     integer                   ::  iz(5)
     integer                   ::  ndz, ndz_all
     integer                   ::  indic
@@ -2417,10 +3217,16 @@ contains
         'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
       print dafmt,'Calling m1qn3 '//trim(damsg)
     endif
-    if(impres>0)then
-      open(m1qn3_io,file=date2string(LOGFILE,current_date),iostat=status)
+    if ( impres > 0 ) then
+      ! target file for optimizer messasges:
+      write (logfile,'("m1qn3_YYYYMMDDhh-PPP_",a,".log")') trim(loglabel)
+      logfile = date2string(trim(logfile),current_date)
+      ! info ...
+      write (gol,'(a,": optimizer log file: ",a)') rname, trim(logfile); call goPr
+      ! open:
+      open( m1qn3_io, file=trim(logfile), iostat=status )
       IF_NOT_OK_RETURN(status=1)
-    endif
+    end if
 
 #ifdef with_ajs
     ! start timing:
@@ -2465,7 +3271,7 @@ contains
                            dx_loc, .false., status )
       IF_NOT_OK_RETURN(status=1)
 
-      !! info ...
+      !! testing ...
       !write (gol,'(a,":     Jcost    : ",e16.6)') rname, Jcost; call goPr
       !write (gol,'(a,":     dx range : ",2e16.6)') rname, minval(dx_loc), maxval(dx_loc); call goPr
 
@@ -2477,7 +3283,7 @@ contains
         IF_NOT_OK_RETURN(status=1)
       end if
 
-      !! info ...
+      !! testing ...
       !write (gol,'(a,":     call m1qn3 ...")') rname; call goPr
       !write (gol,'(a,":       state size : ",i0," (local ",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
       !write (gol,'(a,":       work  size : ",i0," (local ",i0,")")') rname, ndz_all, ndz; call goPr
@@ -3202,10 +4008,14 @@ contains
           TRACEBACK; status=1; return
         end if
       end if ! local slab present
-      ! other levels are unobserved:
-      call Bmat%BcovarSqrt%Reverse_UnObs( itime, chi_hc, du_loc, status, &
+      ! fill surface layer:
+      call Bmat%BcovarSqrt%Reverse_UnObs( itime, chi_hc, du_loc(:,:,1:1,:), status, &
                                             sigma_scale_factors=Bmat%sigma_scale_factors )
       IF_NOT_OK_RETURN(status=1)
+      ! copy:
+      do k = 1, size(du_loc,3)
+        du_loc(:,:,k,:) = du_loc(:,:,1,:)
+      end do
 
     end if
 
@@ -3458,8 +4268,16 @@ contains
           ! fill departure in level range:
           HT_OinvDep_loc(i,j,l0:l1,itracer) = HT_OinvDep_loc(i,j,l0:l1,itracer) + Hops%obs(n)%H_jac(l0:l1) * OinvDep(n)
           !! testing ...
-          !write (gol,'("HT_OinvDep_loc n=",i0," p=",i0," l0:l1=",i0,":",i0," ichem=",i0," H_jac=",es12.4," OinvDep=",es12.4)') &
-          !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
+          !if ( n == 1 ) then
+          !  !write (gol,'("HT_OinvDep_loc n=",i0," p=",i0," l0:l1=",i0,":",i0," ichem=",i0," H_jac=",es12.4," OinvDep=",es12.4)') &
+          !  !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
+          !  write (gol,*) rname//':    yyy1 LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC'; call goPr
+          !  write (gol,*) rname//':      y1 departure      ', n; call goPr
+          !  write (gol,*) rname//':      y1 H_jac          ', l0, l1, ';', Hops%obs(n)%H_jac(l0:l1); call goPr
+          !  write (gol,*) rname//':      y1 OinvDep        ', OinvDep(n); call goPr
+          !  write (gol,*) rname//':      y1 departure cell ', i, j, ' itracer ', itracer; call goPr
+          !  write (gol,*) rname//':      y1 departure loc  ', HT_OinvDep_loc(i,j,1,itracer); call goPr
+          !end if
 
         ! profile is scaled with factor relative to 2D analysis increment:
         !case ( LEVTYPE_3D_ML_K1, LEVTYPE_3D_ML_K2 )
@@ -3473,10 +4291,13 @@ contains
           HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac1 * OinvDep(n)
           
           !! testing ...
-          !write (gol,*) rname//':    yyy1 departure      ', n, Hops%obs(n)%H_jac1, OinvDep(n); call goPr
-          !write (gol,*) rname//':      y1 departure cell ', i, j, ' itracer ', itracer; call goPr
-          !write (gol,*) rname//':      y1 departure loc  ', HT_OinvDep_loc(i,j,1,itracer); call goPr
-
+          !if ( n == 1 ) then
+          !  write (gol,*) rname//':    yyy1 LEVTYPE_3D_ML_K2'; call goPr
+          !  write (gol,*) rname//':      y1 departure      ', n, Hops%obs(n)%H_jac1, OinvDep(n); call goPr
+          !  write (gol,*) rname//':      y1 departure cell ', i, j, ' itracer ', itracer; call goPr
+          !  write (gol,*) rname//':      y1 departure loc  ', HT_OinvDep_loc(i,j,1,itracer); call goPr
+          !end if
+ 
         ! surface
         case ( LEVTYPE_2D_ML_SFC )
           ! check ...
@@ -3496,6 +4317,14 @@ contains
           ! use only one level from H_jac too to avoid errors on shape:
           HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(l0) * OinvDep(n)
 
+          !! testing ...
+          !if ( n == 1 ) then
+          !  write (gol,*) rname//':    yyy1 LEVTYPE_2D_ML_SFC'; call goPr
+          !  write (gol,*) rname//':      y1 departure      ', n, Hops%obs(n)%H_jac1, OinvDep(n); call goPr
+          !  write (gol,*) rname//':      y1 departure cell ', i, j, ' itracer ', itracer; call goPr
+          !  write (gol,*) rname//':      y1 departure loc  ', HT_OinvDep_loc(i,j,1,itracer); call goPr
+          !end if
+ 
         ! observation field
         case ( LEVTYPE_2D_OBS_SFC )
           ! check ...
@@ -3506,6 +4335,14 @@ contains
           ! fill departure; both HT_OinvDep_loc and H_jac have only one level:
           HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(1) * OinvDep(n)
 
+          !! testing ...
+          !if ( n == 1 ) then
+          !  write (gol,*) rname//':    yyy1 LEVTYPE_2D_OBS_SFC'; call goPr
+          !  write (gol,*) rname//':      y1 departure      ', n, Hops%obs(n)%H_jac(1), OinvDep(n); call goPr
+          !  write (gol,*) rname//':      y1 departure cell ', i, j, ' itracer ', itracer; call goPr
+          !  write (gol,*) rname//':      y1 departure loc  ', HT_OinvDep_loc(i,j,1,itracer); call goPr
+          !end if
+ 
         ! unknown ...
         case default
           write (gol,'("unsupported levtype ",i0)') Hops%obs(n)%levtype; call goErr
@@ -3536,7 +4373,7 @@ contains
     ! grad Jb
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":   compute gradJb ...")') rname; call goPr
 
     ! gradient to elements of chi:
@@ -3546,10 +4383,10 @@ contains
     ! grad Jobs
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":   HT_OinvDep_loc : ",2es12.4)') rname, minval(HT_OinvDep_loc), maxval(HT_OinvDep_loc); call goPr
 
-    !! info ...
+    !! testing ...
     !write (gol,'(a,":   evaluate w = B^{H/2} (H^T R^{-1} dy) ...")') rname; call goPr
 
 #ifdef with_ajs
@@ -3563,7 +4400,7 @@ contains
                                          sigma_scale_factors=Bmat%sigma_scale_factors )
     IF_NOT_OK_RETURN(status=1)
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":   chi_hc         : ",2es12.4)') rname, minval(abs(chi_hc)), maxval(abs(chi_hc)); call goPr
 
 #ifdef with_ajs
@@ -3582,13 +4419,13 @@ contains
       end do
     end if  ! nw_local > 0
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":   gradJobs_hcr   : ",2es12.4)') rname, minval(gradJobs_hcr), maxval(gradJobs_hcr); call goPr
 
     ! combine:
     gradJcost_hcr = gradJb_hcr + gradJobs_hcr
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":     sum l2w : ",i0)') rname, sum(l2w_hcr); call goPr
 
     ! info: local l2 sum:
@@ -3598,7 +4435,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! convert to norm:
     gradnorm = sqrt(gradnorm)
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":     norm(gradJb  ) : ",e16.6)') rname, gradnorm; call goPr
 
     ! info: local l2 sum:
@@ -3608,7 +4445,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! convert to norm:
     gradnorm = sqrt(gradnorm)
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":     norm(gradJobs) : ",e16.6)') rname, gradnorm; call goPr
 
     ! info: local l2 sum:
@@ -3618,7 +4455,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! convert to norm:
     gradnorm = sqrt(gradnorm)
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":     norm(gradJ   ) : ",e16.6)') rname, gradnorm; call goPr
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3641,7 +4478,7 @@ contains
     ! Jb
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    !! info ..
+    !! testing ..
     !write (gol,'(a,":   compute Jb ...")')  rname; call goPr
 
     ! norm over local elements of chi (complex!)
@@ -3652,7 +4489,7 @@ contains
     call MPIF90_AllReduce( Jb_loc, Jb, MPI_SUM, MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)
 
-    !! info ...
+    !! testing ...
     !write (gol,'(a,":     Jb       = ",e16.6)') rname, Jb; call goPr
 
 
@@ -3676,7 +4513,7 @@ contains
     call MPIF90_AllReduce( Jobs_loc, Jobs, MPI_SUM, MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)
 
-    !! info ...
+    !! testing ...
     !write (gol,'(a,":     Jobs     = ",e16.6)') rname, Jobs; call goPr
 
 
@@ -3687,7 +4524,7 @@ contains
     ! combine:
     Jcost = Jb + Jobs
 
-    !! info ...
+    !! testing ...
     !write (gol,'(a,":     Jcost    = ",e16.6)') rname, Jcost; call goPr
 
 
