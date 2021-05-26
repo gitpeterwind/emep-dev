@@ -609,8 +609,8 @@ OutputVegO3=
 !    'POD0_IAM_CR   ','POD', 0.0,  'MM', 'IAM_CR',F,0,999, 'YM',   
     'POD3_IAM_CR   ','POD', 3.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
     'POD3_IAM_CROP ','POD', 3.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
-    'POD3_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
-    'POD3_IAM_CROP ','POD', 6.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
+    'POD6_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
+    'POD6_IAM_CROP ','POD', 6.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
 !
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 'YM',   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 'YM',   
