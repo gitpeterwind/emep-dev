@@ -88,6 +88,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6. Small tidy-ups:
      AeroFunctions_mod, Setup_1d_mod
   
+7. IAM_CROP added to LandInputs_May2021 files and config_emep.nml
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st May 2021, Dave
 NEW TAG: rv4.41
