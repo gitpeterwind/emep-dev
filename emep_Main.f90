@@ -47,7 +47,7 @@ program emep_Main
   use DryDep_mod,        only: init_DryDep ! sets up dry and wet dep
   !use GasParticleCoeffs_mod, only: init_DryDep ! sets up dry and wet dep
   use GridValues_mod,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles,&
-                              DefDebugProc, GridRead, set_EuropeanAndGlobal_Config
+                              DefDebugProc, GridRead !REM, set_EuropeanAndGlobal_Config
   use Io_mod,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
   use Io_Progs_mod,      only: read_line
   use Io_RunLog_mod,     only: PrintLog
@@ -158,7 +158,8 @@ program emep_Main
   call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj
   call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 
-  call set_EuropeanAndGlobal_Config() !Set config values that depend on domain coverage
+ !May 2021: Dave moved all into initial Config system
+ !REM  call set_EuropeanAndGlobal_Config() !Set config values that depend on domain coverage
 
   ! daynumber needed  for BCs, so call here to get initial
   daynumber=day_of_year(yyyy,mm,dd)
