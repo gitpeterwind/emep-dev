@@ -43,6 +43,9 @@ NEW FILE: GravSettling_mod.f90: Code added as EXPERIMENTAL ONLY. Do not use yet.
     Makefile.SRCS 
     Config_module.f90 - USES%GRAVSET = .false.
     PhyChem_mod.f90 - calls grav settling if USES%GRAVSET
+
+AeroFunctions_mod:
+   Small tidy up, especially self_test
   
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st May 2021, Dave

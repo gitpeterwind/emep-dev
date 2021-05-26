@@ -42,6 +42,8 @@ module AeroFunctions_mod
   public :: self_test
   public :: self_test_fracs
 
+   real, parameter :: SQRT_TWO = sqrt(2.0)
+   real, parameter :: THIRD = 1.0/3.0
 
 
   !========================================
@@ -77,7 +79,6 @@ module AeroFunctions_mod
    real, intent(in) :: Dpg, sig, Dp
    real, intent(in), optional :: rho_gcm3 ! to get aerodynamic diameter
    real :: Fn, erf
-   real, parameter :: SQRT_TWO = sqrt(2.0)
    real :: d
    d=Dpg
   ! Convert to aerodynamic diameters
@@ -151,7 +152,7 @@ module AeroFunctions_mod
   !      , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
   !      , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
       ],(/5,2/) )
-   real, parameter :: THIRD = 1.0/3.0, cm2m = 1.0e-2
+   real, parameter ::  cm2m = 1.0e-2
    real :: rd, mrh
    integer :: ind
 
@@ -317,9 +318,6 @@ module AeroFunctions_mod
   !! Calculates the surface area for a given mass of dry PM, together
   !! with sigma for log-normal
   !! If Dpw provided, calculates surface area of wet aerosol.
-  !! NOTE - unlike emepctm's use of VOLFACs, here we use simple mass (ug/m3) and
-  !! density. (rho was anyway species independent, so use of specific mol wts.
-  !! for SO4, NO3, SEASALT, etc seems incosistent.)
 
   elemental function pmSurfArea(dry_ug,Dp,Dpw,sigma,sigmaFac,rho_kgm3) result(S) 
      real, intent(in) :: dry_ug        !< mass PM, dry, ug/m3
@@ -581,28 +579,61 @@ module AeroFunctions_mod
    real, dimension(10) :: ugPM, S_m2m3, Kn2o5
    integer, parameter :: io1=20,io2=22 ! TMP stallo gfortran doesn't handle newunit :-(
    character(len=50)::fmt
+   real, dimension(12) :: pRHs = [ 10.0, 30.0, 40.0, 50., 70.,80., 90.0, 98.0, 99.0, 99.9, 99.99, 100.0 ]
+
+   type :: PM_t  !  type name from GasParticle_coeffs
+     character(len=20) :: name
+     real :: umDpgV   ! Aerodynamic diameter for particles, volume, um
+     real :: sigma    ! sigma of log-normal dist.  for particles
+     real :: rho_p    ! particle density
+     integer :: Gb    ! GerberClass ! 
+   end type PM_t
+   type(PM_t), dimension(11):: pm = [ &
+     PM_t( 'PMf'   , 0.33, 1.8, 1600,  1)& ! as SAI_F 
+    ,PM_t( 'SSf'   , 0.33, 1.8, 2200,  2)& ! as SSF
+    ,PM_t( 'DUf'   , 0.33, 1.8, 2600, -1)& ! NEW?? CHECK
+    ,PM_t( 'PMc  ',3.00,  2.0, 2200,  1)& ! as PM QUERY 20
+    ! SSc, DUc have dummy values, CHECK!!
+    ,PM_t( 'SSc  ', 4.80,  2.0, 2200,  2)& ! 
+    ,PM_t( 'DUc  ', 5.00,  2.2, 2600, -1)&
+    ,PM_t( 'POLLb',22.00,  2.0,  800, -1)& ! birch
+    ,PM_t( 'POLLo',28.00,  2.0,  800, -1)& ! olive
+    ,PM_t( 'POLLa',22.00,  2.0,  800, -1)& ! alder
+    ,PM_t( 'POLLr',18.00,  2.0,  800, -1)& ! ragweed
+    ,PM_t( 'POLLg',32.00,  2.0,  800, -1)& ! grass
+   ]
 
    cn2o5 = cMolSpeed( 298.0, 108.0)
    print *, "Speed N2O5 ", cn2o5
 
-   ! emepctm has MMD=0.33e-6 for PMf, sigma 1.8
-   DpgN = DpgV2DpgN(DpgV=0.33e-6,sigma_g=1.8)
-   DpgV = DpgN2DpgV(DpgN,sigma_g=1.8) ! test reverse
-   print "(2(a,f8.4))", "EMEP DpgV 0.33um -> DpgN ",DpgN*um," ->DpgV ",DpgV*um
+   do i = 1, size(pm)
+     DpgN = DpgV2DpgN(1.0e-6*pm(i)%umDpgV,sigma_g=pm(i)%sigma)
+     DpgV = DpgN2DpgV(DpgN,pm(i)%sigma) ! test reverse
+     print *, "-------------------------------------------------------------"
+     print "(a15,i3,a,2f8.4)", "STARTING "//pm(i)%name, &
+        pm(i)%Gb,  "DpgV ->  DpgN ", DpgV*um, DpgN*um
 
-   ! Test Gerber's eqns (NB Units MUST be m, DpgN must be number)
-   rdry=0.5*DpgN
-   fmt='(a,es12.3,f8.3)'
-   print *, "Gerber's full scheme: rwet(rdry for RpgNd ", rdry
-   print fmt, " 50%rh  ->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.50, pmtype=1)/rdry
-   print fmt, " 98%rh  ->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.98, pmtype=1)/rdry
-   print fmt, " 99.9%rh->Rw(nm)", rdry, GerberWetRad(rdry, fRH=0.999, pmtype=1)/rdry
-   print fmt, " 100.%rh->Rw(nm)", rdry, GerberWetRad(rdry, fRH=1.0, pmtype=1)/rdry
-   print fmt, " 50.0%rh->Rw(nm),SS", rdry, GerberWetRad(rdry, fRH=0.50, pmtype=2)/rdry
-   print fmt, " 99.9%rh->Rw(nm),SS", rdry, GerberWetRad(rdry, fRH=0.999, pmtype=2)/rdry
-   print fmt, " 100.%rh->Rw(nm),SS", rdry, GerberWetRad(0.11e-5, fRH=1.0, pmtype=2)/rdry
-!   print *, "Test cmWetRad"
-!   print fmt, " 99.9%rh->Rw(nm),SS", rdry, cmWetrad(rdry*1.0e2, fRH=0.999, pmtype=2)/rdry
+    ! Test Gerber's eqns (NB Units MUST be m, DpgN must be number)
+     rdry=0.5*DpgN   ! in m
+     fmt='(a15,f8.2,9f8.2)'
+     if ( pm(i)%Gb < 1 ) cycle
+     print '(a13,9a8)', ' ', 'RH', 'rd', 'rd/rw', 'sigma', 'S(cm2)', 'S*(cm2)'
+     do iRH = 1, size(pRHS)
+       frh = 0.01 * pRHs(iRH)
+       rwet = GerberWetrad(rdry, frh, pm(i)%Gb)
+       !rwet2 = GerberWetrad2(rdry, frh, pm(i)%Gb)
+       !sigma = pm(i)%sigma + GerberWetSigmaAdd(rdry,frh, pm(i)%Gb)
+
+       ! surf area for 1 ug/m3
+       Spm  = pmSurfArea(1.0,Dp=2*rdry, Dpw=2*rwet, rho_kgm3=pm(i)%rho_p )
+       ! Testing
+       !Spm2 = pmSurfArea(1.0,Dp=2*rdry, Dpw=2*rwet, rho_kgm3=pm(i)%rho_p, sigma=sigma)
+       !Spm3 = pmSurfArea(1.0,Dp=2*rdry, Dpw=2*rwet2,rho_kgm3=pm(i)%rho_p,sigma=2.03)
+
+       print fmt, pm(i)%name, 100*frh, rdry*um, rwet/rdry, Spm*um2
+     end do ! iRH
+   end do
+   
    return ! TEST
 
    !print *, "Gerber simp", GerberWetRadS(rdry=0.5*DpgN, fRH=0.98, pmtype=1) ! m
