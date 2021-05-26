@@ -17,14 +17,14 @@ EmChem19p is just EmChem19a + Alvaro's pollen species.
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
 the appropriate place, DataDir/ZCM_DIRS/ZCM_EmChem19.
 
-Soil NOx - NOW COMPLICATED since some inventories include already
+Soil NOx - NOW COMPLICATED since some inventories include already include soil NOx:
 
   USES%SOILNOX_METHOD - needs user decision!
-    CAMS_NoFert  - for EMEP, ECLIPSEv6
-    NOTSET       - ok for CAMS_REG_ANT, ECLIPSEv5
+    NoFert       - for EMEP, ECLIPSEv6
+    Total        - ok for CAMS_REG_ANT, ECLIPSEv5
 
-  (will likely change NOTSET to "wFert" for these latter emissions, to force
-   the user to make a choice.)
+** See new config SOILNOx system, rv4.42
+
 
 
 =============================================================================
@@ -35,17 +35,49 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-26th May 2021, Dave
+26th May 2021, Dave/Peter/Agnes
 
-NEW FILE: GravSettling_mod.f90: Code added as EXPERIMENTAL ONLY. Do not use yet.
+1. SOILNOx emissions system improved (gridded 3h steps), and simplified to just:
+
+  USES%SOILNOx            ! T or F
+  USES%SOILNOx_METHOD     ! Total, NoFert, Zaehle2011, or OLD_EURO
+  soilnox_emission_File   ! cams81 or Zaehle files
+
+  Changes in:
+    Biogenics_mod
+    Config_module
+    Emissions_mod
+    NetCDF_mod
+
+2. config_emep.nml
+
+  Simpler system started. The complex bit involving emissions, domain,
+   soil-NOx is now at the top, and needs user-decisions. Many other
+   settings removed if the defaults are fine. Comments/suggestions welcome
+   for further improvements.
+
+  GridValues_mod, emep_Main: commented out set_EuropeanAndGlobal_Config
+
+3. Volcano files updated in Config_module:
+
+   volcano_emission.csv_20210525, volcano_location.csv_20210525
+
+
+4. TRONKz is now TROENKz, = default (renamed after Troen ;-)
+
+  BLPhysics
+  Config_module
+  config_emep.nml
+
+5. NEW FILE: GravSettling_mod.f90: Code added as EXPERIMENTAL ONLY. Do not use yet.
 
   Affects:
     Makefile.SRCS 
     Config_module.f90 - USES%GRAVSET = .false.
     PhyChem_mod.f90 - calls grav settling if USES%GRAVSET
 
-AeroFunctions_mod:
-   Small tidy up, especially self_test
+6. Small tidy-ups:
+     AeroFunctions_mod, Setup_1d_mod
   
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st May 2021, Dave
