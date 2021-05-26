@@ -104,8 +104,8 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 !DS WILL UPDATE May 2020
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_May2021/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_May2021/Inputs_DO3SE.csv',
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
@@ -192,7 +192,7 @@ SecEmisOutWanted = .true.
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
 
 !--- 'fake' vegetation for ozone POD calculations
-  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+  FLUX_VEGS = 'IAM_CROP', 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
               'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
@@ -605,9 +605,12 @@ OutputVegO3=
 ! Way too uncertain!
 !   'POD6_TC       ','POD', 3.0,  'MM', 'TC    ',F,0,999, 'YM',   
 !   'POD6_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! WARN!
-    'POD1_IAM_CR   ','POD', 1.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! 
-    'POD0_IAM_CR   ','POD', 0.0,  'MM', 'IAM_CR',F,0,999, 'YM',   
+!   'POD1_IAM_CR   ','POD', 1.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! 
+!    'POD0_IAM_CR   ','POD', 0.0,  'MM', 'IAM_CR',F,0,999, 'YM',   
     'POD3_IAM_CR   ','POD', 3.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
+    'POD3_IAM_CROP ','POD', 3.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
+    'POD3_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
+    'POD3_IAM_CROP ','POD', 6.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
 !
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 'YM',   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 'YM',   
