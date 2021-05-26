@@ -1248,10 +1248,12 @@ subroutine lf_chem(i,j)
   integer :: n_SO2,n_SO4,  n_EC_new, n_EC
   real :: k_OH, k_H2O2, k_O3
   real ::  d_age
+  integer, parameter :: EC_AGEING_RATE_IDX = 101 ! TODO: update automatically
   
   call Code_timer(tim_before)
   
   if(isrc_EC_f_new>0)then
+     call StopAll("EC_f_new no more implemented")
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         ! d_age = amount that has been transformed from EC_f_new to EC_f_age
         d_age = rct(80,k)*xn_adv(ix_EC_f_new,i,j,k) *dt_advec
@@ -1267,7 +1269,7 @@ subroutine lf_chem(i,j)
   if(isrc_EC_f_ffuel_new >0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         ! d_age = amount that has been transformed from EC_f_ffuel_new to EC_f_ffuel_age
-        d_age = rct(96,k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
+        d_age = rct(EC_AGEING_RATE_IDX,k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
         inv = 1.0/( xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age + 1.0E-20)        
         n_EC_new = lf_src(isrc_EC_f_ffuel_new)%start
         do n_EC=lf_src(isrc_EC_f_ffuel_age)%start, lf_src(isrc_EC_f_ffuel_age)%end
@@ -1278,7 +1280,7 @@ subroutine lf_chem(i,j)
   endif
   if(isrc_EC_f_wood_new >0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        d_age = rct(96,k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
+        d_age = rct(EC_AGEING_RATE_IDX,k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
         inv = 1.0/( xn_adv(ix_EC_f_wood_age,i,j,k) + d_age + 1.0E-20)        
         n_EC_new = lf_src(isrc_EC_f_wood_new)%start
         do n_EC=lf_src(isrc_EC_f_wood_age)%start, lf_src(isrc_EC_f_wood_age)%end
