@@ -10,32 +10,6 @@ module BLPhysics_mod
  implicit none
  private
 
-! minimum value now generally calculated as z_mid(19), but we
-!   keep a fixed value for smoothing. 
-! real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
-! real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
-
-!MOVED to Config_mod, PBL:
-! Choose one Kz method here. Prefered method is likely to use O'brien
-! in convective, Jericevic in Stable.
-!TMPA back: logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
-!TMPB back: logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
-!TMPC back: character(len=2), parameter, public :: KzMethod = &
-!    "TRONKz"   ! Set U, S separately, preferred? :
-!  !   "JG"   ! Jericevic/Grisogono - both unstable + stable
-!  !   "SILAMKz"   ! SILAM - both unstable + stable  
-!  !   "TRONKz"   ! TROEN - both unstable + stable  
-!  character(len=2), parameter, public :: UnstableKzMethod = &
-!     "OB"   ! O'Brien
-!  character(len=2), parameter, public :: StableKzMethod = &
-!     "JG"   ! Jericevic/Grisogono
-!    !"BW"   ! Brost Wynngard
-!    !"Sb"   ! Seibert
-
-!Movbed
-!  character(len=4), parameter, public :: FluxPROFILE = &
-!     "Iter"   ! 
-! !     "Ln95"   ! ! will use Launiainen1995 
 
  logical, parameter, public :: PIELKE = .true.
  real, public, parameter :: KZ_MINIMUM = 0.001 ! m2/s
@@ -43,7 +17,6 @@ module BLPhysics_mod
  real, public, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
  ! TI code had unstable if delq > 0.00001, ca. fh >10-8 so excluded neutral
  real, public, parameter :: OB_invL_LIMIT =  -1.0e-10
- !F21 real, public, parameter :: MIN_USTAR_LAND = 0.1 ! ms - Defines stable BL height
 
  real, parameter, private :: EPS=0.01  !prevents div by zero for WS
 
