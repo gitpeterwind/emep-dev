@@ -2888,7 +2888,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(data3D)then
         call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-        call CheckStop(name/='k'.and.name/='N'.and.name/='lev'.and.name/='height',&
+        call CheckStop(name/='k'.and.name/='N'.and.name/='lev'.and.name/='height'.and.name/='tsteps',&
           "vertical coordinate (k, lev, N or height) not found")
      end if
 
@@ -3011,7 +3011,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         end do
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
-          errmsg=dtxt_msg//"RRvalues")
+          errmsg=dtxt_msg//"lonlatRRvalues")
 
      if(present(Mask_filename))then
         N=1
