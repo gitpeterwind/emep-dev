@@ -43,8 +43,6 @@ public :: WriteConfig_to_RunLog
 !  TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
 !  TXTLEN_FILE = 200    ! large enough for paths from namelists
 
-CHARACTER(LEN=TXTLEN_NAME), public, save :: EXP_NAME="EMEPSTD"
-
 ! It is quite easy to end config files accidently through e.g. an extra
 ! & from a fortran comment. We place a marker at the end of the (first-called)
 ! config file, and test for this.
@@ -257,8 +255,8 @@ real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
   TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USES%DUST=.true.
- ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
- ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
+ ,INERIS_SNAP1       = .false.       & ! Switches off decadal trend
+ ,INERIS_SNAP2       = .false.       & ! Allows near-zero summer values
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
@@ -807,7 +805,6 @@ subroutine Config_Constants(iolog)
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
-   ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & !
    ,AERO   & ! for aerosol equilibrium scheme
    ,PBL    & !
