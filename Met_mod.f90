@@ -1832,7 +1832,7 @@ subroutine BLPhysics()
           end do
         end do
 
-      case ( "TRONKz" ) 
+      case ( "TROENKz" ) 
         do k = 2, KMAX_MID
           do j=1,ljmax
             do i=1,limax
