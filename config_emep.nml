@@ -7,15 +7,12 @@
   enddate   = 2018,01,01,24,
 
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
-  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
-  DataPath(3) = '/nobackup/forsk/sm_petwi/Data',  !Elvis, Nebula
-  DataPath(4) = '/cluster/projects/nn2890k/Data',!Fram
+  DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
+  DataPath(2) = '/cluster/projects/nn2890k/Data', !Fram, Betzy
 !-------- Experiment Description
-!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
-!NB: set the path with the exact version (metdata_VERSION) if you want to be 
+!NB: set the meteorology path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
   EXP_NAME              = 'EMEPSTD',
@@ -33,7 +30,7 @@
 
   USES%SOILNOX = T,
   emis_inputlist(1)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
-  emis_inputlist(1)%type  = 'DMS',    ! Needs ad-hoc treatment
+  emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
   MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_may2021/MonthlyFacs.POLL',
 
   ! Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
@@ -48,7 +45,7 @@
   USES%CONVECTION        = T,
   USES%DEGREEDAY_FACTORS = F, 
   USES%PFT_MAPS  = T,
-  Vertical_levelsFile = 'DataDir/Vertical_levels20.txt',
+  Vertical_levelsFile = 'DataDir/Vertical_levels19.txt', ! Lowest layers 94m
   USES%ROADDUST          = F,
   !EmisDir='DataDir/Emis_ECLIPSEv6b/'
   !NEED TO UNCOMMENT. Note, DMS is emis_inputlist(1)
@@ -60,7 +57,7 @@
   USES%SOILNOX_METHOD = 'NoFert',
 
 ! 1b) GLOBAL; using ECLIPSEv5 or CAMS-GLOB-ANT  emissions:
-!     WANRNING: Need to set CAMS-GLOB-ANT ags emissions to zero!!!!
+!     WARNING: Need to set CAMS-GLOB-ANT ags emissions to zero!!!!
 
   USES%SOILNOX_METHOD = 'Total',
 
@@ -142,7 +139,7 @@ SecEmisOutWanted = .true.
 !
 
 !  emis_inputlist(3)%name  = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc',    ! Ocean NH3
-!  emis_inputlist(3)%type  = 'OceanNH3',    ! Needs ad-hoc treatment
+!  emis_inputlist(3)%type  = 'OceanNH3',    ! Tells the code to treat as Ocean NH3
 
 !
 !******one can either include or exclude, not both
@@ -233,18 +230,6 @@ SecEmisOutWanted = .true.
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
 !!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
-! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests
-! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = 120, 360, 24, 368,      ! TNO14 reduced (15W-45E;30N-73N)
-! RUNDOMAIN =  60, 180, 12, 184,      ! TNO28 reduced (15W-45E;30N-73N)
-! RUNDOMAIN =  30,  90,  6,  92,      ! TNO56 reduced (15W-45E;30N-73N)
-! RUNDOMAIN =  60, 180, 12, 184,      ! TNO07 test
-! RUNDOMAIN =  70, 110, 72, 110,      ! TNO28 test
-!!  RUNDOMAIN =  60, 140, 70, 150,      ! EMEP0302 NW Europe
-! RUNDOMAIN =   1, 230, 10, 200,       ! EMEP0302 WEUR
-! RUNDOMAIN =  36, 167, 12, 122,      ! EMEP domain in PARLAM
-! RUNDOMAIN =   1, 132,  1, 111,      ! EECCA, rep09
-! RUNDOMAIN =   1, 132,  1, 159,      ! EECCA, rep10
 ! RUNDOMAIN =  20, 167,  1, 122,      ! OSPAR/HELCOM domain
 ! RUNDOMAIN =  18, 169,  1, 124,      ! OSPAR/HELCOM domain+borders
 !
@@ -269,7 +254,7 @@ SecEmisOutWanted = .true.
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
-    DEBUG%SEASALT         = F, ! depends on RUNCHEM
+  DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
