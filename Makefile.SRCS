@@ -20,6 +20,7 @@ SRCS ?=	\
 	EmisDef_mod.f90 EmisGet_mod.f90 Emissions_mod.f90 ExternalBICs_mod.f90 \
 	FastJ_mod.f90 ForestFire_mod.f90 Functions_mod.f90 \
         GasParticleCoeffs_mod.f90 \
+	GravSettling_mod.f90 \
 	Gravset_mod.f90 GridAllocate_mod.f90 GridValues_mod.f90 \
 	InterpolationRoutines_mod.f90 \
 	Io_mod.f90 Io_Nums_mod.f90 Io_Progs_mod.f90 Io_RunLog_mod.f90 \

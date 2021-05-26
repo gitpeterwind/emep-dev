@@ -35,6 +35,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th May 2021, Dave
+
+NEW FILE: GravSettling_mod.f90: Code added as EXPERIMENTAL ONLY. Do not use yet.
+
+  Affects:
+    Makefile.SRCS 
+    Config_module.f90 - USES%GRAVSET = .false.
+    PhyChem_mod.f90 - calls grav settling if USES%GRAVSET
+  
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st May 2021, Dave
 NEW TAG: rv4.41
 

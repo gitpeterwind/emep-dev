@@ -34,6 +34,7 @@ use EmisDef_mod,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month
                             , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
 use Emissions_mod,     only: EmisSet
 use Gravset_mod,       only: gravset
+use GravSettling_mod,  only: gravSettling ! EXPERIMENTAl!!
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use Io_Progs_mod,       only: datewrite
@@ -232,6 +233,7 @@ subroutine phyche()
   call debug_concs("PhyChe post-chem ")
 
   !*********************************************************!
+  if(USES%GRAVSET) call gravSettling ! After chem/emis?? EXPERIMENTAL!
   !========================================================!
 
 
