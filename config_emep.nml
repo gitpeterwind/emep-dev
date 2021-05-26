@@ -278,16 +278,7 @@ SecEmisOutWanted = .true.
   DEBUG%SPEC            = 'OH',
 
 !------------------------------
-! volcanic emissions from passive degassing and historical eruptions
-!------------------------------
-  flocdef="DataDir/volcano_location.csv_20180321",
-  femsdef="DataDir/volcano_emission.csv_20190606",
 
-  need_topo=T, ! Do not use column emissions if topography.nc not found
-! NMAX_LOC=-1, ! estimate from lines in flocdef
-! NMAX_EMS=-1, ! estiamte from lines in femsdef
-
-!------------------------------
 ! ForestFire data is selected in mk.GenChem.  
 ! Check in mk.GenChem to find out which data is linked.
 ! Default EMEP setup is using 'FINN'
