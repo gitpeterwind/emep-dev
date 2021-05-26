@@ -35,6 +35,10 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th May 2021, Anna
+BoundaryConditions_mod.f90: Updated with 2019 Mace Head
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th May 2021, Peter
 
 LocalFractions: Updated conversion rate index for EC_old->EC_new
