@@ -133,10 +133,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 
 ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 
-
-!DSTEST MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
-SecEmisOutWanted = .true.
-!   ,SecEmisOutWanted      & ! sector emissions to include in output
+!SecEmisOutWanted(2) = T, !output sector 2 separately
 
 !**#######################################################
 !*** Special Cases ***
