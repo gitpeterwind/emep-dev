@@ -6,7 +6,7 @@ module Emissions_mod
 !_____________________________________________________________________________
 
 use AirEmis_mod, only : airn, TotAircraftEmis
-use Biogenics_mod,     only: SoilNOx, AnnualNdep
+use Biogenics_mod,     only: SoilNOx, SoilNOx3D, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
                              NEMIS_File  ! No. emission files
@@ -28,7 +28,7 @@ use Config_module,only: &
     DMS,&
     NPROC, EmisSplit_OUT,uEMEP,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
-    AircraftEmis_FLFile,nox_emission_1996_2005File, nox_emission_cams81File, RoadMapFile,&
+    AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
@@ -2279,7 +2279,7 @@ subroutine newmonth
 
   ! For now, only the global runs use the Monthly files
   integer :: kstart,kend,nstart,Nyears,mm
-  real :: buffer(LIMAX,LJMAX),SumSoilNOx,ccsum
+  real :: buffer3D(8,LIMAX,LJMAX),buffer(LIMAX,LJMAX),SumSoilNOx,ccsum
   real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
@@ -2391,8 +2391,8 @@ subroutine newmonth
     if (MasterProc) write(*,*) TotAircraftEmis," kg(NO2)/month"
   end if ! USES%AIRCRAFT_EMIS
 
-  if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????"
-  if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions
+  if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????", me
+  if(USES%SOILNOx .and. USES%SOILNOX_METHOD=='OLD_EURO')then  ! European Soil NOx emissions
 
       ! read in map of annual N-deposition produced from pre-runs of EMEP model
       ! with script mkcdo.annualNdep
@@ -2403,44 +2403,65 @@ subroutine newmonth
         write(*,"(a,4es12.3)") dtxt//" SOILNOX AnnualDEBUG ", &
         AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
 
-      call CheckStop(USES%GLOBAL_SOILNOX, dtxt//"SOILNOX - cannot use global with Euro")
-      ! We then calculate SoilNOx in Biogenics_mod
-
-  elseif(USES%GLOBAL_SOILNOX) then ! Global soil NOx
+  elseif(USES%SOILNOX) then ! Global soil NOx, default from 2021
 
     SoilNOx(:,:)=0.0
+    SoilNOx3D(:,:,:)=0.0
+    buffer3D(:,:,:)=0.0
     buffer(:,:)=0.0
+    if(debug_proc) write(*,*)' SOILNOx start', me, trim( USES%SOILNOX_METHOD )
 
-    write(*,*)' CAMS xFert?', me, trim( USES%SOILNOX_METHOD )
-    if ( USES%CAMS81_SOILNOX ) then
+    if ( USES%SOILNOX_METHOD == 'Total' .or. USES%SOILNOX_METHOD =='NoFert' ) then
 
       ! tmp checks. Will sort out climatological case later
-      call CheckStop(current_date%year>2018,dtxt//'CAMS81 soil>2018')
+      ! tmp Will use 2018 for 2019... 
+      ! BUT safety for < 2000 set here. (more likely to cause errors with
+      ! trends)
+      !call CheckStop(current_date%year>2018,dtxt//'CAMS81 soil>2018')
       call CheckStop(current_date%year<2000,dtxt//'CAMS81 soil<2000')
 
-      nstart=(current_date%year-2000)*12 + current_date%month
+      if ( debug_proc) write(*,*) '3DSOIL file', trim(soilnox_emission_File)// 'XXX'
 
-      call ReadField_CDF(nox_emission_cams81File,'TotalSoilEmis',SoilNOx,&
-             nstart=nstart,interpol='conservative',known_projection="lon lat",&
-             needed=.true.,debug_flag=.false.,UnDef=0.0)
-      !if ( debug_proc) write(*,*)' CAMS xFertP', trim( USES%SOILNOX_METHOD )
-      if ( USES%SOILNOX_METHOD == 'CAMS_NoFert' ) then
-        if ( debug_proc) write(*,*)' CAMS xFertA', SoilNOx(debug_li,debug_lj), minval(SoilNOx)
-        call ReadField_CDF(nox_emission_cams81File,'FertEmis',buffer,&
-             nstart=nstart,interpol='conservative',known_projection="lon lat",&
-             needed=.true.,debug_flag=.false.,UnDef=0.0)
-        SoilNOx = SoilNOx - buffer
-        if ( debug_proc) write(*,*)' CAMS xFertB', SoilNOx(debug_li,debug_lj), minval(SoilNOx)
-        SoilNOx = max(SoilNOx, 0.0) ! in case of any small negs
-        
+      nstart=(min(2018,max(2000,current_date%year))-2000)*12 + current_date%month !12*19=228 years defined
+
+      call ReadField_CDF(soilnox_emission_File,&
+           'TotalSoilEmis',SoilNOx,&
+           nstart=nstart,interpol='conservative',known_projection="lon lat",&
+           needed=.false.,debug_flag=.false.,UnDef=0.0)
+
+      if (USES%SOILNOX_METHOD == 'NoFert') then
+         !we must substract Fertilizer emissions
+         call ReadField_CDF(soilnox_emission_File,&
+           'FertEmis',buffer,&
+           nstart=nstart,interpol='conservative',known_projection="lon lat",&
+           needed=.true.,debug_flag=.true.,UnDef=0.0)
+         SoilNOx = max(0.0, SoilNOx - buffer)
       end if
+
+      call ReadField_CDF(soilnox_emission_File,&
+           'MonthlyDiurnalEmisFactor',buffer3D,&
+           nstart=current_date%month, kstart=1, kend=8,& !same variation every year
+           interpol='conservative',known_projection="lon lat",&
+           needed=.true.,debug_flag=.true.,UnDef=0.0)
+      
+      do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
+        do i=1,limax
+          do j=1,ljmax
+            SoilNOx3D(i,j,n)=buffer3D(n,i,j) * SoilNOx(i,j)
+          end do
+        end do
+        if(debug_proc) write(*,*) dtxt//'3DSOIL ', current_date%month, i, &
+            SoilNOx3D(debug_li,debug_lj,n)
+      end do
+      
       if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt//"CAMS81 SOILNO ", &
-        current_date%year, nstart, maxval(SoilNOx)
-    else
+           current_date%year, nstart, maxval(SoilNOx)
+      
+    else if (USES%SOILNOX_METHOD == 'Zaehle2011') then
       nstart=(current_date%year-1996)*12 + current_date%month
       if(nstart>0.and.nstart<=120)then
         !the month is defined
-        call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',SoilNOx,&
+        call ReadField_CDF(soilnox_emission_File,'NOX_EMISSION',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
         if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt// &
@@ -2450,7 +2471,7 @@ subroutine newmonth
         Nyears=10 !10 years defined
         do iyr=1,Nyears
           nstart=12*(iyr-1) + current_date%month
-          call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',buffer,&
+          call ReadField_CDF(soilnox_emission_File,'NOX_EMISSION',buffer,&
               nstart=nstart,interpol='conservative',known_projection="lon lat",&
               needed=.true.,debug_flag=.false.,UnDef=0.0)
           do j=1,ljmax
@@ -2465,11 +2486,14 @@ subroutine newmonth
         end do !iyr
         SoilNOx=SoilNOx/Nyears
       end if ! nstart test
+     
+    else !  SOILNOX_METHOD Needs to be OLD_EURO, Fert, NoFert, or Zaehle2011
+      call StopAll(dtxt//'WRONG SNOX METHOD:'//USES%SOILNOX_METHOD )
     end if ! CAMS81
 
      if(DEBUG%SOILNOX.and.debug_proc) then
-       write(*,"(a,i3,3es10.3)") dtxt//"After Global SOILNO ",&
-             me,maxval(SoilNOx),SoilNOx(debug_li,debug_lj)
+       write(*,"(a,i3,4es10.3)") dtxt//"After Global SOILNO ",&
+             me,maxval(SoilNOx),SoilNOx(debug_li,debug_lj), sum(SoilNOx3D(debug_li,debug_lj,:))/8.0
      end if
   else ! no soil NO
     if(DEBUG%SOILNOX.and.debug_proc) &
@@ -2477,14 +2501,15 @@ subroutine newmonth
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
-  if(USES%GLOBAL_SOILNOX) then
+  if(USES%SOILNOX .and. USES%SOILNOX_METHOD /= 'OLD_EURO') then
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
     ! CAMS uses kg(NO)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle
-    if ( USES%CAMS81_SOILNOX ) then ! have kg(NO)/m2/s
+    if ( USES%SOILNOX_METHOD /= 'Zaehle2011' ) then ! have kg(NO)/m2/s
       do j=1,ljmax
         do i=1,limax
           SoilNOx(i,j) = SoilNOx(i,j) * 14./30 * 1000.0 * 24*3600 ! from kg(NO) to g(N)
+          SoilNOx3D(i,j,:) = SoilNOx3D(i,j,:) * 14./30 * 1000.0 * 24*3600 ! from kg(NO) to g(N)
         end do
       end do
     end if ! CAMS81 test
@@ -2514,6 +2539,7 @@ subroutine newmonth
     do j=1,ljmax
       do i=1,limax
         SoilNOx(i,j)=SoilNOx(i,j)*conv
+        SoilNOx3D(i,j,:) = SoilNOx3D(i,j,:) * conv
       end do
    end do
 end if

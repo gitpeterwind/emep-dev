@@ -638,10 +638,7 @@ subroutine setup_rcemis(i,j)
     if(burning(i,j))call Fire_rcemis(i,j)
   end if
 
-  ! Soil NOx is accounted for in setup_bio!!
-  if(USES%GLOBAL_SOILNOX)then
-     ! rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
-  end if
+  ! SOILNOx? Soil NOx is accounted for in setup_bio!!
 
   ! Emissions from GEIA, was use for Aerocom NO3 experiment
   if(USES%OCEAN_NH3)then

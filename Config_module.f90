@@ -81,9 +81,9 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
-      KzMethod = "Mixed"  ! Set U, S separately, default, pre rv4-38
+      KzMethod = "TROENKz" !  TROEN - U+S New default 
+                      ! "Mixed"  ! Set U, S separately, default, pre rv4-38
                       !   (defaulted to OBrien U + Jericevic S)
-                      ! "TRONKz"   ! TROEN - U+S New default in testing :-)
                       ! "SILAMKz"  ! SILAM - U+S
                       ! "JG"       ! Jericevic/Grisogono - U+S
     character(len=2) :: UnstableKzMethod = "OB" ! O'Brien
@@ -154,11 +154,8 @@ type, public :: emep_useconfig
     ,zero_below3000ft = .true.  &! set aircraft emissions to zero below ca 3000ft
     ,LIGHTNING_EMIS   = .true.  &!
     ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
-    ,DUST             = .false. &! Experimental
-    ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
-    ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
-    ,CAMS81_SOILNOX   = .false. &! Need to design better switch. See SOILNOX_METHOD below
-    ,SOILNOX          = .true.  & ! DO NOT ALTER: Set after config
+    ,DUST             = .true.  &! Only EECCA?
+    ,SOILNOX          = .true.  &! See SOILNOx_Method below.
     ,OCEAN_DMS        = .false. &!set automatically true if found.
     ,OCEAN_NH3        = .false. &!set automatically true if found
     ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
@@ -176,11 +173,11 @@ type, public :: emep_useconfig
     ,FASTJ            = .false. & ! use FastJ_mod for computing rcphot
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
-    ,PFT_MAPS         = .false. &!
+    ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
-    ,SOILWATER        = .false. &!
+    ,SOILWATER        = .true.  &! Uses SMI from meteo data
     ,EtaCOORDINATES   = .true.  &! default since October 2014
     ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
     ,ZREF             = .false. &! testing
@@ -196,7 +193,7 @@ type, public :: emep_useconfig
   character(len=TXTLEN_SHORT), public, dimension(2) :: fPMc_specs = '-'
 
  ! If USES%EMISTACKS, need to set:
-  character(len=4)  :: PlumeMethod   = "none" !MKPS:"ASME","NILU","PVDI"
+  character(len=4)  :: PlumeMethod   = "PVDI" !MKPS:"ASME","NILU","PVDI"
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
@@ -206,11 +203,12 @@ type, public :: emep_useconfig
   character(len=20) :: n2o5HydrolysisMethod = 'Smix'
 
 ! Selection of method for Whitecap calculation for Seasalt
-  character(len=15) :: WHITECAPS  = 'Callaghan'
+  character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
 ! In development
    logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
    character(len=20) :: BiDirMethod = 'NOTSET'  ! FUTURE
    character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
+   ! Can be 'Total', 'NoFert', or 'OLD_EURO' (latter to get ACP2012 system)
    character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
 end type emep_useconfig
 
@@ -283,7 +281,7 @@ integer, public, save :: &
 ! global runs need global monthly. Variable USE_SOILNOX set from
 ! these below.
 !
-! Also, is scaling needed for EURO_SOILNOX?
+! Also, is scaling needed for "OLD_EURO" SOILNOX?
 ! The Euro soil NO emissions are based upon average Nr-deposition calculated
 !  for the 2000s, as given in the AnnualNdep.nc files. For future years a
 !  new AnnualNdep.nc could be pre-calculated. A simpler but approximate
@@ -600,7 +598,7 @@ logical, public, save ::  MasterProc = .true.
 
 logical, public, save :: SOURCE_RECEPTOR = .false., VOLCANO_SR=.false.
 
-! Compress NetCDF output? (nc4 feature, use -1 for netcdf3 output)
+! Compress NetCDF output? (nc4 feature, 1-9 GZIP compress, 0 no compress, -1 for netcdf3 output)
 integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 
 !Hourly output in single file or monthly/daily files:
@@ -745,8 +743,10 @@ character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/E
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
-character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
-character(len=TXTLEN_FILE), target, save, public :: nox_emission_cams81File = 'DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
+!Zahle2011:
+!character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
+!CAMS81:
+character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.2_GLOBAL05_2000_2018.nc'
 !character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
 !
 !2021: added ECLIPSE6b-based factors for non-European areas
@@ -859,8 +859,7 @@ subroutine Config_Constants(iolog)
    ,SoilTypesFile&
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
-   ,nox_emission_1996_2005File&
-   ,nox_emission_cams81File&
+   ,soilnox_emission_File&
    ,MonthlyFacFile&
    ,MonthlyFacBasis&
    ,DailyFacFile&
@@ -921,7 +920,6 @@ subroutine Config_Constants(iolog)
   ! do not close(IO_NML), other modules will be read namelist on this file
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
-  USES%SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
   if(MasterProc) then
     write(logtxt,'(a,L2)') dtxt//'USES%SOILNOX ', USES%SOILNOX
     write(*,*) trim(logtxt), IOLOG
@@ -1025,8 +1023,7 @@ subroutine Config_Constants(iolog)
   call associate_File(SoilTypesFile)
   call associate_File(SurfacePressureFile)
   call associate_File(AircraftEmis_FLFile)
-  call associate_File(nox_emission_1996_2005File)
-  call associate_File(nox_emission_cams81File)
+  call associate_File(soilnox_emission_File)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
   call associate_File(HourlyFacFile)

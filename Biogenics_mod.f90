@@ -132,6 +132,7 @@ module Biogenics_mod
    real,public, save, allocatable, dimension(:,:) :: &
       AnnualNdep, &  ! N-dep in mgN/m2/
       SoilNOx, SoilNH3
+   real,public, save, allocatable, dimension(:,:,:) :: SoilNOx3d 
 
  ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
@@ -184,8 +185,10 @@ module Biogenics_mod
     
     allocate(AnnualNdep(LIMAX,LJMAX), &
                 SoilNOx(LIMAX,LJMAX), &
+                SoilNOx3D(LIMAX,LJMAX,8), &
                 SoilNH3(LIMAX,LJMAX))
     SoilNOx=0.0  !BIDIR safety
+    SoilNOx3D=0.0  !BIDIR safety
     SoilNH3=0.0  !BIDIR safety
     allocate(EmisNat(NEMIS_BioNat,LIMAX,LJMAX))
     EmisNat=0.0
@@ -565,7 +568,7 @@ module Biogenics_mod
   integer, intent(in) ::  i,j
 
   character(len=*), parameter :: dtxt='BioModSetup:' 
-  integer :: it2m, loc_hour
+  integer :: it2m, gmt_3hour
   real    :: E_ISOP, E_MTP, E_MTL, sFac
 
 ! To get from ug/m2/h to molec/cm3/s
@@ -636,21 +639,21 @@ module Biogenics_mod
   rcbio(NATBIO%TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
   EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
 
-  if ( USES%EURO_SOILNOX ) then
-    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
-    !FUTURE? rcbio(NATBIO%NO,KG) =
-         SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
-    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-    loc_hour = -999 ! just for dbg printout
+  if ( USES%SOILNOX ) then
+    if ( USES%SOILNOX_METHOD == 'OLD_EURO' ) then
+      rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
+           SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
+      EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
 
-  else if ( USES%GLOBAL_SOILNOX ) then !emissions should be in molecules/m2/s (NB: not molecules/cm3/s!)
-    EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)/biofac_SOILNO * 1.0e-15/3600.0 !molecules/m2/s -> kg/m2/h ?
-    loc_hour = int(current_date%hour + Grid%longitude/15)
-    if (loc_hour>24)  loc_hour = loc_hour - 24
-    if (loc_hour< 1)  loc_hour = loc_hour + 24
-    rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + & 
-         SoilNOx(i,j) /Grid%DeltaZ * 1.0e-6 * hourlySoilFac(loc_hour) !molecules/m2/s -> molecules/cm3/s
-  end if
+    else !GLOBAL emissions should be in molecules/m2/s (NB: not molecules/cm3/s!)
+      EmisNat(NATBIO%NO,i,j) =  SoilNOx(i,j)/biofac_SOILNO * 1.0e-15/3600.0 !molecules/m2/s -> kg/m2/h ?
+      gmt_3hour = 1 + int(current_date%hour/3)
+      !molecules/m2/s -> molecules/cm3/s:
+      rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
+         SoilNOx3D(i,j,gmt_3hour)/Grid%DeltaZ * 1.0e-6
+
+    end if ! USES%SOILNOX_METHOD
+  end if ! USES%SOILNOX
 
     !EXPERIMENTAL
     !if ( USES%SOILNH3 ) then
@@ -667,12 +670,14 @@ module Biogenics_mod
     if ( dbg .and. current_date%seconds==0 ) then 
 
       !molecules/m2/s -> molecules/cm3/s
-      sFac = 1/Grid%DeltaZ * 1.0e-6 * hourlySoilFac(loc_hour)
+      sFac = 1/Grid%DeltaZ * 1.0e-6
 
       call datewrite(dtxt//" env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
-      call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", [ loc_hour ], &
-       [ E_ISOP, E_MTP, E_MTL, hourlySoilFac(loc_hour), SoilNOx(i,j) * sFac ] ) 
+      call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", [  gmt_3hour ], &
+       [ E_ISOP, E_MTP, E_MTL, SoilNOx(i,j) * sFac, &
+        SoilNOx3D(i,j,gmt_3hour) * sFac ] ) 
+
       if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j) * sFac,&
                                       SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
       call datewrite(dtxt//" rcemisL ", (/ &
@@ -696,12 +701,13 @@ module Biogenics_mod
       real :: hfac
 
 
-      if ( .not. USES%EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
+      if ( .not. USES%SOILNOX  ) return ! and fSW has been set to 1. at start
+      if ( USES%SOILNOX_METHOD /= 'OLD_EURO' ) return
 
       if( DEBUG%SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_mod DEBUG_SOILNOX EURO: ",&
           current_date%day, current_date%hour, current_date%seconds,&
-          USES%EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
+          USES%SOILNOX_METHOD, EURO_SOILNOX_DEPSCALE
       end if
 
       ! We reset once per hour
