@@ -15,7 +15,7 @@
 !NB: set the meteorology path with the exact version (metdata_VERSION) if you want to be 
 !sure to run with a constant version of the meteo!
   meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined above
-  EXP_NAME              = 'EMEPSTD',
+
 !------------------------------
 !General Comment: only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are
 ! recognized. "POLL" will be replaced by emissions names listed in
@@ -45,12 +45,18 @@
   USES%CONVECTION        = T,
   USES%DEGREEDAY_FACTORS = F, 
   USES%PFT_MAPS  = T,
-  Vertical_levelsFile = 'DataDir/Vertical_levels19.txt', ! Lowest layers 94m
+  Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt', ! Lowest layers 94m
   USES%ROADDUST          = F,
   !EmisDir='DataDir/Emis_ECLIPSEv6b/'
   !NEED TO UNCOMMENT. Note, DMS is emis_inputlist(1)
   !emis_inputlist(2)%name  = 'DataDir/Emis_ECLIPSEv6b/emis_ECLIPSEv6b_YYYY_05deg_noINTSHIP.nc',
+  !emis_inputlist(2)%sector = 'SNAP',
   !emis_inputlist(3)%name  = 'DataDir/Emis_ECLIPSEv6a_ships/emis_ECLIPSEv6a_YYYY_05deg_INTSHIP.nc',
+  !emis_inputlist(3)%sector = 'SNAP',
+
+!Defaults splits are compatible with 'SNAP' sectors
+!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
+!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
 
 ! 1a) GLOBAL; using ECLIPSEv6 emissions:
 
@@ -85,6 +91,13 @@
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_latest.nc',
 
+! 2c) Splits compatible with GNFR_CAMS emissions
+! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
+! inventory assumptions! Here we hav Ref2, which corresponds to
+! TNO's estimate of emissions with condensable organics. Sadly,
+! even the BC emissions are tied to this assumption.
+SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
+SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
 
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !
@@ -120,14 +133,6 @@
 
 ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 
-!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
-!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
-! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
-! inventory assumptions! Here we hav Ref2, which corresponds to
-! TNO's estimate of emissions with condensable organics. Sadly,
-! even the BC emissions are tied to this assumption.
-SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
-SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
 
 !DSTEST MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 SecEmisOutWanted = .true.
