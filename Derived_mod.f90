@@ -44,7 +44,7 @@ use Config_module,     only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
-  ,USES, uEMEP, startdate,enddate,&
+  ,USES, uEMEP, lf_src, startdate,enddate,&
   HourlyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
 
 use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
@@ -187,7 +187,7 @@ subroutine Init_Derived()
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
-  if(USES%LocalFractions .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
+  if(USES%LocalFractions .and. (lf_src(1)%HOUR .or. lf_src(1)%HOUR_INST)) HourlyEmisOut = .true.
 
   if(dbg0) write(*,*) dtxt//"INIT STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
