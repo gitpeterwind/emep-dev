@@ -170,6 +170,7 @@
        if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
        if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
        if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
+       if(GRIDWIDTH_M< 2000.0) dt_advec= 100.0
 
 ! GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=1200.0
 ! MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=1200.0
