@@ -35,6 +35,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th May 2021, Dave
+
+ZCM_EmChem19rnr added - has Res and nonRes species.
+                        (Provisional: will try to add NMVOC, NMHC groups to 
+                         EmChem19 later.)
+
+config_emep.nml - added commented out link to Ref 2.1 with Res/nonRes emissions,
+                  under ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1
+
+Config_module - added PBL outout to RunLog outputs
+
+utils/Rd_csvsites.f90 - bug fix
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th May 2021, Anna
 BoundaryConditions_mod.f90: Updated with 2019 Mace Head
 
