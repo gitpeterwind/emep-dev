@@ -53,6 +53,7 @@ logical :: first=.true., dbg = .false., force_output=.false.
 
    read(unit=io_in,fmt=*)  nsites
    read(unit=io_in,fmt=*)  freq
+   read(unit=io_in,fmt=*)  txt1 ! header
 !============================================================================
    do isite = 1, nsites
      read(unit=io_in,fmt=*)   sitename(isite)
@@ -61,6 +62,8 @@ logical :: first=.true., dbg = .false., force_output=.false.
      else
         print *, isite, sitename(isite)
      end if
+     if ( dbg ) print *, 'Reads site ', isite, sitename(isite)
+ 
    end do
    if ( len_trim(wsite)==0 ) then
       print *, "Choose site"
@@ -74,7 +77,7 @@ logical :: first=.true., dbg = .false., force_output=.false.
      stop
    end if
 print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(wsite), trim(sitename(wanted_site))
-   print *, "Chose site", sitename(wanted_site)
+   print *, "Choose site", sitename(wanted_site)
 !stop
 !============================================================================
    wanted_spec = -1
