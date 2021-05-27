@@ -45,6 +45,7 @@ config_emep.nml - added commented out link to Ref 2.1 with Res/nonRes emissions,
                   under ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1
 
 
+utils/Rd_csvsites.f90 - bug fix
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th May 2021, Anna
