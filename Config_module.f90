@@ -145,6 +145,7 @@ type, public :: emep_useconfig
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
+!    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
     ,GRAVSET          = .false. &! gravitational settling (EXPERIMENTAL! DO NOT USE YET)
     ,SEASALT          = .true.  &! See also SEASALT_fFrac
     ,CONVECTION       = .false. &! false works best for Euro runs
@@ -1106,7 +1107,7 @@ end subroutine Config_Constants
 ! PRELIM. Just writes out USES so far.
 subroutine WriteConfig_to_RunLog(iolog)
   integer, intent(in) :: iolog ! for Log file
-  NAMELIST /OutUSES/ USES
+  NAMELIST /OutUSES/ USES, PBL
   if(MasterProc)then
      write(iolog,*) ' USES after 1st time-step'
      write(iolog,nml=OutUSES)
