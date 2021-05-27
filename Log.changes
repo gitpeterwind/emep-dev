@@ -37,9 +37,13 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th May 2021, Dave
 
-ZCM_EmChem19rnr added - has Res and nonRes species.
-                        (Provisional: will try to add NMVOC, NMHC groups to 
-                         EmChem19 later.)
+
+ZCM_EmChem19a -   Update: CM_ChemGroups now has NMVOC, NMHC groups. 
+                          NMVOC species removed.
+
+ZCM_EmChem19rnr added - has Res and nonRes species (e.g. POM_f_Res, POM_f_nonRes),
+                        which are basically tracers of GNFR C emissions.
+                        CM_ChemGroups: now has NMVOC, NMHC groups, from EmChem19a
 
 config_emep.nml - added commented out link to Ref 2.1 with Res/nonRes emissions,
                   under ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1

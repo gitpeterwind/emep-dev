@@ -7,10 +7,10 @@ module ChemDims_mod
   
 
     ! NSPEC for TOT : All reacting species
-    integer, public, parameter :: NSPEC_TOT=127
+    integer, public, parameter :: NSPEC_TOT=126
     
     ! NSPEC for ADV : Advected species
-    integer, public, parameter :: NSPEC_ADV=112
+    integer, public, parameter :: NSPEC_ADV=111
     
     ! NSPEC for SHL : Short-lived (non-advected) species
     integer, public, parameter :: NSPEC_SHL=15

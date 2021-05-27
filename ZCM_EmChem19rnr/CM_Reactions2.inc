@@ -394,3 +394,131 @@
   xnew(Ash_c) = xold(Ash_c) + dt2 * P
 
 
+!-> POM_f_Res
+
+  P = rcemis(POM_F_RES,k)
+  
+  ! L = 0.0
+  
+  xnew(POM_f_Res) = xold(POM_f_Res) + dt2 * P
+
+
+!-> POM_c_Res
+
+  ! P = 0.0
+  
+  ! L = 0.0
+  
+  ! Nothing to do for POM_c_Res! xnew(POM_c_Res) = max(0.0, xold(POM_c_Res))
+
+
+!-> POM_f_nonRes
+
+  P = rcemis(POM_F_NONRES,k)
+  
+  ! L = 0.0
+  
+  xnew(POM_f_nonRes) = xold(POM_f_nonRes) + dt2 * P
+
+
+!-> POM_c_nonRes
+
+  P = rcemis(POM_C_NONRES,k)
+  
+  ! L = 0.0
+  
+  xnew(POM_c_nonRes) = xold(POM_c_nonRes) + dt2 * P
+
+
+!-> EC_f_Res_new
+
+  P = rcemis(EC_F_RES_NEW,k)
+  
+  L = rct(101,k)
+  
+  xnew(EC_f_Res_new) = (xold(EC_f_Res_new) + dt2 * P) / (1.0 + dt2 * L)
+
+
+!-> EC_f_Res_age
+
+  P = rcemis(EC_F_RES_AGE,k)  &
+    + rct(101,k) * xnew(EC_f_Res_new)
+  
+  ! L = 0.0
+  
+  xnew(EC_f_Res_age) = xold(EC_f_Res_age) + dt2 * P
+
+
+!-> EC_c_Res
+
+  P = rcemis(EC_C_RES,k)
+  
+  ! L = 0.0
+  
+  xnew(EC_c_Res) = xold(EC_c_Res) + dt2 * P
+
+
+!-> EC_f_nonRes_new
+
+  P = rcemis(EC_F_NONRES_NEW,k)
+  
+  L = rct(101,k)
+  
+  xnew(EC_f_nonRes_new) = (xold(EC_f_nonRes_new) + dt2 * P) / (1.0 + dt2 * L)
+
+
+!-> EC_f_nonRes_age
+
+  P = rcemis(EC_F_NONRES_AGE,k)  &
+    + rct(101,k) * xnew(EC_f_nonRes_new)
+  
+  ! L = 0.0
+  
+  xnew(EC_f_nonRes_age) = xold(EC_f_nonRes_age) + dt2 * P
+
+
+!-> EC_c_nonRes
+
+  P = rcemis(EC_C_NONRES,k)
+  
+  ! L = 0.0
+  
+  xnew(EC_c_nonRes) = xold(EC_c_nonRes) + dt2 * P
+
+
+!-> remPPM25_nonRes
+
+  P = rcemis(REMPPM25_NONRES,k)
+  
+  ! L = 0.0
+  
+  xnew(remPPM25_nonRes) = xold(remPPM25_nonRes) + dt2 * P
+
+
+!-> remPPM25_Res
+
+  P = rcemis(REMPPM25_RES,k)
+  
+  ! L = 0.0
+  
+  xnew(remPPM25_Res) = xold(remPPM25_Res) + dt2 * P
+
+
+!-> remPPM_c_nonRes
+
+  P = rcemis(REMPPM_C_NONRES,k)
+  
+  ! L = 0.0
+  
+  xnew(remPPM_c_nonRes) = xold(remPPM_c_nonRes) + dt2 * P
+
+
+!-> remPPM_c_Res
+
+  P = rcemis(REMPPM_C_RES,k)
+  
+  ! L = 0.0
+  
+  xnew(remPPM_c_Res) = xold(remPPM_c_Res) + dt2 * P
+
+

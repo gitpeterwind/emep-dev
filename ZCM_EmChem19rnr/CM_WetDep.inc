@@ -63,5 +63,19 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("Dust_sah_c", "PMc       ", -999.0 ) &
 , dep_t("Ash_f     ", "PMf       ", -999.0 ) &
 , dep_t("Ash_c     ", "PMc       ", -999.0 ) &
+, dep_t("POM_f_Res ", "PMf       ", -999.0 ) &
+, dep_t("POM_c_Res ", "PMc       ", -999.0 ) &
+, dep_t("POM_f_nonRes", "PMf       ", -999.0 ) &
+, dep_t("POM_c_nonRes", "PMc       ", -999.0 ) &
+, dep_t("EC_f_Res_new", "ECfn      ", -999.0 ) &
+, dep_t("EC_f_Res_age", "PMf       ", -999.0 ) &
+, dep_t("EC_c_Res  ", "PMc       ", -999.0 ) &
+, dep_t("EC_f_nonRes_new", "ECfn      ", -999.0 ) &
+, dep_t("EC_f_nonRes_age", "PMf       ", -999.0 ) &
+, dep_t("EC_c_nonRes", "PMc       ", -999.0 ) &
+, dep_t("remPPM25_nonRes", "PMf       ", -999.0 ) &
+, dep_t("remPPM25_Res", "PMf       ", -999.0 ) &
+, dep_t("remPPM_c_nonRes", "PMc       ", -999.0 ) &
+, dep_t("remPPM_c_Res", "PMc       ", -999.0 ) &
 , dep_t("SQT_SOA_NV", "PMf       ", -999.0 ) &
 /)

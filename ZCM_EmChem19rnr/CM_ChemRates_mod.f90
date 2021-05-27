@@ -229,6 +229,7 @@ contains
                & GAM=0.2,  &
                & S=S_M2M3(AERO%PM,  &
                & :))
+    rct(101,:) = EC_AGEING_RATE()
   
   end subroutine setChemRates
 
