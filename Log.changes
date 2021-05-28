@@ -11,7 +11,18 @@ chemistry, run:
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
-EmChem19a should be the default chemistry for most emep jobs. This also uses the EmChem19 emissplits though.
+2021 UPDATE: 
+EmChem19rnr,  EmChem19rnrp (=EmChem19rnr+pollen).
+
+  now splits PM into Res and nonRes species (e.g. POM_f_Res,
+  POM_f_nonRes), which are basically tracers of GNFR C emissions.
+  If you want PM split into wood/ffuel, use EmChem19a, EmChem19p
+
+  To be used in 2021 reporting, and GP SR runs
+
+EmChem19a was previously the default chemistry for most emep jobs, and should
+  still be used where the distinction wood/ffuel is wanted.
+
 EmChem19p is just EmChem19a + Alvaro's pollen species.
 
 MAKE sure that SplitDefaultFile  and SplitSpecialsFile  point to
@@ -38,6 +49,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th May 2021, Dave
 
 ZCM_EmChem19rnrp added - same as EmChem19rnr below, but with Pollen too.
+
+On DataDir, ZCM_DIRS/ZCM_EmChem19/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1
+  was copied to rnr-suffixed: CAMS-REG-AP_v4_2_yr2017_REF2_1 _rnr, to make it
+  clear that ony EmChem19rnr type chem schemes can be used.
+  Will delete non-suffixed version after some days.
+
+
+config_emep.nml updated to reflect this change
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th May 2021, Dave

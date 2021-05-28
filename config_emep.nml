@@ -100,8 +100,8 @@ SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
 !
 !May 2021 possibility. If using EmChem19rnr (Res or NonRes emissions), for Ref2.1, use:
-!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1/emissplit_defaults_POLL.csv',
-!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1/emissplit_specials_POLL.csv',
+!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
+!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
 
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !
