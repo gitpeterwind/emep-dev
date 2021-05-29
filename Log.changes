@@ -46,6 +46,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd June 2021, Peter
+
+LocalFractions for pm25:
+Now treats the pm25 "chemistry" (new->age) exactly by default.
+The pm25 are then divided into two groups, new species and the remainder.
+The cost is then only twice (was seven times when each species
+needed to be treated separatly and needed to sum then in the postprocessing)
+
+The non-chemistry pm25, can be required by requiring the "pm25_tot" species
+(useful it one does not want to pay twice the price, and accept the small
+differences).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th May 2021, Dave
 
 ZCM_EmChem19rnrp added - same as EmChem19rnr below, but with Pollen too.

@@ -5,8 +5,9 @@ module LocalFractions_mod
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
+use ChemFunctions_mod, only: EC_AGEING_RATE
 use ChemSpecs_mod,     only: species_adv,species
-use Config_module,     only: KMAX_MID, KMAX_BND,USES, uEMEP, lf_src, IOU_HOUR&
+use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, uEMEP, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
@@ -72,7 +73,7 @@ integer , private, save :: lf_Nvertout = 1!number of vertical levels to save in 
 integer, public, save :: NTIMING_lf=9
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
-integer, public, save :: Nsources=0
+integer, public, save :: Nsources=0, Nsources_nonew=0
 integer, public, save :: lf_Nvert=0
 
 integer, public, save :: LF_SRC_TOTSIZE
@@ -100,19 +101,23 @@ integer, private, save :: isrc_EC_f_new=-1, isrc_EC_f_age=-1
 integer, private, save :: ix_EC_f_ffuel_new=-1, ix_EC_f_ffuel_age=-1
 integer, private, save :: ix_EC_f_new=-1, ix_EC_f_age=-1
 integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
+integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
 integer, private, save :: Ncountrysectors_lf=0
+character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
+integer, private, save :: isrc_new(MAXSRC)
 
 contains
 
   subroutine lf_init
-    integer :: i, ic, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: i, ii, ic, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
     integer :: found
-    character(len=TXTLEN_NAME) :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
 
+! pm25_new and pm25 are considered as two different emitted pollutants
+    
   call Code_timer(tim_before)
   ix=0
   if(USES%uEMEP)then
@@ -173,6 +178,19 @@ contains
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if
   enddo
+  !for each pm25 we should separate into new and age parts
+  Nsources_nonew = Nsources
+  isrc_new = -1
+  do i = 1, Nsources_nonew
+     if(lf_src(i)%species == 'pm25')then
+        if(MasterProc)write(*,*)'splitting pm25 for source',i,' into pm25 and pm25_new'
+        Nsources = Nsources + 1
+        call CheckStop(Nsources>MAXSRC,"Number of LF sources exceeds MAXSRC")
+        lf_src(Nsources) = lf_src(i)
+        lf_src(Nsources)%species = 'pm25_new'
+        isrc_new(i) = Nsources
+     end if
+  enddo  
 
   ipoll=0
   iem2ipoll = -1
@@ -259,75 +277,117 @@ contains
      enddo
      
      iem=find_index(lf_src(isrc)%species ,EMIS_FILE(1:NEMIS_FILE))
+
      if(iem<1)then
-        !defined as single species (NO, NO2, O3..)
-        lf_src(isrc)%Nsplit = 1
-        ix=find_index(lf_src(isrc)%species ,species(:)%name)
-        if(ix<0)then
-           ix=find_index(lf_src(isrc)%species ,species(:)%name, any_case=.true.) !NB: index among all species also short lived
-           if(me==0 .and. ix>0)then
-              write(*,*)'WARNING: '//trim(lf_src(isrc)%species)//' not found, replacing with '//trim(species(ix)%name)
-              lf_src(isrc)%species=trim(species(ix)%name)
+        if(lf_src(isrc)%species=='pm25_new')then
+           !we separate pm25_new from other pm25
+           iem = find_index('pm25' ,EMIS_FILE(1:NEMIS_FILE))
+           lf_src(isrc)%iem = iem
+           ii = 0 ! index that over only the splits included
+           do i=1,emis_nsplit(iem)
+              iqrc = sum(emis_nsplit(1:iem-1)) + i
+              itot = iqrc2itot(iqrc)
+              ix = itot-NSPEC_SHL
+              if (index(species(itot)%name,'_new') == 0) cycle !not a "new" : exclude
+              isrc_pm25_new = isrc
+              ii = ii + 1
+              lf_src(isrc)%ix(ii) = ix
+              lf_src(isrc)%mw(ii) = species_adv(ix)%molwt
+              lf_src(isrc)%Nsplit = ii ! will take value of the last ii
+           enddo
+        else if(lf_src(isrc)%species=='pm25_tot')then
+           !we consider pm25 as a whole, without explicitly including the "chemistry", i.e. conversion new->age
+           iem = find_index('pm25' ,EMIS_FILE(1:NEMIS_FILE))
+           lf_src(isrc)%iem = iem
+           ii = 0 ! index that over only the splits included
+           do i=1,emis_nsplit(iem)
+              iqrc = sum(emis_nsplit(1:iem-1)) + i
+              itot = iqrc2itot(iqrc)
+              ix = itot-NSPEC_SHL
+              ii = ii + 1
+              lf_src(isrc)%ix(ii) = ix
+              lf_src(isrc)%mw(ii) = species_adv(ix)%molwt
+              lf_src(isrc)%Nsplit = ii ! will take value of the last ii
+           enddo
+        else
+           !defined as single species (NO, NO2, O3..)
+           lf_src(isrc)%Nsplit = 1
+           ix=find_index(lf_src(isrc)%species ,species(:)%name)
+           if(ix<0)then
+              ix=find_index(lf_src(isrc)%species ,species(:)%name, any_case=.true.) !NB: index among all species also short lived
+              if(me==0 .and. ix>0)then
+                 write(*,*)'WARNING: '//trim(lf_src(isrc)%species)//' not found, replacing with '//trim(species(ix)%name)
+                 lf_src(isrc)%species=trim(species(ix)%name)
+              endif
            endif
-        endif
-        call CheckStop( ix<1, "Local Fractions did not find corresponding pollutant: "//trim(lf_src(isrc)%species) )
-        iem=-1
-        lf_src(isrc)%species_ix = ix !NB: index among all species
-        lf_src(isrc)%ix(1) = ix - NSPEC_SHL !NB: index among advected species
-        lf_src(isrc)%mw(1) = species_adv(lf_src(isrc)%ix(1))%molwt
-        lf_src(isrc)%iqrc = itot2iqrc(ix) !negative if not among emitted species
-        if(lf_src(isrc)%iqrc>0) iem = iqrc2iem(lf_src(isrc)%iqrc)
-        lf_src(isrc)%iem = iem
-        if(trim(species(ix)%name)=='O3')isrc_O3=isrc
-        if(trim(species(ix)%name)=='NO')isrc_NO=isrc
-        if(trim(species(ix)%name)=='NO2')isrc_NO2=isrc
-        if(trim(species(ix)%name)=='O3')ix_O3=lf_src(isrc)%ix(1)!shortcut
-        if(trim(species(ix)%name)=='NO')ix_NO=lf_src(isrc)%ix(1)!shortcut
-        if(trim(species(ix)%name)=='NO2')ix_NO2=lf_src(isrc)%ix(1)!shortcut
-        if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
-        if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
-        if(trim(species(ix)%name)=='SO4')ix_SO4=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='SO2')ix_SO2=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
-        if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
-        if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
-        if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
-        if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
-        if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
-        if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
-        if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
-        if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
-        if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
+           call CheckStop( ix<1, "Local Fractions did not find corresponding pollutant: "//trim(lf_src(isrc)%species) )
+           iem=-1
+           lf_src(isrc)%species_ix = ix !NB: index among all species
+           lf_src(isrc)%ix(1) = ix - NSPEC_SHL !NB: index among advected species
+           lf_src(isrc)%mw(1) = species_adv(lf_src(isrc)%ix(1))%molwt
+           lf_src(isrc)%iqrc = itot2iqrc(ix) !negative if not among emitted species
+           if(lf_src(isrc)%iqrc>0) iem = iqrc2iem(lf_src(isrc)%iqrc)
+           lf_src(isrc)%iem = iem
+           if(trim(species(ix)%name)=='O3')isrc_O3=isrc
+           if(trim(species(ix)%name)=='NO')isrc_NO=isrc
+           if(trim(species(ix)%name)=='NO2')isrc_NO2=isrc
+           if(trim(species(ix)%name)=='O3')ix_O3=lf_src(isrc)%ix(1)!shortcut
+           if(trim(species(ix)%name)=='NO')ix_NO=lf_src(isrc)%ix(1)!shortcut
+           if(trim(species(ix)%name)=='NO2')ix_NO2=lf_src(isrc)%ix(1)!shortcut
+           if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
+           if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
+           if(trim(species(ix)%name)=='SO4')ix_SO4=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='SO2')ix_SO2=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
+           if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
+           if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
+           if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
+           if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
+           if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
+           if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
+           if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
+           if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
+           if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
+        end if
      else
         !species defines as primary emitted 
         lf_src(isrc)%iem = iem
-        lf_src(isrc)%Nsplit=emis_nsplit(iem)
-        do i=1,lf_src(isrc)%Nsplit
+        ii = 0 ! index that over only the splits included
+        do i=1,emis_nsplit(iem)
            iqrc=sum(emis_nsplit(1:iem-1)) + i
            itot=iqrc2itot(iqrc)
            ix=itot-NSPEC_SHL
-           lf_src(isrc)%ix(i)=ix
-           lf_src(isrc)%mw(i)=species_adv(ix)%molwt
-!           if(lf_src(isrc)%species=="pm25")then
-!              ix=find_index('EC_f_ffuel_new', species(:)%name)
-!              call CheckStop( ix<1, "Local Fractions did not find  ")
-!              ix_EC_f_ffuel_new = ix - NSPEC_SHL!shortcut
-!              ix=find_index('EC_f_ffuel_age', species(:)%name)
-!              call CheckStop( ix<1, "Local Fractions did not find  ")
-!              ix_EC_f_ffuel_age = ix - NSPEC_SHL!shortcut
-!              ix=find_index('isrc_EC_f_wood_new', species(:)%name)
-!              call CheckStop( ix<1, "Local Fractions did not find  ")
-!              ix_isrc_EC_f_wood_new = ix - NSPEC_SHL!shortcut
-!              ix=find_index('isrc_EC_f_wood_age', species(:)%name)
-!              call CheckStop( ix<1, "Local Fractions did not find  ")
-!              ix_isrc_EC_f_wood_age = ix - NSPEC_SHL!shortcut
-!           endif
+           if(lf_src(isrc)%species == 'pm25') then
+              isrc_pm25 = isrc
+              !we include only the parts of pm25 which are not "new" 
+              if(MasterProc .and. i == 1 .and. index(species(itot)%name,'_new')>0)write(*,*)'including only new pm25 into pm25_new'
+              if (index(species(itot)%name,'_new')>0) cycle              
+           end if
+           ii = ii + 1
+           lf_src(isrc)%Nsplit = ii
+           lf_src(isrc)%ix(ii) = ix
+           lf_src(isrc)%mw(ii) = species_adv(ix)%molwt
+           
+           !           if(lf_src(isrc)%species=="pm25")then
+           !              ix=find_index('EC_f_ffuel_new', species(:)%name)
+           !              call CheckStop( ix<1, "Local Fractions did not find  ")
+           !              ix_EC_f_ffuel_new = ix - NSPEC_SHL!shortcut
+           !              ix=find_index('EC_f_ffuel_age', species(:)%name)
+           !              call CheckStop( ix<1, "Local Fractions did not find  ")
+           !              ix_EC_f_ffuel_age = ix - NSPEC_SHL!shortcut
+           !              ix=find_index('isrc_EC_f_wood_new', species(:)%name)
+           !              call CheckStop( ix<1, "Local Fractions did not find  ")
+           !              ix_isrc_EC_f_wood_new = ix - NSPEC_SHL!shortcut
+           !              ix=find_index('isrc_EC_f_wood_age', species(:)%name)
+           !              call CheckStop( ix<1, "Local Fractions did not find  ")
+           !              ix_isrc_EC_f_wood_age = ix - NSPEC_SHL!shortcut
+           !           endif
            if(lf_src(isrc)%species=="voc")then
               isrc_VOC = isrc
               ix=find_index('CH3CO3', species(:)%name)
@@ -340,12 +400,12 @@ contains
            if(lf_src(isrc)%species=="nox")then
               ix=find_index("NO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for NO2 not found')
-              lf_src(isrc)%mw(i)=species_adv(ix)%molwt
+              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt
            endif
            if(lf_src(isrc)%species=="sox")then
               ix=find_index("SO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for SO2 not found')
-              lf_src(isrc)%mw(i)=species_adv(ix)%molwt
+              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt
            endif
            if(lf_src(isrc)%species=="nox" .and. (lf_src(isrc)%DryDep .or. lf_src(isrc)%WetDep))then
               ix=find_index("NO3",species_adv(:)%name)
@@ -370,7 +430,7 @@ contains
               enddo
            endif
         end do
-        
+
      endif
      if(ix_SO2>0)then
         !need some more indices
@@ -818,7 +878,7 @@ subroutine lf_av(dt,End_of_Day)
   real, intent(in)    :: dt                   ! time-step used in integrations
   logical, intent(in) :: End_of_Day           ! e.g. 6am for EMEP sites
   real :: xtot
-  integer ::i,j,k,n,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
+  integer ::i,j,k,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
   integer ::isec_poll
   logical :: pollwritten(Npoll_lf_max)
   
@@ -831,7 +891,7 @@ subroutine lf_av(dt,End_of_Day)
   !do the averaging
   do iou_ix = 1, Niou_ix
      pollwritten = .false.
-     do isrc=1,Nsources
+     do isrc=1,Nsources_nonew
         ipoll = lf_src(isrc)%poll
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
            do j=1,ljmax
@@ -849,7 +909,7 @@ subroutine lf_av(dt,End_of_Day)
                              *roa(i,j,k,1)*1.E9 !for ug/m3
                        !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                     endif
-                end do
+                 end do                 
                  if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
                     lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
                  endif
@@ -857,12 +917,42 @@ subroutine lf_av(dt,End_of_Day)
                     lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix)+xtot*lf(n,i,j,k)
                  end do
               enddo
-           enddo
+           enddo           
         enddo
+        if(isrc_new(isrc)>0)then
+           !add pm25_new to pm25
+           isrc_pm25_new = isrc_new(isrc)
+           do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+              do j=1,ljmax
+                 do i=1,limax
+                    xtot=0.0
+                    do iix=1,lf_src(isrc_pm25_new)%Nsplit
+                       ix=lf_src(isrc_pm25_new)%ix(iix)
+                       if(lf_src(isrc_pm25_new)%type=='country')then
+                          !3m height cfac correction
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc_pm25_new)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
+                          !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                       else
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc_pm25_new)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9 !for ug/m3
+                          !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                       endif
+                    end do
+                    lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
+                    n_new = lf_src(isrc_pm25_new)%start
+                    do n=lf_src(isrc)%start, lf_src(isrc)%end !NB: loop over isrc for pm25, not new
+                       lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix)+xtot*lf(n_new,i,j,k)
+                       n_new = n_new + 1
+                    end do
+                 enddo
+              enddo
+           enddo
+        end if
         pollwritten(ipoll) = .true.
-      enddo
+     enddo
   enddo
-  
+
   av_fac=av_fac+1
   
   call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: averaging")
@@ -1244,49 +1334,70 @@ subroutine lf_chem(i,j)
   integer, intent(in) ::i,j
   real :: VOC,HO2,O3,NO,NO2,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt,inv
   real :: SO4,SO2, d_SO2, d_SO4
-  integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2
-  integer :: n_SO2,n_SO4,  n_EC_new, n_EC
+  real :: xn_new, xn_age
+  integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2, isrc
+  integer :: n_SO2,n_SO4,  n_EC_new, n_EC, n_age, n_new, iix, ix
   real :: k_OH, k_H2O2, k_O3
-  real ::  d_age
-  integer, parameter :: EC_AGEING_RATE_IDX = 101 ! TODO: update automatically
+  real ::  d_age, ageing_rate(KCHEMTOP:KMAX_MID)
   
   call Code_timer(tim_before)
-  
-  if(isrc_EC_f_new>0)then
-     call StopAll("EC_f_new no more implemented")
-     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        ! d_age = amount that has been transformed from EC_f_new to EC_f_age
-        d_age = rct(80,k)*xn_adv(ix_EC_f_new,i,j,k) *dt_advec
-        inv = 1.0/( xn_adv(ix_EC_f_age,i,j,k) + d_age + 1.0E-20)        
-        n_EC_new = lf_src(isrc_EC_f_new)%start
-        do n_EC=lf_src(isrc_EC_f_age)%start, lf_src(isrc_EC_f_age)%end
-           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
-           n_EC_new = n_EC_new + 1
+  ageing_rate = EC_AGEING_RATE()
+
+  if (isrc_pm25 > 0) then
+     do isrc = 1, Nsources_nonew
+        isrc_pm25_new = isrc_new(isrc)
+        isrc_pm25 = isrc
+        if (isrc_pm25_new < 0) cycle
+        !transform some of the pm25_new into age
+        do k = KMAX_MID-lf_Nvert+1,KMAX_MID     
+           xn_new = 0.0
+           xn_age = 0.0
+           do iix=1,lf_src(isrc_pm25_new)%Nsplit
+              ix=lf_src(isrc_pm25_new)%ix(iix)
+              xn_new=xn_new+xn_adv(ix,i,j,k)*lf_src(isrc_pm25_new)%mw(iix)
+           end do
+           d_age = ageing_rate(k)*xn_new *dt_advec
+           if (d_age > 1.0E-30) then ! very important. Wrong results without if, even far from the country source.
+              do iix=1,lf_src(isrc_pm25)%Nsplit
+                 ix=lf_src(isrc_pm25)%ix(iix)
+                 xn_age=xn_age+xn_adv(ix,i,j,k)*lf_src(isrc_pm25)%mw(iix)
+              end do
+              inv = 1.0/( xn_age + d_age )        
+              n_new = lf_src(isrc_pm25_new)%start
+              do n_age=lf_src(isrc_pm25)%start, lf_src(isrc_pm25)%end
+                 lf(n_age,i,j,k) = (lf(n_age,i,j,k)*xn_age + d_age*lf(n_new,i,j,k)) * inv
+                 n_new = n_new + 1
+              enddo
+           end if
         enddo
-     enddo
-  endif
+     end do
+  end if
 
   if(isrc_EC_f_ffuel_new >0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         ! d_age = amount that has been transformed from EC_f_ffuel_new to EC_f_ffuel_age
-        d_age = rct(EC_AGEING_RATE_IDX,k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
+        d_age = ageing_rate(k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
+        if (d_age > 1.0E-30) then
         inv = 1.0/( xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age + 1.0E-20)        
         n_EC_new = lf_src(isrc_EC_f_ffuel_new)%start
         do n_EC=lf_src(isrc_EC_f_ffuel_age)%start, lf_src(isrc_EC_f_ffuel_age)%end
            lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
            n_EC_new = n_EC_new + 1
         enddo
+        endif
      enddo
   endif
   if(isrc_EC_f_wood_new >0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        d_age = rct(EC_AGEING_RATE_IDX,k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
+        d_age = ageing_rate(k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
+        if (d_age > 1.0E-30) then
         inv = 1.0/( xn_adv(ix_EC_f_wood_age,i,j,k) + d_age + 1.0E-20)        
         n_EC_new = lf_src(isrc_EC_f_wood_new)%start
         do n_EC=lf_src(isrc_EC_f_wood_age)%start, lf_src(isrc_EC_f_wood_age)%end
            lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_wood_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
            n_EC_new = n_EC_new + 1
         enddo
+        endif
      enddo     
   endif
   if(isrc_SO2>0)then
@@ -1663,20 +1774,21 @@ subroutine lf_emis(indate)
       enddo
    end do ! i
  end do ! j
-
-  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
+ call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
 
 end subroutine lf_emis
 
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: n, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
-  real :: emis
+  integer :: n, ii, iqrc, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
+  real :: emis, sdt
   integer :: ngroups, ig2ic(Max_Country_groups)
 
   call Code_timer(tim_before)
 
+  sdt = s * dt_advec
+  
   emish_idx = SECTORS(isec)%height
   split_idx = SECTORS(isec)%split
   do n=1,iem2Nipoll(iem)
@@ -1684,13 +1796,31 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(ipoll2iqrc(ipoll)>0)then
         !only extract that single pollutant
         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emisfrac(ipoll2iqrc(ipoll),split_idx,iland)&
-                * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec!total over all sectors and countries for each pollutant
+           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(ipoll2iqrc(ipoll),split_idx,iland)&
+                * emis_kprofile(KMAX_BND-k,emish_idx) !total over all sectors and countries for each pollutant
         enddo
      else
-        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + s * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec!total for each pollutant
-        enddo
+        if (trim(iem2names(iem, n)) == 'pm25') then
+           !include only part of the splitted species
+           do ii=1, lf_src(isrc_pm25)%Nsplit
+              iqrc=itot2iqrc(lf_src(isrc_pm25)%ix(ii)+NSPEC_SHL)
+              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                 lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
+              end do
+           end do
+        else if (trim(iem2names(iem, n)) == 'pm25_new') then
+           !include only part of the splitted species
+           do ii=1, lf_src(isrc_new(isrc_pm25))%Nsplit
+              iqrc=itot2iqrc(lf_src(isrc_pm25_new)%ix(ii)+NSPEC_SHL)
+              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                 lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
+              end do
+           end do
+        else
+           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+              lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
+           enddo
+        end if
      endif
   enddo
 
@@ -1711,9 +1841,19 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
               emis = s * dt_advec
               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
-              enddo
+              if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
+                 !include only a part of the pm25 splitted species
+                 do ii=1, lf_src(isrc)%Nsplit
+                    iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)
+                    do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                       emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx)
+                    end do
+                 end do             
+              else
+                 do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                    emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
+                 end do
+              end if
            enddo
         enddo
      end if
@@ -1731,19 +1871,28 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            ic = ig2ic(ig) ! index for country_group
            do is=1,Ncountrysectors_lf
               if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
-              emis = s * dt_advec
               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
-              enddo
+              if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
+                 !include only a part of the pm25 splitted species
+                 do ii=1, lf_src(isrc)%Nsplit
+                    iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)                             
+                    do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                       emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + sdt  * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx)
+                    end do
+                 end do
+              else
+                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                    emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx)
+                 enddo
+              end if
            enddo
         enddo
      endif
      if(lf_src(isrc)%iqrc>0 .and. (Ncountry_lf>0.or.Ncountry_group_lf>0))then
         !sum of all emissions for that species from all countries and sectors
         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) &
-                * emisfrac(lf_src(isrc)%iqrc,split_idx,iland) *dt_advec
+           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) &
+                * emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
         enddo
         
      else
@@ -1753,13 +1902,24 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            !single pollutant, part of emitted group of pollutant
            ipoll = lf_src(isrc)%poll
            do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) &
-                   * emisfrac(lf_src(isrc)%iqrc,split_idx,iland) *dt_advec       
+              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) &
+                   * emisfrac(lf_src(isrc)%iqrc,split_idx,iland)      
            enddo
         else
-           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + s * emis_kprofile(KMAX_BND-k,emish_idx) * dt_advec
-           enddo
+           if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
+              !include only a part of the pm25 splitted species
+              do ii=1, lf_src(isrc)%Nsplit
+                 iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)
+                 emis = sdt * emisfrac(iqrc,split_idx,iland)
+                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                    emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
+                 enddo
+              enddo
+           else 
+              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+                 emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx)
+              enddo
+           end if
         endif
      endif
   enddo
