@@ -1056,6 +1056,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
          if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
       end do
       weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      weight_k1(k)=max(0.0,min(1.0,weight_k1(k)))
       weight_k2(k)=1.0-weight_k1(k)
       if(mydebug)&
         write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
@@ -1081,6 +1082,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
         if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
       end do
       weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      weight_k1(k)=max(0.0,min(1.0,weight_k1(k)))
       weight_k2(k)=1.0-weight_k1(k)
       if(mydebug) &
         write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
