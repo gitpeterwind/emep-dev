@@ -1995,7 +1995,17 @@ contains
           iObsComp = Bmats(iB)%iObsComp(itracer)
           ! copy sigma, fill in dx_loc which is not used yet:
           if ( lny > 0 ) then
-            dx_loc(:,:,:,iObsComp) = Bmats(iB)%Bcovarsqrt%S(:,:,:,itracer,itime)
+            !! testing ...
+            !write (gol,*) rname//':       dx_loc', shape(dx_loc), ';', shape(Bmats(iB)%Bcovarsqrt%S); call goPr
+            ! check ..
+            if ( size(Bmats(iB)%Bcovarsqrt%S,3) /= 1 ) then
+              write (gol,'("expected S on 1 level, found ",i0)') size(Bmats(iB)%Bcovarsqrt%S,1); call goErr
+              TRACEBACK; status=1; return
+            end if
+            ! copy same std.dev. to all levels, only bottom (ilev=nlev) is used ..
+            do ilev = 1, nlev
+              dx_loc(:,:,ilev,iObsComp) = Bmats(iB)%Bcovarsqrt%S(:,:,1,itracer,itime)
+            end do
           end if
         end do  ! tarcers in covar
 
