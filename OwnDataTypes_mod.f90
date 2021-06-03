@@ -282,6 +282,13 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file .NB: not read from attributes
 end type EmisFile_id_type
 
+type, public :: hourly_emis_factor_type
+   character(len=TXTLEN_FILE) :: file = 'NOTSET' !filename with path
+   character(len=TXTLEN_NAME) :: poll = 'NOTSET' !one of the emitted pollutants, nox, sox, pm25 etc. Case sensitive
+   character(len=TXTLEN_NAME) :: cdfname = 'NOTSET' ! name of the variable in the file
+end type hourly_emis_factor_type
+
+
 !/ Emissions file treatment. Dims more than used.
 type, public :: emis_in
   character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF

@@ -30,7 +30,8 @@ use Config_module,only: &
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
-    startdate, Emis_sourceFiles, EmisMask
+    startdate, Emis_sourceFiles, EmisMask, &
+    hourly_emisfac
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
 use Debug_module,      only: DEBUG ! , & !DEBUG => DEBUG_EMISSIONS, &
@@ -1800,6 +1801,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer :: iwday
   real :: daynorm, roadfac
   character(len=*), parameter:: dtxt='EmisSet:'
+  character(len=TXTLEN_FILE) :: filename
+  real, allocatable :: Emisfac2D(:,:,:)
 
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
@@ -1876,6 +1879,24 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:,:) = 0.0
     if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
+
+    if (any(hourly_emisfac%file /= 'NOTSET')) then
+       allocate(Emisfac2D(LIMAX,LJMAX,NEMIS_File))
+       Emisfac2D(1,1,:) = -1.0 ! to indicate that it is not set
+       do i = 1, size(hourly_emisfac)
+          iem = find_index(hourly_emisfac(i)%poll,EMIS_FILE(:))
+          call CheckStop(iem<1 .and. hourly_emisfac(i)%file /= 'NOTSET', &
+               trim(hourly_emisfac(i)%poll)//' is not a valid emitted pollutant name')
+          if (iem<1) cycle
+          n =  current_date%hour + 1 ! record
+          filename = date2string(hourly_emisfac(i)%file,current_date,mode='YMDH')
+          filename = key2str(filename,'DataDir',DataDir)
+          filename = key2str(filename,'DataDir',EmisDir)          
+          call ReadField_CDF(trim(filename), hourly_emisfac(i)%cdfname, Emisfac2D(1,1,iem), n,&
+               interpol='conservative',needed=.true.,debug_flag=.false.,UnDef=1.0)
+       end do
+    end if
+    
     ! Process each grid:
     do j = 1,ljmax
       do i = 1,limax
@@ -1923,7 +1944,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
               !in order not to access the array and waste cache if not necessary
-              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,tfac_idx,iem)
+              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac = tfac * GridTfac(i,j,tfac_idx,iem)
 
               !Degree days - only SNAP-2
               if(USES%DEGREEDAY_FACTORS .and. IS_DOM(isec) .and. Gridded_SNAP2_Factors) then
@@ -1939,8 +1960,16 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     isec, tfac_idx,iland, daynumber, indate%hour, &
                     timefac(iland_timefac,tfac_idx,iem), t2_nwp(i,j,2)-273.15, &
                     fac_min(iland,tfac_idx,iem),  gridfac_HDD(i,j), tfac
-              end if ! =============== HDD
-
+             end if ! =============== HDD
+ 
+              if (allocated(Emisfac2D)) then
+                 if (Emisfac2D(1,1,iem)>-0.5) then
+                    if(me==NPROC/2 .and. i==2 .and. j==2 .and. icc == 1 .and. isec==1) write(*,*)'Warning: reseting all timefactors, and using only gridded hourly factors for '//trim(EMIS_FILE(iem))
+                    !the hourly factors are defined for this pollutant
+                    tfac = Emisfac2D(i,j,iem)
+                 end if
+              end if
+              
               s = tfac * secemis(isec,i,j,icc,iem)
               ! prelim emis sum kg/m2/s
               SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
@@ -2079,6 +2108,7 @@ end if
 
 !Add emissions from new format
     do n = 1, NEmis_sources
+       call CheckStop(allocated(Emisfac2D), 'hourly gridded emisfactors not implemented yet for emis new formats')
        itot = Emis_source(n)%species_ix
        isec = Emis_source(n)%sector
        isec_idx = Emis_source(n)%sector_idx !index in SECTORS
@@ -2240,6 +2270,9 @@ end if
           enddo
        endif
     enddo
+    
+    if(allocated(Emisfac2D))deallocate(Emisfac2D)
+    
  end if ! hourchange
 
   if(USES%ROADDUST)THEN

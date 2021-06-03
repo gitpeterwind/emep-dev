@@ -46,6 +46,21 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd June 2021, Peter/Arjo
+
+Gridded hourly timefactors.
+Config setting should be of format for example:
+hourly_emisfac(1)%file = 'Emis-hfactorYYYYMMDD.nc',
+hourly_emisfac(1)%cdfname = 'NOx_emis_factor',
+hourly_emisfac(1)%poll = 'nox',
+
+hourly_emisfac(2)%file = 'Emis-hfactorYYYYMMDD.nc',
+hourly_emisfac(2)%cdfname = 'PM_emis_factor',
+hourly_emisfac(2)%poll = 'pm25',
+
+and the file must have 24 records starting from 00:00
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd June 2021, Peter
 
 LocalFractions for pm25:

@@ -16,7 +16,7 @@ use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, 
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEMEP_type, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
-                                 Sector_type,&
+                                 Sector_type, hourly_emis_factor_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  TXTLEN_DERIV, Emis_mask_type, &
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4
@@ -221,6 +221,7 @@ type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
 type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
+type(hourly_emis_factor_type), public, save :: hourly_emisfac(10) !mapped hourly emissions timefactor
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100
 logical, public, save :: SecEmisOutWanted(MaxNSECTORS) = .false.
@@ -863,6 +864,7 @@ subroutine Config_Constants(iolog)
    ,DailyFacFile&
    ,HourlyFacFile&
    ,HourlyFacSpecialsFile&
+   ,hourly_emisfac& !2D mapped hourly timefactors
    ,cmxbicDefaultFile&
    ,cmxBiomassBurning_FINNv1p5&
    ,cmxBiomassBurning_GFASv1&
