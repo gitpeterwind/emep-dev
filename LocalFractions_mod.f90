@@ -711,6 +711,7 @@ subroutine lf_out(iotyp)
      iddep = 0
      iwdep = 0
      do isrc = 1, Nsources
+        if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
