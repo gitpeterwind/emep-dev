@@ -25,7 +25,7 @@ ifeq ($(MACHINE), betzy)
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpiifort
-else ($(MACHINE),fram)
+else ifeq ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
