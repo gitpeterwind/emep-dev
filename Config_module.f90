@@ -154,6 +154,7 @@ type, public :: emep_useconfig
     ,LIGHTNING_EMIS   = .true.  &!
     ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
     ,DUST             = .true.  &! Only EECCA?
+    ,NO2_COMPENSATION_PT = .false. & ! allows
     ,SOILNOX          = .true.  &! See SOILNOx_Method below.
     ,OCEAN_DMS        = .false. &!set automatically true if found.
     ,OCEAN_NH3        = .false. &!set automatically true if found
