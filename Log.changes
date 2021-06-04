@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th June 2021, Peter
+
+Makefile adapted for Betzy
+
+EmisGet_mod: changed tmp_emisfrac from automatic to allocatable array, because
+otherwise the code crashes on Betzy, with segmentation error (!?). 
+(netCDF/4.7.4-iimpi-2020b)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd June 2021, Peter/Arjo
 
 Gridded hourly timefactors.

@@ -1258,7 +1258,8 @@ end if
 ! zero to just use species()%molwt.:
   type(KeyVal), dimension(1)  :: MassValue ! set for e.f. NOx as NO2, SOx as SO2
   integer :: NKeys
-  real, dimension(NSPEC_ADV,N_SPLITMAX,NLAND) :: tmp_emisfrac
+!  real, dimension(NSPEC_ADV,N_SPLITMAX,NLAND) :: tmp_emisfrac
+  real, allocatable :: tmp_emisfrac(:,:,:) !Betzy did not like automatic array
   real, dimension(NSPEC_ADV) :: tmp_emis_masscorr
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2itot !maps from iqrc
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2iem !maps from iqrc
@@ -1278,7 +1279,7 @@ end if
   nrcsplit= 0                 !
   itot2iqrc = -1 !init. Used to recognized non-split emissions (individual species)
   iemsplit2itot = -1 !init
-
+  allocate(tmp_emisfrac(NSPEC_ADV,N_SPLITMAX,NLAND))
   debugm = (DEBUG%GETEMIS.and.MasterProc)
 
   do ie = 1, NEMIS_FILE
@@ -1535,6 +1536,9 @@ end if
   iqrc2itot(:)        = tmp_iqrc2itot(1:nrcemis)
   iqrc2iem(:)        = tmp_iqrc2iem(1:nrcemis)
   emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
+
+  deallocate(tmp_emisfrac)
+
 
 !rb: not ideal place for this but used here for a start
 ! Temporary solution! Need to find the molweight from the

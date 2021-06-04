@@ -14,10 +14,18 @@ OPT_FLAGS = -O2 -ftz
 F90FLAGS =  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
-export MACHINE ?= stallo
+export MACHINE ?= betzy
 export DEBUG ?= no
 export ARCHIVE ?= no
-ifeq ($(MACHINE),fram)
+ifeq ($(MACHINE), betzy)
+#  MODULES = netCDF-Fortran/4.5.3-iimpi-2020b
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
+  MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
+  OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=mpiifort
+else ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
