@@ -12,7 +12,7 @@ chemistry, run:
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
 2021 UPDATE: 
-EmChem19rnr,  EmChem19rnrp (=EmChem19rnr+pollen).
+EmChem19r,  EmChem19rp (=EmChem19r+pollen).
 
   now splits PM into Res and nonRes species (e.g. POM_f_Res,
   POM_f_nonRes), which are basically tracers of GNFR C emissions.
@@ -44,6 +44,21 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th June 2021, Dave
+
+NAME changes:
+  ZCM_EmChem19rnr  renamed to ZCM_EmChem19r
+  ZCM_EmChem19rnrp renamed to ZCM_EmChem19rp
+
+Consistent NMVOC, and without PAN, MPAN in NMVOC_GROUP:
+  ZCM_EmChem19r, ZCM_EmChem19rp, ZCM_EmChem19a, ZCM_EmChem19p
+
+DryDep_mod, Config_module
+
+  - added USES%NO2_COMPENSATION_PT to mimic old behaviour if SOILNOX=F.
+    Only for testing, and will be removed soon!
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th June 2021, Peter

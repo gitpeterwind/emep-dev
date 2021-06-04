@@ -424,15 +424,6 @@
   xnew(CH3CO3) = (xold(CH3CO3) + dt2 * P) / (1.0 + dt2 * L)
 
 
-!-> NMVOC
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for NMVOC! xnew(NMVOC) = max(0.0, xold(NMVOC))
-
-
 !-> O3
 
   P = rct(1,k) * xnew(OP)  &
