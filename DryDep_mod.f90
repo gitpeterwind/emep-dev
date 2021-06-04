@@ -356,6 +356,9 @@ contains
     end if
 
    !---------------------------------------------------------
+   ! DEPRECATED 2021! Now we should always have SOILNOx
+   ! emissions when running full chemistry. Added USES%NO2_COMPENSATION_PT 
+   ! to mimic old behaviour if needed.
    ! If we do not have soil NO emissions active, we use instead a 
    ! surrogate for NO2 compensation point approach, assuming 
    ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
@@ -364,7 +367,7 @@ contains
    ! Note, xn_2d has no2 in #/cm-3
  
     no2fac = 1.0
-    if ( .not. USES%SOILNOX ) then
+    if ( .not. USES%SOILNOX .and. USES%NO2_COMPENSATION_PT  ) then
       no2fac = max( 1.0, xn_2d(NO2,K2) )
       no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
     end if
