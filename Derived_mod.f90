@@ -11,7 +11,7 @@ module Derived_mod
 !  in the user-defined My_Derived_mod.
 !
 ! User-defined routines and treatments are often needed here. Here there is
-! added stuff for VOC, AOTs, accsu. In
+! added stuff for AOTs, accsu. In
 ! general such code should be added in such a way that it isn't activated if
 ! not needed. It then doesn't need to be commented out if not used.
 !---------------------------------------------------------------------------
@@ -101,13 +101,10 @@ public  :: AddDeriv       ! Adds Deriv type to def_2d, def_3d
 public  :: AddNewDeriv    ! Creates & Adds Deriv type to def_2d, def_3d
 private :: Define_Derived
 public  :: wanted_iou     ! (iotyp, def%iotyp)
-private :: Setups
 private :: write_debug
 private :: write_debugadv
 
 public  :: Derived        ! Calculations of sums, avgs etc.
-private :: voc_2dcalc     ! Calculates sum of VOC for 2d fields
-private :: voc_3dcalc     ! Calculates sum of VOC for 3d fields
 private :: group_calc     ! Calculates sum of groups, e.g. pm25 from group array
 
 logical, private, parameter :: T = .true., F = .false. ! shorthands only
@@ -148,14 +145,6 @@ real, save, private :: fracPM25 = -999.9
 
 integer, public, allocatable, dimension(:,:), save :: nav_2d,nav_3d
 
-!-- some variables for the VOC sum done for ozone models
-!   (have no effect in non-ozone models - leave in code)
-
-integer, private, save :: nvoc   ! No. VOCs
-integer, private, dimension(NSPEC_ADV), save :: &
-         voc_index, &     ! Index of VOC in xn_adv
-         voc_carbon       ! Number of C atoms
-
 logical, private, save :: Is3D
 logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
@@ -165,7 +154,7 @@ character(len=100), private :: errmsg
 character(len=*), private, parameter :: HORIZ_LINE =repeat('=',78) !f2003://new_line('a') 
 
 ! NB global use of these common variables is dangerous!
-integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
+integer, private :: i,j,k,l,n, iou, isec   ! Local loop variables
 
 ! Avoid hard codded IXADV_SPCS
  integer, private, save :: iadv_O3=-999, &
@@ -241,7 +230,6 @@ subroutine Init_Derived()
   if(iadv_POM_C_FFUEL>0)call Units_Scale('ug',iadv_POM_C_FFUEL,ug_POM_C_FFUEL)
 
   call Define_Derived()
-  call Setups()  ! just for VOC now
 
   iddefPMc = find_index('PMc',DDdefs(:)%name, any_case=.true.)
   associate ( D=> DDdefs(iddefPMc) )
@@ -266,7 +254,7 @@ end subroutine Init_Derived
 subroutine AddNewDeriv( name,class,subclass,txt,unit,ind,f2d,&
        dt_scale,scale, avg,iotype,Is3D)
   character(len=*), intent(in) :: name    ! e.g. DDEP_SO2_m2Conif
-  character(len=*), intent(in) :: class   ! Type of data, e.g. ADV or VOC
+  character(len=*), intent(in) :: class   ! Type of data, e.g. ADV
   character(len=*), intent(in) :: subclass
   character(len=*), intent(in) :: txt     ! text where needed, e.g. "Conif"
   character(len=*), intent(in) :: unit    ! writen in netCDF output
@@ -499,6 +487,13 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
         end select
         Is3D      = (class(1:3)=="EXT")
         call AOD_init("Derived:"//trim(class),wlen=trim(subclass),out3d=Is3D)
+      case('VOC')
+        write(unit=errmsg,fmt="(2(A,1X,4(A,','),A),:,1X)") &
+          dtxt,&
+          trim(outname),trim(outunit),'VOC','MISC',trim(outind),&
+          "output is no longer supported, try with",&
+          'NMVOC',trim(outunit),'AIR_CONCS','GROUP',trim(outind)
+        call CheckStop(errmsg)
       case default
          if(outdim=='3d')Is3D=.true.
          unitscale = 1.0
@@ -890,45 +885,6 @@ function wanted_iou(iou,iotype,only_iou) result(wanted)
     wanted=(iou==only_iou)                  ! is only_iou?
   end if
 end function wanted_iou
-!=========================================================================
-subroutine Setups()
-  integer :: n
-  !*** flexibility note. By making use of character-based tests such
-  !    as for "VOC" below, we achieve code which can stay for
-  !    different chemical mechanisms, without having to define non-used indices.
-
-  !*** if voc wanted, set up voc_array. Works for all ozone chemistries
-
-  if ( any(  f_2d(:)%class == "VOC" ) ) then !TMP .or. &
-  !TMP           any(  f_3d(:)%class == "VOC" )  ) then
-  ! was call Setup_VOC(), moved here Mar 2010
-  !--------------------------------------------------------
-  ! Searches through the advected species and colects the
-  ! index and carbon content of nmhc/voc species, as they are
-  ! defined in CM_ChemSpecs_mod
-  !
-  !--------------------------------------------------------
-  !====================================================================
-    nvoc = 0
-    do n = 1, NSPEC_ADV
-      if(species( NSPEC_SHL+n )%carbons > 0 .and. &
-         species( NSPEC_SHL+n )%name   /= "CO"  .and. &
-         species( NSPEC_SHL+n )%name   /= "CH4" ) then
-
-         nvoc = nvoc + 1
-         voc_index(nvoc) = n
-         voc_carbon(nvoc) = int(species( NSPEC_SHL+n )%carbons)
-      end if
-    end do
-  !====================================================================
-    !if (DEBUG  .and. MasterProc )then
-    if ( MasterProc )then
-      write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
-      write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
-      write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
-    end if
-  end if
-end subroutine Setups
 !=========================================================================
 subroutine Derived(dt,End_of_Day,ONLY_IOU)
 !*** DESCRIPTION
@@ -1603,10 +1559,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         end if
       end if
 
-    case ( "VOC", "TVOC" )
-
-      call voc_2dcalc()
-
     case( "GRIDAOT" )!  Hardly used these days. The vegetation-specific
                      !  AOTs are handled in the Mosaic class and as
                      !  part of the dry dep calculations.
@@ -2170,9 +2122,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_3d(n,i,j,k,IOU_INST)=xn_shl(ind,i,j,lev3d(k))&
                          *inv_air_density3D(i,j,lev3d(k))
 
-    case ( "VOC" )
-      call voc_3dcalc()
-
     case ( "3D_PPB_SPEC" )
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=xn_adv(ind,i,j,lev3d(k))
@@ -2385,41 +2334,6 @@ subroutine ResetDerived(period)
   end if
 
 end subroutine ResetDerived
-!=========================================================================
-subroutine voc_2dcalc()
-!/-- Sums up voc species using the indices defined earlier in Setup_VOCs
-  integer :: ind
-
-! We initialise d_2d first, the use a simple loop
-! over voc. Some CPU could be saved by initialising
-! with the 1st voc, then looping over 2, nvoc, but who cares...
-
-  d_2d( n, 1:limax,1:ljmax,IOU_INST) =  0.0
-
-  do ivoc = 1, nvoc
-    ind = voc_index(ivoc)           ! Gives which IXADV_ to use.
-    forall(i=1:limax,j=1:ljmax) &
-      d_2d(n,i,j,IOU_INST)=d_2d(n,i,j,IOU_INST) &
-                    +xn_adv(ind,i,j,KMAX_MID) &
-                     *voc_carbon(ivoc)*cfac(ind,i,j)
-                     ! multiplied by nr. of C and "reduced to surface"
-  end do ! ivoc
-end subroutine voc_2dcalc
-!=========================================================================
-subroutine voc_3dcalc()
-!/-- as for voc_2dcalc
-  integer :: ind
-
-  d_3d(n,1:limax,1:ljmax,1:num_lev3d,IOU_INST) =  0.0
-  do ivoc = 1, nvoc
-    ind = voc_index(ivoc)
-    forall(i=1:limax,j=1:ljmax,k=1:num_lev3d)  &
-      d_3d(n,i,j,k,IOU_INST)=d_3d(n,i,j,k,IOU_INST) &
-                      +xn_adv(ind,i,j,lev3d(k))&
-                       *voc_carbon(ivoc)
-  end do ! ivoc
-
- end subroutine voc_3dcalc
 !=========================================================================
 subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 

@@ -113,7 +113,7 @@
 OutputConcs=
   'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM',
   'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
-  'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
+  'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
   'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
   'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
   'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',

@@ -75,7 +75,7 @@ OutputConcs=
      !----------------------------------------------------------------
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
-      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
+      'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
 ! ug/m3                                                    
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',

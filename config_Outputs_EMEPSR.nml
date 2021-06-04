@@ -14,7 +14,7 @@
 !
 &OutputConcs_config
 OutputConcs= 
-      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
+      'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
 ! ug/m3                                                    
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',

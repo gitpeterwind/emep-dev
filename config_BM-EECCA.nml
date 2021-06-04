@@ -119,7 +119,7 @@ OutputConcs=
 !     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,'YMDI', !! hourly tests
       'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,'YMDI', !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
-      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
+      'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
       'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,'YMD',
       'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,'YMD',
 ! ug/m3                                                    
