@@ -1347,7 +1347,6 @@ subroutine lf_chem(i,j)
   if (isrc_pm25 > 0) then
      do isrc = 1, Nsources_nonew
         isrc_pm25_new = isrc_new(isrc)
-        isrc_pm25 = isrc
         if (isrc_pm25_new < 0) cycle
         !transform some of the pm25_new into age
         do k = KMAX_MID-lf_Nvert+1,KMAX_MID     
@@ -1359,13 +1358,13 @@ subroutine lf_chem(i,j)
            end do
            d_age = ageing_rate(k)*xn_new *dt_advec
            if (d_age > 1.0E-30) then ! very important. Wrong results without if, even far from the country source.
-              do iix=1,lf_src(isrc_pm25)%Nsplit
-                 ix=lf_src(isrc_pm25)%ix(iix)
-                 xn_age=xn_age+xn_adv(ix,i,j,k)*lf_src(isrc_pm25)%mw(iix)
+              do iix=1,lf_src(isrc)%Nsplit
+                 ix=lf_src(isrc)%ix(iix)
+                 xn_age=xn_age+xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix)
               end do
               inv = 1.0/( xn_age + d_age )        
               n_new = lf_src(isrc_pm25_new)%start
-              do n_age=lf_src(isrc_pm25)%start, lf_src(isrc_pm25)%end
+              do n_age=lf_src(isrc)%start, lf_src(isrc)%end
                  lf(n_age,i,j,k) = (lf(n_age,i,j,k)*xn_age + d_age*lf(n_new,i,j,k)) * inv
                  n_new = n_new + 1
               enddo
