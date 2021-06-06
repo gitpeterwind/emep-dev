@@ -48,7 +48,9 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th June 2021, Dave
 
-Small bug in NMHC output fixed.
+Small bug in NMHC output fixed: TERPO2 removed from NMVOC group (SHL species
+  cannot be used in group output, so no RO2 species can be included. Their
+   concentrations should be very small though.)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th June 2021, Peter
 
