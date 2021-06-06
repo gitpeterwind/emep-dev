@@ -128,14 +128,13 @@ module ChemGroups_mod
   integer, public, target, save, dimension (3) :: &
     DDEP_DRX_2P1_GROUP = (/ HO2NO2, CH3CHO, GLYOX /)
   
-  integer, public, target, save, dimension (37) :: &
+  integer, public, target, save, dimension (36) :: &
     NMVOC_GROUP = (/  &
       C2H6, NC4H10, C2H4, C3H6, BENZENE, TOLUENE, OXYL, C5H8,  &
       CH3OH, C2H5OH, HCHO, CH3CHO, MACR, MEK, ACETOL, GLYOX,  &
       MGLYOX, BIACET, C5DICARB, CH3OOH, C2H5OOH, BURO2H, ETRO2H,  &
       MEKO2H, C5DICAROOH, HPALD, MACROOH, OXYO2H, CH3CO3H,  &
-      PACALD, IEPOX, SC4H9NO3, NALD, ISON, APINENE, TERPO2,  &
-      TERPOOH  &
+      PACALD, IEPOX, SC4H9NO3, NALD, ISON, APINENE, TERPOOH  &
     /)
   
   integer, public, target, save, dimension (9) :: &
