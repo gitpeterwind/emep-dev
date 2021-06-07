@@ -47,6 +47,12 @@ info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th June 2021, Peter
+
+Much faster reading og netcdf emissions in new format.
+(down from hours to seconds for file with all countries and sectors!)
+Open the file took all the time. Now it is done only once per file instead
+of once per variable.
+
 "if" -> "case"  in emissions new format (should not affect functionality)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

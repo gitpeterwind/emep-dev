@@ -579,7 +579,7 @@ contains
   subroutine EmisUpdate
     !Update emission arrays, and read new sets as required
     integer :: n, i, j, f, ix, is, date_limit(5), iem, ic, icc, iqrc
-    integer :: itot,isec,iland, i_femis_lonlat
+    integer :: itot,isec,iland, i_femis_lonlat, ncFileID
     type(date) :: coming_date
     real :: fac, gridyear, ccsum,emsum(NEMIS_FILE)
     character(len=TXTLEN_NAME) :: fmt
@@ -613,7 +613,7 @@ contains
 
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources
-      if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
+       if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
           if(me==0 .and. writeoutsums)&
                write(*,*)'Emis: current date has reached past update date ',&
                EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
@@ -850,7 +850,10 @@ contains
           else
              !the correct times must be written in the file and updated in Emis_GetCdf
           endif
-
+          if(EmisFiles(n)%ncFileID >= 0) then
+             call check(nf90_close(EmisFiles(n)%ncFileID))
+             EmisFiles(n)%ncFileID = -1 !mark as closed
+          end if
        endif
        if(writeout)then
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&

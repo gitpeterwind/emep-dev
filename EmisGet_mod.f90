@@ -123,6 +123,7 @@ contains
     type(EmisFile_id_type),intent(inout) ::  EmisFile
     real, intent(out), dimension(*) :: Emis_XD
     type(date), intent(in) :: date_wanted
+    integer :: ncFileID
     real :: date_wanted_in_days, TimesInDays(1)
     integer :: record
     logical, save :: dbg= .false., first_call = .true.
@@ -132,8 +133,14 @@ contains
       dbg =  ( MasterProc .and. DEBUG%GETEMIS )
       first_call = .false.
     end if
-
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
+    if (EmisFile%ncFileID < 0 .and. trim(EmisFile%projection) /= 'native') then
+       !open file (much faster if it is done once only, and not for each variable)
+       !fast native not implemented yet
+       call check(nf90_open(path = fname, mode = nf90_nowrite, ncid = ncFileID))
+       EmisFile%ncFileID = ncFileID
+    end if
+    ncFileID = EmisFile%ncFileID
 
     if(EmisFile%periodicity == 'yearly' .or. EmisFile%periodicity == 'once')then
        !assumes only one record to read
@@ -179,7 +186,7 @@ contains
                interpol='conservative',&
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
-               debug_flag=.false.)
+               debug_flag=.false., ncFileID_given=ncFileID)
        else  if(Emis_source%units == 'kt' .or. Emis_source%units == 'kt/s' &
             .or. Emis_source%units == 'kt/month' .or. Emis_source%units == 'kt/year' &
             .or. Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
@@ -199,7 +206,7 @@ contains
                interpol='mass_conservative',&
                Grid_resolution_in = EmisFile%grid_resolution,&
                needed=.true.,UnDef=0.0,&
-               debug_flag=.false.)
+               debug_flag=.false., ncFileID_given=ncFileID)
        else
           call StopAll("EmisGet: Unit for emissions not recognized: "//trim(Emis_source%units)//' '//trim(Emis_source%varname))
        endif
