@@ -643,86 +643,74 @@ contains
 
              !unit and factor conversions
              !convert into kg/m2/s
-             if(Emis_source(is)%units == 'kg/s' .or. Emis_source(is)%units == 'kg/m2/s')then
+             select case(Emis_source(is)%units)
+             case ('kg/s', 'kg/m2/s')
                 fac = fac
-             else if(Emis_source(is)%units == 'g/s' .or. Emis_source(is)%units == 'g/m2/s')then
+             case ('g/s', 'g/m2/s')
                 fac = fac /(1000.0)
-             else if(Emis_source(is)%units == 'mg/s' .or. Emis_source(is)%units == 'mg/m2/s')then
+             case ('mg/s', 'mg/m2/s')
                 fac = fac /(1000*1000.0)
-             else
-                !depends on periodicity
+             case default
+                !if not /s units, depends on periodicity:
                 if(EmisFiles(n)%periodicity == 'yearly')then
-                   if(Emis_source(is)%units == 'kt/m2' .or. Emis_source(is)%units == 'kt/m2/year'&
-                        .or. Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/year')then
-                      fac = fac * 1000 *1000/(3600*24*nydays)
-                   else if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/year'&
-                        .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/year')then
+                   select case(Emis_source(is)%units)
+                   case ('kt/m2', 'kt/m2/year', 'kt', 'kt/year')
+                         fac = fac * 1000 *1000/(3600*24*nydays)
+                   case ('tonnes/m2', 'tonnes/m2/year', 'tonnes', 'tonnes/year')
                       fac = fac * 1000/(3600*24*nydays)
-                   else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/year'&
-                        .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/year')then
+                   case ('kg/m2', 'kg/m2/year', 'kg', 'kg/year')
                       fac = fac /(3600*24*nydays)
-                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/year'&
-                        .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/year')then
+                   case ('g/m2', 'g/m2/year', 'g', 'g/year')
                       fac = fac /(1000.0*3600*24*nydays)
-                   else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/year'&
-                        .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/year')then
+                   case ('mg/m2', 'mg/m2/year', 'mg', 'mg/year')
                       fac = fac /(1.0e6*3600*24*nydays)
-                   else
-                      call StopAll("B Unit for emissions not recognized: "//trim(Emis_source(is)%units))
-                   endif
+                   case default
+                      call StopAll("Unit for yearly emissions not recognized: "//trim(Emis_source(is)%units))
+                   end select
                 else if(EmisFiles(n)%periodicity == 'monthly')then
-                   if(Emis_source(is)%units == 'kt/m2' .or. Emis_source(is)%units == 'kt/m2/month'&
-                        .or. Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/month')then
+                   select case(Emis_source(is)%units)
+                   case ('kt/m2','kt/m2/month', 'kt', 'kt/month')
                       fac = fac *1000*1000/(3600*24*nmdays(coming_date%month))
-                   else if(Emis_source(is)%units == 'tonnes/m2' .or. Emis_source(is)%units == 'tonnes/m2/month'&
-                        .or. Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/month')then
+                   case ('tonnes/m2', 'tonnes/m2/month', 'tonnes', 'tonnes/month')
                       fac = fac *1000/(3600*24*nmdays(coming_date%month))
-                   else if(Emis_source(is)%units == 'kg/m2' .or. Emis_source(is)%units == 'kg/m2/month'&
-                        .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/month')then
+                   case ('kg/m2', 'kg/m2/month', 'kg', 'kg/month')
                       fac = fac /(3600*24*nmdays(coming_date%month))
-                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/month'&
-                        .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/month')then
+                   case ('g/m2', 'g/m2/month', 'g', 'g/month')
                       fac = fac /(1000*3600*24*nmdays(coming_date%month))
-                   else if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/month'&
-                        .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/month')then
+                   case ('mg/m2', 'mg/m2/month', 'mg', 'mg/month')
                       fac = fac /(1.0e6*3600*24*nmdays(coming_date%month))
-                   else
-                      call StopAll("C Unit for emissions not recognized: "//trim(Emis_source(is)%units))
-                   endif
+                   case default
+                      call StopAll("Unit for montly emissions not recognized: "//trim(Emis_source(is)%units))
+                   end select
                 else
                    !assume hourly
-                   if(Emis_source(is)%units == 'mg/m2' .or. Emis_source(is)%units == 'mg/m2/h')then
+                   select case(Emis_source(is)%units)
+                   case ('mg/m2', 'mg/m2/h')
                       !convert into kg/m2/s
                       fac = fac /(1.0e6*3600.0)
-                   else if(Emis_source(is)%units == 'g/m2' .or. Emis_source(is)%units == 'g/m2/h')then
+                   case ('g/m2', 'g/m2/h')
                       fac = fac /(1000.0*3600.0)
                       if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
                          call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))
                       endif
-                   else if(Emis_source(is)%units == 'g/s')then
+                   case ('g/s')
                       fac = fac /(1000.0)
-                   else if(Emis_source(is)%units == 'kg/s')then
+                   case ('kg/s')
                       fac = fac
-                   else if(Emis_source(is)%units == 'tonnes/s')then
+                   case ('tonnes/s')
                       fac = fac * 1000.0
-                   else
+                   case default
                       call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))
-                   endif
-                   !Note: easy to implement more unit choices. Just add "if" cases here
+                   end select
+                   !Note: easy to implement more unit choices. Just add appropriate cases here
                 endif
-             endif
+             end select
 
-             if(Emis_source(is)%units == 'kt' .or. Emis_source(is)%units == 'kt/s' &
-                  .or.Emis_source(is)%units == 'kt/month' .or. Emis_source(is)%units == 'kt/year'  &
-                  .or.Emis_source(is)%units == 'tonnes' .or. Emis_source(is)%units == 'tonnes/s' &
-                  .or.Emis_source(is)%units == 'tonnes/month' .or. Emis_source(is)%units == 'tonnes/year' &
-                  .or. Emis_source(is)%units == 'kg' .or. Emis_source(is)%units == 'kg/s' &
-                  .or. Emis_source(is)%units == 'kg/month' .or. Emis_source(is)%units == 'kg/year' &
-                  .or. Emis_source(is)%units == 'g' .or. Emis_source(is)%units == 'g/s' &
-                  .or. Emis_source(is)%units == 'g/month' .or. Emis_source(is)%units == 'g/year' &
-                  .or. Emis_source(is)%units == 'mg' .or. Emis_source(is)%units == 'mg/s' &
-                  .or. Emis_source(is)%units == 'mg/month' .or. Emis_source(is)%units == 'mg/year' &
-                  .or. Emis_source(is)%units == 'g/h' .or. Emis_source(is)%units == 'mg/h')then
+             ! units that are "per gridcell" must be dvided by gridcell areas
+             select case(Emis_source(is)%units)
+             case ('kt', 'kt/s', 'kt/month', 'kt/year', 'tonnes', 'tonnes/s', 'tonnes/month' &
+                  , 'tonnes/year', 'kg', 'kg/s', 'kg/month', 'kg/year', 'g', 'g/s', 'g/month' &
+                  , 'g/year', 'mg', 'mg/s', 'mg/month', 'mg/year', 'g/h', 'mg/h')
                 !divide by gridarea
                 fac = fac / (GRIDWIDTH_M * GRIDWIDTH_M)
                 do j = 1,ljmax
@@ -730,7 +718,7 @@ contains
                       Emis_source_2D(i,j,is) = Emis_source_2D(i,j,is) * xm2(i,j)
                    enddo
                 enddo
-             endif
+             end select
 
              do j = 1,ljmax
                 do i = 1,limax
