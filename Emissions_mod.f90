@@ -229,6 +229,7 @@ contains
     Emis_source = Emis_sources_defaults!set all initial values to default
 
     Emisfile_defaults%periodicity = 'time'
+    Emisfile_defaults%timevalidity = 'end'
     Emisfile_defaults%projection = 'lon lat'
     Emisfile_defaults%factor = 1.0
     Emisfile_defaults%sectorsName = 'GNFR_CAMS'
@@ -289,6 +290,7 @@ contains
        n = EmisFilesMap(i)
        if(n>0)then
           if(Emis_sourceFiles(n)%periodicity /= Emisfile_undefined%periodicity) EmisFiles(i)%periodicity = Emis_sourceFiles(n)%periodicity
+          if(Emis_sourceFiles(n)%timevalidity /= Emisfile_undefined%timevalidity) EmisFiles(i)%timevalidity = Emis_sourceFiles(n)%timevalidity
           if(Emis_sourceFiles(n)%projection /= Emisfile_undefined%projection) EmisFiles(i)%projection = Emis_sourceFiles(n)%projection
           if(Emis_sourceFiles(n)%grid_resolution /= Emisfile_undefined%grid_resolution) EmisFiles(i)%grid_resolution = Emis_sourceFiles(n)%grid_resolution
           if(Emis_sourceFiles(n)%projection /= 'native')then
@@ -319,6 +321,7 @@ contains
           if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%country_ISO
           if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%sector
           Emis_source(ii)%periodicity = EmisFiles(i)%periodicity !NB: periodicity cannot be set individually for variables
+          Emis_source(ii)%timevalidity = EmisFiles(i)%timevalidity !NB: timevalidity  cannot be set individually for variables
           Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis !cannot be set in the netcdf file
           Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions !cannot be set in the netcdf file
           Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%mask_ID !cannot be set in the netcdf file
@@ -434,42 +437,7 @@ contains
 
     enddo
 
-    !include reduction factors
     do n = 1, NEmis_sources
-       if(Emis_source(n)%apply_femis)then
-          isec = Emis_source(n)%sector
-          if(Emis_source(n)%sector>0 .and. Emis_source(n)%sector<=NSECTORS)then
-             iland = Emis_source(n)%country_ix
-             if(iland<0)iland=IC_DUMMY
-             isec = Emis_source(n)%sector
-             iem = find_index(Emis_source(n)%species,EMIS_FILE(:))
-             if(iem >0 )then
-                !apply femis
-                Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
-                !lonlat format must be applied after the 2D fields are read
-             else
-                !see if the species belongs to any of the splitted species
-                iqrc = 0
-                do iem = 1,NEMIS_FILE
-                   do f = 1,emis_nsplit(iem)
-                      iqrc = iqrc + 1
-                      itot = iqrc2itot(iqrc)
-                      if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
-                         if(dbg) write(*,'(a,5i4,a,f12.3)')&
-                              trim(Emis_source(n)%species)//' included in '//trim(EMIS_FILE(iem)), n, &
-                              isec, iland, Emis_source(n)%country_ix, iem, &
-                              trim( species(itot)%name ),  e_fact(isec,iland,iem)
-                         Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
-                          go to 888
-                      endif
-                   enddo
-                enddo ! iem
-888             continue
-             endif
-          endif
-
-       endif
-
        !define  mask indices
        if(Emis_source(n)%mask_ID /= Emis_id_undefined%mask_ID)then
           ix = find_index(Emis_source(n)%mask_ID,EmisMask(:)%ID)
@@ -489,8 +457,8 @@ contains
              if(MasterProc)write(*,*)'WARNING mask not defined ',trim(Emis_source(n)%mask_ID_reverse)
           endif
        endif
-
     enddo ! n = 1, NEmis_sources
+
 
     !find and define the 3D emissions
     ix=0
@@ -644,40 +612,40 @@ contains
              !unit and factor conversions
              !convert into kg/m2/s
              select case(Emis_source(is)%units)
-             case ('kg/s', 'kg/m2/s')
+             case ('kg/s', 'kg/m2/s', 'kg m-2 s-1')
                 fac = fac
-             case ('g/s', 'g/m2/s')
+             case ('g/s', 'g/m2/s', 'g m-2 s-1')
                 fac = fac /(1000.0)
-             case ('mg/s', 'mg/m2/s')
+             case ('mg/s', 'mg/m2/s', 'mg m-2 s-1')
                 fac = fac /(1000*1000.0)
              case default
                 !if not /s units, depends on periodicity:
                 if(EmisFiles(n)%periodicity == 'yearly')then
                    select case(Emis_source(is)%units)
-                   case ('kt/m2', 'kt/m2/year', 'kt', 'kt/year')
+                   case ('kt/m2', 'kt/m2/year', 'kt', 'kt/year','kt m-2', 'kt m-2 year-1', 'kt year-1')
                          fac = fac * 1000 *1000/(3600*24*nydays)
-                   case ('tonnes/m2', 'tonnes/m2/year', 'tonnes', 'tonnes/year')
+                   case ('tonnes/m2', 'tonnes/m2/year', 'tonnes', 'tonnes/year','tonnes m-2', 'tonnes m-2 year-1', 'tonnes year-1')
                       fac = fac * 1000/(3600*24*nydays)
-                   case ('kg/m2', 'kg/m2/year', 'kg', 'kg/year')
+                   case ('kg/m2', 'kg m-2', 'kg/m2/year', 'kg m-2 year-1', 'kg', 'kg/year', 'kg year-1')
                       fac = fac /(3600*24*nydays)
-                   case ('g/m2', 'g/m2/year', 'g', 'g/year')
+                   case ('g/m2', 'g/m2/year', 'g', 'g/year', 'g m-2', 'g m-2 year-1', 'g year-1')
                       fac = fac /(1000.0*3600*24*nydays)
-                   case ('mg/m2', 'mg/m2/year', 'mg', 'mg/year')
+                   case ('mg/m2', 'mg/m2/year', 'mg', 'mg/year', 'mg m-2', 'mg m-2 year-1', 'mg year-1')
                       fac = fac /(1.0e6*3600*24*nydays)
                    case default
                       call StopAll("Unit for yearly emissions not recognized: "//trim(Emis_source(is)%units))
                    end select
                 else if(EmisFiles(n)%periodicity == 'monthly')then
                    select case(Emis_source(is)%units)
-                   case ('kt/m2','kt/m2/month', 'kt', 'kt/month')
+                   case ('kt/m2','kt/m2/month', 'kt', 'kt/month','kt m-2','kt m-2 month-1', 'kt month-1')
                       fac = fac *1000*1000/(3600*24*nmdays(coming_date%month))
-                   case ('tonnes/m2', 'tonnes/m2/month', 'tonnes', 'tonnes/month')
+                   case ('tonnes/m2', 'tonnes/m2/month', 'tonnes', 'tonnes/month','tonnes m-2', 'tonnes m-2 month-1', 'tonnes month-1')
                       fac = fac *1000/(3600*24*nmdays(coming_date%month))
-                   case ('kg/m2', 'kg/m2/month', 'kg', 'kg/month')
+                   case ('kg/m2', 'kg/m2/month', 'kg', 'kg/month','kg m-2', 'kg m-2 month-1', 'kg month-1')
                       fac = fac /(3600*24*nmdays(coming_date%month))
-                   case ('g/m2', 'g/m2/month', 'g', 'g/month')
+                   case ('g/m2', 'g/m2/month', 'g', 'g/month','g m-2', 'g m-2 month-1', 'g month-1')
                       fac = fac /(1000*3600*24*nmdays(coming_date%month))
-                   case ('mg/m2', 'mg/m2/month', 'mg', 'mg/month')
+                   case ('mg/m2', 'mg/m2/month', 'mg', 'mg/month','mg m-2', 'mg m-2 month-1', 'mg month-1')
                       fac = fac /(1.0e6*3600*24*nmdays(coming_date%month))
                    case default
                       call StopAll("Unit for montly emissions not recognized: "//trim(Emis_source(is)%units))
@@ -685,19 +653,19 @@ contains
                 else
                    !assume hourly
                    select case(Emis_source(is)%units)
-                   case ('mg/m2', 'mg/m2/h')
+                   case ('mg/m2', 'mg/m2/h', 'mg m-2', 'mg m-2 h-1')
                       !convert into kg/m2/s
                       fac = fac /(1.0e6*3600.0)
-                   case ('g/m2', 'g/m2/h')
+                   case ('g/m2', 'g/m2/h','g m-2', 'g m-2 h-1')
                       fac = fac /(1000.0*3600.0)
                       if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
                          call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))
                       endif
-                   case ('g/s')
+                   case ('g/s','g s-1')
                       fac = fac /(1000.0)
-                   case ('kg/s')
+                   case ('kg/s','kg s-1')
                       fac = fac
-                   case ('tonnes/s')
+                   case ('tonnes/s', 'tonnes s-1')
                       fac = fac * 1000.0
                    case default
                       call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))
@@ -710,7 +678,10 @@ contains
              select case(Emis_source(is)%units)
              case ('kt', 'kt/s', 'kt/month', 'kt/year', 'tonnes', 'tonnes/s', 'tonnes/month' &
                   , 'tonnes/year', 'kg', 'kg/s', 'kg/month', 'kg/year', 'g', 'g/s', 'g/month' &
-                  , 'g/year', 'mg', 'mg/s', 'mg/month', 'mg/year', 'g/h', 'mg/h')
+                  , 'g/year', 'mg', 'mg/s', 'mg/month', 'mg/year', 'g/h', 'mg/h'&
+                  , 'kt s-1', 'kt month-1', 'kt year-1', 'tonnes s-1', 'tonnes month-1' &
+                  , 'tonnes year-1', 'kg s-1', 'kg month-1', 'kg year-1', 'g s-1', 'g month-1' &
+                  , 'g year-1', 'mg s-1', 'mg month-1', 'mg year-1', 'g h-1', 'mg h-1')
                 !divide by gridarea
                 fac = fac / (GRIDWIDTH_M * GRIDWIDTH_M)
                 do j = 1,ljmax
@@ -951,6 +922,7 @@ contains
     real :: buffer(LIMAX,LJMAX)
     logical country_owner_map(NLAND,NPROC)
     integer largestsplit !used only here to check value
+    integer :: f, itot, iqrc
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -1679,6 +1651,47 @@ contains
 
     deallocate(sumemis_sec, sumemis_local)
 
+    !additional new format initializations that must be placed after splits are defined
+    !include reduction factors
+    do n = 1, NEmis_sources
+       if(Emis_source(n)%apply_femis)then
+          isec = Emis_source(n)%sector
+          if(Emis_source(n)%sector>0 .and. Emis_source(n)%sector<=NSECTORS)then
+             iland = Emis_source(n)%country_ix
+             if(iland<0)iland=IC_DUMMY
+             isec = Emis_source(n)%sector
+             iem = find_index(Emis_source(n)%species,EMIS_FILE(:))
+             if(iem >0 )then
+                !apply femis
+                Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
+                !lonlat format must be applied after the 2D fields are read
+             else
+                !see if the species belongs to any of the splitted species
+                iqrc = 0
+                do iem = 1,NEMIS_FILE
+                   do f = 1,emis_nsplit(iem)
+                      iqrc = iqrc + 1
+                      itot = iqrc2itot(iqrc)
+                      if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
+                         if(DEBUG%EMISSIONS .and. MasterProc) write(*,'(a,5i4,a,f12.3)')&
+                              trim(Emis_source(n)%species)//' included in '//trim(EMIS_FILE(iem)), n, &
+                              isec, iland, Emis_source(n)%country_ix, iem, &
+                              trim( species(itot)%name ),  e_fact(isec,iland,iem)
+                         Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
+                          go to 888
+                      endif
+                   enddo
+                enddo ! iem
+888             continue
+             endif
+          endif
+
+       endif
+
+
+    enddo ! n = 1, NEmis_sources
+
+    
     !output emissions
     fileName = 'EMIS_OUT.nc'
 !Not ready

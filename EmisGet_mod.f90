@@ -151,12 +151,35 @@ contains
     else
        !the correct time must be written in the file
        call date2nctime(date_wanted,date_wanted_in_days)
+       if (EmisFile%timevalidity /= 'end') then
+          call CheckStop(EmisFile%periodicity /= 'daily', "timevalidity only implemented for daily")
+          if (EmisFile%periodicity == 'daily') then
+             date_wanted_in_days = date_wanted_in_days - 1.0
+          else if (EmisFile%periodicity == 'hourly') then
+             date_wanted_in_days = date_wanted_in_days - 1.0/24.0
+          else
+             call StopAll("timevalidity not implemented for "//trim(EmisFile%periodicity))
+          end if
+       end if
+       
        call ReadTimeCDF(fname,TimesInDays,record,date_wanted_in_days)
-
+       
+       if (EmisFile%timevalidity /= 'end') then
+          if (EmisFile%periodicity == 'daily') then
+             TimesInDays(1) = TimesInDays(1) + 1.0
+          else if (EmisFile%periodicity == 'hourly') then
+             TimesInDays(1) = TimesInDays(1) + 1.0/24.0
+          else
+             call StopAll("timevalidity not implemented for "//trim(EmisFile%periodicity))
+          end if
+       end if
+             
        call nctime2date(EmisFile%end_of_validity_date, TimesInDays(1))
-       if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS))&
-            write(*,*)record,'ENDOFVAL ', EmisFile%end_of_validity_date
-    endif
+       if(me==0 .and. (step_main<10 .or. DEBUG%EMISSIONS)) then
+          write(*,*)'record ',record,' assumed end of validity:'
+          write(*,*)'(y m d h s)',EmisFile%end_of_validity_date
+       end if
+    end if
 
     if( dbg ) write(*,*) dtxt//'Reading '//trim(fname)
     if(trim(EmisFile%projection) == 'native')then
@@ -176,11 +199,16 @@ contains
        if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
             write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
        if(Emis_source%units(1:5) == 'kt/m2'  &
+            .or. Emis_source%units(1:6) == 'kt m-2'  &
             .or. Emis_source%units(1:9) == 'tonnes/m2'  &
+            .or. Emis_source%units(1:10) == 'tonnes m-2'  &
             .or. Emis_source%units(1:5) == 'kg/m2' &
+            .or. Emis_source%units(1:6) == 'kg m-2' &
             .or. Emis_source%units(1:4) == 'g/m2'  &
-            .or. Emis_source%units(1:5) == 'mg/m2')then
-          !per area units
+            .or. Emis_source%units(1:5) == 'g m-2'  &
+            .or. Emis_source%units(1:5) == 'mg/m2'  &
+            .or. Emis_source%units(1:6) == 'mg m-2')then
+          !per area units (can be per time unit or not)
           call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
                known_projection=trim(EmisFile%projection),&
                interpol='conservative',&
@@ -197,8 +225,19 @@ contains
             .or. Emis_source%units == 'g/month' .or. Emis_source%units == 'g/year' &
             .or. Emis_source%units == 'mg' .or. Emis_source%units == 'mg/s' &
             .or. Emis_source%units == 'mg/month' .or. Emis_source%units == 'mg/year' &
-            .or. Emis_source%units == 'g/h' .or. Emis_source%units == 'mg/h')then
-          !per gridcell unit
+            .or. Emis_source%units == 'g/h' .or. Emis_source%units == 'mg/h' &          
+            .or. Emis_source%units == 'kt s-1' &
+            .or. Emis_source%units == 'kt month-1' .or. Emis_source%units == 'kt year-1' &
+            .or. Emis_source%units == 'tonnes s-1' &
+            .or. Emis_source%units == 'tonnes month-1' .or. Emis_source%units == 'tonnes year-1' &
+            .or. Emis_source%units == 'kg s-1' &
+            .or. Emis_source%units == 'kg month-1' .or. Emis_source%units == 'kg year-1' &
+            .or. Emis_source%units == 'g s-1' &
+            .or. Emis_source%units == 'g month-1' .or. Emis_source%units == 'g year-1' &
+            .or. Emis_source%units == 'mg s-1' &
+            .or. Emis_source%units == 'mg month-1' .or. Emis_source%units == 'mg year-1' &
+            .or. Emis_source%units == 'g h-1' .or. Emis_source%units == 'mg h-1') then
+          !per gridcell unit (can be per time unit or not)
           if(me==0 .and. DEBUG%EMISSIONS)&
                write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
          call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
@@ -620,6 +659,8 @@ contains
            trim(EmisFile_in%filename),trim(default_projection), default_resolution
        status = nf90_get_att(ncFileID,nf90_global,"periodicity", name)
        if(status==nf90_noerr)EmisFile%periodicity = trim(name)
+       status = nf90_get_att(ncFileID,nf90_global,"timevalidity", name)
+       if(status==nf90_noerr)EmisFile%timevalidity = trim(name)
 
     endif
 

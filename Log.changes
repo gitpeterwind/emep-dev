@@ -45,6 +45,17 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th June 2021, Peter
+
+Emissions new format upgrades:
+.- Can read units with "-1" instead of "/", as in "kg m-2 s-1"
+.- Moved the calls, so that it can define SECTORS.
+.- For daily and hourly periodicity can set
+Emis_sourceFiles(1)%timevalidity = 'start'
+if the time corresponds to the start of the period.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th June 2021, Peter
 
