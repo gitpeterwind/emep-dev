@@ -20,11 +20,12 @@ module RunChem_mod
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
   use Chemsolver_mod,    only: chemistry
   use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
-  use ChemSpecs_mod                     ! DEBUG ONLY
+  use ChemSpecs_mod,     only: 
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, step_main,  &
-                              USES, AOD_WANTED, dt_advec
+                              USES, AOD_WANTED, dt_advec &
+                              , OH_ix,NH3_ix,SO2_ix,SO4_ix, NO_ix, C5H8_ix
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
   use DefPhotolysis_mod, only: setup_phot
@@ -156,11 +157,11 @@ subroutine runchem()
       call CheckStop(errcode,"setup_photerror in Runchem") 
 
       if(DEBUG%RUNCHEM.and.debug_flag) then
-        call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
+        call datewrite("Runchem Pre-Chem", (/ rcemis(NO_ix,20), &
              !rcemis(SHIPNOX,KMAX_MID), !hardcoded chemical indice are not
              ! defined for all chem schemes, and should usually be avoided
           rcbio(1,KMAX_MID), &
-          rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID), rcphot(3,20), xn_2d(NO,20),xn_2d(C5H8,20),&
+          rcemis(C5H8_ix,KMAX_MID)+rcbio(1,KMAX_MID), rcphot(3,20), xn_2d(NO_ix,20),xn_2d(C5H8_ix,20),&
           rct(67,KMAX_MID), rct(68,KMAX_MID) /) ) ! PAN P, L
        write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpre', me &
 !          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
@@ -169,13 +170,11 @@ subroutine runchem()
 !          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
 !          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
           !,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20)& 
-          ,'xOH',  xn_2d(OH,20),'xNH3',  xn_2d(NH3,20) &
-          ,'eSO2', rcemis(SO2,KMAX_MID), 'eSO4', rcemis(SO4,KMAX_MID) &
-          ,'xSO2', xn_2d(SO2,KMAX_MID), 'xSO4', xn_2d(SO4,KMAX_MID) 
+          ,'xOH',  xn_2d(OH_ix,20),'xNH3',  xn_2d(NH3_ix,20) &
+          ,'eSO2', rcemis(SO2_ix,KMAX_MID), 'eSO4', rcemis(SO4_ix,KMAX_MID) &
+          ,'xSO2', xn_2d(SO2_ix,KMAX_MID), 'xSO4', xn_2d(SO4_ix,KMAX_MID) 
 
 !           'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), 'eC5H8', rcemis(C5H8,KMAX_MID) &
-
-
 
       end if
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
@@ -208,7 +207,7 @@ subroutine runchem()
 !     !-------------------------------------------------
 !     !-------------------------------------------------
       if(DEBUG%RUNCHEM.and.debug_flag)then
-        call datewrite("Runchem Post-Chem",(/xn_2d(NO,20),xn_2d(C5H8,20)/))
+        call datewrite("Runchem Post-Chem",(/xn_2d(NO_ix,20),xn_2d(C5H8_ix,20)/))
         write(*,"(a,i4,100(1x,a,1x,es9.2))") 'RDBGpos', me &
 !          ,'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20) &
 !          ,'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20) &
@@ -216,9 +215,9 @@ subroutine runchem()
 !          ,'xPOM_f_FFUEL',  xn_2d(POM_f_FFUEL,20) &
 !          ,'xEC_f_FFUEL_new',xn_2d(EC_f_FFUEL_new,20) &
           !,'xNO',  xn_2d(NO,20), 'xCO',xn_2d(CO,20) &
-          ,'xOH',  xn_2d(OH,20),'xNH3',  xn_2d(NH3,20) &
-          ,'eSO2', rcemis(SO2,KMAX_MID), 'eSO4', rcemis(SO4,KMAX_MID) &
-          ,'xSO2', xn_2d(SO2,KMAX_MID), 'xSO4', xn_2d(SO4,KMAX_MID) 
+          ,'xOH',  xn_2d(OH_ix,20),'xNH3',  xn_2d(NH3_ix,20) &
+          ,'eSO2', rcemis(SO2_ix,KMAX_MID), 'eSO4', rcemis(SO4_ix,KMAX_MID) &
+          ,'xSO2', xn_2d(SO2_ix,KMAX_MID), 'xSO4', xn_2d(SO4_ix,KMAX_MID) 
 !           !'eNO',  rcemis(NO,20), 'eCO',rcemis(CO,20), &
 !           ! 'eC5H8', rcemis(C5H8,KMAX_MID)+rcbio(1,KMAX_MID) &
 !          'ePOM_f_FFUEL',  rcemis(POM_f_FFUEL,20), 'eEC_f_FFUEL_new',rcemis(EC_f_FFUEL_new,20), 'eC5H8', rcemis(C5H8,KMAX_MID) &

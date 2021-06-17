@@ -17,8 +17,8 @@ module ChemFunctions_mod
  use AeroConstants_mod,     only: AERO
  use AeroFunctions_mod,     only: UptakeRate, GammaN2O5_EJSS, GammaN2O5
  use CheckStop_mod,         only: CheckStop, StopAll
- use ChemSpecs_mod,         only : SO4, NO3_f, NH4_f, NO3_c, species, species_adv
- use Config_module,         only : MasterProc
+ use ChemSpecs_mod,         only : species, species_adv
+ use Config_module,         only : MasterProc, SO4_ix, NH4_f_ix, NO3_f_ix, NO3_c_ix
  use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES
  use PhysicalConstants_mod,  only : AVOG, RGAS_J, DAY_ZEN
@@ -277,7 +277,18 @@ use SmallUtils_mod,     only : find_index
      real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
      integer :: k
      real :: xNO3  ! As the partitioning between fine and coarse is so difficult
-                   ! we include both in the nitrate used here.
+     ! we include both in the nitrate used here.
+     
+     integer :: SO4, NO3_f, NH4_f, NO3_c
+     
+     SO4 = SO4_ix
+     call CheckStop( SO4_ix<1, "SO4 not defined" )
+     NH4_f = NH4_f_ix
+     call CheckStop( NH4_f_ix<1, "NH4_f not defined" )
+     NO3_f = NO3_f_ix
+     call CheckStop( NO3_f_ix<1, "NO3_f not defined" )
+     NO3_c = NO3_c_ix
+     call CheckStop( NO3_c_ix<1, "NO3_c not defined" )
 
      do k = K1, K2
        if ( rh(k)  > 0.4) then
@@ -312,6 +323,16 @@ use SmallUtils_mod,     only : find_index
      real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
      real :: xNO3  ! As the partitioning between fine and coarse is so difficult
                    ! we include both in the nitrate used here.
+     integer :: SO4, NH4_f, NO3_f, NO3_c
+     
+     SO4 = SO4_ix
+     call CheckStop( SO4_ix<1, "SO4 not defined" )
+     NH4_f = NH4_f_ix
+     call CheckStop( NH4_f_ix<1, "NH4_f not defined" )
+     NO3_f = NO3_f_ix
+     call CheckStop( NO3_f_ix<1, "NO3_f not defined" )
+     NO3_c = NO3_c_ix
+     call CheckStop( NO3_c_ix<1, "NO3_c not defined" )
 
           xNO3 = x(NO3_f,k) + x(NO3_c,k) 
 
@@ -353,6 +374,16 @@ use SmallUtils_mod,     only : find_index
                  ! we include both in the nitrate used here.
    logical, save :: first_call = .true.
    character(len=*), parameter :: dtxt = 'HydrolN2O5:'
+   integer :: SO4, NH4_f, NO3_f, NO3_c
+   
+   SO4 = SO4_ix
+   call CheckStop( SO4_ix<1, "SO4 not defined" )
+   NH4_f = NH4_f_ix
+   call CheckStop( NH4_f_ix<1, "NH4_f not defined" )
+   NO3_f = NO3_f_ix
+   call CheckStop( NO3_f_ix<1, "NO3_f not defined" )
+   NO3_c = NO3_c_ix
+   call CheckStop( NO3_c_ix<1, "NO3_c not defined" )
 
 
    if( first_call ) then

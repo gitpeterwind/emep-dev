@@ -47,6 +47,21 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th June 2021, Peter
+
+Replaced many of the hardcoded species indices by "soft" indices, so
+that it is possible to compile the model with chemistry where thoase are
+not defined.
+
+define_chemicals_indices makes:
+SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_f_ix, 
+NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix
+
+To check:
+In DryDep default for so2nh3ratio when nh3 is not defined?
+Switch off codep in this case?
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th June 2021, Peter
 
 Emissions new format upgrades:

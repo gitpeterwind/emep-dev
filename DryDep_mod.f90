@@ -41,10 +41,11 @@ use Biogenics_mod,        only: SoilNH3  ! for BiDir
 use CheckStop_mod,        only: CheckStop, StopAll
 use Chemfields_mod ,      only: cfac, so2nh3_24hr,Grid_snow 
 use ChemDims_mod,         only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
-use ChemSpecs_mod            ! several species needed
+use ChemSpecs_mod,        only: species, IXADV_O3, FIRST_SEMIVOL, LAST_SEMIVOL
 use Config_module,        only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                               USES, MasterProc, PPBINV, IOU_INST,&
-                              KUPPER, NLANDUSEMAX
+                              KUPPER, NLANDUSEMAX,&
+                              SO2_ix,NH3_ix,NH4_f_ix,NO3_f_ix,NO2_ix,O3_ix
 use Debug_module,         only: DEBUG, DEBUG_ECOSYSTEMS
 use DerivedFields_mod,    only: d_2d, f_2d, VGtest_out_ix
 use DO3SE_mod,            only: do3se
@@ -94,14 +95,15 @@ character(len=30),private, save :: errmsg = "ok"
 
 ! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE (set to 1 for non-ozone models)
 
-integer, public, parameter :: FLUX_ADV   = IXADV_O3
-integer, public, parameter :: FLUX_TOT   = O3
+!Peter: removed those as O3, NO3_f and NH4_f may not be defined in all chemistry
+!!integer, public, parameter :: FLUX_ADV   = IXADV_O3
+!integer, public, parameter :: FLUX_TOT   = O3
 
 ! WE ALSO NEED NO3_f and NH4_f for deposition.
 ! (set to one for non-no3/nh4 models)
 
-integer, public, parameter :: pNO3  = NO3_f
-integer, public, parameter :: pNH4  = NH4_f
+!integer, public, parameter :: pNO3  = NO3_f
+!integer, public, parameter :: pNH4  = NH4_f
 
 !logical, public, parameter :: COMPENSATION_PT = .false. 
 
@@ -272,6 +274,13 @@ contains
     ! Dry deposion rates are specified in subroutine readpar
     !
 
+    call CheckStop( O3_ix<1, "DryDep: O3 not defined" )
+    call CheckStop( SO2_ix<1, "DryDep:SO2 not defined" )
+    call CheckStop( NO2_ix<1, "DryDep:NO2 not defined" )
+    !call CheckStop( NH3_ix<1, "DryDep:NH3_f not defined" )
+    !call CheckStop( NH4_f_ix<1, "DryDep:NH4_f not defined" )
+    call CheckStop( NO3_f_ix<1, "DryDep:NO3_f not defined" )
+
 
 
    ! - Set up debugging stuff first. ---------------------------!
@@ -342,16 +351,21 @@ contains
     Sub(0)%Vg_3m   = 0.0
  
     !/ SO2/NH3 for Rsur calc
-    Grid%so2nh3ratio = xn_2d(SO2,K2) / max(1.0,xn_2d(NH3,K2))
-
-    Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
-
+    if (NH3_ix > 0) then
+       Grid%so2nh3ratio = xn_2d(SO2_ix,K2) / max(1.0,xn_2d(NH3_ix,K2))
+       
+       Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
+    else
+       Grid%so2nh3ratio = xn_2d(SO2_ix,K2) ! ?
+       
+       Grid%so2nh3ratio24hr = xn_2d(SO2_ix,K2) ! ?   
+    end if
    !---------------------------------------------------------
    !> NH4NO3 deposition will need this ratio for the NH4 part
 
     no3nh4ratio = 1.0
-    if( xn_2d(pNH4,K2) > 1.0  ) then
-       no3nh4ratio = xn_2d(pNO3,K2) / xn_2d(pNH4,K2)
+    if( xn_2d(NH4_f_ix,K2) > 1.0  .and. NH4_f_ix > 0) then
+       no3nh4ratio = xn_2d(NO3_f_ix,K2) / xn_2d(NH4_f_ix,K2)
        no3nh4ratio = min( 1.0,  no3nh4ratio )
     end if
 
@@ -368,15 +382,15 @@ contains
  
     no2fac = 1.0
     if ( .not. USES%SOILNOX .and. USES%NO2_COMPENSATION_PT  ) then
-      no2fac = max( 1.0, xn_2d(NO2,K2) )
+      no2fac = max( 1.0, xn_2d(NO2_ix,K2) )
       no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
     end if
    !---------------------------------------------------------
 
     if ( dbghh ) then
       write(*,"(a,2i4,L2,9es12.4)") dtxt//" CONCS SO2,NH3,O3,NO2 (ppb),f ", &
-       i,j, USES%SOILNOX,  xn_2d(SO2,K2)*surf_ppb, xn_2d(NH3,K2)*surf_ppb, &
-          xn_2d(O3,K2)*surf_ppb, xn_2d(NO2,K2)*surf_ppb, no2fac
+       i,j, USES%SOILNOX,  xn_2d(SO2_ix,K2)*surf_ppb, xn_2d(NH3_ix,K2)*surf_ppb, &
+          xn_2d(O3_ix,K2)*surf_ppb, xn_2d(NO2_ix,K2)*surf_ppb, no2fac
     end if
 
     call GasCoeffs(Grid%t2)             ! Sets DDdefs coeffs.
@@ -531,7 +545,7 @@ contains
            if( dbg .and. first_ddep .and. icmp==idcmpNO2 ) then
              associate ( b=>BL(icmp) )
                write(*,'(a,2i4,9es10.3)')'DBGXNO2 :',icmp, iL,L%Ra_ref, b%Rb,&
-                      b%Rsur, b%Gsto, Vg_ref(icmp), no2fac, 4.0e-11*xn_2d(NO2,K2)
+                      b%Rsur, b%Gsto, Vg_ref(icmp), no2fac, 4.0e-11*xn_2d(NO2_ix,K2)
              end associate
            end if
 
@@ -548,7 +562,7 @@ contains
             else if ( .not. USES%SOILNOX .and.  icmp == idcmpNO2 ) then
 
               if( dbg .and. first_ddep .and. icmp==idcmpNO2 ) &
-                  write(*,*) 'DBGXNO2 no2fac TRIGGERED', no2fac, 4.0e-11*xn_2d(NO2,K2)
+                  write(*,*) 'DBGXNO2 no2fac TRIGGERED', no2fac, 4.0e-11*xn_2d(NO2_ix,K2)
   
               Vg_eff(icmp) = Vg_eff(icmp) * no2fac
               Vg_ref(icmp) = Vg_ref(icmp) * no2fac
@@ -689,7 +703,7 @@ contains
         !n = CDDEP_O3
         icmp = idcmpO3
         Ra_diff = L%Ra_ref - L%Ra_3m
-        c_hveg3m = xn_2d(FLUX_TOT,K2)  &     ! #/cm3 units
+        c_hveg3m = xn_2d(O3_ix,K2)  &     ! #/cm3 units
                      * ( 1.0-Ra_diff*Vg_ref(icmp) )
 
       ! Flux = Vg_ref*c_ref = Vg_h * c_h = (c_ref-c_h)/Ra(z_ref,z_h)
@@ -699,12 +713,12 @@ contains
         Ra_diff  = AerRes(max( L%hveg-L%d, STUBBLE) , Grid%z_ref-L%d,&
                     L%ustar,L%invL,KARMAN)
 
-        c_hveg = xn_2d(FLUX_TOT,K2)  &     ! #/cm3 units
+        c_hveg = xn_2d(O3_ix,K2)  &     ! #/cm3 units
                      * ( 1.0-Ra_diff*Vg_ref(icmp) )
 
         if ( DEBUG%AOT .and. debug_flag .and. iL==1 ) then
            call datewrite(dtxt//"CHVEG ", iL, &
-             (/  xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
+             (/  xn_2d(O3_ix,K2)*surf_ppb, c_hveg*surf_ppb,&
                  c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp), &
                  L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, &
                  BL(icmp)%Rb,BL(icmp)%Rsur /) )
@@ -811,11 +825,11 @@ contains
          call CheckStop("NEGXN DEPLOSS" )
         end if
 
-        if ( ntot == O3 ) then 
+        if ( ntot == O3_ix ) then 
 
-          o3_45m = xn_2d(O3,K2)*surf_ppb !store for consistency of SPOD outputs
+          o3_45m = xn_2d(O3_ix,K2)*surf_ppb !store for consistency of SPOD outputs
           Grid%surf_o3_ppb  = o3_45m * gradient_fac( icmp )
-          Grid%surf_o3_ppb1 = ( xn_2d(O3,K2) - Deploss(nadv)) * & ! after loss
+          Grid%surf_o3_ppb1 = ( xn_2d(O3_ix,K2) - Deploss(nadv)) * & ! after loss
                gradient_fac( icmp )*surf_ppb
 
           if( dbghh ) then
@@ -829,7 +843,7 @@ contains
         xn_2d( ntot,K2) = xn_2d( ntot,K2) - DepLoss(nadv)
 
 
-        if ( ntot == FLUX_TOT ) then
+        if ( ntot == O3_ix ) then
 
           ! fraction by which xn is reduced - safety measure:
              if( xn_2d(ntot,K2)  > 1.0e-30 ) then
@@ -843,7 +857,7 @@ contains
   
              if ( DEBUG%AOT .and. debug_flag ) then !FEB2013 testing
                call datewrite(dtxt//"CHVEGX ", me, &
-                 (/ xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
+                 (/ xn_2d(O3_ix,K2)*surf_ppb, c_hveg*surf_ppb,&
                   c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp) /) )
              end if
         end if ! not FLUXTOT
@@ -902,18 +916,18 @@ contains
           !  write(*, "(a,2i4,f8.3)") "DEBUG DryDep SET ", &
           !       n,nadv, DDepMap(icmp)%vg
           !else
-          if( ntot == O3 ) & ! O3
+          if( ntot == O3_ix ) & ! O3
             call datewrite( "DEBUG DDEPxnd: "// trim(species(ntot)%name), &
               icmp, (/ real(nadv),real(icmp), gradient_fac( icmp),&
                  xn_2d(ntot,K2), vg_fac(icmp) /) )
           !end if
         end if
 
-        if ( DEBUG%AOT .and. debug_flag .and. ntot == FLUX_TOT  ) then
+        if ( DEBUG%AOT .and. debug_flag .and. ntot == O3_ix  ) then
             write(*, "(a,3i3,i5,i3,2f9.4,f7.3)") &
              dtxt//"AOTCHXN ", imm, idd, ihh, current_date%seconds, &
-                 iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
-                  (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
+                 iL, xn_2d(O3_ix,K2)*surf_ppb, &
+                  (xn_2d( O3_ix,K2) + DepLoss(nadv) )*surf_ppb, &
                    gradient_fac( icmp)
         end if
      end do DCMPLOOP ! is

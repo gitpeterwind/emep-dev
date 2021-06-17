@@ -161,7 +161,7 @@ type, public :: emep_useconfig
     ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong
-    ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
+    ,NOCHEM       = .false. &! Turns off chemistry for emergency runs
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,PROGRESS_FILES   = .false. &! write to file.msg for each output in file.nc
     ,SKIP_INCOMPLETE_OUTPUT = .false. & ! skip daily/montly/fullrun output for runs under 1/28/181 days
@@ -794,6 +794,11 @@ character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! 
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
+! Species indices that may or may not be defined in Species
+integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_f_ix, &
+                         NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix
+
+
 !----------------------------------------------------------------------------
 contains
 subroutine Config_Constants(iolog)
@@ -1105,6 +1110,8 @@ subroutine Config_Constants(iolog)
      write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
   endif
 
+  call define_chemicals_indices() ! sets up species indices if they exist
+  
 end subroutine Config_Constants
 
 ! PRELIM. Just writes out USES so far.
@@ -1124,6 +1131,38 @@ subroutine associate_File(FileName)
   call CheckStop(ix > size(InputFiles) , "Config_module: Size_InputFiles too small")
   InputFiles(ix)%filename => FileName
 end subroutine associate_File
+
+subroutine define_chemicals_indices()
+  !we set values for species indices if they are defined, -1 if they don't
+  integer :: ix
+  ix = find_index('O3' ,species(:)%name)
+  O3_ix = ix
+  ix = find_index('SO2' ,species(:)%name)
+  SO2_ix = ix
+  ix = find_index('NO2' ,species(:)%name)
+  NO2_ix = ix
+  ix = find_index('SO4' ,species(:)%name)
+  SO4_ix = ix
+  ix = find_index('NH4_f' ,species(:)%name)
+  NH4_f_ix = ix
+  ix = find_index('NO3_f' ,species(:)%name)
+  NO3_f_ix = ix
+  ix = find_index('NO3_c' ,species(:)%name)
+  NO3_c_ix = ix
+  ix = find_index('NH3' ,species(:)%name)
+  NH3_ix = ix
+  ix = find_index('HNO3' ,species(:)%name)
+  HNO3_ix = ix
+  ix = find_index('C5H8' ,species(:)%name)
+  C5H8_ix = ix
+  ix = find_index('HO2' ,species(:)%name)
+  HO2_ix = ix
+  ix = find_index('NO' ,species(:)%name)
+  NO_ix = ix
+  ix = find_index('OH' ,species(:)%name)
+  OH_ix = ix
+ 
+end subroutine define_chemicals_indices
 
 end module Config_module
 !_____________________________________________________________________________

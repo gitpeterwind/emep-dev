@@ -11,7 +11,7 @@ use Biogenics_mod,     only: Set_SoilNOx
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv,cfac,xn_shl
 use ChemDims_mod,      only: NSPEC_SHL
-use ChemSpecs_mod,     only: IXADV_SO2, IXADV_NH3, IXADV_O3, species
+use ChemSpecs_mod,     only: species
 use CoDep_mod,         only: make_so2nh3_24hr
 use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,dt_advec       & ! time-step for phyche/advection
@@ -23,7 +23,8 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,JUMPOVER29FEB&
                            ,IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
-                           ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE
+                           ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE&
+                           , O3_ix,SO2_ix,NH3_ix
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
 use Debug_module,      only: DEBUG, DebugCell  ! -> DEBUG%GRIDVALUES
@@ -118,7 +119,7 @@ subroutine phyche()
      nstart=max(1,8*(daynumber-2)+current_date%hour/3)
      !first available day is 2nd January for 2010:
      if(current_date%year==2010)nstart=max(1,8*(daynumber-1)+current_date%hour/3)
-     call  ReadField_CDF(trim(fileName_O3_Top),'O3',xn_adv(IXADV_O3,:,:,1),&
+     call  ReadField_CDF(trim(fileName_O3_Top),'O3',xn_adv(O3_ix-NSPEC_SHL,:,:,1),&
           nstart=nstart,kstart=kstart,kend=kstart,&
           interpol='zero_order',debug_flag=.false.)     
   endif
@@ -312,12 +313,12 @@ subroutine phyche()
   end if
 
   ! CoDep
-  if(modulo(current_date%hour,1)==0) & ! every hour
+  if(modulo(current_date%hour,1)==0 .and. NH3_ix>0 .and. SO2_ix>0) & ! every hour
     call make_so2nh3_24hr(current_date%hour,&
-      xn_adv(IXADV_SO2,:,:,KMAX_MID),&
-      xn_adv(IXADV_NH3,:,:,KMAX_MID),&
-      cfac(IXADV_SO2,:,:),&
-      cfac(IXADV_NH3,:,:))
+      xn_adv(SO2_ix-NSPEC_SHL,:,:,KMAX_MID),&
+      xn_adv(NH3_ix-NSPEC_SHL,:,:,KMAX_MID),&
+      cfac(SO2_ix-NSPEC_SHL,:,:),&
+      cfac(NH3_ix-NSPEC_SHL,:,:))
 
   first_call=.false.
 end subroutine phyche
