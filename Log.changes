@@ -47,6 +47,17 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd June 2021, Dave
+
+Adding ZCM_EmChem19a-CAMS5
+
+ - for use with CAMSv5 (CANT) emissions, which have OC and EC. Activate with 
+   mk.ChemFiles EmChem19a-CAMS5 as usual. Be careful with emissplits though -
+   they are not yet added in DataDir, but exist in ZCM_EmChem19a-CAMS5.
+
+ - will added in ecosx or genchem soon....
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th June 2021, Peter
 
 Replaced many of the hardcoded species indices by "soft" indices, so
