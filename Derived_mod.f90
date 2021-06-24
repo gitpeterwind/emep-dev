@@ -26,7 +26,8 @@ use CheckStop_mod,     only: CheckStop, StopAll
 use Chemfields_mod,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             SurfArea_um2cm3, &
                             Fgas3d, & ! FSOA
-                            Extin_coeff, PM25_water, PM25_water_rh50
+                            Extin_coeff, PM25_water, PM25_water_rh50 &
+                          , PMco_water_rh50   !JUN21AERO
 use Chemfields_mod ,   only: so2nh3_24hr,Grid_snow
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemGroups_mod          ! SIA_GROUP, PMCO_GROUP -- use tot indices
@@ -386,7 +387,7 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
         unittxt="m"
         Is3D=.true.
       case('SIA25','PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
-           'PM25water','PM25_wet','PM10_wet','PM_coarse')
+           'PM25water','PMco_water','PM25_wet','PM10_wet','PM_coarse')
         iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
                   ! group_calc gets the unit conversion factor from Group_Units
         call Units_Scale(outunit,iadv,unitscale,unittxt)
@@ -735,6 +736,11 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
   call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-","ug/m3", &
                        -99 , -99, F, 1.0,   T,  'YMD' )
 
+  if(AERO%JUN21AERO .and. &
+     find_index("SURF_PMco_water",def_2d(:)%name,any_case=.true.)<1)&
+  call AddNewDeriv("SURF_PMco_water", "PMco_water", "-", "-","ug/m3", &
+                       -99 , -99, F, 1.0,   T,  'YMD' )
+
 ! As for GRIDAOT, we can use index for the threshold
   call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   35, -99, F, 1.0,   F,   'YM' )
@@ -921,7 +927,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_pmfine=-999 ,ind3d_pmfine=-999,   &
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
     ind2d_pm10=-999   ,ind3d_pm10=-999,     &
-    ind2d_pm25=-999 
+    ind2d_pm25=-999   ,ind2d_pmcowater=-999
 
   integer :: imet_tmp, ind, iadvDep
   real, pointer, dimension(:,:,:) :: met_p => null()
@@ -1339,6 +1345,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = PM25_water_rh50(i,j)
       ind2d_pmwater = n
 
+    case ( "PMco_water" )      !water JUN21AERO
+      forall ( i=1:limax, j=1:ljmax ) &
+        d_2d( n, i,j,IOU_INST) = PMco_water_rh50(i,j)
+      ind2d_pmcowater = n
+
     case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
@@ -1466,6 +1477,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax) &
         d_2d(n,i,j,IOU_INST) = d_2d(ind2d_pm10   ,i,j,IOU_INST) &
                              + d_2d(ind2d_pmwater,i,j,IOU_INST)
+      if ( AERO%JUN21AERO ) then
+        forall(i=1:limax,j=1:ljmax) &
+         d_2d(n,i,j,IOU_INST) = d_2d(n,i,j,IOU_INST) + &
+           d_2d(ind2d_pmcowater,i,j,IOU_INST)   !ST EQSAM
+      end if
 
     case("AOD","AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
       if(first_call)call AOD_init("Derived:"//trim(class))

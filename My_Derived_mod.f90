@@ -112,6 +112,8 @@ character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
     ! all array members will have len=TXTLEN_DERIV
     ! Surface pressure used for crosssection
     "SURF_MAXO3","SURF_PM25water","SOMO35","PS"] 
+!JUN21AERO ST had dim(5) and :
+!    "SURF_MAXO3","SURF_PM25water","SURF_PMcowater","SOMO35","PS"]    !
 
 !============ Extra parameters for model evaluation: ===================!
 !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &

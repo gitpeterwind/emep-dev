@@ -1,6 +1,7 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-use AeroConstants_mod,  only: NSAREA_DEF       ! =>  z dimension
+use AeroConstants_mod,  only: NSAREA_DEF  &       ! =>  z dimension
+                             ,AERO                ! for JUN21AERO
 use AllocInits,     only: AllocInit
 use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
                           NCHEMRATES, NPHOTOLRATES 
@@ -45,9 +46,14 @@ private
      xn_adv(:,:,:,:)  &
     ,xn_shl(:,:,:,:)  &
     ,xn_bgn(:,:,:,:) &
-    ,PM25_water(:,:,:) &      !3D PM water
+    ,PM25_water(:,:,:)    &  !3D PM water
+    ,PMco_water(:,:,:)    &  !3D PM water ! Added JUN21AERO
     ,PM25_water_rh50(:,:) &   !gravimetric PM water
-    ,pmH2Ogb(:,:,:)           !2D PM water from GERBER, for fine & coarse
+    ,pmH2Ogb(:,:,:)       &   !2D PM water from GERBER, for fine & coarse
+    ! Added PMco_water and Gerber_water from JUN21AERO. Overlap with pmH2O?
+    ,PMco_water_rh50(:,:) &   !gravimetric PM water
+    ,Gerber_water(:,:,:)   !3D PM water from GERBER
+
 
   real, save, allocatable, public :: &
     SurfArea_um2cm3(:,:,:)  !2D  aerosol surface area, um2/cm3  (n,i,j)
@@ -83,6 +89,12 @@ contains
     PM25_water=0.0
     allocate(PM25_water_rh50(LIMAX,LJMAX))
     PM25_water_rh50=0.0
+    if ( AERO%JUN21AERO ) then
+      allocate(PMco_water(LIMAX,LJMAX,KMAX_MID))
+      PMco_water=0.0
+      allocate(PMco_water_rh50(LIMAX,LJMAX))
+      PMco_water_rh50=0.0
+    end if 
     allocate(cfac(NSPEC_ADV,LIMAX,LJMAX))
     cfac=1.0
     allocate(so2nh3_24hr(LIMAX,LJMAX))
@@ -130,6 +142,10 @@ contains
     SurfArea_um2cm3=0.0
     allocate(pmH2Ogb(LIMAX,LJMAX,2))
     pmH2Ogb=0.0
+    if ( AERO%JUN21AERO ) then
+      allocate(Gerber_water(LIMAX,LJMAX,KMAX_MID))
+      Gerber_water=0.0
+    end if
 
    ! wet DpgN and defaults from dry values
     allocate(DpgNw(NSAREA_DEF, KCHEMTOP:KMAX_MID))
