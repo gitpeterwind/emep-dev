@@ -55,6 +55,20 @@ Probably called very many time. Now it is called only for species that are
 wetdeposited )
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th June 2021, Dave
+
+Prepping for EQSAM:
+
+ AeroConstants_mod: Added logical JUN21AERO to AERO type (default false)
+ ChemFields_mod   : new fields, allocated if AERO%JUN21AERO is .true.
+ My_Derived_SR    : commented out JUN21AERO option.
+ Derived_mod      : JUN21AERO outputs for pmcowater
+
+Small changes
+  EmisGet_mod - just print femis warning from MasterProc
+  Sites_mod   - just print levels warning from MasterProc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd June 2021, Dave
 
 Adding ZCM_EmChem19a-CAMS5

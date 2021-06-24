@@ -386,7 +386,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     call CheckStop(len_trim(adjustl(s)) >= 40, dtxt//'Need longer TXTLEN_SITE for '//trim(s))
 
     if (lev<0) lev = KMAX_MID
-    if(lev>KMAX_MID)then
+    if(lev>KMAX_MID .and. MasterProc )then
        write(*,*)'WARNING: sites.dat found vertical level out of range. Setting to ',KMAX_MID
        write(*,*)'WARNING: vertical level out of range'//trim(txtinput), me
     endif

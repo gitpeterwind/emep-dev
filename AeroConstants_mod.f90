@@ -20,6 +20,7 @@ module AeroConstants_mod
      logical          :: DYNAMICS = .false.
      integer          :: NSIZE    = 7
      integer :: PM_F=1,SS_F=2,DU_F=3,SS_C=4,DU_C=5,PM=6  ! Will be set in GasParticleCoeffs_mod
+     logical :: JUN21AERO = .false.   ! Flag to trigger ST's 2021 EQSAM and Aero tests
    end type aero_t
    type(aero_t), public, save :: AERO = aero_t()
 

@@ -496,11 +496,12 @@ contains
   do isrc = 1, Nsources
      if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + lf_src(isrc)%Npos
      if(lf_src(isrc)%wetdep) Nwetdep_lf = Nwetdep_lf + lf_src(isrc)%Npos
-     if(.not. lf_src(isrc)%WetDep) cycle
-     do iix=1,lf_src(isrc)%Nsplit
-        ix=lf_src(isrc)%ix(iix)
-        wetdep_lf(ix) = .true.
-     end do
+     if (lf_src(isrc)%WetDep) then 
+        do iix=1,lf_src(isrc)%Nsplit
+           ix=lf_src(isrc)%ix(iix)
+           wetdep_lf(ix) = .true.
+        end do
+     end if
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
