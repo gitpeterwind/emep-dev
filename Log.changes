@@ -47,6 +47,14 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th June 2021, Peter
+
+LocalFractions: faster wetdep calculations.
+(for some reason the call to lf_wetdep itself was taking long time.
+Probably called very many time. Now it is called only for species that are
+wetdeposited )
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd June 2021, Dave
 
 Adding ZCM_EmChem19a-CAMS5

@@ -87,6 +87,7 @@ integer,  public, save :: ipoll2iqrc(MAXIPOLL)=-1 !-1 for primary pollutant
 
 integer, public, save :: Ndrydep_lf=0
 integer, public, save :: Nwetdep_lf=0
+logical, public, save :: wetdep_lf(NSPEC_ADV)=.false.
 
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
@@ -113,7 +114,7 @@ integer, private, save :: isrc_new(MAXSRC)
 contains
 
   subroutine lf_init
-    integer :: i, ii, ic, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: i, ii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
     integer :: found
 
 ! pm25_new and pm25 are considered as two different emitted pollutants
@@ -495,6 +496,11 @@ contains
   do isrc = 1, Nsources
      if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + lf_src(isrc)%Npos
      if(lf_src(isrc)%wetdep) Nwetdep_lf = Nwetdep_lf + lf_src(isrc)%Npos
+     if(.not. lf_src(isrc)%WetDep) cycle
+     do iix=1,lf_src(isrc)%Nsplit
+        ix=lf_src(isrc)%ix(iix)
+        wetdep_lf(ix) = .true.
+     end do
      lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
@@ -561,6 +567,7 @@ contains
   else
      allocate(loc_frac_wetdep(1,1,1))
   endif
+  
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
 

@@ -49,7 +49,7 @@ use DerivedFields_mod,  only: f_2d, d_2d     ! Contains Wet deposition fields
 use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep
 use GridValues_mod,     only: gridwidth_m,xm2,dA,dB,i_fdom,j_fdom
 use Io_mod,             only: IO_DEBUG, datewrite
-use LocalFractions_mod, only: lf_wetdep, Nwetdep_lf
+use LocalFractions_mod, only: lf_wetdep, wetdep_lf
 use MassBudget_mod,     only : wdeploss,totwdep
 use MetFields_mod,       only: pr, roa, z_bnd, cc3d, lwc
 use MetFields_mod,       only: ps
@@ -735,7 +735,7 @@ subroutine WetDeposition(i,j,debug_flag)
         loss = loss * rho(k) ! concentration -> weight
         wdeploss(iadv) = wdeploss(iadv) + loss
         
-        if(USES%LocalFractions .and. Nwetdep_lf>0) call lf_wetdep(iadv, i, j, k, loss, invgridarea)
+        if(USES%LocalFractions .and. wetdep_lf(iadv)) call lf_wetdep(iadv, i, j, k, loss, invgridarea)
 
         if(DEBUG%AQUEOUS.and.debug_flag.and.pr_acc(KMAX_MID)>1.0e-5) then
           write(*,"(a50,2i4,a,9es12.2)") "DEBUG_WDEP, k, icalc, spec", k, &
