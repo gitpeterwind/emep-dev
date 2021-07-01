@@ -370,6 +370,18 @@ type, public :: lf_country_group_type
    integer, dimension(MAX_lf_country_group_size):: ix = -1 ! index of the country as defined in Country_ml (set by model)
 end type lf_country_group_type
 
+integer, public, parameter :: Max_Country_list=1000
+integer, public, parameter :: Max_Country_groups=30
+integer, public, parameter :: Max_Country_sectors=50
+type, public :: lf_country_type
+   integer :: mask_val_min = 1
+   integer :: mask_val_max = 0
+   character(len=10) :: list(Max_Country_list) = 'NOTSET'
+   type(lf_country_group_type) :: group(Max_Country_groups)
+   integer :: sector_list(Max_Country_sectors)=-1
+end type lf_country_type
+
+
 contains
 !=========================================================================
 subroutine print_Asc2D(w)

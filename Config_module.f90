@@ -18,8 +18,9 @@ use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEME
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
                                  Sector_type, hourly_emis_factor_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
-                                 TXTLEN_DERIV, Emis_mask_type, &
-                                 Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4
+                                 TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
+                                 Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
+                                 Max_Country_list, Max_Country_groups,Max_Country_sectors
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -268,12 +269,10 @@ type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
 
 integer, public, parameter :: MAXSRC=1000
 type(lf_sources), public, save :: lf_src(MAXSRC)
-integer, public, parameter :: Max_Country_list=100
 character(len=10), public, save :: lf_country_list(Max_Country_list)='NOTSET'!new format "uEMEP" Local Fractions. List of countries
-integer, public, parameter :: Max_Country_groups=30
 type(lf_country_group_type), public, save :: lf_country_group(Max_Country_groups)
-integer, public, parameter :: Max_Country_sectors=13
 integer, public, save :: lf_country_sector_list(Max_Country_sectors)=-1!new format "uEMEP" Local Fractions. List of sectors for each country
+type(lf_country_type), public, save :: lf_country
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -824,6 +823,7 @@ subroutine Config_Constants(iolog)
    ,EURO_SOILNOX_DEPSCALE &
    ,uEMEP & !old format . Avoid, will be removed in future versions
    ,lf_src & !new format "uEMEP" Local Fractions
+   ,lf_country & !new format masks, countries, and groups
    ,lf_country_list & !new format "uEMEP" Local Fractions. List of countries
    ,lf_country_group & !new format "uEMEP" Local Fractions. List of group of countries
    ,lf_country_sector_list & !new format "uEMEP" Local Fractions. List of sectors for each country

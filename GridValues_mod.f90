@@ -2257,7 +2257,7 @@ subroutine lb_rot2lb(xsph,ysph,xrot,yrot,grid_north_pole_longitude,grid_north_po
   
 end subroutine lb_rot2lb
 
-subroutine lb2UTM(Long, Lat, UTMEasting, UTMNorthing, UTMZone)
+subroutine lb2UTM(Long, Lat, UTMEasting, UTMNorthing, UTMZone_in)
   ! converts lat/long to UTM coords.  Equations from USGS Bulletin 1532
   ! East Longitudes are positive, West longitudes are negative.
   ! North latitudes are positive, South latitudes are negative
@@ -2272,8 +2272,10 @@ subroutine lb2UTM(Long, Lat, UTMEasting, UTMNorthing, UTMZone)
 
   implicit none
 
-  real :: UTMNorthing, UTMEasting,  Lat,  Long
-  integer :: UTMZone
+  real, intent(in):: Lat,  Long
+  real, intent(out) :: UTMNorthing, UTMEasting
+  integer, optional, intent(in) :: UTMZone_in
+  real :: UTMZone
   real :: a = 6378137.0 !WGS-84
   real :: eccSquared = 0.00669438 !WGS-84
   real :: k0 = 0.9996
@@ -2293,23 +2295,31 @@ subroutine lb2UTM(Long, Lat, UTMEasting, UTMNorthing, UTMZone)
   !//Make sure the longitude is between -180.00 .. 179.9
   LongTemp = (Long+180)-int((Long+180)/360)*360-180!; // -180.00 .. 179.9;
   LongRad = LongTemp*deg2rad
-  UTMZone = int((LongTemp + 180)/6) + 1;
+
+  UTMZone = -1
   
-  !Southern Norway, zone 32 is extended by 3 degrees to the West
-  if( Lat >= 56.0 .and. Lat < 64.0  .and. LongTemp >= 3.0 .and. LongTemp < 12.0 )UTMZone  = 32
-  
-  !// Special zones for Svalbard
-  if( Lat >= 72.0 .and. Lat < 84.0 ) then
-    if(      LongTemp >= 0.0  .and. LongTemp <  9.0 )then
-      UTMZone = 31
-    else if( LongTemp >= 9.0  .and. LongTemp < 21.0 )then
-      UTMZone = 33
-    else if( LongTemp >= 21.0 .and. LongTemp < 33.0 )then
-      UTMZone = 35
-    else if( LongTemp >= 33.0 .and. LongTemp < 42.0 )then
-      UTMZone = 37
-    endif
-  endif
+  if (present(UTMZone_in)) UTMZone = UTMZone_in
+
+  if (UTMZone < 0) then
+     !define according to longitude
+     UTMZone = int((LongTemp + 180)/6) + 1;
+     
+     !Southern Norway, zone 32 is extended by 3 degrees to the West
+     if( Lat >= 56.0 .and. Lat < 64.0  .and. LongTemp >= 3.0 .and. LongTemp < 12.0 )UTMZone  = 32
+     
+     !// Special zones for Svalbard
+     if( Lat >= 72.0 .and. Lat < 84.0 ) then
+        if(      LongTemp >= 0.0  .and. LongTemp <  9.0 )then
+           UTMZone = 31
+        else if( LongTemp >= 9.0  .and. LongTemp < 21.0 )then
+           UTMZone = 33
+        else if( LongTemp >= 21.0 .and. LongTemp < 33.0 )then
+           UTMZone = 35
+        else if( LongTemp >= 33.0 .and. LongTemp < 42.0 )then
+           UTMZone = 37
+        end if
+     end if
+  end if
   LongOrigin = (UTMZone - 1)*6 - 180 + 3!  //+3 puts origin in middle of zone
   LongOriginRad = LongOrigin * deg2rad
   

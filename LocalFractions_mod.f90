@@ -11,9 +11,9 @@ use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, uEMEP, lf_src, IO
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, MAXSRC, Max_Country_list, Max_Country_sectors &
-                             ,lf_country_group, Max_Country_groups&
-                             ,lf_country_sector_list,lf_country_list
+                             ,HOURLYFILE_ending, MAXSRC &
+                             ,lf_country_group&
+                             ,lf_country_sector_list,lf_country_list,lf_country
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
@@ -24,7 +24,7 @@ use EmisDef_mod,       only: lf, emis_lf, lf_emis_tot, emis_lf_cntry, loc_frac_s
                             loc_frac_drydep, loc_frac_wetdep, &
                             nlandcode,landcode,&
                             TFAC_IDX_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
-                            NEmis_sources, Emis_source_2D, Emis_source
+                            NEmis_sources, Emis_source_2D, Emis_source, EmisMaskIntVal
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom
@@ -32,7 +32,8 @@ use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
 use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, MAX_lf_country_group_size, &
-                             TXTLEN_NAME, TXTLEN_FILE
+                             TXTLEN_NAME, TXTLEN_FILE, &
+                             Max_Country_list, Max_Country_sectors, Max_Country_groups
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
@@ -108,6 +109,8 @@ integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
 integer, private, save :: Ncountrysectors_lf=0
+integer, private, save :: Ncountry_mask_lf=0
+integer, private, save :: country_mask_val(Max_Country_list) = -999999
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
 integer, private, save :: isrc_new(MAXSRC)
 
@@ -193,9 +196,77 @@ contains
      end if
   enddo  
 
+  !new format countries
+  if(lf_country%mask_val_min<lf_country%mask_val_max .or. lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
+     !new format
+     Ncountry_mask_lf = 0
+     Ncountry_lf=0
+     do i = lf_country%mask_val_min,lf_country%mask_val_max
+        Ncountry_mask_lf = Ncountry_mask_lf + 1
+        Ncountry_lf = Ncountry_lf + 1
+        country_mask_val(Ncountry_lf) = i
+     end do
+     if (Ncountry_mask_lf>0 .and. MasterProc) then
+        write(*,*)'include sources with masks from ',lf_country%mask_val_min, ' to ',lf_country%mask_val_max
+     end if
+     if(lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
+        !list of countries/sectors instead of single country
+        do i = 1, Max_Country_list
+           if(lf_country%list(i) == 'NOTSET') exit
+           Ncountry_lf=Ncountry_lf+1
+           ix = find_index(trim(lf_country%list(i)) ,Country(:)%code, first_only=.true.)
+           if (ix<0 .and. lf_country%list(i) =='AST') then
+              ix = IC_AST_EXTRA 
+           else if (ix<0 .and. lf_country%list(i) =='RUT') then
+              ix = IC_RUT_EXTRA 
+           else if (ix<0 .and. lf_country%list(i) =='BIC') then
+              ix = IC_BIC_EXTRA
+           endif
+           call CheckStop(ix<0,'country '//trim(lf_country%list(i))//' not defined. ')        
+           country_ix_list(i) = ix
+           if(MasterProc)write(*,*)'include sources from ',trim(lf_country%list(i))
+        enddo
+        
+        Ncountry_group_lf=0
+        do i = 1, Max_Country_groups
+           if(lf_country%group(i)%name == 'NOTSET') exit
+           Ncountry_group_lf = Ncountry_group_lf+1
+           do ic = 1, MAX_lf_country_group_size
+              if(lf_country%group(i)%list(ic) == 'NOTSET') exit
+              
+              ix = find_index(trim(lf_country%group(i)%list(ic)) ,Country(:)%code, first_only=.true.)
+              if(ix<0 .and. lf_country%list(i) =='AST')then
+                 ix = IC_AST_EXTRA 
+              else if(ix<0 .and. lf_country%list(i) =='RUT')then
+                 ix = IC_RUT_EXTRA 
+              else if(ix<0 .and. lf_country%list(i) =='BIC')then
+                 ix = IC_BIC_EXTRA 
+              endif
+              call CheckStop(ix<0,'country '//trim(lf_country%group(i)%list(ic))//' not defined. ')        
+              lf_country%group(i)%ix(ic) = ix
+              if(MasterProc)write(*,*)'include sources from '//&
+                   trim(lf_country%group(i)%list(ic))//' as '//trim(lf_country%group(i)%name)
+           enddo
+        enddo
+        Ncountrysectors_lf=0
+        do i = 1, Max_Country_sectors
+           if(lf_country%sector_list(i) < 0) exit
+           Ncountrysectors_lf=Ncountrysectors_lf+1
+           if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
+        enddo
+        do isrc = 1, Nsources
+           lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
+           if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
+        end do
+     endif
+   end if
+  
   ipoll=0
   iem2ipoll = -1
   iem2Nipoll = 0
+  if(Ncountry_mask_lf==0)then
+     lf_country%sector_list=lf_country_sector_list
+  end if
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
      if(lf_src(isrc)%type == 'relative')then
@@ -207,7 +278,8 @@ contains
         lf_src(isrc)%Npos = (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv2_coarse = max(Ndiv2_coarse,Ndiv_coarse*Ndiv_coarse)
      endif
-     if(lf_src(isrc)%type == 'country')then
+
+     if(lf_src(isrc)%type == 'country' .and. Ncountry_mask_lf==0)then
         if(lf_country_list(1)/= 'NOTSET' .or. lf_country_group(1)%name/= 'NOTSET')then
            !list of countries/sectors instead of single country
            Ncountry_lf=0
@@ -215,17 +287,18 @@ contains
               if(lf_country_list(i) == 'NOTSET') exit
               Ncountry_lf=Ncountry_lf+1
               ix = find_index(trim(lf_country_list(i)) ,Country(:)%code, first_only=.true.)
-              if(ix<0 .and. lf_country_list(i) =='AST')then
+              if (ix<0 .and. lf_country_list(i) =='AST') then
                  ix = IC_AST_EXTRA 
-              else if(ix<0 .and. lf_country_list(i) =='RUT')then
+              else if (ix<0 .and. lf_country_list(i) =='RUT') then
                  ix = IC_RUT_EXTRA 
-              else if(ix<0 .and. lf_country_list(i) =='BIC')then
-                 ix = IC_BIC_EXTRA 
+              else if (ix<0 .and. lf_country_list(i) =='BIC') then
+                 ix = IC_BIC_EXTRA
               endif 
               call CheckStop(ix<0,'country '//trim(lf_country_list(i))//' not defined. ')        
               country_ix_list(i) = ix
               if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from ',trim(lf_country_list(i))
            enddo
+       
            Ncountry_group_lf=0
            do i = 1, Max_Country_groups
               if(lf_country_group(i)%name == 'NOTSET') exit
@@ -249,9 +322,9 @@ contains
            enddo
            Ncountrysectors_lf=0
            do i = 1, Max_Country_sectors
-              if(lf_country_sector_list(i) < 0) exit
+              if(lf_country%sector_list(i) < 0) exit
               Ncountrysectors_lf=Ncountrysectors_lf+1
-              if(MasterProc)write(*,*)'country sector ',lf_country_sector_list(i)
+              if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
           enddo
           lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
           if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
@@ -770,8 +843,12 @@ subroutine lf_out(iotyp)
               do j=1,Ncountrysectors_lf
                  n1=n1+1
                  !single cell source
-                 isec=lf_country_sector_list(j)
-                 if(i<=Ncountry_lf)then
+                 isec=lf_country%sector_list(j)
+                 if(lf_country%sector_list(j)>=0)isec=lf_country%sector_list(j)
+                 if(i<=Ncountry_mask_lf)then
+                    write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
+                    if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
+                 else if(i<=Ncountry_lf)then
                     write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
                     if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
                  else
@@ -1790,7 +1867,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: n, ii, iqrc, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
-  real :: emis, sdt
+  real :: emis, sdt, fac
   integer :: ngroups, ig2ic(Max_Country_groups)
 
   call Code_timer(tim_before)
@@ -1837,7 +1914,8 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(Ncountry_lf>0)then
         !has to store more detailed info
         do ic=1,Ncountry_lf
-           if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+           if (ic<Ncountry_mask_lf) then
+           else if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
            else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
            else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
            else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
@@ -1845,9 +1923,13 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            else if(country_ix_list(ic)/=iland)then
               cycle
            endif
+           fac = 1.0
+           if (country_mask_val(ic)>-99999) then
+              if(EmisMaskIntVal(i,j) /= country_mask_val(ic)) fac = 0.0 !remove all parts which are not covered by mask
+           end if
            do is=1,Ncountrysectors_lf
-              if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
-              emis = s * dt_advec
+              if(lf_country%sector_list(is)/=isec .and. lf_country%sector_list(is)/=0)cycle
+              emis = s * dt_advec * fac
               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
               if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
                  !include only a part of the pm25 splitted species
@@ -1878,7 +1960,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
         do ig = 1, ngroups
            ic = ig2ic(ig) ! index for country_group
            do is=1,Ncountrysectors_lf
-              if(lf_country_sector_list(is)/=isec .and. lf_country_sector_list(is)/=0)cycle
+              if(lf_country%sector_list(is)/=isec .and. lf_country%sector_list(is)/=0)cycle
               if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
               if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
                  !include only a part of the pm25 splitted species

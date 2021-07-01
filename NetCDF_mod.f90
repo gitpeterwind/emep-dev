@@ -49,7 +49,8 @@ use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              lat_stand1_lambert,&!standard latitude at which mapping factor=1
                              lat_stand2_lambert,&!second standard latitude
                              x1_lambert,& !x value at i=1
-                             y1_lambert  !y value at j=1
+                             y1_lambert,& !y value at j=1
+                             UTM2lb, lb2UTM
 use InterpolationRoutines_mod,  only : grid2grid_coeff
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                                MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
@@ -2441,6 +2442,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:),lon_mask(:),lat_mask(:)
+  real, allocatable:: xUTM(:), yUTM(:)
   integer, allocatable:: Mask_values(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
@@ -2463,8 +2465,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer :: Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
   logical :: Reverse_lat_direction_Mask,ilast_corrected
   character(len=*),parameter  :: field_not_found='field_not_found'
-  real :: latlon_weight
-
+  real :: latlon_weight, false_easting, UTMEasting, UTMNorthing
+  integer :: UTMzone
   real ::Rlonmin,Rlonmax,dRlon,dRloni,frac,frac_j,ir,jr
   real ::Rlatmin,Rlatmax,dRlat,dRlati, Resolution_fac
   integer, allocatable ::ifirst(:),ilast(:),jfirst(:),jlast(:)
@@ -2747,19 +2749,48 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err, trim(fileName)
   end if
 
-  call check_lon_lat(ncFileID, used_lon_name, used_lat_name, n, lonVarID, latVarID)
-  if(present(use_lat_name)) used_lat_name=trim(use_lat_name)
-  if(present(use_lon_name)) used_lon_name=trim(use_lon_name)
-  if ( debug ) write(*,*) 'ReadCDF using lon name',trim(used_lon_name)
-  if ( debug ) write(*,*) 'ReadCDF using lat name',trim(used_lat_name)
-
-  if(trim(data_projection)=="lon lat")then
-     call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
-     call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
+  if (trim(data_projection)/="transverse_mercator") then
+     call check_lon_lat(ncFileID, used_lon_name, used_lat_name, n, lonVarID, latVarID)
+     if(present(use_lat_name)) used_lat_name=trim(use_lat_name)
+     if(present(use_lon_name)) used_lon_name=trim(use_lon_name)
+     if ( debug ) write(*,*) 'ReadCDF using lon name',trim(used_lon_name)
+     if ( debug ) write(*,*) 'ReadCDF using lat name',trim(used_lat_name)
+     
+     if(trim(data_projection)=="lon lat")then
+        call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
+        call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
+     else
+        call check(nf90_get_var(ncFileID, lonVarID, Rlon,start=(/1,1/),count=(/dims(1),dims(2)/)))
+        call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
+     end if
   else
-     call check(nf90_get_var(ncFileID, lonVarID, Rlon,start=(/1,1/),count=(/dims(1),dims(2)/)))
-     call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
+     !special case for UTM aka transverse_mercator
+     status = nf90_inq_varid(ncFileID,"projection_utm",VarID)
+     false_easting = 0.0
+     if (status == nf90_noerr) then
+        call check(nf90_get_att(ncFileID,VarID,"longitude_of_central_meridian",lon))
+        UTMZone = (nint(lon) + 177)/6 + 1 !lon=15 gives UTM=33
+        status = nf90_get_att(ncFileID,VarID,"false_easting",false_easting)
+        if (status == nf90_noerr) then
+           call CheckStop(abs(false_easting-500000)>0.5,"UTM pojection assumes false easting = 500000")
+        end if
+     end if
+     !convert x y into lon lat
+     allocate(xUTM(dims(1)),yUTM(dims(2)))
+     call check(nf90_inq_varid(ncFileID,"x",lonVarID))
+     call check(nf90_get_var(ncFileID, lonVarID, xUTM))
+     call check(nf90_inq_varid(ncFileID,"y",latVarID))
+     call check(nf90_get_var(ncFileID, latVarID, yUTM))
+!     do i = 1, dims(1)
+!        do j = 1, dims(2)
+!           ij = i + (j-1)*dim(1)
+!           call UTM2lb(UTMEasting, UTMNorthing, UTMZone,  Lon, Lat) ! we do not need lon and lat actually!
+!           Rlon(ij) = lon
+!           Rlat(ij) = lat
+!        end do
+!     end do
   end if
+  
   if(xtype_lon==NF90_INT.or.xtype_lon==NF90_SHORT.or.xtype_lon==NF90_BYTE)then
      !scale data if it is packed
      scalefactors(1) = 1.0 !default
@@ -3790,6 +3821,31 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      end if
 
+  else if (data_projection == "transverse_mercator") then
+     call CheckStop(interpol_used /= 'zero_order', &
+          "only zero order interpolation implemented for transverse mercator projection")
+     call CheckStop(data3D, &
+          "only 2D interpolation implemented for transverse mercator projection")
+     allocate(Rvalues(dims(1)*dims(2)), stat=alloc_err)
+     allocate(Ivalues(dims(1)*dims(2)))
+     call check(nf90_inq_varid(ncFileID,trim(varname),VarID))
+     call check(nf90_get_var(ncFileID, VarID, Ivalues,start=(/1,1/),count=(/dims(1),dims(2)/)))
+     dRlon = xUTM(2) - xUTM(1)
+     dRlat = yUTM(2) - yUTM(1)
+     do j=1,  ljmax      
+        do i=1,limax
+           ijk = i+(j-1)*limax
+           call lb2UTM(glon(i,j), glat(i,j), UTMEasting, UTMNorthing, UTMZone)
+           if(UTMEasting <= xUTM(dims(1)) .and. UTMEasting >= xUTM(1) .and. UTMNorthing <= yUTM(dims(2)) .and. UTMNorthing >= yUTM(1)) then
+              ig = nint((UTMEasting-xUTM(1))/dRlon) + 1
+              jg = nint((UTMNorthing-yUTM(1))/dRlat) + 1
+              Rvar(ijk) = Ivalues(ig + (jg-1)*dims(1))
+           else
+              Rvar(ijk) = UnDef_local
+           endif
+        end do
+     end do
+     deallocate(ivalues)
   else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
      if(debug1) write(*,*)'interpolatingL from ', &
@@ -4096,6 +4152,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   deallocate(Rvalues)
   deallocate(Rlon)
   deallocate(Rlat)
+  if (data_projection == "transverse_mercator") deallocate(xUTM,yUTM)
   if(fractions)then
      deallocate(NCC,CC,fraction_in)
   end if

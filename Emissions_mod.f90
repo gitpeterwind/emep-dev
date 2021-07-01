@@ -66,7 +66,7 @@ use EmisDef_mod,       only: &
      ,NSECTORS_GNFR_CAMS, GNFR_CAMS_SECTORS, NSECTORS_SNAP, SNAP_SECTORS, NSECTORS_MAX, SECTORS&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT & !old format
-     ,NEmisMask, EmisMaskValues & !new format
+     ,NEmisMask, EmisMaskValues, EmisMaskIntVal& !new format
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
      ,Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources&
@@ -478,8 +478,8 @@ contains
     real :: mask_cdf(LIMAX,LJMAX), xsum
     logical :: found
     integer :: iEmisMask = 0
-    integer :: i,ii,jj,ic
-
+    integer :: n,i,ii,jj,ic
+    
     iEmisMask = 0
     !1) find number of valid masks defined
     do i = 1, size(EmisMask)
@@ -497,49 +497,59 @@ contains
        if(EmisMask(i)%filename /= 'NOTSET' .and. EmisMask(i)%cdfname /= 'NOTSET'&
            .and. EmisMask(i)%ID /= 'NOTSET' ) then
 
-          iEmisMask = iEmisMask+1
-          call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
-               interpol='conservative', needed=.false.,found = found, UnDef=-1.0E10, debug_flag=.false.)
-
-          if(found)then
-             !set mask value
-             ic = 0
-             xsum = 0.0
-             do jj = 1, LJMAX
-             do ii = 1, LIMAX
-                xsum = xsum + mask_cdf(ii,jj)
-                if(mask_cdf(ii,jj)>EmisMask(i)%threshold)then
-                    EmisMaskValues(ii,jj,iEmisMask) = 0.0 !remove everything
-                    ic = ic + 1
-                 else
-                    EmisMaskValues(ii,jj,iEmisMask) = 1.0 !keep everything
-                 endif
-             end do
-             end do
-             if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
-             if(ic>0)write(*,*)me,' masked ',ic,' cells'
-          else
-             call StopAll("Mask variable not found: "//trim(EmisMask(i)%cdfname)// &
-                  ':'//trim(EmisMask(i)%filename))
-             EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
-          endif
-
-          !to keep some compatibility with old format we also set old format masks
-          if(any(emis_inputlist(:)%use_mask))then
-             if(.not.allocated(Emis_mask))then
-                allocate(Emis_mask(LIMAX,LJMAX))
-                Emis_mask = .false.
-             endif
-             if(MasterProc)write(*,*)'defining mask for old formats ',trim(EmisMask(i)%cdfname)
+          if (EmisMask(i)%ID == 'NUMBER') then
+             call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
+                  interpol='zero_order', needed=.true.,found = found, UnDef=0.0, debug_flag=.false.)
+             if(.not. allocated(EmisMaskIntVal)) allocate(EmisMaskIntVal(LIMAX,LJMAX))
              do jj = 1, LJMAX
                 do ii = 1, LIMAX
-                   if(EmisMaskValues(ii,jj,iEmisMask)<0.5)Emis_mask(ii,jj) = .true.
-                enddo
-             enddo
-          endif
-
-       endif
-   enddo
+                   EmisMaskIntVal(ii,jj) = nint(mask_cdf(ii,jj))                   
+                end do
+             end do
+          else
+             iEmisMask = iEmisMask+1
+             call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
+                  interpol='zero_order', needed=.false.,found = found, UnDef=-1.0E10, debug_flag=.false.)
+           
+             if(found)then
+                !set mask value
+                ic = 0
+                xsum = 0.0
+                do jj = 1, LJMAX
+                   do ii = 1, LIMAX
+                      xsum = xsum + mask_cdf(ii,jj)
+                      if(mask_cdf(ii,jj)>EmisMask(i)%threshold)then
+                         EmisMaskValues(ii,jj,iEmisMask) = 0.0 !remove everything
+                         ic = ic + 1
+                      else
+                         EmisMaskValues(ii,jj,iEmisMask) = 1.0 !keep everything
+                      end if
+                   end do
+                end do
+                if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
+                if(ic>0)write(*,*)me,' masked ',ic,' cells'
+             else
+                call StopAll("Mask variable not found: "//trim(EmisMask(i)%cdfname)// &
+                     ':'//trim(EmisMask(i)%filename))
+                EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
+             end if
+             
+             !to keep some compatibility with old format we also set old format masks
+             if(any(emis_inputlist(:)%use_mask))then
+                if(.not.allocated(Emis_mask))then
+                   allocate(Emis_mask(LIMAX,LJMAX))
+                   Emis_mask = .false.
+                end if
+                if(MasterProc)write(*,*)'defining mask for old formats ',trim(EmisMask(i)%cdfname)
+                do jj = 1, LJMAX
+                   do ii = 1, LIMAX
+                      if(EmisMaskValues(ii,jj,iEmisMask)<0.5)Emis_mask(ii,jj) = .true.
+                   end do
+                end do
+             end if
+          end if
+       end if
+   end do
 
 
   end subroutine Init_masks
