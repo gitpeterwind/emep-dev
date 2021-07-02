@@ -227,7 +227,7 @@ integer :: ime, imex, imey, rest,i
     call CheckStop(GIMAX/NPROCX<min_grids,'subdomains are too small in X direction')
   end if
 
-56  format(A,I3,A,I3,A)
+56  format(A,I4,A,I4,A)
 66  format(A,I3,A,I5,A)
   if(MasterProc)then
     write(*,56)' Using ',NPROCX*NPROCY ,' processors out of ',NPROC,' available for calculations' !may be different in future versions

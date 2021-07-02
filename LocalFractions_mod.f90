@@ -197,6 +197,15 @@ contains
   enddo  
 
   !new format countries
+
+  !backward compatibility with old format countries
+  if (lf_country_list(1)/= 'NOTSET') then
+     call CheckStop(lf_country%list(1)/= 'NOTSET',"cannot use old AND new format for lf_country")
+     lf_country%list = lf_country_list
+     lf_country%sector_list=lf_country_sector_list
+     lf_country%group = lf_country_group
+  endif
+  
   if(lf_country%mask_val_min<lf_country%mask_val_max .or. lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
      !new format
      Ncountry_mask_lf = 0
@@ -223,7 +232,7 @@ contains
               ix = IC_BIC_EXTRA
            endif
            call CheckStop(ix<0,'country '//trim(lf_country%list(i))//' not defined. ')        
-           country_ix_list(i) = ix
+           country_ix_list(i + Ncountry_mask_lf) = ix
            if(MasterProc)write(*,*)'include sources from ',trim(lf_country%list(i))
         enddo
         
@@ -264,9 +273,6 @@ contains
   ipoll=0
   iem2ipoll = -1
   iem2Nipoll = 0
-  if(Ncountry_mask_lf==0)then
-     lf_country%sector_list=lf_country_sector_list
-  end if
   do isrc = 1, Nsources
      !for now only one Ndiv possible for all sources
      if(lf_src(isrc)%type == 'relative')then
@@ -279,63 +285,6 @@ contains
         Ndiv2_coarse = max(Ndiv2_coarse,Ndiv_coarse*Ndiv_coarse)
      endif
 
-     if(lf_src(isrc)%type == 'country' .and. Ncountry_mask_lf==0)then
-        if(lf_country_list(1)/= 'NOTSET' .or. lf_country_group(1)%name/= 'NOTSET')then
-           !list of countries/sectors instead of single country
-           Ncountry_lf=0
-           do i = 1, Max_Country_list
-              if(lf_country_list(i) == 'NOTSET') exit
-              Ncountry_lf=Ncountry_lf+1
-              ix = find_index(trim(lf_country_list(i)) ,Country(:)%code, first_only=.true.)
-              if (ix<0 .and. lf_country_list(i) =='AST') then
-                 ix = IC_AST_EXTRA 
-              else if (ix<0 .and. lf_country_list(i) =='RUT') then
-                 ix = IC_RUT_EXTRA 
-              else if (ix<0 .and. lf_country_list(i) =='BIC') then
-                 ix = IC_BIC_EXTRA
-              endif 
-              call CheckStop(ix<0,'country '//trim(lf_country_list(i))//' not defined. ')        
-              country_ix_list(i) = ix
-              if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from ',trim(lf_country_list(i))
-           enddo
-       
-           Ncountry_group_lf=0
-           do i = 1, Max_Country_groups
-              if(lf_country_group(i)%name == 'NOTSET') exit
-              Ncountry_group_lf = Ncountry_group_lf+1
-              do ic = 1, MAX_lf_country_group_size
-                 if(lf_country_group(i)%list(ic) == 'NOTSET') exit
-                 
-                 ix = find_index(trim(lf_country_group(i)%list(ic)) ,Country(:)%code, first_only=.true.)
-                 if(ix<0 .and. lf_country_list(i) =='AST')then
-                    ix = IC_AST_EXTRA 
-                 else if(ix<0 .and. lf_country_list(i) =='RUT')then
-                    ix = IC_RUT_EXTRA 
-                 else if(ix<0 .and. lf_country_list(i) =='BIC')then
-                    ix = IC_BIC_EXTRA 
-                 endif
-                 call CheckStop(ix<0,'country '//trim(lf_country_group(i)%list(ic))//' not defined. ')        
-                 lf_country_group(i)%ix(ic) = ix
-                 if(MasterProc)write(*,*)'include '//trim(lf_src(isrc)%species)//' from '//&
-                      trim(lf_country_group(i)%list(ic))//' as '//trim(lf_country_group(i)%name)
-              enddo
-           enddo
-           Ncountrysectors_lf=0
-           do i = 1, Max_Country_sectors
-              if(lf_country%sector_list(i) < 0) exit
-              Ncountrysectors_lf=Ncountrysectors_lf+1
-              if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
-          enddo
-          lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
-          if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
-        else
-           lf_src(isrc)%Npos = 1
-           ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
-           call CheckStop(ix<0,'country '//trim(lf_src(isrc)%country_ISO)//' not defined. ')        
-           lf_src(isrc)%country_ix = ix
-           lf_src(isrc)%Npos = 1
-        endif
-     endif
      if(lf_src(isrc)%country_ISO /= 'NOTSET')then
         lf_src(isrc)%type = 'country'
         ix = find_index(trim(lf_src(isrc)%country_ISO) ,Country(:)%code, first_only=.true.)
@@ -849,12 +798,12 @@ subroutine lf_out(iotyp)
                     write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
                     if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
                  else if(i<=Ncountry_lf)then
-                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_list(i))
-                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_list(i))
+                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
                  else
                     !country group
-                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country_group(i-Ncountry_lf)%name)
-                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country_group(i-Ncountry_lf)%name)                    
+                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)                    
                  endif
                  if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name)
                  def2%unit='ug/m3'
@@ -1952,7 +1901,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
         ngroups = 0
         do ic=1,Ncountry_group_lf
            !find all groups that include iland
-           if(any(lf_country_group(ic)%ix(:)==iland))then
+           if(any(lf_country%group(ic)%ix(:)==iland))then
               ngroups = ngroups + 1
               ig2ic(ngroups) = ic + Ncountry_lf
            endif

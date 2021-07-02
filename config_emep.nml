@@ -199,35 +199,41 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 
-!-------Local Fractions setup example
+!-------Local Fractions setup example for SR style outputs
   USES%LocalFractions = F, ! T for computing Local Fractions
   !Local Fractions pollutants and sectors to include:
   lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(1)%sector=0 !0 means sum of all sectors
-  lf_src(1)%make_fracsum=T,
-  lf_src(2)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  lf_src(2)%sector=0 !0 means sum of all sectors
-  lf_src(2)%res=5 ! sources are squares with size 5x5 gridcells
-  lf_src(2)%make_fracsum=T,
-
-  lf_src(3)%species="nox "
-  lf_src(3)%sector=0
-  lf_src(4)%species="nox "
-  lf_src(4)%sector=8
-
-  lf_src(1)%drydep=T !means make country dry deposition maps too
-  lf_src(1)%wetdep=T !means make country wet deposition maps too
   lf_src(1)%type='country',
-  lf_country_sector_list(1:8)=0,1,2,3,4,5,6,7,
-  lf_country_list(1:20)='FR','IT','DE','ES','NO','NL','SE','PL','AT','BE','BG','DK','FI','GR','HU','PT','RO','CH','TR','GB',
-  lf_country_group(1)%name='NORDIC', !any name given to the group (used as output name)
-  lf_country_group(1)%list(1:)='NO','DK','SE','FI', ! countries included in the group
+
+  lf_src(2)%species="nh3" ! if nh3 is chosen, one MUST choose NH4_f and NH3 for exact calculations
+  lf_src(2)%sector=0
+  lf_src(2)%type='country',
+  lf_src(3)%species="NH3"
+  lf_src(3)%sector=0
+  lf_src(3)%type='country',
+  lf_src(4)%species="NH4_f"
+  lf_src(4)%sector=8
+  lf_src(4)%type='country',
+
+  lf_src(1)%drydep=T, !means make country dry deposition maps too
+  lf_src(1)%wetdep=T, !means make country wet deposition maps too
+
+  lf_country%sector_list(1:1)=0,
+  lf_country%list(1:20)='FR','IT','DE','ES','NO','NL','SE','PL','AT','BE','BG','DK','FI','GR','HU','PT','RO','CH','TR','GB',
+  lf_country%group(1)%name='NORDIC', !any name given to the group (used as output name)
+  lf_country%group(1)%list(1:)='NO','DK','SE','FI', ! countries included in the group
+
+  lf_src(1)%Nvert = 14, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
 
   !Local Fractions frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
   !Values from lf_src(1) are used for all sources
-  lf_src(1)%YEAR = T !average value for full run in output
-  lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
-  lf_src(1)%Nvert = 14, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+  lf_src(1)%YEAR = T, !average value for full run in output
+  lf_src(1)%MONTH = T, !average value for each month
+
+!example uEMEP style output: (NB: you cannot mix country and relative types in the same run!)
+!  lf_src(1)%type='relative',
+!  lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
 
 !  lf_src(1)%DOMAIN = 370, 420, 270, 320, !which domain to include in lf output. Will save disk, but not CPU to reduce.
 

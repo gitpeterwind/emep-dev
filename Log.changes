@@ -47,6 +47,19 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd July 2021, Peter
+
+New masks possibilities for Local Fractions. Can give a netCDF file with
+integer values that show different regions to include as sources.
+ example /nobackup/forsk/sm_petwi/Data/municip_mask/municip_mask_500m.nc
+
+New format for lf_country, use lf_country%list instead of lf_country_list etc.
+
+Some compatibility with UTM projection (to read the Norwegian municiplaties masks)
+
+Larger size for new format emissions arrays (EmisFiles).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th June 2021, Peter
 
 LocalFractions: faster wetdep calculations.
