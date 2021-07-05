@@ -518,7 +518,7 @@ contains
                 do jj = 1, LJMAX
                    do ii = 1, LIMAX
                       xsum = xsum + mask_cdf(ii,jj)
-                      if(mask_cdf(ii,jj)>EmisMask(i)%threshold)then
+                      if(mask_cdf(ii,jj)>EmisMask(i)%threshold .and. mask_cdf(ii,jj)<EmisMask(i)%threshold_max)then
                          EmisMaskValues(ii,jj,iEmisMask) = 0.0 !remove everything
                          ic = ic + 1
                       else

@@ -262,7 +262,8 @@ type, public :: Emis_mask_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'! netcdf filename with path
    character(len=TXTLEN_NAME) :: cdfname = 'NOTSET' ! name of the mask in the netcdf file
    character(len=TXTLEN_NAME) :: ID = 'NOTSET' ! name that the user set to identify this mask
-   real                       :: threshold = 1.E-20 !min value below which is considered as zero (not masked)
+   real                       :: threshold = 1.E-20 !mask is set for where value is above threshold
+   real                       :: threshold_max = 1.E60 !mask is not set if value above threshold
 end type Emis_mask_type
 
 type, public :: EmisFile_id_type

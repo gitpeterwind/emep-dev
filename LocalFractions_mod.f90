@@ -261,40 +261,39 @@ contains
            country_ix_list(i + Ncountry_mask_lf) = ix
            if(MasterProc)write(*,*)'include sources from ',trim(lf_country%list(i))
         enddo
-        
-        Ncountry_group_lf=0
-        do i = 1, Max_Country_groups
-           if(lf_country%group(i)%name == 'NOTSET') exit
-           Ncountry_group_lf = Ncountry_group_lf+1
-           do ic = 1, MAX_lf_country_group_size
-              if(lf_country%group(i)%list(ic) == 'NOTSET') exit
-              
-              ix = find_index(trim(lf_country%group(i)%list(ic)) ,Country(:)%code, first_only=.true.)
-              if(ix<0 .and. lf_country%list(i) =='AST')then
-                 ix = IC_AST_EXTRA 
-              else if(ix<0 .and. lf_country%list(i) =='RUT')then
-                 ix = IC_RUT_EXTRA 
-              else if(ix<0 .and. lf_country%list(i) =='BIC')then
-                 ix = IC_BIC_EXTRA 
-              endif
-              call CheckStop(ix<0,'country '//trim(lf_country%group(i)%list(ic))//' not defined. ')        
-              lf_country%group(i)%ix(ic) = ix
-              if(MasterProc)write(*,*)'include sources from '//&
-                   trim(lf_country%group(i)%list(ic))//' as '//trim(lf_country%group(i)%name)
-           enddo
-        enddo
-        Ncountrysectors_lf=0
-        do i = 1, Max_Country_sectors
-           if(lf_country%sector_list(i) < 0) exit
-           Ncountrysectors_lf=Ncountrysectors_lf+1
-           if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
-        enddo
-        do isrc = 1, Nsources
-           lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
-           if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
-        end do
      endif
-   end if
+     
+     Ncountry_group_lf=0
+     do i = 1, Max_Country_groups
+        if(lf_country%group(i)%name == 'NOTSET') exit
+        Ncountry_group_lf = Ncountry_group_lf+1
+        do ic = 1, MAX_lf_country_group_size
+           if(lf_country%group(i)%list(ic) == 'NOTSET') exit           
+           ix = find_index(trim(lf_country%group(i)%list(ic)) ,Country(:)%code, first_only=.true.)
+           if(ix<0 .and. lf_country%list(i) =='AST')then
+              ix = IC_AST_EXTRA 
+           else if(ix<0 .and. lf_country%list(i) =='RUT')then
+              ix = IC_RUT_EXTRA 
+           else if(ix<0 .and. lf_country%list(i) =='BIC')then
+              ix = IC_BIC_EXTRA 
+           endif
+           call CheckStop(ix<0,'country '//trim(lf_country%group(i)%list(ic))//' not defined. ')        
+           lf_country%group(i)%ix(ic) = ix
+           if(MasterProc)write(*,*)'include sources from '//&
+                trim(lf_country%group(i)%list(ic))//' as '//trim(lf_country%group(i)%name)
+        enddo
+     enddo
+     Ncountrysectors_lf=0
+     do i = 1, Max_Country_sectors
+        if(lf_country%sector_list(i) < 0) exit
+        Ncountrysectors_lf=Ncountrysectors_lf+1
+        if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
+     enddo
+     do isrc = 1, Nsources
+        lf_src(isrc)%Npos = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
+        if(MasterProc)write(*,*)lf_src(isrc)%Npos,' countries x sectors'
+     end do
+  end if
   
   ipoll=0
   iem2ipoll = -1
@@ -523,7 +522,7 @@ contains
         endif
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
-        write(*,"(A,30I4)")'sector:',lf_src(isrc)%sector
+        if (lf_src(isrc)%type/='country') write(*,"(A,30I4)")'sector:',lf_src(isrc)%sector
         !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
