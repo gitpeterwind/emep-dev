@@ -109,15 +109,16 @@ integer, private, save :: country_ix_list(Max_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
 integer, private, save :: Ncountrysectors_lf=0
-integer, private, save :: Ncountry_mask_lf=0
-integer, private, save :: country_mask_val(Max_Country_list) = -999999
+integer, private, save :: Ncountry_mask_lf=0 !total number of masks defined
+integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using lf_country%mask_val
+integer, private, save :: country_mask_val(Max_Country_list) = -999999 ! values of all defined masks
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
 integer, private, save :: isrc_new(MAXSRC)
 
 contains
 
   subroutine lf_init
-    integer :: i, ii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: n, i, ii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
     integer :: found
 
 ! pm25_new and pm25 are considered as two different emitted pollutants
@@ -206,18 +207,43 @@ contains
      lf_country%group = lf_country_group
   endif
   
-  if(lf_country%mask_val_min<lf_country%mask_val_max .or. lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
+  if(lf_country%mask_val_min<lf_country%mask_val_max .or. &
+       lf_country%mask_val(1) > -999999 .or. &
+       lf_country%list(1)/= 'NOTSET' .or. &
+       lf_country%group(1)%name/= 'NOTSET')then
      !new format
      Ncountry_mask_lf = 0
+     Ncountry_mask_lf_val = 0
      Ncountry_lf=0
+     do i = 1, Max_Country_list
+        if(lf_country%mask_val(i) < -999999) exit
+        Ncountry_mask_lf = Ncountry_mask_lf + 1
+        Ncountry_lf = Ncountry_lf + 1
+        country_mask_val(Ncountry_lf) = lf_country%mask_val(i)
+     end do
+     Ncountry_mask_lf_val = Ncountry_lf !only defined with lf_country%mask_val (not min/max)
+     if (Ncountry_mask_lf_val>0 .and. MasterProc) then
+        write(*,*)'including  ',Ncountry_mask_lf_val,' individually defined mask sources '
+     end if
+  
      do i = lf_country%mask_val_min,lf_country%mask_val_max
+        found = 0
+        do n = 1, Ncountry_mask_lf_val
+           if (i == lf_country%mask_val(n)) found = 1
+           if (found == 1) exit
+        end do
+        if (found == 1) cycle !already included
         Ncountry_mask_lf = Ncountry_mask_lf + 1
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = i
      end do
      if (Ncountry_mask_lf>0 .and. MasterProc) then
-        write(*,*)'include sources with masks from ',lf_country%mask_val_min, ' to ',lf_country%mask_val_max
+        write(*,*)'including in total',Ncountry_mask_lf,'mask sources:'
+        do n = 1, (Ncountry_mask_lf+29)/30
+           write(*,fmt="(30(I0,1x))")(country_mask_val(ii),ii=(n-1)*30+1, min(Ncountry_mask_lf,n*30))
+        end do
      end if
+     
      if(lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
         !list of countries/sectors instead of single country
         do i = 1, Max_Country_list

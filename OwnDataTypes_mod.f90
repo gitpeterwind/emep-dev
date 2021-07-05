@@ -376,6 +376,7 @@ integer, public, parameter :: Max_Country_sectors=50
 type, public :: lf_country_type
    integer :: mask_val_min = 1
    integer :: mask_val_max = 0
+   integer,dimension(Max_Country_list) :: mask_val = -9999999
    character(len=10) :: list(Max_Country_list) = 'NOTSET'
    type(lf_country_group_type) :: group(Max_Country_groups)
    integer :: sector_list(Max_Country_sectors)=-1
