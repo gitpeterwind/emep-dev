@@ -2719,10 +2719,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      else
         status=nf90_inq_varid(ncid = ncFileID, name='lon', varID = lonVarID)
         if(status /= nf90_noerr) then
-           status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
+           status=nf90_inq_varid(ncid = ncFileID, name = 'long', varID = lonVarID)
            if(status /= nf90_noerr) then
-              status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
-              call CheckStop(status /= nf90_noerr,'did not find projection nor longitude variable '//trim(fileName))
+              status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
+              if(status /= nf90_noerr) then
+                 status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
+                 call CheckStop(status /= nf90_noerr,'did not find projection nor longitude variable '//trim(fileName))
+              end if
            end if
         end if
         call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon, ndims=ndimslon ))
@@ -2913,7 +2916,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      !check that there are dimensions called lon and lat
 
      call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ),name)
-     call CheckStop(trim(name)/='lon'.and.trim(name)/='longitude',"longitude not found")
+     call CheckStop(trim(name)/='lon'.and.trim(name)/='longitude'.and.trim(name)/='long',"longitude not found")
      call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ),name)
      call CheckStop(trim(name)/='lat'.and.trim(name)/='latitude',"latitude not found")
 
@@ -5166,9 +5169,13 @@ end subroutine vertical_interpolate
       lon_name = 'LON'
       status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
       if(status /= nf90_noerr) then
-         lon_name = 'longitude'
+         lon_name = 'long'
          status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
-         call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+         if(status /= nf90_noerr) then
+            lon_name = 'longitude'
+            status=nf90_inq_varid(ncid = ncFileID, name = lon_name, varID = VarID)
+            call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+         end if
       end if
    end if
    if(present(lonVarID))lonVarID=VarID

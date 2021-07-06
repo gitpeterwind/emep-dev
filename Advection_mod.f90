@@ -76,7 +76,7 @@
                   USES,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_Eta
-  use EmisDef_mod,        only: NSECTORS, Nneighbors, lf, loc_frac_src, loc_frac_src_1d
+  use EmisDef_mod,        only: NSECTORS, lf, loc_frac_src, loc_frac_src_1d
   use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&

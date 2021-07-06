@@ -7,13 +7,12 @@ use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE
 use ChemSpecs_mod,     only: species_adv,species
-use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, uEMEP, lf_src, IOU_HOUR&
+use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, MAXSRC &
-                             ,lf_country_group&
-                             ,lf_country_sector_list,lf_country_list,lf_country
+                             ,HOURLYFILE_ending, lf_country_group&
+                             ,lf_species, lf_country_sector_list,lf_country_list,lf_country
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
@@ -31,9 +30,9 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
-use OwnDataTypes_mod,  only: Deriv, Npoll_lf_max, Nsector_lf_max, MAX_lf_country_group_size, &
+use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_country_group_size, &
                              TXTLEN_NAME, TXTLEN_FILE, &
-                             Max_Country_list, Max_Country_sectors, Max_Country_groups
+                             Max_lf_res, Max_lf_spec, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, ATWAIR 
 use SmallUtils_mod,    only: find_index
@@ -105,20 +104,20 @@ integer, private, save :: ix_EC_f_new=-1, ix_EC_f_age=-1
 integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
 integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
-integer, private, save :: country_ix_list(Max_Country_list)
+integer, private, save :: country_ix_list(Max_lf_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
 integer, private, save :: Ncountrysectors_lf=0
 integer, private, save :: Ncountry_mask_lf=0 !total number of masks defined
 integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using lf_country%mask_val
-integer, private, save :: country_mask_val(Max_Country_list) = -999999 ! values of all defined masks
+integer, private, save :: country_mask_val(Max_lf_Country_list) = -999999 ! values of all defined masks
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,MAXIPOLL) !name of that pollutant
-integer, private, save :: isrc_new(MAXSRC)
+integer, private, save :: isrc_new(Max_lf_sources)
 
 contains
 
   subroutine lf_init
-    integer :: n, i, ii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
+    integer :: n, i, ii, iii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
     integer :: found
 
 ! pm25_new and pm25 are considered as two different emitted pollutants
@@ -126,38 +125,7 @@ contains
   call Code_timer(tim_before)
   ix=0
   if(USES%uEMEP)then
-     !Temporary: we keep compatibilty with lf input
-     old_format=.true.
-     lf_src(:)%dist = uEMEP%dist !Temporary
-     lf_src(:)%Nvert = uEMEP%Nvert !Temporary
-     do i=1,4
-        lf_src(:)%DOMAIN(i) = uEMEP%DOMAIN(i) !Temporary
-        if(lf_src(1)%DOMAIN(i)<0)lf_src(:)%DOMAIN(i) = RUNDOMAIN(i)
-        if(me==0)write(*,*)i,' DOMAIN ',lf_src(1)%DOMAIN(i)
-     enddo
-     lf_src(:)%YEAR=uEMEP%YEAR
-     lf_src(:)%MONTH=uEMEP%MONTH
-     lf_src(:)%MONTH_ENDING=uEMEP%MONTH_ENDING
-     lf_src(:)%DAY=uEMEP%DAY
-     lf_src(:)%HOUR=uEMEP%HOUR
-     lf_src(:)%HOUR_INST=uEMEP%HOUR_INST
-     do isrc=1,Npoll_lf_max
-        if(uEMEP%poll(isrc)%emis=='none')then
-           call CheckStop(isrc==1,"init_uEMEP: no pollutant specified")
-           exit
-        else
-           do isec=1,Nsector_lf_max
-              if(uEMEP%poll(isrc)%sector(isec)<0)then
-                 call CheckStop(isec==0,"init_uEMEP: nosector specified for "//uEMEP%poll(isrc)%emis)
-                 exit
-              else
-                 ix=ix+1
-                 lf_src(ix)%species = uEMEP%poll(isrc)%emis
-                 lf_src(ix)%sector = uEMEP%poll(isrc)%sector(isec)
-              endif
-           enddo
-        endif
-     enddo
+     call StopAll("USES%uEMEP no longer in use. Use lf_ syntaks")     
   else
      !separate values do not work properly yet
      lf_src(:)%dist = lf_src(1)%dist !Temporary
@@ -174,15 +142,31 @@ contains
 
   lf_Nvert = lf_src(1)%Nvert !Temporary
   Nsources = 0
-  do i = 1, MAXSRC
-     if(lf_src(i)%species == 'NONE') exit
+  do i = 1, Max_lf_sources
+     if(lf_src(i)%species == 'NOTSET') exit
      Nsources = Nsources + 1
   enddo
-  do i = Nsources + 1, MAXSRC
-     if(lf_src(i)%species /= 'NONE') then
+  do i = Nsources + 1, Max_lf_sources
+     if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if
   enddo
+
+  !we includes sources defined using lf_species nomenclature
+  do i = 1, Max_lf_spec
+     if(lf_species(i)%name == 'NOTSET') exit
+     do ii = 1, Max_lf_sectors
+        if(lf_species(i)%sectors(ii) < 0) exit
+        do iii = 1, Max_lf_res
+           if(lf_species(i)%res(iii) < 0) exit
+           Nsources = Nsources + 1
+           lf_src(Nsources)%species = lf_species(i)%name
+           lf_src(Nsources)%sector = lf_species(i)%sectors(ii)
+           lf_src(Nsources)%res = lf_species(i)%res(iii)
+        end do
+     end do
+  end do
+
   !for each pm25 we should separate into new and age parts
   Nsources_nonew = Nsources
   isrc_new = -1
@@ -190,7 +174,7 @@ contains
      if(lf_src(i)%species == 'pm25')then
         if(MasterProc)write(*,*)'splitting pm25 for source',i,' into pm25 and pm25_new'
         Nsources = Nsources + 1
-        call CheckStop(Nsources>MAXSRC,"Number of LF sources exceeds MAXSRC")
+        call CheckStop(Nsources>Max_lf_sources,"Number of LF sources exceeds Max_lf_sources")
         lf_src(Nsources) = lf_src(i)
         lf_src(Nsources)%species = 'pm25_new'
         isrc_new(i) = Nsources
@@ -215,7 +199,7 @@ contains
      Ncountry_mask_lf = 0
      Ncountry_mask_lf_val = 0
      Ncountry_lf=0
-     do i = 1, Max_Country_list
+     do i = 1, Max_lf_Country_list
         if(lf_country%mask_val(i) < -999999) exit
         Ncountry_mask_lf = Ncountry_mask_lf + 1
         Ncountry_lf = Ncountry_lf + 1
@@ -246,7 +230,7 @@ contains
      
      if(lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
         !list of countries/sectors instead of single country
-        do i = 1, Max_Country_list
+        do i = 1, Max_lf_Country_list
            if(lf_country%list(i) == 'NOTSET') exit
            Ncountry_lf=Ncountry_lf+1
            ix = find_index(trim(lf_country%list(i)) ,Country(:)%code, first_only=.true.)
@@ -264,7 +248,7 @@ contains
      endif
      
      Ncountry_group_lf=0
-     do i = 1, Max_Country_groups
+     do i = 1, Max_lf_Country_groups
         if(lf_country%group(i)%name == 'NOTSET') exit
         Ncountry_group_lf = Ncountry_group_lf+1
         do ic = 1, MAX_lf_country_group_size
@@ -284,7 +268,7 @@ contains
         enddo
      enddo
      Ncountrysectors_lf=0
-     do i = 1, Max_Country_sectors
+     do i = 1, Max_lf_sectors
         if(lf_country%sector_list(i) < 0) exit
         Ncountrysectors_lf=Ncountrysectors_lf+1
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
@@ -522,7 +506,7 @@ contains
         endif
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
-        if (lf_src(isrc)%type/='country') write(*,"(A,30I4)")'sector:',lf_src(isrc)%sector
+        if (lf_src(isrc)%type/='country') write(*,"(A,I4,A,I4)")'sector:',lf_src(isrc)%sector,',  res:',lf_src(isrc)%res
         !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
@@ -642,7 +626,7 @@ subroutine lf_out(iotyp)
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldmonthlyname
   real :: fracsum(LIMAX,LJMAX)
-  logical :: pollwritten(Npoll_lf_max)
+  logical :: pollwritten(Max_lf_spec)
   integer :: ncFileID
 
   call Code_timer(tim_before)
@@ -940,7 +924,7 @@ subroutine lf_av(dt,End_of_Day)
   real :: xtot
   integer ::i,j,k,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
   integer ::isec_poll
-  logical :: pollwritten(Npoll_lf_max)
+  logical :: pollwritten(Max_lf_spec)
   
   call Code_timer(tim_before)
   if(.not. lf_src(1)%HOUR.and.&
@@ -1842,7 +1826,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: n, ii, iqrc, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
   real :: emis, sdt, fac
-  integer :: ngroups, ig2ic(Max_Country_groups)
+  integer :: ngroups, ig2ic(Max_lf_Country_groups)
 
   call Code_timer(tim_before)
 
