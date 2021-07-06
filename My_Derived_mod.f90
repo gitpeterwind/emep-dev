@@ -49,7 +49,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             lev3d_from_surface,&
                             MAX_NUM_DERIV2D,OutputVegO3
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
-use EmisDef_mod,       only: NSECTORS, SECTORS,EMIS_FILE, Nneighbors
+use EmisDef_mod,       only: NSECTORS, SECTORS, EMIS_FILE
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain
 use Io_Nums_mod,       only: IO_NML

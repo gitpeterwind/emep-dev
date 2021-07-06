@@ -26,7 +26,7 @@ use Config_module,only: &
     SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
     DMS,&
-    NPROC, EmisSplit_OUT,uEMEP,&
+    NPROC, EmisSplit_OUT,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     AVG_SMI_2005_2010File,NdepFile,&
@@ -62,7 +62,6 @@ use EmisDef_mod,       only: &
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
-     ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_GNFR_CAMS, GNFR_CAMS_SECTORS, NSECTORS_SNAP, SNAP_SECTORS, NSECTORS_MAX, SECTORS&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT & !old format
@@ -2182,7 +2181,7 @@ end if
                         + s * dtgrid * xmd(i,j)
 
                    if(USES%LocalFractions .and. me==0) write(*,*)dtxt//&
-                    'WARNING: single emitted spec not implemented in uEMEP yet'
+                    'WARNING: single emitted spec not implemented for Local Fractions yet'
 
                    !  Assign to height levels 1-KEMISTOP
                    do k=KEMISTOP,KMAX_MID

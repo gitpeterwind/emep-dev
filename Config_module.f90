@@ -14,13 +14,14 @@ use Debug_module,          only: DEBUG, DebugCell
 use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Zlevels, &
                                  Emis_Zlevels, Emis_h_pre
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, uEMEP_type, Emis_id_type, &
+use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
                                  Sector_type, hourly_emis_factor_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
-                                 Max_Country_list, Max_Country_groups,Max_Country_sectors
+                                 Max_lf_Country_list, Max_lf_Country_groups,Max_lf_sectors, &
+                                 poll_type, Max_lf_spec, Max_lf_sources
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -265,13 +266,11 @@ logical, public, save ::             &
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
-type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
-
-integer, public, parameter :: MAXSRC=1000
-type(lf_sources), public, save :: lf_src(MAXSRC)
-character(len=10), public, save :: lf_country_list(Max_Country_list)='NOTSET'!new format "uEMEP" Local Fractions. List of countries
-type(lf_country_group_type), public, save :: lf_country_group(Max_Country_groups)
-integer, public, save :: lf_country_sector_list(Max_Country_sectors)=-1!new format "uEMEP" Local Fractions. List of sectors for each country
+type(lf_sources), public, save :: lf_src(Max_lf_sources)
+type(poll_type), public, save :: lf_species(Max_lf_spec)
+character(len=10), public, save :: lf_country_list(Max_lf_Country_list)='NOTSET'!Local Fractions. List of countries
+type(lf_country_group_type), public, save :: lf_country_group(Max_lf_Country_groups)
+integer, public, save :: lf_country_sector_list(Max_lf_sectors)=-1 ! List of sectors for each country
 type(lf_country_type), public, save :: lf_country
 
 integer, public, save :: &
@@ -821,12 +820,12 @@ subroutine Config_Constants(iolog)
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
-   ,uEMEP & !old format . Avoid, will be removed in future versions
-   ,lf_src & !new format "uEMEP" Local Fractions
-   ,lf_country & !new format masks, countries, and groups
-   ,lf_country_list & !new format "uEMEP" Local Fractions. List of countries
-   ,lf_country_group & !new format "uEMEP" Local Fractions. List of group of countries
-   ,lf_country_sector_list & !new format "uEMEP" Local Fractions. List of sectors for each country
+   ,lf_src & !Local Fractions
+   ,lf_species &
+   ,lf_country & !Local Fractions countries, and groups
+   ,lf_country_list & !Local Fractions . List of countries
+   ,lf_country_group & !Local Fractions. List of group of countries
+   ,lf_country_sector_list & !Local Fractions. List of sectors for each country
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
