@@ -117,8 +117,9 @@ integer, private, save :: isrc_new(Max_lf_sources)
 contains
 
   subroutine lf_init
-    integer :: n, i, ii, iii, ic, ix, iix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4, size, IOU_ix, isrc
-    integer :: found
+    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask
+    integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix
+    integer, allocatable :: MaskVal(:)
 
 ! pm25_new and pm25 are considered as two different emitted pollutants
     
@@ -195,7 +196,7 @@ contains
        lf_country%mask_val(1) > -999999 .or. &
        lf_country%list(1)/= 'NOTSET' .or. &
        lf_country%group(1)%name/= 'NOTSET')then
-     !new format
+
      Ncountry_mask_lf = 0
      Ncountry_mask_lf_val = 0
      Ncountry_lf=0
@@ -210,7 +211,22 @@ contains
         write(*,*)'including  ',Ncountry_mask_lf_val,' individually defined mask sources '
      end if
   
+     n_mask = lf_country%mask_val_max-lf_country%mask_val_min+1
+     if (n_mask>0) then
+        !include only mask values that exist in EmisMaskIntVal from any MPI
+        allocate(MaskVal(lf_country%mask_val_min:lf_country%mask_val_max))
+        MaskVal = 0
+        do j=1,ljmax
+           do i=1,limax
+              if (EmisMaskIntVal(i,j)>=lf_country%mask_val_min .and. EmisMaskIntVal(i,j)<=lf_country%mask_val_max) then
+                 MaskVal(EmisMaskIntVal(i,j))=1
+              end if
+           enddo
+        enddo
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,MaskVal,n_mask,MPI_INTEGER, MPI_SUM,MPI_COMM_CALC,IERROR)
+     end if
      do i = lf_country%mask_val_min,lf_country%mask_val_max
+        if (MaskVal(i)==0) cycle ! is not anywhere on the mask
         found = 0
         do n = 1, Ncountry_mask_lf_val
            if (i == lf_country%mask_val(n)) found = 1
@@ -221,6 +237,7 @@ contains
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = i
      end do
+     if (n_mask>0) deallocate(MaskVal)
      if (Ncountry_mask_lf>0 .and. MasterProc) then
         write(*,*)'including in total',Ncountry_mask_lf,'mask sources:'
         do n = 1, (Ncountry_mask_lf+29)/30
