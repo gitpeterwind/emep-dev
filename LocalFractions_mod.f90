@@ -122,7 +122,7 @@ real   , private, save :: P_NO(100),P_NO2(100)
 contains
 
   subroutine lf_init
-    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask
+    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask, mask_val_min, mask_val_max
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix
     integer, allocatable :: MaskVal(:)
 ! pm25_new and pm25 are considered as two different emitted pollutants
@@ -196,7 +196,7 @@ contains
      lf_country%group = lf_country_group
   endif
   
-  if(lf_country%mask_val_min<lf_country%mask_val_max .or. &
+  if(lf_country%mask_val_min <= lf_country%mask_val_max .or. &
        lf_country%mask_val(1) > -999999 .or. &
        lf_country%list(1)/= 'NOTSET' .or. &
        lf_country%group(1)%name/= 'NOTSET')then
@@ -204,34 +204,52 @@ contains
      Ncountry_mask_lf = 0
      Ncountry_mask_lf_val = 0
      Ncountry_lf=0
+     mask_val_min = lf_country%mask_val_min
+     mask_val_max = lf_country%mask_val_max
      do i = 1, Max_lf_Country_list
         if(lf_country%mask_val(i) < -999999) exit
+        mask_val_min = min(lf_country%mask_val(i),mask_val_min)
+        mask_val_max = max(lf_country%mask_val(i),mask_val_max)
+     end do
+     if (mask_val_max >= mask_val_min) then
+        !make listof mask values that exist in EmisMaskIntVal from any MPI
+        allocate(MaskVal(mask_val_min:mask_val_max))
+        MaskVal = 0
+        do j=1,ljmax
+           do i=1,limax              
+              if (EmisMaskIntVal(i,j)>=mask_val_min .and. EmisMaskIntVal(i,j)<=mask_val_max) then
+                 MaskVal(EmisMaskIntVal(i,j))=1
+              end if
+              !if(EmisMaskIntVal(i,j)>123)write(*,*)'MASKfirst ',me,i,j,EmisMaskIntVal(i,j),MaskVal(123),MaskVal(124)
+         enddo
+        enddo
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,MaskVal,mask_val_max-mask_val_min+1,MPI_INTEGER, MPI_SUM,MPI_COMM_CALC,IERROR)
+        do j=1,ljmax
+           do i=1,limax              
+              if (EmisMaskIntVal(i,j)>=mask_val_min .and. EmisMaskIntVal(i,j)<=mask_val_max) then
+                 MaskVal(EmisMaskIntVal(i,j))=1
+              end if
+              !if(EmisMaskIntVal(i,j)>123)write(*,*)'MASKKKKKKKKKKKKK ',me,i,j,EmisMaskIntVal(i,j),MaskVal(123),MaskVal(124)
+           enddo
+        enddo
+     end if
+     do i = 1, Max_lf_Country_list
+        if(lf_country%mask_val(i) < -999999) exit
+
+        if(MaskVal(lf_country%mask_val(i)) == 0 ) cycle !the value is not defined anywhere on the netcdf masks
+        
         Ncountry_mask_lf = Ncountry_mask_lf + 1
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = lf_country%mask_val(i)
-     end do
+    end do
      Ncountry_mask_lf_val = Ncountry_lf !only defined with lf_country%mask_val (not min/max)
      if (Ncountry_mask_lf_val>0 .and. MasterProc) then
         write(*,*)'including  ',Ncountry_mask_lf_val,' individually defined mask sources '
      end if
-  
-     n_mask = lf_country%mask_val_max-lf_country%mask_val_min+1
-     if (n_mask>0) then
-        !include only mask values that exist in EmisMaskIntVal from any MPI
-        allocate(MaskVal(lf_country%mask_val_min:lf_country%mask_val_max))
-        MaskVal = 0
-        do j=1,ljmax
-           do i=1,limax
-              if (EmisMaskIntVal(i,j)>=lf_country%mask_val_min .and. EmisMaskIntVal(i,j)<=lf_country%mask_val_max) then
-                 MaskVal(EmisMaskIntVal(i,j))=1
-              end if
-           enddo
-        enddo
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE,MaskVal,n_mask,MPI_INTEGER, MPI_SUM,MPI_COMM_CALC,IERROR)
-     end if
+     
      do i = lf_country%mask_val_min,lf_country%mask_val_max
         if (MaskVal(i)==0) cycle ! is not anywhere on the mask
-        found = 0
+        found = 0           
         do n = 1, Ncountry_mask_lf_val
            if (i == lf_country%mask_val(n)) found = 1
            if (found == 1) exit
@@ -241,7 +259,8 @@ contains
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = i
      end do
-     if (n_mask>0) deallocate(MaskVal)
+     if (mask_val_max >= mask_val_min) deallocate(MaskVal)
+
      if (Ncountry_mask_lf>0 .and. MasterProc) then
         write(*,*)'including in total',Ncountry_mask_lf,'mask sources:'
         do n = 1, (Ncountry_mask_lf+29)/30
@@ -608,7 +627,6 @@ contains
            do is=1,Ncountrysectors_lf
               if (country_ix_list(ic)==IC_STRATOS) then
                  nstratos = nstratos + 1
-                 if(me==0)write(*,*)nstratos,' Stratos: ',n0
                  Stratos_ix(nstratos)=n0
               end if
               if (country_ix_list(ic)==IC_INIT) lf(n0,:,:,:) = 1.0
@@ -2025,7 +2043,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
      if(Ncountry_lf>0)then
         !has to store more detailed info
         do ic=1,Ncountry_lf
-           if (ic<Ncountry_mask_lf) then
+           if (ic <= Ncountry_mask_lf) then
            else if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
            else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
            else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
