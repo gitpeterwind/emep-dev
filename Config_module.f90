@@ -793,8 +793,11 @@ character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'Data
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
 ! Species indices that may or may not be defined in Species
-integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_f_ix, &
-                         NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix
+integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
+     NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
+     HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
+     PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,&
+     N2O5_ix
 
 
 !----------------------------------------------------------------------------
@@ -1134,33 +1137,39 @@ end subroutine associate_File
 subroutine define_chemicals_indices()
   !we set values for species indices if they are defined, -1 if they don't
   integer :: ix
-  ix = find_index('O3' ,species(:)%name)
-  O3_ix = ix
-  ix = find_index('SO2' ,species(:)%name)
-  SO2_ix = ix
-  ix = find_index('NO2' ,species(:)%name)
-  NO2_ix = ix
-  ix = find_index('SO4' ,species(:)%name)
-  SO4_ix = ix
-  ix = find_index('NH4_f' ,species(:)%name)
-  NH4_f_ix = ix
-  ix = find_index('NO3_f' ,species(:)%name)
-  NO3_f_ix = ix
-  ix = find_index('NO3_c' ,species(:)%name)
-  NO3_c_ix = ix
-  ix = find_index('NH3' ,species(:)%name)
-  NH3_ix = ix
-  ix = find_index('HNO3' ,species(:)%name)
-  HNO3_ix = ix
-  ix = find_index('C5H8' ,species(:)%name)
-  C5H8_ix = ix
-  ix = find_index('HO2' ,species(:)%name)
-  HO2_ix = ix
-  ix = find_index('NO' ,species(:)%name)
-  NO_ix = ix
-  ix = find_index('OH' ,species(:)%name)
-  OH_ix = ix
- 
+  O3_ix = find_index('O3' ,species(:)%name)
+  SO2_ix = find_index('SO2' ,species(:)%name)
+  NO2_ix = find_index('NO2' ,species(:)%name)
+  SO4_ix = find_index('SO4' ,species(:)%name)
+  NH4_f_ix = find_index('NH4_f' ,species(:)%name)
+  NO3_ix = find_index('NO3' ,species(:)%name)
+  NO3_f_ix = find_index('NO3_f' ,species(:)%name)
+  NO3_c_ix = find_index('NO3_c' ,species(:)%name)
+  NH3_ix = find_index('NH3' ,species(:)%name)
+  HNO3_ix = find_index('HNO3' ,species(:)%name)
+  C5H8_ix = find_index('C5H8' ,species(:)%name)
+  HO2_ix = find_index('HO2' ,species(:)%name)
+  NO_ix = find_index('NO' ,species(:)%name)
+  OH_ix = find_index('OH' ,species(:)%name)
+
+  HONO_ix = find_index('HONO' ,species(:)%name)
+  OP_ix = find_index('OP' ,species(:)%name)
+  CH3O2_ix = find_index('CH3O2' ,species(:)%name)
+  C2H5O2_ix = find_index('C2H5O2' ,species(:)%name)
+  CH3CO3_ix = find_index('CH3CO3' ,species(:)%name)
+  C4H9O2_ix = find_index('C4H9O2' ,species(:)%name)
+  MEKO2_ix = find_index('MEKO2' ,species(:)%name)
+  ETRO2_ix = find_index('ETRO2' ,species(:)%name)
+  PRRO2_ix = find_index('PRRO2' ,species(:)%name)
+  OXYO2_ix = find_index('OXYO2' ,species(:)%name)
+  C5DICARBO2_ix = find_index('C5DICARBO2' ,species(:)%name)
+  ISRO2_ix = find_index('ISRO2' ,species(:)%name)
+  MACRO2_ix = find_index('MACRO2' ,species(:)%name)
+  TERPO2_ix = find_index('TERPO2' ,species(:)%name)
+  H2O2_ix = find_index('H2O2' ,species(:)%name)
+  N2O5_ix = find_index('N2O5' ,species(:)%name)
+
+  
 end subroutine define_chemicals_indices
 
 end module Config_module

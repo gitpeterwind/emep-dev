@@ -6,13 +6,17 @@ use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE
-use ChemSpecs_mod
+use ChemSpecs_mod,     only: species_adv,species
 use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending, lf_country_group&
-                             ,lf_species, lf_country_sector_list,lf_country_list,lf_country
+                             ,lf_species, lf_country_sector_list,lf_country_list,lf_country,&
+                             SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix, NO3_f_ix, &
+                             NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
+                             HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
+                             PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
@@ -96,10 +100,6 @@ integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that 
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
-integer, private, save :: ix_O3=-1, ix_NO2=-1, ix_NO=-1, ix_CH3CO3=-1, ix_HO2=-1
-integer, private, save :: ix_SO4=-1, ix_SO2=-1, ix_H2O2=-1, ix_OH=-1
-integer, private, save :: ix_NH4=-1, ix_NH3=-1
-integer, private, save :: ix_NO3=-1, ix_HNO3=-1
 integer, private, save :: isrc_EC_f_ffuel_new=-1, isrc_EC_f_ffuel_age=-1, isrc_EC_f_wood_new=-1, isrc_EC_f_wood_age=-1
 integer, private, save :: isrc_EC_f_new=-1, isrc_EC_f_age=-1
 integer, private, save :: ix_EC_f_ffuel_new=-1, ix_EC_f_ffuel_age=-1
@@ -390,26 +390,20 @@ contains
            isrc_oddO = isrc
            !oddO -> O3 + NO2 + 2*NO3 + 3* N2O5 + HNO3 + H2O2  (+ HO2 but short lived)
            !The weights are taken into account through an effective mw, in units of NO2
-           ix_NO2=find_index('NO2' ,species(:)%name) - NSPEC_SHL
-           ix_O3=find_index('O3' ,species(:)%name) - NSPEC_SHL
-           lf_src(isrc_oddO)%ix(1) = ix_O3
-           lf_src(isrc_oddO)%mw(1) = species_adv(ix_NO2)%molwt
-           lf_src(isrc_oddO)%ix(2) = ix_NO2
-           lf_src(isrc_oddO)%mw(2) = species_adv(ix_NO2)%molwt
-           ix=find_index('NO3' ,species(:)%name) - NSPEC_SHL
-           lf_src(isrc_oddO)%ix(3) = ix
-           lf_src(isrc_oddO)%mw(3) = 2*species_adv(ix_NO2)%molwt
-           ix=find_index('N2O5' ,species(:)%name) - NSPEC_SHL
-           lf_src(isrc_oddO)%ix(4) = ix
-           lf_src(isrc_oddO)%mw(4) = 3*species_adv(ix_NO2)%molwt
-           ix=find_index('HNO3' ,species(:)%name) - NSPEC_SHL
-           lf_src(isrc_oddO)%ix(5) = ix
-           lf_src(isrc_oddO)%mw(5) = species_adv(ix_NO2)%molwt
-           ix=find_index('H2O2' ,species(:)%name) - NSPEC_SHL
-           lf_src(isrc_oddO)%ix(6) = ix
-           lf_src(isrc_oddO)%mw(6) = species_adv(ix_NO2)%molwt
+           lf_src(isrc_oddO)%ix(1) = O3_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(1) = species(NO2_ix)%molwt
+           lf_src(isrc_oddO)%ix(2) = NO2_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(2) = species(NO2_ix)%molwt
+           lf_src(isrc_oddO)%ix(3) = NO3_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(3) = 2*species(NO2_ix)%molwt
+           lf_src(isrc_oddO)%ix(4) = N2O5_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(4) = 3*species(NO2_ix)%molwt
+           lf_src(isrc_oddO)%ix(5) = HNO3_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(5) = species(NO2_ix)%molwt
+           lf_src(isrc_oddO)%ix(6) = H2O2_ix - NSPEC_SHL
+           lf_src(isrc_oddO)%mw(6) = species(NO2_ix)%molwt
            lf_src(isrc_oddO)%Nsplit = 6
-           lf_src(isrc_oddO)%iqrc = itot2iqrc(ix_NO2 + NSPEC_SHL) !will set NO2 as single emitted species
+           lf_src(isrc_oddO)%iqrc = itot2iqrc(NO2_ix) !will set NO2 as single emitted species
            call CheckStop(lf_src(isrc_oddO)%iqrc<=0, "Did not find iqrc for NO2")
            iem = iqrc2iem(lf_src(isrc_oddO)%iqrc)
            lf_src(isrc_oddO)%iem = iem
@@ -435,17 +429,10 @@ contains
            if(trim(species(ix)%name)=='O3')isrc_O3=isrc
            if(trim(species(ix)%name)=='NO')isrc_NO=isrc
            if(trim(species(ix)%name)=='NO2')isrc_NO2=isrc
-           if(trim(species(ix)%name)=='O3')ix_O3=lf_src(isrc)%ix(1)!shortcut
-           if(trim(species(ix)%name)=='NO')ix_NO=lf_src(isrc)%ix(1)!shortcut
-           if(trim(species(ix)%name)=='NO2')ix_NO2=lf_src(isrc)%ix(1)!shortcut
            if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
            if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
-           if(trim(species(ix)%name)=='SO4')ix_SO4=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='SO2')ix_SO2=lf_src(isrc)%ix(1)
            if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
            if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
-           if(trim(species(ix)%name)=='NH4_f')ix_NH4=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='NH3')ix_NH3=lf_src(isrc)%ix(1)
            if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
            if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
            if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
@@ -478,46 +465,28 @@ contains
            lf_src(isrc)%ix(ii) = ix
            lf_src(isrc)%mw(ii) = species_adv(ix)%molwt
            
-           !           if(lf_src(isrc)%species=="pm25")then
-           !              ix=find_index('EC_f_ffuel_new', species(:)%name)
-           !              call CheckStop( ix<1, "Local Fractions did not find  ")
-           !              ix_EC_f_ffuel_new = ix - NSPEC_SHL!shortcut
-           !              ix=find_index('EC_f_ffuel_age', species(:)%name)
-           !              call CheckStop( ix<1, "Local Fractions did not find  ")
-           !              ix_EC_f_ffuel_age = ix - NSPEC_SHL!shortcut
-           !              ix=find_index('isrc_EC_f_wood_new', species(:)%name)
-           !              call CheckStop( ix<1, "Local Fractions did not find  ")
-           !              ix_isrc_EC_f_wood_new = ix - NSPEC_SHL!shortcut
-           !              ix=find_index('isrc_EC_f_wood_age', species(:)%name)
-           !              call CheckStop( ix<1, "Local Fractions did not find  ")
-           !              ix_isrc_EC_f_wood_age = ix - NSPEC_SHL!shortcut
-           !           endif
            if(lf_src(isrc)%species=="voc")then
               isrc_VOC = isrc
-              ix=find_index('CH3CO3', species(:)%name)
-              call CheckStop( ix<1, "Local Fractions did not find CH3CO3 ")
-              ix_CH3CO3 = ix - NSPEC_SHL!shortcut
+              ix=find_index('CH3CO3', species(:)%name)              
+              call CheckStop( ix<1, "Local Fractions did not find CH3CO3 ")              
               ix=find_index('HO2', species(:)%name)
-              call CheckStop( ix<1, "Local Fractions did not find HO2 ")
-              ix_HO2= ix!shortcut !NB: index as short lived
+              call CheckStop( ix<1, "Local Fractions did not find HO2 ")              
            endif
            if(lf_src(isrc)%species=="nox")then
               ix=find_index("NO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for NO2 not found')
-              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt
+              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt !"as NO2"
            endif
            if(lf_src(isrc)%species=="sox")then
               ix=find_index("SO2",species_adv(:)%name)
               call CheckStop(ix<0,'Index for SO2 not found')
-              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt
+              lf_src(isrc)%mw(ii)=species_adv(ix)%molwt !"as SO2"
            endif
            if(lf_src(isrc)%species=="nox" .and. (lf_src(isrc)%DryDep .or. lf_src(isrc)%WetDep))then
               ix=find_index("NO3",species_adv(:)%name)
               call CheckStop(ix<0,'Index for NO3 not found')
-              ix_NO3=ix
               ix=find_index("HNO3",species_adv(:)%name)
               call CheckStop(ix<0,'Index for HNO3 not found')
-              ix_HNO3=ix
            endif
            
            if(lf_src(isrc)%species=="nh3")then
@@ -536,12 +505,7 @@ contains
         end do
 
      endif
-     if(ix_SO2>0)then
-        !need some more indices
-        ix_O3=find_index('O3' ,species(:)%name, any_case=.true.) - NSPEC_SHL !NB: index among advected species
-        ix_OH=find_index('OH' ,species(:)%name, any_case=.true.) !NB: index among all species
-        ix_H2O2=find_index('H2O2' ,species(:)%name, any_case=.true.) !NB: index among all species
-     endif
+     
      if(iem>0)then
         !emitted species
         found=0
@@ -1052,7 +1016,7 @@ subroutine lf_av(dt,End_of_Day)
                        !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                     endif
                  end do
-                 if(isrc==isrc_oddO) xtot=xtot*species_adv(ix_O3)%molwt/species_adv(ix_NO2)%molwt !mw(NO2) -> mw(O3)
+                 if(isrc==isrc_oddO) xtot=xtot*species(O3_ix)%molwt/species(NO2_ix)%molwt !mw(NO2) -> mw(O3)
                  if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
                     lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
                  endif
@@ -1477,28 +1441,28 @@ subroutine lf_chemrates(k,i,dtchem,xnew)
 
   ! production of NO excluding emissions
   P_NO(k) =  P_NO(k) &
-       + (rct(17,k) * xnew(NO2) * xnew(NO3)  &
-       + rcphot(IDNO2,k) * xnew(NO2)  &
-       + 0.127* rcphot(IDNO3,k) * xnew(NO3)  &
-       + rcphot(IDHONO,k) * xnew(HONO) ) * dtchem
+       + (rct(17,k) * xnew(NO2_ix) * xnew(NO3_ix)  &
+       + rcphot(IDNO2,k) * xnew(NO2_ix)  &
+       + 0.127* rcphot(IDNO3,k) * xnew(NO3_ix)  &
+       + rcphot(IDHONO,k) * xnew(HONO_ix) ) * dtchem
   
   P_NO2(k) =  P_NO2(k) &
-       + (rct(10,k) * xnew(OP) * xnew(NO)  &
-       + rct(11,k) * xnew(O3) * xnew(NO)  &
-       + 1* rct(15,k) * xnew(NO) * xnew(NO3)  & !NB: only one
-       + rct(16,k) * xnew(NO) * xnew(HO2)  &
-       + rct(29,k) * xnew(CH3O2) * xnew(NO)  &
-       + rct(38,k) * xnew(C2H5O2) * xnew(NO)  &
-       + rct(42,k) * xnew(CH3CO3) * xnew(NO)  &
-       + 0.917* rct(48,k) * xnew(C4H9O2) * xnew(NO)  &
-       + rct(48,k) * xnew(MEKO2) * xnew(NO)  &
-       + rct(48,k) * xnew(ETRO2) * xnew(NO)  &
-       + rct(48,k) * xnew(PRRO2) * xnew(NO)  &
-       + rct(48,k) * xnew(OXYO2) * xnew(NO)  &
-       + rct(48,k) * xnew(C5DICARBO2) * xnew(NO)  &
-       + 0.9* rct(48,k) * xnew(ISRO2) * xnew(NO)  &
-       + rct(48,k) * xnew(MACRO2) * xnew(NO)  &
-       + rct(48,k) * xnew(TERPO2) * xnew(NO) ) * dtchem
+       + (rct(10,k) * xnew(OP_ix) * xnew(NO_ix)  &
+       + rct(11,k) * xnew(O3_ix) * xnew(NO_ix)  &
+       + 1* rct(15,k) * xnew(NO_ix) * xnew(NO3_ix)  & !NB: only one
+       + rct(16,k) * xnew(NO_ix) * xnew(HO2_ix)  &
+       + rct(29,k) * xnew(CH3O2_ix) * xnew(NO_ix)  &
+       + rct(38,k) * xnew(C2H5O2_ix) * xnew(NO_ix)  &
+       + rct(42,k) * xnew(CH3CO3_ix) * xnew(NO_ix)  &
+       + 0.917* rct(48,k) * xnew(C4H9O2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(MEKO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(ETRO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(PRRO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(OXYO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(C5DICARBO2_ix) * xnew(NO_ix)  &
+       + 0.9* rct(48,k) * xnew(ISRO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(MACRO2_ix) * xnew(NO_ix)  &
+       + rct(48,k) * xnew(TERPO2_ix) * xnew(NO_ix) ) * dtchem
 
 end subroutine lf_chemrates
 
@@ -1527,8 +1491,8 @@ subroutine lf_chem(i,j)
           oddO = oddO + xn_adv(lf_src(isrc_oddO)%ix(iix),i,j,k)*M(k)
           oddO_new = oddO_new + xn_2d(NSPEC_SHL+lf_src(isrc_oddO)%ix(iix),k)
        end do
-       NO = xn_adv(ix_NO,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO,k)
-       NO2 = xn_adv(ix_NO2,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO2,k)
+       NO = xn_adv(NO_ix-NSPEC_SHL,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO,k)
+       NO2 = xn_adv(NO2_ix-NSPEC_SHL,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO2,k)
        d_NO = P_NO(k) !we assume all NO has been produce by (effective) NO2 conversion  
        d_NO2 = P_NO2(k) !we include only NO2 that has been produced by NO conversion
        d_oddO = (oddO_new-oddO-d_NO2) ! How much oddO is transformed (Loss) into non-NO2 equivalents
@@ -1609,7 +1573,7 @@ subroutine lf_chem(i,j)
   endif
   if(isrc_SO2>0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        SO4 = xn_2d(NSPEC_SHL+ix_SO4,k)
+        SO4 = xn_2d(SO4_ix,k)
         n_SO4 = lf_src(isrc_SO4)%start
         stop
         !SO4 produced by SO2 , without emitted SO4:
@@ -1625,93 +1589,6 @@ subroutine lf_chem(i,j)
 
  end if
 
-
- 
-  if(isrc_O3<=0)return
-  !the source index must give three values, stored at isrc_O3, isrc_NO and isrc_NO2
-  do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-     !xn_adv is proportional to concentrations (~kg/m3) units in advection routines, (in mass mixing ratio otherwise).
-     !xn_2d is in units of molecules/cm3, and defined also with short lived
-     !units do not matter for local fractions, as long as all units are the same.
-!     if(allocated(Dchem))then
-!        !if(me==0.and. i==5 .and.j==5)write(*,*)'DCHEM ',Dchem(NSPEC_SHL+ix_SO2,k,i,j)*0.5*dt_advec,xn_2d(NSPEC_SHL+ix_SO2,k)
-!        NO = max(0.0,xn_2d(NSPEC_SHL+ix_NO,k)+Dchem(NSPEC_SHL+ix_NO,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
-!        NO2 = max(0.0,xn_2d(NSPEC_SHL+ix_NO2,k)+Dchem(NSPEC_SHL+ix_NO2,k,i,j)*0.5*dt_advec)! put value at approximatively average value during chem timestep
-!     else
-        NO = xn_2d(NSPEC_SHL+ix_NO,k)
-        NO2 = xn_2d(NSPEC_SHL+ix_NO2,k)
-!     endif
-     O3 = xn_2d(NSPEC_SHL+ix_O3,k) 
-     VOC = xn_2d(NSPEC_SHL+ix_CH3CO3,k)
-     HO2 = xn_2d(ix_HO2,k) !NB: ix_HO2 is already short lived index
-     k1 = rct(11,k) * dt_advec
-     !CH3CO3 + HO2 -> 0.162*O3 + 0.384*CH3CO3H + 0.454 OH + 0.454 CH3O2 + 0.162 CH3COOH ?
-     k2 = 0.162* rct(45,k) * HO2 * dt_advec
-     d_VOC = VOC*k2/(1 + k2)
-     d_VOC=0.0
-     n_O3 = lf_src(isrc_O3)%start
-     n_NO = lf_src(isrc_NO)%start
-     
-     J_phot=rcphot(IDNO2,k)*dt_advec
-     !NO2 photodecomposition: NO2+hv->NO+O3 (we skip OP)
-     !d_NO2 = -J_phot*NO2
-     d_NO2 = NO2*J_phot/(1 +  J_phot)
-     !if(i==5 .and. j==5 .and. k==20 .and. me>300  .and. me>400  )write(*,*)d_VOC,d_NO2,rct(1,k),rct(10,k)*NO
-
-     !NO+O3->NO2+O2
-     !d_NO = k1*O3*NO
-     if(NO<O3)then
-        d_NO = (k1*O3*NO)/(1+k1*O3)
-     else
-        d_NO = (k1*O3*NO)/(1+k1*NO)
-     endif
-
-     nsteps = 1
-     invt=1.0/nsteps
-     do n=1,nsteps
-!update fractions
-        n_O3 = lf_src(isrc_O3)%start
-        n_VOC = lf_src(isrc_VOC)%start
-        n_NO = lf_src(isrc_NO)%start
-        do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-           if(isnan(lf(n_O3,i,j,k)) .or. lf(n_O3,i,j,k)>10.0)then
-              write(*,*)'O3 is nan before chem',O3,NO2,NO,VOC, d_NO2 , d_VOC 
-              stop
-           endif
-           if(isnan(lf(n_NO,i,j,k)))then
-              write(*,*)'NO is nan before chem',O3,NO2,NO,VOC
-               stop
-           endif
-           if(isnan(lf(n_NO2,i,j,k)) .or. lf(n_NO2,i,j,k)>10.0)then
-              write(*,*)'NO2 is nan before chem',O3,NO2,NO,VOC
-               stop
-           endif
-           lf(n_O3,i,j,k) = (lf(n_O3,i,j,k)*O3 + d_NO2*lf(n_NO2,i,j,k) -d_NO*lf(n_NO,i,j,k) + d_VOC*lf(n_VOC,i,j,k) )/(O3 + d_NO2 - d_NO + d_VOC + 1.0)
-
-           if(isnan(lf(n_O3,i,j,k)) .or. lf(n_O3,i,j,k)>10.0)then
-              write(*,*)'O3 is nan after chem ',lf(n_O3,i,j,k),lf(n_NO2,i,j,k),O3,NO2,NO,VOC, d_NO2 , d_VOC 
-              stop
-           endif
-
-           lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO2*lf(n_NO2,i,j,k) )/(NO + d_NO2 + 1.0)
-
-           lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*(NO2-d_NO2) + d_NO*lf(n_NO,i,j,k) + d_NO*lf(n_O3,i,j,k) )/(NO2 - d_NO2 + d_NO + d_NO + 1.0)
-           if(isnan(lf(n_NO,i,j,k)) .or. lf(n_NO,i,j,k)>10.0)then
-              write(*,*)'NO is nan after chem ',lf(n_NO,i,j,k),O3,NO2,NO,VOC
-               stop
-           endif
-           if(isnan(lf(n_NO2,i,j,k)) .or. lf(n_NO2,i,j,k)>10.0)then
-              write(*,*)'NO2 is nan after chem ',lf(n_NO2,i,j,k),O3,NO2,NO,VOC,d_NO2 , d_NO
-               stop
-           endif
- 
-           n_O3 = n_O3 + 1
-           n_VOC = n_VOC + 1
-           n_NO = n_NO + 1
-        enddo
-     enddo
-     
-  enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 end subroutine lf_chem
 
@@ -1722,8 +1599,8 @@ subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
   if(isrc_NH4<0)return;
   call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-     lf_NH4(k) = xn_2d(NSPEC_SHL+ix_NH4,k)
-     lf_NH3(k) = xn_2d(NSPEC_SHL+ix_NH3,k)
+     lf_NH4(k) = xn_2d(NH4_f_ix,k)
+     lf_NH3(k) = xn_2d(NH3_ix,k)
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   
@@ -1738,8 +1615,8 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
   call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
 
-     NH3 = xn_2d(NSPEC_SHL+ix_NH3,k)
-     NH4 = xn_2d(NSPEC_SHL+ix_NH4,k)
+     NH3 = xn_2d(NH3_ix,k)
+     NH4 = xn_2d(NH4_f_ix,k)
      d_NH4 = NH4 - lf_NH4(k) 
      d_NH3 = NH3 - lf_NH3(k)
      
@@ -1789,22 +1666,22 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
         if(isrc==isrc_NH3 .or. isrc==isrc_NH4 .or. lf_src(isrc)%species=="nh3")ffac = ffac* 14.0/17.0!NH3->N
         if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox")ffac = ffac*14.0/46.0 !NO2->N
      
-        if( ix==ix_SO4 ) then
+        if( ix==SO4_ix - NSPEC_SHL ) then
            !take directly local fractions from SO4 instead of sox
            istart = lf_src(isrc_SO4)%start
            iend= lf_src(isrc_SO4)%end
         endif
-        if( ix==ix_SO2 ) then
+        if( ix==SO2_ix - NSPEC_SHL ) then
            !take directly local fractions from SO2 instead of sox
            istart = lf_src(isrc_SO2)%start
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==ix_NH4 ) then
+        if( ix==NH4_f_ix - NSPEC_SHL ) then
            istart = lf_src(isrc_NH4)%start
            iend= lf_src(isrc_NH4)%end
         endif
-        if( ix==ix_NH3 ) then
+        if( ix==NH3_ix - NSPEC_SHL ) then
            istart = lf_src(isrc_NH3)%start
            iend= lf_src(isrc_NH3)%end
         endif
@@ -1816,13 +1693,13 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
         enddo
         if(lf_src(isrc)%species=="nox" .and. iix==lf_src(isrc)%Nsplit)then
            !we add also depositions of NO3 and HNO3
-           ix=ix_NO3
+           ix=NO3_ix - NSPEC_SHL
            idep=idep0
            do n = istart, iend 
               idep=idep+1
               loc_frac_drydep(i,j,idep) = loc_frac_drydep(i,j,idep) + lf(n,i,j,KMAX_MID)*DepLoss(ix)*ffac
            enddo
-           ix=ix_HNO3
+           ix=HNO3_ix - NSPEC_SHL
            idep=idep0
            do n = istart, iend 
               idep=idep+1
@@ -1860,22 +1737,22 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
         if(isrc==isrc_NH4) ffac = ffac* 14.0/18.0 !NH4->N
         if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox") ffac = ffac*14.0/46.0 !NO2->N
      
-        if( ix==ix_SO4 ) then
+        if( ix==SO4_ix - NSPEC_SHL ) then
            !take directly local fractions from SO4 instead of sox
            istart = lf_src(isrc_SO4)%start
            iend= lf_src(isrc_SO4)%end
         endif
-        if( ix==ix_SO2 ) then
+        if( ix==SO2_ix - NSPEC_SHL ) then
            !take directly local fractions from SO2 instead of sox
            istart = lf_src(isrc_SO2)%start
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==ix_NH4 ) then
+        if( ix==NH4_f_ix - NSPEC_SHL ) then
            istart = lf_src(isrc_NH4)%start
            iend= lf_src(isrc_NH4)%end
         endif
-        if( ix==ix_NH3 ) then
+        if( ix==NH3_ix - NSPEC_SHL ) then
            istart = lf_src(isrc_NH3)%start
            iend= lf_src(isrc_NH3)%end
         endif
@@ -1887,13 +1764,13 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
         enddo
         if(lf_src(isrc)%species=="nox" .and. iix==lf_src(isrc)%Nsplit)then
            !we add also depositions of NO3 and HNO3
-           ix=ix_NO3
+           ix=NO3_ix - NSPEC_SHL
            idep=idep0
            do n = istart, iend 
               idep=idep+1
               loc_frac_wetdep(i,j,idep) = loc_frac_wetdep(i,j,idep) + lf(n,i,j,k)*loss*ffac
            enddo
-           ix=ix_HNO3
+           ix=HNO3_ix - NSPEC_SHL
            idep=idep0
            do n = istart, iend 
               idep=idep+1
