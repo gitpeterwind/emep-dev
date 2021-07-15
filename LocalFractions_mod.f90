@@ -241,7 +241,7 @@ contains
         Ncountry_mask_lf = Ncountry_mask_lf + 1
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = lf_country%mask_val(i)
-    end do
+     end do
      Ncountry_mask_lf_val = Ncountry_lf !only defined with lf_country%mask_val (not min/max)
      if (Ncountry_mask_lf_val>0 .and. MasterProc) then
         write(*,*)'including  ',Ncountry_mask_lf_val,' individually defined mask sources '
