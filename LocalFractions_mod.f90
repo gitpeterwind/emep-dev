@@ -1650,14 +1650,14 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==ix_NH4 ) then
-           istart = lf_src(isrc_NH4)%start
-           iend= lf_src(isrc_NH4)%end
-        endif
-        if( ix==ix_NH3 ) then
-           istart = lf_src(isrc_NH3)%start
-           iend= lf_src(isrc_NH3)%end
-        endif
+!        if( ix==ix_NH4 ) then
+!           istart = lf_src(isrc_NH4)%start
+!           iend= lf_src(isrc_NH4)%end
+!        endif
+!        if( ix==ix_NH3 ) then
+!           istart = lf_src(isrc_NH3)%start
+!           iend= lf_src(isrc_NH3)%end
+!        endif
         
         idep=idep0
         do n = istart, iend 
@@ -1721,14 +1721,14 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==ix_NH4 ) then
-           istart = lf_src(isrc_NH4)%start
-           iend= lf_src(isrc_NH4)%end
-        endif
-        if( ix==ix_NH3 ) then
-           istart = lf_src(isrc_NH3)%start
-           iend= lf_src(isrc_NH3)%end
-        endif
+!        if( ix==ix_NH4 ) then
+!           istart = lf_src(isrc_NH4)%start
+!           iend= lf_src(isrc_NH4)%end
+!        endif
+!        if( ix==ix_NH3 ) then
+!           istart = lf_src(isrc_NH3)%start
+!           iend= lf_src(isrc_NH3)%end
+!        endif
         
         idep=idep0
         do n = istart, iend 
