@@ -364,9 +364,11 @@ contains
    !> NH4NO3 deposition will need this ratio for the NH4 part
 
     no3nh4ratio = 1.0
-    if( xn_2d(NH4_f_ix,K2) > 1.0  .and. NH4_f_ix > 0) then
-       no3nh4ratio = xn_2d(NO3_f_ix,K2) / xn_2d(NH4_f_ix,K2)
-       no3nh4ratio = min( 1.0,  no3nh4ratio )
+    if(NH4_f_ix > 0) then
+       if( xn_2d(NH4_f_ix,K2) > 1.0 ) then
+          no3nh4ratio = xn_2d(NO3_f_ix,K2) / xn_2d(NH4_f_ix,K2)
+          no3nh4ratio = min( 1.0,  no3nh4ratio )
+       end if
     end if
 
    !---------------------------------------------------------

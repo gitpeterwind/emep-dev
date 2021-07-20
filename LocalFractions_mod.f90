@@ -1436,6 +1436,8 @@ subroutine lf_chemrates(k,i,dtchem,xnew)
   real, intent(in) :: dtchem, xnew(*)
   integer, intent(in) :: k,i
 
+  if (isrc_oddO<0) return
+
   if(i==1) P_NO(k) = 0.0
   if(i==1) P_NO2(k) = 0.0
 
