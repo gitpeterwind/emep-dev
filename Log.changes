@@ -47,6 +47,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th July 2021, Peter
+
+Primitive "linear O3" Local Fractions for countries.
+Use
+lf_src(1)%species="NO2"
+lf_src(2)%species="NO"
+lf_src(3)%species="oddO".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd July 2021, Peter
 
 New masks possibilities for Local Fractions. Can give a netCDF file with

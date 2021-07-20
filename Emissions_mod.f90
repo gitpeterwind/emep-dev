@@ -2180,7 +2180,7 @@ end if
                    totemadd(itot) = totemadd(itot) &
                         + s * dtgrid * xmd(i,j)
 
-                   if(USES%LocalFractions .and. me==0) write(*,*)dtxt//&
+                   if(USES%LocalFractions .and. me==0.and.i==1.and.j==1.and.n==1) write(*,*)dtxt//&
                     'WARNING: single emitted spec not implemented for Local Fractions yet'
 
                    !  Assign to height levels 1-KEMISTOP

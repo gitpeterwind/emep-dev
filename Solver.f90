@@ -36,6 +36,7 @@
     use EmisDef_mod,        only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
+    use LocalFractions_mod, only: lf_chemrates
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -225,6 +226,8 @@ contains
 
 
             end do !! End iterations
+                
+            if(USES%LocalFractions) call lf_chemrates(k, ichem, dtchem(ichem),xnew)
 
            !YIELDs  Allows change of gas/aerosol yield, which currently is only used
            !     for SOA species to be handled in CM_Reactions2
