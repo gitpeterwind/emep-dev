@@ -89,7 +89,7 @@ integer, public, save :: iotyp2ix(IOU_MAX_MAX)
 integer, public, save :: av_fac(IOU_MAX_MAX)
 integer, public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
 integer, public, save :: Npoll = 0 !Number of different pollutants to consider
-integer, private, parameter :: MAXIPOLL = 16
+integer, private, parameter :: MAXIPOLL = 20
 integer, public, save :: iem2ipoll(NEMIS_File,MAXIPOLL) !internal indices of pollutants for that emis file
 integer, public, save :: ipoll2iqrc(MAXIPOLL) = -1 !-1 for primary pollutant
 
@@ -1558,7 +1558,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,xnew_lf)
      do n=lf_src(isrc)%start, lf_src(isrc)%end
         lf0(n) = lf(n,i,j,k)
         if(abs(lf0(n))>10 .or. isnan(lf0(n)))then
-           if(abs(lf0(n))>100)write(*,*)'LARGE ',me,n,isrc,lf(n,i,j,k),i,j,k,xn(8),xn(9),xn(10),i_fdom(i), j_fdom(j)
+           if(abs(lf0(n))>1000)write(*,*)'LARGE ',me,n,isrc,lf(n,i,j,k),i,j,k,xn(8),xn(9),xn(10),i_fdom(i), j_fdom(j)
            if(lf0(n)>0)lf0(n) = 0.1
            if(lf0(n)<0)lf0(n) = -0.1
            !           stop
@@ -1617,14 +1617,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,xnew_lf)
            lf_unass(ispec) = lf_unass(ispec) - lf0(n)
         end do
         lf0_unass(ispec) = lf_unass(ispec)
-        lf_unass(ispec) = 0.0
-        if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
-           x=0.0
-           do n=lf_src(isrc_emis)%start, lf_src(isrc_emis)%end
-              x= x + lf0(n)
-           end do
-           write(*,*)ispec,' sumx before ',x, lf0_unass(ispec)
-        end if
+        lf_unass(ispec) = 0.0        
         
      end do
      exit !we only need one valid ix
@@ -1648,7 +1641,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,xnew_lf)
               !if(ix/=ispec)then ! does not work otherwise ? TO CHECK
                  if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
                     n=lf_src(isrc)%start
-                    write(*,*)'lfvalue before ',fac,ix,ispec,lf(n,i,j,k),lf0(nispec) ,lf0(n),lf0_unass(n)
+!                    write(*,*)'lfvalue before ',fac,ix,ispec,lf(n,i,j,k),lf0(nispec) ,lf0(n),lf0_unass(n)
                  end if
 
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -1683,8 +1676,8 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,xnew_lf)
                  x0 = x0 +lf0_unass(ix)
                  
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
-                    lf(n,i,j,k) = lf(n,i,j,k)*x0/x
-                    if(abs(lf(n,i,j,k))>10 .or. isnan(lf(n,i,j,k)))then
+!                    lf(n,i,j,k) = lf(n,i,j,k)*x0/x
+                    if(abs(lf(n,i,j,k))>1000 .or. isnan(lf(n,i,j,k)))then
                        write(*,*)'LARGElf ',me,n,isrc,ix,lf(n,i,j,k),i,j,k,x,x0,lf0(n),lf_unass(ix),lf0_unass(ix)
                                   stop
                     end if
