@@ -4,7 +4,7 @@ module LocalFractions_mod
 !
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac
-use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
+use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE
 use ChemSpecs_mod,     only: species_adv,species
 use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
@@ -38,7 +38,7 @@ use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_count
                              TXTLEN_NAME, TXTLEN_FILE, &
                              Max_lf_res, Max_lf_spec, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
-use PhysicalConstants_mod, only : GRAV, ATWAIR 
+use PhysicalConstants_mod, only : GRAV, AVOG, ATWAIR 
 use SmallUtils_mod,    only: find_index
 !use Chemsolver_mod,    only: Dchem
 use TimeDate_mod,      only: date, current_date,day_of_week
@@ -67,6 +67,7 @@ public  :: lf_adv_y
 public  :: lf_adv_k
 public  :: lf_diff
 public  :: lf_chemrates
+public  :: lf_chemderiv
 public  :: lf_chem
 public  :: lf_aero_pre, lf_aero_pos 
 public  :: lf_drydep, lf_wetdep
@@ -76,7 +77,7 @@ public  :: add_lf_emis
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
-integer , private, save :: lf_Nvertout = 1!number of vertical levels to save in output
+integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
 integer, public, save :: NTIMING_lf=9
 real, private :: tim_after,tim_before
 integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
@@ -84,17 +85,18 @@ integer, public, save :: Nsources=0, Nsources_nonew=0
 integer, public, save :: lf_Nvert=0
 
 integer, public, save :: LF_SRC_TOTSIZE
-integer,  public, save :: iotyp2ix(IOU_MAX_MAX)
-integer,  public, save :: av_fac(IOU_MAX_MAX)
-integer,  public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
-integer,  public, save :: Npoll = 0 !Number of different pollutants to consider
-integer, private, parameter :: MAXIPOLL=16
-integer,  public, save :: iem2ipoll(NEMIS_File,MAXIPOLL) !internal indices of pollutants for that emis file
-integer,  public, save :: ipoll2iqrc(MAXIPOLL)=-1 !-1 for primary pollutant
+integer, public, save :: iotyp2ix(IOU_MAX_MAX)
+integer, public, save :: av_fac(IOU_MAX_MAX)
+integer, public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
+integer, public, save :: Npoll = 0 !Number of different pollutants to consider
+integer, private, parameter :: MAXIPOLL = 16
+integer, public, save :: iem2ipoll(NEMIS_File,MAXIPOLL) !internal indices of pollutants for that emis file
+integer, public, save :: ipoll2iqrc(MAXIPOLL) = -1 !-1 for primary pollutant
 
-integer, public, save :: Ndrydep_lf=0
-integer, public, save :: Nwetdep_lf=0
-logical, public, save :: wetdep_lf(NSPEC_ADV)=.false.
+integer, public, save :: Nspec_chem_lf = NSPEC_ADV
+integer, public, save :: Ndrydep_lf = 0
+integer, public, save :: Nwetdep_lf = 0
+logical, public, save :: wetdep_lf(NSPEC_ADV) = .false.
 
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
@@ -107,7 +109,7 @@ integer, private, save :: ix_EC_f_new=-1, ix_EC_f_age=-1
 integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
 integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
 integer, private, save :: isrc_oddO = -1, isrc_strato=-1, isrc_ini=-1
-real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
+real, allocatable, private, save :: lf_NH4(:), lf_NH3(:), lf0(:)
 integer, private, save :: country_ix_list(Max_lf_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
@@ -123,6 +125,7 @@ contains
 
   subroutine lf_init
     integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask, mask_val_min, mask_val_max
+    integer :: nfullchem
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix
     integer, allocatable :: MaskVal(:)
 ! pm25_new and pm25 are considered as two different emitted pollutants
@@ -147,11 +150,17 @@ contains
 
   lf_Nvert = lf_src(1)%Nvert !Temporary
   Nsources = 0
+  nfullchem = 0
   do i = 1, Max_lf_sources
-     if(lf_src(i)%species == 'NOTSET') exit
+     if (lf_src(i)%species == 'NOTSET') exit
+     if (lf_src(i)%species == 'FULLCHEM') then
+        nfullchem = nfullchem + 1
+        cycle
+     end if
      Nsources = Nsources + 1
+     nfullchem = nfullchem + 1
   enddo
-  do i = Nsources + 1, Max_lf_sources
+  do i = nfullchem + 1, Max_lf_sources
      if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if
@@ -172,6 +181,24 @@ contains
      end do
   end do
 
+  !we add sources corresponding to full chemistry. 
+ do isrc = 1, Max_lf_sources
+     if (lf_src(isrc)%species == 'NOTSET') exit
+     if (lf_src(isrc)%species == 'FULLCHEM') then
+        if(me==0)write(*,*)isrc,' FULLCHEM '
+        call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
+        lf_src(isrc)%Npos = 0
+        lf_src(isrc)%Nsplit = 0
+        do i = 1, Nspec_chem_lf !one source per advected species!
+           Nsources = Nsources + 1
+           lf_src(Nsources)%type = lf_src(isrc)%type
+           lf_src(Nsources)%species = species_adv(i)%name
+           lf_src(Nsources)%full_chem = .true.
+           !lf_src(Nsources)%ix(1) = i set later also
+        end do
+     end if
+  end do
+
   !for each pm25 we should separate into new and age parts
   Nsources_nonew = Nsources
   isrc_new = -1
@@ -186,8 +213,7 @@ contains
      end if
   enddo  
 
-  !new format countries
-
+  !countries
   !backward compatibility with old format countries
   if (lf_country_list(1)/= 'NOTSET') then
      call CheckStop(lf_country%list(1)/= 'NOTSET',"cannot use old AND new format for lf_country")
@@ -426,25 +452,29 @@ contains
            lf_src(isrc)%iqrc = itot2iqrc(ix) !negative if not among emitted species
            if(lf_src(isrc)%iqrc>0) iem = iqrc2iem(lf_src(isrc)%iqrc)
            lf_src(isrc)%iem = iem
-           if(trim(species(ix)%name)=='O3')isrc_O3=isrc
-           if(trim(species(ix)%name)=='NO')isrc_NO=isrc
-           if(trim(species(ix)%name)=='NO2')isrc_NO2=isrc
-           if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
-           if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
-           if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
-           if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
-           if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
-           if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
-           if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
-           if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
-           if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
-           if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
-           if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
-           if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
+
+           if (.not. lf_src(Nsources)%full_chem) then
+              !use simplified methods
+              if(trim(species(ix)%name)=='O3')isrc_O3=isrc
+              if(trim(species(ix)%name)=='NO')isrc_NO=isrc
+              if(trim(species(ix)%name)=='NO2')isrc_NO2=isrc
+              if(trim(species(ix)%name)=='SO4')isrc_SO4=isrc
+              if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
+              if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
+              if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
+              if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
+              if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+              if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
+              if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
+              if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
+              if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
+              if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
+              if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
+              if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
+              if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
+              if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
+              if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
+           end if
         end if
      else
         !species defines as primary emitted 
@@ -655,6 +685,12 @@ contains
   else
      allocate(loc_frac_wetdep(1,1,1))
   endif
+  if(nfullchem>0)then
+     allocate(lf0(LF_SRC_TOTSIZE))
+     lf0=0.0
+  else
+     allocate(lf0(1))
+  endif
   
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
@@ -806,6 +842,8 @@ subroutine lf_out(iotyp)
      iddep = 0
      iwdep = 0
      do isrc = 1, Nsources
+        if (lf_src(isrc)%species == 'FULLCHEM') cycle
+        if(lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2')cycle 
         if(isrc==isrc_oddO) lf_src(isrc)%species='O3' !NBNB!! we rename as O3!!
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
@@ -953,6 +991,7 @@ subroutine lf_out(iotyp)
   
 ! reset the cumulative arrays
   do isrc = 1, Nsources
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
@@ -996,6 +1035,7 @@ subroutine lf_av(dt,End_of_Day)
   do iou_ix = 1, Niou_ix
      pollwritten = .false.
      do isrc=1,Nsources_nonew
+        if (lf_src(isrc)%species == 'FULLCHEM') cycle
         ipoll = lf_src(isrc)%poll
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
            do j=1,ljmax
@@ -1023,7 +1063,11 @@ subroutine lf_av(dt,End_of_Day)
 !                 x=0.0
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
                     lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix)+xtot*lf(n,i,j,k)
-!                   if(58/=n-lf_src(isrc)%start) x=x+lf(n,i,j,k) !59 is IntShips
+                    if(isnan(lf_src_acc(n,i,j,k,iou_ix)))then
+                       write(*,*)'lf is NaN ',me,isrc,lf(n,i,j,k),xtot,n,i,j,k,trim(lf_src(isrc)%species)
+                       stop
+                    end if
+                    !                   if(58/=n-lf_src(isrc)%start) x=x+lf(n,i,j,k) !59 is IntShips
                   !if(me==340 .and. i==5.and.j==5 .and. lf(n,i,j,k)>1e-20)write(*,*)n,isrc,k,' sum lf ',lf(n,i,j,k),x,xn_adv(lf_src(isrc)%ix(1),i,j,k)
                  end do
 !                 if(me>=NPROC_MPI/2 .and. me<3*NPROC_MPI/4 .and. i==5.and.j==5)write(*,*)me,isrc,k,' sum lf ',x
@@ -1089,6 +1133,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      xn=0.0
      x=0.0
      xx=0.0
@@ -1203,6 +1248,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      xn=0.0
      x=0.0
      xx=0.0
@@ -1341,6 +1387,7 @@ subroutine lf_adv_k(fluxk,i,j)
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           xn=0.0
           x=0.0
           xx=0.0
@@ -1403,6 +1450,7 @@ subroutine lf_adv_k(fluxk,i,j)
     xn_k = 0.0
     do k = 1,KMAX_MID
        do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x=0.0
           do iix=1,lf_src(isrc)%Nsplit
              ix=lf_src(isrc)%ix(iix)
@@ -1422,6 +1470,7 @@ subroutine lf_adv_k(fluxk,i,j)
  
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
        do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
              lf(n,i,j,k) = xn_k(n,k)*x                               
@@ -1435,6 +1484,8 @@ end subroutine lf_diff
 subroutine lf_chemrates(k,i,dtchem,xnew)
   real, intent(in) :: dtchem, xnew(*)
   integer, intent(in) :: k,i
+
+  if (isrc_oddO<0) return
 
   if(i==1) P_NO(k) = 0.0
   if(i==1) P_NO2(k) = 0.0
@@ -1466,6 +1517,219 @@ subroutine lf_chemrates(k,i,dtchem,xnew)
 
 end subroutine lf_chemrates
 
+subroutine lf_chemderiv(i,j,k,xn,xnew,xnew_lf)
+  real, intent(in) :: xn(NSPEC_TOT),xnew(NSPEC_TOT),xnew_lf(NSPEC_ADV,NSPEC_TOT)
+  integer, intent(in) :: i,j,k
+  integer :: n, ispec, nispec, isrc,isrc_emis, iix,ix, ic, is
+  real :: xderiv(NSPEC_ADV,NSPEC_TOT) !dX_ispec/dX_n
+  real, parameter :: eps1 = 1.0001 !to send to Solver and softify
+  real :: xndiff, x, x0,emis(NSPEC_ADV,LF_SRC_TOTSIZE), Emis_conversion,fac,lf_unass(NSPEC_ADV),lf0_unass(NSPEC_ADV)
+
+  if(i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
+  !make derivatives
+  do ispec = 1, NSPEC_TOT !loop over all species, also short lived
+     do n = 1, NSPEC_ADV !loop over derivatives
+        if(xn(ispec)>100 .and. xnew(ispec)>100)then !units are molecules/cm3 (?) 100 means almost no molecules
+           ! derivatives are normalized to concentration of each species, dx/dy *y/x
+           !(xnew_lf(n,ispec) - xnew(ispec))/(0.0001*xn(n+NSPEC_SHL)) * xn(n+NSPEC_SHL)/xnew(ispec) =
+           xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))/(0.0001*(xnew(ispec)))
+           if(abs(xderiv(n,ispec))>200)then
+              if(abs(xderiv(n,ispec))>200 .and. k==kmax_mid .and. (n==1.or.n==2.or.n==3) )then
+                 write(*,*)'large deriv',n,ispec,xderiv(n,ispec),xn(ispec), xnew_lf(n,ispec), xnew(ispec)
+              endif
+              if(xderiv(n,ispec) >0) xderiv(n,ispec) = 1.0
+              if(xderiv(n,ispec) <0) xderiv(n,ispec) = -1.0
+           endif
+           !xderiv(n,ispec) = max(0.0,xderiv(n,ispec))!TEMPORARY
+       else
+           xderiv(n,ispec) = 0.0
+        end if
+     end do
+  end do
+
+  ! concentrations have changed in the chemical reactions.
+  ! The derivatives give the sensitivity to each species
+  ! The local fration are then propagated with the derivatives as weights
+
+  !store lf values before chemistry
+  do isrc=1,Nsources
+     if (.not. lf_src(isrc)%full_chem) cycle
+     ix = lf_src(isrc)%ix(1) + NSPEC_SHL ! index of species in species()
+     do n=lf_src(isrc)%start, lf_src(isrc)%end
+        lf0(n) = lf(n,i,j,k)
+        if(abs(lf0(n))>10 .or. isnan(lf0(n)))then
+           if(abs(lf0(n))>100)write(*,*)'LARGE ',me,n,isrc,lf(n,i,j,k),i,j,k,xn(8),xn(9),xn(10),i_fdom(i), j_fdom(j)
+           if(lf0(n)>0)lf0(n) = 0.1
+           if(lf0(n)<0)lf0(n) = -0.1
+           !           stop
+        end if
+        if(xnew(ix)>1000)then
+           !if(xnew(ix)>xn(ix))then !lf does not change by loss
+              lf(n,i,j,k) = 0.0 !lf0(n) * xn(ix)/xnew(ix)
+           !end if
+        else
+           lf(n,i,j,k) = 0.0
+        end if
+        
+     end do
+  end do
+
+  ! two changes have to be included:
+  ! 1) due to emissions, which propagates to different species
+  ! 2) due to "time" that allows chemistry to take place
+
+  ! Changes of j due to emissions of species i are d(emis_i)*d(X_j)/d(X_i)
+  ! All other changes are xnew_j-xn_j-sum_i(d(emis_i)*d(X_j)/d(X_i))
+
+  !ix -> j , ispec->i
+  !lf_j = (lf0_j*xn_j + lf0_i * (xnew_i-xn_i) * (xnew_lf(i,j) - xnew(j)/(0.0001*xn(i))) /xnew_j =
+  !lf_j = lf0_j*xn_j/xnew_j + lf0_i * (xnew_i-xn_i) * (xnew_lf(i,j) - xnew_j/(0.0001*xnew_j)) /xn_i =
+  !lf_j = lf0_j*xn_j/xnew_j + lf0_i * (xnew_i-xn_i)/xn_i * xderiv(i,j)
+  ! i=j is special
+
+  !BUT: if dO3/dNO2 >0 means that when NO2 disapears, it has been transformed into O3? -> minus?
+
+  
+  !renormalization:
+  !how much ix really changes: xnew(j)-xn(j)
+  !renorm = (xnew(j)-xn(j)) /xnew_j / sum_i( (xnew_i-xn_i)/xn_i * xderiv(i,j)  )
+  
+
+!(xnew_lf(ispec,ix) - xnew(ix))/0.0001 !how much ix changes per ispec change
+  !lf0(nispec,i,j,k) * (xnew_lf(ispec,ix) - xnew(ix))/0.0001 !how much ix changes per ispec change due to source nispec  
+  !(xnew(ispec)-xn(ispec)) *(xnew_lf(ispec,ix) - xnew(ix))/0.0001 !how much ix changes through ispec
+  !
+!  z_bnd(i,j,k)=z_bnd(i,j,k+1)+(dA(k)+dB(k)*ps(i,j,nt))/(roa(i,j,k,nt)*GRAV) in metfieldint/met_derived, called each dt_advec
+!  Emis_conversion = 0.001*AVOG/(z_bnd(i,j,k+1)-z_bnd(i,j,k))
+  Emis_conversion = GRAV*0.001*AVOG*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
+  
+  !sum of lf is normalized to one. first find unassigned input fractions
+  !TODO: better isrc loop
+  do isrc = 1, Nsources
+     if (.not. lf_src(isrc)%full_chem) cycle
+     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
+     do ispec = 1, NSPEC_ADV
+        !if(ispec/=1 .and. ispec/=2  .and. ispec/=3) cycle !TODO keep emitted and relevant (not pm) species only
+        !if(ispec/=2  .and. ispec/=3) cycle !TODO keep emitted and relevant (not pm) species only
+        lf_unass(ispec) = 1.0
+        isrc_emis = isrc-ix+ispec ! corresponding source for species ispec
+        do n=lf_src(isrc_emis)%start, lf_src(isrc_emis)%end
+           lf_unass(ispec) = lf_unass(ispec) - lf0(n)
+        end do
+        lf0_unass(ispec) = lf_unass(ispec)
+        lf_unass(ispec) = 0.0
+        if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
+           x=0.0
+           do n=lf_src(isrc_emis)%start, lf_src(isrc_emis)%end
+              x= x + lf0(n)
+           end do
+           write(*,*)ispec,' sumx before ',x, lf0_unass(ispec)
+        end if
+        
+     end do
+     exit !we only need one valid ix
+  end do
+
+  do isrc = 1, Nsources
+     if (.not. lf_src(isrc)%full_chem) cycle
+     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
+     !if(ix/=1 .and. ix/=2  .and. ix/=3) cycle
+     if(xnew(ix+NSPEC_SHL)>1)then
+        if(lf_src(isrc)%type=='country' .and. (Ncountry_lf>0 .or. Ncountry_group_lf>0))then
+           
+           do ispec = 1, NSPEC_ADV
+              !if(ispec/=1 .and. ispec/=2  .and. ispec/=3) cycle !TODO keep emitted and relevant (not pm) species only
+              if(xnew(ispec+NSPEC_SHL)<100 .or. xn(ispec+NSPEC_SHL)<100)cycle
+              
+              isrc_emis = isrc-ix+ispec ! corresponding source for species ispec
+              nispec = lf_src(isrc_emis)%start ! start of corresponding source for species ispec
+              
+              !include changes 2) due to time, removing the part already taken into account
+              !if(ix/=ispec)then ! does not work otherwise ? TO CHECK
+                 if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
+                    n=lf_src(isrc)%start
+                    write(*,*)'lfvalue before ',fac,ix,ispec,lf(n,i,j,k),lf0(nispec) ,lf0(n),lf0_unass(n)
+                 end if
+
+                 do n=lf_src(isrc)%start, lf_src(isrc)%end
+                    lf(n,i,j,k) = lf(n,i,j,k)+ lf0(nispec) * xderiv(ispec,ix+NSPEC_SHL) 
+                    
+                    if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41 .and. lf0(nispec)+lf0(n)>0.0001)then
+                       !write(*,*)n,'lfvalue ',ix,ispec,lf(n,i,j,k),xderiv(ispec,ix+NSPEC_SHL),lf0(nispec) ,lf0(nispec) * xderiv(ispec,ix+NSPEC_SHL),lf0(n)
+                    end if
+                    nispec = nispec + 1
+                 end do
+                 !add contribution from unassigned source
+                 lf_unass(ix) = lf_unass(ix) + lf0_unass(ispec) * xderiv(ispec,ix+NSPEC_SHL)
+                    if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41 .and. lf0(nispec)+lf0(n)>0.0001)then
+                        !write(*,*)n,'lfvalue ',ix,ispec,lf_unass(ix),xderiv(ispec,ix+NSPEC_SHL),lf0_unass(ispec),lf0_unass(ispec) * xderiv(ispec,ix+NSPEC_SHL)
+                     end if
+            
+              !end if
+              end do
+              !renormalize
+              x=0.0
+              do n=lf_src(isrc)%start, lf_src(isrc)%end
+                 !lf(n,i,j,k) = max(-0.9,lf(n,i,j,k)) !?
+                 x = x+ lf(n,i,j,k)
+              end do
+              x = x +lf_unass(ix)
+              if(abs(x)>1.0)then
+                 !TODO: put out of loop
+                 x0=0
+                 do n=lf_src(isrc)%start, lf_src(isrc)%end
+                    x0 = x0+ lf0(n)
+                 end do
+                 x0 = x0 +lf0_unass(ix)
+                 
+                 do n=lf_src(isrc)%start, lf_src(isrc)%end
+                    lf(n,i,j,k) = lf(n,i,j,k)*x0/x
+                    if(abs(lf(n,i,j,k))>10 .or. isnan(lf(n,i,j,k)))then
+                       write(*,*)'LARGElf ',me,n,isrc,ix,lf(n,i,j,k),i,j,k,x,x0,lf0(n),lf_unass(ix),lf0_unass(ix)
+                                  stop
+                    end if
+                 end do
+                 if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41 .and. ix<4)then
+                    write(*,*)'sumlfvalue ',ix,x0,x,lf0_unass(ix),lf_unass(ix)
+                    x=0.0
+                    do n=lf_src(isrc)%start, lf_src(isrc)%end
+                       x = x+ lf(n,i,j,k)
+                    end do
+                    write(*,*)'sumlfvalue without unass ',ix,x
+                    
+                 end if
+              else
+                 
+              end if
+        end if
+     else
+        do n=lf_src(isrc)%start, lf_src(isrc)%end
+           if(k==kmax_mid .and. i_fdom(i)==57.and. j_fdom(j)==45.and. ix==1)then
+              write(*,*)'lfvalue set to 0 ',ispec,lf(n,i,j,k),xnew(ix+NSPEC_SHL)
+           end if
+           lf(n,i,j,k) = 0.0
+        end do
+     end if
+
+  end do
+
+  67 format(10x,50(A11))
+  if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
+     68 format(10x,50E11.4)
+     write(*,68)(xn(n+NSPEC_SHL),n = 1, NSPEC_ADV)
+     write(*,68)(xnew(n+NSPEC_SHL),n = 1, NSPEC_ADV)
+     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, NSPEC_ADV)
+     
+     do ispec = 1, NSPEC_TOT
+66      format(A10,50(F10.5,A1))
+        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, NSPEC_ADV)
+     end do
+
+  endif
+
+
+end subroutine lf_chemderiv
+
 subroutine lf_chem(i,j)
   !track through chemical reactions
   integer, intent(in) ::i,j
@@ -1495,7 +1759,7 @@ subroutine lf_chem(i,j)
        NO2 = xn_adv(NO2_ix-NSPEC_SHL,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO2,k)
        d_NO = P_NO(k) !we assume all NO has been produce by (effective) NO2 conversion  
        d_NO2 = P_NO2(k) !we include only NO2 that has been produced by NO conversion
-       d_oddO = (oddO_new-oddO-d_NO2) ! How much oddO is transformed (Loss) into non-NO2 equivalents
+       !d_oddO = (oddO_new-oddO-d_NO2) ! How much oddO is transformed (Loss) into non-NO2 equivalents
        n_NO = lf_src(isrc_NO)%start
        n_oddO = lf_src(isrc_oddO)%start
        do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
@@ -1657,6 +1921,7 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
  
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%DryDep)cycle
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         ffac = fac*1.e6*lf_src(isrc)%mw(iix) !(units ok?)
@@ -1677,14 +1942,14 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==NH4_f_ix - NSPEC_SHL ) then
-           istart = lf_src(isrc_NH4)%start
-           iend= lf_src(isrc_NH4)%end
-        endif
-        if( ix==NH3_ix - NSPEC_SHL ) then
-           istart = lf_src(isrc_NH3)%start
-           iend= lf_src(isrc_NH3)%end
-        endif
+!        if( ix==NH4_f_ix - NSPEC_SHL ) then
+!           istart = lf_src(isrc_NH4)%start
+!           iend= lf_src(isrc_NH4)%end
+!        endif
+!        if( ix==NH3_ix - NSPEC_SHL ) then
+!           istart = lf_src(isrc_NH3)%start
+!           iend= lf_src(isrc_NH3)%end
+!        endif
         
         idep=idep0
         do n = istart, iend 
@@ -1725,6 +1990,7 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
 
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%WetDep) cycle
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         if(ix /= iadv) cycle
@@ -1748,14 +2014,14 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
            iend= lf_src(isrc_SO2)%end
         endif
         
-        if( ix==NH4_f_ix - NSPEC_SHL ) then
-           istart = lf_src(isrc_NH4)%start
-           iend= lf_src(isrc_NH4)%end
-        endif
-        if( ix==NH3_ix - NSPEC_SHL ) then
-           istart = lf_src(isrc_NH3)%start
-           iend= lf_src(isrc_NH3)%end
-        endif
+!        if( ix==NH4_f_ix - NSPEC_SHL ) then
+!           istart = lf_src(isrc_NH4)%start
+!           iend= lf_src(isrc_NH4)%end
+!        endif
+!        if( ix==NH3_ix - NSPEC_SHL ) then
+!           istart = lf_src(isrc_NH3)%start
+!           iend= lf_src(isrc_NH3)%end
+!        endif
         
         idep=idep0
         do n = istart, iend 
@@ -1787,8 +2053,6 @@ end subroutine lf_wetdep
 subroutine lf_emis(indate)
 !include emission contributions to local fractions
 
-!NB: should replace most of the stuff and use gridrcemis instead!
-
   implicit none
   type(date), intent(in) :: indate  ! Gives year..seconds
   integer :: i, j, k, n       ! coordinates, loop variables
@@ -1805,7 +2069,7 @@ subroutine lf_emis(indate)
   integer ::icc_lf, iqrc, itot
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
-  real::dt_lf, xtot, x
+  real::dt_lf, xtot
   real :: lon
   integer :: jmin,jmax,imin,imax,n0
   
@@ -1816,9 +2080,11 @@ subroutine lf_emis(indate)
        ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
        iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
        do isrc=1,Nsources
-         iem = lf_src(isrc)%iem
-         isec = lf_src(isrc)%sector
-         do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
+          !if (lf_src(Nsources)%full_chem) cycle
+          iem = lf_src(isrc)%iem
+          isec = lf_src(isrc)%sector
+          do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
             if(lf_src(isrc)%iqrc<0)then
                if(lf_emis_tot(i,j,k,lf_src(isrc)%poll)<1.E-20)cycle
             else
@@ -1831,13 +2097,10 @@ subroutine lf_emis(indate)
             end do
             if(lf_src(isrc)%type=='country' .and. (Ncountry_lf>0 .or. Ncountry_group_lf>0))then
                n0=lf_src(isrc)%start
-               x=0.0
                do ic=1,Ncountry_lf
                   do is=1,Ncountrysectors_lf
                      lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
                      n0=n0+1
-                     x=x+emis_lf_cntry(i,j,k,ic,is,isrc)
-!                     if(me==340 .and. i==5.and.j==5.and.k==19 .and. emis_lf_cntry(i,j,k,ic,is,isrc)>1e-13)write(*,*)isrc,ic,is,' emissum ',emis_lf_cntry(i,j,k,ic,is,
                  enddo
                enddo
                do ic=Ncountry_lf+1,Ncountry_lf+Ncountry_group_lf
@@ -1846,8 +2109,7 @@ subroutine lf_emis(indate)
                      n0=n0+1
                   enddo
                enddo
-               !if(me==340 .and. i==5.and.j==5.and.k==19)write(*,*)me,isrc,k,' sumemis lf ',x,lf_emis_tot(i,j,k,lf_src(isrc)%poll)
-              cycle !only one fraction per country
+               cycle !only one fraction per country
             else if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='coarse')then
                !Country constraints already included in emis_lf
                if(lf_src(isrc)%type=='relative') n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
@@ -1870,6 +2132,8 @@ subroutine lf_emis(indate)
 end subroutine lf_emis
 
 subroutine add_lf_emis(s,i,j,iem,isec,iland)
+! save emission data
+
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: n, ii, iqrc, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
@@ -1917,6 +2181,7 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
 
   do isrc = 1, Nsources
      if(lf_src(isrc)%iem /= iem) cycle
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      if(Ncountry_lf>0)then
         !has to store more detailed info
         do ic=1,Ncountry_lf

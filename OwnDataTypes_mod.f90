@@ -342,6 +342,7 @@ type, public :: lf_sources
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
   logical     :: HOUR_INST =.false.
+  logical     :: full_chem =.false.
 end type lf_sources
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group

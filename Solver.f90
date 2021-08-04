@@ -27,6 +27,7 @@
     use ChemDims_mod               ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_mod              ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]
+                             ,x_lf, xold_lf ,xnew_lf  & ! Work arrays [molec./cm3]
                              ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use Config_module,      only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
@@ -36,7 +37,7 @@
     use EmisDef_mod,        only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
-    use LocalFractions_mod, only: lf_chemrates
+    use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -81,7 +82,7 @@ contains
 
     !  Local
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
-    integer ::  k, ichem, iter,n    ! Loop indices
+    integer ::  k, ichem, iter,n, i_lf    ! Loop indices
     integer, save ::  nchem         ! No chem time-steps
     real(kind=dp)    ::  dt2, accdt2, accdt
     real(kind=dp)    ::  P, L                ! Production, loss terms
@@ -99,8 +100,11 @@ contains
     real(kind=dp), dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
     ! Test of precision
-     real(kind=dp) :: pi = 4.0*atan(1.0_dp)
-
+    real(kind=dp) :: pi = 4.0*atan(1.0_dp)
+    real, dimension(NSPEC_ADV):: L_lf,P_lf
+   
+    real, parameter :: eps1 = 1.0001
+    
 !======================================================
 
 
@@ -153,6 +157,22 @@ contains
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
+       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+          !make NSPEC_ADV copy of concentration
+          do n = 1, NSPEC_TOT
+             do i_lf = 1, NSPEC_ADV
+                xnew_lf(i_lf,n) = xn_2d(n,k)          
+                x_lf(i_lf,n)    = xn_2d(n,k)  - Dchem(n,k,i,j)*dti(1)*1.5 
+                x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
+             end do  
+          end do
+          !increase slightly one of the concentrations for derivatives
+          do i_lf = 1, NSPEC_ADV
+             xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1! we assume xn_i are slightly increased for pollutant i
+             x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k)* eps1  - Dchem(i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5 
+             x_lf(i_lf,i_lf+NSPEC_SHL)    = max (x_lf(i_lf,i_lf+NSPEC_SHL), 0.0)
+          end do
+      end if
 
        !*************************************
        !     Start of integration loop      *
@@ -185,7 +205,19 @@ contains
              xold(n) = max( xold(n), 0.0 )
              x(n) = xnew(n)
              xnew(n) = xextrapol
-
+             
+             if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+                do i_lf = 1, NSPEC_ADV
+                   xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
+                   xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
+                   xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )
+                   x_lf(i_lf,n) = xnew_lf(i_lf,n)
+                   xnew_lf(i_lf,n) = xextrapol
+                   if(xnew_lf(i_lf,n) < CPINIT )then
+                      xnew_lf(i_lf,n) = CPINIT
+                   end if
+                end do
+             end if
           end do
 
           dt2  =  dti(ichem) !*(1.0+cc(ichem))/(1.0+2.0*cc(ichem))
@@ -205,7 +237,7 @@ contains
           if ( DEBUG%DRYRUN ) then
             ! Skip fast chemistry
           else
-
+             
             do iter = 1, toiter(k)
 !
 ! The chemistry is iterated several times, more close to the ground than aloft.
@@ -218,31 +250,36 @@ contains
 ! "slowreactions", which is not iterated or fewer times. This needs some
 ! work to draw a proper line ......
 
-                !if(k>=KCHEMTOP)then
+               !if(k>=KCHEMTOP)then
 
-                   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                   include 'CM_Reactions1.inc'
-                   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
+               !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+               include 'CM_Reactions1.inc'
+               !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+               
+               if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+                  include 'CM_Reactions1_lf.inc'
+               end if
+               
             end do !! End iterations
                 
-            if(USES%LocalFractions) call lf_chemrates(k, ichem, dtchem(ichem),xnew)
-
-           !YIELDs  Allows change of gas/aerosol yield, which currently is only used
-           !     for SOA species to be handled in CM_Reactions2
-
+            if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+               call lf_chemrates(k, ichem, dtchem(ichem),xnew)
+            end if
+            
+            !YIELDs  Allows change of gas/aerosol yield, which currently is only used
+            !for SOA species to be handled in CM_Reactions2
+            
             if ( YieldModificationsInUse ) then
-                !OLD if( DebugCell ) write(*,*) 'YIELD RUN  ', me, k, &
-                !OLD   1/cell_tinv, iter, toiter(k)
-                !OLD: if( iter == toiter(k) ) & ! runlabel='lastFastChem'
-                call doYieldModifications('run')
-           end if
-
-          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-           include 'CM_Reactions2.inc'
-          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-          end if ! DEBUG%DRYRUN
+               !OLD if( DebugCell ) write(*,*) 'YIELD RUN  ', me, k, &
+               !OLD   1/cell_tinv, iter, toiter(k)
+               !OLD: if( iter == toiter(k) ) & ! runlabel='lastFastChem'
+               call doYieldModifications('run')
+            end if
+            
+            !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            include 'CM_Reactions2.inc'
+            !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+         end if ! DEBUG%DRYRUN
 
        end do ! ichem
 
@@ -250,13 +287,15 @@ contains
        !     End of integration loop        *
        !*************************************
 
-
+       if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+          call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, xnew_lf)
+       end if
+       
        !**  Saves tendencies Dchem and returns the new concentrations:
 
-            Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
-            xn_2d(:,k) = xnew(:)
-
-
+       Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
+       xn_2d(:,k) = xnew(:)
+ 
     end do ! End of vertical k-loop
 
    first_call = .false.

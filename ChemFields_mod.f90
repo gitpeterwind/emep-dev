@@ -41,6 +41,8 @@ private
     !March 2017: moved from Solver
   real, save, public, dimension(NSPEC_TOT):: &
      x, xold ,xnew  ! Work arrays [molecules/cm3]
+  real, save, public, dimension(NSPEC_ADV,NSPEC_TOT):: &
+     x_lf, xold_lf ,xnew_lf  ! Work arrays [molecules/cm3]
 
   real, save, allocatable, public :: &
      xn_adv(:,:,:,:)  &
