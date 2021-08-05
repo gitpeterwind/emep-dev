@@ -31,8 +31,7 @@ use Debug_module,      only: DEBUG, DebugCell  ! -> DEBUG%GRIDVALUES
 use Derived_mod,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_mod, only: d_2d, f_2d
 use DryDep_mod,        only: init_drydep
-use EmisDef_mod,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month&
-                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
+use EmisDef_mod,       only: NSECTORS
 use Emissions_mod,     only: EmisSet
 use Gravset_mod,       only: gravset
 use GravSettling_mod,  only: gravSettling ! EXPERIMENTAl!!

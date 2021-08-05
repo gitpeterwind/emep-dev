@@ -60,7 +60,7 @@ use EmisDef_mod,       only: &
      ,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
+     ,MAXFEMISLONLAT,N_femis_lonlat &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
      ,NSECTORS_GNFR_CAMS, GNFR_CAMS_SECTORS, NSECTORS_SNAP, SNAP_SECTORS, NSECTORS_MAX, SECTORS&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
@@ -68,8 +68,7 @@ use EmisDef_mod,       only: &
      ,NEmisMask, EmisMaskValues, EmisMaskIntVal& !new format
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
-     ,Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources&
-     ,emis_lf, lf_emis_tot, emis_lf_cntry
+     ,Emis_source_2D, Emis_source_3D,ix3Dmap, NEmis_3Dsources
 use EmisGet_mod,       only: &
      EmisSplit &
     ,EmisGetCdf &
@@ -123,7 +122,8 @@ use Timefactors_mod,   only: &
     ,Read_monthly_timezones &
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
-use LocalFractions_mod, only : add_lf_emis
+use LocalFractions_mod, only : add_lf_emis,loc_frac&
+                               ,emis_lf, lf_emis_tot, emis_lf_cntry
 implicit none
 private
 

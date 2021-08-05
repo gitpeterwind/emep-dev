@@ -26,8 +26,7 @@
     use ChemGroups_mod !,     only: RO2_POOL, RO2_GROUP
     use ChemDims_mod               ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_mod              ! => NSPEC_TOT, O3, NO2, etc.
-    use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]
-                             ,x_lf, xold_lf ,xnew_lf  & ! Work arrays [molec./cm3]
+    use ChemFields_mod,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]                             
                              ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use Config_module,      only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
@@ -37,7 +36,8 @@
     use EmisDef_mod,        only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
-    use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert
+    use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert &
+                                  ,x_lf, xold_lf ,xnew_lf
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -288,7 +288,7 @@ contains
        !*************************************
 
        if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
-          call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, xnew_lf)
+          call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, eps1)
        end if
        
        !**  Saves tendencies Dchem and returns the new concentrations:
