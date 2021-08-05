@@ -37,7 +37,7 @@
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert &
-                                  ,x_lf, xold_lf ,xnew_lf
+                                  ,x_lf, xold_lf ,xnew_lf, lf_fullchem
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -157,7 +157,7 @@ contains
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
-       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+       if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
           !make NSPEC_ADV copy of concentration
           do n = 1, NSPEC_TOT
              do i_lf = 1, NSPEC_ADV
@@ -206,7 +206,7 @@ contains
              x(n) = xnew(n)
              xnew(n) = xextrapol
              
-             if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+             if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
                 do i_lf = 1, NSPEC_ADV
                    xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
                    xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
@@ -253,19 +253,15 @@ contains
                !if(k>=KCHEMTOP)then
 
                !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-               include 'CM_Reactions1.inc'
+               include 'CM_Reactions1.inc'               
                !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                
-               if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
-                  include 'CM_Reactions1_lf.inc'
-               end if
-               
             end do !! End iterations
-                
+            
             if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
                call lf_chemrates(k, ichem, dtchem(ichem),xnew)
             end if
-            
+ 
             !YIELDs  Allows change of gas/aerosol yield, which currently is only used
             !for SOA species to be handled in CM_Reactions2
             
@@ -287,7 +283,7 @@ contains
        !     End of integration loop        *
        !*************************************
 
-       if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+       if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
           call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, eps1)
        end if
        
