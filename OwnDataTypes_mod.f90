@@ -305,7 +305,7 @@ integer, public, parameter :: Max_lf_Country_list = 1000 ! max number of countri
 integer, public, parameter :: Max_lf_Country_groups = 30
 integer, public, parameter :: Max_lf_sectors = 50
 integer, public, parameter :: Max_lf_res = 50
-integer, public, parameter :: Max_lf_spec = 50 !max number of lf pollutant
+integer, public, parameter :: Max_lf_spec = 150
 type, public :: poll_type
   character(len=TXTLEN_NAME):: name = 'NOTSET'    ! pollutants to include
   integer, dimension(Max_lf_sectors) ::sectors = -1    ! sectors to be included for this pollutant. Zero is sum of all sectors
@@ -319,7 +319,7 @@ type, public :: lf_sources
   integer :: dist = -1 ! window dimension, if defined
   integer :: res = 1  ! half size of the single source square (square size is 2*res+1 x 2*res+1 )
   integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
-  integer :: sector= -1 ! sector for this source. Zero is sum of all sectors
+  integer :: sector = 0 ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model)
   integer :: start = 1 ! first position index in lf_src (set by model)
   integer :: end = 1 ! last position index in lf_src (set by model)
@@ -342,6 +342,7 @@ type, public :: lf_sources
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
   logical     :: HOUR_INST =.false.
+  logical     :: full_chem =.false.
 end type lf_sources
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group

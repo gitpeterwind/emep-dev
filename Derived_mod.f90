@@ -53,7 +53,7 @@ use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d, VGtest_out_ix
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac&
+use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3&
                             ,SecEmisOut, EmisOut, SplitEmisOut, &
                             isec2SecOutWanted,SECTORS
 use EmisGet_mod,       only: nrcemis,iqrc2itot
@@ -89,7 +89,7 @@ use Tabulations_mod,      only : tab_esat_Pa
 use TimeDate_mod,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
 use TimeDate_ExtraUtil_mod,only: to_stamp, date_is_reached
-use LocalFractions_mod,    only: lf_av
+use LocalFractions_mod,    only: lf_av, loc_frac
 use Units_mod,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none

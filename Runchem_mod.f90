@@ -194,7 +194,10 @@ subroutine runchem()
 !     !-------------------------------------------------
 
       if( .not. USES%NOCHEM) then
-        call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
+         !xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
+         !     +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
+         !rcemis = 0.0
+         call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
       else  
         xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
                                          +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec

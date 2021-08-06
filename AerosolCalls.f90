@@ -499,7 +499,11 @@ contains
              coef
   integer :: k, errmark
  !-----------------------------------
-
+  if(AERO%EQUILIB/='MARS' .and. AERO%EQUILIB/='MARS_2900' .and. AERO%EQUILIB/='GEOSCHEM')then
+     PM25_water(i,j,:) = 0.0
+     return
+  endif
+ 
    coef = 1.e12 / AVOG
 
  !.. PM2.5 water at ambient conditions (3D)

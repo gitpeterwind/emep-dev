@@ -76,7 +76,7 @@
                   USES,ZERO_ORDER_ADVEC
   use Debug_module,       only: DEBUG_ADV
   use Convection_mod,     only: convection_Eta
-  use EmisDef_mod,        only: NSECTORS, lf, loc_frac_src, loc_frac_src_1d
+  use EmisDef_mod,        only: NSECTORS
   use GridValues_mod,     only: GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
@@ -97,7 +97,8 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use LocalFractions_mod, only: lf_adv_x, lf_adv_y, lf_adv_k, lf_diff, LF_SRC_TOTSIZE, lf_Nvert
+  use LocalFractions_mod, only: lf_adv_x, lf_adv_y, lf_adv_k, lf_diff, LF_SRC_TOTSIZE, lf_Nvert,&
+                                lf, loc_frac_src, loc_frac_src_1d
   use VerticalDiffusion_mod, only: vertdiffn  !DSKZ
 
   implicit none
