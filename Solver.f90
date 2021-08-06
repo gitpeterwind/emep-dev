@@ -37,7 +37,7 @@
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert &
-                                  ,x_lf, xold_lf ,xnew_lf, lf_fullchem
+                                  ,x_lf, xold_lf ,xnew_lf, lf_fullchem, NSPEC_fullchem_lf
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -160,19 +160,19 @@ contains
        if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
           !make NSPEC_ADV copy of concentration
           do n = 1, NSPEC_TOT
-             do i_lf = 1, NSPEC_ADV
+             do i_lf = 1, NSPEC_fullchem_lf
                 xnew_lf(i_lf,n) = xn_2d(n,k)          
                 x_lf(i_lf,n)    = xn_2d(n,k)  - Dchem(n,k,i,j)*dti(1)*1.5 
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
              end do  
           end do
           !increase slightly one of the concentrations for derivatives
-          do i_lf = 1, NSPEC_ADV
+          do i_lf = 1, NSPEC_fullchem_lf
              xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1! we assume xn_i are slightly increased for pollutant i
              x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k)* eps1  - Dchem(i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5 
              x_lf(i_lf,i_lf+NSPEC_SHL)    = max (x_lf(i_lf,i_lf+NSPEC_SHL), 0.0)
           end do
-      end if
+       end if
 
        !*************************************
        !     Start of integration loop      *
@@ -207,7 +207,7 @@ contains
              xnew(n) = xextrapol
              
              if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
-                do i_lf = 1, NSPEC_ADV
+                do i_lf = 1, NSPEC_fullchem_lf
                    xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
                    xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
                    xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )

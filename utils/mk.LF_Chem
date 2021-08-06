@@ -26,7 +26,8 @@ sed -i 's/L \=/L_lf(:) =/g' CM_Reactions1_tmp.inc
 sed -i 's/ L)/ L_lf(:))/g' CM_Reactions1_tmp.inc
 sed -i 's/xnew(/xnew_lf(:,/g' CM_Reactions1_tmp.inc
 sed -i 's/xold(/xold_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/i do i_lf = 1,NSPEC_ADV' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/i do i_lf = 1,NSPEC_fullchem_lf' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/s/xnew_lf(:/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 

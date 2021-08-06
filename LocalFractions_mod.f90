@@ -124,7 +124,6 @@ integer, public, save :: Npoll = 0 !Number of different pollutants to consider
 integer, public, save :: iem2ipoll(NEMIS_File,Max_lf_spec) !internal indices of pollutants for that emis file
 integer, public, save :: ipoll2iqrc(Max_lf_spec) = -1 !-1 for primary pollutant
 
-integer, public, save :: Nspec_chem_lf = NSPEC_ADV
 integer, public, save :: Ndrydep_lf = 0
 integer, public, save :: Nwetdep_lf = 0
 logical, public, save :: wetdep_lf(NSPEC_ADV) = .false.
@@ -154,6 +153,7 @@ integer, private, save :: nstratos, Stratos_ix(100) !100 must be larger han KMAX
 real   , private, save :: P_NO(100),P_NO2(100)
 integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed 
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed 
+integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" 
 contains
 
   subroutine lf_init
@@ -192,6 +192,7 @@ contains
      Nsources = Nsources + 1
   enddo
   if (nfullchem>0) lf_fullchem = .true.
+  NSPEC_fullchem_lf = min(54, NSPEC_ADV) !include only species involved in O3 chemistry
   do i = nfullchem + 1, Max_lf_sources
      if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
@@ -221,7 +222,7 @@ contains
         call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
         lf_src(isrc)%Npos = 0
         lf_src(isrc)%Nsplit = 0
-        do i = 1, Nspec_chem_lf !one source per advected species!
+        do i = 1, NSPEC_fullchem_lf !one source per advected species!
            Nsources = Nsources + 1
            lf_src(Nsources)%type = lf_src(isrc)%type
            lf_src(Nsources)%species = species_adv(i)%name
@@ -1556,11 +1557,12 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   !make derivatives
   do ispec = 1, NSPEC_TOT !loop over all species, also short lived
-     do n = 1, NSPEC_ADV !loop over derivatives
+     do n = 1, NSPEC_fullchem_lf !loop over derivatives
         if(xn(ispec)>100 .and. xnew(ispec)>100)then !units are molecules/cm3 (?) 100 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !(xnew_lf(n,ispec) - xnew(ispec))/(0.0001*xn(n+NSPEC_SHL)) * xn(n+NSPEC_SHL)/xnew(ispec) =
            xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))/((eps1-1.0)*(xnew(ispec)))
+           
            if(abs(xderiv(n,ispec))>200)then
               !remove numerical noise
               if(xderiv(n,ispec) >0) xderiv(n,ispec) = 1.0
@@ -1597,7 +1599,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
      ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
      if(xnew(ix+NSPEC_SHL)>100)then
         if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then           
-           do ispec = 1, NSPEC_ADV
+           do ispec = 1, NSPEC_fullchem_lf
               if(xnew(ispec+NSPEC_SHL)<100 .or. xn(ispec+NSPEC_SHL)<100)cycle
               
               isrc_emis = isrc-ix+ispec ! corresponding source for species ispec
@@ -1620,13 +1622,13 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
   67 format(10x,50(A11))
   if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
      68 format(10x,50E11.4)
-     write(*,68)(xn(n+NSPEC_SHL),n = 1, min(15,NSPEC_ADV))
-     write(*,68)(xnew(n+NSPEC_SHL),n = 1, min(15,NSPEC_ADV))
-     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(15,NSPEC_ADV))
+     write(*,68)(xn(n+NSPEC_SHL),n = 1, min(15,NSPEC_fullchem_lf))
+     write(*,68)(xnew(n+NSPEC_SHL),n = 1, min(15,NSPEC_fullchem_lf))
+     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(15,NSPEC_fullchem_lf))
      
      do ispec = 1, NSPEC_TOT
 66      format(A10,50(F10.5,A1))
-        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(15,NSPEC_ADV))
+        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(15,NSPEC_fullchem_lf))
      end do
 
   endif
