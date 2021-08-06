@@ -47,6 +47,23 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Aug 2021, Peter
+
+Core parts of the full chemistry setup for Local Fractions.
+Runs the chemistry loop many time to make numerical derivatives.
+
+the script utils/mk.LF_chem must be run to modify the two CM_ReactionsX.inc
+
+Still rough version, not really practical:
+All advected species are included in the LF O3 chemistry, even if many (most?) of them
+do not contribute.
+Only country sources.
+Corresponding LF values are not normalized (? concentrations maps are defined
+with an unknown multiplicative constant)
+Equilibrium chemistry not included.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th July 2021, Peter
 
 Primitive "linear O3" Local Fractions for countries.

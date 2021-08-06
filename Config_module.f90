@@ -14,7 +14,7 @@ use Debug_module,          only: DEBUG, DebugCell
 use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Zlevels, &
                                  Emis_Zlevels, Emis_h_pre
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_mod,      only: typ_ss, lf_sources, lf_country_group_type, Emis_id_type, &
+use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
                                  Sector_type, hourly_emis_factor_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
@@ -268,9 +268,6 @@ logical, public, save ::             &
 
 type(lf_sources), public, save :: lf_src(Max_lf_sources)
 type(poll_type), public, save :: lf_species(Max_lf_spec)
-character(len=10), public, save :: lf_country_list(Max_lf_Country_list)='NOTSET'!Local Fractions. List of countries
-type(lf_country_group_type), public, save :: lf_country_group(Max_lf_Country_groups)
-integer, public, save :: lf_country_sector_list(Max_lf_sectors)=-1 ! List of sectors for each country
 type(lf_country_type), public, save :: lf_country
 
 integer, public, save :: &
@@ -826,9 +823,6 @@ subroutine Config_Constants(iolog)
    ,lf_src & !Local Fractions
    ,lf_species &
    ,lf_country & !Local Fractions countries, and groups
-   ,lf_country_list & !Local Fractions . List of countries
-   ,lf_country_group & !Local Fractions. List of group of countries
-   ,lf_country_sector_list & !Local Fractions. List of sectors for each country
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &

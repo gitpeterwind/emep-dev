@@ -11,8 +11,7 @@ use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, lf_country_group&
-                             ,lf_species, lf_country_sector_list,lf_country_list,lf_country,&
+                             ,HOURLYFILE_ending, lf_species, lf_country,&
                              SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix, NO3_f_ix, &
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
@@ -246,15 +245,7 @@ contains
      end if
   enddo  
 
-  !countries
-  !backward compatibility with old format countries
-  if (lf_country_list(1)/= 'NOTSET') then
-     call CheckStop(lf_country%list(1)/= 'NOTSET',"cannot use old AND new format for lf_country")
-     lf_country%list = lf_country_list
-     lf_country%sector_list=lf_country_sector_list
-     lf_country%group = lf_country_group
-  endif
-  
+  !countries  
   if(lf_country%mask_val_min <= lf_country%mask_val_max .or. &
        lf_country%mask_val(1) > -999999 .or. &
        lf_country%list(1)/= 'NOTSET' .or. &
