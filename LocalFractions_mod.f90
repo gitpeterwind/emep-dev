@@ -222,7 +222,14 @@ contains
         call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
         lf_src(isrc)%Npos = 0
         lf_src(isrc)%Nsplit = 0
-        do i = 1, NSPEC_fullchem_lf !one source per advected species!
+        do i = 1, NSPEC_fullchem_lf !first source per advected species, tracking NOx
+           Nsources = Nsources + 1
+           lf_src(Nsources)%type = lf_src(isrc)%type
+           lf_src(Nsources)%species = species_adv(i)%name
+           lf_src(Nsources)%full_chem = .true.
+           !lf_src(Nsources)%ix(1) = i set later also
+        end do
+        do i = 1, NSPEC_fullchem_lf !second source per advected species, tracking NMVOC
            Nsources = Nsources + 1
            lf_src(Nsources)%type = lf_src(isrc)%type
            lf_src(Nsources)%species = species_adv(i)%name
@@ -476,7 +483,18 @@ contains
            lf_src(isrc)%iqrc = itot2iqrc(ix) !negative if not among emitted species
            if(lf_src(isrc)%iqrc>0) iem = iqrc2iem(lf_src(isrc)%iqrc)
            lf_src(isrc)%iem = iem
-
+           if (lf_src(Nsources)%full_chem .and. iem>0) then
+           !TEMPORARY makes LF for NOx and VOC emissions
+              if(isrc>Nsources-2*NSPEC_fullchem_lf .and. isrc<=Nsources-NSPEC_fullchem_lf) then
+                 ! sources that track NOx
+                 if (EMIS_FILE(iem)/='nox') lf_src(isrc)%iem = -1
+              end if
+              if(isrc>Nsources-NSPEC_fullchem_lf) then
+                 ! sources that track NMVOC
+                 if (EMIS_FILE(iem)/='voc') lf_src(isrc)%iem = -1
+              end if
+           end if
+           
            if (.not. lf_src(Nsources)%full_chem) then
               !use simplified methods
               if(trim(species(ix)%name)=='O3')isrc_O3=isrc
@@ -871,7 +889,7 @@ subroutine lf_out(iotyp)
      iwdep = 0
      do isrc = 1, Nsources
         if (lf_src(isrc)%species == 'FULLCHEM') cycle
-        if(lf_fullchem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2')cycle 
+        if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2')cycle 
         if(isrc==isrc_oddO) lf_src(isrc)%species='O3' !NBNB!! we rename as O3!!
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
@@ -938,6 +956,11 @@ subroutine lf_out(iotyp)
                     write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
                     if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)                    
                  endif
+                 if (lf_src(Nsources)%full_chem) then
+                    !add emission species to name
+                    if(isrc>Nsources-2*NSPEC_fullchem_lf .and. isrc<=Nsources-NSPEC_fullchem_lf) write(def2%name,"(A)")trim(def2%name)//'nox'
+                    if(isrc>Nsources-NSPEC_fullchem_lf) write(def2%name,"(A)")trim(def2%name)//'voc'
+                 end if
                  if(me==0 .and. iter==2)write(*,*)'writing '//trim(def2%name)
                  def2%unit='ug/m3'
                  scale=1.0
@@ -1556,11 +1579,14 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
   if (nfullchem <= 0) return
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   !make derivatives
-  do ispec = 1, NSPEC_TOT !loop over all species, also short lived
+  do ispec = NSPEC_SHL+1, NSPEC_SHL+NSPEC_fullchem_lf!loop over included species only
      do n = 1, NSPEC_fullchem_lf !loop over derivatives
         if(xn(ispec)>100 .and. xnew(ispec)>100)then !units are molecules/cm3 (?) 100 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
+           ! NB: has to choose if derivatives are defined such that y% change of emissions means
+           ! y% of mass or y% of molecules
            !(xnew_lf(n,ispec) - xnew(ispec))/(0.0001*xn(n+NSPEC_SHL)) * xn(n+NSPEC_SHL)/xnew(ispec) =
+!           xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))*species_adv(n)%molwt/((eps1-1.0)*(xnew(ispec)*species(ispec)%molwt))
            xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))/((eps1-1.0)*(xnew(ispec)))
            
            if(abs(xderiv(n,ispec))>200)then
@@ -1626,7 +1652,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
      write(*,68)(xnew(n+NSPEC_SHL),n = 1, min(15,NSPEC_fullchem_lf))
      write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(15,NSPEC_fullchem_lf))
      
-     do ispec = 1, NSPEC_TOT
+     do ispec = NSPEC_SHL+1, NSPEC_fullchem_lf
 66      format(A10,50(F10.5,A1))
         write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(15,NSPEC_fullchem_lf))
      end do
@@ -1977,7 +2003,7 @@ subroutine lf_emis(indate)
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
   real::dt_lf, xtot
-  real :: lon
+  real :: lon, fac
   integer :: jmin,jmax,imin,imax,n0
   
   call Code_timer(tim_before)
@@ -1986,9 +2012,8 @@ subroutine lf_emis(indate)
     do i = li0,li1
        ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
        iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
-       do isrc=1,Nsources
+        do isrc=1,Nsources
           if (lf_src(isrc)%species == 'FULLCHEM') cycle
-          !if (lf_src(Nsources)%full_chem) cycle
           iem = lf_src(isrc)%iem
           isec = lf_src(isrc)%sector
           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
@@ -2003,12 +2028,14 @@ subroutine lf_emis(indate)
                xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
             end do
             if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then
-               if (lf_src(Nsources)%full_chem) then
+              if (lf_src(isrc)%full_chem) then
                   !the lf are not normalized to 1
-                  n0=lf_src(isrc)%start
+                  n0 = lf_src(isrc)%start
+                  fac = 1.0
+                  if (EMIS_FILE(iem)=='nox') fac = lf_src(isrc)%mw(1)/46.0
                   do ic=1,Ncountry_lf+Ncountry_group_lf
                      do is=1,Ncountrysectors_lf
-                        lf(n0,i,j,k)=lf(n0,i,j,k)+emis_lf_cntry(i,j,k,ic,is,isrc)/(xtot+1.e-20)
+                        lf(n0,i,j,k)=lf(n0,i,j,k)+emis_lf_cntry(i,j,k,ic,is,isrc)*fac/(xtot+1.e-20)
                         n0=n0+1
                      enddo
                   enddo                  
