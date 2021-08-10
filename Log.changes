@@ -64,6 +64,20 @@ Equilibrium chemistry not included.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Aug 2021, Peter, Qin, Agnes, Dave
+
+EmisDef_mod
+timefactor and height release for GNFR_D changed from 4 to 5
+(=SNAP indices for "Production processes").
+
+NB: WILL CHANGE RESULTS.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Aug 2021, Peter
+
+Exact Local Fractions for O3 chemistry. Still under development.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th July 2021, Peter
 
 Primitive "linear O3" Local Fractions for countries.

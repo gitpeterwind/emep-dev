@@ -112,7 +112,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
    Sector_type('GNFR_CAMS', 'GNFR_A',  'sec01',      1,            1,            1,       'Public Power', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_B',  'sec02',      3,            3,            2,       'Industry', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_C',  'sec03',      2,            2,            3,       'OtherStationaryComb', 'ALL'),& !NB: used for domestic/degree-day
-   Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      4,            4,            4,       'Fugitive', 'ALL'),&
+   Sector_type('GNFR_CAMS', 'GNFR_D',  'sec04',      5,            5,            4,       'Fugitive', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_E',  'sec05',      6,            2,            5,       'Solvents', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_F',  'sec06',      7,            2,            6,       'RoadTransport', 'ALL'),&
    Sector_type('GNFR_CAMS', 'GNFR_G',  'sec07',      8,            8,            7,       'Shipping', 'ALL'),&
