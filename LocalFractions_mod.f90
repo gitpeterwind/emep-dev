@@ -132,14 +132,11 @@ integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that 
 logical :: old_format=.false. !temporary, use old format for input and output
 integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
-integer, private, save :: isrc_EC_f_ffuel_new=-1, isrc_EC_f_ffuel_age=-1, isrc_EC_f_wood_new=-1, isrc_EC_f_wood_age=-1
-integer, private, save :: isrc_EC_f_new=-1, isrc_EC_f_age=-1
-integer, private, save :: ix_EC_f_ffuel_new=-1, ix_EC_f_ffuel_age=-1
-integer, private, save :: ix_EC_f_new=-1, ix_EC_f_age=-1
-integer, private, save :: ix_EC_f_wood_new=-1, ix_EC_f_wood_age=-1
+integer, private, save :: isrc_NO3=-1, isrc_HNO3=-1
 integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
 integer, private, save :: isrc_oddO = -1, isrc_strato=-1, isrc_ini=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:), lf0(:)
+real, allocatable, private, save :: lf_NO3(:), lf_HNO3(:)
 integer, private, save :: country_ix_list(Max_lf_Country_list)
 integer, private, save :: Ncountry_lf=0
 integer, private, save :: Ncountry_group_lf=0
@@ -153,7 +150,8 @@ integer, private, save :: nstratos, Stratos_ix(100) !100 must be larger han KMAX
 real   , private, save :: P_NO(100),P_NO2(100)
 integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed 
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed 
-integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" 
+integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
+integer, public, save :: NSPEC_fullchem_inc_lf=0 ! number of species to included in CM_Reactions1
 contains
 
   subroutine lf_init
@@ -191,8 +189,25 @@ contains
      end if
      Nsources = Nsources + 1
   enddo
-  if (nfullchem>0) lf_fullchem = .true.
-  NSPEC_fullchem_lf = min(54, NSPEC_ADV) !include only species involved in O3 chemistry
+  if (nfullchem>0) then
+     lf_fullchem = .true.
+     
+     !We ASSUME that SO2 is the last species (highest index) involved in O3 chemistry
+     NSPEC_fullchem_lf = NSPEC_ADV !default include all
+     ix=find_index("SO2" ,species_adv(:)%name)
+     if(ix>0)NSPEC_fullchem_lf = ix
+     
+     !TEMPORARY, should be set to NSPEC_fullchem_lf  
+     !We ASSUME that SQT_SOA_NV is the last species (highest index) included in CM_Reactions1.inc
+     ix=find_index("SQT_SOA_NV" ,species(:)%name) !NB: index among all species, also SHL
+     NSPEC_fullchem_inc_lf = ix
+     NSPEC_fullchem_inc_lf = max(ix, NSPEC_fullchem_lf+NSPEC_SHL)
+
+     if(me==0)write(*,*)'LF chemistry, number of derivatives calculated: ',NSPEC_fullchem_lf
+     if(me==0)write(*,*)'LF chemistry, max index of species included: ',NSPEC_fullchem_inc_lf
+    
+  end if
+  
   do i = nfullchem + 1, Max_lf_sources
      if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
@@ -228,6 +243,10 @@ contains
            lf_src(Nsources)%species = species_adv(i)%name
            lf_src(Nsources)%full_chem = .true.
            !lf_src(Nsources)%ix(1) = i set later also
+           if (lf_src(Nsources)%species =='NH4_f') isrc_NH4 = Nsources
+           if (lf_src(Nsources)%species =='NH3') isrc_NH3 = Nsources
+           if (lf_src(Nsources)%species =='NO3') isrc_NO3 = Nsources
+           if (lf_src(Nsources)%species =='HNO3') isrc_HNO3 = Nsources
         end do
         do i = 1, NSPEC_fullchem_lf !second source per advected species, tracking NMVOC
            Nsources = Nsources + 1
@@ -504,18 +523,6 @@ contains
               if(trim(species(ix)%name)=='SO2')isrc_SO2=isrc
               if(trim(species(ix)%name)=='NH4_f')isrc_NH4=isrc
               if(trim(species(ix)%name)=='NH3')isrc_NH3=isrc
-              if(trim(species(ix)%name)=='EC_f_new')isrc_EC_f_ffuel_new=isrc
-              if(trim(species(ix)%name)=='EC_f_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-              if(trim(species(ix)%name)=='EC_f_age')isrc_EC_f_ffuel_age=isrc
-              if(trim(species(ix)%name)=='EC_f_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-              if(trim(species(ix)%name)=='EC_f_ffuel_new')isrc_EC_f_ffuel_new=isrc
-              if(trim(species(ix)%name)=='EC_f_ffuel_new')ix_EC_f_ffuel_new=lf_src(isrc)%ix(1)
-              if(trim(species(ix)%name)=='EC_f_ffuel_age')isrc_EC_f_ffuel_age=isrc
-              if(trim(species(ix)%name)=='EC_f_ffuel_age')ix_EC_f_ffuel_age=lf_src(isrc)%ix(1)
-              if(trim(species(ix)%name)=='EC_f_wood_new')isrc_EC_f_wood_new=isrc
-              if(trim(species(ix)%name)=='EC_f_wood_new')ix_EC_f_wood_new=lf_src(isrc)%ix(1)
-              if(trim(species(ix)%name)=='EC_f_wood_age')isrc_EC_f_wood_age=isrc
-              if(trim(species(ix)%name)=='EC_f_wood_age')ix_EC_f_wood_age=lf_src(isrc)%ix(1)
            end if
         end if
      else
@@ -730,10 +737,17 @@ contains
   if(lf_fullchem)then
      allocate(lf0(LF_SRC_TOTSIZE))
      lf0=0.0
-     allocate(xderiv(NSPEC_ADV,NSPEC_TOT))
-     allocate(xnew_lf(NSPEC_ADV,NSPEC_TOT))
-     allocate(x_lf(NSPEC_ADV,NSPEC_TOT))
-     allocate(xold_lf(NSPEC_ADV,NSPEC_TOT))
+     allocate(xderiv(NSPEC_fullchem_lf,NSPEC_fullchem_inc_lf))
+     allocate(xnew_lf(NSPEC_fullchem_lf,NSPEC_fullchem_inc_lf))
+     allocate(x_lf(NSPEC_fullchem_lf,NSPEC_fullchem_inc_lf))
+     allocate(xold_lf(NSPEC_fullchem_lf,NSPEC_fullchem_inc_lf))
+     xnew_lf = 0.0
+     x_lf = 0.0
+     xold_lf = 0.0
+     allocate(lf_NH4(KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(lf_NH3(KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(lf_NO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   else
      allocate(lf0(1))
   endif
@@ -889,7 +903,7 @@ subroutine lf_out(iotyp)
      iwdep = 0
      do isrc = 1, Nsources
         if (lf_src(isrc)%species == 'FULLCHEM') cycle
-        if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2')cycle 
+        if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2'  .and. lf_src(isrc)%species/='HNO3'.and. lf_src(isrc)%species/='NH3')cycle 
         if(isrc==isrc_oddO) lf_src(isrc)%species='O3' !NBNB!! we rename as O3!!
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
@@ -1578,17 +1592,17 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
 
   if (nfullchem <= 0) return
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
+  call Code_timer(tim_before)
   !make derivatives
-  do ispec = NSPEC_SHL+1, NSPEC_SHL+NSPEC_fullchem_lf!loop over included species only
+  do ispec = NSPEC_SHL+1, NSPEC_fullchem_lf+NSPEC_SHL!loop over included species only
      do n = 1, NSPEC_fullchem_lf !loop over derivatives
         if(xn(ispec)>100 .and. xnew(ispec)>100)then !units are molecules/cm3 (?) 100 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            ! NB: has to choose if derivatives are defined such that y% change of emissions means
            ! y% of mass or y% of molecules
            !(xnew_lf(n,ispec) - xnew(ispec))/(0.0001*xn(n+NSPEC_SHL)) * xn(n+NSPEC_SHL)/xnew(ispec) =
-!           xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))*species_adv(n)%molwt/((eps1-1.0)*(xnew(ispec)*species(ispec)%molwt))
            xderiv(n,ispec) = (xnew_lf(n,ispec) - xnew(ispec))/((eps1-1.0)*(xnew(ispec)))
-           
+
            if(abs(xderiv(n,ispec))>200)then
               !remove numerical noise
               if(xderiv(n,ispec) >0) xderiv(n,ispec) = 1.0
@@ -1632,7 +1646,7 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
               nispec = lf_src(isrc_emis)%start ! start of corresponding source for species ispec              
               
               do n=lf_src(isrc)%start, lf_src(isrc)%end
-                 lf(n,i,j,k) = lf(n,i,j,k)+ lf0(nispec) * xderiv(ispec,ix+NSPEC_SHL)                  
+                 lf(n,i,j,k) = lf(n,i,j,k) + lf0(nispec) * xderiv(ispec,ix+NSPEC_SHL)                  
                  nispec = nispec + 1
               end do
            end do
@@ -1644,7 +1658,9 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
      end if
 
   end do
-
+  
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+  return
   67 format(10x,50(A11))
   if(k==kmax_mid .and. i_fdom(i)==63.and. j_fdom(j)==41)then
      68 format(10x,50E11.4)
@@ -1740,33 +1756,6 @@ subroutine lf_chem(i,j)
      end do
   end if
 
-  if(isrc_EC_f_ffuel_new >0)then
-     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        ! d_age = amount that has been transformed from EC_f_ffuel_new to EC_f_ffuel_age
-        d_age = ageing_rate(k)*xn_adv(ix_EC_f_ffuel_new,i,j,k) *dt_advec
-        if (d_age > 1.0E-30) then
-        inv = 1.0/( xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age + 1.0E-20)        
-        n_EC_new = lf_src(isrc_EC_f_ffuel_new)%start
-        do n_EC=lf_src(isrc_EC_f_ffuel_age)%start, lf_src(isrc_EC_f_ffuel_age)%end
-           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_ffuel_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
-           n_EC_new = n_EC_new + 1
-        enddo
-        endif
-     enddo
-  endif
-  if(isrc_EC_f_wood_new >0)then
-     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        d_age = ageing_rate(k)*xn_adv(ix_EC_f_wood_new,i,j,k) *dt_advec
-        if (d_age > 1.0E-30) then
-        inv = 1.0/( xn_adv(ix_EC_f_wood_age,i,j,k) + d_age + 1.0E-20)        
-        n_EC_new = lf_src(isrc_EC_f_wood_new)%start
-        do n_EC=lf_src(isrc_EC_f_wood_age)%start, lf_src(isrc_EC_f_wood_age)%end
-           lf(n_EC,i,j,k) = (lf(n_EC,i,j,k)*xn_adv(ix_EC_f_wood_age,i,j,k) + d_age*lf(n_EC_new,i,j,k)) * inv
-           n_EC_new = n_EC_new + 1
-        enddo
-        endif
-     enddo     
-  endif
   if(isrc_SO2>0)then
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         SO4 = xn_2d(SO4_ix,k)
@@ -1793,13 +1782,19 @@ subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
   integer, intent(in) ::i,j
   integer :: k
   !save concentrations, to see changes
-  if(isrc_NH4<0)return;
+  if (isrc_NH4<0 .and. .not.lf_fullchem) return;
   call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
      lf_NH4(k) = xn_2d(NH4_f_ix,k)
      lf_NH3(k) = xn_2d(NH3_ix,k)
   enddo
-  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+  if (lf_fullchem .and. NO3_ix>0 .and. HNO3_ix>0) then
+     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+        lf_NO3(k) = xn_2d(NO3_ix,k)
+        lf_HNO3(k) = xn_2d(HNO3_ix,k)
+     enddo
+  end if
+call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   
 end subroutine lf_aero_pre
 
@@ -1807,8 +1802,10 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
   integer, intent(in) ::i,j
   real :: d_NH4, d_NH3, NH4, NH3, inv
   integer :: n_NH3, n_NH4, k
+  real :: d_NO3, d_HNO3, NO3, HNO3
+  integer :: n_NO3, n_HNO3
 
-  if(isrc_NH4<0)return;
+  if (isrc_NH4<0 .and. .not.lf_fullchem) return;
   call Code_timer(tim_before)
   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
 
@@ -1836,6 +1833,34 @@ subroutine lf_aero_pos (i,j) !called just after AerosolEquilib
      else
         !N is not conserved or concentrations are constant
      endif
+     
+     if (lf_fullchem) then
+        NO3 = xn_2d(NO3_ix,k)
+        HNO3 = xn_2d(HNO3_ix,k)
+        d_NO3 = NO3 - lf_NO3(k) 
+        d_HNO3 = HNO3 - lf_HNO3(k)
+        
+        if(d_NO3>0.0 .and. d_HNO3<0.0)then
+           !HNO3 has been transformed into NO3
+           n_HNO3 = lf_src(isrc_HNO3)%start
+           inv = 1.0/(NO3+d_NO3)
+           do n_NO3=lf_src(isrc_NO3)%start, lf_src(isrc_NO3)%end
+              lf(n_NO3,i,j,k) = (lf(n_NO3,i,j,k)*NO3 + d_NO3*lf(n_HNO3,i,j,k)) * inv
+              n_HNO3 = n_HNO3 + 1
+           enddo
+        else if(d_NO3<0.0 .and. d_HNO3>0.0)then
+           !NO3 has been transformed into HNO3
+           n_HNO3 = lf_src(isrc_HNO3)%start
+           inv = 1.0/(HNO3+d_HNO3)
+           do n_NO3=lf_src(isrc_NO3)%start, lf_src(isrc_NO3)%end
+              lf(n_HNO3,i,j,k) = (lf(n_HNO3,i,j,k)*HNO3 + d_HNO3*lf(n_NO3,i,j,k)) * inv
+              n_HNO3 = n_HNO3 + 1
+           enddo
+        else
+           !N is not conserved or concentrations are constant
+        endif
+
+     end if
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   

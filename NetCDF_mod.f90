@@ -4907,6 +4907,8 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
 !  if(MasterProc)write(*,*)'vertical_interpolate: reading vertical levels'
 !  if(MasterProc)write(*,*)'filename ',trim(filename)
   allocate(P_ext(KMAX_ext),hyam_ext(KMAX_ext+1),hybm_ext(KMAX_ext+1))
+  hyam_ext = 0.0
+  hybm_ext = 0.0
   call check(nf90_open(fileName,nf90_nowrite,ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
 

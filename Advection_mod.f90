@@ -1369,7 +1369,8 @@ if(hor_adv0th)then
       ps3d(ij)     = max(0.0,ps3d(ij)                                &
            -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))
    end do
-
+   fc(1)=vel(1)*dth ! for fluxes
+   fc(li1)=vel(li1)*dth ! for fluxes
 else
 
     limtlow = li0-1
@@ -1959,6 +1960,8 @@ if(hor_adv0th)then
                     max(0.0,ps3d(ij*LIMAX)                            &
                           -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))
    end do
+   fc(1) = vel(1*LIMAX)*dth ! for fluxes
+   fc(lj1) = vel(lj1*LIMAX)*dth ! for fluxes
 
 else
 

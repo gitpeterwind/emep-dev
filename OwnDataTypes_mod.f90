@@ -305,7 +305,7 @@ integer, public, parameter :: Max_lf_Country_list = 1000 ! max number of countri
 integer, public, parameter :: Max_lf_Country_groups = 30
 integer, public, parameter :: Max_lf_sectors = 50
 integer, public, parameter :: Max_lf_res = 50
-integer, public, parameter :: Max_lf_spec = 150
+integer, public, parameter :: Max_lf_spec = 250
 type, public :: poll_type
   character(len=TXTLEN_NAME):: name = 'NOTSET'    ! pollutants to include
   integer, dimension(Max_lf_sectors) ::sectors = -1    ! sectors to be included for this pollutant. Zero is sum of all sectors
