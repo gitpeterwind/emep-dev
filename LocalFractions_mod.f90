@@ -615,7 +615,6 @@ contains
          end do
          if (found == 0) then
             ipoll = ipoll + 1
-            if(me==0)write(*,*)isrc,' poll set to ',ipoll
             lf_src(isrc)%poll = ipoll
             Npoll = ipoll
             call CheckStop(ipoll>Max_lf_spec,"Error: increase Max_lf_spec")

@@ -235,6 +235,7 @@ logical, public, save :: EmisSplit_OUT = .false.
 logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD requested in output
 
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
+logical, public, save  :: DailyEmisOut = .false. !to output sector emissions daily
 
 !Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
 character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
@@ -839,6 +840,7 @@ subroutine Config_Constants(iolog)
    ,SecEmisOutWanted      & ! sector emissions to include in output
    ,SecEmisTotalsWanted    & ! give total per sectors and countries
    ,HourlyEmisOut         & ! to output emissions hourly
+   ,DailyEmisOut         & ! to output emissions daily
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons

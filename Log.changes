@@ -46,6 +46,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Aug 2021, Alvaro
+
+Allow daily ouput of emissions with the flag DailyEmisOut = T 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Aug 2021, Alvaro
 
 Stop simulation when an external BC mapping is required (USE_EXTERNAL_BIC=T)

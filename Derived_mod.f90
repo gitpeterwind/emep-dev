@@ -46,7 +46,7 @@ use Config_module,     only: &
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
   ,USES, lf_src, startdate,enddate,&
-  HourlyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
+  HourlyEmisOut, DailyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
 
 use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
@@ -177,7 +177,8 @@ subroutine Init_Derived()
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
-  if(USES%LocalFractions .and. (lf_src(1)%HOUR .or. lf_src(1)%HOUR_INST)) HourlyEmisOut = .true.
+  if (USES%LocalFractions .and. (lf_src(1)%HOUR .or. lf_src(1)%HOUR_INST)) HourlyEmisOut = .true.
+  if (USES%LocalFractions .and. lf_src(1)%DAY) DailyEmisOut = .true.
 
   if(dbg0) write(*,*) dtxt//"INIT STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
@@ -677,7 +678,13 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
-    if(HourlyEmisOut)then
+    if (HourlyEmisOut .and. DailyEmisOut) then
+       call AddNewDeriv( dname, "TotEmis", "-", "-", "mg/m2", &
+            ind , -99, T,  1.0e6,  F,  'YMDH' )
+    else if (DailyEmisOut) then
+       call AddNewDeriv( dname, "TotEmis", "-", "-", "mg/m2", &
+            ind , -99, T,  1.0e6,  F,  'YMD' )
+    else  if (HourlyEmisOut) then
        call AddNewDeriv( dname, "TotEmis", "-", "-", "mg/m2", &
             ind , -99, T,  1.0e6,  F,  'YMH' )
     else
@@ -690,7 +697,13 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
   do  i = 1, NEMIS_File
      dname = "Sec_Emis_mgm2_"//trim(EMIS_FILE(i))
      isec_poll = i
-     if(HourlyEmisOut)then
+     if (HourlyEmisOut .and. DailyEmisOut) then
+        call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+             isec_poll , -99, T,  1.0e6,  F,  'YMDH' )
+     else if (DailyEmisOut) then
+        call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+             isec_poll , -99, T,  1.0e6,  F,  'YMD' )
+     else if (HourlyEmisOut) then
         call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
              isec_poll , -99, T,  1.0e6,  F,  'YMH' )
      else
@@ -703,7 +716,13 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
         do  i = 1, NEMIS_File
            write(dname,"(A)")trim(SECTORS(isec)%longname)//"_Emis_mgm2_"//trim(EMIS_FILE(i))
            isec_poll = (isec)*(NEMIS_File) + i
-           if(HourlyEmisOut)then
+           if (HourlyEmisOut .and. DailyEmisOut) then
+              call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+                   isec_poll , -99, T,  1.0e6,  F,  'YMDH' )
+           else if (DailyEmisOut) then
+              call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+                   isec_poll , -99, T,  1.0e6,  F,  'YMD' )
+           else if (HourlyEmisOut) then
               call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
                    isec_poll , -99, T,  1.0e6,  F,  'YMH' )
            else
@@ -846,7 +865,7 @@ Is3D = .true.
       iou_list(iou)=(index(f_3d(i)%iotype,IOU_KEY(iou))>0)
     end do
   end do
-
+  
   VGtest_out_ix = 0
   if(allocated(f_2d)) &
        VGtest_out_ix = find_index("VgRatio", f_2d(:)%subclass)
