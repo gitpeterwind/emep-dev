@@ -297,7 +297,6 @@ contains
               if (EmisMaskIntVal(i,j)>=mask_val_min .and. EmisMaskIntVal(i,j)<=mask_val_max) then
                  MaskVal(EmisMaskIntVal(i,j))=1
               end if
-              !if(EmisMaskIntVal(i,j)>123)write(*,*)'MASKfirst ',me,i,j,EmisMaskIntVal(i,j),MaskVal(123),MaskVal(124)
          enddo
         enddo
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,MaskVal,mask_val_max-mask_val_min+1,MPI_INTEGER, MPI_SUM,MPI_COMM_CALC,IERROR)
@@ -306,7 +305,6 @@ contains
               if (EmisMaskIntVal(i,j)>=mask_val_min .and. EmisMaskIntVal(i,j)<=mask_val_max) then
                  MaskVal(EmisMaskIntVal(i,j))=1
               end if
-              !if(EmisMaskIntVal(i,j)>123)write(*,*)'MASKKKKKKKKKKKKK ',me,i,j,EmisMaskIntVal(i,j),MaskVal(123),MaskVal(124)
            enddo
         enddo
      end if
@@ -580,7 +578,7 @@ contains
                     lf_src(isrc)%mw(lf_src(isrc)%Nsplit) = species_adv(ixnh3)%molwt !use NH3 mw also for NH4
                  endif
               enddo
-           endif
+           end if
         end do
 
      endif
@@ -589,12 +587,12 @@ contains
         !emitted species
         found=0
         do i=1,iem2Nipoll(iem)
-           if(iem2names(iem,i)==lf_src(isrc)%species)then
+           if (iem2names(iem,i)==lf_src(isrc)%species) then
               found=1
               lf_src(isrc)%poll = iem2ipoll(iem,i)
-           endif
-        enddo
-        if(found==0)then
+           end if
+        end do
+        if (found==0) then
            !add a new pollutant for that emis file
            iem2Nipoll(iem)=iem2Nipoll(iem)+1
            ipoll = ipoll + 1
@@ -603,36 +601,47 @@ contains
            iem2ipoll(iem, iem2Nipoll(iem)) = ipoll     
            lf_src(isrc)%poll = ipoll
            Npoll = ipoll
-        endif
+        end if
         if(lf_src(isrc)%iqrc>0)ipoll2iqrc(lf_src(isrc)%poll)=lf_src(isrc)%iqrc!single species
       else
-        !single species not emitted (like O3)
-        ipoll = ipoll + 1
-        lf_src(isrc)%poll = ipoll
-        Npoll = ipoll
-        call CheckStop(ipoll>Max_lf_spec,"Error: increase Max_lf_spec")
-     endif
+         !single species not emitted (like O3)
+         !check if this has been included already
+         found=0
+         do ii = 1, isrc-1
+            if (lf_src(isrc)%species == lf_src(ii)%species) then
+               found = 1
+               lf_src(isrc)%poll = lf_src(ii)%poll
+            end if
+         end do
+         if (found == 0) then
+            ipoll = ipoll + 1
+            if(me==0)write(*,*)isrc,' poll set to ',ipoll
+            lf_src(isrc)%poll = ipoll
+            Npoll = ipoll
+            call CheckStop(ipoll>Max_lf_spec,"Error: increase Max_lf_spec")
+         end if
+      end if
         
-     if(MasterProc)then
-        if(lf_src(isrc)%iem>0)then
+     if (MasterProc) then
+        if (lf_src(isrc)%iem>0) then
            write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
         else
            write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
-        endif
+        end if
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
         if (lf_src(isrc)%type/='country') write(*,"(A,I4,A,I4)")'sector:',lf_src(isrc)%sector,',  res:',lf_src(isrc)%res
         !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
-  if(isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0))then
+  if (isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0)) then
      if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
      stop!may be relaxed in future
-  endif
-  if(isrc_SO2>0 .and. (isrc_SO4<0))then
+  end if
+  if (isrc_SO2>0 .and. (isrc_SO4<0)) then
      if(me==0)write(*,*)'WARNING: SO2 tracking requires SO4'
      stop!may be relaxed in future
-  endif
+  end if
 
   av_fac=0.0
   

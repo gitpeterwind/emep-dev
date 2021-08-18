@@ -320,7 +320,7 @@ type, public :: lf_sources
   integer :: res = 1  ! half size of the single source square (square size is 2*res+1 x 2*res+1 )
   integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
   integer :: sector = 0 ! sector for this source. Zero is sum of all sectors
-  integer :: poll = 1 !index of pollutant in loc_tot (set by model)
+  integer :: poll = 1 !index of pollutant in loc_tot (set by model). One poll for all sources related to that poll
   integer :: start = 1 ! first position index in lf_src (set by model)
   integer :: end = 1 ! last position index in lf_src (set by model)
   integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
