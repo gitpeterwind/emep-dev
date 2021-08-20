@@ -196,7 +196,7 @@ if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
      enddo
      if(.not.Grid%is_allsea)then
         !renormalize to land
-        if(land_frac >= 1.E-6)then
+        if(land_frac >= 1.E-9)then
            if(z0_out_ix>0) d_2d(z0_out_ix,i,j,IOU_INST) = &
                 d_2d(z0_out_ix,i,j,IOU_INST)/land_frac
            if(invL_out_ix>0)  d_2d(invL_out_ix,i,j,IOU_INST) = &
