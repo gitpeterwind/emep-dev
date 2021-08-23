@@ -55,6 +55,7 @@ integer ::IC_AST_EXTRA = 324567,IC_RUT_EXTRA = 324568 !sum of countries which ar
 integer ::IC_BIC_EXTRA = 324569
 integer ::IC_STRATOS = 324566 !contribution from stratosphere
 integer ::IC_INIT = 324565 !contribution from pollutants present at the start of the run
+logical, parameter :: DEBUG = .false.
 
 public  :: lf_init
 public  :: lf_out
@@ -197,7 +198,7 @@ contains
      ix=find_index("SO2" ,species_adv(:)%name)
      if(ix>0)NSPEC_fullchem_lf = ix
 
-     !TEMPORARY, should be set to NSPEC_fullchem_lf
+     !TEMPORARY, should be set to NSPEC_fullchem_lf+NSPEC_SHL
      !We ASSUME that SQT_SOA_NV is the last species (highest index) included in CM_Reactions1.inc
      ix=find_index("SQT_SOA_NV" ,species(:)%name) !NB: index among all species, also SHL
      NSPEC_fullchem_inc_lf = ix
@@ -942,10 +943,10 @@ subroutine lf_out(iotyp)
                           tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac ! sum over all k
                           fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
                           !if(tmp_out_cntry(i,j,n1)<1.e-18)tmp_out_cntry(i,j,n1)=0.0
-                          if(isnan(tmp_out_cntry(i,j,n1)).or. tmp_out_cntry(i,j,n1)>1.e19)then
-                             write(*,*)'tmp_out_cntry is nan ',tmp_out_cntry(i,j,n1),lf_src_acc(n,i,j,k,iou_ix),invtot,trim(lf_src(isrc)%species)
-                             stop
-                          endif
+!                          if(isnan(tmp_out_cntry(i,j,n1)).or. tmp_out_cntry(i,j,n1)>1.e19)then
+!                             write(*,*)'tmp_out_cntry is nan ',tmp_out_cntry(i,j,n1),lf_src_acc(n,i,j,k,iou_ix),invtot,trim(lf_src(isrc)%species)
+!                             stop
+!                          endif
                        enddo
                     else
                        do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -1136,18 +1137,13 @@ subroutine lf_av(dt,End_of_Day)
                  if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
                     lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
                  endif
-!                 x=0.0
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
                     lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix)+xtot*lf(n,i,j,k)
-                    if(isnan(lf_src_acc(n,i,j,k,iou_ix)))then
+                    if(DEBUG .and. isnan(lf_src_acc(n,i,j,k,iou_ix)))then
                        write(*,*)'lf is NaN ',me,isrc,lf(n,i,j,k),xtot,n,i,j,k,trim(lf_src(isrc)%species)
                        stop
                     end if
-                    !                   if(58/=n-lf_src(isrc)%start) x=x+lf(n,i,j,k) !59 is IntShips
-                  !if(me==340 .and. i==5.and.j==5 .and. lf(n,i,j,k)>1e-20)write(*,*)n,isrc,k,' sum lf ',lf(n,i,j,k),x,xn_adv(lf_src(isrc)%ix(1),i,j,k)
                  end do
-!                 if(me>=NPROC_MPI/2 .and. me<3*NPROC_MPI/4 .and. i==5.and.j==5)write(*,*)me,isrc,k,' sum lf ',x
-!                 if(me==340 .and. i==5.and.j==5)write(*,*)me,isrc,k,' sum lf ',x
               enddo
            enddo
         enddo
@@ -1620,6 +1616,10 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
            !remove numerical noise
            xderiv(n,ispec) = 0.0
         end if
+        if(DEBUG .and. isnan(xderiv(n,ispec)))then
+           write(*,*)'deriv is NaN ',me,n,ispec,i,j,k,xnew(ispec),xnew_lf(n,ispec),trim(lf_src(n)%species),trim(lf_src(ispec-NSPEC_SHL)%species)
+           stop
+        end if
      end do
   end do
 
@@ -1633,8 +1633,8 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
      ix = lf_src(isrc)%ix(1) + NSPEC_SHL ! index of species in species()
      do n=lf_src(isrc)%start, lf_src(isrc)%end
         lf0(n) = lf(n,i,j,k)
-        if(abs(lf0(n))>1000 .or. isnan(lf0(n)))then
-           !write(*,*)'LARGE lf',me,n,ix,lf(n,i,j,k),xn(ix),xnew(ix),k,i_fdom(i), j_fdom(j)
+        if(DEBUG .and. (abs(lf0(n))>1000 .or. isnan(lf0(n))))then
+           write(*,*)'LARGE lf',me,n,ix,lf(n,i,j,k),xn(ix),xnew(ix),k,i_fdom(i), j_fdom(j)
            lf0(n) = 0.0
            !stop
         end if
@@ -1655,6 +1655,10 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
 
               do n=lf_src(isrc)%start, lf_src(isrc)%end
                  lf(n,i,j,k) = lf(n,i,j,k) + lf0(nispec) * xderiv(ispec,ix+NSPEC_SHL)
+                 if(DEBUG .and. isnan(lf(n,i,j,k)))then
+                    write(*,*)'lf is found NaN ',me,isrc,lf0(nispec) , xderiv(ispec,ix+NSPEC_SHL),ix,nispec,i,j,k,trim(lf_src(isrc)%species)
+                    stop
+                 end if
                  nispec = nispec + 1
               end do
            end do
