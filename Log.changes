@@ -55,6 +55,10 @@ In the case of restarting exactly at the start of a month (at time 00:00, the 1s
 because the nest file had the BC from preceding month, and it will otherwise
 use old month BC.
 
+Allow to define a multiplicative factor for emission masks for new format
+emissions, for example:
+EmisMask(1)%fac = 0.85,
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Aug 2021, Peter
 

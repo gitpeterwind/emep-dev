@@ -518,7 +518,7 @@ contains
                    do ii = 1, LIMAX
                       xsum = xsum + mask_cdf(ii,jj)
                       if(mask_cdf(ii,jj)>EmisMask(i)%threshold .and. mask_cdf(ii,jj)<EmisMask(i)%threshold_max)then
-                         EmisMaskValues(ii,jj,iEmisMask) = 0.0 !remove everything
+                         EmisMaskValues(ii,jj,iEmisMask) = EmisMask(i)%fac !remove everything, or fac fraction if defined
                          ic = ic + 1
                       else
                          EmisMaskValues(ii,jj,iEmisMask) = 1.0 !keep everything
@@ -542,7 +542,7 @@ contains
                 if(MasterProc)write(*,*)'defining mask for old formats ',trim(EmisMask(i)%cdfname)
                 do jj = 1, LJMAX
                    do ii = 1, LIMAX
-                      if(EmisMaskValues(ii,jj,iEmisMask)<0.5)Emis_mask(ii,jj) = .true.
+                      if(EmisMaskValues(ii,jj,iEmisMask)<0.999)Emis_mask(ii,jj) = .true.
                    end do
                 end do
              end if
@@ -720,7 +720,12 @@ contains
              if(Emis_source(is)%mask_reverse_ix>0)then
                 do j = 1,ljmax
                    do i = 1,limax
-                      Emis_source_2D(i,j,is) = Emis_source_2D(i,j,is) * (1.0-EmisMaskValues(i,j,Emis_source(is)%mask_ix))!take complementary
+                      if (abs(EmisMaskValues(i,j,Emis_source(is)%mask_ix)-1.0)>1.0E-10) then
+                         !mutiply by fac in the not covered region
+                         Emis_source_2D(i,j,is) = Emis_source_2D(i,j,is) * EmisMaskValues(i,j,Emis_source(is)%mask_ix)
+                      else
+                         !keep unchanged otherwise
+                      end if
                    enddo
                 enddo
              endif

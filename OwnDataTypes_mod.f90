@@ -247,6 +247,7 @@ type, public :: Emis_mask_type
    character(len=TXTLEN_NAME) :: ID = 'NOTSET' ! name that the user set to identify this mask
    real                       :: threshold = 1.E-20 !mask is set for where value is above threshold
    real                       :: threshold_max = 1.E60 !mask is not set if value above threshold
+   real                       :: fac = 0.0 !multiplicative factor
 end type Emis_mask_type
 
 type, public :: EmisFile_id_type
