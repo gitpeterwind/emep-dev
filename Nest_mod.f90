@@ -6,6 +6,7 @@ module Nest_mod
 !    'NONE':      do not read (default)
 !    'NHOUR':     read every NEST_NHOURREAD, if the files are found
 !    'START':     read at the start of run
+!    'RESTART':   read at the start of run, but not the outer frame, so as not to overwrite BC
 !  NEST_MODE_SAVE
 !    'NONE':      do not write (default)
 !    'NHOUR':     write every NEST_NHOURSAVE
@@ -91,7 +92,7 @@ private
 logical, private, save :: mydebug =  .false.
 
 character(len=TXTLEN_SHORT),private, parameter :: &
-  READ_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','START','MONTH'],&
+  READ_MODES(5)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','START','RESTART','MONTH'],&
   SAVE_MODES(4)=[character(len=TXTLEN_SHORT)::'NONE','NHOUR','END','MONTH']
 character(len=TXTLEN_FILE),private, save ::  &
   filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.
@@ -211,7 +212,7 @@ subroutine readxn(indate)
     if(MasterProc.and.oldmonth==0) write(*,*)'Nest: Initialzing IC'
     oldmonth=indate%month
     if(MasterProc) write(*,*)'Nest: New month, reset BC'
-  case('START')
+  case('START', 'RESTART')
     if(.not.first_call)return
     first_call=.false.
     filename_read_3D=date2string(NEST_template_read_3D,ndate,mode='YMDH',debug=mydebug)
@@ -1770,17 +1771,31 @@ subroutine reset_3D(ndays_indate)
         end if
         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
         CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
-        
-        ! overwrite everything 3D (init)
-        if(divbyroa)then
-           forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
-                xn_adv(n,i,j,k)=(WeightData(i,j,k1_ext(k))*weight_k1(k) &
-                +WeightData(i,j,k2_ext(k))*weight_k2(k))&
-                /roa(i,j,k,1)
+
+        if (NEST_MODE_READ == 'RESTART') then
+           ! overwrite everything 3D (init), but NOT the outer frame, which is set by BC
+           if(divbyroa)then
+              forall (k=1:KMAX_MID, j=lj0:lj1, i=li0:li1) &
+                   xn_adv(n,i,j,k)=(WeightData(i,j,k1_ext(k))*weight_k1(k) &
+                   +WeightData(i,j,k2_ext(k))*weight_k2(k))&
+                   /roa(i,j,k,1)
+           else
+              forall (k=1:KMAX_MID, j=lj0:lj1, i=li0:li1) &
+                   xn_adv(n,i,j,k)=WeightData(i,j,k1_ext(k))*weight_k1(k)&
+                   +WeightData(i,j,k2_ext(k))*weight_k2(k)
+           end if
         else
-           forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
-                xn_adv(n,i,j,k)=WeightData(i,j,k1_ext(k))*weight_k1(k)&
-                +WeightData(i,j,k2_ext(k))*weight_k2(k)
+           ! overwrite everything 3D (init)
+           if(divbyroa)then
+              forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
+                   xn_adv(n,i,j,k)=(WeightData(i,j,k1_ext(k))*weight_k1(k) &
+                   +WeightData(i,j,k2_ext(k))*weight_k2(k))&
+                   /roa(i,j,k,1)
+           else
+              forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
+                   xn_adv(n,i,j,k)=WeightData(i,j,k1_ext(k))*weight_k1(k)&
+                   +WeightData(i,j,k2_ext(k))*weight_k2(k)
+           end if
         end if
         
      end do DO_SPEC

@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st Aug 2021, Peter
+
+Added the "RESTART" option for NEST. This is to be used when one restart a run
+without changing the domain size ("checkpoint-restart").
+The difference with "START" is only that BC are not overwritten. This is important 
+In the case of restarting exactly at the start of a month (at time 00:00, the 1st),
+because the nest file had the BC from preceding month, and it will otherwise
+use old month BC.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Aug 2021, Peter
 
 Reduce the threshold for "no sea and no land" warning, since it was often giving
