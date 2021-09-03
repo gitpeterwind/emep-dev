@@ -478,12 +478,13 @@ contains
     logical :: found
     integer :: iEmisMask = 0
     integer :: n,i,ii,jj,ic
-    
+
     iEmisMask = 0
     !1) find number of valid masks defined
     do i = 1, size(EmisMask)
-       if(EmisMask(i)%filename /= 'NOTSET' .and. EmisMask(i)%cdfname /= 'NOTSET'&
-           .and. EmisMask(i)%ID /= 'NOTSET' ) then
+       if(EmisMask(i)%filename /= 'NOTSET') then
+          call CheckStop(EmisMask(i)%cdfname /= 'NOTSET',"EmisMask(i)%cdfname undefined for "//trim(EmisMask(i)%filename))
+          call CheckStop(EmisMask(i)%ID /= 'NOTSET',"EmisMask(i)%ID undefined for "//trim(EmisMask(i)%filename))
           iEmisMask = iEmisMask+1 !assumes the fields are defined, without checking
        endif
     enddo
@@ -493,8 +494,7 @@ contains
     !now set the values for the actual masks
     iEmisMask = 0
     do i = 1, size(EmisMask)
-       if(EmisMask(i)%filename /= 'NOTSET' .and. EmisMask(i)%cdfname /= 'NOTSET'&
-           .and. EmisMask(i)%ID /= 'NOTSET' ) then
+       if(EmisMask(i)%filename /= 'NOTSET' ) then
 
           if (EmisMask(i)%ID == 'NUMBER') then
              call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
@@ -502,14 +502,14 @@ contains
              if(.not. allocated(EmisMaskIntVal)) allocate(EmisMaskIntVal(LIMAX,LJMAX))
              do jj = 1, LJMAX
                 do ii = 1, LIMAX
-                   EmisMaskIntVal(ii,jj) = nint(mask_cdf(ii,jj))                   
+                   EmisMaskIntVal(ii,jj) = nint(mask_cdf(ii,jj))
                 end do
              end do
           else
              iEmisMask = iEmisMask+1
              call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
                   interpol='zero_order', needed=.false.,found = found, UnDef=-1.0E10, debug_flag=.false.)
-           
+
              if(found)then
                 !set mask value
                 ic = 0
@@ -532,7 +532,7 @@ contains
                      ':'//trim(EmisMask(i)%filename))
                 EmisMask(i)%ID = 'NOTSET'!cannot be used anymore
              end if
-             
+
              !to keep some compatibility with old format we also set old format masks
              if(any(emis_inputlist(:)%use_mask))then
                 if(.not.allocated(Emis_mask))then
@@ -1112,7 +1112,7 @@ contains
              found = 1
           end if
        end do
-       if (NSECTORS==0) then          
+       if (NSECTORS==0) then
           do i = 1, NSECTORS_GNFR_CAMS
              NSECTORS = NSECTORS + 1
              call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
@@ -1121,7 +1121,7 @@ contains
           if(MasterProc) write(*,*)'including default GNFR_CAMS sectors ', NSECTORS
        end if
     end if
-    
+
     i=0
     N_TFAC = 0
     N_HFAC = 0
@@ -1143,11 +1143,11 @@ contains
           TFAC_IDX_DOM = SECTORS(isec)%timefac
        end if
        if (SECTORS(isec)%longname(1:6) == 'GNFR_F' .or. trim(SECTORS(isec)%longname) == 'SNAP7') then
-          IS_TRAF(isec) = .true.        
+          IS_TRAF(isec) = .true.
           TFAC_IDX_TRAF = SECTORS(isec)%timefac
        end if
        if (SECTORS(isec)%longname(1:6) == 'GNFR_K' .or. trim(SECTORS(isec)%longname) == 'SNAP10') then
-           IS_AGR(isec) = .true.                 
+           IS_AGR(isec) = .true.
            TFAC_IDX_AGR = SECTORS(isec)%timefac
        end if
        if (SECTORS(isec)%longname(1:6) == 'GNFR_B' .or. SECTORS(isec)%longname(1:6) == 'GNFR_D' .or.&
@@ -1158,7 +1158,7 @@ contains
 
     do isec = 1, NSECTORS
        if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM .or. IS_DOM(isec)) then
-          IS_DOM(isec) = .true.  
+          IS_DOM(isec) = .true.
           i=1
           if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
           if(USES%DEGREEDAY_FACTORS) then
@@ -1309,7 +1309,7 @@ contains
           if (IS_DOM(isec)) fac_min(:,isec,:) = 0.
        end do
      end if
-      
+
     ! 4) Read emission files
 
     ! allocate for MasterProc (me:=0) only:
@@ -1705,7 +1705,7 @@ contains
 
     enddo ! n = 1, NEmis_sources
 
-    
+
     !output emissions
     fileName = 'EMIS_OUT.nc'
 !Not ready
@@ -1909,12 +1909,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           n =  current_date%hour + 1 ! record
           filename = date2string(hourly_emisfac(i)%file,current_date,mode='YMDH')
           filename = key2str(filename,'DataDir',DataDir)
-          filename = key2str(filename,'DataDir',EmisDir)          
+          filename = key2str(filename,'DataDir',EmisDir)
           call ReadField_CDF(trim(filename), hourly_emisfac(i)%cdfname, Emisfac2D(1,1,iem), n,&
                interpol='conservative',needed=.true.,debug_flag=.false.,UnDef=1.0)
        end do
     end if
-    
+
     ! Process each grid:
     do j = 1,ljmax
       do i = 1,limax
@@ -1979,7 +1979,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     timefac(iland_timefac,tfac_idx,iem), t2_nwp(i,j,2)-273.15, &
                     fac_min(iland,tfac_idx,iem),  gridfac_HDD(i,j), tfac
              end if ! =============== HDD
- 
+
               if (allocated(Emisfac2D)) then
                  if (Emisfac2D(1,1,iem)>-0.5) then
                     if(me==NPROC/2 .and. i==2 .and. j==2 .and. icc == 1 .and. isec==1) write(*,*)'Warning: reseting all timefactors, and using only gridded hourly factors for '//trim(EMIS_FILE(iem))
@@ -1987,7 +1987,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     tfac = Emisfac2D(i,j,iem)
                  end if
               end if
-              
+
               s = tfac * secemis(isec,i,j,icc,iem)
               ! prelim emis sum kg/m2/s
               SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
@@ -2288,9 +2288,9 @@ end if
           enddo
        endif
     enddo
-    
+
     if(allocated(Emisfac2D))deallocate(Emisfac2D)
-    
+
  end if ! hourchange
 
   if(USES%ROADDUST)THEN
@@ -2465,7 +2465,7 @@ subroutine newmonth
     if ( USES%SOILNOX_METHOD == 'Total' .or. USES%SOILNOX_METHOD =='NoFert' ) then
 
       ! tmp checks. Will sort out climatological case later
-      ! tmp Will use 2018 for 2019... 
+      ! tmp Will use 2018 for 2019...
       ! BUT safety for < 2000 set here. (more likely to cause errors with
       ! trends)
       !call CheckStop(current_date%year>2018,dtxt//'CAMS81 soil>2018')
@@ -2494,7 +2494,7 @@ subroutine newmonth
            nstart=current_date%month, kstart=1, kend=8,& !same variation every year
            interpol='conservative',known_projection="lon lat",&
            needed=.true.,debug_flag=.true.,UnDef=0.0)
-      
+
       do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
         do i=1,limax
           do j=1,ljmax
@@ -2504,10 +2504,10 @@ subroutine newmonth
         if(debug_proc) write(*,*) dtxt//'3DSOIL ', current_date%month, i, &
             SoilNOx3D(debug_li,debug_lj,n)
       end do
-      
+
       if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt//"CAMS81 SOILNO ", &
            current_date%year, nstart, maxval(SoilNOx)
-      
+
     else if (USES%SOILNOX_METHOD == 'Zaehle2011') then
       nstart=(current_date%year-1996)*12 + current_date%month
       if(nstart>0.and.nstart<=120)then
@@ -2537,7 +2537,7 @@ subroutine newmonth
         end do !iyr
         SoilNOx=SoilNOx/Nyears
       end if ! nstart test
-     
+
     else !  SOILNOX_METHOD Needs to be OLD_EURO, Fert, NoFert, or Zaehle2011
       call StopAll(dtxt//'WRONG SNOX METHOD:'//USES%SOILNOX_METHOD )
     end if ! CAMS81
@@ -2581,7 +2581,7 @@ subroutine newmonth
        'GLOBAL SOILNOX emissions within domain, month:', mm, &
         SumSoilNOx, ' kg/day', SumSoilNOx*1.0e-9*nmdays(mm), ' Tg per month'
 
-    ! convert from g(N)/m2/day into molecules/m2/s 
+    ! convert from g(N)/m2/day into molecules/m2/s
     !  from g to molecules: AVOG/14  14=molweight N,
     !  from /day to /seconds : 24*3600
     conv=AVOG/14.0/(24*3600)
