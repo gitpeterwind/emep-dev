@@ -492,8 +492,9 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
       case('VOC')
         write(unit=errmsg,fmt="(2(A,1X,4(A,','),A),:,1X)") &
           dtxt,&
-          trim(outname),trim(outunit),'VOC','MISC',trim(outind),&
-          "output is no longer supported, try with",&
+! txt string became too long for errmsg. Not worth expanding errmsg for this old output
+!          trim(outname),trim(outunit),'VOC','MISC',trim(outind),&
+          "VOC MISC output is no longer supported, try with",&
           'NMVOC',trim(outunit),'AIR_CONCS','GROUP',trim(outind)
         call CheckStop(errmsg)
       case default
@@ -2474,7 +2475,14 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
         else ! Simple gas or particle.
 
-            if(ik==0) fac = fac * cfac(iadvDep,i,j)
+            if(ik==0) then
+               if(iadvDep<1) then
+                 print *, dtxt//"IADVDEP ", iadv, itot, nspec, &
+                     ParticlePhaseOutputs, trim(unit), semivol_wanted
+                 call StopAll(dtxt//'IADVDEP problem')
+               end if
+               fac = fac * cfac(iadvDep,i,j)
+            end if
         
         end if
 
