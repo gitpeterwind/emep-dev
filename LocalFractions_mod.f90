@@ -2141,7 +2141,9 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
            end do
         else if (trim(iem2names(iem, n)) == 'pm25_new') then
            !include only part of the splitted species
-           do ii=1, lf_src(isrc_new(isrc_pm25))%Nsplit
+           isrc_pm25_new = isrc_new(isrc_pm25)
+           if (isrc_pm25_new < 0) cycle
+           do ii=1, lf_src(isrc_pm25_new)%Nsplit
               iqrc=itot2iqrc(lf_src(isrc_pm25_new)%ix(ii)+NSPEC_SHL)
               do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
                  lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
