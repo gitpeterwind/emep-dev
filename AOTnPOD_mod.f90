@@ -256,7 +256,8 @@ contains
 
    ! Add fluxes if Y exceeded:
 
-     pod  = max(L%FstO3 - Y,0.0)
+     !D21 pod  = max(L%FstO3 - Y,0.0)
+     pod  = max(L%FstO3 - Y,0.0) * do3se(iLC)%PODscale
 
     if ( dbg ) then
        write(txt,"(a,L1)") "Rel", VEGO3_OUTPUTS(iO3cl)%RelSGS
