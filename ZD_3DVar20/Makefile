@@ -114,7 +114,7 @@ MAINOBJ = ../emep_Main.o
 # Rule for main program, only depends on main object, also ensure that non-module objects are created;
 # link rule requires all possible object files:
 $(PROG): $(XOBJ) $(MAINOBJ)
-	$(FC) -o $@ $(FFLAGS) $(LDFLAGS) `find .. -name '*.o'` $(LIBS)
+	$(FC) -o $@ $(FFLAGS) $(LDFLAGS) `find .. -name '*.o' ! -name My_3DVar_mod.o` $(LIBS)
 #
 #<<<
 
