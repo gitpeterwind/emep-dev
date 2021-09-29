@@ -34,7 +34,8 @@ module SoilWater_mod
  use Landuse_mod,        only: water_fraction
  use LocalVariables_mod, only: Grid
  use Met_mod,            only: extendarea
- use MetFields_mod,      only: SoilWater_deep, SoilWaterSource,fSW &
+ use MetFields_mod,      only: SoilWater_deep, SoilWaterSource &
+                               ,fSW40, fSW50, fSW90 &
                                ,foundSoilWater_deep  ! false if no SW-deep
  use Par_mod,            only: limax, ljmax, me
  use TimeDate_mod,       only: current_date, daynumber
@@ -110,15 +111,17 @@ contains
 
              REW      = SoilWater_deep(i,j,1) !!!!/ SoilMAM ! Now done in Met_mod
 
-             if ( REW < SoilDAM ) then
-               fSW(i,j) = REW/SoilDAM
-             else
-               fSW(i,j) = 1.0
-             end if
+             fSW40 = 1.0
+             fSW50 = 1.0
+             fSW90 = 1.0
+             if ( REW < 0.4 ) fSW40(i,j) = REW/0.4
+             if ( REW < 0.5 ) fSW50(i,j) = REW/SoilDAM
+             if ( REW < 0.9 ) fSW90(i,j) = REW/0.9
 
              if ( mydebug ) then
-               write(*,"(a,i4,f7.4,i4,2f12.4)") "RESET_SWF: ", &
-                 daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j)
+               write(*,"(a,i4,f7.4,i4,4f12.4)") "RESET_SWF: ", &
+                 daynumber, SoilWater_deep(i,j,1), hourloc, REW, &
+                  fSW40(i,j) , fSW50(i,j), fSW90(i,j)
              end if
 
         end do
@@ -130,9 +133,9 @@ contains
          hourloc= mod(nint(current_date%hour+24*(1+longitude(i,j)/360.0)),24)
          REW   = SoilWater_deep(i,j,1) !done:/ SoilMAM
 
-         write(*,"(a,f7.4,i4,f7.4,i4,2f12.4)") "DEBUG_SWF: ", &
+         write(*,"(a,f7.4,i4,f7.4,i4,4f12.4)") "DEBUG_SWF: ", &
            water_fraction(i,j), daynumber, SoilWater_deep(i,j,1), hourloc,&
-            REW, fSW(i,j)
+            REW, fSW40(i,j) , fSW50(i,j), fSW90(i,j)
              
       end if
 

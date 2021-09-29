@@ -14,11 +14,12 @@ use CheckStop_mod, only: StopAll, CheckStop
 use Config_module, only:  NLANDUSEMAX, FluxPROFILE, LANDIFY_MET, USES, PBL &
                       , Zmix_ref !height at which concentration above different landuse are considered equal 
 use Debug_module,  only: DEBUG     !Needs DEBUG_RUNCHEM and DEBUG%SUBMET to get debug_flag
+use DO3SE_mod, only: do3se
 use Functions_mod, only: T_2_Tpot  !needed if FluxPROFILE == Ln95
 use LandDefs_mod,   only: LandType, LandDefs
 use Landuse_mod,    only: LandCover
 use LocalVariables_mod, only: Grid, SubDat
-use MetFields_mod, only: ps        !needed if FluxPROFILE == Ln95
+use MetFields_mod, only: ps, fSW40, fSW50, fSW90        !needed if FluxPROFILE == Ln95
 use MicroMet_mod, only:  PsiM, AerRes    !functions
 use MicroMet_mod, only:  Launiainen1995
 use PhysicalConstants_mod, only: PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
@@ -117,10 +118,16 @@ if ( dbg) write(*,*) 'SUBB CellH', iL, Grid%Hd
         Sub(iL)%is_forest = LandType(iL)%is_forest
         Sub(iL)%is_crop   = LandType(iL)%is_crop   
 
-        Sub(iL)%fSW    = Grid%fSW ! probably  not needed, but safest
+        Sub(iL)%fSW    = Grid%fSW50 ! probably  not needed, but safest
 
        ! For Mills et al, GCB, 2018 we used irrigated wheat:
-        if( index( LandDefs(iL)%name , 'Irrigated' ) > 0 ) Sub(iL)%fSW = 1.0
+        if( index( LandDefs(iL)%name , '_Irrig' ) > 0 ) then
+          Sub(iL)%fSW = 1.0
+        else if ( do3se(iL)%SMICrit > 0.6 ) then
+          Sub(iL)%fSW = Grid%fSW90
+        else if ( do3se(iL)%SMICrit < 0.49) then
+          Sub(iL)%fSW = Grid%fSW40
+        end if
 
 
      ! If NWP thinks this is a sea-square, but we anyway have land,
