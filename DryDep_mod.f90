@@ -56,6 +56,7 @@ use GridValues_mod ,      only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, glon, &
                              debug_proc, debug_li, debug_lj, i_fdom, j_fdom
 use Io_Progs_mod,         only: datewrite
 use Landuse_mod,          only: SetLandUse, Land_codes  & 
+                             ,updateSGSmaps & 
                              ,NLUMAX &  ! Max. no countries per grid
                              ,LandCover   ! Provides codes, SGS, LAI, etc,
 use LandDefs_mod,         only: LandType, LandDefs, STUBBLE
@@ -75,7 +76,7 @@ use ZchemData_mod,        only: xn_2d,M, Fpart, Fgas
 use Sites_mod,            only: nlocal_sites, site_x, site_y, &
                                   site_name, site_gn
 use SmallUtils_mod,       only:  find_index
-use SoilWater_mod,        only: fSW !  =1.0 unless set by Met_mod
+use SoilWater_mod,        only: fSW50 !  =1.0 unless set by Met_mod
 use StoFlux_mod,          only: unit_flux, &! = sto. flux per m2
                                  lai_flux,  &! = lai * unit_flux
                                  Setup_StoFlux, Calc_StoFlux  ! subs
@@ -155,6 +156,7 @@ contains
   if ( my_first_call ) then 
 
      call GetDepMapping()    ! creates DDspec, DDmapping
+     call updateSGSmaps()    ! Accounts for Topo in SGS, EGS
      call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
      if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
@@ -501,10 +503,10 @@ contains
          write(6,"(a30,3i3,f6.1,2i4,3f7.3,i4,9f8.3)") adjustl(dtxt//"DVEG: "// &
            LandDefs(iL)%code), nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
             L%coverage, L%LAI, L%hveg,daynumber, &
-            Grid%sdepth, fSW(i,j),L%fSW,L%t2C
+            Grid%sdepth, fSW50(i,j),L%fSW,L%t2C
 
           call datewrite(dtxt//"WHEAT"//LandDefs(iL)%name, &
-              [iL, j, daynumber, L%SGS, L%EGS] , [  L%LAI, glat(i,j),glon(i,j), L%t2C, fSW(i,j),L%fSW,L%t2C ], &
+              [iL, j, daynumber, L%SGS, L%EGS] , [  L%LAI, glat(i,j),glon(i,j), L%t2C, fSW50(i,j),L%fSW,L%t2C ], &
             afmt="a34,TXTDATE,5i5,4f8.2,20es14.5")  ! just array
 
          write(6,"(a,i4,3f7.2,7es10.2)") dtxt//"DMET SUB", &

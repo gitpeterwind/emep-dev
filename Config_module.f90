@@ -128,6 +128,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
+    character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
   end type LandCoverInputs_t
   type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
@@ -618,7 +619,7 @@ logical, public, parameter :: NH3_U10 = .false.
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
-  NLANDUSEMAX  = 40    &    ! Max num land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 45    &    ! Max num land use types in Inputs.Landuse file
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
@@ -1020,6 +1021,7 @@ subroutine Config_Constants(iolog)
   end do
   call associate_File(LandCoverInputs%LandDefs)
   call associate_File(LandCoverInputs%Do3seDefs)
+  call associate_File(LandCoverInputs%mapMed)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)
