@@ -48,7 +48,15 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Sep 2021, Dave
 
-USES%WETRAD added as optin to trigger use of wet-radius and density in
+BUG-FIX: SoilWater_mod was setting all fSW to 1.0!! Also changed DEBUG_SOILWATER
+ to DEBUG%SOILWATER. Fixes in:
+
+ Debug_mod.f90
+ Met_mod.f90
+ SoilWater_mod.f90
+ SubMet_mod.f90
+
+USES%WETRAD added as option to trigger use of wet-radius and density in
   aerosol settling velocity (Vs) calculations. Only really affects coarse
   sea-salt.
  

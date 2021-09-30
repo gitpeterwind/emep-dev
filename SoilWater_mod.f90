@@ -27,7 +27,7 @@
 !*****************************************************************************!
 module SoilWater_mod
  use Config_module,      only: USES
- use Debug_module,       only: DEBUG_SOILWATER
+ use Debug_module,       only: DEBUG  ! for %SOILWATER
  use GridValues_mod,     only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => glon
  use Io_RunLog_mod,      only: PrintLog
@@ -80,7 +80,7 @@ contains
       logical :: mydebug
       real    :: REW       !  Relative soil water
 
-      if( DEBUG_SOILWATER .and. debug_proc ) write(*,*) "DEBUG_SW START: ", &
+      if( DEBUG%SOILWATER .and. debug_proc ) write(*,*) "DEBUG_SW START: ", &
         current_date%day, current_date%hour, current_date%seconds
 
       if ( .not. USES%SOILWATER  ) return ! and fSW has been set to 1. at start
@@ -102,7 +102,7 @@ contains
 
              hourloc= mod(nint(current_date%hour+24*(1+longitude(i,j)/360.0)),24)
 
-             mydebug = ( DEBUG_SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) 
+             mydebug = ( DEBUG%SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) 
              if ( mydebug ) write(*,*) "CHECK_SWF", hourloc, " date ", current_date
 
 
@@ -111,9 +111,9 @@ contains
 
              REW      = SoilWater_deep(i,j,1) !!!!/ SoilMAM ! Now done in Met_mod
 
-             fSW40 = 1.0
-             fSW50 = 1.0
-             fSW90 = 1.0
+             fSW40(i,j) = 1.0
+             fSW50(i,j) = 1.0
+             fSW90(i,j) = 1.0
              if ( REW < 0.4 ) fSW40(i,j) = REW/0.4
              if ( REW < 0.5 ) fSW50(i,j) = REW/SoilDAM
              if ( REW < 0.9 ) fSW90(i,j) = REW/0.9
@@ -127,7 +127,7 @@ contains
         end do
         end do
 
-      if ( DEBUG_SOILWATER .and. debug_proc ) then
+      if ( DEBUG%SOILWATER .and. debug_proc ) then
          i = debug_li
          j = debug_lj
          hourloc= mod(nint(current_date%hour+24*(1+longitude(i,j)/360.0)),24)

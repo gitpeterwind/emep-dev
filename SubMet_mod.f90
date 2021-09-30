@@ -127,6 +127,7 @@ if ( dbg) write(*,*) 'SUBB CellH', iL, Grid%Hd
           Sub(iL)%fSW = Grid%fSW90
         else if ( do3se(iL)%SMICrit < 0.49) then
           Sub(iL)%fSW = Grid%fSW40
+          if ( dbg) write(*,*) 'SUBSW40 ', iL, do3se(iL)%SMICrit, Sub(iL)%fSW
         end if
 
 
