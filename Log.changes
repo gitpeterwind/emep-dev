@@ -46,6 +46,26 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Sep 2021, Dave
+
+USES%WETRAD added as optin to trigger use of wet-radius and density in
+  aerosol settling velocity (Vs) calculations. Only really affects coarse
+  sea-salt.
+ 
+  Default is .false. for now to preserve rv4.43 results, but will be set .true.
+  very soon, after further tests and maybe another tweak or two.
+
+   Changes in:
+    config_emep.nml - added USES%WETRAD for clarity.
+    Config_mod.f90 - just added WETRAD in USES structure
+    DryDep_mod.f90 - uses USES%WETRAD
+
+  Note: current system tests both wet and dry Vs just to compare in debug output.
+  A more CPU effective vesion would only calculate the one needed.
+  Also, the USES option will be removed once we are happy that everything works
+  well. Settling velocity should use the wet radius and density.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th Sep 2021, Dave
 NEW tag:rv4.43
 

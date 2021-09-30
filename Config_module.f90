@@ -185,6 +185,7 @@ type, public :: emep_useconfig
     ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
     ,ZREF             = .false. &! testing
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
+    ,WETRAD           = .false.  &! for settling velocity. Will be set to default true soon!
     ,TIMEZONEMAP      = .true. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
