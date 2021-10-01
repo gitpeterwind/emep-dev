@@ -51,7 +51,6 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LDFLAGS += -Nmpi
   F90FLAGS += -Nmpi
 else ifneq (,$(findstring $(MACHINE),stratus nebula))
-# MODULES = buildenv-intel/2018a-eb netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare FFTW/3.3.6-nsc1
   MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
@@ -83,8 +82,13 @@ endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
-.SUFFIXES: $(SUFFIXES) .f90
-%.o:%.f90
+%.o: %.f90
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.F90
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.F
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
@@ -141,7 +145,7 @@ AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: 3DVar
-3DVar16 3DVar17 3DVar20: EmChem19rp
+3DVar20: EmChem19rp
 	$(MAKE) -C ZD_$@/ $(PROG) DFLAGS="-D_MPI -Dwith_lapack95_mkl -Dwith_assim"
 
 # Chemistry version
