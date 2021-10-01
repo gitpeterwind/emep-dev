@@ -16,7 +16,6 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= betzy
 export DEBUG ?= no
-export ARCHIVE ?= no
 ifeq ($(MACHINE), betzy)
 #  MODULES = netCDF-Fortran/4.5.3-iimpi-2020b
   LDFLAGS +=  $(shell nc-config --flibs)
@@ -127,22 +126,6 @@ touchdepend:
 TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
-
-# eEMP Default Scenarios: Vents, NPPs & NUCs
-Emergency: VENTS ?= DefaultVolcano
-#Eyjafjoll,Vesuvius,Etna,Kr.suv.k,Katla,Askja
-Emergency: NPPAS ?=
-#Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-Emergency: NUCXS ?=
-#NorthKorea,Tehran
-Emergency:
-	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS)
-#-N $(NPPAS) -X $(NUCXS)
-
-# eEMP Default AshInversion: Vents
-AshInversion: VENTS ?= Eyjafjoll
-AshInversion:
-	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: 3DVar
 3DVar20: EmChem19rp
