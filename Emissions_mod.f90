@@ -483,8 +483,8 @@ contains
     !1) find number of valid masks defined
     do i = 1, size(EmisMask)
        if(EmisMask(i)%filename /= 'NOTSET') then
-          call CheckStop(EmisMask(i)%cdfname /= 'NOTSET',"EmisMask(i)%cdfname undefined for "//trim(EmisMask(i)%filename))
-          call CheckStop(EmisMask(i)%ID /= 'NOTSET',"EmisMask(i)%ID undefined for "//trim(EmisMask(i)%filename))
+          call CheckStop(EmisMask(i)%cdfname == 'NOTSET',"EmisMask(i)%cdfname undefined for "//trim(EmisMask(i)%filename))
+          call CheckStop(EmisMask(i)%ID == 'NOTSET',"EmisMask(i)%ID undefined for "//trim(EmisMask(i)%filename))
           iEmisMask = iEmisMask+1 !assumes the fields are defined, without checking
        endif
     enddo
