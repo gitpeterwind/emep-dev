@@ -1478,7 +1478,6 @@ subroutine lf_adv_k(fluxk,i,j)
 
           x =max(0.0,x)*inv_tot!factor due to flux through bottom face
           xx=max(0.0,xx)*inv_tot!factor due to flux through top face
-          if(k<=KMAX_MID-lf_Nvert+1 .and. isrc /= isrc_oddO) xx = 0.0 !no fraction coming from higher than KMAX_MID-lf_Nvert+1
           if(k==KMAX_MID) x = 0.0 !no fraction coming from surface
           xn = xn * inv_tot
           !often either x or xx is zero
@@ -1488,7 +1487,7 @@ subroutine lf_adv_k(fluxk,i,j)
              enddo
              if(xx>1.E-20)then
                 do n = lf_src(isrc)%start, lf_src(isrc)%end
-                   lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k)*xx
+                   lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_km1(n,k)*xx !NB: lf already multiplied by xn here
                 enddo
              endif
           else if (xx>1.E-20)then

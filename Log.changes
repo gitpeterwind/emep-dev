@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th Oct 2021, Peter
+
+Local Fractions. Changed the behaviour at top of LF region.
+Earlier the LF where not mixed with LF above the region in adv_k,
+now they mix with lf=0.
+
+Mask bug corrected: model stops in a checkstop.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Sep 2021, Dave
 
 BUG-FIX: SoilWater_mod was setting all fSW to 1.0!! Also changed DEBUG_SOILWATER
