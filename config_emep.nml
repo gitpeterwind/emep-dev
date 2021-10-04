@@ -36,6 +36,9 @@
   ! Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
   MonthlyFacBasis = 'ECLIPSE',
 
+  ! In testing, so placed here for clarity
+  USES%WETRAD = .false.  ! Will be set to .true. very soon, and option removed.
+
 ! 1) GLOBAL
 ! =========
 !    - uses convection. SoilNOx different for ECLIPSE and CAMS:
@@ -108,8 +111,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 !DS WILL UPDATE May 2020
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_May2021/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_May2021/Inputs_DO3SE.csv',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2021ms/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2021ms/Inputs_DO3SE.csv',
+ LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2021ms/medMap_0.5deg.nc',
+
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
     'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
@@ -178,6 +183,7 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
  
   femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
   !SHIP femisFile               = '/home/sm_davsi/emep-mscw/rv4_39nship/femis.GNFRSHIP'
+ ! femisFile               = 'NOTSET' ,!Default does not make any reduction
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
@@ -193,8 +199,11 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
 
 !--- 'fake' vegetation for ozone POD calculations
-  FLUX_VEGS = 'IAM_CROP', 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
-              'Wheat_Irrigated', 'Wheat_NonIrrig',
+  FLUX_VEGS = 'IAM_CROP', 'IAM_CR','IAM_DF','IAM_DF_MED', ! do not need all array elements
+               'IAM_WH', 'IAM_WH_MED',
+               'IAM_WH_Irrig', 'IAM_WH_MED_Irrig',
+               'IAM_SNL', 'IAM_SNL_MED',
+            !  'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
@@ -260,11 +269,11 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%LANDDEFS        = F,
-  DEBUG%LANDUSE         = 0,
-  DEBUG%MOSAICS         = F,
+  DEBUG%LANDUSE         = 0, !WARNING SEP2021 CAUSES STALL
+   DEBUG%MOSAICS         = F,
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
-  DEBUG%RSUR            = F,
+  DEBUG%RSUR            = F,   ! LOTS of output
   DEBUG%RUNCHEM         = F,
   DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
@@ -592,27 +601,29 @@ OutputConcs=
 OutputVegO3= 
 !   Name             class  Threshhold defn  txtLC RelSGS, SAccPeriod, EAccPeriod, iotyp 
 !====================================================================================
-    'POD1_IAM_DF   ','POD', 1.0,  'MM', 'IAM_DF',F,0,999 , 'YM', 
-    'POD0_IAM_DF   ','POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 'YM',
-    'POD1_IAM_MF   ','POD', 1.0,  'MM', 'IAM_MF',F,0,999 , 'YM',
-    'POD0_IAM_MF   ','POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 'YM',
-    'POD1_DF       ','POD', 1.0,  'MM', 'DF    ',F,0,999 , 'YM',
-    'POD1_CF       ','POD', 1.0,  'MM', 'CF    ',F,0,999 , 'YM',
-    'POD3_TC       ','POD', 3.0,  'MM', 'TC    ',F,0,999 , 'YM', 
+!    'POD0_IAM_DF   ','POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 'YM',
+!    'POD0_IAM_DF_MED   ','POD', 0.0,  'MM', 'IAM_DF_MED',F,0,999 , 'YM',
+!    'POD1_DF       ','POD', 1.0,  'MM', 'DF    ',F,0,999 , 'YM',
+!    'POD1_CF       ','POD', 1.0,  'MM', 'CF    ',F,0,999 , 'YM',
+    'POD1_IAM_DF       ','POD', 1.0,  'MM', 'IAM_DF',F,0,999 , 'YM', 
+    'POD1_IAM_DF_MED   ','POD', 1.0,  'MM', 'IAM_DF_MED',F,0,999 , 'YM',
+    'POD1_SNL    ','POD', 1.0,  'MM', 'IAM_SNL',F,0,999 , 'YM',
+    'POD1_SNL_MED','POD', 1.0,  'MM', 'IAM_SNL_MED',F,0,999 , 'YM',
 ! WARNING - POD6 is not recommended for European-scale IAM modelling
 ! Way too uncertain!
 !   'POD6_TC       ','POD', 3.0,  'MM', 'TC    ',F,0,999, 'YM',   
-!   'POD6_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! WARN!
-!   'POD1_IAM_CR   ','POD', 1.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! 
-!    'POD0_IAM_CR   ','POD', 0.0,  'MM', 'IAM_CR',F,0,999, 'YM',   
     'POD3_IAM_CR   ','POD', 3.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
     'POD3_IAM_CROP ','POD', 3.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
+    'POD3_IAM_WH ','POD', 3.0,  'MM', 'IAM_WH',F,0,999, 'YM',  
+    'POD3_IAM_WH_Irrig ','POD', 3.0,  'MM', 'IAM_WH_Irrig',F,0,999, 'YM',  
+    'POD3_IAM_WH_MED ','POD', 3.0,  'MM', 'IAM_WH_MED',F,0,999, 'YM',  
+    'POD3_IAM_WH_MED_Irrig','POD', 3.0,  'MM', 'IAM_WH_MED_Irrig',F,0,999, 'YM',  
     'POD6_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
     'POD6_IAM_CROP ','POD', 6.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
 !
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 'YM',   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 'YM',   
-    'MMAOT40_IAM_MF','AOT', 40.0, 'MM', 'IAM_MF',F,0,999, 'YM',   
+    'MMAOT40_IAM_DF_MED','AOT', 40.0, 'MM', 'IAM_DF_MED',F,0,999, 'YM',   
     'MMAOT40_IAM_CR','AOT', 40.0, 'MM', 'IAM_CR',F,0,999, 'YM',   
 ! IAM_CR, we use 3m O3
     'EUAOT40_Crops ','AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 'YM',

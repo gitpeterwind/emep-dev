@@ -42,6 +42,8 @@ module EMEP_BCovarSqrt
     integer                           ::  ntr
     integer, allocatable              ::  itr(:)      ! (ntracer)
     integer, allocatable              ::  itracer(:)  ! (ntr)
+    ! 3D fields?
+    logical                           ::  with_3d
     ! grid dimensions:
     integer                           ::  nlon, nlat
     integer                           ::  nlat_local, ilat_offset
@@ -180,7 +182,8 @@ contains
     type(Datafile)                   ::  inp_file
     type(RealCoordinate)             ::  lon_coor, lat_coor
     type(Dimension)                  ::  lon_ex_dim, lat_ex_dim
-    type(HybrideLevelCoordinate)     ::  lev_coor
+    type(IntegerCoordinate)          ::  lev_coor
+    type(HybrideLevelCoordinate)     ::  lev3d_coor
     type(LabelCoordinate)            ::  tracer_coor
     type(TimeCoordinate)             ::  ctime_coor
     type(RealCoordinate)             ::  akstar_coor
@@ -273,16 +276,32 @@ contains
     ! size:
     call lat_coor%Get_Dim( status, n=self%nlat )
     IF_NOT_OK_RETURN(status=1)
+    
+    ! no 3d ...
+    self%with_3d = .false.
 
-    ! create level coordinate:
-    call lev_coor%Init( 'lev', status )
-    IF_NOT_OK_RETURN(status=1)
-    ! read from file:
-    call lev_coor%Read( inp_file, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! size:
-    call lev_coor%Get_Dim( status, n=self%nlev )
-    IF_NOT_OK_RETURN(status=1)
+    ! 3D?
+    if ( self%with_3d ) then
+      ! create level coordinate:
+      call lev3d_coor%Init( 'lev', status )
+      IF_NOT_OK_RETURN(status=1)
+      ! read from file:
+      call lev3d_coor%Read( inp_file, status )
+      IF_NOT_OK_RETURN(status=1)
+      ! size:
+      call lev3d_coor%Get_Dim( status, n=self%nlev )
+      IF_NOT_OK_RETURN(status=1)
+    else
+      ! create level coordinate:
+      call lev_coor%Init( 'lev', status )
+      IF_NOT_OK_RETURN(status=1)
+      ! read from file:
+      call lev_coor%Read( inp_file, status )
+      IF_NOT_OK_RETURN(status=1)
+      ! size:
+      call lev_coor%Get_Dim( status, n=self%nlev )
+      IF_NOT_OK_RETURN(status=1)
+    end if
 
     ! create tracer coordinate:
     call tracer_coor%Init( 'tracer', status )
@@ -331,8 +350,23 @@ contains
       ! obtain index of original tracer:
       if ( present(tracers) ) then
         ! match with original names:
-        call goMatchValue( tracers(itr), self%tracer_name, itracer, status )
-        IF_NOT_OK_RETURN(status=1)
+        !call goMatchValue( tracers(itr), self%tracer_name, itracer, status )
+        !IF_NOT_OK_RETURN(status=1)
+        itracer = -999
+        do k = 1, size(self%tracer_name)
+          if ( (trim(tracers(itr))      == trim(self%tracer_name(k))) .or. &
+               (trim(tracers(itr))//'c' == trim(self%tracer_name(k)))      ) then
+            itracer = k
+            exit
+          end if
+        end do
+        if ( itracer < 1 ) then
+          write (gol,'("could not find variable `",a,"[c]` in:")') trim(tracers(itr)); call goErr
+          do k = 1, size(self%tracer_name)
+            write (gol,'("  ",a)') trim(self%tracer_name(k)); call goErr
+          end do
+          TRACEBACK; status=1; return
+        end if
       else
         ! 1-1 copy:
         itracer = itr
@@ -436,6 +470,7 @@ contains
     
     ! any slabs?
     if ( self%nlat_local > 0 ) then
+      !>>> 2D covars, no need to set "top" layer sigma to zero ...
       !! set sigma explicitly to zero for fixed layers ...
       !do itracer = 1, self%ntracer
       !  do ilev = 1, self%nlev
@@ -450,7 +485,8 @@ contains
       !end do
       ! top layer (since fixed array seems not '1' for pm10 top layer ...)
       !write (gol,'("xxx set level ",i0," to zero")') 1; call goPr
-      self%S(:,:,1,:,:) = 0.0
+      !self%S(:,:,1,:,:) = 0.0
+      !<<<<
       ! west bound:
       !write (gol,'("xxx set west bound ",i0," to zero")') 1; call goPr
       self%S(        1,:,:,:,:) = 0.0
@@ -2153,7 +2189,7 @@ contains
       ! copy:
       Sfac = sigma_scale_factors
     end if
-    !! info ...
+    !! testing ...
     !write (gol,*) rname//': Sfac = ', Sfac; call goPr
     
     ! ~ E S x
@@ -2182,6 +2218,11 @@ contains
           do itr = 1, self%ntr
             ! copy and scale with std.dev.:
             x_ex(1:self%nlon,1:self%nlat_local,k,itr) = Sfac(itr) * self%S(:,:,ilev,itr,itime) * x(:,:,k,itr)
+            !! testing ...
+            !write (gol,*) rname//': x_ex k:',k,'; ilev:', ilev, '; itr:', itr; call goPr
+            !write (gol,*) rname//':   S    range: ', minval(self%S(:,:,ilev,itr,itime)), maxval(self%S(:,:,ilev,itr,itime)); call goPr
+            !write (gol,*) rname//':   x    range: ', minval(x(:,:,k,itr)), maxval(x(:,:,k,itr)); call goPr
+            !write (gol,*) rname//':   x_ex range: ', minval(x_ex(:,:,k,itr)), maxval(x_ex(:,:,k,itr)); call goPr
           end do ! tracers
         end if ! correlation only
       end do ! selected layers

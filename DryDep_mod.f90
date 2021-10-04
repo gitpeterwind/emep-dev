@@ -34,6 +34,7 @@ module DryDep_mod
 ! FUTURE: BiDir functionality (Dave/Roy Wichink Kruit) using Roy's methods
   
 use AeroConstants_mod,    only: AERO
+use AeroFunctions_mod,    only: GerberWetRad   !, WetSigmaAdd
 use Aero_Vds_mod,         only: SettlingVelocity, GPF_Vds300, Wesely300
 use BiDir_emep
 use BiDir_module
@@ -56,6 +57,7 @@ use GridValues_mod ,      only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, glon, &
                              debug_proc, debug_li, debug_lj, i_fdom, j_fdom
 use Io_Progs_mod,         only: datewrite
 use Landuse_mod,          only: SetLandUse, Land_codes  & 
+                             ,updateSGSmaps & 
                              ,NLUMAX &  ! Max. no countries per grid
                              ,LandCover   ! Provides codes, SGS, LAI, etc,
 use LandDefs_mod,         only: LandType, LandDefs, STUBBLE
@@ -75,7 +77,7 @@ use ZchemData_mod,        only: xn_2d,M, Fpart, Fgas
 use Sites_mod,            only: nlocal_sites, site_x, site_y, &
                                   site_name, site_gn
 use SmallUtils_mod,       only:  find_index
-use SoilWater_mod,        only: fSW !  =1.0 unless set by Met_mod
+use SoilWater_mod,        only: fSW50 !  =1.0 unless set by Met_mod
 use StoFlux_mod,          only: unit_flux, &! = sto. flux per m2
                                  lai_flux,  &! = lai * unit_flux
                                  Setup_StoFlux, Calc_StoFlux  ! subs
@@ -155,6 +157,7 @@ contains
   if ( my_first_call ) then 
 
      call GetDepMapping()    ! creates DDspec, DDmapping
+     call updateSGSmaps()    ! Accounts for Topo in SGS, EGS
      call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
      if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
@@ -253,6 +256,8 @@ contains
     character(len=20), save :: fname
     integer :: nglob
     logical :: first_ddep = .true.
+    real :: r_dry, r_wet, rho_wet, Vs_dry, Vs_wet, sig_wet !S21 radius  and density
+!    real :: S ! saturation ration = e/es ~ fRH
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Extra outputs sometime used. Important that this line is kept at the
@@ -407,13 +412,45 @@ contains
 
       if ( DDspec(icmp)%is_gas ) CYCLE
 
+      ! Remember, L%rh not set over water
+
       BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
              DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
+!S21 START
+
+   Vs_dry = BL(icmp)%Vs
+   if ( DDspec(icmp)%Gb>0 .and. USES%WETRAD  ) then 
+      r_dry = 0.5*DDspec(icmp)%DpgV
+      !S = min(rh2m(i,j,1),USES%SURF_AREA_RHLIMITS)
+
+      r_wet = GerberWetRad( r_dry, rh2m(i,j,1), DDspec(icmp)%Gb )
+
+      !SKIP sig_wet = DDspec(icmp)%sigma + WetSigmaAdd(r_dry,S, DDspec(icmp)%Gb)
+
+      rho_wet = ( 1000*r_wet**3 + r_dry**3*(DDspec(icmp)%rho_p-1000) )/r_wet**3
+      !rho_wet = ( 1000*(r_wet**3 - r_dry**3) + r_dry**3 * DDspec(icmp)%rho_p )/r_wet**3
+
+      Vs_wet = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+                  DDspec(icmp)%sigma, 2*r_wet, rho_wet )
+
+      BL(icmp)%Vs =  Vs_wet
+
+      !if ( dbghh ) & 
+      ! write(*,'(a,2i3,5f8.3,2f8.1,9e12.3)') 'WWW3', icmp, DDspec(icmp)%Gb, &
+      !  rh2m(i,j,1), DDspec(icmp)%sigma, 1.0e6*r_dry, 1.0e6*r_wet,&
+      !     DDspec(icmp)%rho_p, rho_wet, BL(icmp)%Vs, Vs_wet
+   else !TMP PRINTOUT
+      r_dry = 0.5*DDspec(icmp)%DpgV
+      r_wet = -1.
+      rho_wet = DDspec(icmp)%rho_p
+      Vs_wet = -1
+   end if
+!S22 END
 
       if ( dbghh ) then
         call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
-           [ DDspec(icmp)%DpgV, DDspec(icmp)%sigma,  DDspec(icmp)%rho_p, &
-              BL(icmp)%Vs ] )
+           [ rh2m(i,j,1), 1.0e6*r_dry, 1.0e6*r_wet, DDspec(icmp)%rho_p, rho_wet, &
+              Vs_dry, Vs_wet ] )
       end if
     end do
 
@@ -501,10 +538,10 @@ contains
          write(6,"(a30,3i3,f6.1,2i4,3f7.3,i4,9f8.3)") adjustl(dtxt//"DVEG: "// &
            LandDefs(iL)%code), nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
             L%coverage, L%LAI, L%hveg,daynumber, &
-            Grid%sdepth, fSW(i,j),L%fSW,L%t2C
+            Grid%sdepth, fSW50(i,j),L%fSW,L%t2C
 
           call datewrite(dtxt//"WHEAT"//LandDefs(iL)%name, &
-              [iL, j, daynumber, L%SGS, L%EGS] , [  L%LAI, glat(i,j),glon(i,j), L%t2C, fSW(i,j),L%fSW,L%t2C ], &
+              [iL, j, daynumber, L%SGS, L%EGS] , [  L%LAI, glat(i,j),glon(i,j), L%t2C, fSW50(i,j),L%fSW,L%t2C ], &
             afmt="a34,TXTDATE,5i5,4f8.2,20es14.5")  ! just array
 
          write(6,"(a,i4,3f7.2,7es10.2)") dtxt//"DMET SUB", &

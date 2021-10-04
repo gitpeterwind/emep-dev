@@ -128,6 +128,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
+    character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
   end type LandCoverInputs_t
   type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
@@ -184,6 +185,7 @@ type, public :: emep_useconfig
     ,WRF_MET_NAMES    = .false. &!to read directly WRF metdata
     ,ZREF             = .false. &! testing
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
+    ,WETRAD           = .false.  &! for settling velocity. Will be set to default true soon!
     ,TIMEZONEMAP      = .true. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
@@ -618,7 +620,7 @@ logical, public, parameter :: NH3_U10 = .false.
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
-  NLANDUSEMAX  = 40    &    ! Max num land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 45    &    ! Max num land use types in Inputs.Landuse file
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
@@ -1020,6 +1022,7 @@ subroutine Config_Constants(iolog)
   end do
   call associate_File(LandCoverInputs%LandDefs)
   call associate_File(LandCoverInputs%Do3seDefs)
+  call associate_File(LandCoverInputs%mapMed)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)

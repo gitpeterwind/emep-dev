@@ -23,6 +23,7 @@ use LandDefs_mod,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
                           NLANDUSE_EMEP
 use LandPFT_mod,       only: MapPFT_LAI, pft_lai
+use MetFields_mod,     only : model_surf_elevation  !SEP21 use of topo
 use MPI_Groups_mod, only : MPI_INTEGER,MPI_COMM_CALC, IERROR
 use OwnDataTypes_mod, only: TXTLEN_SHORT
 use Par_mod,         only: LIMAX, LJMAX, &
@@ -41,6 +42,7 @@ private
 
   public :: InitLanduse
   public :: SetLanduse
+  public :: updateSGSmaps    ! corrects for Topo
   private :: Polygon         ! Used for LAI
   private :: MedLAI          ! Used for LAI, Medit.
 
@@ -84,6 +86,7 @@ private
  logical, public,save, allocatable,dimension(:,:) :: mainly_sea
 
  real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover
+ real, private, allocatable, dimension(:,:) :: isMed
  logical,public,save :: water_frac_set = .false.
 
  character(len=200), private :: errmsg
@@ -106,6 +109,13 @@ contains
     !=====================================
 
     !ALLOCATE ARRAYS
+    allocate(isMed(LIMAX,LJMAX))
+    isMed(:,:) = 0.0
+    call ReadField_CDF(LandCoverInputs%mapMed,'Med', &
+             isMed(:,:),1,interpol='zero_order',needed=.true.,&
+              debug_flag=.false.,UnDef=-999.0)
+
+
     allocate(LandCover(LIMAX,LJMAX))
     allocate(likely_coastal(LIMAX,LJMAX) )
     allocate(mainly_sea(LIMAX,LJMAX) )
@@ -193,15 +203,20 @@ contains
        do j = 1, ljmax
 
           dbgij = ( debug_proc .and. i == debug_li .and. j == debug_lj )
+        dbgij = ( debug_proc .and. i == 5 .and. j == 24 ) ! Alps max
+
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
              call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
                   "SetLandUse out of range" )
+             if( dbgij ) write(*,*) 'ALTLU'//trim(LandDefs(lu)%code), lu, LandDefs(lu)%SGS50
 
              if ( LandDefs(lu)%SGS50 > 0 ) then ! need to set growing seasons
 
                 call Growing_season( lu,abs(glat(i,j)),&
                      LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu) )
+
+              
              else
                 LandCover(i,j)%SGS(ilu) =  LandDefs(lu)%SGS50
                 LandCover(i,j)%EGS(ilu) =  LandDefs(lu)%EGS50
@@ -220,7 +235,8 @@ contains
                 LandCover(i,j)%SGS(ilu) =  LandCover(i,j)%EGS(ilu) - 90
              end if
 
-             if ( DEBUG%LANDUSE>0 .and. dbgij ) &
+             !TMP if ( DEBUG%LANDUSE>0 .and. dbgij ) &
+             if (  dbgij ) &
                   write(*,"(a,i3,a20,3i4)")"LANDUSE: LU_SETGS", &
                   lu, LandDefs(lu)%name,&
                   LandCover(i,j)%SGS(ilu),LandCover(i,j)%ANTH(ilu), &
@@ -264,9 +280,80 @@ contains
     end do ! i
 
     water_frac_set = .true.  ! just to inform other routines
+    !call printCDF('MEDVEG_', isMed(:,:),"Int")
+
+    if ( debug_proc ) then
+      lu=2
+      i=debug_li
+      j=debug_lj
+      do ilu= 1, LandCover(i,j)%ncodes
+        lu      = LandCover(i,j)%codes(ilu)
+        write(*,"(a,4i4,9f7.1)")'ALTendInit'// &
+          trim(LandDefs(lu)%code), ilu, LandCover(i,j)%ncodes, &
+             LandDefs(lu)%SGS50, LandCover(i,j)%SGS(ilu)
+      end do
+    end if
 
   end subroutine InitLanduse
 
+ !============================================================================
+ ! 2021 Update to match ICP-VEG Mapping Manual: SGS is 1 day later, and EGS
+ ! one day earlier, per 100m elevation correction
+ ! The MM formula causes problems in the eastern region though, where elevations
+ ! of > 3000 are found. As the lat/elev equation was tested in W.Europe only
+ ! we appy a max correction (iTopo below)  of 20 days (ie 2000m).
+  subroutine updateSGSmaps()
+    integer :: i, j, ilu, lu, iTopo
+    logical :: dbgij
+    character(len=*), parameter :: dtxt='LUtopo:'
+    real,dimension(:,:),allocatable :: map2dSGS
+    allocate(map2dSGS(LIMAX,LJMAX))  !Just for printout
+    map2dSGS = 0.0
+
+    do i = 1, limax
+      do j = 1, ljmax
+        dbgij = ( i_fdom(i) == 133 .and. j_fdom(j) == 76 ) ! Alps with iy0=10
+        dbgij = ( debug_proc .and. i == 5 .and. j == 24 ) ! Alps with iy0=10
+        dbgij = ( debug_proc .and. i == debug_li .and. j == debug_lj ) ! Alps with iy0=10
+        iTopo = int( model_surf_elevation(i,j)/100.0 )
+        iTopo = max( 0, iTopo )
+        iTopo = min( 20, iTopo )
+
+        do ilu= 1, LandCover(i,j)%ncodes
+          lu      = LandCover(i,j)%codes(ilu)
+
+          if ( dbgij ) write(*,"(a,5i4,9f7.1)")'ALTin'// &
+               trim(LandDefs(lu)%code), ilu,  lu, &
+                  LandDefs(lu)%SGS50, LandCover(i,j)%SGS(1),&
+               LandCover(i,j)%SGS(ilu), glat(i,j), glon(i,j)
+
+
+          if ( LandDefs(lu)%SGS50 > 0 ) then ! growing seasons from lat/alt model
+            LandCover(i,j)%SGS(ilu) = LandCover(i,j)%SGS(ilu) + iTopo 
+            LandCover(i,j)%EGS(ilu) = LandCover(i,j)%EGS(ilu) - iTopo 
+            if ( dbgij ) write(*,"(a,3i4,f7.1)")'ALTIJ'// &
+               trim(LandDefs(lu)%code), lu, iTopo, LandCover(i,j)%SGS(ilu) &
+               ,model_surf_elevation(i,j)
+
+            ! Just a crude check that the growing season remains > 30 days:
+            ! 30 days would work for W. Europe, but v. big montains in Asian
+            ! part complicate things. Shouldn't use latitude function here
+            if ( LandCover(i,j)%EGS(ilu)-LandCover(i,j)%SGS(ilu) < 20 ) then
+              print *, dtxt//"iTopo problem: ", model_surf_elevation(i,j), &
+                LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu), &
+                 glat(i,j), glon(i,j)
+              call StopAll( dtxt//'iTopo SGS EGS problem')
+            end if
+
+          end if !  LandDefs(lu)%SGS50 > 0
+          if(LandDefs(lu)%code=='IAM_SNL_MED') map2dSGS(i,j) =  LandCover(i,j)%SGS(ilu)
+        end do !ilu
+      end do
+    end do
+
+    call printCDF('NEWSGS_IAM_DF', map2dSGS(:,:),"SGS")
+ 
+  end subroutine updateSGSmaps
  !============================================================================
 
   subroutine ReadLanduse_CDF(filefound)
@@ -504,6 +591,9 @@ contains
           IAM_VEG: do iam = 1, nFluxVegs !   size( FLUX_VEGS )
              lu = iam_index(iam)
              landuse_in(i,j,lu) = 1.0e-3/real(nFluxVegs) ! small addition
+if( index(Land_codes(lu), '_MED') > 0 ) then
+  if ( isMed(i,j) < 0.01 ) landuse_in(i,j,lu) = 0.0  ! SKIP non-Med areas
+end if
              if ( dbgij ) write(*,*) dtxt//'IAM add:', me, lu, trim(Land_codes(lu))
           end do IAM_VEG
        end do  !j

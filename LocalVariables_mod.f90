@@ -51,7 +51,9 @@ type, public :: GridDat
   real    :: rho_s        !  Air density (kg/m3) at surface, here 2m
   real    :: vpd          ! Vapour pressure deficit  (kPa) ! CHECK UNITS
   real    :: SWP          ! SWP  ! CHECK UNITS
-  real    :: fSW          ! fSW  - function for soil-water, 0--1
+  real    :: fSW40        ! fSW  - function for soil-water, 0--1
+  real    :: fSW50        ! fSW  - function for soil-water, 0--1
+  real    :: fSW90        ! fSW  - function for soil-water, 0--1
   real    :: ustar        ! friction velocity, m/s
   real    :: wstar        ! convective velocity scale, m/s
   real    :: invL         ! 1/L, where L is Obukhiov length (1/m)

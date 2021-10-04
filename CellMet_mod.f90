@@ -23,7 +23,7 @@ use MetFields_mod,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
                             coszen !F21, Idirect, Idiffuse
 use PhysicalConstants_mod, only: PI, CP, GRAV, KARMAN
-use SoilWater_mod,     only: fSW
+use SoilWater_mod,     only: fSW40, fSW50, fSW90 ! Not we have fSW50, fSW90 also now
 use SubMet_mod,        only: Get_SubMet, Sub
 
 implicit none
@@ -124,7 +124,9 @@ if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
   Grid%ice_nwp   = max( ice_nwp(i,j,1), ice_landcover(i,j) )
   Grid%snowice   = ( Grid%sdepth  > 1.0e-10 .or. Grid%ice_nwp > 1.0e-10 )
 
-  Grid%fSW       = fSW(i,j)
+  Grid%fSW40     = fSW40(i,j)
+  Grid%fSW50     = fSW50(i,j)
+  Grid%fSW90     = fSW90(i,j)
 
   ! we limit u* to a physically plausible value
   ! to prevent numerical problems

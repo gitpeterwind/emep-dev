@@ -58,6 +58,8 @@ module DO3SE_mod
      real:: VPD_max         ! threshold VPD when relative f = f_min
      real:: VPD_min         ! threshold VPD when relative f = 1
      real:: VPDcrit         ! threshold SumVPD for TC/RC/IAM_CR
+     real:: SMIcrit         ! threshold SMI when fSW starts to reduce
+     real:: PODscale        ! scaling factr to be applied to final POD
      real:: SWP_max         ! threshold SWP when relative f = 1
      real:: PWP             ! threshold SWP when relative f = f_min
                         ! and assumed equal to permanent wilting point
@@ -253,7 +255,9 @@ contains
 
    mmol2sm = 8.3144e-8 * L%t2       ! 0.001 * RT/P
 
-   L%g_sto = do3se(iLC)%g_max * L%f_env * mmol2sm 
+   !SPECIAL CASE: for IAM_SNL_MED
+   !  min(g_sto, 550) needed as veg community has 550, but sens veg has 782
+   L%g_sto = min( do3se(iLC)%g_max, 550.0)  * L%f_env * mmol2sm 
 
    L%g_sun = do3se(iLC)%g_max * mmol2sm * L%f_phen * L%f_sun * &
          max( do3se(iLC)%f_min,  L%f_temp * L%f_vpd * L%fSW )

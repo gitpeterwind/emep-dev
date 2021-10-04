@@ -209,7 +209,9 @@ module MetFields_mod
   character(len=10), public, save  :: SoilWaterSource="IFS"  ! IFS or PARLAM
 
   real,target,public, save, allocatable,dimension(:,:) :: &
-    fSW     ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
+    fSW50  &! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin), for
+   ,fSW40  &! for limits of 50, 40 and 90%
+   ,fSW90   ! for IAM_SNL_MED
 
   real,target, public, dimension(:,:), save,allocatable  ::&
          xwf  ! extension of water fraction, save after 1st call
@@ -1118,8 +1120,12 @@ end if
     allocate(pwp(LIMAX,LJMAX))
     allocate(fc(LIMAX,LJMAX))
     allocate(xwf(LIMAX+2*NEXTEND,LJMAX+2*NEXTEND)) 
-    allocate(fSW(LIMAX,LJMAX))
-    fSW = 1.0
+    allocate(fSW40(LIMAX,LJMAX))
+    allocate(fSW50(LIMAX,LJMAX))
+    allocate(fSW90(LIMAX,LJMAX))
+    fSW40 = 1.0
+    fSW50 = 1.0
+    fSW90 = 1.0
     allocate(zen(LIMAX, LJMAX))
     allocate(coszen(LIMAX, LJMAX))
     coszen=0.0

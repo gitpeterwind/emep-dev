@@ -57,8 +57,7 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
      ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
-use Debug_module,       only: DEBUG, &
-                              DEBUG_SOILWATER, DEBUG_LANDIFY 
+use Debug_module,       only: DEBUG, DEBUG_LANDIFY 
 use FastJ_mod,          only: setup_phot_fastj,rcphot_3D
 use Functions_mod,      only: Exner_tab, Exner_nd
 use Functions_mod,      only: T_2_Tpot, StandardAtmos_kPa_2_km 
@@ -1012,7 +1011,7 @@ subroutine MeteoRead()
       foundSMI1=.false.
       do isw = 1, size(possible_soilwater_uppr)
         namefield=possible_soilwater_uppr(isw)
-        if((DEBUG_SOILWATER.or.first_call).and.MasterProc) &
+        if((DEBUG%SOILWATER.or.first_call).and.MasterProc) &
                write(*,*) "Met_mod: soil water search ",isw,trim(namefield)
         call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                SoilWater_uppr(:,:,nr),needed=met(ix_SoilWater_uppr)%needed,found=foundSoilWater_uppr)

@@ -16,7 +16,6 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= betzy
 export DEBUG ?= no
-export ARCHIVE ?= no
 ifeq ($(MACHINE), betzy)
 #  MODULES = netCDF-Fortran/4.5.3-iimpi-2020b
   LDFLAGS +=  $(shell nc-config --flibs)
@@ -51,7 +50,6 @@ else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   LDFLAGS += -Nmpi
   F90FLAGS += -Nmpi
 else ifneq (,$(findstring $(MACHINE),stratus nebula))
-# MODULES = buildenv-intel/2018a-eb netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare FFTW/3.3.6-nsc1
   MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
@@ -83,8 +81,13 @@ endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
-.SUFFIXES: $(SUFFIXES) .f90
-%.o:%.f90
+%.o: %.f90
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.F90
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.F
+	$(F90) $(F90FLAGS) -c $< -o $@
+%.o: %.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
@@ -124,24 +127,8 @@ TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
-# eEMP Default Scenarios: Vents, NPPs & NUCs
-Emergency: VENTS ?= DefaultVolcano
-#Eyjafjoll,Vesuvius,Etna,Kr.suv.k,Katla,Askja
-Emergency: NPPAS ?=
-#Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-Emergency: NUCXS ?=
-#NorthKorea,Tehran
-Emergency:
-	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS)
-#-N $(NPPAS) -X $(NUCXS)
-
-# eEMP Default AshInversion: Vents
-AshInversion: VENTS ?= Eyjafjoll
-AshInversion:
-	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
-
 # Data assimilation: 3DVar
-3DVar16 3DVar17 3DVar20: EmChem19rp
+3DVar20: EmChem19rp
 	$(MAKE) -C ZD_$@/ $(PROG) DFLAGS="-D_MPI -Dwith_lapack95_mkl -Dwith_assim"
 
 # Chemistry version

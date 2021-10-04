@@ -46,11 +46,81 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Sep 2021, Dave
+
+BUG-FIX: SoilWater_mod was setting all fSW to 1.0!! Also changed DEBUG_SOILWATER
+ to DEBUG%SOILWATER. Fixes in:
+
+ Debug_mod.f90
+ Met_mod.f90
+ SoilWater_mod.f90
+ SubMet_mod.f90
+
+USES%WETRAD added as option to trigger use of wet-radius and density in
+  aerosol settling velocity (Vs) calculations. Only really affects coarse
+  sea-salt.
+ 
+  Default is .false. for now to preserve rv4.43 results, but will be set .true.
+  very soon, after further tests and maybe another tweak or two.
+
+   Changes in:
+    config_emep.nml - added USES%WETRAD for clarity.
+    Config_mod.f90 - just added WETRAD in USES structure
+    DryDep_mod.f90 - uses USES%WETRAD
+
+  Note: current system tests both wet and dry Vs just to compare in debug output.
+  A more CPU effective vesion would only calculate the one needed.
+  Also, the USES option will be removed once we are happy that everything works
+  well. Settling velocity should use the wet radius and density.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th Sep 2021, Dave
+NEW tag:rv4.43
+
+Changes to update POD calculations to 2017 Mapping Manual (MM):
+(Results don't change very much at all, except slight degrade in O3 and
+ new veg for POD.)
+
+1) added PODscale and SMIcrit params to do3se(iLC) type
+    and also special treatment for IAM_SNL_MED
+
+  Impacts:
+
+   AOT40nPOD_mod.f90 - uses PODscale
+   DO3SE_mod.f90 - added PODscale and SMIcrit
+                   and L%g_sto = min( do3se(iLC)%g_max, 550.0) - for IAM_SNL_MED
+
+   DataDir/Input_LandDefs_Sep2021, with map of (approx) Meditteranean
+
+
+2) Use of mask for (approx) Meditteranean, and of topography for SGS, EGS
+
+    - medMap_0.5deg.nc
+    - updates LandDefs, DO3SE with new MM IAM vegs
+
+  Config_module.f90 - reads LandCoverInputs%mapMed
+  Landuse_mod.f90   - routine updateSGSmaps corrects SGS, EGS for topography
+
+  DryDep_mod.f90 - calls updateSGSmaps to change SGS, EGS
+
+3) Introduced fSW40, fSW50 and fSW90 for different veg. Impacts:
+
+  CellMet_mod.f90
+  LocalVariables_mod.f90
+  MetFields_mod.f90
+  SoilWater_mod.f90
+  SubMet_mod.f90
+
+Other:
+
+  config_emep.nml - new LandInputs, POD, FLUX_VEGS
+
+  LandDefs_mod: dbg changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th Sep 2021, Dave
 
 Derived_mod: just added 2 small safety checks
-
-
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st Aug 2021, Peter
 

@@ -48,6 +48,7 @@ module Debug_module
     ,SETUP_1DBIO     = .false. &
     ,SITES           = .false. & ! set also DEBUG%SITE below
     ,SOILNOX         = .false. &
+    ,SOILWATER       = .false. &
     ,SOLVER          = .false. &
     ,STOFLUX         = .false. &
     ,VERT_DIFF       = .false. &
@@ -89,7 +90,6 @@ logical, public, parameter ::    &
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_WETDEP       = .false. &
-  ,DEBUG_RB             = .false. &
-  ,DEBUG_SOILWATER      = .false. 
+  ,DEBUG_RB             = .false.
 
 end module Debug_module
