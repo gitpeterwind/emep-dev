@@ -2483,7 +2483,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   debug = .false.
   dtxt_msg = dtxt//trim(fileName)//':'//trim(varname)//':' ! Message for errors
   if(present(debug_flag))then
-     debug = debug_flag .and. me==0
+     debug = (debug_flag .or. DEBUG_NETCDF_RF) .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
 
@@ -2704,7 +2704,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   xtype_lon=NF90_FLOAT !default
   xtype_lat=NF90_FLOAT !default
-  if( present(known_projection) ) then
+  
+  data_projection = 'Unknown'
+  if( present(known_projection) ) data_projection = trim(known_projection)
+  if( data_projection /= 'Unknown' ) then
      data_projection = trim(known_projection)
      if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
      if ( debug ) write(*,*) 'data known_projection ',trim(data_projection)
@@ -3164,10 +3167,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         fractions_out(1:LIMAX*LJMAX,1)=0.0
         fractions_out(1:LIMAX*LJMAX,2:Nmax)=0.0
      end if
-
-
-     if ( DEBUG_NETCDF_RF ) write(*,*) 'ReadCDF types ', &
-          xtype, NF90_INT, NF90_SHORT, NF90_BYTE
 
      if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
         !scale data if it is packed
