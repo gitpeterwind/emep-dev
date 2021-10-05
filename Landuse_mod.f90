@@ -600,11 +600,14 @@ end if
     end do  !i
     PRI_VEG: do iam = 1, nFluxVegs !   size( FLUX_VEGS )
       lu = iam_index(iam)
-      if(mydbg) call printCDF('FLUXVEG_'//trim(Land_codes(lu)), landuse_in(:,:,lu),"frac")
+      if(DEBUG%LANDUSE>0) call printCDF('FLUXVEG_'//trim(Land_codes(lu)), &
+                                             landuse_in(:,:,lu),"frac")
     end do PRI_VEG
-!SEI
-    if(mydbg) call printCDF('Latitude', glat(:,:),"degrees")
-    if(mydbg) call printCDF('Longitude', glon(:,:),"degrees")
+!SEI, just helps to locate some veg:
+    if(DEBUG%LANDUSE>0)  then
+      call printCDF('Latitude', glat(:,:),"degrees")
+      call printCDF('Longitude', glon(:,:),"degrees")
+    end if
 
 
    !!!!!!!!!!!! Now, convert to more compact arrays for export
