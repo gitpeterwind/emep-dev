@@ -3377,7 +3377,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                                 call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
                                      Rvar(ijk),dims(1)*dims(2),igjgk,ijk,frac,Reduc)
 
-                             elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                             elseif( Rvalues(igjgk)<1E30 .and. (OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue))then
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*frac
                              else
                                 !Not defined: don't include this Rvalue
@@ -3454,7 +3454,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                                   fraction_in,fractions_out,Ncc_out,CC_out,&
                                   Rvar(ijk),dims(1)*dims(2),igjgk,ijk,&
                                   latlon_weight,Reduc)
-                          elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                          elseif(Rvalues(igjgk)<1E30 .and. (OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue))then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
                              !Not defined: don't include this Rvalue
@@ -3702,7 +3702,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           Nvalues(ijk)=Nvalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
 
-                          if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                          if(Rvalues(igjgk)<1E30 .and. (OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue))then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
                              !Not defined: don't include this Rvalue
@@ -3983,7 +3983,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           Ivalues(ijk)=Ivalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
 
-                          if(OnlyDefinedValues.or.Rvalues(igjg)/=FillValue)then
+                          if(Rvalues(igjg)<1E30 .and. (OnlyDefinedValues.or.Rvalues(igjg)/=FillValue))then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
                              !Not defined: don't include this Rvalue
