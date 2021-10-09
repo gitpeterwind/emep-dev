@@ -20,7 +20,8 @@ real, public, parameter  ::    &
   ,  CP      = 1004.0          &   ! Specific heat at const. pressure
   ,  KAPPA   = RGAS_KG/CP      &   
   ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)
-  ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
+!  ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
+  ,  PI      = 4 * atan(1.0)   &   ! Uses machine precision
   ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
   ,  RAD2DEG = 180.0/PI        &   ! COnverts radians to degrees
   ,  ROWATER = 1000.0          &   ! pw density of water kg m-3
