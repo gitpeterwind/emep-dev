@@ -75,7 +75,9 @@ private
          ,Eiso      &! Emission potential, isoprene
          ,Emt       &! Emission potential, monoterpenes
          ,SumVPD    &! For critical VPD calcs, reset each day
+         ,GsH2O     &! For Tleaf testing
          ,old_gsun   ! also for flux
+   logical :: has_veg 
  end type LandCov
  !=============================================
  type(LandCov), public, save, allocatable,dimension(:,:) :: LandCover
@@ -577,6 +579,7 @@ contains
        do j = 1, ljmax
           dbgij = ( mydbg .and. i==debug_li.and.j==debug_lj )
           sum_veg = 0.0
+          LandCover(i,j)%has_veg = .false.
           do lu = 1, NLand_codes
              if ( is_veg(lu) .and. landuse_in(i,j,lu)  > 0.0 ) then
                 sum_veg = sum_veg + landuse_in(i,j,lu)
@@ -585,6 +588,7 @@ contains
                   me,ncalls,i,j, trim(Land_codes(lu)), is_veg(lu), sum_veg
           end do
           if (  sum_veg < 1.0e-6 )  CYCLE
+          LandCover(i,j)%has_veg = .true.
 
           if ( dbgij ) write(*,*) dtxt//'IAM nnn:', nFluxVegs
 
