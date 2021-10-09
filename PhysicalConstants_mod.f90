@@ -43,17 +43,19 @@ real, public, parameter  ::  &
 
 ! CHARNOCK is used to calculate the roughness length for the 
 ! landuse category water
+! CHARNOCK = 0.032   ! Charnock's alpha:
+! see Nordeng (1986), p.31, Nordeng(1991), JGR, 96, no. C4, pp. 7167-7174.
+! In the second of these publications, Nordeng uses "m" to denote Charnock's
+! alpha whilst in the first he specifies the value 0.032.
+real, public, parameter  :: CHARNOCK = 0.0144  ! Garratt for k=0.41
 
+! Other micro-met params. Lambda and gamma are approx, but should be
+! okay over temperature range they are used for.
 real, public, parameter  :: &
-     PRANDTL = 0.71,            &   ! Prandtl number (see Garratt, 1992)
-     Sc_H20  = 0.6,             &   ! Schmidt number for water
-  CHARNOCK = 0.0144  !  From Garratt for k=0.41
-  !CHARNOCK = 0.032   ! Charnock's alpha:
-                     ! see Nordeng (1986), p.31, 
-                     ! Nordeng(1991), JGR, 96, no. C4, pp. 7167-7174.
-                     ! In the second of these publications, Nordeng uses
-                     ! "m" to denote Charnock's alpha whilst in the first
-                     ! he specifies the value 0.032.
+  PRANDTL = 0.71      & ! Prandtl number (see Garratt, 1992)
+ ,Sc_H20  = 0.6       & ! Schmidt number for water
+ ,LAMBDA_W = 2.454e6  & ! J/kg Latent heat evap water, 20degC, Jones 1992,App3
+ ,GAMMA_Psychr = 66.1   ! Pa/K Psychrometer const. at 20 degC, Jones 1992,App3
 
 ! Standard temperature :
 real, public, parameter :: T0 = 273.15   ! zero degrees Celsius in Kelvin 
