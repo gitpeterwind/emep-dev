@@ -64,6 +64,11 @@ type, public :: GridDat
   real    :: u_ref        ! wind speed at ref. height
   real    :: Ra_2m        !
   real    :: Ra_3m        !
+  real    :: dTleafRn     !TESTING Tleaf for IAM_DF
+  real    :: dTleaf       !TESTING Tleaf - Tair 
+  real    :: Dair         !TESTING Tleaf
+  real    :: s            !TESTING Tleaf -  d(esat)/dT
+  real    :: GsH2O        !TESTING Tleaf -  stomatal conductance H2O
   real    :: so2nh3ratio  !  for CEH deposition scheme
   real    :: surf_o3_ppb  !  for  EU AOTs, 3m O3
   real    :: surf_o3_ppb1 !   .... after deploss
@@ -117,6 +122,8 @@ type, public :: SubDat
     ,Ra_X      = NOT_SET  & !pw: temporary name
     ,Ra_2m     = NOT_SET  &
     ,Ra_3m     = NOT_SET  &
+    ,dTfromHd  = NOT_SET  & ! TESTING Tleaf - Tair using energy partition
+    ,dTfromRn  = NOT_SET  & ! TESTING Tleaf - Tair using energy partition
     ,RgsO      = NOT_SET  & ! ground-surface resistances - set in DO3SE
     ,RgsS      = NOT_SET  & ! ground-surface resistances - set in DO3SE
     ,coverage  = NOT_SET  & ! Area covered (fraction)
@@ -145,7 +152,11 @@ type, public :: SubDat
 ! and enable concentrations at canopy height:
     ,cano3_ppb  = 0.0     & ! Use 0.0 to make d_2d behave better
     ,cano3_nmole= 0.0     & ! Use 0.0 to make d_2d behave better
-    ,FstO3      = 0.0       ! leaf O3 flux, nmole/m2/s
+    ,FstO3      = 0.0     & ! leaf O3 flux, nmole/m2/s
+! Tleaf testing
+    ,dTleaf     = 0.0     & !TESTING Tleaf
+    ,Tleaf     = NOT_SET  & !TESTING Tleaf
+    ,GsH2O     = 0.0        !TESTING TLEAF  stomatal conductance H2O,
   real, dimension(NLOCDRYDEP_MAX) :: & ! for species subject to dry depostion
      Vg_ref   &  ! Grid average of Vg at ref ht. (effective Vg for cell)
     ,Vg_eff   &  ! Grid average of Vg effective at ref ht. (effective Vg for cell)
