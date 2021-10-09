@@ -46,6 +46,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Oct 2021, Dave 
+
+Io_Progs  - misleading initial text removed (claiming F-compliance).
+          - datewrite_iia improved using advance='NO' construct to avoid
+            useless outputs
+
+Landuse_mod - add %has_veg and %GsH2O to LandCover 
+
+LocalVariables_mod - adding Tleaf testing variables dTLeaf, Tleaf, GsH2O
+
+PhysicalConstants_mod - pi is now 4*atan(1.0) = best possible ;-)
+            Added LAMBDA_W, GAMMA_Psychr
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Oct 2021, Peter
 
 More robust netcdf "conservative" interpolation: neglect the values larger
