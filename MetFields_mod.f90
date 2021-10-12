@@ -211,7 +211,9 @@ module MetFields_mod
   real,target,public, save, allocatable,dimension(:,:) :: &
     fSW50  &! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin), for
    ,fSW40  &! for limits of 50, 40 and 90%
-   ,fSW90   ! for IAM_SNL_MED
+   ,fSW90  &! for IAM_SNL_MED
+   ,dTleafRn & ! TESTING Tleaf - Tair
+   ,dTleafHd  ! TESTING Tleaf - Tair
 
   real,target, public, dimension(:,:), save,allocatable  ::&
          xwf  ! extension of water fraction, save after 1st call
@@ -1126,6 +1128,14 @@ end if
     fSW40 = 1.0
     fSW50 = 1.0
     fSW90 = 1.0
+    !if ( USES%TLEAF_FROM_HD ) then
+      allocate(dTleafHd(LIMAX,LJMAX))
+      dTleafHd = 0.0
+    !end if
+    !if ( USES%TLEAF_FROM_RN ) then
+      allocate(dTleafRn(LIMAX,LJMAX))
+      dTleafRn = 0.0
+    !end if
     allocate(zen(LIMAX, LJMAX))
     allocate(coszen(LIMAX, LJMAX))
     coszen=0.0
