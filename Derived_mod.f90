@@ -359,9 +359,11 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YM' )
 
-  call AddNewDeriv( "dTleafHd","dTleafHd",  "-","-",   "deg. C", &
+  if ( USES%TLEAF_FROM_HD )  &
+    call AddNewDeriv( "dTleafHd","dTleafHd",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YMDH' )
-  call AddNewDeriv( "dTleafRn","dTleafRn",  "-","-",   "deg. C", &
+  if ( USES%TLEAF_FROM_RN ) & 
+    call AddNewDeriv( "dTleafRn","dTleafRn",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YMDH' )
 
 !CRUDE for SEI Feb 2021:
@@ -1155,14 +1157,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = t2_nwp(i,j,1) - 273.15
       end forall
     case ( "dTleafHd" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = dTleafHd(i,j)
-      end forall
-    if ( dbgP ) call write_debug(n,ind, "dTleafHd")
+      if ( USES%TLEAF_FROM_HD ) then
+        forall ( i=1:limax, j=1:ljmax )
+          d_2d( n, i,j,IOU_INST) = dTleafHd(i,j)
+        end forall
+        if ( dbgP ) call write_debug(n,ind, "dTleafHd")
+      end if
     case ( "dTleafRn" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = dTleafRn(i,j)
-      end forall
+      if ( USES%TLEAF_FROM_RN ) then
+        forall ( i=1:limax, j=1:ljmax )
+          d_2d( n, i,j,IOU_INST) = dTleafRn(i,j)
+        end forall
+      end if
     case ( "Idirect" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Idirect(i,j)
