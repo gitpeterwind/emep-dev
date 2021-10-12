@@ -46,11 +46,26 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th Oct 2021, Dave 
+12th Oct 2021, Dave 
+
+Just prepping for futire Tleaf calculations:
+
+Biogenics_mod.f90 - uses Grid%dTleaf, though this is currently zero
+
+Config_mod.f90 - added TLEAF_FROM_HD, TLEAF_FROM_RN, both .false. for
+                 future usage.
+
+Derived_mod.f90 - added dTleafHd, dTleafRn outputs as MISC. Also corrected
+                  indentation of some "end forall"
 
 Io_Progs  - misleading initial text removed (claiming F-compliance).
           - datewrite_iia improved using advance='NO' construct to avoid
             useless outputs
+
+MetFields_mod - added dTleafHd, dTleafRn possibilities. Use of USES%TLEAF etc
+    temporarily disabled to allow model to run.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Oct 2021, Dave 
 
 Landuse_mod - add %has_veg and %GsH2O to LandCover 
 
