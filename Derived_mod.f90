@@ -66,6 +66,7 @@ use MetFields_mod,     only: roa,Kz_m2s,th,zen, ustar_nwp, u_ref, hmix,&
                             met, derivmet,  q, &
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             cc3dmax, & ! SEI
+                            dTleafHd, dTleafRn, & ! TLEAF
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
 use My_Derived_mod, only : &
@@ -357,6 +358,11 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
 
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YM' )
+
+  call AddNewDeriv( "dTleafHd","dTleafHd",  "-","-",   "deg. C", &
+               -99,  -99, F, 1.0,  T,  'YMDH' )
+  call AddNewDeriv( "dTleafRn","dTleafRn",  "-","-",   "deg. C", &
+               -99,  -99, F, 1.0,  T,  'YMDH' )
 
 !CRUDE for SEI Feb 2021:
 !  call AddNewDeriv( "u_ref","u_ref",  "SURF", "-",   "m/s", &
@@ -1117,11 +1123,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "SurfAreaSSC_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C,i,j)
-    end forall
+      end forall
     case ( "SurfAreaDUF_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_F,i,j)
-    end forall
+      end forall
     case ( "SurfAreaDUC_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
@@ -1130,32 +1136,41 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "u_ref" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = u_ref(i,j)
-    end forall
+      end forall
     if ( dbgP ) call write_debug(n,ind, "PUREF")
 
     case ( "SMI_deep" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
-    end forall
+      end forall
     if ( dbgP ) call write_debug(n,ind, "SoilWater_DEEP")
     case ( "SMI_uppr" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
-    end forall
+      end forall
     if ( dbgP ) call write_debug(n,ind, "SoilWater_uppr")
 
     case ( "T2m" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = t2_nwp(i,j,1) - 273.15
-    end forall
+      end forall
+    case ( "dTleafHd" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = dTleafHd(i,j)
+      end forall
+    if ( dbgP ) call write_debug(n,ind, "dTleafHd")
+    case ( "dTleafRn" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = dTleafRn(i,j)
+      end forall
     case ( "Idirect" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Idirect(i,j)
-    end forall
+      end forall
     case ( "Idiffuse" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Idiffuse(i,j)
-    end forall
+      end forall
 
     case ( "XSNOW" ) ! Was not snow depth, but rather flag
       forall ( i=1:limax, j=1:ljmax )
