@@ -4,11 +4,6 @@
 !    is designed for EMEP format input files, using specific headers.
 !    Read_Headers can also be used to check that all required columns
 !    are available, or to read files with columns in arbitray positions.
-!
-! Language: F-compliant, except system calls in Self_Test
-! (Can be run with F is test-input file created manually
-!  and system calls commented out, as here)
-!  Dave Simpson, 1999-2007
 !_____________________________________________________________________________
 
 use CheckStop_mod,           only: CheckStop
@@ -541,7 +536,7 @@ subroutine datewrite_iia (txt,ii,array,txt_pattern,afmt)
   character(len=*), intent(in), optional :: afmt
   character(len=100):: fmt="(a,3i3,i5,1x, 5i5, 20es11.2)" ! default
   logical :: use_pattern=.false.
-  integer :: Ni
+  integer :: Ni, i
   integer,  dimension(5):: iout ! arrays of integers, max 5
   Ni = size(ii)
   call CheckStop(Ni>5, "Too many integers in datewrite: only coded for 5")
@@ -556,13 +551,12 @@ subroutine datewrite_iia (txt,ii,array,txt_pattern,afmt)
     if (present(afmt)) then  ! e.f. "a20,DATE,3i3,5f7.2"
       !fmt="("//trim(str_replace(afmt,"DATE","3i3,i5,1x"))//")"
       fmt="("//trim(str_replace(afmt,"TXTDATE","a")) //")"
-!print *, 'TXTDATE'//trim(fmt), Ni, iout(1:Ni), array
       write(*,fmt) adjustl("dw:" // txt), " "//print_date(current_date), iout(1:Ni), array
     else
-      Ni = 5  ! with no formatting, print all iout
-      write(*,fmt) "dw:" // trim(txt), &
-      current_date%month, current_date%day, current_date%hour, &
-      current_date%seconds, iout(1:Ni), array
+      write(*,'(a,3i3,i5,1x,88i5)',advance='NO') "dw:" // trim(txt), &
+       current_date%month, current_date%day, current_date%hour, &
+       current_date%seconds,ii
+      write(*,"(20es11.2)") array
     end if
        
   end if
