@@ -595,7 +595,13 @@ module Biogenics_mod
   dbg = ( DEBUG%BIO .and. debug_proc .and. &
           i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
 
+  !TLEAF: prepping for future Tleaf calculation.
+  ! We have a mix of forest species for any emitting PFT, so we just
+  ! use the one Grid based value, which is appropriate for trees.
+  ! Oct 2021: Grid%dTleaf is just zero
   it2m = nint( Grid%t2C - TINY )
+  if ( dbg ) write(*,*)'DBGITA',  Grid%t2C, it2m, canopy_ecf(BIO_ISOP,it2m)
+  it2m = nint( Grid%t2C + Grid%dTleaf  - TINY )
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
@@ -612,6 +618,7 @@ module Biogenics_mod
 
        E_ISOP = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL &
                   * EmBio%IsopFac
+       if ( dbg ) write(*,*)'DBGITB',  Grid%dTleaf, it2m, canopy_ecf(BIO_ISOP,it2m), cL, E_ISOP
 
       ! Add light-dependent terpenes to pool-only
       if(BIO_TERP > 0) E_MTL = &
@@ -674,13 +681,15 @@ module Biogenics_mod
 
       call datewrite(dtxt//" env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
+      write(*,*) dtxt//" EISOP RAW ",  gmt_3hour, E_ISOP
+      call datewrite(dtxt//" E_SOI ", [  gmt_3hour ], [ SoilNOx(i,j) ] )
       call datewrite(dtxt//" EISOP EMTP EMTL ESOIL-N ", [  gmt_3hour ], &
        [ E_ISOP, E_MTP, E_MTL, SoilNOx(i,j) * sFac, &
         SoilNOx3D(i,j,gmt_3hour) * sFac ] ) 
 
       if (USES%BIDIR) call datewrite(dtxt//" BIDIR ", (/  SoilNOx(i,j) * sFac,&
                                       SoilNH3(i,j), rcbio(NATBIO%NH3,KG) /) ) 
-      call datewrite(dtxt//" rcemisL ", (/ &
+      call datewrite(dtxt//" rcemisL ", (/ Grid%t2C , Grid%dTleaf, &
             rcbio(NATBIO%C5H8,KG), rcbio(NATBIO%TERP,KG) /))
       call datewrite(dtxt//" EmisNat1:8 ", EmisNat(1:8,i,j) )
 
