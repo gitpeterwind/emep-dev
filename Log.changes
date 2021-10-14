@@ -46,6 +46,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Oct 2021, Arjo
+
+Added extension "ZD_EmCso" for simulation of satellite observations.
+Main Makefile has a new target "EmCso" to compile the model including
+this extension.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Oct 2021, Dave 
 
 Just prepping for futire Tleaf calculations:
