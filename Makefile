@@ -127,6 +127,10 @@ TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
+# simulation of satellite retrievals
+EmCso: EmChem19rp
+	$(MAKE) -C ZD_$@ $(PROG)
+
 # Data assimilation: 3DVar
 3DVar20: EmChem19rp
 	$(MAKE) -C ZD_$@/ $(PROG) DFLAGS="-D_MPI -Dwith_lapack95_mkl -Dwith_assim"
