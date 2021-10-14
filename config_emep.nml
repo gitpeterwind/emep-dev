@@ -36,8 +36,6 @@
   ! Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
   MonthlyFacBasis = 'ECLIPSE',
 
-  ! In testing, so placed here for clarity
-  USES%WETRAD = .false.  ! Will be set to .true. very soon, and option removed.
 
 ! 1) GLOBAL
 ! =========

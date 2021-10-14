@@ -157,7 +157,7 @@ contains
   if ( my_first_call ) then 
 
      call GetDepMapping()    ! creates DDspec, DDmapping
-     call updateSGSmaps()    ! Accounts for Topo in SGS, EGS
+     call updateSGSmaps()    ! Accounts for Topo in SGS, EGS, if Euro_Settings
      call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
      if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
@@ -256,7 +256,7 @@ contains
     character(len=20), save :: fname
     integer :: nglob
     logical :: first_ddep = .true.
-    real :: r_dry, r_wet, rho_wet, Vs_dry, Vs_wet, sig_wet !S21 radius  and density
+    real :: r_dry, r_wet, rho_wet, Vs_dry, Vs_wet
 !    real :: S ! saturation ration = e/es ~ fRH
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -406,46 +406,38 @@ contains
 
     call Setup_StoFlux( i, j )
 
-! - can set settling velcoty here since not landuse dependent
+! - can set settling velocity here since not landuse dependent
 
     do icmp = 1, nddep
 
       if ( DDspec(icmp)%is_gas ) CYCLE
 
-      ! Remember, L%rh not set over water
 
-      BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+
+      r_dry = 0.5*DDspec(icmp)%DpgV
+      r_wet = r_dry
+
+      if ( DDspec(icmp)%Gb>0  ) then  ! water absorbed on aerosol
+
+         r_wet = GerberWetRad( r_dry, rh2m(i,j,1), DDspec(icmp)%Gb )
+
+         rho_wet = ( 1000*r_wet**3 + r_dry**3*(DDspec(icmp)%rho_p-1000) )/r_wet**3
+       ! (Remember, L%rh not set over water)
+       !rho_wet = ( 1000*(r_wet**3 - r_dry**3) + r_dry**3 * DDspec(icmp)%rho_p )/r_wet**3
+
+         BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+                          DDspec(icmp)%sigma, 2*r_wet, rho_wet )
+         Vs_wet = BL(icmp)%Vs
+         Vs_dry = -999
+
+      else ! keep dry radius
+
+         BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
              DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
-!S21 START
+         Vs_dry = BL(icmp)%Vs
+         Vs_wet = -999
 
-   Vs_dry = BL(icmp)%Vs
-   if ( DDspec(icmp)%Gb>0 .and. USES%WETRAD  ) then 
-      r_dry = 0.5*DDspec(icmp)%DpgV
-      !S = min(rh2m(i,j,1),USES%SURF_AREA_RHLIMITS)
-
-      r_wet = GerberWetRad( r_dry, rh2m(i,j,1), DDspec(icmp)%Gb )
-
-      !SKIP sig_wet = DDspec(icmp)%sigma + WetSigmaAdd(r_dry,S, DDspec(icmp)%Gb)
-
-      rho_wet = ( 1000*r_wet**3 + r_dry**3*(DDspec(icmp)%rho_p-1000) )/r_wet**3
-      !rho_wet = ( 1000*(r_wet**3 - r_dry**3) + r_dry**3 * DDspec(icmp)%rho_p )/r_wet**3
-
-      Vs_wet = SettlingVelocity( Grid%t2, Grid%rho_ref, &
-                  DDspec(icmp)%sigma, 2*r_wet, rho_wet )
-
-      BL(icmp)%Vs =  Vs_wet
-
-      !if ( dbghh ) & 
-      ! write(*,'(a,2i3,5f8.3,2f8.1,9e12.3)') 'WWW3', icmp, DDspec(icmp)%Gb, &
-      !  rh2m(i,j,1), DDspec(icmp)%sigma, 1.0e6*r_dry, 1.0e6*r_wet,&
-      !     DDspec(icmp)%rho_p, rho_wet, BL(icmp)%Vs, Vs_wet
-   else !TMP PRINTOUT
-      r_dry = 0.5*DDspec(icmp)%DpgV
-      r_wet = -1.
-      rho_wet = DDspec(icmp)%rho_p
-      Vs_wet = -1
-   end if
-!S22 END
+      end if
 
       if ( dbghh ) then
         call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
