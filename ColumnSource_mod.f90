@@ -365,6 +365,7 @@ subroutine setRate()
     call CheckStop ( l > size(PROC_LOC) , dtxt//' NEEDS larger size for PROC_LOC')
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
     if(txtline(1:1)=='#')cycle doLOC  ! Comment line
+    if ( len_trim(txtline) == 0 ) cycle doLOC  ! Empty line
     dloc=getVent(txtline)
     if(coord_in_processor(dloc%lon,dloc%lat,iloc=dloc%iloc,jloc=dloc%jloc))then
       PROC_LOC(l) = ME!The source is located on this proc 
@@ -423,6 +424,7 @@ subroutine setRate()
     if(.not.found_source)cycle doEMS  ! There is no vents on sub-domain
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
     if(txtline(1:1)=='#')cycle doEMS  ! Comment line
+    if ( len_trim(txtline) == 0 ) cycle doEMS  ! Empty line
     dems=getErup(txtline)
     if(sbeg>date2string(dems%send,enddate  ).or.&         ! starts after end of run
        send<date2string(dems%sbeg,startdate).or.&         ! ends before start of run
@@ -537,7 +539,7 @@ function getVent(line) result(def)
   integer :: stat,nwords,igrp
   call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
   call CheckStop(stat,"EMERGENCY: Wrong/Unknown line format "//trim(line))
-  call CheckStop(nwords,size(words),"EMERGENCY: Missing data in line "//trim(line))
+  call CheckStop(nwords,size(words),"EMERGENCY: getVent: Missing data in line: "//trim(line))
 !#1:NUMBER,2:NAME,3:LOCATION,4:LATITUDE,5:NS,6:LONGITUDE,7:EW,8:ELEV,9:TYPE,10:ERUPTION TYPE
 !V1702A02B,Eyjafjöll,Iceland-S,63.63,N,19.62,W,1666,Stratovolcano,S0
   read(words(4),*)lat
@@ -571,7 +573,7 @@ function getErup(line) result(def)
   real    :: base,top,rate,frac,dhh
   call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
   call CheckStop(stat,"EMERGENCY: Wrong/Unknown line format "//trim(line))
-  call CheckStop(nwords,size(words),"EMERGENCY: Missing data in line "//trim(line))
+  call CheckStop(nwords,size(words),"EMERGENCY: getErup: Missing data in line: "//trim(line))
 !#1:TYPE/VOLCANO,2:VARIABLE,3:BASE[km],4:H[km above BASE],5:D[h],6:dM/dt[kg/s],7:m63[-],8:START[code/date],9:END[code/date],10:DESCRIPTION
 !S0       ,     ,  , 11.000,   3.00, 4e6, 0.40,SR                 ,SR+D,Silicic standard
 !V1702A02B,SO2  , 0,  8.000,  24.00,  15,     ,2010-04-14 00:00:00,SE+D,Eyja 20100414 SO2

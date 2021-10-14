@@ -48,6 +48,14 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Oct 2021, Arjo
 
+Facilite debugging of incorrect source description.
+
+ColumnSource_mod.f90  -  ignore empty lines in column source description files,
+                         print routine name in error messages.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th Oct 2021, Arjo
+
 Added extension "ZD_EmCso" for simulation of satellite observations.
 Main Makefile has a new target "EmCso" to compile the model including
 this extension.
