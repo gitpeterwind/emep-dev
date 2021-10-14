@@ -309,6 +309,9 @@ contains
     logical :: dbgij
     character(len=*), parameter :: dtxt='LUtopo:'
     real,dimension(:,:),allocatable :: map2dSGS
+
+    if ( USES%PFT_MAPS ) return ! Uses PFT_MAPS, not lat-based SGS
+
     allocate(map2dSGS(LIMAX,LJMAX))  !Just for printout
     map2dSGS = 0.0
 
