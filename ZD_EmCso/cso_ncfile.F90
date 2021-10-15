@@ -1059,7 +1059,16 @@ contains
         IF_NF90_NOT_OK_RETURN(status=1)
       !~
       case default
-        write (csol,'("unsupported attribute type `",a,"`")') trim(self%atype); call csoErr
+        write (csol,'("attribute `",a,"` has unsupported type id ",i0,"")') &
+                               trim(aname), xtype; call csoErr
+        write (csol,'("maybe unsigned byte or int?")'); call csoErr
+        write (csol,'("supported by NF90 library:")'); call csoErr
+        write (csol,'(i8,"  NF90_BYTE  ")') NF90_BYTE  ; call csoErr
+        write (csol,'(i8,"  NF90_SHORT ")') NF90_SHORT ; call csoErr
+        write (csol,'(i8,"  NF90_INT   ")') NF90_INT   ; call csoErr
+        write (csol,'(i8,"  NF90_FLOAT ")') NF90_FLOAT ; call csoErr
+        write (csol,'(i8,"  NF90_DOUBLE")') NF90_DOUBLE; call csoErr
+        write (csol,'(i8,"  NF90_CHAR  ")') NF90_CHAR  ; call csoErr
         TRACEBACK; status=1; return
     end select
 

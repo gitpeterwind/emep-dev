@@ -46,6 +46,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Oct 2021, Arjo
+
+Added extra checks on input files for satellite observation operator.
+
+ZD_EmCso/cso_ncfile.F90 - check number of dimensions of variable
+ZD_EmCso/cso_pixels.F90  - show information on supported attribute types
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct 2021, Dave
 NEW TAG: rv4.44
 

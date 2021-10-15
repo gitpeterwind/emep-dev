@@ -465,6 +465,7 @@ contains
     ! --- local ----------------------------------
     
     integer                 ::  varid
+    integer                 ::  ndims
     integer                 ::  dimids(7)
     integer                 ::  xshp(7)
     integer                 ::  shp(7)
@@ -493,6 +494,20 @@ contains
     if (status/=NF90_NOERR) then
       csol=nf90_strerror(status); call csoErr
       write (csol,'("variable name: ",a)') trim(varname); call csoErr
+      TRACEBACK; status=1; return
+    end if
+
+    ! number of dimensions in file:
+    status = NF90_Inquire_Variable( ncid, varid, ndims=ndims )
+    IF_NF90_NOT_OK_RETURN(status=1)
+    ! check ..
+    if ( ndims /= self%ndim+1 ) then
+      write (csol,'("variable `",a,"` has ",i0," dimension(s), while expecting ",i0,"+1 :")') &
+                        trim(varname), ndims, self%ndim; call csoErr
+      do idim = 1, self%ndim
+        write (csol,'("  ",a)') trim(self%dimnames(idim)); call csoErr
+      end do
+      write (csol,'("  (pixel)")'); call csoErr
       TRACEBACK; status=1; return
     end if
 
