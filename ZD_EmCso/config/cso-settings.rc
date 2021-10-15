@@ -31,7 +31,7 @@ S5p-no2.with_mapping      :  F
 !~ data
 
 ! data variables:
-S5p-no2.dvars             :  hp yr vr A M nla
+S5p-no2.dvars             :  hp yr vr A M nla qa_value
 
 ! half-level pressures:
 !~ dimensions, copied from data file:
@@ -68,6 +68,10 @@ S5p-no2.dvar.M.source     :  amf_trop
 S5p-no2.dvar.nla.dims     :  retr
 !~ source variable:
 S5p-no2.dvar.nla.source   :  nla
+
+! quality value:
+S5p-no2.dvar.qa_value.dims     :  
+S5p-no2.dvar.qa_value.source   :  qa_value
 
 !~ state
 

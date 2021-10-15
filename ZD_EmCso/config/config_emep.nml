@@ -4,8 +4,18 @@
 !!!  [dev/]config_emep.nml
 !!!
 !!! Settings for simulation of CSO S5p/NO2 columns:
+!!!   
 !!! - changed run labels
-!!! - changed default start/end date
+!!!   
+!!! - changed default start/end date, commented them,
+!!!   and added lines to be filled from templates
+!!!   
+!!! - Chemistry extension: EmChem19rp
+!!!   - This requires:
+!!!       !May 2021 possibility. If using EmChem19rnr (Res or NonRes emissions), for Ref2.1, use:
+!!!       SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
+!!!       SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
+!!!   
 !!! - new cso section
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -111,12 +121,12 @@
 ! inventory assumptions! Here we hav Ref2, which corresponds to
 ! TNO's estimate of emissions with condensable organics. Sadly,
 ! even the BC emissions are tied to this assumption.
-SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
-SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
+!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
+!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
 !
 !May 2021 possibility. If using EmChem19rnr (Res or NonRes emissions), for Ref2.1, use:
-!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
-!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
+SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
+SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
 
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !

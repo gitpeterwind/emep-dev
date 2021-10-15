@@ -48,10 +48,13 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2021, Arjo
 
-Added extra checks on input files for satellite observation operator.
+Testing benchmark for satellite observation operator.
+Added extra checks on input files.
 
-ZD_EmCso/cso_ncfile.F90 - check number of dimensions of variable
-ZD_EmCso/cso_pixels.F90  - show information on supported attribute types
+ZD_EmCso/cso_ncfile.F90         - check number of dimensions of variable
+ZD_EmCso/cso_pixels.F90         - show information on supported attribute types
+ZD_EmCso/config/config_emep.nml - updated benchmark settings
+ZD_EmCso/config/cso-settings.rc - updated benchmark settings
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct 2021, Dave
