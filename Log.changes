@@ -46,6 +46,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Oct 2021, Dave
+
+GasParticleCoeffs_mod: (should have been done for rv4.44)
+  Changed MMD of SS to 4.0um (was 4.8)
+
+SeaSalt_mod.f90:   just added helper text.
+
+Chasing strange behaviour:
+  CellMet_mod.f90:  Added some debug lines
+  Setup_1d_mod.f90: Added some debug lines. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2021, Arjo
 
 Testing benchmark for satellite observation operator.
@@ -60,7 +72,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct 2021, Dave
 NEW TAG: rv4.44
 
-GasParticleCoeffs_mod:
+GasParticleCoeffs_mod:   FAILED **** wasn't committed :-(
   Changed MMD of SS to 4.0um (was 4.8)
 
 WETRAD is now removed from config, and wet radius used always when applicable
