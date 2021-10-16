@@ -12,6 +12,7 @@ module CellMet_mod
 use CheckStop_mod,     only: CheckStop
 use Config_module,    only: KMAX_MID, KMAX_BND, PT, USES, IOU_INST, PBL
 use DerivedFields_mod, only: d_2d, f_2d
+use Functions_mod, only : Tpot_2_T
 use GridValues_mod,    only: dA,dB, glat, glon
 use Landuse_mod,       only: LandCover, ice_landcover ! Provides SGS,hveg,LAI,...
 use Landuse_mod,       only: mainly_sea
@@ -21,10 +22,11 @@ use MicroMet_mod,      only: PsiH, PsiM, AerRes       ! functions
 use MetFields_mod,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
                             ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, sst, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
-                            coszen !F21, Idirect, Idiffuse
+                            coszen
 use PhysicalConstants_mod, only: PI, CP, GRAV, KARMAN
 use SoilWater_mod,     only: fSW40, fSW50, fSW90 ! Not we have fSW50, fSW90 also now
 use SubMet_mod,        only: Get_SubMet, Sub
+use ZchemData_mod, only : pp, temp   ! TLEAF testing
 
 implicit none
 private
@@ -116,6 +118,22 @@ if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
   Grid%theta_ref = th(i,j,KMAX_MID,1)
   Grid%rh2m  = rh2m(i,j,1)      !
   Grid%rho_s = rho_surf(i,j)    ! Should replace Met_mod calc. in future
+
+  if( debug_flag ) then
+
+     write(*,"(a,9f10.3)") 'CellMet: PTterms', &  !checked, psurf=ps(i,j,1)
+        0.01*ps(i,j,1), 0.01*pp(KMAX_MID), & ! hPa
+        temp(KMAX_MID)-273.15, th(i,j,KMAX_MID,1)*Tpot_2_T( pp(KMAX_MID) )-273.15, Grid%t2C
+
+     write(*,"(a,9f10.3)") 'CellMet: Zterms', Grid%z_ref, Grid%z_mid
+
+    write(*,"(a,2f8.2,9es12.3)") 'CellRterms', Grid%t2C, &
+     Grid%ustar, Grid%Hd, Grid%LE, Grid%rh2m  !, tab_esat_Pa(iT), & !           Grid%Dair, Grid%s,  Grid%psurf*CP/(0.622*LAMBDA_W)
+
+     write(*,"(a,9f8.3)") 'CellTterms', Grid%t2C, temp(KMAX_MID), &! Grid%Tref-273.15,
+       Grid%theta_ref-273.15, Grid%theta_ref*Tpot_2_T(Grid%psurf) - 273.15 !, Tpot_2_T(pp(KMAX_MID) )
+   end if ! debug
+
 
   Grid%is_mainlysea = mainly_sea(i,j)
   Grid%is_allsea = .true. !set to false below if land found

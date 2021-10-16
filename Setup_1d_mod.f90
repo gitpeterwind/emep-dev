@@ -100,7 +100,7 @@ contains
  !
 
     integer, intent(in) :: i,j    ! coordinates of column
-    character(len=9)  :: dtxt='setup_1d:'
+    character(len=*), parameter :: dtxt='setup_1d:'
     character(len=30)  :: fmt="(a32,i3,99es13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
@@ -237,6 +237,11 @@ contains
        qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
        rh(k) = min( q(i,j,k,1)/qsat , 1.0)
        rh(k) = max( rh(k) , 0.001)
+
+       if( debug_flag .and. k==KMAX_MID ) then
+         write(*,"(a,9f10.3)") dtxt//'PTterms ', 0.01*ps(i,j,1), 0.01*pp(k),&
+            temp(k)-273.15, th(i,j,k,1)*Tpot_2_T( pp(k) )-273.15,Grid%t2C
+       end if
 
         ! 1)/ Short-lived species - no need to convert units
 
