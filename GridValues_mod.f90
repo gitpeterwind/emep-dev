@@ -1318,12 +1318,12 @@ subroutine DefDebugProc()
   if(debug_proc) write(*,*) "GridValues debug_proc found:", &
   me, debug_li, debug_lj
   if(DEBUG%GRIDVALUES) then
-    if(MasterProc) write(*,"(a,2a4,a3,4a4,a2,2a4,4a12)") "GridValues debug:", &
+    if(MasterProc) write(*,"(a,2a4,5a4,a2,2a4,4a12)") "GridValues debug:", &
     "D_i", "D_j", "me", "li0", "li1", "lj0", "lj1", &
     "dp" , "d_li", "d_lj", "i_fdom(li0)","i_fdom(li1)", &
     "j_fdom(lj0)", "j_fdom(lj1)"
     
-    write(*,"(a,2i4,i3,4i4,L2,2i4,4i12)") "GridValues debug:", &
+    write(*,"(a,2i4,5i4,L2,2i4,4i12)") "GridValues debug:", &
     DEBUG%IJ(1), DEBUG%IJ(2), me, li0, li1, lj0, lj1, &
     debug_proc , debug_li, debug_lj, &
     i_fdom(li0),i_fdom(li1), j_fdom(lj0), j_fdom(lj1)

@@ -96,6 +96,7 @@ subroutine runchem()
 ! Processes calls 
   errcode = 0
 
+  if(debug_proc) write(*,*) "RUNCHEM PRE", i_fdom(debug_li), j_fdom(debug_lj)
   do j = 1, ljmax
     do i = 1, limax
 ! do j = lj0, lj1 !  ljmax
@@ -107,9 +108,9 @@ subroutine runchem()
       debug_flag =  .false.  
       DebugCell = debug_proc .and. debug_li==i .and. debug_lj==j
       if(DEBUG%RUNCHEM.and.debug_proc) then
-        debug_flag = (debug_li==i .and. debug_lj==j) 
+        debug_flag = DebugCell
         DEBUG%datetxt = print_date(current_date)
-        if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
+        if(debug_flag) write(*,*) "RUNCHEM DEBUG START!", i_fdom(i), j_fdom(j)
       end if
      !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j
      !write(*,*) "RUNCHEM DEBUG LLTESTS", me,debug_proc,debug_flag
@@ -122,7 +123,7 @@ subroutine runchem()
       if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,first_tstep,debug_flag)
       call Add_2timing(25,tim_after,tim_before,"Runchem:OrganicAerosol")
 
-      call setup_1d(i,j)     ! Extracting i,j column data
+      call setup_1d(i,j,debug_flag)     ! Extracting i,j column data
       call Add_2timing(26,tim_after,tim_before,"Runchem:setup_1d")
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")

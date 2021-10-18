@@ -93,16 +93,16 @@ integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   subroutine setup_1d(i,j)
+   subroutine setup_1d(i,j,debug_flag)
 
  !..   extracts data along one vertical column for input to chemical
  !     solver concentrations for chemistry......
  !
 
     integer, intent(in) :: i,j    ! coordinates of column
+    logical, intent(in) :: debug_flag
     character(len=*), parameter :: dtxt='setup_1d:'
     character(len=30)  :: fmt="(a32,i3,99es13.4)"  ! default format
-    logical :: debug_flag
     logical, save :: first_call = .true.
    ! for surface area calcs: 
    ! had: SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7 ORIG=8,NSAREA=NSAREA_DEF
@@ -137,12 +137,7 @@ contains
        is_sia_a,      &  ! not needed?
        is_bc_a           ! will add soon
 
-    debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
-      i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
-
     if( first_call ) then
-
-       if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
       !- find surrogates for Gerber area calcs, to get Dp,rho,sigma)
       ! Note, if a species is not found (eg seasalt) then iGerber
@@ -239,7 +234,8 @@ contains
        rh(k) = max( rh(k) , 0.001)
 
        if( debug_flag .and. k==KMAX_MID ) then
-         write(*,"(a,9f10.3)") dtxt//'PTterms ', 0.01*ps(i,j,1), 0.01*pp(k),&
+         write(*,"(a,2i4,9f10.3)") dtxt//'PTterms ',i_fdom(i), j_fdom(j), &
+            0.01*ps(i,j,1), 0.01*pp(k),&
             temp(k)-273.15, th(i,j,k,1)*Tpot_2_T( pp(k) )-273.15,Grid%t2C
        end if
 

@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Oct 2021, Dave
+
+Small debug changes:
+
+  GridValues_mod: small re-format to ensure space in dbg statememt
+  RunChem_mod: made debug_flag argument to setup_1d call
+  Setup_1d: made debug_flag argument to setup_1d call
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Oct 2021, Dave
 
 RE-TAGGED as rv4.44. MMD change of 14/10/21 was only committed on 16/10/21
