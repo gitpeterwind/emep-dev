@@ -46,6 +46,10 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct 2021, Dave
+
+RE-TAGGED as rv4.44. MMD change of 14/10/21 was only committed on 16/10/21
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Oct 2021, Dave
 
 GasParticleCoeffs_mod: (should have been done for rv4.44)
@@ -70,7 +74,7 @@ ZD_EmCso/config/cso-settings.rc - updated benchmark settings
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct 2021, Dave
-NEW TAG: rv4.44
+DELETED TAG: rv4.44
 
 GasParticleCoeffs_mod:   FAILED **** wasn't committed :-(
   Changed MMD of SS to 4.0um (was 4.8)
