@@ -45,6 +45,17 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd Oct 2021, Peter
+
+Reorganizing the writing of localfraction in NetCDF. Chunk sizes are now:
+(dx,dy,64,64,1,1)
+Now each CPU send its data to master, which writes it as soon as it is
+received (only for the LF).
+
+Should be much faster write and faster uEMEP read too.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Oct 2021, Dave
 

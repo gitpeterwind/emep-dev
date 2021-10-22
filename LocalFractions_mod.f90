@@ -7,7 +7,7 @@ use Chemfields_mod,    only: xn_adv, cfac
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE
 use ChemSpecs_mod,     only: species_adv,species
-use Config_module,     only: KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
+use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU_HOUR&
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec, RUNDOMAIN, runlabel1 &
@@ -153,6 +153,7 @@ integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, save :: NSPEC_fullchem_inc_lf=0 ! number of species to included in CM_Reactions1
+
 contains
 
   subroutine lf_init
@@ -200,7 +201,7 @@ contains
 
      !TEMPORARY, should be set to NSPEC_fullchem_lf+NSPEC_SHL
      !We ASSUME that SQT_SOA_NV is the last species (highest index) included in CM_Reactions1.inc
-     ix=find_index("SQT_SOA_NV" ,species(:)%name) !NB: index among all species, also SHL
+     !ix=find_index("SQT_SOA_NV" ,species(:)%name) !NB: index among all species, also SHL
      NSPEC_fullchem_inc_lf = ix
      NSPEC_fullchem_inc_lf = max(ix, NSPEC_fullchem_lf+NSPEC_SHL)
 
@@ -828,6 +829,8 @@ subroutine lf_out(iotyp)
   kmax=lf_Nvertout
   scale=1.0
   CDFtype=Real4
+  dimSizes=1
+  
   dimSizes(1)=2*lf_src(1)%dist+1
   dimNames(1)='x_dist'
   dimSizes(2)=2*lf_src(1)%dist+1
@@ -883,11 +886,11 @@ subroutine lf_out(iotyp)
   def3=def1
   def3%unit='mg/m2'
   chunksizes=1
-  !chunksizes(1)=dimSizes(1) !slower!!
-  !chunksizes(2)=dimSizes(2) !slower!!
-  chunksizes(3)=MAXLIMAX
-  chunksizes(4)=MAXLJMAX
-  chunksizes(5)=dimSizes(5)
+  chunksizes(1)=dimSizes(1)
+  chunksizes(2)=dimSizes(2)
+  chunksizes(3)=64
+  chunksizes(4)=64
+  chunksizes(5)=1
   chunksizes_tot=1
   chunksizes_tot(1)=MAXLIMAX
   chunksizes_tot(2)=MAXLJMAX
@@ -1031,11 +1034,12 @@ subroutine lf_out(iotyp)
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
            endif
-           scale=1.0
+           scale=1.0           
            call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
            overwrite=.false.
         endif
+       
 
         if(lf_src(isrc)%make_fracsum)then
            if (lf_src(isrc)%name/='NOTSET')then
@@ -1047,8 +1051,10 @@ subroutine lf_out(iotyp)
               write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
               if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
            end if
+
            call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+           
         endif
 
      enddo

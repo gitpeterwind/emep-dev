@@ -1131,7 +1131,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   character(len=10) :: lastmodified_hour,lastmodified_hour0,created_hour
   integer :: varID,nrecords,ncFileID=closedID,ndate(4)
   integer :: d,alloc_err,ijk,status,i,j,k,i1,i2,j1,j2
-  real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID)
+  real, allocatable :: buff(:) !(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real(kind=8),   allocatable,dimension(:,:,:) :: R8data3D
   real(kind=4),   allocatable,dimension(:,:,:) :: R4data3D
   integer(kind=4),allocatable,dimension(:,:,:) :: Idata3D
@@ -1143,7 +1143,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   real(kind=8) :: rdays,rdays_time(1),rdaysstart
   logical :: overwrite_local,createfile=.false.
   integer, parameter :: IOU_GIVEN=-IOU_INST
-  integer ::domain(4),startvec(10),countvec(10),Nextradim,n,iextradim,iiextradim,nijk,date_start(4)
+  integer ::domain(4),startvec(10),countvec(10),Nextradim,n,extradim,nijk,date_start(4)
 
   domain=RUNDOMAIN!default domain (in fulldoamin coordinates)
 !fullrun, Monthly, Daily and hourly domains may be predefined
@@ -1357,7 +1357,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
               dimSizes=dimSizes,dimNames=dimNames)
     end if
   end if!MasterProc
-
+  
   if(create_var_only_local)then
     ! Don't write the data
     ! For performance: need to create all variables before writing data
@@ -1375,66 +1375,72 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   end if ! create var only
 
   Nextradim=1
+  extradim = 1
   if(present(dimSizes))then
      do n=1,ndim-3
         Nextradim=Nextradim*dimSizes(n)
      end do
-  endif
-  do iextradim = 1,Nextradim
-     startvec(1:ndim+1)=1
-     countvec(1:ndim+1)=1
-     iiextradim = iextradim-1
-     do n=1,ndim-3
-        startvec(n)=mod(iiextradim,dimSizes(n))+1
-        iiextradim=iiextradim/dimSizes(n)
+     do n = 1,Nextradim-1
+        extradim = extradim*dimSizes(n)
      end do
-     if(ndim-2>0)countvec(ndim-2)=i2-i1+1
-     if(ndim-1>0)countvec(ndim-1)=j2-j1+1
-     countvec(ndim)=kmax
-   !buffer the wanted part of data
-     ijk=0
-     nijk=iextradim-Nextradim
-     do k=1,kmax
-        do j = 1,tljmax(me)
-           do i = 1,tlimax(me)
+  endif
+  if(extradim>1 .and. (OUTtype/=Real4 .or. ndim/=5))write(*,*)extradim,OUTtype,ndim
+  call CheckStop(extradim>1 .and. (OUTtype/=Real4 .or. ndim/=5), "extradim case not implemented")
+  
+  if(ndim-2>0)countvec(ndim-2)=i2-i1+1
+  if(ndim-1>0)countvec(ndim-1)=j2-j1+1
+  countvec(ndim)=kmax
+  
+  !buffer the wanted part of data
+  ijk=0
+  allocate(buff(MAXLIMAX*MAXLJMAX*kmax*extradim))
+  do k=1,kmax
+     do j = 1,tljmax(me)
+        do i = 1,tlimax(me)
+           do n=1,extradim
               ijk=ijk+1
-              nijk=nijk+Nextradim
-!              if(i==5.and.j==5.and.k==kmax.and.mod(iextradim-1,11)==0.and.dat(nijk)>1.E-12)write(*,*)trim(varname),me,iextradim,dat(nijk)
-              buff(ijk)=dat(nijk)*scale
-              !if(isnan(buff(ijk)))then
-              !   write(*,*)'ERROR ',me,i,j,k,iextradim,ijk
-              !   stop
-              !endif
-              !if(buff(ijk)>1.1)then
-              !   write(*,*)'too large ERROR ',trim(varname),me,i,j,k,iextradim,ijk,buff(ijk)
-              !   stop
-              !endif
+              buff(ijk)=dat(ijk)*scale              
            end do
         end do
      end do
-
-     !send all data to me=0
-     outCDFtag = mod(outCDFtag + 1, 100000) ! mpi tags can overflow at some value (524287 in some installation)
-
-     if(MasterProc)then
-        if(iextradim==1)then
-           ! allocate a large array (only on one processor)
-           select case(OUTtype)
-           case(Int1,Int2,Int4)
-              allocate(Idata3D (GIMAX,GJMAX,kmax),stat=alloc_err)
-           case(Real4)
-              allocate(R4data3D(GIMAX,GJMAX,kmax),stat=alloc_err)
-           case(Real8)
-              allocate(R8data3D(GIMAX,GJMAX,kmax),stat=alloc_err)
-           case default
-              WRITE(*,*)'WARNING NetCDF:Data type not supported'
-              alloc_err=-1  ! trip error stop
-           end select
-           call CheckStop(alloc_err, "alloc failed in NetCDF_mod")
-        endif
+  end do
+  
+  !send all data to me=0
+  outCDFtag = mod(outCDFtag + 1, 100000) ! mpi tags can overflow at some value (524287 in some installation)
+  nrecords=0
+  if(MasterProc)then
+     
+     ndate(1:4) = [current_date%year,current_date%month,&
+          current_date%day ,current_date%hour]
+     
+     ! get variable id
+     call check(nf90_inq_varid(ncFileID,varname,VarID))
+     ! find the number of records already written
+     call check(nf90_get_att(ncFileID,VarID,"numberofrecords",nrecords))
+     if(DEBUG_NETCDF) print *,'number of dataset saved: ',nrecords
+     
+     ! test if new record is needed
+     if(present(ik).and.nrecords>0)then
+        ! The new record may already exist
+        call date2nctime(current_date,rdays,iotyp)
+        call check(nf90_inq_varid(ncFileID,"time",timeVarID))
+        call check(nf90_get_var(ncFileID,timeVarID,rdays_time,start=(/nrecords/)))
+        ! check if this is a newer time
+        if((abs(rdays-rdays_time(1))>0.00001))then!0.00001 is about 1 second
+           nrecords=nrecords+1 !start a new record
+        end if
+     else
+        ! increase nrecords, to define position of new data
+        nrecords=nrecords+1
+     end if
+     if(DEBUG_NETCDF) print *,'writing on dataset: ',nrecords
+     startvec(ndim+1)=nrecords        
+     
+     if (ndim<5) then
         !write own data in global array
         select case(OUTtype)
         case(Int1,Int2,Int4)
+           allocate(Idata3D (GIMAX,GJMAX,kmax),stat=alloc_err)
            ijk=0
            do k=1,kmax
               do j = tgj0(me),tgj0(me)+tljmax(me)-1
@@ -1445,6 +1451,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
               end do
            end do
         case(Real4)
+           allocate(R4data3D(GIMAX,GJMAX,kmax),stat=alloc_err)
            ijk=0
            do k=1,kmax
               do j = tgj0(me),tgj0(me)+tljmax(me)-1
@@ -1455,6 +1462,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
               end do
            end do
         case(Real8)
+           allocate(R8data3D(GIMAX,GJMAX,kmax),stat=alloc_err)
            ijk=0
            do k=1,kmax
               do j = tgj0(me),tgj0(me)+tljmax(me)-1
@@ -1464,12 +1472,38 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
                  end do
               end do
            end do
+        case default
+           WRITE(*,*)'WARNING NetCDF:Data type not supported'
+           alloc_err=-1
         end select
+        call CheckStop(alloc_err, "alloc failed in NetCDF_mod")
+     end if
 
-        do d = 1, NPROC-1
-           CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax, MPI_BYTE, d, &
-                outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
-
+     do d = 0, NPROC-1
+        
+        if(d>0) CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax*extradim, MPI_BYTE, d, &
+             outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
+        
+        if(ndim==5)then
+           !write out each buffer separately
+           startvec(1)=1
+           startvec(2)=1
+           startvec(3)=tgi0(d)
+           startvec(4)=tgj0(d)                 
+           startvec(5)=1                 
+           countvec(1)=dimSizes(1)
+           countvec(2)=dimSizes(2)
+           countvec(3)=tlimax(d)
+           countvec(4)=tljmax(d)
+           countvec(5)=kmax
+           call check(nf90_put_var(ncFileID,VarID,buff,&
+                start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
+        else
+           if(ndim>3)then
+              write(*,*)'ndim >3 and not=5 not implemented'
+              stop
+           end if
+           if (d == 0) continue
            ! copy data to global buffer
            select case(OUTtype)
            case(Int1,Int2,Int4)
@@ -1503,120 +1537,89 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
                  end do
               end do
            end select
-        end do
-     else
-        CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax, MPI_BYTE, 0, &
-             outCDFtag, MPI_COMM_CALC, IERROR)
-     end if
-     !return
-
-     if(MasterProc)then
-        if(iextradim==1)then
-        ndate(1:4) = [current_date%year,current_date%month,&
-             current_date%day ,current_date%hour]
-
-        ! get variable id
-        call check(nf90_inq_varid(ncFileID,varname,VarID))
-        ! find the number of records already written
-        call check(nf90_get_att(ncFileID,VarID,"numberofrecords",nrecords))
-        if(DEBUG_NETCDF) print *,'number of dataset saved: ',nrecords
-
-        ! test if new record is needed
-        if(present(ik).and.nrecords>0 .and. iextradim==1)then
-           ! The new record may already exist
-           call date2nctime(current_date,rdays,iotyp)
-           call check(nf90_inq_varid(ncFileID,"time",timeVarID))
-           call check(nf90_get_var(ncFileID,timeVarID,rdays_time,start=(/nrecords/)))
-           ! check if this is a newer time
-           if((abs(rdays-rdays_time(1))>0.00001))then!0.00001 is about 1 second
-              nrecords=nrecords+1 !start a new record
-           end if
-        else
-           ! increase nrecords, to define position of new data
-           nrecords=nrecords+1
         end if
-        if(DEBUG_NETCDF) print *,'writing on dataset: ',nrecords
-        endif
-        startvec(ndim+1)=nrecords
-
-        ! append new values
-        select case(OUTtype)
-        case(Int1,Int2,Int4)  ! type Integer
-           if(ndim==3)then
-              if(present(ik))then
-                 !     print *, 'write: ',i1,i2, j1,j2,ik
-                 call check(nf90_put_var(ncFileID,VarID,Idata3D(i1:i2,j1:j2,1),&
-                      start=(/1,1,ik,nrecords/)))
-              else
-                 call check(nf90_put_var(ncFileID,VarID,Idata3D(i1:i2,j1:j2,1:kmax),&
-                      start=(/1,1,1,nrecords/)))
-              end if
-           else if(ndim==2)then
-              call check(nf90_put_var(ncFileID, VarID,Idata3D(i1:i2,j1:j2,1),&
-                   start=(/1,1,nrecords/)))
-           else
-              call check(nf90_put_var(ncFileID, VarID,Idata3D(i1:i2,j1:j2,1:kmax),&
-                   start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
-           end if
-
-        case(Real4)           ! type Real4
-           if(ndim==3)then
-              if(present(ik))then
-                 !     print *, 'write: ',i1,i2, j1,j2,ik
-                 call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1),&
-                      start=(/1,1,ik,nrecords/)))
-              else
-                 call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1:kmax),&
-                      start=(/1,1,1,nrecords/)))
-              end if
-           else if(ndim==2)then
-              call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1),&
-                   start=(/1,1,nrecords/)))
-           else
-              !write(*,*)'writing slice ',iextradim,' of ',Nextradim
-!              if(mod(iextradim-1,12)==0)then
-!                 write(*,*)trim(varname),me,startvec(2),startvec(3),iextradim,R4data3D(GIMAX/2,GJMAX/2,kmax)
-!              endif
-    !if(me>=0)write(*,*)iextradim,'outcdf locfrac ',R4data3D(4,37,7),trim(varname),trim(fileName)
-              call check(nf90_put_var(ncFileID, VarID,R4data3D(i1:i2,j1:j2,1:kmax),&
-                   start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
-          end if
-
-        case(Real8)           ! type Real8
-           if(ndim==3)then
-              if(present(ik))then
-                 !     print *, 'write: ',i1,i2, j1,j2,ik
-                 call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1),&
-                      start=(/1,1,ik,nrecords/)))
-              else
-                 call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1:kmax),&
-                      start=(/1,1,1,nrecords/)))
-              end if
-           else if(ndim==2)then
-              call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1),&
-                   start=(/1,1,nrecords/)))
-           else
-              call check(nf90_put_var(ncFileID, VarID,R8data3D(i1:i2,j1:j2,1:kmax),&
-                   start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
-           end if
-
-        end select !type
-     end if !MasterProc
-  enddo
-
-  if(MasterProc)then
+     end do
+  else
+     CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax*extradim, MPI_BYTE, 0, &
+          outCDFtag, MPI_COMM_CALC, IERROR)
+  end if
+  
+  deallocate(buff)
+  
+  if(MasterProc .and. ndim<5)then
+     ! append new values
      select case(OUTtype)
      case(Int1,Int2,Int4)  ! type Integer
-        deallocate(Idata3D,stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID,VarID,Idata3D(i1:i2,j1:j2,1),&
+                   start=(/1,1,ik,nrecords/)))
+           else
+              call check(nf90_put_var(ncFileID,VarID,Idata3D(i1:i2,j1:j2,1:kmax),&
+                   start=(/1,1,1,nrecords/)))
+           end if
+        else if(ndim==2)then
+           call check(nf90_put_var(ncFileID, VarID,Idata3D(i1:i2,j1:j2,1),&
+                start=(/1,1,nrecords/)))
+        else
+           call check(nf90_put_var(ncFileID, VarID,Idata3D(i1:i2,j1:j2,1:kmax),&
+                start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
+        end if
+        
      case(Real4)           ! type Real4
-        deallocate(R4data3D, stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1),&
+                   start=(/1,1,ik,nrecords/)))
+           else
+              call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1:kmax),&
+                   start=(/1,1,1,nrecords/)))
+           end if
+        else if(ndim==2)then
+           call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1),&
+                start=(/1,1,nrecords/)))
+        else
+           stop                      
+        end if
+        
      case(Real8)           ! type Real8
-        deallocate(R8data3D, stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1),&
+                   start=(/1,1,ik,nrecords/)))
+           else
+              call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1:kmax),&
+                   start=(/1,1,1,nrecords/)))
+           end if
+        else if(ndim==2)then
+           call check(nf90_put_var(ncFileID,VarID,R8data3D(i1:i2,j1:j2,1),&
+                start=(/1,1,nrecords/)))
+        else
+           call check(nf90_put_var(ncFileID, VarID,R8data3D(i1:i2,j1:j2,1:kmax),&
+                start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
+        end if
+        
      end select !type
+  end if !MasterProc
 
+  
+  if(MasterProc)then
+     if (ndim<5) then
+        select case(OUTtype)
+        case(Int1,Int2,Int4)  ! type Integer
+           deallocate(Idata3D,stat=alloc_err)
+           call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        case(Real4)           ! type Real4
+           deallocate(R4data3D, stat=alloc_err)
+           call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        case(Real8)           ! type Real8
+           deallocate(R8data3D, stat=alloc_err)
+           call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
+        end select !type
+     end if
      call check(nf90_get_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour0 ))
      call check(nf90_get_att(ncFileID,nf90_global,"created_hour",created_hour))
      call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
