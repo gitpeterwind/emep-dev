@@ -47,6 +47,13 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th Oct 2021, Peter, Dave
+
+Replace "YYYY" for the SplitSpecialsFile and SplitDefaultFile.
+For Specials, the file must exist for at least one pollutant,
+for Defaults they must all exist.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd Oct 2021, Peter
 
 Reorganizing the writing of localfraction in NetCDF. Chunk sizes are now:

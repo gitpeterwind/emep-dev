@@ -1320,7 +1320,8 @@ end if
   logical  :: defaults          ! Set to true for defaults, false for specials
   logical  :: debugm            ! debug flag on master proc
   character(len=*), parameter :: dtxt = 'EmisGet:'
-  integer  :: itot_RDF
+  integer  :: itot_RDF, nfexist
+  logical :: fexist
 !-----------------------------------------------
 
   iqrc = 0               ! Starting index in emisfrac array
@@ -1330,6 +1331,29 @@ end if
   allocate(tmp_emisfrac(NSPEC_ADV,N_SPLITMAX,NLAND))
   debugm = (DEBUG%GETEMIS.and.MasterProc)
 
+  !check that the required files exist
+  SplitDefaultFile  = key2str(SplitDefaultFile,'YYYY',startdate(1))
+  do ie = 1, NEMIS_FILE
+     fname = key2str(SplitDefaultFile,'POLL', EMIS_FILE(ie) )
+     !Defaults must exist for all pollutants
+     inquire(file=fname,exist=fexist)
+     call CheckStop(.not. fexist ,trim(fname)//" does not exist")
+  end do
+  
+  ! for specials check that at if YYYY is used in the names,
+  ! the file exists for at least one pollutants
+  nfexist = 0
+  if (index(SplitSpecialsFile,'YYYY') > 0 ) then
+     do ie = 1, NEMIS_FILE
+        SplitSpecialsFile = key2str(SplitSpecialsFile,'YYYY',startdate(1))
+        fname = key2str(SplitSpecialsFile,'POLL', EMIS_FILE(ie) )
+        inquire(file=fname,exist=fexist)     
+        if (fexist) nfexist = nfexist + 1
+     end do
+     call CheckStop(MasterProc .and. nfexist == 0, &
+          "none of the "//trim(SplitSpecialsFile)//" does exist")
+  end if
+  
   do ie = 1, NEMIS_FILE
 
     IDEF_LOOP: do idef = 0, 1
