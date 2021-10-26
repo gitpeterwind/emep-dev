@@ -1,0 +1,204 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!
+!!! Settings for CSO operator in EMEP
+!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!-------------------------------------------------
+! datasets
+!-------------------------------------------------
+
+! keys that define datasets:
+cso.keys                      :  S5p-no2-superobs
+
+
+!-------------------------------------------------
+! S5p/NO2
+!-------------------------------------------------
+
+! template for listing with converted files:
+!~ nebula:
+S5p-no2-superobs.listing           : /nobackup/forsk/sm_arjse/work/projects/CAMS_81/CSO-data/S5p/listing-NO2-superobs.csv
+
+! also read info on original track (T|F)?
+! if enabled, this will be stored in the output too:
+S5p-no2-superobs.with_track        :  T
+
+! put out mapping arrays? only for diagnosis yet ..
+S5p-no2-superobs.with_mapping      :  F
+
+!~ data
+
+! data variables:
+S5p-no2-superobs.dvars             :  hp yr vr A M nla
+
+! half-level pressures:
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.hp.dims      :  layeri
+!~ source variable:
+S5p-no2-superobs.dvar.hp.source    :  pressure
+
+! retrieval: 
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.yr.dims      :  retr
+!~ source variable:
+S5p-no2-superobs.dvar.yr.source    :  vcd
+
+! retrieval error covariance: 
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.vr.dims      :  retr retr
+!~ source variable:
+S5p-no2-superobs.dvar.vr.source    :  vcd_errvar
+
+! kernel:
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.A.dims       :  retr layer
+!~ source variable:
+S5p-no2-superobs.dvar.A.source     :  kernel_trop
+
+! tropospheric airmass factor
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.M.dims       :  retr
+!~ source variable:
+S5p-no2-superobs.dvar.M.source     :  amf_trop
+
+! number of apriori layers in retrieval layer:
+!~ dimensions, copied from data file:
+S5p-no2-superobs.dvar.nla.dims     :  retr
+!~ source variable:
+S5p-no2-superobs.dvar.nla.source   :  nla
+
+!~ state
+
+! state varaiables to be put out from model:
+S5p-no2-superobs.vars                         :  mod_conc mod_hp xs ys Sx M_m A_m yr_m ys_m
+
+! model concentration profile:
+!~ model layer dimension:
+S5p-no2-superobs.var.mod_conc.dims            :  model_layer
+!~ standard attributes:
+S5p-no2-superobs.var.mod_conc.attrs           :  long_name units
+S5p-no2-superobs.var.mod_conc.attr.long_name  :  model NO2 concentrations
+S5p-no2-superobs.var.mod_conc.attr.units      :  ppb
+
+! idem after analysis
+!~ model layer dimension:
+S5p-no2-superobs.var.mod_conc_an.dims            :  model_layer
+!~ standard attributes:
+S5p-no2-superobs.var.mod_conc_an.attrs           :  long_name units
+S5p-no2-superobs.var.mod_conc_an.attr.long_name  :  analyzed NO2 concentrations
+S5p-no2-superobs.var.mod_conc_an.attr.units      :  ppb
+
+! model hpentration profile:
+!~ model layer interfaces:
+S5p-no2-superobs.var.mod_hp.dims              :  model_layeri
+!~ standard attributes:
+S5p-no2-superobs.var.mod_hp.attrs             :  long_name units
+S5p-no2-superobs.var.mod_hp.attr.long_name    :  model pressure at layer interfaces
+S5p-no2-superobs.var.mod_hp.attr.units        :  Pa
+
+! model concentrations at apriori layers:
+!~ apriori layers:
+S5p-no2-superobs.var.xs.dims                  :  layer
+!~ how computed:
+S5p-no2-superobs.var.xs.formula               :  LayerAverage( hp, mod_hp, mod_conc )
+S5p-no2-superobs.var.xs.formula_terms         :  hp: hp   mod_hp: mod_hp   mod_conc: mod_conc
+!~ standard attributes:
+S5p-no2-superobs.var.xs.attrs                 :  long_name units
+S5p-no2-superobs.var.xs.attr.long_name        :  model simulations at apriori layers
+S5p-no2-superobs.var.xs.attr.units            :  mol m-2
+
+! simulated retrievals
+!~ retrieval layers:
+S5p-no2-superobs.var.ys.dims                  :  retr
+!~ how computed:
+S5p-no2-superobs.var.ys.formula               :  A x
+S5p-no2-superobs.var.ys.formula_terms         :  A: A   x: xs
+!~ standard attributes:
+S5p-no2-superobs.var.ys.attrs                 :  long_name units
+S5p-no2-superobs.var.ys.attr.long_name        :  simulated retrieval
+S5p-no2-superobs.var.ys.attr.units            :  mol m-2
+
+! partial columns as sum over apriori layers:
+!    Sx = sum_{l=1,nla} Hx
+! note that this assumes that profiles are in surface-to-top order!
+!~ retrieval layers:
+S5p-no2-superobs.var.Sx.dims                 :  retr
+!~ how computed:
+S5p-no2-superobs.var.Sx.formula              :  PartialColumns( nla, x )
+S5p-no2-superobs.var.Sx.formula_terms        :  nla: nla   x: xs
+!~ standard attributes:
+S5p-no2-superobs.var.Sx.attrs                :  long_name units
+S5p-no2-superobs.var.Sx.attr.long_name       :  tropospheric column in local model
+S5p-no2-superobs.var.Sx.attr.units           :  mol m-2
+
+! airmass factor from local model
+!~ retrieval layers:
+S5p-no2-superobs.var.M_m.dims                 :  retr
+!~ how computed:
+S5p-no2-superobs.var.M_m.formula              :  AltAirMassFactor( M, A, x, Sx )
+S5p-no2-superobs.var.M_m.formula_terms        :  M: M   A: A   x: xs   Sx: Sx
+!~ standard attributes:
+S5p-no2-superobs.var.M_m.attrs                :  long_name units
+S5p-no2-superobs.var.M_m.attr.long_name       :  airmass factors from local model
+S5p-no2-superobs.var.M_m.attr.units           :  1
+
+! kernel using airmass factor from local model
+!~ retrieval layers times apriori layers
+S5p-no2-superobs.var.A_m.dims                 :  retr layer
+!~ how computed:
+S5p-no2-superobs.var.A_m.formula              :  AltKernel( A, M, M_m )
+S5p-no2-superobs.var.A_m.formula_terms        :  A: A   M: M   M_m: M_m
+!~ standard attributes:
+S5p-no2-superobs.var.A_m.attrs                :  long_name units
+S5p-no2-superobs.var.A_m.attr.long_name       :  averaging kernel using local airmass factors
+S5p-no2-superobs.var.A_m.attr.units           :  1
+
+! retrieval using airmass factor from local model
+!~ retrieval layers:
+S5p-no2-superobs.var.yr_m.dims                :  retr
+!~ how computed:
+S5p-no2-superobs.var.yr_m.formula             :  AltRetrieval( y, M, M_m )
+S5p-no2-superobs.var.yr_m.formula_terms       :  y: yr   M: M   M_m: M_m
+!~ standard attributes:
+S5p-no2-superobs.var.yr_m.attrs               :  long_name units
+S5p-no2-superobs.var.yr_m.attr.long_name      :  retrieval using local airmass factors
+S5p-no2-superobs.var.yr_m.attr.units          :  mol m-2
+
+! simulated retrievals using airmass factor from local model
+!~ retrieval layers:
+S5p-no2-superobs.var.ys_m.dims                 :  retr
+!~ how computed:
+S5p-no2-superobs.var.ys_m.formula              :  A x
+S5p-no2-superobs.var.ys_m.formula_terms        :  A: A_m   x: xs
+!~ standard attributes:
+S5p-no2-superobs.var.ys_m.attrs                :  long_name units
+S5p-no2-superobs.var.ys_m.attr.long_name       :  simulated retrieval based on local airmass factors
+S5p-no2-superobs.var.ys_m.attr.units           :  mol m-2
+
+!
+! * info for EMEP model
+!
+
+! model tracer:
+S5p-no2-superobs.tracer            :  NO2
+
+
+!-------------------------------------------------
+! general
+!-------------------------------------------------
+
+! mapping from footprints to grid cells using sample points in polygon;
+! sample points is centroid of footprint (level 0),
+! or centroids of triangles in which footprint is recursevely devided;
+! number of points for 4-sided footprint:
+!  1 point (levels=0), 4 (1), 16 (2), 64 (3)
+cso.mapping.levels            :  3
+
+
+
+
+!-------------------------------------------------
+! end
+!-------------------------------------------------
