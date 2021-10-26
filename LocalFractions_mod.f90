@@ -27,7 +27,8 @@ use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
                              NEmis_sources, Emis_source_2D, Emis_source, EmisMaskIntVal
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
-use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom
+use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom,&
+                             RestrictDomain
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Out_netCDF,LF_ncFileID_iou
@@ -424,12 +425,9 @@ contains
         lf_src(isrc)%country_ix = ix
         if(MasterProc)write(*,*)isrc,' country '//trim(lf_src(isrc)%country_ISO)//' '//trim(lf_src(isrc)%species)
      endif
-     
-     lf_src(isrc)%DOMAIN(1) = max(RUNDOMAIN(1),lf_src(isrc)%DOMAIN(1))
-     lf_src(isrc)%DOMAIN(2) = min(RUNDOMAIN(2),lf_src(isrc)%DOMAIN(2))
-     lf_src(isrc)%DOMAIN(3) = max(RUNDOMAIN(3),lf_src(isrc)%DOMAIN(3))
-     lf_src(isrc)%DOMAIN(4) = min(RUNDOMAIN(4),lf_src(isrc)%DOMAIN(4))
 
+     call RestrictDomain(lf_src(isrc)%DOMAIN)
+     
      iem=find_index(lf_src(isrc)%species ,EMIS_FILE(1:NEMIS_FILE))
 
      if(iem<1)then
