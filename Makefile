@@ -128,7 +128,7 @@ TEST:
 	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
 # simulation of satellite retrievals
-EmCso: EmChem19rp
+EmCso:
 	$(MAKE) -C ZD_$@ $(PROG)
 
 # Data assimilation: 3DVar
