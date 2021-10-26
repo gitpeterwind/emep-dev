@@ -25,7 +25,7 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, step_main,END_OF_EMEPDAY &
                            ,IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
                            ,fileName_O3_Top,FREQ_SITE, FREQ_SONDE&
                            , O3_ix,SO2_ix,NH3_ix
-use EMEP_CSO_mod,      only: EMEP_CSO_Simulate, TIMING_CSO
+use EMEP_CSO_mod,      only: EMEP_CSO_Simulate, EMEP_CSO_Clear, TIMING_CSO
 use DA_mod,            only: DEBUG_DA_1STEP
 use DA_3DVar_mod,      only: main_3dvar, T_3DVAR
 use Debug_module,      only: DEBUG, DebugCell  ! -> DEBUG%GRIDVALUES
@@ -306,6 +306,12 @@ subroutine phyche()
     ! end timing:
     call Add_2timing( TIMING_CSO, tim_after, tim_before )
   end if
+
+  ! clear simulation of satellite retrievals:
+  call EMEP_CSO_Clear( status )
+  call CheckStop( status, "EMEP_CSO_Clear in PhyChem_mod/PhyChe" )
+  ! end timing:
+  call Add_2timing( TIMING_CSO, tim_after, tim_before )
 
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting
   if(USES%POLLEN) call pollen_dump()

@@ -38,6 +38,7 @@ module EMEP_CSO_mod
 
   public  ::  EMEP_CSO_Init, EMEP_CSO_Done
   public  ::  EMEP_CSO_Simulate
+  public  ::  EMEP_CSO_Clear
 
 
   ! --- const -----------------------------------------
@@ -73,7 +74,7 @@ module EMEP_CSO_mod
     ! work array:
     real, allocatable         ::  wmap(:,:)  ! (nlon,nlat)
     !
-    ! idem for arrays for pixel arrays:
+    ! idem for pixel arrays:
     integer                   ::  nall
     integer                   ::  mxall
     integer, pointer          ::  all_iw0(:), all_nw(:)   ! (npix)
@@ -115,6 +116,10 @@ module EMEP_CSO_mod
   character(len=32)                     ::  cso_tracer(maxcso)
   ! tool for mapping regular grid to footprint:
   type(T_EMEP_GridMapping)              ::  emep_grid_mapping
+  ! how to decide if pixel overlaps (partly) with domain:
+  !  'center'     :  based on center only
+  !  'footprint'  :  based on corners
+  character(len=16)                     ::  cso_mapping_select_by
   
   
 contains
@@ -250,6 +255,10 @@ contains
       
     end do ! cso sets
 
+    ! how to decide if pixel overlaps with domain:
+    call cso_rcf%Get( 'cso.mapping.select_by', cso_mapping_select_by, status )
+    IF_NOT_OK_RETURN(status=1)
+
     ! mapping level:
     call cso_rcf%Get( 'cso.mapping.levels', cso_mapping_levels, status )
     IF_NOT_OK_RETURN(status=1)
@@ -298,28 +307,10 @@ contains
 
     ! loop over datasets:
     do icso = 1, ncso
-
-      ! orbit file found for this time?
-      if ( len_trim(cso_orbit_filename(icso)) > 0 ) then
-
-        ! done with state:
-        call cso_sstate(icso)%Done( cso_sdata(icso), status )
-        IF_NOT_OK_RETURN(status=1)
-
-        ! done with data:
-        call cso_sdata(icso)%Done( status )
-        IF_NOT_OK_RETURN(status=1)
-
-        !! testing ...
-        !write (gol,'("break after first orbit")'); call goErr
-        !TRACEBACK; status=1; return
-
-      end if  ! orbit found in listing
-
       ! done with listing:
       call cso_listing(icso)%Done( status )
       IF_NOT_OK_RETURN(status=1)
-    end do
+    end do ! icso
 
     ! done with CSO settings:
     call cso_rcf%Done( status )
@@ -359,7 +350,6 @@ contains
     use CSO                   , only : Pretty
     use CSO                   , only : Precisely
     use CSO                   , only : operator(+), operator(-), operator(*), operator(>=)
-!    use CSO                   , only : T_ProfileMapping
 
     use Config_module         , only : KMAX_MID
     use TimeDate_mod          , only : current_date
@@ -396,8 +386,8 @@ contains
     ! number of global pixels:
     integer                           ::  nglb
     ! global pixel arrays:
-    !real, pointer                     ::  glb_lon(:)       ! (nglb)
-    !real, pointer                     ::  glb_lat(:)       ! (nglb)
+    real, pointer                     ::  glb_lon(:)       ! (nglb)
+    real, pointer                     ::  glb_lat(:)       ! (nglb)
     real, pointer                     ::  glb_clons(:,:)   ! (nglb,4)
     real, pointer                     ::  glb_clats(:,:)   ! (nglb,4)
     logical, pointer                  ::  glb_select(:)    ! (nglb)
@@ -445,6 +435,13 @@ contains
 
     ! --- begin -----------------------------
     
+    ! make orbit filenames empty, since "Clear" checks on length;
+    ! loop over data sets:
+    do icso = 1, ncso
+      ! no file read:
+      cso_orbit_filename(icso) = ''
+    end do ! icso
+    
     ! current time ;
     ! "current_date" is type "date" with fields: year,hour,day, hour,seconds
     ! (thus no "minutes"!)
@@ -490,34 +487,62 @@ contains
 
           ! obtain from the orbit:
           ! - number of footprints (global, all pixels in file)
-          ! - pointers to arrays with footprint corners
           ! - pointer to to selection flags, should be used to select pixels overlapping with local domain
-          call cso_sdata(icso)%Get( status, nglb=nglb, &
-                                   glb_clons=glb_clons, glb_clats=glb_clats, &
-                                   glb_select=glb_select )
+          call cso_sdata(icso)%Get( status, nglb=nglb, glb_select=glb_select )
           IF_NOT_OK_RETURN(status=1)
-          ! number of corners:
-          ncrnr = size(glb_clons,1)
 
-          ! select pixels that overlap with local domain;
-          ! loop over global pixels:
-          do iglb = 1, nglb
-            !!~ testing, select all:
-            !glb_select(1:nglb) = .true.
-            !!~ deceide if pixel center is part of local domain:
-            !glb_select(iglb) = coord_in_domain( 'local', glb_lon(iglb), glb_lat(iglb) )
-            !~ check if footprint overlaps (partly) with domain:
-            glb_select(iglb) = .false.
-            do icrnr = 1, ncrnr
-              glb_select(iglb) = glb_select(iglb) .or. &
-                  coord_in_domain( 'local' , glb_clons(icrnr,iglb), glb_clats(icrnr,iglb) )
-            end do ! icrnr
-            ! ... and if it is entirely in global domain:
-            do icrnr = 1, ncrnr
-              glb_select(iglb) = glb_select(iglb) .and. &
-                  coord_in_domain( 'global', glb_clons(icrnr,iglb), glb_clats(icrnr,iglb) )
-            end do ! icrnr
-          end do ! iglb
+          ! select pixels that overlap with local domain:
+          select case ( trim(cso_mapping_select_by) )
+
+            !~ just on centers:
+            case ( 'center' )
+
+              ! obtain from the orbit:
+              ! - pointers to arrays with footprint centers
+              call cso_sdata(icso)%Get( status, glb_lon=glb_lon, glb_lat=glb_lat )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! loop over global pixels:
+              do iglb = 1, nglb
+                !~ decide if pixel center is part of local domain;
+                !  do not adjust to prefered domain since this gives problems at date-line:
+                glb_select(iglb) = coord_in_domain( 'local', glb_lon(iglb), glb_lat(iglb), fix=.false. )
+              end do ! iglb
+
+            !~ based on entire footprint
+            case ( 'footprint' )
+
+              ! obtain from the orbit:
+              ! - pointers to arrays with footprint corners
+              call cso_sdata(icso)%Get( status, glb_clons=glb_clons, glb_clats=glb_clats )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! number of corners:
+              ncrnr = size(glb_clons,1)
+
+              ! loop over global pixels:
+              do iglb = 1, nglb
+                ! by default no overlap:
+                glb_select(iglb) = .false.
+                !~ check if footprint overlaps (partly) with domain;
+                !  do not adjust to prefered domain since this gives problems at date-line:
+                do icrnr = 1, ncrnr
+                  glb_select(iglb) = glb_select(iglb) .or. &
+                      coord_in_domain( 'local' , glb_clons(icrnr,iglb), glb_clats(icrnr,iglb), fix=.false. )
+                end do ! icrnr
+                ! ... and if it is entirely in global domain;
+                !  do not adjust to prefered domain:
+                do icrnr = 1, ncrnr
+                  glb_select(iglb) = glb_select(iglb) .and. &
+                      coord_in_domain( 'global', glb_clons(icrnr,iglb), glb_clats(icrnr,iglb), fix=.false. )
+                end do ! icrnr
+              end do ! iglb
+              
+            !~
+            case default
+              write (gol,'("unsupported selection method `",a,"`")') trim(cso_mapping_select_by); call goPr
+              TRACEBACK; status=1; return
+          end select
 
           ! read orbit, locally store only pixels that are flagged in 'glb_select'
           ! as having overlap with this domain:
@@ -674,7 +699,7 @@ contains
                       write (gol,'(a,": variable `",a,"` requires conversion to `",a,"` from `",a,"`")') &
                               rname, trim(uvarnames(iuvar)), trim(uvarunits(iuvar)), 'Pa'; call goErr
                     end if
-                    ! get pointer to target array with shape (nlev,npix):
+                    ! get pointer to target array with shape (nlev+1,npix):
                     call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data1=data1 )
                     IF_NOT_OK_RETURN(status=1)
                     ! loop over pixels:
@@ -688,7 +713,7 @@ contains
                           ! add contribution,
                           ! comppute half level pressures using hybride coeff;
                           ! first record of surface pressure is said to be the correct one ..
-                          data1(2:KMAX_MID+2+2,ipix) = data1(2:KMAX_MID+2,ipix) + (A_bnd + B_bnd * ps(ii(iw),jj(iw),1)) * ww(iw)/areas(ipix)
+                          data1(2:KMAX_MID+2,ipix) = data1(2:KMAX_MID+2,ipix) + (A_bnd + B_bnd * ps(ii(iw),jj(iw),1)) * ww(iw)/areas(ipix)
                         end do ! iw
                       end if ! nw > 0
                     end do ! ipix
@@ -704,14 +729,11 @@ contains
               ! info ...
               write (gol,'("end ...")'); call goPr
   
-              ! any user defined?
-              if ( nuvar > 0 ) then
-                ! clear:
-                deallocate( uvarnames, stat=status )
-                IF_NOT_OK_RETURN(status=1)
-                deallocate( uvarunits, stat=status )
-                IF_NOT_OK_RETURN(status=1)
-              end if  ! nuvar > 0
+              ! clear:
+              deallocate( uvarnames, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              deallocate( uvarunits, stat=status )
+              IF_NOT_OK_RETURN(status=1)
   
             end if ! nuvar > 0
 
@@ -781,11 +803,57 @@ contains
       end do ! cso sets
       
     end if  ! time at whole hour
-
+    
     ! ok
     status = 0
 
   end subroutine EMEP_CSO_Simulate
+
+
+  ! ***
+
+
+  subroutine EMEP_CSO_Clear( status )
+
+    ! --- in/out ----------------------------
+
+    integer, intent(out)           ::  status
+
+    ! --- const ----------------------------
+
+    character(len=*), parameter  ::  rname = mname//'/EMEP_CSO_Clear'
+
+    ! --- local ----------------------------
+
+    integer                               ::  icso
+
+    ! --- begin -----------------------------
+    
+    ! info ...
+    write (gol,'(a,": clear CSO data ...")') rname; call goPr
+
+    ! loop over datasets:
+    do icso = 1, ncso
+
+      ! orbit file found for this time?
+      if ( len_trim(cso_orbit_filename(icso)) > 0 ) then
+
+        ! done with state:
+        call cso_sstate(icso)%Done( cso_sdata(icso), status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! done with data:
+        call cso_sdata(icso)%Done( status )
+        IF_NOT_OK_RETURN(status=1)
+
+      end if  ! orbit found in listing
+
+    end do  ! icso
+
+    ! ok
+    status = 0
+
+  end subroutine EMEP_CSO_Clear
   
   
   ! ====================================================================
@@ -885,6 +953,8 @@ contains
       deallocate( self%xxp, stat=status )
       IF_NOT_OK_RETURN(status=1)
       deallocate( self%yyp, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      deallocate( self%wwp, stat=status )
       IF_NOT_OK_RETURN(status=1)
     end if
     
@@ -994,8 +1064,10 @@ contains
       !! target cell:
       !i = ceiling( (self%xxp(ip)-self%west )/self%dlon ) - self%ilon0
       !j = ceiling( (self%yyp(ip)-self%south)/self%dlat ) - self%ilat0
-      ! test if location is in local domain, also return indices (if defined):
-      inside = coord_in_domain( 'local', self%xxp(ip), self%yyp(ip), iloc=i, jloc=j )
+      ! test if location is in local domain, also return indices (if defined),
+      ! do not adjust to prefered domain since this gives problems at date-line:
+      inside = coord_in_domain( 'local', self%xxp(ip), self%yyp(ip), &
+                                  iloc=i, jloc=j, fix=.false. )
       ! in local domain?
       if ( inside ) then
         ! increase weights on map:
