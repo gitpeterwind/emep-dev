@@ -424,10 +424,11 @@ contains
         lf_src(isrc)%country_ix = ix
         if(MasterProc)write(*,*)isrc,' country '//trim(lf_src(isrc)%country_ISO)//' '//trim(lf_src(isrc)%species)
      endif
-
-     do i=1,4
-        lf_src(isrc)%DOMAIN(i) = max(RUNDOMAIN(i),lf_src(isrc)%DOMAIN(i))
-     enddo
+     
+     lf_src(isrc)%DOMAIN(1) = max(RUNDOMAIN(1),lf_src(isrc)%DOMAIN(1))
+     lf_src(isrc)%DOMAIN(2) = min(RUNDOMAIN(2),lf_src(isrc)%DOMAIN(2))
+     lf_src(isrc)%DOMAIN(3) = max(RUNDOMAIN(3),lf_src(isrc)%DOMAIN(3))
+     lf_src(isrc)%DOMAIN(4) = min(RUNDOMAIN(4),lf_src(isrc)%DOMAIN(4))
 
      iem=find_index(lf_src(isrc)%species ,EMIS_FILE(1:NEMIS_FILE))
 
@@ -888,8 +889,8 @@ subroutine lf_out(iotyp)
   chunksizes=1
   chunksizes(1)=dimSizes(1)
   chunksizes(2)=dimSizes(2)
-  chunksizes(3)=64
-  chunksizes(4)=64
+  chunksizes(3)=64 ! optimal for read and write?
+  chunksizes(4)=64 ! optimal for read and write?
   chunksizes(5)=1
   chunksizes_tot=1
   chunksizes_tot(1)=MAXLIMAX

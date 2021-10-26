@@ -1143,9 +1143,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   real(kind=8) :: rdays,rdays_time(1),rdaysstart
   logical :: overwrite_local,createfile=.false.
   integer, parameter :: IOU_GIVEN=-IOU_INST
-  integer ::domain(4),startvec(10),countvec(10),Nextradim,n,extradim,nijk,date_start(4)
+  integer ::domain(4),startvec(10),countvec(10),n,extradim,eijk,date_start(4)
 
-  domain=RUNDOMAIN!default domain (in fulldoamin coordinates)
+  domain=RUNDOMAIN!default domain (in fulldomain coordinates)
 !fullrun, Monthly, Daily and hourly domains may be predefined
   select case(iotyp)
   case(IOU_YEAR)
@@ -1374,13 +1374,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
    return
   end if ! create var only
 
-  Nextradim=1
   extradim = 1
   if(present(dimSizes))then
-     do n=1,ndim-3
-        Nextradim=Nextradim*dimSizes(n)
-     end do
-     do n = 1,Nextradim-1
+     do n = 1, ndim-3
         extradim = extradim*dimSizes(n)
      end do
   endif
@@ -1394,17 +1390,39 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   !buffer the wanted part of data
   ijk=0
   allocate(buff(MAXLIMAX*MAXLJMAX*kmax*extradim))
-  do k=1,kmax
-     do j = 1,tljmax(me)
-        do i = 1,tlimax(me)
-           do n=1,extradim
-              ijk=ijk+1
-              buff(ijk)=dat(ijk)*scale              
+  
+  if (ndim==5) then
+     !special case for extra dimensions
+     eijk=0
+     do k=1,kmax
+        do j = 1,tljmax(me)
+           if (j_fdom(j)>=j1 .and. j_fdom(j)<=j2) then
+              do i = 1,tlimax(me)
+                 if (i_fdom(i)>=i1 .and. i_fdom(i)<=i2) then
+                    ijk = ((i-1)+(j-1)*tlimax(me)+(k-1)*tljmax(me)*tlimax(me))*extradim
+                    do n=1,extradim
+                       eijk=eijk+1
+                       buff(eijk)=dat(ijk+n)*scale
+                    end do
+                 end if
+              end do
+           end if
+        end do
+     end do
+     !note that we send all the MAXLIMAX*MAXLJMAX*kmax*extradim, even if not all are used/defined
+  else
+     do k=1,kmax
+        do j = 1,tljmax(me)
+           do i = 1,tlimax(me)
+              do n=1,extradim
+                 ijk=ijk+1
+                 buff(ijk)=dat(ijk)*scale
+              end do
            end do
         end do
      end do
-  end do
-  
+  end if
+
   !send all data to me=0
   outCDFtag = mod(outCDFtag + 1, 100000) ! mpi tags can overflow at some value (524287 in some installation)
   nrecords=0
@@ -1434,7 +1452,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         nrecords=nrecords+1
      end if
      if(DEBUG_NETCDF) print *,'writing on dataset: ',nrecords
-     startvec(ndim+1)=nrecords        
+     startvec(ndim+1) = nrecords
+     countvec(ndim+1) = 1
      
      if (ndim<5) then
         !write own data in global array
@@ -1485,19 +1504,23 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
              outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
         
         if(ndim==5)then
-           !write out each buffer separately
+          !write out each buffer separately
            startvec(1)=1
            startvec(2)=1
-           startvec(3)=tgi0(d)
-           startvec(4)=tgj0(d)                 
-           startvec(5)=1                 
+           startvec(3)=max(1,tgi0(d)-i1+1)
+           startvec(4)=max(1,tgj0(d)-j1+1)
+           startvec(5)=1
            countvec(1)=dimSizes(1)
            countvec(2)=dimSizes(2)
-           countvec(3)=tlimax(d)
-           countvec(4)=tljmax(d)
+           countvec(3)=tlimax(d) - max(0,i1-tgi0(d)) !remove on the left
+           countvec(3)=countvec(3)-max(0,(tgi0(d)+tlimax(d)-1 - i2)) !remove on the right
+           countvec(4)=tljmax(d) - max(0,j1-tgj0(d))
+           countvec(4)=countvec(4)-max(0,tgj0(d)+tljmax(d)-1 - j2)
            countvec(5)=kmax
-           call check(nf90_put_var(ncFileID,VarID,buff,&
-                start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
+           if (countvec(3)>0 .and. countvec(4)>0) then
+              call check(nf90_put_var(ncFileID,VarID,buff,&
+                   start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
+           endif
         else
            if(ndim>3)then
               write(*,*)'ndim >3 and not=5 not implemented'

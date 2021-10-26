@@ -45,6 +45,13 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2021, Peter
+
+Corrected bugs introduced 22nd Oct 2021, for LF chunksizes optimizations.
+
+Also noticed/corrected that the lf%out_DOMAIN was not working for the upper
+bounds
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Oct 2021, Arjo
