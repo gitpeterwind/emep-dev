@@ -1398,7 +1398,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pmfine <1,"Missing PMFINE output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
      end if
@@ -1412,7 +1412,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "PM_coarse" )      !
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pm25 <1,"Missing PM25 output for "//trim(class))
         call CheckStop(ind2d_pm10 <1,"Missing PM10 output for "//trim(class))
      end if
@@ -1423,7 +1423,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "SIA25" )   ! Need to subtract some NO3_c from SIA
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_sia <1,"Missing SIA output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
       end if
@@ -1445,7 +1445,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pmfine <1,"Missing PMFINE output for "//trim(class))
         call CheckStop(ind2d_pmwater<1,"Missing PM25water output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
@@ -1470,7 +1470,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case("PM25X")      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pmfine <1,"Missing PMFINE output for "//trim(class))
       end if
       if(any([iadv_NO3_C,iadv_EC_C_WOOD,iadv_EC_C_FFUEL,iadv_POM_C_FFUEL]<1))then
@@ -1492,7 +1492,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case("PM25X_rh50")      ! Need to add PMFINE + fraction NO3_c + water
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pmfine <1,"Missing PMFINE output for "//trim(class))
         call CheckStop(ind2d_pmwater<1,"Missing PM25water output for "//trim(class))
       end if
@@ -1515,7 +1515,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case("PM10_rh50")      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_2d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind2d_pm10   <1,"Missing PM10 output for "//trim(class))
         call CheckStop(ind2d_pmwater<1,"Missing PM25water output for "//trim(class))
       end if
@@ -1855,7 +1855,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_2d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
-      if(first_call)then
+      if(first_call.and.f_2d(n)%unit=="ug/m3")then
         select case(chemgroups(igrp)%name)
           case("PMFINE"); ind2d_pmfine = n
           case("SIA");    ind2d_sia = n
@@ -2082,7 +2082,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_3d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_3d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind3d_pmfine <1,"Missing PMFINE output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
       end if
@@ -2095,7 +2095,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "PM25_wet" )         ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_3d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_3d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind3d_pmfine <1,"Missing PMFINE output for "//trim(class))
         call CheckStop(ind3d_pmwater<1,"Missing PM25water output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
@@ -2118,7 +2118,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "SIA25" )      ! Need to subtract some NO3_c from SIA
       if(first_call)then
-        call CheckStop(f_3d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_3d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind3d_sia <1,"Missing 3D-SIA output for "//trim(class))
         call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
       end if
@@ -2131,7 +2131,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case("PM10_wet")      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_3d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(f_3d(n)%unit,"ug/m3","Wrong unit for "//trim(class))
         call CheckStop(ind3d_pm10   <1,"Missing PM10 output for "//trim(class))
         call CheckStop(ind3d_pmwater<1,"Missing PM25water output for "//trim(class))
       end if
@@ -2206,7 +2206,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_3d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
-      if(first_call)then
+      if(first_call.and.f_3d(n)%unit=="ug/m3")then
         select case (chemgroups(igrp)%name)
           case("PMFINE"); ind3d_pmfine = n
           case("SIA");    ind3d_sia = n
