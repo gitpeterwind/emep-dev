@@ -62,11 +62,11 @@ ZD_EmCso/Makefile.SRCS      - Updated comment.
 
 ZD_EmCso/cso.inc            - Define macro to enable MPI code.
 
-ZD_EmCso/GridValues_mod.f90 - Optional argument 'fix' to 'coord_in_domain'
+ZD_EmCso/GridValues_mod.f90 - Optional argument "fix" to "coord_in_domain"
                               to disable automatic adaptation of arguments.
 
-ZD_EmCso/config/config_GLOBAL05.cams81__cso.nml   - added template settings for global Soil-NOx runs
-ZD_EmCso/config/cso-settings__S5p-no2-superobs.rc - added template settings for global Soil-NOx runs
+ZD_EmCso/config/config_GLOBAL05.cams81__cso.nml   - Template settings for global Soil-NOx runs.
+ZD_EmCso/config/cso-settings__S5p-no2-superobs.rc - Template settings for global Soil-NOx runs.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
