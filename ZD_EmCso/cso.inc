@@ -1,1 +1,2 @@
-! no macro's defined
+! enable MPI codes:
+#define _MPI
