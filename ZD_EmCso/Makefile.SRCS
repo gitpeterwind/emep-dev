@@ -1,7 +1,8 @@
 include ../Makefile.SRCS
 
 # new source files ;
-# do not include "cso.inc", otherwise makedepf90 will put "cso.o" twice in FOBJS ..
+# do not include "cso.inc", otherwise "makedepf90"
+# will put "cso.o" twice in FOBJS ..
 NEW_SRCS = cso_comm.F90 cso_logging.F90 cso_tools.F90 \
            cso_parray.F90 cso_domains.F90 \
            cso_mapping.F90 cso_exchange.F90 cso_swapping.F90 \
@@ -12,13 +13,13 @@ NEW_SRCS = cso_comm.F90 cso_logging.F90 cso_tools.F90 \
            EMEP_CSO_mod.f90
 
 # local files that replace versions from the main directory:
-RENEW_SRCS = PhyChem_mod.f90 emep_Main.f90
+RENEW_SRCS = GridValues_mod.f90 PhyChem_mod.f90 emep_Main.f90
 
 # renew source list:
-# - file from main directory with '../' added as prefix,
-#   but not the templates that replaced by local versions;
-# - new source files;
-# - source files that replace version from main directory:
+# - files from main directory with '../' added as prefix,
+#   excluding the files that should be replaced by local versions;
+# - source files that replace the original versions from the main directory;
+# - new source files:
 SRCS := $(addprefix ../,$(filter-out $(RENEW_SRCS),$(SRCS))) \
         $(RENEW_SRCS) \
 	$(NEW_SRCS)

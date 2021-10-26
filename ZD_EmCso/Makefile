@@ -4,6 +4,18 @@
 
 include ../Makefile
 
+
+# ------------------------------------------------
+# rules
+# ------------------------------------------------
+
+## compile files with debug flags:
+#cso%.o:     cso%.F90
+#	$(F90) $(F90FLAGS) $(DEBUG_FLAGS) -c $< -o $@
+#EMEP_CSO_mod.o: EMEP_CSO_mod.f90
+#	$(F90) $(F90FLAGS) $(DEBUG_FLAGS) -c $< -o $@
+
+
 # ------------------------------------------------
 # libraries
 # ------------------------------------------------
@@ -20,7 +32,16 @@ endif
 # ------------------------------------------------
 #   _MPI                 # enables MPI code, used in the past for testing with serial version
 # ------------------------------------------------
-#~ enable MPI:
-DFLAGS  = -D_MPI
+##~ enable MPI:
+#DFLAGS  = -D_MPI
+
+# ------------------------------------------------
+# targets
+# ------------------------------------------------
+
+clean-local:
+	rm -f cso*.{o,mod}
+	rm -f EMEP_CSO_mod.{o,mod}
+
 
 
