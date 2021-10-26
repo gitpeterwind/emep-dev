@@ -47,6 +47,29 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Oct 2021, Arjo
+
+Updated satellite observation operator.
+
+Makefile                    - Removed dependency on chemistry version.
+
+ZD_EmCso/EMEP_CSO_mod.f90   - Fixed memory leak.
+ZD_EmCso/PhyChem_mod.f90    - Fixed memory leak.
+
+ZD_EmCso/Makefile           - Added templates to enable debug flags.
+                              Removed macro definition flag to enable MPI code.
+ZD_EmCso/Makefile.SRCS      - Updated comment.
+
+ZD_EmCso/cso.inc            - Define macro to enable MPI code.
+
+ZD_EmCso/GridValues_mod.f90 - Optional argument 'fix' to 'coord_in_domain'
+                              to disable automatic adaptation of arguments.
+
+ZD_EmCso/config/config_GLOBAL05.cams81__cso.nml   - added template settings for global Soil-NOx runs
+ZD_EmCso/config/cso-settings__S5p-no2-superobs.rc - added template settings for global Soil-NOx runs
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th Oct 2021, Peter, Dave
 
 Replace "YYYY" for the SplitSpecialsFile and SplitDefaultFile.
