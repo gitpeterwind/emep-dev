@@ -45,6 +45,14 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th Oct 2021, Peter
+
+Back to (i,j) = (dx,dy,34,42,1) for the LF chunksize
+NetCDF LF 5dim output: put data from all subdomain into one big array before
+writing, if the array is les than 2GB (for faster write).
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Oct 2021, Peter
 

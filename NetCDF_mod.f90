@@ -12,6 +12,7 @@ module NetCDF_mod
 !for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will
 !be wrong
 !
+
 use Chemfields_mod,     only : xn_shl,xn_adv
 use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
 use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
@@ -53,7 +54,7 @@ use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              UTM2lb, lb2UTM
 use InterpolationRoutines_mod,  only : grid2grid_coeff
 use MPI_Groups_mod,     only: MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
-                               MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
+                               MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,MPI_WTIME
 use netcdf
 use OwnDataTypes_mod,   only : Deriv, TXTLEN_NAME, TXTLEN_FILE
 use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
@@ -1130,21 +1131,22 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   character(len=08) :: lastmodified_date
   character(len=10) :: lastmodified_hour,lastmodified_hour0,created_hour
   integer :: varID,nrecords,ncFileID=closedID,ndate(4)
-  integer :: d,alloc_err,ijk,status,i,j,k,i1,i2,j1,j2
+  integer :: d,alloc_err,ijk,status,i,j,k,i1,i2,j1,j2,dx,dy
   real, allocatable :: buff(:) !(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real(kind=8),   allocatable,dimension(:,:,:) :: R8data3D
   real(kind=4),   allocatable,dimension(:,:,:) :: R4data3D
+  real(kind=4),   allocatable,dimension(:,:,:,:,:) :: R4data5D
   integer(kind=4),allocatable,dimension(:,:,:) :: Idata3D
   integer :: OUTtype !local version of CDFtype
-  integer :: iotyp_new
+  integer :: iotyp_new, size5D
   integer :: iDimID,jDimID,kDimID,timeVarID
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf
   real(kind=8) :: rdays,rdays_time(1),rdaysstart
   logical :: overwrite_local,createfile=.false.
   integer, parameter :: IOU_GIVEN=-IOU_INST
-  integer ::domain(4),startvec(10),countvec(10),n,extradim,eijk,date_start(4)
-
+  integer ::domain(4),startvec(10),countvec(10),n,extradim,date_start(4)
+  real :: t1, tmpi,tio
   domain=RUNDOMAIN!default domain (in fulldomain coordinates)
 !fullrun, Monthly, Daily and hourly domains may be predefined
   select case(iotyp)
@@ -1391,41 +1393,21 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   ijk=0
   allocate(buff(MAXLIMAX*MAXLJMAX*kmax*extradim))
   
-  if (ndim==5) then
-     !special case for extra dimensions
-     eijk=0
-     do k=1,kmax
-        do j = 1,tljmax(me)
-           if (j_fdom(j)>=j1 .and. j_fdom(j)<=j2) then
-              do i = 1,tlimax(me)
-                 if (i_fdom(i)>=i1 .and. i_fdom(i)<=i2) then
-                    ijk = ((i-1)+(j-1)*tlimax(me)+(k-1)*tljmax(me)*tlimax(me))*extradim
-                    do n=1,extradim
-                       eijk=eijk+1
-                       buff(eijk)=dat(ijk+n)*scale
-                    end do
-                 end if
-              end do
-           end if
-        end do
-     end do
-     !note that we send all the MAXLIMAX*MAXLJMAX*kmax*extradim, even if not all are used/defined
-  else
-     do k=1,kmax
-        do j = 1,tljmax(me)
-           do i = 1,tlimax(me)
-              do n=1,extradim
-                 ijk=ijk+1
-                 buff(ijk)=dat(ijk)*scale
-              end do
+  do k=1,kmax
+     do j = 1,tljmax(me)
+        do i = 1,tlimax(me)
+           do n=1,extradim
+              ijk=ijk+1
+              buff(ijk)=dat(ijk)*scale
            end do
         end do
      end do
-  end if
+  end do
 
   !send all data to me=0
   outCDFtag = mod(outCDFtag + 1, 100000) ! mpi tags can overflow at some value (524287 in some installation)
-  nrecords=0
+  nrecords = 0
+  size5D = 0
   if(MasterProc)then
      
      ndate(1:4) = [current_date%year,current_date%month,&
@@ -1496,15 +1478,24 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
            alloc_err=-1
         end select
         call CheckStop(alloc_err, "alloc failed in NetCDF_mod")
+     else
+        size5D = dimSizes(1)*dimSizes(2)*GIMAX*GJMAX*kmax
+        if (size5D < 512000000) then ! less than 2GB
+           allocate(R4data5D(dimSizes(1),dimSizes(2),GIMAX,GJMAX,kmax))
+        else
+           size5D=0 !to show it should not be used
+        end if
      end if
-
+     tmpi=0.0
+     tio=0.0
      do d = 0, NPROC-1
-        
+        t1=MPI_WTIME()
         if(d>0) CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax*extradim, MPI_BYTE, d, &
              outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
         
-        if(ndim==5)then
-          !write out each buffer separately
+        tmpi = tmpi + MPI_WTIME()-t1
+        if(ndim==5 .and. size5D<=0)then
+           ! write one buffer at a time to save memory              
            startvec(1)=1
            startvec(2)=1
            startvec(3)=max(1,tgi0(d)-i1+1)
@@ -1518,15 +1509,19 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
            countvec(4)=countvec(4)-max(0,tgj0(d)+tljmax(d)-1 - j2)
            countvec(5)=kmax
            if (countvec(3)>0 .and. countvec(4)>0) then
+              t1=MPI_WTIME()
               call check(nf90_put_var(ncFileID,VarID,buff,&
                    start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
-           endif
+              tio = tio + MPI_WTIME()-t1
+           end if
+
         else
-           if(ndim>3)then
+           
+           if(ndim>3 .and. ndim/= 5)then
               write(*,*)'ndim >3 and not=5 not implemented'
               stop
            end if
-           if (d == 0) continue
+           
            ! copy data to global buffer
            select case(OUTtype)
            case(Int1,Int2,Int4)
@@ -1540,15 +1535,31 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
                  end do
               end do
            case(Real4)
-              ijk=0
-              do k=1,kmax
-                 do j = tgj0(d),tgj0(d)+tljmax(d)-1
-                    do i = tgi0(d),tgi0(d)+tlimax(d)-1
-                       ijk=ijk+1
-                       R4data3D(i,j,k)=buff(ijk)
+              if (ndim <=3 ) then
+                 ijk=0
+                 do k=1,kmax
+                    do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                       do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                          ijk=ijk+1
+                          R4data3D(i,j,k)=buff(ijk)
+                       end do
                     end do
                  end do
-              end do
+              else if(size5D>0) then
+                 ijk=0
+                 do k=1,kmax
+                    do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                       do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                          do dy = 1,dimSizes(2)
+                             do dx = 1,dimSizes(1)
+                                ijk=ijk+1
+                                R4data5D(dx,dy,i,j,k)=buff(ijk)
+                             end do
+                          end do
+                       end do
+                    end do
+                 end do
+              end if
            case(Real8)
               ijk=0
               do k=1,kmax
@@ -1569,7 +1580,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   
   deallocate(buff)
   
-  if(MasterProc .and. ndim<5)then
+  if(MasterProc)then
+     t1=MPI_WTIME()
      ! append new values
      select case(OUTtype)
      case(Int1,Int2,Int4)  ! type Integer
@@ -1591,9 +1603,12 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         end if
         
      case(Real4)           ! type Real4
-        if(ndim==3)then
+        if(ndim==5)then
+           if(size5D>0) call check(nf90_put_var(ncFileID,VarID,R4data5D(1:dimSizes(1),&
+                1:dimSizes(2),i1:i2,j1:j2,1),start=(/1,1,1,1,1,nrecords/)),&
+                "5D put failed "//trim(varname))
+        else if(ndim==3)then
            if(present(ik))then
-              !     print *, 'write: ',i1,i2, j1,j2,ik
               call check(nf90_put_var(ncFileID,VarID,R4data3D(i1:i2,j1:j2,1),&
                    start=(/1,1,ik,nrecords/)))
            else
@@ -1624,8 +1639,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
            call check(nf90_put_var(ncFileID, VarID,R8data3D(i1:i2,j1:j2,1:kmax),&
                 start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
         end if
-        
      end select !type
+     tio = tio + MPI_WTIME()-t1
   end if !MasterProc
 
   
@@ -1643,6 +1658,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
            call CheckStop(alloc_err, "dealloc failed in NetCDF_mod")
         end select !type
      end if
+     if (size5D > 0) deallocate(R4data5D, stat=alloc_err)
+     if (DEBUG_NETCDF .and. ndim == 5) write(*,*)'TIME mpi ',tmpi,' time IO ',tio,trim(varname)
+          
      call check(nf90_get_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour0 ))
      call check(nf90_get_att(ncFileID,nf90_global,"created_hour",created_hour))
      call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
