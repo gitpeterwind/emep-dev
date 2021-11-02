@@ -1375,8 +1375,10 @@ end if
 
           if ( ios == NO_FILE ) then
               ios = 0
-              if(MasterProc) &
+              if(MasterProc) then
                  write(*,fmt=*) "emis_split: no specials for:",EMIS_FILE(ie)
+                 write(*,fmt=*) "emis_split: misses fname:"//trim(fname)
+              end if
 
               exit IDEF_LOOP
           end if
