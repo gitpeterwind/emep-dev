@@ -96,11 +96,9 @@ subroutine runchem()
 ! Processes calls 
   errcode = 0
 
-  if(debug_proc) write(*,*) "RUNCHEM PRE", i_fdom(debug_li), j_fdom(debug_lj)
+  if(debug_proc .and. DEBUG%RUNCHEM) write(*,*) "RUNCHEM PRE", i_fdom(debug_li), j_fdom(debug_lj)
   do j = 1, ljmax
     do i = 1, limax
-! do j = lj0, lj1 !  ljmax
-!   do i = li0, li1 ! 1, limax
 
       call Code_Timer(tim_before)
 

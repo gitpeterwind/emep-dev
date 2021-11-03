@@ -47,6 +47,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Nov 2021, Peter
+
+Accept average for SOMO class. Allows to output monthly average of MDA8 with:
+OutputMisc='MDA8', 'SOMO','SURF',  '-','ppb',0,-99,T,1.0,T,'YMD',
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th Oct 2021, Peter
 
 Back to (i,j) = (dx,dy,34,42,1) for the LF chunksize

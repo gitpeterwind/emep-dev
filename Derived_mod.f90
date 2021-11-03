@@ -1654,9 +1654,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       if(dayfrac<0)then !only at midnight: write on d_2d
         call somo_calc( n, f_2d(n)%index, dbgP )
         d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
-
+        if(f_2d(n)%avg) nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
         ! if(current_date%month>=4.and.current_date%month<=9)then
         d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
+        if(f_2d(n)%avg) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         !NB overwritten anyway D2_O3_DAY = 0.
       end if
 
@@ -2564,7 +2565,6 @@ subroutine somo_calc( n, iX, debug_flag )
 
       if(debug_flag.and.i==debug_li.and.j==debug_lj)&
         write(*,"(a,2i4,f12.3)") "SOMO DEBUG ", n, iX, o3
-
 
       o3 = max( o3 - iX , 0.0 )   ! Definition of SOMOs
 
