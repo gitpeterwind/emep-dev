@@ -942,6 +942,18 @@ subroutine MeteoRead()
     ! rough conversion wrf->SMI . Can be improved!
     SoilWater_uppr(:,:,nr)=(SoilWater_uppr(:,:,nr)-0.05)*3
     SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-0.05)*3
+    !convert from kg H2O per kg Air (kg/kg) into relative humidity (relative to saturation) 
+    do j=1,ljmax
+       do i=1,limax
+          temperature = t2_nwp(i,j,nr)
+          !saturation water pressure
+          swp = 611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
+          !water pressure
+          wp = rh2m(i,j,nr)*ps(i,j,nr)/0.622
+          rh2m(i,j,nr)= wp/swp
+          rh2m(i,j,nr)=min(1.0,max(0.0,rh2m(i,j,nr)))
+       end do
+    end do
   end if
 
   if(LANDIFY_MET)then

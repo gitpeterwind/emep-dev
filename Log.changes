@@ -47,6 +47,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Nov 2021, Peter, Massimo
+
+The 2 meter relative humidity from wrf had wrong units.
+Now converted from kg(H2O)/kg(air) into relative to saturation.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Nov 2021, Peter
 
 Accept average for SOMO class. Allows to output monthly average of MDA8 with:

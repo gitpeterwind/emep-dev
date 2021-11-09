@@ -1100,7 +1100,7 @@ if(USES%WRF_MET_NAMES)then
    met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
    met(ix_sdepth)%name            = 'SNOWH'!snowdepth in m
    met(ix_ice_nwp)%name           = 'SEAICE'!flag 0 or 1
-   met(ix_rh2m)%name              = 'Q2' ! 2 meter relative humidity
+   met(ix_rh2m)%name              = 'Q2' ! NB: units kg(H2O)/kg(air), has to be converted into relative to saturation
 
 !meteo model topography (assumed constant in time)
    met(ix_elev)%name             = 'HGT'
