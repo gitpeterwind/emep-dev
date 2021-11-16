@@ -47,6 +47,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Nov 2021, Peter
+
+Emission new format: "country" when defined with number (not ISO) was not
+working properly.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Nov 2021, Peter, Massimo
 
 The 2 meter relative humidity from wrf had wrong units.

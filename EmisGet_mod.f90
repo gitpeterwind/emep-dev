@@ -617,13 +617,13 @@ contains
              if(status==nf90_noerr)then
                 ix = find_index(countrycode, Country(:)%icode)
                 if(ix<0)then
-                   if(me==0)write(*,*)dtxt//'WARNING: country '//trim(name)//&
+                   if(me==0)write(*,*)dtxt//'WARNING: country code ',countrycode,&
                      ' not defined. file'//trim(fname)//&
                      ' variable '//trim(cdfvarname)
                 else
-                   Emis_source(NEmis_sources)%country_ISO = trim(name)
+                   Emis_source(NEmis_sources)%country_ISO = Country(ix)%code
                    Emis_source(NEmis_sources)%country_ix = ix
-                   if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(name)
+                   if ( debugm0 ) write(*,*) dtxt//'ISO add:',ix,trim(Country(ix)%code)
                 endif
              else
                 Emis_source(NEmis_sources)%country_ISO = EmisFile%country_ISO !default
