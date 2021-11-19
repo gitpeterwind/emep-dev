@@ -211,7 +211,7 @@ contains
 
   end if
 
-  do i = nfullchem + 1, Max_lf_sources
+  do i = Nsources + nfullchem + 1, Max_lf_sources
      if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if

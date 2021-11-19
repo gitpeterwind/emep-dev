@@ -76,7 +76,7 @@ contains
         !call emep2Isorropia(debug_flag)
       case default
         if( my_first_call .and. MasterProc ) then
-          write(*,*) 'WARNING: AerosolEquilib: nothing chosen:'
+          write(*,*) 'WARNING! AerosolEquilib, nothing valid chosen: '//AERO%EQUILIB
         end if
     end select
     my_first_call = .false.

@@ -192,7 +192,7 @@ real,  public, allocatable :: EmisMaskValues(:,:,:) ! size will be (LIMAX,LJMAX,
 type(Emis_id_type), public, save:: Emis_id(50)
 type(EmisFile_id_type), public, save:: EmisFiles(50) !list of emission files after validation
 integer, public, save, allocatable, dimension(:,:):: EmisMaskIntVal
-integer,  public, parameter:: NEmis_sourcesMAX = 200
+integer,  public, parameter:: NEmis_sourcesMAX = 400
 type(Emis_id_type), public, save:: Emis_source(NEmis_sourcesMAX) !list of valid sources found in the emission files
 integer,  public, save :: NEmis_sources = 0
 integer,  public, save :: NEmis_3Dsources = 0

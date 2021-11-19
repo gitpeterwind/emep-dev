@@ -397,6 +397,7 @@ contains
                       NSECTORS = NSECTORS + 1
                       call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                       SECTORS(NSECTORS) = SECTORS_ADD(isec_idx)
+                      if(MasterProc) write(*,*)'adding sector  ',trim(SECTORS_ADD(isec_idx)%longname),', total ',NSECTORS
                       found = 1
                    end if
                 end do
@@ -429,7 +430,7 @@ contains
           max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
           if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
           if(MasterProc) write(*,'(a,a,a)')'including '//trim(Emis_source(ii)%varname)//' as '//&
-               trim(Emis_source(ii)%species)//' sector ',trim(SECTORS(Emis_source(n)%sector_idx)%longname),' country '//trim(Emis_source(ii)%country_ISO)
+               trim(Emis_source(ii)%species)//' sector ',trim(SECTORS(Emis_source(ii)%sector_idx)%longname),' country '//trim(Emis_source(ii)%country_ISO)
        enddo
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
 !            //trim(Emis_sourceFiles(n)%filename)
@@ -1282,7 +1283,9 @@ contains
     end if
     !=========================
     call EmisSplit()    ! In EmisGet_mod, => emisfrac
-    call CheckStop(N_SPLIT == 19 .and. largestsplit<=11," Cannot use GNFR_CAMS splits together with SNAP sector split settings")
+    call CheckStop(N_SPLIT == 19 .and. largestsplit<=11 .and. &
+         (SECTORS(1)%name=='GNFR_CAMS'.or.SECTORS(1)%name=='SNAP'),& !if defined own sectors, assumes that we know what we are doing
+    " Cannot use GNFR_CAMS splits together with SNAP sector split settings")
     call CheckStop(largestsplit>N_SPLIT," split index not defined ")
     !=========================
     !Must first call EmisSplit, to get nrcemis defined
