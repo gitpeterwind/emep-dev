@@ -46,6 +46,42 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th Nov 2021, Peter, Heiko
+
+New optimization flag in Makefile. Tested on Nebula. Can give 25% improvement
+in runtime!
+
+(cut from a mail to Heiko:)
+Test on Nebula, EMEP01, 6 hours, 8*32 CPUs.
+times: total within loops
+
+ -O2  -ftz 38.3
+ -O2  -ftz -ipo 38.9
+ -O3  -ftz 38.7
+ -O2  -ftz -march=core-avx2 -ipo 33.4
+ -O2  -ftz -march=core-avx2 31.8
+ -O3  -ftz -march=core-avx2 34.6
+ -O3 -xcore-avx512  -ftz  -ipo 37.5
+ -O2 -xcore-avx512 -ftz -ipo 36.5
+ -O3 -xcore-avx512  -ftz 38.7
+ -O2 -xcore-avx512 -ftz 37.1
+ det er omtrent 1 sekund random usikkerhet i tallene)
+
+Så det ser ut som ipo og O3 forverre tiden, mens avx2 er nyttig. Litt rart at avx512 blir verre igjen.
+Omtrent 10 sekunder av tallene er i/o, som (ofte) blir relativt lite for lengre kjøringer. Dvs at for resten går man fra ca 28.3 til 21.8 (med -O2  -ftz -march=core-avx2), = 23% forbedring i kjøretid
+
+På den andre siden, har jeg også gjort noen tester med nye Local Fractions som har veldig tung (vectorisert) kjemi loop. og der blir:
+
+-O2  -ftz 429.7
+-O2  -ftz -march=core-avx2 -ipo 416.3
+-O2  -ftz -march=core-avx2 352.8
+-O3 -xcore-avx512  -ftz  -ipo 360.5
+-O2 -xcore-avx512 -ftz 325.4
+
+Så her er det en del å hente med avx512!
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Nov 2021, Peter
 

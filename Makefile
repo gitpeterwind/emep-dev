@@ -10,7 +10,7 @@ include Makefile.SRCS
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
-OPT_FLAGS = -O2 -ftz
+OPT_FLAGS = -O2 -ftz -march=core-avx2
 F90FLAGS =  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
