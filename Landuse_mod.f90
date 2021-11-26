@@ -356,7 +356,7 @@ contains
       end do
     end do
 
-    call printCDF('NEWSGS_IAM_DF', map2dSGS(:,:),"SGS")
+    if (DEBUG%LANDUSE>0) call printCDF('NEWSGS_IAM_DF', map2dSGS(:,:),"SGS")
  
   end subroutine updateSGSmaps
  !============================================================================

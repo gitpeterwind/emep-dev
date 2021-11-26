@@ -48,6 +48,27 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Nov 2021, Peter
+
+Removed many old config files, that were anyway not maintained and no more
+compatible.
+rm 'config_ANALYSIS.nml'
+rm 'config_EMEPGLOB.nml'
+rm 'config_EMEPSTD.nml'
+rm 'config_EMERGENCY.nml'
+rm 'config_FORECAST.nml'
+rm 'config_IMPACT2C.nml'
+rm 'config_NORWAY.nml'
+rm 'config_Outputs_CAMS50.nml'
+rm 'config_Outputs_CAMS71.nml'
+rm 'config_Outputs_EMEPSR.nml'
+rm 'config_Outputs_EMEPSTD.nml'
+rm 'config_Outputs_EMERGENCY.nml'
+rm 'config_Outputs_NORWAY.nml'
+
+put printCDF('NEWSGS_IAM_DF'..) behind the DEBUG flag
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th Nov 2021, Peter, Heiko
 
 New optimization flag in Makefile. Tested on Nebula. Can give 25% improvement
