@@ -48,6 +48,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th Nov 2021, Heiko, Peter
+
+Remove -ftz compiler flag in Makefile, as it is implicit in -O2 (or -O3)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Nov 2021, Peter
 
 Removed many old config files, that were anyway not maintained and no more

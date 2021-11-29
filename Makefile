@@ -10,7 +10,7 @@ include Makefile.SRCS
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
-OPT_FLAGS = -O2 -ftz -march=core-avx2
+OPT_FLAGS = -O2 -march=core-avx2
 F90FLAGS =  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
@@ -21,7 +21,7 @@ ifeq ($(MACHINE), betzy)
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
-  OPT_FLAGS = -O2 -ftz
+  OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpiifort
 else ifeq ($(MACHINE),fram)
@@ -29,7 +29,7 @@ else ifeq ($(MACHINE),fram)
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
-  OPT_FLAGS = -O2 -ftz
+  OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpiifort
 else ifeq ($(MACHINE),byvind)
