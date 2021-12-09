@@ -338,7 +338,7 @@ subroutine wrtxn(indate, End_of_run)
      case('END')
         return
      case('MONTH')
-        if(indate%month==1.or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
+        if((indate%month==1 .and. first_call) .or.indate%day/=1.or.indate%hour/=0.or.indate%seconds/=0)return
      case default
         if(mod(indate%hour,NEST_NHOURSAVE)/=0.or.indate%seconds/=0)return
      end select

@@ -48,6 +48,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th NDec 2021, Peter, Michael
+
+NEST_MODE_SAVE = 'MONTH': write out also at end of year.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th Nov 2021, Heiko, Peter
 
 Remove -ftz compiler flag in Makefile, as it is implicit in -O2 (or -O3)
