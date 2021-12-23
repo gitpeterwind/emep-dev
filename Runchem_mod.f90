@@ -35,7 +35,7 @@ module RunChem_mod
   use FastJ_mod,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_mod,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_mod,      only: datewrite
-  use LocalFractions_mod,only: lf_chem,lf_aero_pre,lf_aero_pos
+  use LocalFractions_mod,only: lf_chem,lf_aero_pre,lf_aero_pos,lf
   use MassBudget_mod,    only: emis_massbudget_1d
   use OrganicAerosol_mod,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
@@ -193,12 +193,12 @@ subroutine runchem()
 !     !-------------------------------------------------
 
       if( .not. USES%NOCHEM) then
-         !xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
-         !     +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
-         !rcemis = 0.0
+         
          call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
-      else  
-        xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
+ 
+      else
+         ! only add emissions
+         xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
                                          +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
       end if
 

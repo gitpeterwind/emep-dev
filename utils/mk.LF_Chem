@@ -12,7 +12,7 @@ then
   echo "CM_Reactions1.inc already adapted to LF calculations!"
 else
 
-rm CM_Reactions1_tmp.inc >/dev/null
+rm CM_Reactions1_tmp.inc >/dev/null &
 touch CM_Reactions1_tmp.inc
 echo 'if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' >>CM_Reactions1_tmp.inc
 cat CM_Reactions1.inc>> CM_Reactions1_tmp.inc
@@ -26,9 +26,11 @@ sed -i 's/L \=/L_lf(:) =/g' CM_Reactions1_tmp.inc
 sed -i 's/ L)/ L_lf(:))/g' CM_Reactions1_tmp.inc
 sed -i 's/xnew(/xnew_lf(:,/g' CM_Reactions1_tmp.inc
 sed -i 's/xold(/xold_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/i do i_lf = 1,NSPEC_fullchem_lf' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/i do i_lf = 1,NSPEC_fullchem_lf+N_lf_derivemis' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/s/xnew_lf(:/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
+sed -i '/+ rcemis(NO,k)/a P_lf(NSPEC_fullchem_lf+N_lf_derivemis) = P_lf(NSPEC_fullchem_lf+N_lf_derivemis) + (eps1-1.0)*rcemis(NO,k)' CM_Reactions1_tmp.inc
+sed -i '/+ rcemis(NO2,k)/a P_lf(NSPEC_fullchem_lf+N_lf_derivemis) = P_lf(NSPEC_fullchem_lf+N_lf_derivemis) + (eps1-1.0)*rcemis(NO2,k)' CM_Reactions1_tmp.inc
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 
 echo "CM_Reactions1.inc successfully adapted to LF calculations"

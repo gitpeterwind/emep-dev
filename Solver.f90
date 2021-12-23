@@ -38,7 +38,8 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert, &
                                   x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf
+                                  NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf, &
+                                  N_lf_derivemis
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -102,7 +103,7 @@ contains
                         coeff1,coeff2,cc ! coefficients for variable timestep
     ! Test of precision
     real(kind=dp) :: pi = 4.0*atan(1.0_dp)
-    real, dimension(NSPEC_fullchem_lf):: L_lf,P_lf
+    real, dimension(NSPEC_fullchem_lf+N_lf_derivemis):: L_lf,P_lf
    
     real, parameter :: eps1 = 1.0001
     
@@ -161,13 +162,13 @@ contains
        if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
           !make NSPEC_fullchem_lf copy of concentrations
           do n = 1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, NSPEC_fullchem_lf
+             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
                 xnew_lf(i_lf,n) = xn_2d(n,k)          
                 x_lf(i_lf,n)    = xn_2d(n,k) - Dchem(n,k,i,j)*dti(1)*1.5 
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
              end do  
           end do
-          !increase slightly one of the concentrations for derivatives
+          !increase slightly one of the concentrations for chemical derivatives
           do i_lf = 1, NSPEC_fullchem_lf
              xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1! we assume xn_i are slightly increased for pollutant i
              x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k)* eps1 - Dchem(i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5 
@@ -207,8 +208,8 @@ contains
              x(n) = xnew(n)
              xnew(n) = xextrapol
              
-             if (lf_fullchem .and. k > KMAX_MID-lf_Nvert .and. n <= NSPEC_fullchem_lf+NSPEC_SHL) then
-                do i_lf = 1, NSPEC_fullchem_lf
+             if (lf_fullchem .and. k > KMAX_MID-lf_Nvert .and. n <= NSPEC_fullchem_inc_lf) then
+                do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
                    xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
                    xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
                    xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )
