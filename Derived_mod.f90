@@ -1697,7 +1697,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       ii = mod(f_2d(n)%index, 100000)
       do j = 1,ljmax
         do i = 1,limax
-          hourM(i,j,iou) = hourM(i,j,iou) + xn_adv(ii,i,j,KMAX_MID) * cfac(ii,i,j) * density(i,j) * 1000000000 * species_adv(ii)%molwt/ATWAIR
+          hourM(i,j,iou) = hourM(i,j,iou) + xn_adv(ii,i,j,KMAX_MID) * cfac(ii,i,j) * density(i,j) * 1.0e9 * species_adv(ii)%molwt/ATWAIR
         end do
       end do
 
@@ -1730,9 +1730,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
               d_2d(n,i,j,IOU_MON) = max(d_2d(n,i,j,IOU_MON) , D8Max(i,j,iou))
               !NB: max value over year, not average over daily max:
               d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))
+              D8Max(i,j,iou) = 0.0
             end do
           end do
-          D8Max = 0.0
         end if
       end if
 
