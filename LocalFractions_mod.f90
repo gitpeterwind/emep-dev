@@ -2277,6 +2277,8 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
 
   do isrc = 1, Nsources
 
+     if(lf_src(isrc)%iem /= iem) cycle
+     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      if(Ncountry_group_lf>0)then
         call CheckStop(nfullchem>0, " Country groups not implemented yet for fullchem" ) 
         !has to store more detailed info

@@ -48,14 +48,6 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23th Dec 2021 Peter
-
-Local Fractions: the emissions for the "fullchem" mode, are included through
-derivatives in the chemical scheme. Lots of reorganizations required.
-
-mk.LFChem adapted too. Need some manual changes too(?)
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th NDec 2021, Peter, Michael
 
 NEST_MODE_SAVE = 'MONTH': write out also at end of year.
