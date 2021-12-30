@@ -14,6 +14,9 @@ module Derived_mod
 ! added stuff for AOTs, accsu. In
 ! general such code should be added in such a way that it isn't activated if
 ! not needed. It then doesn't need to be commented out if not used.
+!  
+! a line in OutputMisc will be added to def_2d in addDeriv from Derived_mod:
+! call AddDeriv(OutputMisc(n),Is3D=Is3D) 
 !---------------------------------------------------------------------------
 
 use AeroConstants_mod, only: AERO
@@ -966,6 +969,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   real :: default_frac,tot_frac,loc_frac_corr
   character(len=*), parameter :: dtxt='Deriv:'
   real pp, temp, qsat
+  real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:)
   
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
@@ -1027,7 +1031,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     !if ( DEBUG .and. MasterProc .and. first_call ) then
     if(MasterProc.and.first_call)&
-      write(*,"(a,i4,1x,a,i4,1x,a)") "1st call Derived 2d", n, &
+      write(*,"(a,i4,1x,a,1x,i0,1x,a)") "1st call Derived 2d", n, &
         trim(name), ind, trim(class)
 
     select case ( class )
@@ -1659,6 +1663,77 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
         if(f_2d(n)%avg) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         !NB overwritten anyway D2_O3_DAY = 0.
+      end if
+
+    case( "MaxD8M" ) ! maximum daily eight-hour mean concentration
+      if (first_call) then
+
+        if (.not. allocated(D8M)) then ! we want to go through this only once
+          iou = 0 !number of independent MaxD8M fields to output
+          do i = 1, num_deriv2d
+            if (f_2d(i)%class=="MaxD8M") then
+              ! save index of species in f_2d
+              f_2d(i)%index = find_index(f_2d(i)%txt,species_adv(:)%name, any_case=.true.)
+              call CheckStop(f_2d(i)%index<0,"MaxD8M: species "//trim(f_2d(i)%txt)//"not found")
+              !force ug/m3
+              call CheckStop(f_2d(i)%unit/="ug/m3","MaxD8M must be in units of ug/m3 ")
+              iou = iou + 1
+              ! trick to save 2 integers in one:
+              f_2d(i)%index = f_2d(i)%index  + iou * 100000
+            end if
+          end do
+          !we need one array to save the last 8 hourly concentrations, and one to make
+          !the average over the last hour
+          allocate(D8M(LIMAX,LJMAX,8,iou)) ! running last 8 hour values
+          allocate(D8Max(LIMAX,LJMAX,iou)) ! max value of the 8 hour mean since 00:00
+          allocate(hourM(LIMAX,LJMAX,iou)) ! hour Mean
+          hourM = 0.0
+          D8Max = 0.0 !init with low value
+          D8M = 0.0 !init with low value
+        end if
+      end if
+      
+      iou = f_2d(n)%index / 100000
+      ii = mod(f_2d(n)%index, 100000)
+      do j = 1,ljmax
+        do i = 1,limax
+          hourM(i,j,iou) = hourM(i,j,iou) + xn_adv(ii,i,j,KMAX_MID) * cfac(ii,i,j) * density(i,j) * 1.0e9 * species_adv(ii)%molwt/ATWAIR
+        end do
+      end do
+
+      if (current_date%seconds == 0) then
+        !one hour has past since last time here        
+        !save last hour average
+        ii = mod(current_date%hour,8) + 1 !note: this works only because 24 is a multiple of 8!
+        timefrac = dt_advec/3600.0 ! inverse of number of timesteps in an hour
+        D8M(:,:,ii,iou) =  hourM(:,:,iou) * timefrac
+        hourM(:,:,iou) = 0.0
+        tmpwork = 0.0
+        ! update max value since 01:00
+        do j = 1,ljmax
+          do i = 1,limax
+            af = 0.0
+            do l = 1, 8
+              af = af + D8M(i,j,l,iou) * 0.125 ! 8 hour average
+            end do
+            D8Max(i,j,iou) = max(D8Max(i,j,iou) , af) 
+          end do
+        end do
+        !The last period of a day ends at 00:00
+        !since the model output at the end of "EMEP day", which is different,
+        !we must save only once per day at the right time
+        if (current_date%hour == 0) then
+          do j = 1,ljmax
+            do i = 1,limax
+              d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
+              !NB: max value over month, not average over daily max:
+              d_2d(n,i,j,IOU_MON) = max(d_2d(n,i,j,IOU_MON) , D8Max(i,j,iou))
+              !NB: max value over year, not average over daily max:
+              d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))
+              D8Max(i,j,iou) = 0.0
+            end do
+          end do
+        end if
       end if
 
     case("PREC","WDEP","DDEP","VG","Rs","Rns","Gns","Mosaic","POD","SPOD","AOT")

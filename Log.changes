@@ -44,7 +44,25 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th Dec Peter
 
+maximum daily eight-hour mean concentration
+
+Following page 24 note (2)
+https://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2008:152:0001:0044:EN:PDF
+
+The maximum daily eight-hour mean concentration shall be selected by examining
+eight-hour running averages, calculated from hourly data and updated each hour.
+Each eight -hour average so calculated shall be assigned to the day on which it
+ends. i.e. the first calculation period for any one day will be the period from
+17:00 on the previous day to 01:00 on that day; the last calculation period
+for any one day will be the period from 16:00 to 24:00 on the day.
+
+Can be used with for example (in config_emep.nml):
+OutputMisc=
+   'MaxD8M_O3', 'MaxD8M', '',  'O3', 'ug/m3', -1 , -1,   F,    1.0,   F, 'YMD',
+   'MaxD8M_CO', 'MaxD8M', '',  'CO', 'ug/m3', -1 , -1,   F,    1.0,   F, 'YMD',
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
