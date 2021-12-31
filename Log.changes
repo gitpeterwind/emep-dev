@@ -44,6 +44,18 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th Dec 2021 Peter
+
+Local Fractions: the emissions for the "fullchem" mode, are included through
+derivatives in the chemical scheme. Lots of reorganizations required in the LF 
+routines.
+
+mk.LFChem adapted too. Need some manual changes too(?)
+
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th Dec Peter
 
