@@ -49,7 +49,8 @@ use Config_module,     only: &
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR, AOD_WANTED &
   ,USES, lf_src, startdate,enddate,&
-  HourlyEmisOut, DailyEmisOut, SecEmisOutWanted, spinup_enddate, OutputMisc, WDEP_WANTED
+  HourlyEmisOut, DailyEmisOut, SecEmisOutWanted, spinup_enddate, &
+  OutputMisc, WDEP_WANTED, O3_ix
 
 use Debug_module,      only: DEBUG   ! -> DEBUG%DERIVED and COLSRC
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
@@ -965,12 +966,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem
-  integer :: isec_poll,isec,iisec,ii,ipoll,itemp
+  integer :: i_26th, isec_poll,isec,iisec,ii,ipoll,itemp
   real :: default_frac,tot_frac,loc_frac_corr
   character(len=*), parameter :: dtxt='Deriv:'
   real pp, temp, qsat
-  real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:)
-  
+  real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:),D8_26Max(:,:,:)
+  integer , save :: n_MaxD8M_26th = 0
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
   timefrac = dt/3600.0
@@ -1665,6 +1666,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         !NB overwritten anyway D2_O3_DAY = 0.
       end if
 
+    case( "MaxD8M_26th" ) ! maximum daily eight-hour mean concentration
+      ! do nothing, it is taken care of by "MaxD8M" case
     case( "MaxD8M" ) ! maximum daily eight-hour mean concentration
       if (first_call) then
 
@@ -1681,12 +1684,21 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
               ! trick to save 2 integers in one:
               f_2d(i)%index = f_2d(i)%index  + iou * 100000
             end if
+            if (f_2d(i)%class=="MaxD8M_26th") then
+              call CheckStop(n_MaxD8M_26th > 0, "Only one MaxD8M_26th at a time implemented!")
+              n_MaxD8M_26th = i
+            end if
           end do
           !we need one array to save the last 8 hourly concentrations, and one to make
           !the average over the last hour
           allocate(D8M(LIMAX,LJMAX,8,iou)) ! running last 8 hour values
           allocate(D8Max(LIMAX,LJMAX,iou)) ! max value of the 8 hour mean since 00:00
           allocate(hourM(LIMAX,LJMAX,iou)) ! hour Mean
+          if (n_MaxD8M_26th > 0) then
+            !NB: for O3 only!
+            allocate(D8_26Max(26,LIMAX,LJMAX)) ! 26 highest daily values up to current date 
+            D8_26Max = 0.0 !init with low value
+          end if
           hourM = 0.0
           D8Max = 0.0 !init with low value
           D8M = 0.0 !init with low value
@@ -1723,13 +1735,38 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         !since the model output at the end of "EMEP day", which is different,
         !we must save only once per day at the right time
         if (current_date%hour == 0) then
+          
+          if (n_MaxD8M_26th > 0 .and. mod(f_2d(n)%index, 100000) == O3_ix-NSPEC_SHL) then
+            !For O3 we keep the 26 highest values and current value            
+            do j = 1,ljmax
+              do i = 1,limax
+                !1) find smallest value stored so far
+                i_26th = 1 
+                do ii = 2, 26
+                  if (D8_26Max(ii,i,j)<D8_26Max(i_26th,i,j)) i_26th=ii
+                end do
+                if (D8Max(i,j,iou)>D8_26Max(i_26th,i,j)) then
+                  !2) Update i_26th, and D8_26Max(i_26th,i,j)
+                  D8_26Max(i_26th,i,j) = D8Max(i,j,iou)
+                  !3) find new smallest value among 26 largest
+                  i_26th = 1 
+                  do ii = 2, 26
+                    if (D8_26Max(ii,i,j)<D8_26Max(i_26th,i,j)) i_26th=ii
+                  end do
+                  !4) store the 26th largest value of all times
+                  d_2d(n_MaxD8M_26th,i,j,IOU_YEAR) = D8_26Max(i_26th,i,j)
+                end if                
+              end do
+            end do
+          end if
+          
           do j = 1,ljmax
             do i = 1,limax
               d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
               !NB: max value over month, not average over daily max:
               d_2d(n,i,j,IOU_MON) = max(d_2d(n,i,j,IOU_MON) , D8Max(i,j,iou))
               !NB: max value over year, not average over daily max:
-              d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))
+              d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))                                          
               D8Max(i,j,iou) = 0.0
             end do
           end do
