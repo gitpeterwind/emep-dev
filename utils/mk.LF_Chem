@@ -34,5 +34,6 @@ sed -i '/+ rcemis(NO2,k)/a P_lf(NSPEC_fullchem_lf+N_lf_derivemis) = P_lf(NSPEC_f
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 
 echo "CM_Reactions1.inc successfully adapted to LF calculations"
+echo "remember to remove shipNOx from the LF part, and all reactions after SO2"
 
 fi
