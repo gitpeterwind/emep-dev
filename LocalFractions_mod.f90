@@ -249,6 +249,7 @@ contains
            lf_src(Nsources)%full_chem = .true.
            iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
            lf_src(Nsources)%iem_deriv = iem_deriv
+           lf_src(Nsources)%make_fracsum = lf_src(isrc)%make_fracsum
            !lf_src(Nsources)%ix(1) = i set later also
            if (lf_src(Nsources)%species =='NO2') isrc_NO2 = Nsources
            if (lf_src(Nsources)%species =='NH4_f') isrc_NH4 = Nsources
