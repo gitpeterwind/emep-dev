@@ -41,7 +41,7 @@ use Io_Progs_mod,       only: datewrite
 
 use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17, PAR in W/m2
-                            zen,coszen !F21 Idirect,Idiffuse
+                            zen,coszen
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
                              tim_before, tim_before0, tim_after
 use NetCDF_mod,        only: ReadField_CDF,Real4
@@ -52,8 +52,7 @@ use PhysicalConstants_mod, only : ATWAIR
 use Pollen_mod,        only: pollen_dump,pollen_read
 use Radiation_mod,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
-                           !F21  ClearSkyRadn,     &! Idirect, Idiffuse
-                            WeissNormanPAR,   &! WN17=WeissNorman radn, 2017 work
+                            WeissNormanPAR,   &! WN17=WeissNorman radn
                             fCloudAtten,      &!
                             CloudAtten         !
 use Runchem_mod,       only: runchem   ! Calls setup subs and runs chemistry
@@ -158,14 +157,7 @@ subroutine phyche()
         thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
         zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
 
-!F21   call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
-!F21   if(DEBUG%PHYCHEM.and.debug_proc)&
-!F21     print *, 'TXTIN', me, debug_li, debug_lj, thour
-!F21
-!F21  call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
-
-!WN17
-! Gets PAR values, W/m2 here
+!WN17, Gets PAR values, W/m2 here
   fCloud = fCloudAtten(cc3dmax(:,:,KMAX_MID))
   call WeissNormanPAR(ps(:,:,1),coszen,fCloud,PARdbh,PARdif)
   if ( DEBUG%STOFLUX .and. debug_proc ) then

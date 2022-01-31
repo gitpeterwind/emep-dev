@@ -46,6 +46,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st Jan 2022 Dave
+
+Cleaning: removed Idirect lines from:
+  CellMet_mod.f90
+  Derived_mod.f90
+  LocalVariables_mod.f90
+  PhyChem_mod.f90
+  Rsurface_mod.f90
+
+Small tidy and simpified debug
+  StoFlux_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Jan 2022 Peter
 
 Added the 26th highest Max8D fullrun value. (gives approximately the 93% percentile

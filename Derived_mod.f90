@@ -71,7 +71,7 @@ use MetFields_mod,     only: roa,Kz_m2s,th,zen, ustar_nwp, u_ref, hmix,&
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             cc3dmax, & ! SEI
                             dTleafHd, dTleafRn, & ! TLEAF
-                            SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
+                            SoilWater_deep, SoilWater_uppr 
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
 use My_Derived_mod, only : &
     wanted_deriv2d, wanted_deriv3d, & ! names of wanted derived fields
@@ -1174,14 +1174,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           d_2d( n, i,j,IOU_INST) = dTleafRn(i,j)
         end forall
       end if
-    case ( "Idirect" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = Idirect(i,j)
-      end forall
-    case ( "Idiffuse" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = Idiffuse(i,j)
-      end forall
 
     case ( "XSNOW" ) ! Was not snow depth, but rather flag
       forall ( i=1:limax, j=1:ljmax )

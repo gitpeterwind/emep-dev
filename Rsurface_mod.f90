@@ -207,12 +207,10 @@ contains
   !    g_sto 0 when snow covering canopy
 
    if ( dbg ) then
-     !F21 call datewrite(dtxt//"testcan-in ", iL, [ G%Idirect, L%PARsun, G%sdepth,&
      call datewrite(dtxt//"testcan-in ", iL, [ G%Zen, L%PARsun, G%sdepth,&
          coszen(i,j), DAY_COSZEN ], afmt='(a,3i3,i5,1x, i2,3f9.3,2es12.3)'  )
    end if
 
-   !if( leafy_canopy  .and. G%Idirect > 0.001 .and.       &!: daytime
    if( leafy_canopy  .and. G%zen < 89.0 .and.       &!: daytime
                           G%sdepth< (1.0 +Sdmax) ) then   !: above snow
 
@@ -363,8 +361,6 @@ contains
       if ( canopy  ) then
          Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto
       end if
-
-!WHY?  Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
 
       Rsur(icmp) = 1.0/( Gsto(icmp) + Gns(icmp)  )
 

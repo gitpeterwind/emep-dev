@@ -22,7 +22,7 @@ integer, public, save :: iL = INOT_SET              ! Landuse index
 ! -----------------------------------------------------------------------
 ! 1) Grid data which should be okay for local
 ! -----------------------------------------------------------------------
-type, public :: GridDat
+ type, public :: GridDat
   real    :: latitude     ! deg N
   real    :: longitude    ! deg E
   integer :: i            ! index
@@ -75,27 +75,23 @@ type, public :: GridDat
 ! CoDep
   real    :: so2nh3ratio24hr  !  for CEH SO2 deposition scheme
   real    ::              & ! some on this set might not be need
-     solar     = NOT_SET  & ! => irradiance (W/m^2)
-!F21 no longer used. Weiss & Normal used for PARdbh etc.
-!F21    ,Idirectn  = NOT_SET  &   ! => irradiance (W/m^2), normal to beam
-!F21    ,Idiffuse  = NOT_SET  & ! => diffuse solar radiation (W/m^2)
-!F21    ,Idirect   = NOT_SET  & ! => total direct solar radiation (W/m^2)
-    ,zen       = NOT_SET  & !   Zenith angle (degrees)
-    ,coszen    = NOT_SET    ! = cos(zen)(= sinB, where B is elevation angle)
+             solar     = NOT_SET  & ! => irradiance (W/m^2)
+            ,zen       = NOT_SET  & !   Zenith angle (degrees)
+            ,coszen    = NOT_SET    ! = cos(zen)(= sinB, where B is elevation angle)
   integer :: izen = INOT_SET  ! int(zen)
   real, dimension(NLOCDRYDEP_MAX) :: &  ! for species subject to dry depostion
      Vg_ref = 0.0   & ! Grid average of Vg at ref ht. (effective Vg for cell)
     ,StoFrac = 0.0  & ! Fraction of flux (Vg) going through stomata.
     ,Vg_3m    & ! and at 3m
     ,Gsur,Gsto, Gns
-end type GridDat
+ end type GridDat
 
 type(GridDat), public, save :: Grid
 
 ! -----------------------------------------------------------------------
 ! 2) Near-surface & Sub-grid Veg/landcover data
 ! -----------------------------------------------------------------------
-type, public :: SubDat
+ type, public :: SubDat
   integer ::              &
    iL  = INOT_SET         & ! Landcover index
   ,SGS = INOT_SET         & ! Start, growing seasons (day num)
@@ -163,9 +159,9 @@ type, public :: SubDat
     ,Vg_3m    &  ! and at 3m
     ,StoFrac = 0.0  & ! Fraction of flux (Vg) going through stomata.
     ,Gsur, Gsto, Gns
-end type SubDat
+ end type SubDat
 
 ! MOVED TO Mosaic type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
-type(SubDat), public, save :: L         ! For just one land-class
-type(SubDat), public, save :: ResetSub  ! Keeps NOT_SET values
+ type(SubDat), public, save :: L         ! For just one land-class
+ type(SubDat), public, save :: ResetSub  ! Keeps NOT_SET values
 end module LocalVariables_mod

@@ -104,13 +104,9 @@ subroutine Get_CellMet(i,j,debug_flag)
   Grid%zen = zen(i,j)
   Grid%coszen = coszen(i,j)
   Grid%izen = max( 1, int ( Grid%zen + 0.5 ) )! 1 avoids zero in indices.
-  !F21 Grid%Idirect  =  Idirect(i,j)
-  !F21 Grid%Idiffuse =  Idiffuse(i,j)
 
   !**  prefer micromet signs and terminology here:
   Grid%Hd    = -fh(i,j,1)       ! Heat flux, *away from* surface
-if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
-   maxval(fh(:,:,1)), minval(fh(:,:,1)), Grid%z_mid
   Grid%LE    = -fl(i,j,1)       ! Heat flux, *away from* surface
   Grid%ustar = ustar_nwp(i,j)   !  u*
   Grid%t2    = t2_nwp(i,j,1)    ! t2 , K
@@ -121,17 +117,18 @@ if( debug_flag ) write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, &
 
   if( debug_flag ) then
 
-     write(*,"(a,9f10.3)") 'CellMet: PTterms', &  !checked, psurf=ps(i,j,1)
-        0.01*ps(i,j,1), 0.01*pp(KMAX_MID), & ! hPa
-        temp(KMAX_MID)-273.15, th(i,j,KMAX_MID,1)*Tpot_2_T( pp(KMAX_MID) )-273.15, Grid%t2C
+    write(*,"(a,3es12.3,f8.2)") 'CellHd', Grid%Hd, maxval(fh(:,:,1)), &
+        minval(fh(:,:,1)), Grid%z_mid
+    write(*,"(a,9f10.3)") 'CellMet: PTterms', &  !checked, psurf=ps(i,j,1)
+       0.01*ps(i,j,1), 0.01*pp(KMAX_MID), & ! hPa
+       temp(KMAX_MID)-273.15, &
+       th(i,j,KMAX_MID,1)*Tpot_2_T( pp(KMAX_MID) )-273.15, Grid%t2C
 
-     write(*,"(a,9f10.3)") 'CellMet: Zterms', Grid%z_ref, Grid%z_mid
+    write(*,"(a,9f10.3)") 'CellMet: Zterms', Grid%z_ref, Grid%z_mid
 
     write(*,"(a,2f8.2,9es12.3)") 'CellRterms', Grid%t2C, &
-     Grid%ustar, Grid%Hd, Grid%LE, Grid%rh2m  !, tab_esat_Pa(iT), & !           Grid%Dair, Grid%s,  Grid%psurf*CP/(0.622*LAMBDA_W)
+     Grid%ustar, Grid%Hd, Grid%LE, Grid%rh2m !, tab_esat_Pa(iT), Grid%Dair, Grid%s,  Grid%psurf*CP/(0.622*LAMBDA_W)
 
-     write(*,"(a,9f8.3)") 'CellTterms', Grid%t2C, temp(KMAX_MID), &! Grid%Tref-273.15,
-       Grid%theta_ref-273.15, Grid%theta_ref*Tpot_2_T(Grid%psurf) - 273.15 !, Tpot_2_T(pp(KMAX_MID) )
    end if ! debug
 
 
