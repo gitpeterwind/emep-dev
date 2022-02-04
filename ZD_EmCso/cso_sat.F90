@@ -22,6 +22,7 @@ module CSO_Sat
   use CSO_Pixels      , only : T_Track_0D, T_Track_1D
   use CSO_Mapping     , only : T_Mapping
   use CSO_Exchange    , only : T_Exchange
+  use CSO_Domains     , only : T_CSO_Selection1D
 
   implicit none
   
@@ -40,36 +41,6 @@ module CSO_Sat
 
 
   ! --- types --------------------------------
-  
-  !
-  ! satelite data:
-  !  footprints
-  !  timestamps
-  !  kernels
-  !
-  type T_Output
-    ! number of pixels in global doamin:
-    integer                           ::  nglb
-    ! number of local pixels:
-    integer                           ::  npix
-    ! total number over all domains,
-    ! used on root only for output:
-    integer                           ::  npix_all
-    integer, allocatable              ::  iglb_all(:)   ! (npix_all)
-    !
-    ! number of unique pixels used at some domain,
-    ! equal or less than nglb in case some pixels are outside domain:
-    integer                           ::  nout
-    ! mapping from 1:nglb to 1:nout,
-    ! for example used to write glb_lon/etc arrays
-    integer, allocatable              ::  iout_glb(:)   ! (nglb)
-    ! mapping from 1:npix_all to 1:nout:
-    integer, allocatable              ::  iout_all(:)   ! (npix_all)
-    !
-  contains
-    procedure :: Init            => Output_Init
-    procedure :: Done            => Output_Done
-  end type T_Output
   
   !
   ! output selection
@@ -114,6 +85,10 @@ module CSO_Sat
     ! flags:
     logical                           ::  with_track
     !
+    ! how to read?
+    logical                           ::  read_on_root
+    logical                           ::  read_by_me
+    !
     !~ netcdf id's
     integer                           ::  ncid
     !
@@ -152,8 +127,8 @@ module CSO_Sat
     real, pointer                     ::  loc_clons(:,:)  ! (ncorner,npix)
     real, pointer                     ::  loc_clats(:,:)  ! (ncorner,npix)
     !
-    ! output collecting:
-    type(T_Output)                    ::  output
+    ! selection info:
+    type(T_CSO_Selection1D)           ::  slc
     !
     ! mapping from grid cells to pixels:
     type(T_Mapping)                   ::  mapping
@@ -220,183 +195,6 @@ module CSO_Sat
 
   
 contains
-
-
-
-
-  ! ====================================================================
-  ! ===
-  ! === Output
-  ! ===
-  ! ====================================================================
-
-
-  subroutine Output_Init( self, npix, nglb, iglb_loc, status )
-  
-    use CSO_Comm, only : csoc
-
-    ! --- in/out ---------------------------------
-    
-    class(T_Output), intent(out)                ::  self
-    integer, intent(in)                         ::  npix
-    integer, intent(in)                         ::  nglb
-    integer, intent(in)                         ::  iglb_loc(:)  ! (npix)
-    integer, intent(out)                        ::  status
-
-    ! --- const ----------------------------------
-    
-    character(len=*), parameter   :: rname = mname//'/Output_Init'
-    
-    ! --- local ----------------------------------
-    
-    logical, allocatable    ::  used_glb(:)    ! (nglb)
-    integer                 ::  k
-    integer                 ::  iglb
-    integer                 ::  iout
-
-    ! --- begin ----------------------------------
-    
-    ! ... collecting for output .................
-    
-    ! store:
-    self%nglb = nglb
-    self%npix = npix
-    
-    ! total number of pixels handled by local domains, broadcasted to all;
-    ! this could exceed nglb since some footprints cover multiple domains;
-    call csoc%ParInfo( self%npix, status, ntot=self%npix_all )
-    IF_NOT_OK_RETURN(status=1)
-
-    ! any?
-    if ( self%npix_all > 0 ) then
-    
-      ! define:
-      !   iglb_all(npix_all)    : global pixel index, in order of pe from which they are received
-      ! needed on root only:
-      if ( csoc%root ) then
-        ! storage for mapping:
-        allocate( self%iglb_all(self%npix_all), source=-999, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-      else
-        ! dummy ...
-        allocate( self%iglb_all(1), source=-999, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-      end if ! root
-      ! gather on root:
-      call csoc%GatherV( iglb_loc, self%iglb_all, status, nloc=self%npix )
-      IF_NOT_OK_RETURN(status=1)
-
-      ! on root, info on selected pixels
-      if ( csoc%root ) then
-
-        ! storage for flag per global pixel, disable by default:
-        allocate( used_glb(self%nglb), source=.false., stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        ! loop over all locally used pixesl:
-        do k = 1, self%npix_all
-          ! global pixel index:
-          iglb = self%iglb_all(k)
-          ! enable:
-          used_glb(iglb) = .true.
-        end do
-
-        ! count number of global pixels somewhere used:
-        self%nout = count( used_glb )
-        ! storage for mapping from 1:nglb to 1:nout
-        allocate( self%iout_glb(self%nglb), source=-999, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        ! init counter:
-        iout = 0
-        ! loop over global pixels:
-        do iglb = 1, self%nglb
-          ! in use?
-          if ( used_glb(iglb) ) then
-            ! next:
-            iout = iout + 1
-            ! store mapping:
-            self%iout_glb(iglb) = iout
-          end if
-        end do ! iglb
-
-        ! clear:
-        deallocate( used_glb, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-
-        ! storage for mapping from "all" array to "out":
-        allocate( self%iout_all(self%npix_all), stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        ! loop over all locally used pixesl:
-        do k = 1, self%npix_all
-          ! global pixel index:
-          iglb = self%iglb_all(k)
-          ! mapping:
-          self%iout_all(k) = self%iout_glb(iglb)
-        end do ! k
-
-      else
-        ! dummy ...
-        self%nout = -999
-        ! dummy ...
-        allocate( self%iout_glb(1), source=-999, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        ! dummy ...
-        allocate( self%iout_all(1), source=-999, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-      end if ! root
-
-      ! broadcast counter:
-      call csoc%BCast( csoc%root_id, self%nout, status )
-      IF_NOT_OK_RETURN(status=1)
-      
-    end if ! nglb > 0
-
-    ! ok
-    status = 0
-    
-  end subroutine Output_Init
-  
-  
-  ! ***
-
-
-  subroutine Output_Done( self, status )
-
-    use CSO_Comm, only : csoc
-    
-    ! --- in/out ---------------------------------
-    
-    class(T_Output), intent(inout)    ::  self
-    integer, intent(out)              ::  status
-  
-    ! --- const ----------------------------------
-    
-    character(len=*), parameter  ::  rname = mname//'/Output_Done'
-    
-    ! --- local ----------------------------------
-    
-    integer     ::  pid
-    
-    ! --- begin ----------------------------------
-    
-    ! any?
-    if ( self%nglb > 0 ) then
-    
-      ! output collection:
-      deallocate( self%iglb_all, stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      deallocate( self%iout_glb, stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      deallocate( self%iout_all, stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      
-    end if ! nglb > 0
-
-    ! ok
-    status = 0
-    
-  end subroutine Output_Done
-
-
 
 
   ! ====================================================================
@@ -694,49 +492,82 @@ contains
     IF_NOT_OK_RETURN(status=1)
     call rcF%Get( trim(self%rcbase)//'.with_mapping', self%putout_mapping, status )
     IF_NOT_OK_RETURN(status=1)
+    
+    ! read on root, scatter to domains?
+    ! by default .true. now, flag used for testing ...
+    call rcF%Get( trim(self%rcbase)//'.read_on_root', self%read_on_root, status, &
+                    default=.true. )
+    IF_ERROR_RETURN(status=1)
 
-    ! check ...
-    inquire( file=trim(self%filename), exist=exist )
-    if ( .not. exist ) then
-      write (csol,'("file not found: ",a)') trim(self%filename); call csoErr
-      TRACEBACK; status=1; return
+    ! read here?
+    if ( self%read_on_root ) then
+      ! only root:
+      self%read_by_me = csoc%root
+    else
+      ! all:
+      self%read_by_me = .true.
     end if
+    
+    ! read by this pe?
+    if ( self%read_by_me ) then
+    
+      ! check ...
+      inquire( file=trim(self%filename), exist=exist )
+      if ( .not. exist ) then
+        write (csol,'("file not found: ",a)') trim(self%filename); call csoErr
+        TRACEBACK; status=1; return
+      end if
 
-    ! open file:
-    status = NF90_Open( trim(self%filename), NF90_NOWRITE, self%ncid )
-    IF_NF90_NOT_OK_RETURN(status=1)
+      ! open file:
+      status = NF90_Open( trim(self%filename), NF90_NOWRITE, self%ncid )
+      IF_NF90_NOT_OK_RETURN(status=1)
 
-    ! pixel dimension:
-    status = NF90_Inq_DimID( self%ncid, 'pixel', dimid )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! number of pixels
-    status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nglb )
-    IF_NF90_NOT_OK_RETURN(status=1)
+      ! pixel dimension:
+      status = NF90_Inq_DimID( self%ncid, 'pixel', dimid )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! number of pixels
+      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nglb )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+      ! corner dimension:
+      status = NF90_Inq_DimID( self%ncid, 'corner', dimid )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! number of pixels
+      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%ncorner )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+      ! layer dimension (used for kernel):
+      status = NF90_Inq_DimID( self%ncid, 'layer', dimid )
+      if ( status == NF90_NOERR ) then
+        status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nlayer )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      else
+        self%nlayer = -999
+      end if
+
+      ! retrieval dimension:
+      status = NF90_Inq_DimID( self%ncid, 'retr', dimid )
+      if ( status == NF90_NOERR ) then
+        status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nretr )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      else
+        self%nretr = -999
+      end if
       
-    ! corner dimension:
-    status = NF90_Inq_DimID( self%ncid, 'corner', dimid )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! number of pixels
-    status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%ncorner )
-    IF_NF90_NOT_OK_RETURN(status=1)
-
-    ! layer dimension (used for kernel):
-    status = NF90_Inq_DimID( self%ncid, 'layer', dimid )
-    if ( status == NF90_NOERR ) then
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nlayer )
-      IF_NF90_NOT_OK_RETURN(status=1)
-    else
-      self%nlayer = -999
+    end if  ! read by me
+    ! need to broadcast?
+    if ( self%read_on_root ) then
+      ! broadcast from root:
+      call csoc%BCast( csoc%root_id, self%nglb   , status )
+      IF_NOT_OK_RETURN(status=1)
+      call csoc%BCast( csoc%root_id, self%ncorner, status )
+      IF_NOT_OK_RETURN(status=1)
+      call csoc%BCast( csoc%root_id, self%nlayer , status )
+      IF_NOT_OK_RETURN(status=1)
+      call csoc%BCast( csoc%root_id, self%nretr  , status )
+      IF_NOT_OK_RETURN(status=1)
     end if
-
-    ! retrieval dimension:
-    status = NF90_Inq_DimID( self%ncid, 'retr', dimid )
-    if ( status == NF90_NOERR ) then
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nretr )
-      IF_NF90_NOT_OK_RETURN(status=1)
-    else
-      self%nretr = -999
-    end if
+      
 
     ! * read global footprints
 
@@ -744,17 +575,17 @@ contains
     write (csol,'(a,":   number of pixels in file: ",i0)') rname, self%nglb; call csoPr
 
     ! init pixel data:
-    call self%pd%Init( status )
+    call self%pd%Init( status, read_on_root=self%read_on_root )
     IF_NOT_OK_RETURN(status=1)
 
     ! define pixel data, read from ncfile, store global arrays (all pixels) on each domain:
     call self%pd%NcInit( 'longitude', '', self%ncid, 'longitude', status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
-    call self%pd%NcInit( 'latitude', '', self%ncid, 'latitude', status, glb=.true. )
+    call self%pd%NcInit( 'latitude' , '', self%ncid, 'latitude' , status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
     call self%pd%NcInit( 'longitude_bounds', 'corner', self%ncid, 'longitude_bounds', status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
-    call self%pd%NcInit( 'latitude_bounds', 'corner', self%ncid, 'latitude_bounds', status, glb=.true. )
+    call self%pd%NcInit( 'latitude_bounds' , 'corner', self%ncid, 'latitude_bounds' , status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
 
     ! storage for selection flags:
@@ -791,11 +622,12 @@ contains
       IF_NOT_OK_RETURN(status=1)
 
       ! read compressed index in track:
-      call self%pd%NcInit( 'pixel', '', self%ncid, 'pixel', status, xtype='integer', glb=.true. )
+      call self%pd%NcInit( 'pixel', '', self%ncid, 'pixel', status, &
+                              xtype='integer', glb=.true., only_here=.true. )
       IF_NOT_OK_RETURN(status=1)
 
     end if ! track
-    
+
     ! * local pixels
 
     ! no pixels yet:
@@ -899,7 +731,7 @@ contains
     ! ~ swap pixel array
     
     ! any pixels on some domain?
-    if ( sdata%output%npix_all > 0 ) then
+    if ( sdata%slc%nsel_tot > 0 ) then
     
       ! info on swapping from current decomposition 'doms' to decomposition 'doms_f';
       ! use the mapping info to know with which of the new domains a pixel overplaps ;
@@ -927,12 +759,14 @@ contains
       self%npix = 0
     end if
 
-    ! define info on collecting and putting out:
-    call self%output%Init( self%npix, self%nglb, self%iglb, status )
+    ! store selection info, collect all info on root for:
+    ! - scatter after  reading from root (optional)
+    ! - gather  before writing from root (always needed):
+    call self%slc%Init( self%nglb, self%npix, self%iglb, .true., status )
     IF_NOT_OK_RETURN(status=1)
     
     ! any pixels on some domain?
-    if ( sdata%output%npix_all > 0 ) then
+    if ( sdata%slc%nsel_tot > 0 ) then
 
       ! swap pixel data to target decomposition:
       call self%pd%InitSwap( sdata%pd, swp, status )
@@ -1014,7 +848,7 @@ contains
       IF_NOT_OK_RETURN(status=1)
       
       ! output collection:
-      call self%output%Done( status )
+      call self%slc%Done( status )
       IF_NOT_OK_RETURN(status=1)
       
       ! local pixels?
@@ -1063,11 +897,12 @@ contains
 
   subroutine CSO_Sat_Data_Read( self, rcF, rcbase, status )
   
-    use NetCDF    , only : NF90_Close
+    use NetCDF     , only : NF90_Close
 
-    use CSO_Comm  , only : csoc
-    use CSO_Rc    , only : T_CSO_RcFile 
-    use CSO_String, only : CSO_ReadFromLine 
+    use CSO_Comm   , only : csoc
+    use CSO_Domains, only : T_CSO_Selection1D
+    use CSO_Rc     , only : T_CSO_RcFile 
+    use CSO_String , only : CSO_ReadFromLine 
     
     ! --- in/out ---------------------------------
     
@@ -1136,13 +971,13 @@ contains
       IF_NOT_OK_RETURN(status=1)
       
     end if
-
+    
     ! clear:
     deallocate( iglb_local, stat=status )
     IF_NOT_OK_RETURN(status=1)
-
-    ! define info on collecting and putting out:
-    call self%output%Init( self%npix, self%nglb, self%iglb, status )
+    
+    ! store selection info, collect all info on root for scatter and gather:
+    call self%slc%Init( self%nglb, self%npix, self%iglb, .true., status )
     IF_NOT_OK_RETURN(status=1)
     
     ! info ...
@@ -1170,16 +1005,19 @@ contains
       write (csol,'(a,":    dimensions : ",a)') rname, trim(dnames); call csoPr
       write (csol,'(a,":    source     : ",a)') rname, trim(source); call csoPr
 
-      ! define variable and read (local subset) from nc file:
+      ! define variable, and read (local subset) from nc file:
       call self%pd%NcInit( trim(vname), trim(dnames), self%ncid, trim(source), status, &
-                             nselect=self%npix, select=self%iglb )
+                             slc=self%slc )
       IF_NOT_OK_RETURN(status=1)
 
     end do ! dvars
     
-    ! close:
-    status = NF90_Close( self%ncid )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! file opened?
+    if ( self%read_by_me ) then
+      ! close:
+      status = NF90_Close( self%ncid )
+      IF_NF90_NOT_OK_RETURN(status=1)
+    end if ! read by me
 
     ! *
     
@@ -1694,10 +1532,10 @@ contains
     nullify( vars )
 
     ! any pixels to be put out?
-    if ( self%output%nout > 0 ) then
+    if ( self%slc%nout > 0 ) then
     
       ! info ..
-      write (csol,'(a,":   put out ",i0," pixels ...")') rname, self%output%nout; call csoPr
+      write (csol,'(a,":   put out ",i0," pixels ...")') rname, self%slc%nout; call csoPr
     
       ! ~ collect mappings
 
@@ -1706,7 +1544,7 @@ contains
         ! collect mappings from grid cells to pixels:
         ! - fill self%nmap_all, 
         ! - collect arrays, store in map_*_out arrays
-        call self%mapping%Collect( self%npix, self%output%iout_all, self%output%nout, self%output%iout_glb, status )
+        call self%mapping%Collect( self%npix, self%slc%iout_tot, self%slc%nout, self%slc%iout_glb, status )
         IF_NOT_OK_RETURN(status=1)
       end if
       
@@ -1734,7 +1572,7 @@ contains
         ! ~ define
 
         ! define dimensions:
-        status = NF90_Def_Dim( ncid, 'pixel', self%output%nout, dimid_pixel )
+        status = NF90_Def_Dim( ncid, 'pixel', self%slc%nout, dimid_pixel )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! track defined?
         if ( self%with_track ) then
@@ -1778,7 +1616,7 @@ contains
         ! ~ write
 
         ! put selection of "glb" arrays:
-        call self%pd%NcPutGlbSelect( ncid, self%output%iout_glb, status )
+        call self%pd%NcPutGlbSelect( ncid, self%slc%iout_glb, status )
         IF_NOT_OK_RETURN(status=1)
 
         ! track defined?
@@ -1805,7 +1643,7 @@ contains
       
       ! collect distributed arrays on root and write from there,
       ! values found on multiple domains are the same so no need to add them:
-      call self%pd%NcPutGather( ncid, self%output%iout_all, .false., vars, status )
+      call self%pd%NcPutGather( ncid, self%slc%iout_tot, .false., vars, status )
       IF_NOT_OK_RETURN(status=1)
 
       ! written on root...
@@ -1877,8 +1715,8 @@ contains
 
     ! --- begin ----------------------------------
     
-    ! info ...
-    write (csol,'(a,": determine pixels overlapping with multiple domains ...")') rname; call csoPr
+    !! info ...
+    !write (csol,'(a,": determine pixels overlapping with multiple domains ...")') rname; call csoPr
     
     ! only need for multiple pe's, and if not done yet ...
     if ( (csoc%npes > 1) .and. (.not. self%exchange_is_setup) ) then
@@ -1908,7 +1746,7 @@ contains
       end if
       ! storage for processor id's per pixel contribution, needed on root only:
       if ( csoc%root ) then
-        allocate( idi_all(np,self%output%npix_all), source=-999, stat=status )
+        allocate( idi_all(np,self%slc%nsel_tot), source=-999, stat=status )
         IF_NOT_OK_RETURN(status=1)
       else
         allocate( idi_all(np,1), source=-999, stat=status )
@@ -1930,9 +1768,9 @@ contains
         IF_NOT_OK_RETURN(status=1)
 
         ! loop over pixel contributions:
-        do ipix_all = 1, self%output%npix_all
+        do ipix_all = 1, self%slc%nsel_tot
           ! global index:
-          iglb = self%output%iglb_all(ipix_all)
+          iglb = self%slc%iglb_tot(ipix_all)
           ! increase counter:
           qn(iglb) = qn(iglb) + 1
           ! check ...
@@ -1954,8 +1792,8 @@ contains
         
         ! number of exchanges:
         nex_max = count( qn > 1 )
-        ! info ...
-        write (csol,'("counted ",i0," exchanges between domains")') nex_max; call csoPr
+        !! info ...
+        !write (csol,'("counted ",i0," exchanges between domains")') nex_max; call csoPr
         
         ! pixel indices to send and receive:
         allocate( exchi(nex_max,2), source=-999, stat=status )
@@ -2017,8 +1855,8 @@ contains
             
             ! send/recv from here (root)?
             if ( csoc%id == pid1 ) then
-              ! info ...
-              write (csol,'(a,":   exchange ",i0," contributions with pe ",i0)') rname, nex, pid2; call csoPr
+              !! info ...
+              !write (csol,'(a,":   exchange ",i0," contributions with pe ",i0)') rname, nex, pid2; call csoPr
               ! init storage for exchange with pid2:
               call self%exch(pid2)%Alloc( nex, status )
               IF_NOT_OK_RETURN(status=1)
@@ -2080,8 +1918,8 @@ contains
             ! send to first of pair ..
             call csoc%SendRecv( nex, csoc%root_id, pid2, itag2, status )
             IF_NOT_OK_RETURN(status=1)          
-            ! info ...
-            write (csol,'(a,":   exchange ",i0," contributions with pe ",i0)') rname, nex, pid1; call csoPr
+            !! info ...
+            !write (csol,'(a,":   exchange ",i0," contributions with pe ",i0)') rname, nex, pid1; call csoPr
             ! storage:
             call self%exch(pid1)%Alloc( nex, status )
             IF_NOT_OK_RETURN(status=1)
@@ -3001,7 +2839,7 @@ contains
     end if
 
     ! any pixels to be put out?
-    if ( sdata%output%nout > 0 ) then
+    if ( sdata%slc%nout > 0 ) then
     
       ! collect on root, this is much faster than parallel write ...
       if ( csoc%root ) then
@@ -3019,7 +2857,7 @@ contains
         end if
 
         ! pixel dimension:
-        status = NF90_Def_Dim( ncid, 'pixel', sdata%output%nout, dimid_pixel )
+        status = NF90_Def_Dim( ncid, 'pixel', sdata%slc%nout, dimid_pixel )
         IF_NF90_NOT_OK_RETURN(status=1)
 
         ! user output:
@@ -3038,7 +2876,7 @@ contains
       !IF_NOT_OK_RETURN(status=1)
       !~ contributions from different domains have been exchanged already,
       !  so no need to add contributions:
-      call self%pd%NcPutGather( ncid, sdata%output%iout_all, .false., vars, status )
+      call self%pd%NcPutGather( ncid, sdata%slc%iout_tot, .false., vars, status )
       IF_NOT_OK_RETURN(status=1)
       
       ! written on root...

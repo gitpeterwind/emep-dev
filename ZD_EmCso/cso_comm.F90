@@ -124,15 +124,31 @@ module CSO_Comm
                                     CSO_Comm_AllReduce_InPlace_r4_5d
     !
     procedure ::                    CSO_Comm_BCast_i
+    procedure ::                    CSO_Comm_BCast_i_1d
+    procedure ::                    CSO_Comm_BCast_r4
     procedure ::                    CSO_Comm_BCast_r4_1d
     procedure ::                    CSO_Comm_BCast_r4_2d
     procedure ::                    CSO_Comm_BCast_r4_3d
     procedure ::                    CSO_Comm_BCast_r4_4d
+    procedure ::                    CSO_Comm_BCast_r8
+    procedure ::                    CSO_Comm_BCast_r8_1d
+    procedure ::                    CSO_Comm_BCast_r8_2d
+    procedure ::                    CSO_Comm_BCast_r8_3d
+    procedure ::                    CSO_Comm_BCast_r8_4d
+    procedure ::                    CSO_Comm_BCast_c
     generic   ::  BCast         =>  CSO_Comm_BCast_i, &
+                                    CSO_Comm_BCast_i_1d, &
+                                    CSO_Comm_BCast_r4, &
                                     CSO_Comm_BCast_r4_1d, &
                                     CSO_Comm_BCast_r4_2d, &
                                     CSO_Comm_BCast_r4_3d, &
-                                    CSO_Comm_BCast_r4_4d
+                                    CSO_Comm_BCast_r4_4d, &
+                                    CSO_Comm_BCast_r8, &
+                                    CSO_Comm_BCast_r8_1d, &
+                                    CSO_Comm_BCast_r8_2d, &
+                                    CSO_Comm_BCast_r8_3d, &
+                                    CSO_Comm_BCast_r8_4d, &
+                                    CSO_Comm_BCast_c
     !
     procedure ::                    CSO_Comm_Gather_i
     procedure ::                    CSO_Comm_Gather_i_1d
@@ -172,8 +188,16 @@ module CSO_Comm
     !
     procedure                       CSO_Comm_ScatterV_r4_1d
     procedure                       CSO_Comm_ScatterV_r4_2d
+    procedure                       CSO_Comm_ScatterV_r4_3d
+    procedure                       CSO_Comm_ScatterV_r8_1d
+    procedure                       CSO_Comm_ScatterV_r8_2d
+    procedure                       CSO_Comm_ScatterV_r8_3d
     generic   ::  ScatterV      =>  CSO_Comm_ScatterV_r4_1d, &
-                                    CSO_Comm_ScatterV_r4_2d
+                                    CSO_Comm_ScatterV_r4_2d, &
+                                    CSO_Comm_ScatterV_r4_3d, &
+                                    CSO_Comm_ScatterV_r8_1d, &
+                                    CSO_Comm_ScatterV_r8_2d, &
+                                    CSO_Comm_ScatterV_r8_3d
     !
     procedure ::                    CSO_Comm_AllToAll_i4_1d
     generic   ::  AllToAll      =>  CSO_Comm_AllToAll_i4_1d
@@ -209,6 +233,10 @@ module CSO_Comm
 contains
 
 
+  ! ====================================================================
+  ! ===
+  ! === comm
+  ! ===
   ! ====================================================================
 
 
@@ -552,6 +580,7 @@ contains
     use MPI_F08, only : MPI_LOGICAL
     use MPI_F08, only : MPI_INTEGER
     use MPI_F08, only : MPI_REAL, MPI_DOUBLE_PRECISION
+    use MPI_F08, only : MPI_CHAR
 
     ! --- in/out ---------------------------------
 
@@ -600,6 +629,11 @@ contains
             write (csol,'("could not set MPI data type for ",a," kind ",i0)') trim(typ), knd; call csoErr
             TRACEBACK; status=1; return
         end select
+
+      !~ characters:
+      case ( 'char' )
+        ! set result:
+        dtype = MPI_CHAR
 
       !~
       case default
@@ -1662,6 +1696,94 @@ contains
   ! ***
 
 
+  subroutine CSO_Comm_BCast_i_1d( self, rootid, values, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    integer, intent(inout)              ::  values(:)
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_i_1d'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'integer', kind(values), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( values, size(values), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_i_1d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r4( self, rootid, value, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    real(4), intent(inout)              ::  value
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r4'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(value), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( value, 1, dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r4
+
+
+  ! ***
+
+
   subroutine CSO_Comm_BCast_r4_1d( self, rootid, values, status )
 
 #ifdef _MPI
@@ -1833,6 +1955,270 @@ contains
     status = 0
 
   end subroutine CSO_Comm_BCast_r4_4d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r8( self, rootid, value, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    real(8), intent(inout)              ::  value
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r8'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(value), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( value, 1, dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r8
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r8_1d( self, rootid, values, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    real(8), intent(inout)              ::  values(:)
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r8_1d'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(values), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( values, size(values), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r8_1d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r8_2d( self, rootid, values, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)          ::  self
+    integer, intent(in)                 ::  rootid
+    real(8), intent(inout)              ::  values(:,:)
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r8_2d'
+
+    ! --- local ----------------------------------
+    
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(values), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( values, size(values), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r8_2d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r8_3d( self, rootid, values, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    real(8), intent(inout)              ::  values(:,:,:)
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r8_2d'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(values), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( values, size(values), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r8_3d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_r8_4d( self, rootid, values, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    real(8), intent(inout)              ::  values(:,:,:,:)
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_r8_2d'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'real', kind(values), dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( values, size(values), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_r8_4d
+
+
+  ! ***
+
+
+  subroutine CSO_Comm_BCast_c( self, rootid, value, status )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_BCast
+#endif
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    integer, intent(in)                 ::  rootid
+    character(len=*), intent(inout)     ::  value
+    integer, intent(out)                ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_BCast_c'
+
+    ! --- local ----------------------------------
+
+#ifdef _MPI
+    type(MPI_DataType)    ::  dtype
+#endif
+
+    ! --- begin ----------------------------------
+
+#ifdef _MPI
+    ! data type:
+    call self%GetDataType( 'char', 1, dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! send values from root to all other pe's:
+    call MPI_BCast( value, len(value), dtype, rootid, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#endif
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_BCast_c
 
 
   ! ********************************************************************
@@ -3253,7 +3639,7 @@ contains
     if ( present(nloc) ) then
       n = nloc
     else
-      n = size(send)
+      n = size(recv)
     end if
     
 #ifdef _MPI
@@ -3282,7 +3668,7 @@ contains
     
     ! collect values from all pe's on root:
     call MPI_ScatterV( send, sendcounts, displs, dtype, &
-                       recv, n, dtype, &
+                       recv, n                 , dtype, &
                        self%root_id, self%comm, ierror=status )
     IF_MPI_NOT_OK_RETURN(status=1)
 
@@ -3295,7 +3681,7 @@ contains
 #else
 
     ! just copy ...
-    if ( n > 0 ) recv = send(1:n)
+    if ( n > 0 ) recv(1:n) = send(1:n)
 
 #endif
     
@@ -3331,7 +3717,7 @@ contains
 
     ! --- local ----------------------------------
     
-    integer                 ::  m
+    integer                 ::  m1
     integer                 ::  n
 #ifdef _MPI
     type(MPI_DataType)      ::  dtype
@@ -3346,11 +3732,11 @@ contains
     if ( present(nloc) ) then
       n = nloc
     else
-      n = size(send)
+      n = size(recv,2)
     end if
     
     ! first dim:
-    m = size(send,1)
+    m1 = size(recv,1)
     
 #ifdef _MPI
 
@@ -3371,16 +3757,16 @@ contains
     ! check send buffer ...
     if ( self%root ) then
       ! check ...
-      if ( any( shape(send) /= (/m,ntot/) ) ) then
+      if ( any( shape(send) /= (/m1,ntot/) ) ) then
         write (csol,'("send buffer has shape (",i0,",",i0,") while (m,ntot) is (",i0,",",i0,")")') &
-                        shape(send), m,ntot; call csoErr
+                        shape(send), m1,ntot; call csoErr
         TRACEBACK; status=1; return
       end if
     end if
     
     ! collect values from all pe's on root:
-    call MPI_ScatterV( send, m*sendcounts, m*displs, dtype, &
-                       recv, m*n, dtype, &
+    call MPI_ScatterV( send, m1*sendcounts, m1*displs, dtype, &
+                       recv, m1*n                    , dtype, &
                        self%root_id, self%comm, ierror=status )
     IF_MPI_NOT_OK_RETURN(status=1)
 
@@ -3393,7 +3779,7 @@ contains
 #else
 
     ! just copy ...
-    if ( n > 0 ) recv = send(:,1:n)
+    if ( n > 0 ) recv(:,1:n) = send(:,1:n)
 
 #endif
     
@@ -3401,6 +3787,398 @@ contains
     status = 0
 
   end subroutine CSO_Comm_ScatterV_r4_2d
+  
+  ! *
+  
+  subroutine CSO_Comm_ScatterV_r4_3d( self, send, recv, status, &
+                                      nloc )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_ScatterV
+#endif
+
+    ! --- in/out ---------------------------------
+    
+    integer, parameter                  ::  wp = 4
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    real(wp), intent(in)                ::  send(:,:,:)   ! (m1,m2,sum nloc)
+    real(wp), intent(out)               ::  recv(:,:,:)   ! (m1,m2,max(1,nloc))
+    integer, intent(out)                ::  status
+    
+    integer, intent(in), optional       ::  nloc
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_ScatterV_r4_3d'
+
+    ! --- local ----------------------------------
+    
+    integer                 ::  m1, m2
+    integer                 ::  n
+#ifdef _MPI
+    type(MPI_DataType)      ::  dtype
+    integer                 ::  ntot
+    integer, allocatable    ::  sendcounts(:)  ! (npes)
+    integer, allocatable    ::  displs(:)  ! (npes)
+#endif
+
+    ! --- begin ----------------------------------
+    
+    ! local size, take from optional argument if present (value is probably zero ..)
+    if ( present(nloc) ) then
+      n = nloc
+    else
+      n = size(recv,2)
+    end if
+    
+    ! first dims:
+    m1 = size(recv,1)
+    m2 = size(recv,2)
+    
+#ifdef _MPI
+
+    ! data type:
+    call self%GetDataType( 'real', wp, dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! storage:
+    allocate( sendcounts(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( displs(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! collect numbers:
+    call self%ParInfo( n, status, ntot=ntot, sendcounts=sendcounts, displs=displs )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! check send buffer ...
+    if ( self%root ) then
+      ! check ...
+      if ( any( shape(send) /= (/m1,m2,ntot/) ) ) then
+        write (csol,'("send buffer has shape (",i0,2(",",i0),") while (m,ntot) is (",i0,2(",",i0),")")') &
+                        shape(send), m1,m2,ntot; call csoErr
+        TRACEBACK; status=1; return
+      end if
+    end if
+    
+    ! collect values from all pe's on root:
+    call MPI_ScatterV( send, m1*m2*sendcounts, m1*m2*displs, dtype, &
+                       recv, m1*m2*n                       , dtype, &
+                       self%root_id, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+
+    ! clear:
+    deallocate( sendcounts, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( displs, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+#else
+
+    ! just copy ...
+    if ( n > 0 ) recv(:,:,1:n) = send(:,:,1:n)
+
+#endif
+    
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_ScatterV_r4_3d
+  
+  
+  !
+  ! *** r8
+  !
+  
+  
+  subroutine CSO_Comm_ScatterV_r8_1d( self, send, recv, status, &
+                                      nloc )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_ScatterV
+#endif
+
+    ! --- in/out ---------------------------------
+    
+    integer, parameter                  ::  wp = 8
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    real(wp), intent(in)                ::  send(:)   ! (sum nloc)
+    real(wp), intent(out)               ::  recv(:)   ! (max(1,nloc))
+    integer, intent(out)                ::  status
+    
+    integer, intent(in), optional       ::  nloc
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_ScatterV_r8_1d'
+
+    ! --- local ----------------------------------
+    
+    integer                 ::  n
+#ifdef _MPI
+    type(MPI_DataType)      ::  dtype
+    integer                 ::  ntot
+    integer, allocatable    ::  sendcounts(:)  ! (npes)
+    integer, allocatable    ::  displs(:)  ! (npes)
+#endif
+
+    ! --- begin ----------------------------------
+    
+    ! local size, take from optional argument if present (value is probably zero ..)
+    if ( present(nloc) ) then
+      n = nloc
+    else
+      n = size(recv)
+    end if
+    
+#ifdef _MPI
+
+    ! data type:
+    call self%GetDataType( 'real', wp, dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! storage:
+    allocate( sendcounts(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( displs(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! collect numbers:
+    call self%ParInfo( n, status, ntot=ntot, sendcounts=sendcounts, displs=displs )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! check ...
+    if ( self%root ) then
+      if ( size(send) /= ntot ) then
+        write (csol,'("send buffer has size ",i0," while ntot is ",i0)') size(send), ntot; call csoErr
+        TRACEBACK; status=1; return
+      end if
+    end if
+    
+    ! collect values from all pe's on root:
+    call MPI_ScatterV( send, sendcounts, displs, dtype, &
+                       recv, n                 , dtype, &
+                       self%root_id, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+
+    ! clear:
+    deallocate( sendcounts, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( displs, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+#else
+
+    ! just copy ...
+    if ( n > 0 ) recv(1:n) = send(1:n)
+
+#endif
+    
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_ScatterV_r8_1d
+  
+  ! *
+  
+  subroutine CSO_Comm_ScatterV_r8_2d( self, send, recv, status, &
+                                      nloc )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_ScatterV
+#endif
+
+    ! --- in/out ---------------------------------
+    
+    integer, parameter                  ::  wp = 8
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    real(wp), intent(in)                ::  send(:,:)   ! (m1,sum nloc)
+    real(wp), intent(out)               ::  recv(:,:)   ! (m1,max(1,nloc))
+    integer, intent(out)                ::  status
+    
+    integer, intent(in), optional       ::  nloc
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_ScatterV_r8_2d'
+
+    ! --- local ----------------------------------
+    
+    integer                 ::  m1
+    integer                 ::  n
+#ifdef _MPI
+    type(MPI_DataType)      ::  dtype
+    integer                 ::  ntot
+    integer, allocatable    ::  sendcounts(:)  ! (npes)
+    integer, allocatable    ::  displs(:)  ! (npes)
+#endif
+
+    ! --- begin ----------------------------------
+    
+    ! local size, take from optional argument if present (value is probably zero ..)
+    if ( present(nloc) ) then
+      n = nloc
+    else
+      n = size(recv,2)
+    end if
+    
+    ! first dim:
+    m1 = size(recv,1)
+    
+#ifdef _MPI
+
+    ! data type:
+    call self%GetDataType( 'real', wp, dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! storage:
+    allocate( sendcounts(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( displs(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! collect numbers:
+    call self%ParInfo( n, status, ntot=ntot, sendcounts=sendcounts, displs=displs )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! check send buffer ...
+    if ( self%root ) then
+      ! check ...
+      if ( any( shape(send) /= (/m1,ntot/) ) ) then
+        write (csol,'("send buffer has shape (",i0,",",i0,") while (m1,ntot) is (",i0,",",i0,")")') &
+                        shape(send), m1,ntot; call csoErr
+        TRACEBACK; status=1; return
+      end if
+    end if
+    
+    ! collect values from all pe's on root:
+    call MPI_ScatterV( send, m1*sendcounts, m1*displs, dtype, &
+                       recv, m1*n                    , dtype, &
+                       self%root_id, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+
+    ! clear:
+    deallocate( sendcounts, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( displs, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+#else
+
+    ! just copy ...
+    if ( n > 0 ) recv(:,1:n) = send(:,1:n)
+
+#endif
+    
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_ScatterV_r8_2d
+  
+  ! *
+  
+  subroutine CSO_Comm_ScatterV_r8_3d( self, send, recv, status, &
+                                      nloc )
+
+#ifdef _MPI
+    use MPI_F08, only : MPI_DataType
+    use MPI_F08, only : MPI_ScatterV
+#endif
+
+    ! --- in/out ---------------------------------
+    
+    integer, parameter                  ::  wp = 8
+
+    class(T_CSO_Comm), intent(in)       ::  self
+    real(wp), intent(in)                ::  send(:,:,:)   ! (m1,m2,sum nloc)
+    real(wp), intent(out)               ::  recv(:,:,:)   ! (m1,m2,max(1,nloc))
+    integer, intent(out)                ::  status
+    
+    integer, intent(in), optional       ::  nloc
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Comm_ScatterV_r8_3d'
+
+    ! --- local ----------------------------------
+    
+    integer                 ::  m1, m2
+    integer                 ::  n
+#ifdef _MPI
+    type(MPI_DataType)      ::  dtype
+    integer                 ::  ntot
+    integer, allocatable    ::  sendcounts(:)  ! (npes)
+    integer, allocatable    ::  displs(:)  ! (npes)
+#endif
+
+    ! --- begin ----------------------------------
+    
+    ! local size, take from optional argument if present (value is probably zero ..)
+    if ( present(nloc) ) then
+      n = nloc
+    else
+      n = size(recv,2)
+    end if
+    
+    ! first dims:
+    m1 = size(recv,1)
+    m2 = size(recv,2)
+    
+#ifdef _MPI
+
+    ! data type:
+    call self%GetDataType( 'real', wp, dtype, status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! storage:
+    allocate( sendcounts(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( displs(0:self%npes-1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! collect numbers:
+    call self%ParInfo( n, status, ntot=ntot, sendcounts=sendcounts, displs=displs )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! check send buffer ...
+    if ( self%root ) then
+      ! check ...
+      if ( any( shape(send) /= (/m1,m2,ntot/) ) ) then
+        write (csol,'("send buffer has shape (",i0,2(",",i0),") while (m,ntot) is (",i0,2(",",i0),")")') &
+                        shape(send), m1,m2,ntot; call csoErr
+        TRACEBACK; status=1; return
+      end if
+    end if
+    
+    ! collect values from all pe's on root:
+    call MPI_ScatterV( send, m1*m2*sendcounts, m1*m2*displs, dtype, &
+                       recv, m1*m2*n                       , dtype, &
+                       self%root_id, self%comm, ierror=status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+
+    ! clear:
+    deallocate( sendcounts, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( displs, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+#else
+
+    ! just copy ...
+    if ( n > 0 ) recv(:,:,1:n) = send(:,:,1:n)
+
+#endif
+    
+    ! ok
+    status = 0
+
+  end subroutine CSO_Comm_ScatterV_r8_3d
 
 
 
@@ -3969,7 +4747,6 @@ contains
     status = 0
 
   end subroutine CSO_Comm_Displacements
-
 
 
 end module CSO_Comm

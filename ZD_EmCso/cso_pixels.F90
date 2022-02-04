@@ -74,6 +74,9 @@ module CSO_Pixels
     ! formula:
     character(:), allocatable ::  formula
     character(:), allocatable ::  formula_terms
+    ! how to read?
+    logical                   ::  read_on_root
+    logical                   ::  read_by_me
     ! netcdf output:
     integer                   ::  varid
     integer                   ::  fill_value_i
@@ -119,6 +122,9 @@ module CSO_Pixels
     type(T_NcDims)                  ::  ncdims
     ! flags:
     logical                         ::  initialized
+    ! how to read?
+    logical                         ::  read_on_root
+    logical                         ::  read_by_me
     !
   contains
     procedure :: Init            => PixelDatas_Init
@@ -231,7 +237,10 @@ contains
 
 
   subroutine PixelData_Init( self, name, status, &
-                                dtype, shp, glb, source, source_i )
+                                dtype, shp, glb, source, source_i, &
+                                read_on_root )
+                                
+    use CSO_Comm, only : csoc
   
     ! --- in/out ---------------------------------
     
@@ -244,6 +253,7 @@ contains
     logical, intent(in), optional             ::  glb
     integer, intent(in), optional             ::  source_i
     real, intent(in), optional                ::  source
+    logical, intent(in), optional             ::  read_on_root
 
     ! --- const ----------------------------------
     
@@ -279,8 +289,21 @@ contains
     if ( present(source_i) ) self%source_i = source_i
     if ( present(source  ) ) self%source   = real(source,kind=wpr)
     
+    ! read by root and scatter?
+    self%read_on_root = .false.
+    if ( present(read_on_root) ) self%read_on_root = read_on_root
+
+    ! read here?
+    if ( self%read_on_root ) then
+      ! only root:
+      self%read_by_me = csoc%root
+    else
+      ! all:
+      self%read_by_me = .true.
+    end if
+    
     ! init attribures:
-    call self%attrs%Init( status )
+    call self%attrs%Init( status, read_on_root=self%read_on_root )
     IF_NOT_OK_RETURN(status=1)
     
     ! no formula yet:
@@ -443,10 +466,13 @@ contains
 
 
   subroutine PixelData_NcInit( self, ncid, varname, status, &
-                                  nselect, select )
+                                  slc, only_here )
   
     use NetCDF, only : NF90_Inq_DimID, NF90_Inquire_Dimension
     use NetCDF, only : NF90_Inq_VarID, NF90_Inquire_Variable, NF90_Get_Var
+
+    use CSO_Comm   , only : csoc
+    use CSO_Domains, only : T_CSO_Selection1D
   
     ! --- in/out ---------------------------------
     
@@ -455,8 +481,8 @@ contains
     character(len=*), intent(in)        ::  varname
     integer, intent(out)                ::  status
     
-    integer, intent(in), optional       ::  nselect    ! npix or 0
-    integer, intent(in), optional       ::  select(:)  ! (npix) indices in global arrays
+    type(T_CSO_Selection1D), intent(in), optional   ::  slc        ! info to scatter after reading
+    logical, intent(in), optional                   ::  only_here
 
     ! --- const ----------------------------------
     
@@ -464,6 +490,7 @@ contains
     
     ! --- local ----------------------------------
     
+    logical                 ::  with_bcast
     integer                 ::  varid
     integer                 ::  ndims
     integer                 ::  dimids(7)
@@ -478,6 +505,11 @@ contains
     
     ! --- begin ----------------------------------
     
+    ! by default perform broadcasts in case of reading on root,
+    ! but skip if only this pe should read:
+    with_bcast = .true.
+    if ( present(only_here) ) with_bcast = .not. only_here
+    
     ! number of dims (except pixel dimension):
     select case ( trim(self%dtype) )
       case ( '0D', '0D_i' ) ; self%ndim = 0
@@ -489,54 +521,54 @@ contains
         TRACEBACK; status=1; return
     end select
 
-    ! get variable id:
-    status = NF90_Inq_Varid( ncid, varname, varid )
-    if (status/=NF90_NOERR) then
-      csol=nf90_strerror(status); call csoErr
-      write (csol,'("variable name: ",a)') trim(varname); call csoErr
-      TRACEBACK; status=1; return
-    end if
+    ! read here?
+    if ( self%read_by_me ) then
 
-    ! number of dimensions in file:
-    status = NF90_Inquire_Variable( ncid, varid, ndims=ndims )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! check ..
-    if ( ndims /= self%ndim+1 ) then
-      write (csol,'("variable `",a,"` has ",i0," dimension(s), while expecting ",i0,"+1 :")') &
-                        trim(varname), ndims, self%ndim; call csoErr
-      do idim = 1, self%ndim
-        write (csol,'("  ",a)') trim(self%dimnames(idim)); call csoErr
-      end do
-      write (csol,'("  (pixel)")'); call csoErr
-      TRACEBACK; status=1; return
-    end if
+      ! get variable id:
+      status = NF90_Inq_Varid( ncid, varname, varid )
+      if (status/=NF90_NOERR) then
+        csol=nf90_strerror(status); call csoErr
+        write (csol,'("variable name: ",a)') trim(varname); call csoErr
+        TRACEBACK; status=1; return
+      end if
 
-    ! get dimension id's:
-    status = NF90_Inquire_Variable( ncid, varid, dimids=dimids(1:self%ndim+1) )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! loop over dimensions:
-    do idim = 1, self%ndim+1
-      ! get size:
-      status = NF90_Inquire_Dimension( ncid, dimids(idim), len=xshp(idim) )
+      ! number of dimensions in file:
+      status = NF90_Inquire_Variable( ncid, varid, ndims=ndims )
       IF_NF90_NOT_OK_RETURN(status=1)
-    end do
+      ! check ..
+      if ( ndims /= self%ndim+1 ) then
+        write (csol,'("variable `",a,"` has ",i0," dimension(s), while expecting ",i0,"+1 :")') &
+                          trim(varname), ndims, self%ndim; call csoErr
+        do idim = 1, self%ndim
+          write (csol,'("  ",a)') trim(self%dimnames(idim)); call csoErr
+        end do
+        write (csol,'("  (pixel)")'); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! get dimension id's:
+      status = NF90_Inquire_Variable( ncid, varid, dimids=dimids(1:self%ndim+1) )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! loop over dimensions:
+      do idim = 1, self%ndim+1
+        ! get size:
+        status = NF90_Inquire_Dimension( ncid, dimids(idim), len=xshp(idim) )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      end do
+
+    end if ! read by me
+    ! need to broadcast?
+    if ( self%read_on_root .and. with_bcast ) then
+      ! broadcast from root:
+      call csoc%BCast( csoc%root_id, xshp, status )
+      IF_NOT_OK_RETURN(status=1)
+    end if  ! broadcast
     
     ! selection?
-    if ( present(select) ) then
+    if ( present(slc) ) then
 
-      ! number of selected pixels:
-      if ( present(nselect) ) then
-        ! check ...
-        if ( (nselect < 0) .or. (nselect > size(select)) ) then
-          write (csol,'("nselect=",i0," while size(select)=",i0)') nselect, size(select); call csoErr
-          TRACEBACK; status=1; return
-        end if
-        ! copy:
-        self%npix = nselect
-      else
-        ! full size:
-        self%npix = size(select)
-      end if
+      ! copy number of selected elements:
+      self%npix = slc%nsel
       
       ! target shape:
       shp = xshp
@@ -545,86 +577,143 @@ contains
       call self%Alloc( shp(1:self%ndim+1), status )
       IF_NOT_OK_RETURN(status=1)
 
-      ! any local pixels?
-      if ( self%npix > 0 ) then
-
-        ! check ..
-        if ( any(select < 1) .or. any(select > xshp(self%ndim+1)) ) then
-          write (csol,'("selection indices in range ",i0,",..,",i0," while number of pixels is ",i0)') &
-                   minval(select), maxval(select), xshp(self%ndim+1); call csoErr
-          TRACEBACK; status=1; return
-        end if
-
         ! switch:
         select case ( trim(self%dtype) )
-          
-          !~
-          case ( '0D_i' )
-            ! storage for all data:
-            allocate( data0_i(xshp(1)), stat=status )
-            IF_NOT_OK_RETURN(status=1)
-            ! read:
-            status = NF90_Get_Var( ncid, varid, data0_i )
-            IF_NF90_NOT_OK_RETURN(status=1)
-            ! loop over selected pixels:
-            do ipix = 1, self%npix
-              ! copy value from global array:
-              self%data0_i(ipix) = data0_i(select(ipix))
-            end do
-            ! clear:
-            deallocate( data0_i, stat=status )
-            IF_NOT_OK_RETURN(status=1)
-          
+                    
           !~
           case ( '0D' )
-            ! storage for all data:
-            allocate( data0(xshp(1)), stat=status )
-            IF_NOT_OK_RETURN(status=1)
-            ! read:
-            status = NF90_Get_Var( ncid, varid, data0 )
-            IF_NF90_NOT_OK_RETURN(status=1)
-            ! loop over selected pixels:
-            do ipix = 1, self%npix
-              ! copy value from global array:
-              self%data0(ipix) = data0(select(ipix))
-            end do
-            ! clear:
-            deallocate( data0, stat=status )
-            IF_NOT_OK_RETURN(status=1)
+
+            ! need to scatter?
+            if ( self%read_on_root ) then
+            
+              ! read from here?
+              if ( csoc%root ) then
+                ! storage for all data:
+                allocate( data0(xshp(1)), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+                ! read:
+                status = NF90_Get_Var( ncid, varid, data0 )
+                IF_NF90_NOT_OK_RETURN(status=1)
+              else
+                ! dummy ...
+                allocate( data0(1), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+
+              ! scatter selections:
+              call slc%ScatterV( data0, self%data0, status )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! clear:
+              deallocate( data0, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              
+            else
+
+              ! storage for all data:
+              allocate( data0(xshp(1)), stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              ! read:
+              status = NF90_Get_Var( ncid, varid, data0 )
+              IF_NF90_NOT_OK_RETURN(status=1)
+              ! copy selections:
+              call slc%Copy( data0, self%data0, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! clear:
+              deallocate( data0, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+
+            end if  ! root or all
           
           !~
           case ( '1D' )
-            ! storage for all data:
-            allocate( data1(xshp(1),xshp(2)), stat=status )
-            IF_NOT_OK_RETURN(status=1)
-            ! read:
-            status = NF90_Get_Var( ncid, varid, data1 )
-            IF_NF90_NOT_OK_RETURN(status=1)
-            ! loop over selected pixels:
-            do ipix = 1, self%npix
-              ! copy value from global array:
-              self%data1(:,ipix) = data1(:,select(ipix))
-            end do
-            ! clear:
-            deallocate( data1, stat=status )
-            IF_NOT_OK_RETURN(status=1)
+
+            ! need to scatter?
+            if ( self%read_on_root ) then
+            
+              ! read from here?
+              if ( csoc%root ) then
+                ! storage for all data:
+                allocate( data1(xshp(1),xshp(2)), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+                ! read:
+                status = NF90_Get_Var( ncid, varid, data1 )
+                IF_NF90_NOT_OK_RETURN(status=1)
+              else
+                ! dummy ...
+                allocate( data1(1,1), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+
+              ! scatter selections:
+              call slc%ScatterV( data1, self%data1, status )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! clear:
+              deallocate( data1, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              
+            else
+
+              ! storage for all data:
+              allocate( data1(xshp(1),xshp(2)), stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              ! read:
+              status = NF90_Get_Var( ncid, varid, data1 )
+              IF_NF90_NOT_OK_RETURN(status=1)
+              ! copy selections:
+              call slc%Copy( data1, self%data1, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! clear:
+              deallocate( data1, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+
+            end if  ! root or all
           
           !~
           case ( '2D' )
-            ! storage for all data:
-            allocate( data2(xshp(1),xshp(2),xshp(3)), stat=status )
-            IF_NOT_OK_RETURN(status=1)
-            ! read:
-            status = NF90_Get_Var( ncid, varid, data2 )
-            IF_NF90_NOT_OK_RETURN(status=1)
-            ! loop over selected pixels:
-            do ipix = 1, self%npix
-              ! copy value from global array:
-              self%data2(:,:,ipix) = data2(:,:,select(ipix))
-            end do
-            ! clear:
-            deallocate( data2, stat=status )
-            IF_NOT_OK_RETURN(status=1)
+
+            ! need to scatter?
+            if ( self%read_on_root ) then
+            
+              ! read from here?
+              if ( csoc%root ) then
+                ! storage for all data:
+                allocate( data2(xshp(1),xshp(2),xshp(3)), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+                ! read:
+                status = NF90_Get_Var( ncid, varid, data2 )
+                IF_NF90_NOT_OK_RETURN(status=1)
+              else
+                ! dummy ...
+                allocate( data2(1,1,1), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+
+              ! scatter selections:
+              call slc%ScatterV( data2, self%data2, status )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! clear:
+              deallocate( data2, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              
+            else
+
+              ! storage for all data:
+              allocate( data2(xshp(1),xshp(2),xshp(3)), stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              ! read:
+              status = NF90_Get_Var( ncid, varid, data2 )
+              IF_NF90_NOT_OK_RETURN(status=1)
+              ! copy selections:
+              call slc%Copy( data2, self%data2, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! clear:
+              deallocate( data2, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+
+            end if  ! root or all
 
           !~
           case default
@@ -632,7 +721,7 @@ contains
             TRACEBACK; status=1; return
         end select
 
-      end if ! npix > 0
+      !end if ! npix > 0
     
     else
     
@@ -644,24 +733,60 @@ contains
       select case ( trim(self%dtype) )
         !~
         case ( '0D_i' )
-          ! read:
-          status = NF90_Get_Var( ncid, varid, self%data0_i )
-          IF_NF90_NOT_OK_RETURN(status=1)
+          ! read here?
+          if ( self%read_by_me ) then
+            ! read:
+            status = NF90_Get_Var( ncid, varid, self%data0_i )
+            IF_NF90_NOT_OK_RETURN(status=1)
+          end if ! read by me
+          ! need to broadcast?
+          if ( self%read_on_root .and. with_bcast ) then
+            ! broadcast from root:
+            call csoc%BCast( csoc%root_id, self%data0_i, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if  ! broadcast
         !~
         case ( '0D' )
-          ! read:
-          status = NF90_Get_Var( ncid, varid, self%data0 )
-          IF_NF90_NOT_OK_RETURN(status=1)
+          ! read here?
+          if ( self%read_by_me ) then
+            ! read:
+            status = NF90_Get_Var( ncid, varid, self%data0 )
+            IF_NF90_NOT_OK_RETURN(status=1)
+          end if ! read by me
+          ! need to broadcast?
+          if ( self%read_on_root .and. with_bcast ) then
+            ! broadcast from root:
+            call csoc%BCast( csoc%root_id, self%data0, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if  ! broadcast
         !~
         case ( '1D' )
-          ! read:
-          status = NF90_Get_Var( ncid, varid, self%data1 )
-          IF_NF90_NOT_OK_RETURN(status=1)
+          ! read here?
+          if ( self%read_by_me ) then
+            ! read:
+            status = NF90_Get_Var( ncid, varid, self%data1 )
+            IF_NF90_NOT_OK_RETURN(status=1)
+          end if ! read by me
+          ! need to broadcast?
+          if ( self%read_on_root .and. with_bcast ) then
+            ! broadcast from root:
+            call csoc%BCast( csoc%root_id, self%data1, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if  ! broadcast
         !~
         case ( '2D' )
-          ! read:
-          status = NF90_Get_Var( ncid, varid, self%data2 )
-          IF_NF90_NOT_OK_RETURN(status=1)
+          ! read here?
+          if ( self%read_by_me ) then
+            ! read:
+            status = NF90_Get_Var( ncid, varid, self%data2 )
+            IF_NF90_NOT_OK_RETURN(status=1)
+          end if ! read by me
+          ! need to broadcast?
+          if ( self%read_on_root .and. with_bcast ) then
+            ! broadcast from root:
+            call csoc%BCast( csoc%root_id, self%data2, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if  ! broadcast
         !~
         case default
           write (csol,'("unsupported data type `",a,"`")') trim(self%dtype); call csoErr
@@ -669,9 +794,9 @@ contains
       end select
           
     end if ! select
-    
+          
     ! read attributes:
-    call self%attrs%NcGet( ncid, varid, status )
+    call self%attrs%NcGet( ncid, varid, status, only_here=only_here )
     IF_NOT_OK_RETURN(status=1)
 
     ! ok
@@ -1881,12 +2006,16 @@ contains
   ! ====================================================================
 
 
-  subroutine PixelDatas_Init( self, status )
+  subroutine PixelDatas_Init( self, status, &
+                                read_on_root )
+
+    use CSO_Comm, only : csoc
   
     ! --- in/out ---------------------------------
     
     class(T_PixelDatas), intent(out)   ::  self
     integer, intent(out)               ::  status
+    logical, intent(in), optional      ::  read_on_root
 
     ! --- const ----------------------------------
     
@@ -1905,6 +2034,20 @@ contains
     ! init netcdf dimension list:
     call self%ncdims%Init( status )
     IF_NOT_OK_RETURN(status=1)
+    
+    ! read by root and scatter?
+    self%read_on_root = .false.
+    if ( present(read_on_root) ) self%read_on_root = read_on_root
+
+    ! read here?
+    if ( self%read_on_root ) then
+      ! only root:
+      self%read_by_me = csoc%root
+    else
+      ! all:
+      self%read_by_me = .true.
+    end if
+    
 
     ! ok
     status = 0
@@ -2234,6 +2377,7 @@ contains
     use NetCDF, only : NF90_Inquire_Dimension
     
     use CSO_String, only : CSO_SplitString, CSO_MatchValue
+    use CSO_Comm  , only : csoc
     
     ! --- in/out ---------------------------------
     
@@ -2274,7 +2418,7 @@ contains
     p => self%values(ivar)%p
 
     ! initialize with name, no type and allocation yet:
-    call p%Init( vname, status, glb=glb, source_i=source_i, source=source )
+    call p%Init( vname, status, glb=glb, source_i=source_i, source=source, read_on_root=self%read_on_root )
     IF_NOT_OK_RETURN(status=1)
     
     ! split list with dimension names:
@@ -2305,15 +2449,24 @@ contains
     do idim = 1, p%ndim
       ! read length?
       if ( present(ncid) ) then
-        ! dim id:
-        status = NF90_Inq_DimID( ncid, trim(p%dimnames(idim)), dimid )
-        if ( status /= NF90_NOERR ) then
-          write (csol,'("dimension `",a,"` not found in file")') trim(p%dimnames(idim)); call csoErr
-          TRACEBACK; status=1; return
-        end if
-        ! length:
-        status = NF90_Inquire_Dimension( ncid, dimid, len=length )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        ! read here?
+        if ( self%read_by_me ) then
+          ! dim id:
+          status = NF90_Inq_DimID( ncid, trim(p%dimnames(idim)), dimid )
+          if ( status /= NF90_NOERR ) then
+            write (csol,'("dimension `",a,"` not found in file")') trim(p%dimnames(idim)); call csoErr
+            TRACEBACK; status=1; return
+          end if
+          ! length:
+          status = NF90_Inquire_Dimension( ncid, dimid, len=length )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! read by me
+        ! need to broadcast?
+        if ( self%read_on_root ) then
+          ! broadcast from root:
+          call csoc%BCast( csoc%root_id, length, status )
+          IF_NOT_OK_RETURN(status=1)
+        end if  ! broadcast
       else
         ! dummy:
         length = -999
@@ -2335,8 +2488,10 @@ contains
   
   
   subroutine PixelDatas_NcInit( self, name, dnames, ncid, varname, status, &
-                                  nselect, select, glb, xtype )
+                                  slc, glb, xtype, only_here )
   
+    use CSO_Domains, only : T_CSO_Selection1D
+
     ! --- in/out ---------------------------------
     
     class(T_PixelDatas), intent(inout)  ::  self
@@ -2346,10 +2501,10 @@ contains
     character(len=*), intent(in)        ::  varname
     integer, intent(out)                ::  status
     
-    integer, intent(in), optional             ::  nselect    ! npix or 0
-    integer, intent(in), optional             ::  select(:)  ! (npix) indices in global arrays
-    logical, intent(in), optional             ::  glb
-    character(len=*), intent(in), optional    ::  xtype
+    type(T_CSO_Selection1D), intent(in), optional   ::  slc        ! info to scatter after reading
+    logical, intent(in), optional                   ::  glb
+    character(len=*), intent(in), optional          ::  xtype
+    logical, intent(in), optional                   ::  only_here
 
     ! --- const ----------------------------------
     
@@ -2358,8 +2513,6 @@ contains
     ! --- local ----------------------------------
     
     integer     ::  ivar
-!    integer     ::  idim
-!    integer     ::  dimid
 
     ! --- begin ----------------------------------
     
@@ -2370,25 +2523,9 @@ contains
     call self%Def( name, dnames, ivar, status, glb=glb, xtype=xtype, ncid=ncid )
     IF_NOT_OK_RETURN(status=1)
     
-!    ! loop:
-!    do idim = 1, self%ndim
-!      ! length not filed yet?
-!      if ( self%dimlens(idim) < 0 ) then
-!        ! dim id:
-!        status = NF90_Inq_DimID( ncid, trim(self%dimnames(idim)), dimid )
-!        if ( status /= NF90_NOERR ) then
-!          write (csol,'("dimension `",a,"` not found in file")') trim(self%dimnames(idim)); call csoErr
-!          TRACEBACK; status=1; return
-!        end if
-!        ! length:
-!        status = NF90_Inquire_Dimension( ncid, dimid, len=self%dimlens(idim) )
-!        IF_NF90_NOT_OK_RETURN(status=1)
-!      end if ! inq dim
-!    end do ! dims
-
     ! fill from ncfile:
     call self%values(self%n)%p%NcInit( ncid, varname, status, &
-                                         nselect=nselect, select=select )
+                                         slc=slc, only_here=only_here )
     IF_NOT_OK_RETURN(status=1)
     
     ! ok

@@ -67,3 +67,18 @@ The "config/" directory contains examples of:
 - EMEP configuration file "config_emep.nml" with extension for CSO settings;
 - example "cso-settings.rc" with CSO specific settings.
 
+
+
+Changes
+-------
+
+Support extra types for broadcast etc.
+  cso_comm.F90
+
+Read on root, scatter to domains.
+  cso_ncfile.F90
+  cso_domains.F90
+  cso_pixels.F90
+  cso_sat.F90
+  
+ 

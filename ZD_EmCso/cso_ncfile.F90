@@ -103,7 +103,7 @@ module CSO_NcFile
     character(:), allocatable     ::  atype
     ! values:
     integer                       ::  ivalue
-    real                          ::  rvalue
+    real(4)                       ::  rvalue
     character(:), allocatable     ::  cvalue
     !
   contains
@@ -128,8 +128,14 @@ module CSO_NcFile
   ! *
   
   type ::  T_NcAttrs
+    ! number of values:
     integer                       ::  n
+    ! list of values:
     type(P_NcAttr), pointer       ::  values(:)
+    ! how to read?
+    logical                       ::  read_on_root
+    logical                       ::  read_by_me
+    !
   contains
     procedure ::  Init         =>  NcAttrs_Init
     procedure ::  InitCopy     =>  NcAttrs_InitCopy
@@ -996,12 +1002,28 @@ contains
   end subroutine NcAttr_Done
   
   ! *  
+  
+  ! Read attribute value and store.
+  ! Arguments:
+  !  ncid       : netcdf file id
+  !  varid      : netcdf variable id
+  !  aname      : attribute name
+  ! Optional arguments:
+  !  read_on_root   :  set to .true. to let only root read the attribute,
+  !                    default .false. (all processors read)
+  !  only_here      :  if "read_on_root=.true." a broadcast to the other processors is done,
+  !                    unless this flag is .true.
+  ! Return value:
+  !  status     : non-zero in case of error
 
-  subroutine NcAttr_NcGet( self, ncid, varid, aname, status )
+  subroutine NcAttr_NcGet( self, ncid, varid, aname, status, &
+                             read_on_root, only_here )
 
     use NetCDF, only : NF90_BYTE, NF90_SHORT, NF90_INT, NF90_FLOAT, NF90_DOUBLE, NF90_CHAR
     use NetCDF, only : NF90_Inquire_Attribute
     use NetCDF, only : NF90_Get_Att
+    
+    use CSO_Comm, only : csoc
 
     ! --- in/out ---------------------------------
     
@@ -1010,6 +1032,8 @@ contains
     integer, intent(in)                   ::  varid
     character(len=*), intent(in)          ::  aname
     integer, intent(out)                  ::  status
+    logical, intent(in), optional         ::  read_on_root
+    logical, intent(in), optional         ::  only_here
 
     ! --- const ----------------------------------
     
@@ -1017,6 +1041,9 @@ contains
     
     ! --- local ----------------------------------
     
+    logical     ::  with_bcast
+    logical     ::  do_read_on_root
+    logical     ::  do_read_by_me
     integer     ::  xtype
     integer     ::  nchar
     
@@ -1025,38 +1052,101 @@ contains
     ! store name:
     self%name = trim(aname)
     
-    ! get type number:
-    status = NF90_Inquire_Attribute( ncid, varid, aname, xtype=xtype )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! read by root and scatter?
+    do_read_on_root = .false.
+    if ( present(read_on_root) ) do_read_on_root = read_on_root
+    ! read here?
+    if ( do_read_on_root ) then
+      do_read_by_me = csoc%root
+    else
+      do_read_by_me = .true.
+    end if
+    
+    ! by default perform broadcasts in case of reading on root,
+    ! but skip if only this pe should read:
+    with_bcast = .true.
+    if ( present(only_here) ) with_bcast = .not. only_here
+    
+    ! read here?
+    if ( do_read_by_me ) then
+      ! get type number:
+      status = NF90_Inquire_Attribute( ncid, varid, aname, xtype=xtype )
+      IF_NF90_NOT_OK_RETURN(status=1)
+    end if ! read by me
+    ! need to broadcast?
+    if ( do_read_on_root .and. with_bcast ) then
+      ! broadcast from root:
+      call csoc%BCast( csoc%root_id, xtype, status )
+      IF_NOT_OK_RETURN(status=1)
+    end if  ! broadcast
+
     ! switch:
     select case ( xtype )
-      !~ integers:
-      case ( NF90_BYTE, NF90_SHORT, NF90_INT )
+      !~ integers;
+      !  also try to read types not supported by NF90:
+      !    7 unsigned byte
+      case ( NF90_BYTE, NF90_SHORT, NF90_INT, 7 )
         ! fill type:
         self%atype = 'integer'
-        ! read:
-        status = NF90_Get_Att( ncid, varid, trim(self%name), self%ivalue )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        ! read here?
+        if ( do_read_by_me ) then
+          ! read:
+          status = NF90_Get_Att( ncid, varid, trim(self%name), self%ivalue )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! read by me
+        ! need to broadcast?
+        if ( do_read_on_root .and. with_bcast ) then
+          ! broadcast from root:
+          call csoc%BCast( csoc%root_id, self%ivalue , status )
+          IF_NOT_OK_RETURN(status=1)
+        end if  ! broadcast
       !~ reals:
       case ( NF90_FLOAT, NF90_DOUBLE )
         ! fill type:
         self%atype = 'real'
-        ! read:
-        status = NF90_Get_Att( ncid, varid, trim(self%name), self%rvalue )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        ! read here?
+        if ( do_read_by_me ) then
+          ! read:
+          status = NF90_Get_Att( ncid, varid, trim(self%name), self%rvalue )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! read by me
+        ! need to broadcast?
+        if ( do_read_on_root .and. with_bcast ) then
+          ! broadcast from root:
+          call csoc%BCast( csoc%root_id, self%rvalue , status )
+          IF_NOT_OK_RETURN(status=1)
+        end if  ! broadcast
       !~ chars:
       case ( NF90_CHAR )
         ! fill type:
         self%atype = 'character'
-        ! get character length:
-        status = NF90_Inquire_Attribute( ncid, varid, aname, len=nchar )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        ! read here?
+        if ( do_read_by_me ) then
+          ! get character length:
+          status = NF90_Inquire_Attribute( ncid, varid, aname, len=nchar )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! read by me
+        ! need to broadcast?
+        if ( do_read_on_root .and. with_bcast ) then
+          ! broadcast from root:
+          call csoc%BCast( csoc%root_id, nchar, status )
+          IF_NOT_OK_RETURN(status=1)
+        end if  ! broadcast
         ! storage:
         allocate( character(len=nchar) :: self%cvalue, stat=status )
         IF_NOT_OK_RETURN(status=1)
-        ! read:
-        status = NF90_Get_Att( ncid, varid, trim(self%name), self%cvalue )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        ! read here?
+        if ( do_read_by_me ) then
+          ! read:
+          status = NF90_Get_Att( ncid, varid, trim(self%name), self%cvalue )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! read by me
+        ! need to broadcast?
+        if ( do_read_on_root .and. with_bcast ) then
+          ! broadcast from root:
+          call csoc%BCast( csoc%root_id, self%cvalue , status )
+          IF_NOT_OK_RETURN(status=1)
+        end if  ! broadcast
       !~
       case default
         write (csol,'("attribute `",a,"` has unsupported type id ",i0,"")') &
@@ -1064,11 +1154,11 @@ contains
         write (csol,'("maybe unsigned byte or int?")'); call csoErr
         write (csol,'("supported by NF90 library:")'); call csoErr
         write (csol,'(i8,"  NF90_BYTE  ")') NF90_BYTE  ; call csoErr
+        write (csol,'(i8,"  NF90_CHAR  ")') NF90_CHAR  ; call csoErr
         write (csol,'(i8,"  NF90_SHORT ")') NF90_SHORT ; call csoErr
         write (csol,'(i8,"  NF90_INT   ")') NF90_INT   ; call csoErr
         write (csol,'(i8,"  NF90_FLOAT ")') NF90_FLOAT ; call csoErr
         write (csol,'(i8,"  NF90_DOUBLE")') NF90_DOUBLE; call csoErr
-        write (csol,'(i8,"  NF90_CHAR  ")') NF90_CHAR  ; call csoErr
         TRACEBACK; status=1; return
     end select
 
@@ -1132,12 +1222,15 @@ contains
   ! ====================================================================
 
 
-  subroutine NcAttrs_Init( self, status )
+  subroutine NcAttrs_Init( self, status, read_on_root )
+  
+    use CSO_Comm, only : csoc
   
     ! --- in/out ---------------------------------
     
-    class(T_NcAttrs), intent(out)          ::  self
+    class(T_NcAttrs), intent(out)         ::  self
     integer, intent(out)                  ::  status
+    logical, intent(in), optional         ::  read_on_root
 
     ! --- const ----------------------------------
     
@@ -1150,6 +1243,16 @@ contains
     ! empty:
     self%n = 0
     nullify( self%values )
+    
+    ! read by root and scatter?
+    self%read_on_root = .false.
+    if ( present(read_on_root) ) self%read_on_root = read_on_root
+    ! read here?
+    if ( self%read_on_root ) then
+      self%read_by_me = csoc%root
+    else
+      self%read_by_me = .true.
+    end if
     
     ! ok
     status = 0
@@ -1432,10 +1535,12 @@ contains
   ! *
   
 
-  subroutine NcAttrs_NcGet( self, ncid, varid, status )
+  subroutine NcAttrs_NcGet( self, ncid, varid, status, only_here )
 
     use NetCDF, only : NF90_Inquire_Variable
     use NetCDF, only : NF90_Inq_AttName
+    
+    use CSO_Comm, only : csoc
   
     ! --- in/out ---------------------------------
     
@@ -1443,6 +1548,7 @@ contains
     integer, intent(in)                   ::  ncid
     integer, intent(in)                   ::  varid
     integer, intent(out)                  ::  status
+    logical, intent(in), optional         ::  only_here
 
     ! --- const ----------------------------------
     
@@ -1450,27 +1556,53 @@ contains
     
     ! --- local ----------------------------------
     
+    logical               ::  with_bcast
     integer               ::  natts
     integer               ::  attnum
     character(len=256)    ::  aname
     
     ! --- begin ----------------------------------
-    
-    ! number of attributes:
-    status = NF90_Inquire_Variable( ncid, varid, natts=natts )
-    IF_NF90_NOT_OK_RETURN(status=1)    
+
+    ! by default perform broadcasts in case of reading on root,
+    ! but skip if only this pe should read:
+    with_bcast = .true.
+    if ( present(only_here) ) with_bcast = .not. only_here
+
+    ! read here?
+    if ( self%read_by_me ) then
+      ! number of attributes:
+      status = NF90_Inquire_Variable( ncid, varid, natts=natts )
+      IF_NF90_NOT_OK_RETURN(status=1)
+    end if ! read by me
+    ! need to broadcast?
+    if ( self%read_on_root .and. with_bcast ) then
+      ! broadcast from root:
+      call csoc%BCast( csoc%root_id, natts, status )
+      IF_NOT_OK_RETURN(status=1)
+    end if  ! broadcast  
+
     ! loop over attributes:
     do attnum = 1, natts
-      ! get name:
-      status = NF90_Inq_AttName( ncid, varid, attnum, aname )
-      IF_NOT_OK_RETURN(status=1)
+      ! read here?
+      if ( self%read_by_me ) then
+        ! get name:
+        status = NF90_Inq_AttName( ncid, varid, attnum, aname )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! read by me
+      ! need to broadcast?
+      if ( self%read_on_root .and. with_bcast ) then
+        ! broadcast from root:
+        call csoc%BCast( csoc%root_id, aname, status )
+        IF_NOT_OK_RETURN(status=1)
+      end if  ! broadcast  
       ! filter ...
       if ( trim(aname) == '_FillValue' ) cycle
       ! extra element:
       call NcAttrs_Append_Empty( self, status )
       IF_NOT_OK_RETURN(status=1)
       ! fill from file:
-      call self%values(self%n)%p%NcGet( ncid, varid, aname, status )
+      call self%values(self%n)%p%NcGet( ncid, varid, aname, status, &
+                                         read_on_root=self%read_on_root, only_here=only_here )
       IF_NOT_OK_RETURN(status=1)
     end do
 
