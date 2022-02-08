@@ -9,7 +9,7 @@ git clone -b master --single-branch git@github.com:metno/emep-mscw.git
 
 #### I want a specific source/status run version
 Search the [release page](https://github.com/metno/emep-mscw/releases) and note down the tag.
-For example, [status 2016 version](status2016) the has tag `rv4_9`.
+For example, [status 2016 version](status2016) has the tag `rv4_9`.
 After cloning the repository, you can create new branch (`status2016`) from this tag as:
 ```bash
 git checkout -b status2016 rv4_9
