@@ -966,12 +966,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem
-  integer :: i_26th, isec_poll,isec,iisec,ii,ipoll,itemp
+  integer :: isec_poll,isec,iisec,ii,ipoll,itemp
   real :: default_frac,tot_frac,loc_frac_corr
   character(len=*), parameter :: dtxt='Deriv:'
   real pp, temp, qsat
   real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:),D8_26Max(:,:,:)
-  integer , save :: n_MaxD8M_26th = 0
+
+  logical, save :: make_MaxD8M_nth = .false.
+  integer , save :: i_MaxD8M_26th = 0 !index in f_2d
+  integer , save :: i_MaxD8M_1st = 0 !index in f_2d
+  integer , save :: i_MaxD8M_2nd = 0 !index in f_2d
+  integer , save :: i_MaxD8M_3rd = 0 !index in f_2d
+  integer , save :: i_MaxD8M_4th = 0 !index in f_2d
+  integer :: i_26th, i4th, i3rd, i2nd, i1st
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
   timefrac = dt/3600.0
@@ -1658,7 +1665,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         !NB overwritten anyway D2_O3_DAY = 0.
       end if
 
-    case( "MaxD8M_26th" ) ! maximum daily eight-hour mean concentration
+    case( "MaxD8M_26th", "MaxD8M_1st", "MaxD8M_2nd", "MaxD8M_3rd", "MaxD8M_4th")
       ! do nothing, it is taken care of by "MaxD8M" case
     case( "MaxD8M" ) ! maximum daily eight-hour mean concentration
       if (first_call) then
@@ -1677,8 +1684,29 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
               f_2d(i)%index = f_2d(i)%index  + iou * 100000
             end if
             if (f_2d(i)%class=="MaxD8M_26th") then
-              call CheckStop(n_MaxD8M_26th > 0, "Only one MaxD8M_26th at a time implemented!")
-              n_MaxD8M_26th = i
+              call CheckStop(i_MaxD8M_26th > 0, "Only one MaxD8M_26th at a time implemented!")
+              i_MaxD8M_26th = i
+              make_MaxD8M_nth = .true.
+            end if
+            if (f_2d(i)%class=="MaxD8M_1st") then
+              call CheckStop(i_MaxD8M_1st > 0, "Only one MaxD8M_nth at a time implemented!")
+              i_MaxD8M_1st = i
+              make_MaxD8M_nth = .true.
+            end if
+            if (f_2d(i)%class=="MaxD8M_2nd") then
+              call CheckStop(i_MaxD8M_2nd > 0, "Only one MaxD8M_nth at a time implemented!")
+              i_MaxD8M_2nd = i
+              make_MaxD8M_nth = .true.
+            end if
+            if (f_2d(i)%class=="MaxD8M_3rd") then
+              call CheckStop(i_MaxD8M_3rd > 0, "Only one MaxD8M_nth at a time implemented!")
+              i_MaxD8M_3rd = i
+              make_MaxD8M_nth = .true.
+            end if
+            if (f_2d(i)%class=="MaxD8M_4th") then
+              call CheckStop(i_MaxD8M_4th > 0, "Only one MaxD8M_nth at a time implemented!")
+              i_MaxD8M_4th = i
+              make_MaxD8M_nth = .true.
             end if
           end do
           !we need one array to save the last 8 hourly concentrations, and one to make
@@ -1686,7 +1714,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           allocate(D8M(LIMAX,LJMAX,8,iou)) ! running last 8 hour values
           allocate(D8Max(LIMAX,LJMAX,iou)) ! max value of the 8 hour mean since 00:00
           allocate(hourM(LIMAX,LJMAX,iou)) ! hour Mean
-          if (n_MaxD8M_26th > 0) then
+          if (make_MaxD8M_nth) then
+            !Note that for simplicity, we keep 26 largest , even in the case we only need
+            !the first, second, 3rd or fourth
             !NB: for O3 only!
             allocate(D8_26Max(26,LIMAX,LJMAX)) ! 26 highest daily values up to current date 
             D8_26Max = 0.0 !init with low value
@@ -1728,7 +1758,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         !we must save only once per day at the right time
         if (current_date%hour == 0) then
           
-          if (n_MaxD8M_26th > 0 .and. mod(f_2d(n)%index, 100000) == O3_ix-NSPEC_SHL) then
+          if (make_MaxD8M_nth .and. mod(f_2d(n)%index, 100000) == O3_ix-NSPEC_SHL) then           
             !For O3 we keep the 26 highest values and current value            
             do j = 1,ljmax
               do i = 1,limax
@@ -1740,14 +1770,46 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                 if (D8Max(i,j,iou)>D8_26Max(i_26th,i,j)) then
                   !2) Update i_26th, and D8_26Max(i_26th,i,j)
                   D8_26Max(i_26th,i,j) = D8Max(i,j,iou)
-                  !3) find new smallest value among 26 largest
-                  i_26th = 1 
+                  !3) find new smallest values among 26 largest
+                  i_26th = 1
                   do ii = 2, 26
                     if (D8_26Max(ii,i,j)<D8_26Max(i_26th,i,j)) i_26th=ii
                   end do
-                  !4) store the 26th largest value of all times
-                  d_2d(n_MaxD8M_26th,i,j,IOU_YEAR) = D8_26Max(i_26th,i,j)
-                end if                
+                  !4) store the required largest value of all times
+                  if (i_MaxD8M_26th > 0) then
+                    d_2d(i_MaxD8M_26th,i,j,IOU_YEAR) = D8_26Max(i_26th,i,j)
+                  endif
+                end if
+                !5) find new 4 largest values among 26 largest
+                i1st=i_26th
+                i2nd=i_26th
+                i3rd=i_26th
+                i4th=i_26th 
+                do ii = 1, 26
+                   if (D8_26Max(ii,i,j)>D8_26Max(i4th,i,j)) then
+                      if(D8_26Max(ii,i,j) > D8_26Max(i1st,i,j)) then
+                         i4th=i3rd
+                         i3rd=i2nd
+                         i2nd=i1st
+                         i1st=ii
+                      else if(D8_26Max(ii,i,j) > D8_26Max(i2nd,i,j)) then
+                         i4th=i3rd
+                         i3rd=i2nd
+                         i2nd=ii
+                      else if(D8_26Max(ii,i,j) > D8_26Max(i3rd,i,j)) then
+                         i4th=i3rd
+                         i3rd=ii
+                      else 
+                         i4th=ii
+                      endif
+                   endif
+                end do
+                
+                if (i_MaxD8M_1st > 0) d_2d(i_MaxD8M_1st,i,j,IOU_YEAR) = D8_26Max(i1st,i,j)
+                if (i_MaxD8M_2nd > 0) d_2d(i_MaxD8M_2nd,i,j,IOU_YEAR) = D8_26Max(i2nd,i,j)
+                if (i_MaxD8M_3rd > 0) d_2d(i_MaxD8M_3rd,i,j,IOU_YEAR) = D8_26Max(i3rd,i,j)
+                if (i_MaxD8M_4th > 0) d_2d(i_MaxD8M_4th,i,j,IOU_YEAR) = D8_26Max(i4th,i,j)
+                
               end do
             end do
           end if
