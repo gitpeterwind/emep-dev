@@ -1,4 +1,4 @@
-module EmisGet_mod
+	module EmisGet_mod
 
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
@@ -218,6 +218,7 @@ contains
        else  if(Emis_source%units == 'kt' .or. Emis_source%units == 'kt/s' &
             .or. Emis_source%units == 'kt/month' .or. Emis_source%units == 'kt/year' &
             .or. Emis_source%units == 'tonnes' .or. Emis_source%units == 'tonnes/s' &
+            .or. Emis_source%units == 'Mg' &
             .or. Emis_source%units == 'tonnes/month' .or. Emis_source%units == 'tonnes/year' &
             .or. Emis_source%units == 'kg' .or. Emis_source%units == 'kg/s' &
             .or. Emis_source%units == 'kg/month' .or. Emis_source%units == 'kg/year' &
@@ -604,7 +605,7 @@ contains
              Emis_source(NEmis_sources)%varname = trim(cdfvarname)
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
              if ( debugm0 ) write(*,*) dtxt//'source add:',&
-              trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis
+              trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis, NEmis_sources
              Emis_source(NEmis_sources)%units = EmisFile%units !default
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
@@ -1502,7 +1503,7 @@ end if
 
            n = n + 1
            if (debugm ) then
-               write(6,"(a,i3,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
+               write(6,"(a,i,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
                   iland, isec, nsplit, tmp(1:nsplit)
            end if
 
@@ -1522,7 +1523,7 @@ end if
            end if
            if ( .not. defaults ) then
              ! Check that specials headers match defaults
-              if (debugm ) print *,"SPLIT CHECK SPECIES",idef
+              !if (debugm ) print *,"SPLIT CHECK SPECIES",idef
               do nn=1,emis_nsplit(ie)
                   if ( MasterProc ) then
                     if (intext(1,nn) /= intext(0,nn) ) then
