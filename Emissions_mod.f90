@@ -634,7 +634,7 @@ contains
                    select case(Emis_source(is)%units)
                    case ('kt/m2', 'kt/m2/year', 'kt', 'kt/year','kt m-2', 'kt m-2 year-1', 'kt year-1')
                          fac = fac * 1000 *1000/(3600*24*nydays)
-                   case ('tonnes/m2', 'tonnes/m2/year', 'tonnes', 'tonnes/year','tonnes m-2', 'tonnes m-2 year-1', 'tonnes year-1')
+                   case ('tonnes/m2', 'tonnes/m2/year', 'tonnes', 'tonnes/year','tonnes m-2', 'tonnes m-2 year-1', 'tonnes year-1', 'Mg' )
                       fac = fac * 1000/(3600*24*nydays)
                    case ('kg/m2', 'kg m-2', 'kg/m2/year', 'kg m-2 year-1', 'kg', 'kg/year', 'kg year-1')
                       fac = fac /(3600*24*nydays)
@@ -686,7 +686,7 @@ contains
 
              ! units that are "per gridcell" must be dvided by gridcell areas
              select case(Emis_source(is)%units)
-             case ('kt', 'kt/s', 'kt/month', 'kt/year', 'tonnes', 'tonnes/s', 'tonnes/month' &
+             case ('kt', 'Mg', 'kt/s', 'kt/month', 'kt/year', 'tonnes', 'tonnes/s', 'tonnes/month' &
                   , 'tonnes/year', 'kg', 'kg/s', 'kg/month', 'kg/year', 'g', 'g/s', 'g/month' &
                   , 'g/year', 'mg', 'mg/s', 'mg/month', 'mg/year', 'g/h', 'mg/h'&
                   , 'kt s-1', 'kt month-1', 'kt year-1', 'tonnes s-1', 'tonnes month-1' &
