@@ -2699,6 +2699,7 @@ end subroutine group_calc
 !=========================================================================
 subroutine somo_calc( n, iX, debug_flag )
 !/-- Calculates SOMO (8hours) values for input threshold.
+!    which is max. value per day of 8-hour running means
 
   implicit none
   integer, intent(in) :: n           ! index in Derived_mod::d_2d arrays
