@@ -197,8 +197,9 @@ contains
           do n=1,NSPEC_TOT
 
              if ( x(n) < 0.0  .or. xnew(n) < 0.0 ) then
-               print '(a,3i4,a10,3es12.3)', 'NCHEM', me,  n, ichem,&
-                 species(n)%name, x(n), xnew(n), Dchem(n,k,i,j)
+               print '(a,3i4,a10,9es12.3)', dtxt//'NCHEM', me,  n, ichem,&
+                 species(n)%name, x(n), xnew(n), Dchem(n,k,i,j),  &
+                 minval(rcemis), maxval(rcemis)
                call StopAll('NCHEM')
              end if
 
