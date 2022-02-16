@@ -47,6 +47,17 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Feb 2022 Dave
+Made NEmis_sourcesMAX a config variable. Changes in:
+
+  Config_mod
+  EmisDef_mod
+  EmisGet_mod   - allocate source_found
+  Emissions_mod - allocate Emis_source, ix3Dmap
+
+Also:
+   Solver - added rcemis ranges in NCHEM error message
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Feb 2022 Dave
 
 Derived_mod: one extra comment about SOMO
