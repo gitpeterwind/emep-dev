@@ -16,6 +16,7 @@ use Config_module,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, step_main, &
     KCHEMTOP, &
     NSECTORS_ADD_MAX, SECTORS_ADD, &
+    NEmis_sourcesMAX, & ! Feb2022
     emis_inputlist, &
     EmisDir,      &    ! template for emission path
     DataDir,      &    ! template for path
@@ -205,6 +206,10 @@ contains
     if ( first_call ) then
        dbg = DEBUG%EMISSIONS .and. MasterProc
        first_call = .false.
+      !Feb2022: mvoed from EmisDef due to config
+       allocate(Emis_source(NEmis_sourcesMAX)) !list of valid sources found in the emission files
+       allocate(ix3Dmap(NEmis_sourcesMAX))
+       ix3Dmap(:) = 0
     end if
 
     ! new format initializations
@@ -237,6 +242,7 @@ contains
     EmisFile_defaults%country_ISO = Emis_sources_defaults%country_ISO
 
     EmisFiles(:) = EmisFile_defaults
+
 
     !2) read from global attributes in file
     !3) read from variable attributes in file

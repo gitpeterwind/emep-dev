@@ -8,6 +8,7 @@ use Config_module,     only: NPROC, MasterProc,USES,step_main,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              IIFULLDOM,JJFULLDOM, &
                              SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile,&
+                             NEmis_sourcesMAX, & ! Feb2022
                              startdate
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
@@ -25,7 +26,8 @@ use EmisDef_mod,       only: NSECTORS, NCMAX, &
                             ,femis_lonlat_internal &
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
-                            ,NEmis_sourcesMAX, SECTORS&
+                            !Feb2022 ,NEmis_sourcesMAX
+                            ,SECTORS&
                             ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Zlevels_pre&
                             ,Emis_h, Emis_Zlevels &
                             ,Emis_heights_sec_MAX, Emis_Nlevel_MAX
@@ -517,7 +519,13 @@ contains
     character(len=*), parameter :: dtxt='Em_inicdf:'
     integer :: countrycode
     logical :: apply_femis
-    integer :: source_found(NEmis_sourcesMAX)
+    logical :: my_first_call = .true.
+    integer, allocatable :: source_found(:)
+    if(my_first_call) then
+      allocate(source_found(NEmis_sourcesMAX))
+      my_first_call = .true.
+    end if
+      
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -605,7 +613,8 @@ contains
              Emis_source(NEmis_sources)%varname = trim(cdfvarname)
              Emis_source(NEmis_sources)%species = trim(cdfspecies)
              if ( debugm0 ) write(*,*) dtxt//'source add:',&
-              trim(cdfvarname)//'->'// trim(cdfspecies),EmisFile_in%apply_femis, NEmis_sources
+              trim(cdfvarname)//'->'// trim(cdfspecies), &
+               EmisFile_in%apply_femis, NEmis_sources, NEmis_sourcesMAX
              Emis_source(NEmis_sources)%units = EmisFile%units !default
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
