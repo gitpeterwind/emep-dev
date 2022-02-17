@@ -17,13 +17,13 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 export MACHINE ?= betzy
 export DEBUG ?= no
 ifeq ($(MACHINE), betzy)
-#  MODULES = netCDF-Fortran/4.5.3-iimpi-2020b
+#  MODULES = netCDF-Fortran/4.5.3-iompi-2021a
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/cluster/projects/nn2890k/bin/makedepf90
   OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-  F90=mpiifort
+  F90=mpif90
 else ifeq ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)

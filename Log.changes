@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Feb 2022 Peter, Dave
+
+Fixed memory issue when number of emis sources is very large.
+
+NB: on Betzy Makfile now requires
+ml load netCDF-Fortran/4.5.3-iompi-2021a
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Feb 2022 Dave
 Made NEmis_sourcesMAX a config variable. Changes in:

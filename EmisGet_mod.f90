@@ -130,18 +130,29 @@ contains
     integer :: record
     logical, save :: dbg= .false., first_call = .true.
     character(len=*), parameter :: dtxt = 'Emis_GetCdf:'
+    integer, save :: readcounter = 0
 
     if ( first_call ) then
       dbg =  ( MasterProc .and. DEBUG%GETEMIS )
       first_call = .false.
     end if
-    fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')
+    fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')    
     if (EmisFile%ncFileID < 0 .and. trim(EmisFile%projection) /= 'native') then
        !open file (much faster if it is done once only, and not for each variable)
        !fast native not implemented yet
        call check(nf90_open(path = fname, mode = nf90_nowrite, ncid = ncFileID))
        EmisFile%ncFileID = ncFileID
+       readcounter = 0
     end if
+    if (EmisFile%ncFileID >= 0 .and. readcounter>200) then
+       !we close and reopen the file, because otherwise the code may use
+       !lots of memory with some compilers
+       call check(nf90_close(EmisFile%ncFileID))
+        call check(nf90_open(path = fname, mode = nf90_nowrite, ncid = ncFileID))
+       EmisFile%ncFileID = ncFileID
+       readcounter = 0      
+    end if
+    readcounter = readcounter + 1
     ncFileID = EmisFile%ncFileID
 
     if(EmisFile%periodicity == 'yearly' .or. EmisFile%periodicity == 'once')then
