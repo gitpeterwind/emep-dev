@@ -35,6 +35,7 @@
   LandCoverInputs%Do3seDefs = 'DataDir/Inputs_DO3SE.csv',
   LandCoverInputs%MapFile   = 'DataDir/Landuse_PS_5km_LC.nc',
                               'DataDir/glc2000xCLMf18.nc',
+  LandCoverInputs%mapMed    = 'DataDir/medMap_0.5deg.nc',
   YieldModifications    = 'VBS-T10',
   PBL%ZiMIN             =  50.0,
 !------------------------------
