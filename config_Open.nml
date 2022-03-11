@@ -22,9 +22,9 @@
   SondesFile            = 'DataDir/sondes.dat',
   Vertical_levelsFile   = 'DataDir/Vertical_levels20_EC.txt'
 !------------------------------
-  ZCMDIR                     = 'DataDir/ZCM_EmChem19',
-  SplitDefaultFile           = 'ZCMDIR/emissplit.defaults.POLL',
-  SplitSpecialsFile          = 'ZCMDIR/emissplit.specials.POLL',
+  ZCMDIR                     = 'DataDir/ZCM_EmChem19r',
+  SplitDefaultFile           = 'ZCMDIR/emissplit_defaults_POLL',
+  SplitSpecialsFile          = 'ZCMDIR/emissplit_specials_POLL',
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt',
   cmxBiomassBurning_FINNv1p5 = 'ZCMDIR/CMX_BiomassBurning_FINNv1p5.txt',
   cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt',
@@ -46,6 +46,14 @@
   USES%n2o5HydrolysisMethod = 'Smix' ! 'Smix', 'SmixTen', 'Gamma:0.002', NOT:'OrigRiemer'
   USES%WHITECAPS        = 'Callaghan'! 'Callaghan', 'Norris', 'Monahan'
   USES%MonthlyNH3       = 'LOTOS',   ! Better monthly profile, for Europe only!
+!
+! 2021-2022 updates:
+! CAMS81-based SOILNOX DANGER - some inventories already have fertilizer-induced soil NOx. Choose 
+! one of:
+!  USES%SOILNOX_METHOD = 'Total',   ! for CAMS-REG, ECLIPSE v5
+  USES%SOILNOX_METHOD = 'NoFert',   ! for EMEP/CEIP, ECLIPSE v6
+!
+
 !------------------------------
   USES%SOILWATER        = T,         ! Uses SMI from meteo data
   USES%CONVECTION       = F,
