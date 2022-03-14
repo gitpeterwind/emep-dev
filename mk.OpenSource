@@ -1,7 +1,7 @@
-vers=rv4.36;year=2020;chem=EmChem19p  # Input version/year/chem flags
-idir=`dirname ${BASH_SOURCE[0]}`      # Input dir
+vers=rv4.45;year=2022;chem=EmChem19rp   # Input version/year/chem flags
+idir=`dirname ${BASH_SOURCE[0]}`        # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
-tdir=`dirname $idir`                  # top directory
+tdir=`dirname $idir`                    # top directory
 
 odir=EMEP_MSC-W_model.$vers.OpenSource
 odir=$tdir/$odir                      # Output dir
