@@ -48,6 +48,10 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21th March 2022, Alvaro
+
+git tag -a rv4.45 -m "OpenSource rv4.45 (202203)"
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Mar 2022, Dave
 
 Config_mod - switches default soilnox_emission_File to be v2.3, not v2.2, of the CAMS81 data.
