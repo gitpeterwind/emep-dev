@@ -470,7 +470,7 @@ subroutine setRate()
     if(nems(v)>0)cycle doLOCe   ! Specific found --> no need for Default
     e=nems(0)+1       ! A single default can have multiple lines, e.g.
     do                ! each line with a definition for a different specie
-      e=find_index(locdef(v)%etype,emsdef(0,:e-1)%id)
+      e=find_index(locdef(v)%etype,emsdef(0,:e-1)%id,first_only=.false.)
       if(e<1)    cycle doLOCe   ! No Default found
       if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Erup.Default',me,'Expand',&
