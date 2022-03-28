@@ -48,9 +48,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th March 2022, Alvaro
+
+update rv4.45 tag
+git tag -a rv4.45 -m "OpenSource rv4.45 (202203)" -f
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21th March 2022, Alvaro
 
 git tag -a rv4.45 -m "OpenSource rv4.45 (202203)"
+git tag -a CAMS2-40.202203 -m "CAMS2-40 U5 production"
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Mar 2022, Dave
 
