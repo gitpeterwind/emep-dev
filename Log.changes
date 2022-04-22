@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd April 2022, Peter
+
+Changed the printout of model level heights using Pref instead of P0.
+WRF use P0= 100000Pa. Which means a surface pressure much lower than a standard
+atmosphere(!). Using P0, gave a surface with height 110m, which is confusing.
+Does the P0 from WRF actually mean something?
+
+The results (pollutants etc.) should be unchanged anyway: P0 is a local
+variable, not used after the printout of model heights.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th March 2022, Alvaro
