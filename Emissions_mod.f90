@@ -119,6 +119,7 @@ use Timefactors_mod,   only: &
     ,Gridded_SNAP2_Factors, gridfac_HDD &
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_cemm, fac_edd, timefac & ! time-factors
+    ,fac_dayofyear & ! time-factors
     ,Read_monthly_emis_grid_fac &
     ,Read_monthly_timezones &
     ,GridTfac &!array with monthly gridded time factors
@@ -1197,6 +1198,8 @@ contains
        largestsplit = max(largestsplit, SECTORS(isec)%split)
     end do
     call CheckStop(USES%DEGREEDAY_FACTORS .and. i==0," did not find any sector corresponding to domestic")
+    call CheckStop(USES%DEGREEDAY_FACTORS .and. USES%DAYOFYEARTIMEFAC,&
+         "Cannot use DEGREEDAY_FACTORS and DAYOFYEARTIMEFAC together")
 
     if(Emis_mask_allocate)then
        if(.not.allocated(Emis_mask))then
@@ -1247,6 +1250,8 @@ contains
     if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
+    if(USES%DAYOFYEARTIMEFAC .and. .not.allocated(fac_dayofyear)) &
+         allocate(fac_dayofyear(NSECTORS,NLAND,NEMIS_FILE,366))
 
     allocate(isec2SecOutWanted(0:NSECTORS))
     isec2SecOutWanted = 0 !should never be used
@@ -1308,7 +1313,7 @@ contains
     CALL MPI_BCAST(fac_emm,8*NLAND*12*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(fac_edd,8*NLAND*7*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(fac_ehh24x7,8*NEMIS_FILE*N_TFAC*24*7*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-
+    if (USES%DAYOFYEARTIMEFAC) CALL MPI_BCAST(fac_dayofyear,8*NEMIS_FILE*NSECTORS*366*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     !define fac_min for all processors
     forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
          fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
@@ -1960,10 +1965,16 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                tfac_idx = SECTORS(isec)%timefac
                emish_idx = SECTORS(isec)%height
                split_idx = SECTORS(isec)%split
-               tfac = timefac(iland_timefac,tfac_idx,iem) &
-                   * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
-
-              if (debug_tfac.and.iem==1) then
+               
+               if (.not. USES%DAYOFYEARTIMEFAC) then
+                  tfac = timefac(iland_timefac,tfac_idx,iem) &
+                       * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
+               else
+                  tfac = fac_dayofyear(isec, iland_timefac, iem, daynumber)& ! NB: use isec, not tfac_idx
+                       * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
+               endif
+               
+               if (debug_tfac.and.iem==1) then
                 if (isec==1) write(*,"(a,i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
                      iland, glon(i,j), glat(i,j), Country(iland)%timezone
                 write(*,"(a,3i4,f8.3)")dtxt//"DAY TFAC:",isec,tfac_idx,hour_iland,tfac
@@ -2173,11 +2184,12 @@ end if
                       debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                       tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
-                      if(Emis_source(n)%periodicity == 'yearly')then
+                      if (USES%DAYOFYEARTIMEFAC) then
+                         tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
+                      else if(Emis_source(n)%periodicity == 'yearly')then
                          !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,tfac_idx,iem)
-                      endif
-                      if(Emis_source(n)%periodicity == 'monthly')then
+                      else if(Emis_source(n)%periodicity == 'monthly')then
                          !apply daily factors, with renormalization to conserve monthly sums
                          tfac = tfac * fac_edd(iland_timefac,wday,tfac_idx,iem) * daynorm
                       endif
@@ -2241,11 +2253,12 @@ end if
                       !we need to apply hourly factors
                       call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                       tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
-                      if(Emis_source(n)%periodicity == 'yearly')then
+                      if (USES%DAYOFYEARTIMEFAC) then
+                         tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
+                      else if(Emis_source(n)%periodicity == 'yearly')then
                          !apply monthly and daily factor on top of hourly factors
                          tfac = tfac * timefac(iland_timefac,tfac_idx,iem)
-                      endif
-                      if(Emis_source(n)%periodicity == 'monthly')then
+                      else if(Emis_source(n)%periodicity == 'monthly')then
                          !apply daily factors, with renormalization to conserve monthly sums
                          tfac = tfac * fac_edd(iland_timefac,wday,tfac_idx,iem) * daynorm
                       endif

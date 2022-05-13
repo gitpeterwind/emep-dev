@@ -146,6 +146,7 @@ type, public :: emep_useconfig
     ,EMIS             = .false. &! Uses ESX
     ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
+    ,DAYOFYEARTIMEFAC  = .false. &! Replace monthly and Daily by day of year timefactor
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
 !    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
@@ -758,6 +759,7 @@ character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Ti
 character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
 !character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
 !POLL replaced by name of pollutant in Timefactors_mod
+character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
 character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
@@ -871,6 +873,7 @@ subroutine Config_Constants(iolog)
    ,MonthlyFacFile&
    ,MonthlyFacBasis&
    ,DailyFacFile&
+   ,DayofYearFacFile&
    ,HourlyFacFile&
    ,HourlyFacSpecialsFile&
    ,hourly_emisfac& !2D mapped hourly timefactors
@@ -1036,6 +1039,7 @@ subroutine Config_Constants(iolog)
   call associate_File(soilnox_emission_File)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
+  call associate_File(DayofYearFacFile)
   call associate_File(HourlyFacFile)
   call associate_File(HourlyFacSpecialsFile)
   call associate_File(cmxbicDefaultFile)

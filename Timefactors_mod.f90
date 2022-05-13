@@ -68,13 +68,14 @@
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
+                            DayofYearFacFile,&
                             MonthlyFacBasis, & ! ECLIPSE or other
                             monthly_timezoneFile, &
                             HourlyFacFile,HourlyFacSpecialsFile,&
                             USES
   use Debug_module,  only:   DEBUG ! => DEBUG%EMISTIMEFACS
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
-  use OwnDataTypes_mod, only: TXTLEN_FILE
+  use OwnDataTypes_mod, only: TXTLEN_FILE,TXTLEN_NAME
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_mod, only: PI
@@ -137,6 +138,10 @@
   real, public, save,allocatable,  &
      dimension(:,:,:,:) :: fac_edd  ! Daily factors
 
+  ! normalized to one, replaces monthly and Day of week. 
+  real, public, save,allocatable,  &
+     dimension(:,:,:,:) :: fac_dayofyear  ! Daily factors over one year
+
   ! Heating-degree day factor for SNAP-2. Independent of country:
   logical, public, save :: Gridded_SNAP2_Factors = .false.
   real, public, allocatable,dimension (:,:), save :: gridfac_HDD
@@ -182,10 +187,12 @@ contains
   real    :: tmp24(24)          ! used for hourly factors
   character(len=2000) :: inputline ! NB: 24 real number can be many hundred characters long
   real :: fracchange
-  real :: Start, Endval, Average, x, buff(12)
+  real :: Start, Endval, Average, x, buff(366)
   logical :: found_HourlyFacFile, found
   character(len=*), parameter:: dtxt='tfacs:'
   integer :: maxidx = 0
+  character(len=TXTLEN_NAME):: secname
+  character(len=10) :: code
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
     write(unit=6,fmt=*) dtxt//"into timefactors "
@@ -207,7 +214,7 @@ contains
 
    if(N_TFAC==0)return
    
-   if(.not. USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+   if(.not. USES%GRIDDED_EMIS_MONTHLY_FACTOR .and. .not.USES%DAYOFYEARTIMEFAC)then      
 
 !  #################################
 !  1) Read in Monthly factors, and determine min value (for baseload)
@@ -225,7 +232,7 @@ contains
    if ( MonthlyFacBasis == 'ECLIPSE' ) then
       call CheckStop(index(MonthlyFacFile,'may2021')<1, & !CRUDE and TMP!
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
-
+      
    else if ( MonthlyFacBasis == 'GENEMIS' ) then ! check eclipse not in FacFile
      call CheckStop(index(MonthlyFacFile,'xJun2012')<1, &
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
@@ -245,7 +252,7 @@ contains
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
       write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") dtxt//"Change in fac_cemm ", mm,fac_cemm(mm)
      end do
-   else
+  else
       call StopAll(dtxt//'ERROR MonthlyFac:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
    end if ! MonthlyFacBasis
    write(*,"(a,f8.4)") dtxt//"Mean fac_cemm ", sum( fac_cemm(:) )/12.0
@@ -318,12 +325,16 @@ contains
        if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, " records from ", trim(fname2) 
    end do  ! iemis
 
+   else if (USES%DAYOFYEARTIMEFAC) then
+      !set monthly and daily timefactore to 1.0 and use day of the year timefactor instead
+      write(*,*)'Using Day of year timefactors. Setting standard Monthly and Daily factors to 1' 
    end if
 
 ! #################################
 ! 2) Read in Daily factors
+   if (.not. USES%DAYOFYEARTIMEFAC) then
 
-  do iemis = 1, NEMIS_FILE
+     do iemis = 1, NEMIS_FILE
        fname2 = key2str(DailyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
@@ -357,7 +368,53 @@ contains
        close(IO_TIMEFACS)
        if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, " records from ", trim(fname2)
 
-  end do  ! NEMIS_FILE
+     end do  ! NEMIS_FILE
+
+   else
+       !use day of the year timefactors instead
+       fac_dayofyear = 1.0
+       do iemis = 1, NEMIS_FILE
+          fname2 = key2str(DayofYearFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
+          if(me==0)write(*,*)'reading '//trim(fname2)
+          call open_file(IO_TIMEFACS,"r",fname2,needed=.true.,skip=1)
+          
+          call CheckStop( ios, dtxt//" Opening error in DayofYearfac")
+          
+          n = 0
+          do
+             read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, &
+                  (buff(i),i=1,nydays)         
+             if ( ios <  0 ) exit   ! End of file
+             ic=find_index(code,Country(:)%code)
+             if(ic<1.or.ic>NLAND)then
+                if(me==0.and.insec==1.and.iemis==1)write(*,*)dtxt//"Day of year fac code not used: "//trim(code)
+                cycle
+             end if
+             insec=find_index(secname,SECTORS(:)%longname)             
+             call CheckStop(insec>NSECTORS .or. insec==0, secname//' not defined')
+             maxidx = max(insec,maxidx)
+
+             fac_dayofyear(insec,ic,iemis,1:nydays)=buff(1:nydays)
+             
+             n = n + 1
+             
+             !-- Sum over days of the year
+             xday =  sum( fac_dayofyear(insec,ic,iemis,1:nydays)) / nydays
+             
+             if (( xday > 1.01 .or. xday < 0.99) .and. MasterProc) then
+                write(*,*)insec,trim(code)//" Warning: Day of year- not normalised. Renormalizing with factor ",xday
+             end if
+             !We renormalize for ensuring exact norm (so that not too many digits need to be written in file)
+             fac_dayofyear(insec,ic,iemis,1:nydays) = fac_dayofyear(insec,ic,iemis,1:nydays)/xday
+             
+          end do
+          
+          close(IO_TIMEFACS)
+          if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, " records from ", trim(fname2)
+          
+       end do  ! NEMIS_FILE
+    
+   endif
 
 !  #################################
 !  3) Read in hourly (24x7) factors, options set in run script.
@@ -523,7 +580,7 @@ contains
 !    in "NewDayFactors", and scale efac_mm if necessary.
 
        write(unit=6,fmt="(a,I6,a,I5)")dtxt//" Time factors normalisation: ",nydays,' days in ',year
-       call yearly_normalize(year)
+       if (.not. USES%DAYOFYEARTIMEFAC) call yearly_normalize(year)
 
 !#########################################################################
 !
@@ -531,10 +588,17 @@ contains
 
     if (dbgTF ) then 
        write( *,*) dtxt//" test of time factors, UK: "
-       do mm = 1, 12
-           write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
-            fac_emm(27,mm,2,1), fac_edd(27,1,2,1), fac_edd(27,7,2,1)
-       end do ! mm
+       if(.not. USES%DAYOFYEARTIMEFAC)then
+          do mm = 1, 12
+             write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
+                  fac_emm(27,mm,2,1), fac_edd(27,1,2,1), fac_edd(27,7,2,1)
+          end do ! mm
+       else
+          do mm = 1, 12
+             write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
+                  fac_dayofyear,fac_emm(27,mm,2,1), fac_edd(27,1,2,1)
+          end do ! mm
+       end if
        write(*,"(a,4f8.3)") dtxt//" day factors traffic 24x7", &
            fac_ehh24x7(1,7,1,4,1),fac_ehh24x7(1,7,13,4,1), &
               minval(fac_ehh24x7), maxval(fac_ehh24x7)

@@ -47,6 +47,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th May 2022, Peter, Alvaro, Svetlana
+
+Can define a file with timefactors defined every day of the year instead of
+monthly+weekly factors.
+Usage example, in config_emep.nml:
+  USES%DAYOFYEARTIMEFAC = T,
+  DayofYearFacFile ='/home/sm_alvva/EMEP/time_factors_2020/no_lockdown.POLL',
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd April 2022, Peter
 
 Changed the printout of model level heights using Pref instead of P0.
