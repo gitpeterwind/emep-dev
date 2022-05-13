@@ -47,13 +47,24 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12th May 2022, Peter, Alvaro, Svetlana
+13th May 2022, Peter, Alvaro, Svetlana
 
 Can define a file with timefactors defined every day of the year instead of
 monthly+weekly factors.
 Usage example, in config_emep.nml:
   USES%DAYOFYEARTIMEFAC = T,
   DayofYearFacFile ='/home/sm_alvva/EMEP/time_factors_2020/no_lockdown.POLL',
+
+Bug in DegreeDays when a country used the timefactors from another country,
+the DD would not work, i.e. give only hourly variation, but constant between all days.
+
+In Europe, it is only RUX (Russian Fed. outside emep) which is affected,
+so no dramatic changes (this is only domestic sector, and sums over a year are still correct).
+
+fac_min(iland,tfac_idx,iem) should be  fac_min(iland_timefac,tfac_idx,iem)
+fac_min(iland,tfac_idx,iem)=1.0 (dfault) for countries which do not have a
+monthly factor defined for themselves, as RUX.
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd April 2022, Peter

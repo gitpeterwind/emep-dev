@@ -1989,8 +1989,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                  oldtfac = tfac
                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                 ! we make use of a baseload even for SNAP2
-                tfac = ( fac_min(iland,tfac_idx,iem) & ! constant baseload
-                     + ( 1.0-fac_min(iland,tfac_idx,iem) )* gridfac_HDD(i,j) ) &
+                tfac = ( fac_min(iland_timefac,tfac_idx,iem) & ! constant baseload
+                     + ( 1.0-fac_min(iland_timefac,tfac_idx,iem) )* gridfac_HDD(i,j) ) &
                      * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
 
                 if(debug_tfac .and. indate%hour==12 .and. iem==1) &
@@ -2276,15 +2276,15 @@ end if
                       oldtfac = tfac
                       ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                       ! we make use of a baseload even for SNAP2
-                      tfac = ( fac_min(iland,tfac_idx,iem) & ! constant baseload
-                           + ( 1.0-fac_min(iland,tfac_idx,iem) )* gridfac_HDD(i,j) ) &
+                      tfac = ( fac_min(iland_timefac,tfac_idx,iem) & ! constant baseload
+                           + ( 1.0-fac_min(iland_timefac,tfac_idx,iem) )* gridfac_HDD(i,j) ) &
                            * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
 
                       if(debug_tfac .and. indate%hour==12 .and. iem==1) &
                            write(*,"(a,3i3,2i4,7f8.3)") dtxt//"SNAPHDD tfac ",  &
                            isec, tfac_idx,iland, daynumber, indate%hour, &
                            timefac(iland_timefac,tfac_idx,iem), t2_nwp(i,j,2)-273.15, &
-                           fac_min(iland,tfac_idx,iem),  gridfac_HDD(i,j), tfac
+                           fac_min(iland_timefac,tfac_idx,iem),  gridfac_HDD(i,j), tfac
                    end if ! =============== HDD
 
                    s = Emis_source_2D(i,j,n) * emisfrac(iqrc,split_idx,iland) * tfac
