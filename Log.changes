@@ -47,6 +47,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th May 2022, Peter
+
+Small changes for compatibility with gfortran
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2022, Peter, Alvaro, Svetlana
 
 Can define a file with timefactors defined every day of the year instead of

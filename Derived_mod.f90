@@ -239,10 +239,12 @@ subroutine Init_Derived()
   call Define_Derived()
 
   iddefPMc = find_index('PMc',DDdefs(:)%name, any_case=.true.)
-  associate ( D=> DDdefs(iddefPMc) )
-    fracPM25 = LogNormFracBelow(D%umDpgV, D%sigma, 0.001*D%rho_p, 2.5)
-    if(MasterProc) write(*,*) dtxt//"fracPM25 ", D%umDpgV, trim(D%name), fracPM25
-  end associate ! D=> DDdefs(iddefPMc) )
+  !associate ( D=> DDdefs(iddefPMc) ) !does not work with gfortran
+  fracPM25 = LogNormFracBelow(DDdefs(iddefPMc)%umDpgV, &
+       DDdefs(iddefPMc)%sigma, 0.001*DDdefs(iddefPMc)%rho_p, 2.5)
+  if(MasterProc) write(*,*) dtxt//"fracPM25 ", DDdefs(iddefPMc)%umDpgV, &
+       trim(DDdefs(iddefPMc)%name), fracPM25
+  !end associate ! D=> DDdefs(iddefPMc) )
 
 !  select case(nint(DDdefs(iddefPMc)%umDpgV*10))
 !    case(25);fracPM25=0.37

@@ -1523,7 +1523,7 @@ end if
 
            n = n + 1
            if (debugm ) then
-               write(6,"(a,i,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
+               write(6,"(a,i4,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
                   iland, isec, nsplit, tmp(1:nsplit)
            end if
 
