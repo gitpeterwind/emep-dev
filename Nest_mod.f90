@@ -1163,7 +1163,7 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
         else
            projection='lon lat'
            write(*,*)'Nest: projection not found for ',&
-                trim(filename_read)//', assuming '//trim(projection)
+                trim(filename_read)//', assuming '//trim(projection)//' or WRF input'
         end if
         !get dimensions id/name/len: include more dimension names, if necessary
         GIMAX_ext=get_dimLen([character(len=12)::"i","lon","longitude","west_east"],name=iDName)

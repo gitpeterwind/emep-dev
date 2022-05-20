@@ -1198,8 +1198,6 @@ contains
        largestsplit = max(largestsplit, SECTORS(isec)%split)
     end do
     call CheckStop(USES%DEGREEDAY_FACTORS .and. i==0," did not find any sector corresponding to domestic")
-    call CheckStop(USES%DEGREEDAY_FACTORS .and. USES%DAYOFYEARTIMEFAC,&
-         "Cannot use DEGREEDAY_FACTORS and DAYOFYEARTIMEFAC together")
 
     if(Emis_mask_allocate)then
        if(.not.allocated(Emis_mask))then
