@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23th May 2022, Qing, Peter
+
+phih can be outputtes with:
+OutputMisc= 'phih 10m' ,'phih','phih' ,'phih',' ' ,10,-99,F,1.0,T,'H',
+
+The 10 (index) is the height. Must be integer.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th May 2022, Peter
 

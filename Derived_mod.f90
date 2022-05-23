@@ -71,7 +71,7 @@ use MetFields_mod,     only: roa,Kz_m2s,th,zen, ustar_nwp, u_ref, hmix,&
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             cc3dmax, & ! SEI
                             dTleafHd, dTleafRn, & ! TLEAF
-                            SoilWater_deep, SoilWater_uppr 
+                            SoilWater_deep, SoilWater_uppr ,invL_nwp
 use MosaicOutputs_mod,     only: nMosaic, MosaicOutput
 use My_Derived_mod, only : &
     wanted_deriv2d, wanted_deriv3d, & ! names of wanted derived fields
@@ -1200,14 +1200,22 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = ps(i,j,1)*0.01
         !NOT YET - keep hPa in sites:d_2d( n, i,j,IOU_INST) = ps(i,j,1)
       end forall
-    if ( dbgP ) call write_debug(n,ind, "PPSURF")
+      if ( dbgP ) call write_debug(n,ind, "PPSURF")
 
-    case( "o3_45m" )
-      forall ( i=1:limax, j=1:ljmax )
-         d_2d( n, i,j,IOU_INST) = xn_adv(4,i,j,KMAX_MID) 
-      end forall
-    if ( dbgP ) call write_debug(n,ind, "45mO3")
-
+   case ( "phih" )
+       ind = f_2d(n)%index !height 
+       do j=1,ljmax
+          do i=1,limax
+             if (invl_nwp(i,j) < 0) then
+                !As in Garratt and Obrien for phih, so with Prandtl number
+                d_2d( n, i,j,IOU_INST) = 1.0/sqrt(1-16.*ind*invl_nwp(i,j)) 
+             else
+                !As in Garratt, Prandtl number is 1 in stable boundary layer
+                d_2d( n, i,j,IOU_INST) = 1+5.*ind*invl_nwp(i,j) 
+             end if
+          end do
+       end do
+       
     case( "CloudFrac" )
       forall ( i=1:limax, j=1:ljmax )
          d_2d( n, i,j,IOU_INST) = cc3dmax(i,j,KMAX_MID) 
