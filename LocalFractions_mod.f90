@@ -109,6 +109,8 @@ real, public, allocatable, dimension(:,:), save :: &
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 real, allocatable, public, dimension(:,:), save ::xderiv !dX_ispec/dX_n
 real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
+real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf
+real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
@@ -773,9 +775,13 @@ contains
      allocate(xnew_lf(NSPEC_fullchem_lf+N_lf_derivemis,NSPEC_fullchem_inc_lf))
      allocate(x_lf(NSPEC_fullchem_lf+N_lf_derivemis,NSPEC_fullchem_inc_lf))
      allocate(xold_lf(NSPEC_fullchem_lf+N_lf_derivemis,NSPEC_fullchem_inc_lf))
+     allocate(Dchem_lf(NSPEC_fullchem_lf+N_lf_derivemis,NSPEC_fullchem_inc_lf,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
+     allocate(xn_shl_lf(NSPEC_fullchem_lf+N_lf_derivemis,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
+     Dchem_lf = 0.0
+     xn_shl_lf = 0.0
      allocate(lf_NO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   else
@@ -1717,16 +1723,22 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   return
+  if(i_fdom(i)==58.and.j_fdom(j)==-36 .and.k==kmax_mid )then
+     write(*,*)'concentration after chem ',xnew(18)
+     write(*,*)'prediction after 0.0001 nox emis change',xnew(18)*(1.0+0.0001*xderiv( NSPEC_fullchem_lf+1,18))
+     write(*,*)'lf O3 ',lf(3,i,j,k)
+     write(*,*)'prediction after chem and 0.0001 nox emis change',xnew(18)*(1+0.0001*lf(3,i,j,k)) 
+  end if
   67 format(10x,50(A11))
-  if(me==11 .and. i==2.and.j==5.and.k==20 )then
+  if(i_fdom(i)==58.and.j_fdom(j)==36 .and.k==kmax_mid )then
      68 format(10x,50E11.4)
      write(*,68)(xn(n+NSPEC_SHL),n = 1, min(7,NSPEC_fullchem_lf))
      write(*,68)(xnew(n+NSPEC_SHL),n = 1, min(7,NSPEC_fullchem_lf))
-     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(7,NSPEC_fullchem_lf))
+     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(7,NSPEC_fullchem_lf)),'  NOXEMIS'
 
      do ispec = 1, NSPEC_SHL+NSPEC_fullchem_lf
 66      format(A10,50(F10.5,A1))
-        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(7,NSPEC_fullchem_lf))
+        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(7,NSPEC_fullchem_lf)),xderiv(NSPEC_fullchem_lf+1,ispec)
      end do
         write(*,66)'sum             ',(sum(xderiv(n,1:NSPEC_SHL+NSPEC_fullchem_lf)),' ',n = 1, min(7,NSPEC_fullchem_lf))
      

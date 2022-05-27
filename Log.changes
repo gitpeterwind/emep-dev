@@ -48,6 +48,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th May 2022, Peter
+
+LF with full chemistry: correctly takes into account Dchem and short-lived
+for chemical derivatives.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23th May 2022, Qing, Peter
 
 phih can be outputtes with:
