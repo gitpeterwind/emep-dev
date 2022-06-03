@@ -48,6 +48,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+03 June 2022, Agnes & Anna
+
+Mace Head correction for 2020 added to BoundaryConditions_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 23th May 2022, Qing, Peter
 
 phih can be outputtes with:
