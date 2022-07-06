@@ -2375,53 +2375,6 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
 
 end subroutine add_lf_emis
 
-subroutine lf_rcemis_old(i,j,k,eps)
-  !makes the emission differences to be used for derivatives wrt emissions
-  !we assume that all sources that are reduced within a gridcell have the same splits (this precludes sector reductions!). At boundaries that may be wrong/different from brute force
-  integer,intent(in) :: i,j,k
-  real, intent(in) :: eps
-  integer :: n, iem, iqrc, itot
-
-  call Code_timer(tim_before)
-
-  rcemis_lf = 0.0 !default: no difference
-  !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
-  if(k>=KEMISTOP)then
-     iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-     do n = 1, emis_nsplit(iem)
-        iqrc = sum(emis_nsplit(1:iem-1)) + n
-        itot = iqrc2itot(iqrc)
-        if(itot<=NSPEC_fullchem_inc_lf)then !temporary: avoid SHIPNOx
-           rcemis_lf(iem_lf_nox,itot) = eps* gridrcemis(iqrc,k,i,j)&
-                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-        end if
-     end do
-     iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-     do n = 1, emis_nsplit(iem)
-        iqrc = sum(emis_nsplit(1:iem-1)) + n
-        itot = iqrc2itot(iqrc)
-        if(itot<=NSPEC_fullchem_inc_lf)then
-           rcemis_lf(iem_lf_voc,itot) = eps* gridrcemis(iqrc,k,i,j)&
-                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-        end if
-     end do
-  else
-     iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-     do n = 1, emis_nsplit(iem)
-        iqrc = sum(emis_nsplit(1:iem-1)) + n
-        itot = iqrc2itot(iqrc)
-        if(itot<=NSPEC_fullchem_inc_lf)rcemis_lf(iem_lf_nox,itot) = 0.0
-     end do
-     iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-     do n = 1, emis_nsplit(iem)
-        iqrc = sum(emis_nsplit(1:iem-1)) + n
-        itot = iqrc2itot(iqrc)
-        if(itot<=NSPEC_fullchem_inc_lf)rcemis_lf(iem_lf_voc,itot) = 0.0
-     end do     
-  end if
-  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
-end subroutine lf_rcemis_old
-
 subroutine lf_rcemis(i,j,k,eps)
   !makes the emission differences to be used for derivatives wrt emissions
   !we assume that all sources that are reduced within a gridcell have the same splits (this precludes sector reductions!). At boundaries that may be wrong/different from brute force
