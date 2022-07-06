@@ -18,19 +18,25 @@ echo 'if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' >>CM_Reactions1_tmp.inc
 cat CM_Reactions1.inc>> CM_Reactions1_tmp.inc
 echo 'endif' >>CM_Reactions1_tmp.inc
 
-sed -i 's/P \= P +/P_lf(:) \= P_lf(:) +/g' CM_Reactions1_tmp.inc
-sed -i 's/P \= /P_lf(:) \= /g' CM_Reactions1_tmp.inc
-sed -i 's/ dt2 \* P/  dt2 \* P_lf(:)/g' CM_Reactions1_tmp.inc
-sed -i 's/L = L +/L_lf(:) \= L_lf(:) +/g' CM_Reactions1_tmp.inc
-sed -i 's/L \=/L_lf(:) =/g' CM_Reactions1_tmp.inc
-sed -i 's/ L)/ L_lf(:))/g' CM_Reactions1_tmp.inc
-sed -i 's/xnew(/xnew_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i 's/xold(/xold_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/i do i_lf = 1,NSPEC_fullchem_lf+N_lf_derivemis' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/s/xnew_lf(:/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
+sed -i 's/P \= P +/P_lf(1:Nd) \= P_lf(1:Nd) +/g' CM_Reactions1_tmp.inc
+sed -i 's/P \= /P_lf(1:Nd) \= /g' CM_Reactions1_tmp.inc
+sed -i 's/ dt2 \* P/  dt2 \* P_lf(1:Nd)/g' CM_Reactions1_tmp.inc
+sed -i 's/L = L +/L_lf(1:Nd) \= L_lf(1:Nd) +/g' CM_Reactions1_tmp.inc
+sed -i 's/L \=/L_lf(1:Nd) =/g' CM_Reactions1_tmp.inc
+sed -i 's/ L)/ L_lf(1:Nd))/g' CM_Reactions1_tmp.inc
+sed -i 's/xnew(/xnew_lf(1:Nd,/g' CM_Reactions1_tmp.inc
+sed -i 's/xold(/xold_lf(1:Nd,/g' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/i do i_lf = 1,Nd' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/s/xnew_lf(1:Nd/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
-sed -i '/+ rcemis(NO,k)/a P_lf(NSPEC_fullchem_lf+N_lf_derivemis) = P_lf(NSPEC_fullchem_lf+N_lf_derivemis) + (eps1-1.0)*rcemis(NO,k)' CM_Reactions1_tmp.inc
-sed -i '/+ rcemis(NO2,k)/a P_lf(NSPEC_fullchem_lf+N_lf_derivemis) = P_lf(NSPEC_fullchem_lf+N_lf_derivemis) + (eps1-1.0)*rcemis(NO2,k)' CM_Reactions1_tmp.inc
+
+for species in NO NO2 CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK
+do
+  sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_fullchem_lf+1:Nd) = P_lf(NSPEC_fullchem_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species)" CM_Reactions1_tmp.inc
+done
+
+
+
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 
 echo "CM_Reactions1.inc successfully adapted to LF calculations"

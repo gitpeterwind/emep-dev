@@ -37,8 +37,8 @@
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert, &
-                                  x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  Dchem_lf,xn_shl_lf,&
+                                  L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
+                                  Dchem_lf, xn_shl_lf, rcemis_lf, lf_rcemis,&
                                   NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf, &
                                   N_lf_derivemis
     use Par_mod,            only: me, LIMAX, LJMAX
@@ -81,11 +81,11 @@ contains
 
     logical, save ::  first_call = .true.
 
-    real(kind=dp), parameter ::  CPINIT = 0.0 ! 1.0e-30  ! small value for init
+    real(kind=dp), parameter ::  CPINIT = 0.0 ! small value for init
 
     !  Local
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
-    integer ::  k, ichem, iter,n, i_lf    ! Loop indices
+    integer ::  k, ichem, iter,n, i_lf, Nd    ! Loop indices
     integer, save ::  nchem         ! No chem time-steps
     real(kind=dp)    ::  dt2, accdt2, accdt
     real(kind=dp)    ::  P, L                ! Production, loss terms
@@ -104,12 +104,11 @@ contains
                         coeff1,coeff2,cc ! coefficients for variable timestep
     ! Test of precision
     real(kind=dp) :: pi = 4.0*atan(1.0_dp)
-    real, dimension(NSPEC_fullchem_lf+N_lf_derivemis):: L_lf,P_lf
    
-    real, parameter :: eps1 = 1.0001
+    real, parameter :: eps1 = 1.00001
     
 !======================================================
-
+ 
 
     if ( first_call ) then
        allocate( Dchem(NSPEC_TOT,KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
@@ -149,9 +148,8 @@ contains
     !   Previous concentrations are estimated by the current
     !   minus Dchem because the current may be changed by
     !   processes outside the chemistry:
-
     do k = 2, KMAX_MID
-
+       
        DebugCell = debug_flag .and. k==KMAX_MID
        if ( DebugCell .and. DEBUG%VERT_DIFF) write(*,'(a,es12.3)') 'DSKzChem', xn_2d(19,20)
 
@@ -161,17 +159,21 @@ contains
        x(:)    = max (x(:), 0.0)
 
        if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
+          !make rcemis_lf and N_lf_derivemis
+          call lf_rcemis(i,j,k,eps1-1.0)
+          Nd = NSPEC_fullchem_lf + N_lf_derivemis !shorter
+          
           !make NSPEC_fullchem_lf copy of concentrations
           !short lives are derivative dependent
           do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+             do i_lf = 1, Nd
                 xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
                 x_lf(i_lf,n)    = xn_shl_lf(i_lf,n,k,i,j) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
              end do
           end do 
           do n = NSPEC_SHL + 1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+             do i_lf = 1, Nd
                 xnew_lf(i_lf,n) = xn_2d(n,k)          
                 x_lf(i_lf,n)    = xn_2d(n,k) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
@@ -183,6 +185,7 @@ contains
              x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k)* eps1 - Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5
              x_lf(i_lf,i_lf+NSPEC_SHL)    = max (x_lf(i_lf,i_lf+NSPEC_SHL), 0.0)
           end do
+
        end if
 
        !*************************************
@@ -219,7 +222,7 @@ contains
              xnew(n) = xextrapol
              
              if (lf_fullchem .and. k > KMAX_MID-lf_Nvert .and. n <= NSPEC_fullchem_inc_lf) then
-                do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+                do i_lf = 1, Nd
                    xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
                    xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
                    xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )
@@ -299,12 +302,12 @@ contains
           call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, eps1)
           !save tendencies for each derivative
           do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+             do i_lf = 1, Nd
                  Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_shl_lf(i_lf,n,k,i,j) )*dt_advec_inv
             end do
           end do 
           do n = NSPEC_SHL+1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+             do i_lf = 1, Nd
                 Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_2d(n,k) )*dt_advec_inv
              end do
           end do
@@ -313,7 +316,7 @@ contains
           end do
           !save short lives for each derivatives
           do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf+N_lf_derivemis
+             do i_lf = 1, Nd
                 xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n)
              end do
           end do 
@@ -324,9 +327,9 @@ contains
 
        Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
        xn_2d(:,k) = xnew(:)
- 
-    end do ! End of vertical k-loop
 
+    end do ! End of vertical k-loop
+   
    first_call = .false.
   end subroutine chemistry
 

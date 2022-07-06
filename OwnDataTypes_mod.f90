@@ -326,6 +326,7 @@ type, public :: lf_sources
   integer :: end = 1 ! last position index in lf_src (set by model)
   integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
   integer :: iem_deriv = 0 ! index of emitted pollutant to track, emis (set by model)
+  integer :: iem_lf ! index of emitted internal for LF (1 for nox, 2 for voc)
   integer :: Npos = 0 ! number of position indices in lf_src (set by model)
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
   integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox)
