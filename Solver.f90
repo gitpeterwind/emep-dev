@@ -105,7 +105,7 @@ contains
     ! Test of precision
     real(kind=dp) :: pi = 4.0*atan(1.0_dp)
    
-    real, parameter :: eps1 = 1.00001
+    real, parameter :: eps1 =  0.999
     
 !======================================================
  
@@ -148,8 +148,9 @@ contains
     !   Previous concentrations are estimated by the current
     !   minus Dchem because the current may be changed by
     !   processes outside the chemistry:
-    do k = 2, KMAX_MID
-       
+    
+    do k = KCHEMTOP, KMAX_MID
+
        DebugCell = debug_flag .and. k==KMAX_MID
        if ( DebugCell .and. DEBUG%VERT_DIFF) write(*,'(a,es12.3)') 'DSKzChem', xn_2d(19,20)
 
@@ -162,30 +163,41 @@ contains
           !make rcemis_lf and N_lf_derivemis
           call lf_rcemis(i,j,k,eps1-1.0)
           Nd = NSPEC_fullchem_lf + N_lf_derivemis !shorter
-          
-          !make NSPEC_fullchem_lf copy of concentrations
+
+          !Careful sometimes the only difference between xnew and xnew_lf are from initial values (Dchem_lf and/or xn_shl_lf)
           !short lives are derivative dependent
           do n = 1, NSPEC_SHL
-             do i_lf = 1, Nd
+             do i_lf = 1, NSPEC_fullchem_lf 
                 xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
                 x_lf(i_lf,n)    = xn_shl_lf(i_lf,n,k,i,j) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
              end do
-          end do 
+          end do
           do n = NSPEC_SHL + 1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, Nd
+             do i_lf = 1, NSPEC_fullchem_lf 
                 xnew_lf(i_lf,n) = xn_2d(n,k)          
                 x_lf(i_lf,n)    = xn_2d(n,k) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
-             end do  
+             end do
           end do
+          !for emissions we use Dchem and not Dchem_lf. Because in some situations
+          !the xnew_lf does not change because of emissions, but because of
+          !differences in Dchem_lf only -> creates large derivatives.
+          do n = 1, NSPEC_fullchem_inc_lf
+             do i_lf = NSPEC_fullchem_lf + 1, NSPEC_fullchem_lf + N_lf_derivemis
+                xnew_lf(i_lf,n) = xn_2d(n,k)
+                x_lf(i_lf,n)    = xn_2d(n,k) - Dchem(n,k,i,j)*dti(1)*1.5
+                x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
+             end do
+          end do
+          
           !increase slightly one of the concentrations for chemical derivatives
           do i_lf = 1, NSPEC_fullchem_lf
-             xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1! we assume xn_i are slightly increased for pollutant i
-             x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k)* eps1 - Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5
+             xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1
+             x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k) * eps1 - Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5
              x_lf(i_lf,i_lf+NSPEC_SHL)    = max (x_lf(i_lf,i_lf+NSPEC_SHL), 0.0)
           end do
-
+          
        end if
 
        !*************************************
@@ -246,6 +258,7 @@ contains
           where ( xnew(:) < CPINIT  )
              xnew(:) = CPINIT
           end where
+          
 
 !== Here comes all chemical reactions
 !=============================================================================
@@ -264,8 +277,6 @@ contains
 ! and therefore do not need to be iterated.  We could have another class
 ! "slowreactions", which is not iterated or fewer times. This needs some
 ! work to draw a proper line ......
-
-               !if(k>=KCHEMTOP)then
 
                !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                include 'CM_Reactions1.inc'               
@@ -299,15 +310,16 @@ contains
        !*************************************
 
        if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
+          
           call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, eps1)
           !save tendencies for each derivative
           do n = 1, NSPEC_SHL
-             do i_lf = 1, Nd
+             do i_lf = 1, NSPEC_fullchem_lf
                  Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_shl_lf(i_lf,n,k,i,j) )*dt_advec_inv
             end do
           end do 
           do n = NSPEC_SHL+1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, Nd
+             do i_lf = 1, NSPEC_fullchem_lf
                 Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_2d(n,k) )*dt_advec_inv
              end do
           end do
@@ -316,7 +328,7 @@ contains
           end do
           !save short lives for each derivatives
           do n = 1, NSPEC_SHL
-             do i_lf = 1, Nd
+             do i_lf = 1, NSPEC_fullchem_lf
                 xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n)
              end do
           end do 
