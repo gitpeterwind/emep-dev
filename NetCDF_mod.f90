@@ -292,6 +292,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
         "NetCDF_mod: wordsplit error:: "//trim(MetaData(0,n)))
       select case(auxL(2))
       case("c","C","s","S") ! string/char attribute
+        ! ":" characters on meteo_souurce where replaced with "|" in order to avoid problems with wordsplit
         if(auxL(1)=="meteo_source")&
           auxL(3) = trim(str_replace(auxL(3),"|",":"))
         call check(nf90_put_att(ncFileID,nf90_global,trim(auxL(1)),trim(auxL(3))),&

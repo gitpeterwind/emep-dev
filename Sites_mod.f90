@@ -968,6 +968,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       call CheckStop(NattributesMAX<NMetaData,'NattributesMAX too small')
       
       write(MetaData(0,1),"(A,':C:',A)")"File_Type",trim(fname)
+      ! replace ":" characters on meteo_souurce with "|" in order to avoid problems with wordsplit
       write(MetaData(0,2),"(A,':C:',A)")"meteo_source",trim(str_replace(meteo,":","|"))
       write(MetaData(0,3),"(A,':I:',I0)")"Number_of_hours_bewtween_outputs",f
       write(MetaData(0,4),"(A,':I:',I0)")"Number_of_stations_defined",NStations
