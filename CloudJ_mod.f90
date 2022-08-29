@@ -20,7 +20,7 @@ MODULE CloudJ_mod
                                       roa, z_bnd, cw_met, &
                                       foundcloudicewater, ciw_met
     use Config_module,         only: KMAX_BND,KMAX_MID,KCHEMTOP,METSTEP,USES, &
-                                      NPROC, IOU_INST, num_lev3d,lev3d
+                                      NPROC, IOU_INST, num_lev3d,lev3d, cloudjx_strat
     use Par_mod,               only: me,LIMAX,LJMAX
     use TimeDate_mod,          only: daynumber,current_date,date
     use ZchemData_mod,         only: rcphot, rcphotslice
@@ -97,7 +97,7 @@ MODULE CloudJ_mod
 
 CONTAINS
 
-SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
+SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
     !calculate rcphot for one ICA in the emep model
     IMPLICIT NONE
@@ -136,7 +136,7 @@ SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
     real, allocatable, save :: lon_ozone(:), lat_ozone(:), alt_ozone(:)
     real, allocatable, save :: temp_ozone(:,:,:), pres_ozone(:,:,:), ozon_ozone(:,:,:)
     real, allocatable, save :: temp_obs(:,:,:), pres_obs(:,:,:), ozon_obs(:,:,:)
-    character(len=150), save  :: fname_ozone, pathn_ozone
+    character(len=150), save  :: fname_ozone
     real,  save :: dlat, dlon, dalt
     
     !---fast-JX:  INIT_JX is called only once to read in & store all fast-JX data: 
@@ -167,13 +167,11 @@ SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
           !
           ! ##########################################################################################
 
-          ! define path based on model year & month and read in monthly lon-lat-alt satellite obs. data
-          pathn_ozone = '/nobackup/forsk/sm_wilva/EMEP/Development/input/OzoneObs/'
-         
+          ! define path based on model year & month and read in monthly lon-lat-alt satellite obs. data        
           if(year < 2005 .or. year > 2021) then 
-                fname_ozone = trim(pathn_ozone)//trim('clim_')//date2string("MM",current_date)//trim('.dat')
+                fname_ozone = trim(cloudjx_strat)//trim('clim_')//date2string("MM",current_date)//trim('.dat')
           else
-                fname_ozone = trim(pathn_ozone)//date2string("YYYYMM",current_date)//trim('.dat')
+                fname_ozone = trim(cloudjx_strat)//date2string("YYYYMM",current_date)//trim('.dat')
           endif
           if(me==0)write(*,*) 'Opening satellite O3/T obs. file: ', fname_ozone
           
@@ -472,10 +470,10 @@ SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
           ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH )
           
           ! CLDIW is an integer flag: 1 = water cld, 2 = ice cloud, 3 = both
-          if (CWLC(L) .gt. 1.d-11) CLDIW(L) = 1
-          if (CWIC(L) .gt. 1.d-11) CLDIW(L) = CLDIW(L) + 2
+          if (CWLC(L) > 1.d-11) CLDIW(L) = 1
+          if (CWIC(L) > 1.d-11) CLDIW(L) = CLDIW(L) + 2
 
-          if (CWLC(L) .gt. 1.d-12) then            ! [kg/kg]
+          if (CWLC(L) > 1.d-12) then            ! [kg/kg]
                 LWP(L) = CLWP(L)                   ! [g/m2]
                 PMID = 0.5d0*(PPP(L)+PPP(L+1))
                 F1   = 0.005d0 * (PMID - 610.d0)
@@ -483,7 +481,7 @@ SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
                 REFFL(L) = 9.6d0*F1 + 12.68d0*(1.d0-F1)    
           endif
 
-          if (CWIC(L) .gt. 1.d-12) then            ! [kg/kg]
+          if (CWIC(L) > 1.d-12) then            ! [kg/kg]
                 IWP(L) = CIWP(L)                   ! [g/m2]
                 ZDEL = (ZZZ(L+1) - ZZZ(L))*0.01d0  ! [m]
                 ICWC = IWP(L)/ZDEL                 ! [g/m3]
@@ -501,7 +499,7 @@ SUBROUTINE setup_phot_cloudJ(i_emep,j_emep,errcode,mode)
           NDXAER(L,5) = NAA5(L)
           AERSP(L,5)  = AER5(L)
           
-          if (L .gt. KMAX_MID) &  ! ozone column above EMEP model layers
+          if (L > KMAX_MID) &  ! ozone column above EMEP model layers
                 col_o3 = col_o3 + OOO(L)
 
           dobson(i_emep,j_emep) = dobson(i_emep,j_emep) + OOO(L)/2.687e16 !1 DU = 2.687e16 molecules of O3 per square centimetre

@@ -33,6 +33,8 @@
      ,rcbio             & !< Emissions rate coeff.  molec/cm3/s (BVOC, soil-NO, etc.)
      ,rcphot              !< Photolysis rates
 
+  real, public, save, allocatable, dimension(:,:,:,:) :: rcphotslice ! store time-slice of J-vals
+
   real, public, allocatable, dimension(:,:), save :: &
        xn_2d            ! Concentrations [molecules/cm3]
 

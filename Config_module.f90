@@ -174,7 +174,7 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,FASTJ            = .false. & ! use FastJ_mod for computing rcphot
+    ,FASTJ            = .true. & ! use FastJ_mod for computing rcphot
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European
@@ -786,6 +786,8 @@ character(len=TXTLEN_FILE), target, save, public :: jclearFile = 'DataDir/jclear
 character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.SEASON'
 !SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
 character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
+character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/CloudJ_7.3e/'
+character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs/'
 character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
@@ -892,6 +894,8 @@ subroutine Config_Constants(iolog)
    ,jclearFile&
    ,jcl1kmFile&
    ,jcl3kmFile&
+   ,cloudjx_initf&
+   ,cloudjx_strat&
    ,NdepFile&
    ,lightningFile&
    ,BiDirInputFile&
@@ -1056,7 +1060,9 @@ subroutine Config_Constants(iolog)
   call associate_File(EMEP_EuroBVOCFile)
   call associate_File(jclearFile)
   call associate_File(jcl1kmFile)
-  call associate_File(jcl3kmFile)
+  call associate_File(jcl3kmFile) 
+  call associate_File(cloudjx_initf)
+  call associate_File(cloudjx_strat)
   call associate_File(NdepFile)
   call associate_File(lightningFile)
   call associate_File(BiDirInputFile)  ! FUTURE INPUT

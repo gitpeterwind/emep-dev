@@ -2479,6 +2479,8 @@
 !
       USE FJX_CMN_MOD
 
+      use Config_module, only: cloudjx_initf
+
       USE FJX_SUB_MOD, ONLY : EXITC
 
       IMPLICIT NONE
@@ -2512,19 +2514,19 @@
       JXUNIT  = 8
 
 ! Read in fast-J X-sections (spectral data)
-      call RD_XXX(JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/FJX_spec.dat')
+      call RD_XXX(JXUNIT,trim(cloudjx_initf)//'/FJX_spec.dat')
 
 ! Read in cloud scattering data
-      call RD_CLD(JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/FJX_scat-cld.dat')
+      call RD_CLD(JXUNIT,trim(cloudjx_initf)//'/FJX_scat-cld.dat')
 
 ! Read in aerosols scattering data
-      call RD_MIE(JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/FJX_scat-aer.dat')
+      call RD_MIE(JXUNIT,trim(cloudjx_initf)//'/FJX_scat-aer.dat')
 
 ! Read in UMich aerosol scattering data
-      call RD_UM (JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/FJX_scat-UMa.dat')
+      call RD_UM (JXUNIT,trim(cloudjx_initf)//'/FJX_scat-UMa.dat')
 
 ! Read in T & O3 climatology used to fill e.g. upper layers or if O3 not calc.
-      call RD_PROF(JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/atmos_std.dat')
+      call RD_PROF(JXUNIT,trim(cloudjx_initf)//'/atmos_std.dat')
 
         NJXX = NJX
       do J = 1,NJX
@@ -2533,7 +2535,7 @@
 
 ! Read in photolysis rates used in chemistry code and mapping onto FJX J's
 !---CTM call:  read in J-values names and link to fast-JX names
-      call RD_JS_JX(JXUNIT,'/nobackup/forsk/sm_wilva/EMEP/Development/CloudJ_7.3e/FJX_j2j.dat', TITLEJXX,NJXX)
+      call RD_JS_JX(JXUNIT,trim(cloudjx_initf)//'/FJX_j2j.dat', TITLEJXX,NJXX)
 
 !---setup the random number sequence RAN4
          RANSEED = 66
