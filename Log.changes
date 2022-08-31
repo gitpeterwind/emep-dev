@@ -46,6 +46,35 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug 2022, Wim van Caspel
+
+Introduced CloudJ functionality, which can be toggled on/off in Config_emep.f90.
+
+In the current setup, CloudJ can be used to calculate photolysis rates 
+for reactions having a 1-to-1 correspondence with those from the standard 
+CloudJ input files (which are most of the EMEP reactions, see Runchem_mod.f90). The 
+new code runs as 'stand alone' for all years. Between the years 2005 and 2021
+monthly mean lat-lon-altitude satellite ozone and temperature data are read in. 
+For other years, monthly climatologies based on these years are used instead. 
+
+IF USES%CLOUDJ = .true. CloudJ is used to update rcphot(:,:)
+IF USES%HRLYCLOUD = .true. CloudJ updates only once every model hour
+  rather than every model timestep, to save CPU time
+
+For global runs, hourly CloudJ calls lead to a ~10% increase in CPU time,
+whereas instantaneous CloudJ calls lead to a ~25% increase in CPU time.  
+
+An additional change includes a bug-fix to DefPhotolysis_mod.f90, which caused
+only clear-sky tabulated Jvalues to be used at all times. 
+
+IF USES%CLEARSKYTAB = .true. only clear-sky tabulated Jvalues are used, to comply
+  with the state of the model pre-bug-fix.
+
+Another minor change is that the 3d cloud cover array cc3d, used in 
+Aqueous_n_WetDep_mod.f90 and Met_mod.f90, is now interpolated 
+in time, for consistency with the other metfields used by CloudJ.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Aug 2022, Peter
 
 Emis new format: allow use countrycode as a number.
