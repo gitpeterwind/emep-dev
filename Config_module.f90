@@ -174,7 +174,9 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,FASTJ            = .true. & ! use FastJ_mod for computing rcphot
+    ,CLOUDJ           = .false. & ! use CloudJ_mod for computing rcphot  
+    ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
+    ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European

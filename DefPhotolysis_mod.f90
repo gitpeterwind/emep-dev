@@ -99,7 +99,7 @@
     !       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
            ,IDRCOCHO  = IDHCOHCO & ! Just name change CHECK (these are the indices used in chem)
            ,IDCHOCHO  = IDHCOHCO   ! Just name change CHECK
-    ! NB: if(uses%fastj) IDRCOCHO = IDRCOHCO ! fastj includes mglyox dissociation
+    ! NB: if(uses%cloudj) IDRCOCHO = IDRCOHCO ! fastj includes mglyox dissociation
     
     ! In EMEP code, we use IDBO3 for O1D production and IDAO3 for OP production
     ! MCM indices:
@@ -219,7 +219,7 @@
                enddo
             endif
     
-            !   Open, read and broadcast light cloud rates
+            !   Open, read and broadcast light cloud rates 
     !---------------
     
             if(me == 0)then
@@ -346,28 +346,52 @@
                   base = k+1
     
                  ! if all cc3d so far are <1.e-4 we are done
-    
-                  if( base > CLOUDTOP ) then 
+                  if(USES%CLEARSKYTAB) then
+                  
+                    if( base < CLOUDTOP ) then 
     
                     !  we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
     
-                     k = CLOUDTOP
-                     do while(cc3d(i,j,k,1) < 1.0e-4)
-                         k = k+1
-                     end do
-                     top = k
+                    k = CLOUDTOP
+                    do while(cc3d(i,j,k,1) < 1.0e-4)
+                      k = k+1
+                    end do
+                    top = k
     
-                     if(top >= base) then
-                       print *,'top,base'
-                       errcode = 17
-                       return
-                     end if
-                     iclcat = 1
+                    if(top >= base) then
+                      print *,'top,base'
+                      errcode = 17
+                      return
+                    end if
+                    iclcat = 1
     
-                     if(z_bnd(i,j,top)-z_bnd(i,j,base) > 1.5e3) iclcat = 2
-    
+                    if(z_bnd(i,j,top)-z_bnd(i,j,base) > 1.5e3) iclcat = 2
                   end if  ! base<CLOUDTOP
-                end if   ! end cc3dmax
+
+                else
+                  
+                  if( base > CLOUDTOP ) then
+    
+                    !  we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
+    
+                    k = CLOUDTOP
+                    do while(cc3d(i,j,k,1) < 1.0e-4)
+                      k = k+1
+                    end do
+                    top = k
+    
+                    if(top >= base) then
+                      print *,'top,base'
+                      errcode = 17
+                      return
+                    end if
+                    iclcat = 1
+    
+                    if(z_bnd(i,j,top)-z_bnd(i,j,base) > 1.5e3) iclcat = 2
+    
+                  end if ! base > cloudtop 
+                end if ! uses%clearskytab
+              end if ! end cc3dmax
     
     
     

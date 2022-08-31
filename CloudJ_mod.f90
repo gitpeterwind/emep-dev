@@ -447,7 +447,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     end do
     
     !-----------------------------------------------------------------------
-    !---fast-JX:  SOLAR_JX is called only once per grid-square to set U0, etc.
+    !---fast-JX:  SOLAR_JX is called only once per grid-square to set U0, etc. 
     call SOLAR_JX(GMTAU,IDAY,YGRD,XGRD,SZA,U0,SOLF)
 
     LWP(:)  = 0.d0       ! liquid water path (g/m2)
@@ -467,7 +467,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     do L = 1,OZ_TOP 
           DDD(L) = (PPP(L)-PPP(L+1))*MASFAC
           SCALEH = 1.3806d-19*MASFAC*TTT(L)
-          ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH )
+          ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH ) ! can be changed to use DeltZ, to do
           
           ! CLDIW is an integer flag: 1 = water cld, 2 = ice cloud, 3 = both
           if (CWLC(L) > 1.d-11) CLDIW(L) = 1

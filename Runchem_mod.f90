@@ -147,11 +147,16 @@ subroutine runchem()
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USES%FASTJ)then
+      if(USES%CLOUDJ)then
         !call each model tstep or hourly (hard coded)
+        
+        call setup_phot(i,j,errcode) ! only if not all Jvalues are updated by cloudj (current setup)
 
-        call setup_phot(i,j,errcode) ! optional, only if not all Jvalues are updated by cloudj
-        if(nhour.gt.photstep) then
+        if(USES%HRLYCLOUDJ) then
+          if(nhour>photstep) then
+            call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+          endif
+        else
           call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
         endif
 
@@ -169,7 +174,6 @@ subroutine runchem()
         rcphot(IDCH3O2H,:) = rcphotslice(IDCH3O2H,:,i,j)
 
         ! rcphot(:,:) = rcphotslice(:,:,i,j)    ! uncomment to update all J-values instead
-        ! call setup_phot_cloudj(i,j,errcode,0) ! uncomment to calculate J-values every tstep
       else
          call setup_phot(i,j,errcode)
       end if
@@ -326,7 +330,7 @@ subroutine runchem()
   end do ! i
   first_tstep = .false.   ! end of first call  over all i,j
 
-  if(nhour.gt.photstep)then
+  if(nhour > photstep)then
     if(nhour==23)then ! set hrly counter
       photstep= -999
     else
