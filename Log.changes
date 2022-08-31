@@ -45,6 +45,24 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug 2022, Peter
+
+Emis new format: allow use countrycode as a number.
+LF: removed RUE from country predefined group
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Aug 2022, Peter , Hilde, Dave
+
+Average of daily max 8 hour mean:
+
+OutputMisc=
+   'AvgMDA8','AvgMDA8', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+   'AvgMDA8_6month','AvgMDA8AprSep', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+
+The first field is the name in the output,can be chosen freely.
+For AvgMDA8AprSep only the monthes from Apr to Sep are included for yearly, but 
+all month have a monthly value (i.e for monthly, AvgMDA8AprSep and AvgMDA8 are the same)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 July 2022, Peter & Massimo

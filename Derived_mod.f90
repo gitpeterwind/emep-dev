@@ -981,6 +981,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer , save :: i_MaxD8M_3rd = 0 !index in f_2d
   integer , save :: i_MaxD8M_4th = 0 !index in f_2d
   integer :: i_26th, i4th, i3rd, i2nd, i1st
+  integer, save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
+  integer, save :: count_AvgMDA8AprSep_m=0,count_AvgMDA8AprSep_y=0
+  real :: w_m,w_y !weights
+
   if(.not. date_is_reached(spinup_enddate))return ! we do not average during spinup
 
   timefrac = dt/3600.0
@@ -1682,18 +1686,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case( "MaxD8M_26th", "MaxD8M_1st", "MaxD8M_2nd", "MaxD8M_3rd", "MaxD8M_4th")
       ! do nothing, it is taken care of by "MaxD8M" case
-    case( "MaxD8M" ) ! maximum daily eight-hour mean concentration
+    case( "MaxD8M" , "AvgMDA8", "AvgMDA8AprSep") ! maximum daily eight-hour mean concentration
       if (first_call) then
 
         if (.not. allocated(D8M)) then ! we want to go through this only once
-          iou = 0 !number of independent MaxD8M fields to output
+          iou = 0 !number of independent MaxD8M fields to output. for simplicity we add again the same if both MaxD8M and AvgMDA8 are chosen
           do i = 1, num_deriv2d
-            if (f_2d(i)%class=="MaxD8M") then
+            if (f_2d(i)%class=="MaxD8M" .or. f_2d(i)%class=="AvgMDA8" .or. f_2d(i)%class=="AvgMDA8AprSep" ) then
               ! save index of species in f_2d
               f_2d(i)%index = find_index(f_2d(i)%txt,species_adv(:)%name, any_case=.true.)
-              call CheckStop(f_2d(i)%index<0,"MaxD8M: species "//trim(f_2d(i)%txt)//"not found")
+              call CheckStop(f_2d(i)%index<0,"D8M: species "//trim(f_2d(i)%txt)//"not found")
               !force ug/m3
-              call CheckStop(f_2d(i)%unit/="ug/m3","MaxD8M must be in units of ug/m3 ")
+              call CheckStop(f_2d(i)%unit/="ug/m3",trim(f_2d(i)%class)//" must be in units of ug/m3 ")
               iou = iou + 1
               ! trick to save 2 integers in one:
               f_2d(i)%index = f_2d(i)%index  + iou * 100000
@@ -1829,16 +1833,51 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             end do
           end if
           
-          do j = 1,ljmax
-            do i = 1,limax
-              d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
-              !NB: max value over month, not average over daily max:
-              d_2d(n,i,j,IOU_MON) = max(d_2d(n,i,j,IOU_MON) , D8Max(i,j,iou))
-              !NB: max value over year, not average over daily max:
-              d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))                                          
-              D8Max(i,j,iou) = 0.0
+          if (class=="MaxD8M") then
+
+            do j = 1,ljmax
+              do i = 1,limax
+                if(LENOUT2D>=IOU_DAY)d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
+                !NB: max value over month, not average over daily max:
+                if(LENOUT2D>=IOU_MON)d_2d(n,i,j,IOU_MON) = max(d_2d(n,i,j,IOU_MON) , D8Max(i,j,iou))
+                !NB: max value over year, not average over daily max:
+                d_2d(n,i,j,IOU_YEAR) = max(d_2d(n,i,j,IOU_YEAR), D8Max(i,j,iou))                                          
+                D8Max(i,j,iou) = 0.0
+              end do
             end do
-          end do
+
+          else if (class=="AvgMDA8") then
+            if (current_date%day == 1) count_AvgMDA8_m = 1 
+            count_AvgMDA8_m = count_AvgMDA8_m + 1
+            count_AvgMDA8_y = count_AvgMDA8_y + 1
+            w_m = 1.0/count_AvgMDA8_m
+            w_y = 1.0/count_AvgMDA8_y
+            do j = 1,ljmax
+              do i = 1,limax
+                if(LENOUT2D>=IOU_DAY)d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
+                !average. makw weight according to already counted days
+                if(LENOUT2D>=IOU_MON)d_2d(n,i,j,IOU_MON) = (1.0-w_m) * d_2d(n,i,j,IOU_MON) + w_m * D8Max(i,j,iou)
+                d_2d(n,i,j,IOU_YEAR) = (1.0-w_y) * d_2d(n,i,j,IOU_YEAR) + w_y * D8Max(i,j,iou)
+                D8Max(i,j,iou) = 0.0
+              end do
+            end do
+
+          else if ( class=="AvgMDA8AprSep" ) then
+            if (current_date%day == 1) count_AvgMDA8AprSep_m = 1 
+            count_AvgMDA8AprSep_m = count_AvgMDA8AprSep_m + 1!for monthes we output all anyway!
+            if(current_date%month>=4 .and. current_date%month<=9)count_AvgMDA8AprSep_y = count_AvgMDA8AprSep_y + 1
+            w_m = 1.0/count_AvgMDA8AprSep_m
+            w_y = 1.0/count_AvgMDA8AprSep_y
+            do j = 1,ljmax
+              do i = 1,limax
+                if(LENOUT2D>=IOU_DAY)d_2d(n,i,j,IOU_DAY) = D8Max(i,j,iou)
+                !average. makw weight according to already counted days   
+                if(LENOUT2D>=IOU_MON)d_2d(n,i,j,IOU_MON) = (1.0-w_m) * d_2d(n,i,j,IOU_MON) + w_m * D8Max(i,j,iou)
+                if(current_date%month>=4 .and. current_date%month<=9) d_2d(n,i,j,IOU_YEAR) = (1.0-w_y) * d_2d(n,i,j,IOU_YEAR) + w_y * D8Max(i,j,iou)
+                D8Max(i,j,iou) = 0.0
+              end do
+            end do
+          end if
         end if
       end if
 
