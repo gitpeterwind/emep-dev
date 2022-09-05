@@ -46,6 +46,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05 Sep 2022, Arjo Segers
+
+Added optional argument "fix" to "coord_in_domain" to prevent that
+longitudes are changes by a call to this routine.
+
+  GridValues_mod.f90
+
+Updated comment.
+
+  PhyChem_mod.f90
+
+Synchronized source files in "ZD_EmCso" extension with changes in base model.
+
+  ZD_EmCso/GridValues_mod.f90
+  ZD_EmCso/PhyChem_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Aug 2022, Wim van Caspel
 
 Introduced CloudJ functionality, which can be toggled on/off in Config_emep.f90.
