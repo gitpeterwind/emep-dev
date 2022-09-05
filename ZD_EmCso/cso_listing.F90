@@ -227,6 +227,7 @@ contains
     logical               ::  exist
     integer               ::  fu
     character(len=1024)   ::  line
+    character(len=1024)   ::  line0
     integer               ::  irec
     character(len=1024)   ::  rec_filename
     type(T_CSO_DateTime)  ::  rec_t1, rec_t2
@@ -338,13 +339,34 @@ contains
           cycle
         end if
         
+        ! save full line:
+        line0 = trim(line)
         ! extract elements:
+        !~ filename:
         call CSO_ReadFromLine( line, rec_filename, status, sep=self%sep )
-        IF_NOT_OK_RETURN(status=1)
+        if ( status /= 0 ) then
+          write (csol,'("could not extract filename from record ",i0,":")') irec; call csoErr
+          write (csol,'("  ",a)') trim(line0); call csoErr
+          TRACEBACK; status=1; return
+        end if
+        !~ start time:
         call CSO_ReadFromLine( line, rec_t1, status, sep=self%sep )
-        IF_NOT_OK_RETURN(status=1)
+        if ( status /= 0 ) then
+          write (csol,'("could not extract start time from record ",i0,":")') irec; call csoErr
+          write (csol,'("  ",a)') trim(line0); call csoErr
+          write (csol,'("part:")'); call csoErr
+          write (csol,'("  ",a)') trim(line); call csoErr
+          TRACEBACK; status=1; return
+        end if
+        !~ end time:
         call CSO_ReadFromLine( line, rec_t2, status, sep=self%sep )
-        IF_NOT_OK_RETURN(status=1)
+        if ( status /= 0 ) then
+          write (csol,'("could not extract end time from record ",i0,":")') irec; call csoErr
+          write (csol,'("  ",a)') trim(line0); call csoErr
+          write (csol,'("part:")'); call csoErr
+          write (csol,'("  ",a)') trim(line); call csoErr
+          TRACEBACK; status=1; return
+        end if
 
         ! store:
         call self%rec(irec)%Init( rec_filename, rec_t1, rec_t2, status )

@@ -48,6 +48,15 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 05 Sep 2022, Arjo Segers
 
+Extended error messages to trap incorrect records in listings of satellite data.
+
+  ZD_EmCso/cso_listing.F90
+  ZD_EmCso/cso_string.F90
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05 Sep 2022, Arjo Segers
+
 Added optional argument "fix" to "coord_in_domain" to prevent that
 longitudes are changes by a call to this routine.
 
