@@ -46,6 +46,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 Sep 2022, Dave
+NEW TAG rv4.46
+
+- reflecting addition of CloudJ functionality, and changed results  from
+Willem's changes.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 05 Sep 2022, Arjo Segers
 
 Extended error messages to trap incorrect records in listings of satellite data.
