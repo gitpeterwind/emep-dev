@@ -370,12 +370,13 @@ contains
              ix = find_index(Emis_source(ii)%countrycode ,Country(:)%icode, first_only=.true.)
           end if
           if(ix<0)then
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '
-             ix = find_index("N/A" ,Country(:)%code, first_only=.true.)            
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined for '//trim(Emis_source(ii)%varname)
+             ix = find_index("N/A" ,Country(:)%code, first_only=.true.)
           else
-             Emis_source(ii)%country_ix = ix
              if(dbg)write(*,*)dtxt//'country found '//trim(Country(ix)%code), ix, NEmis_sources
           endif
+          Emis_source(ii)%country_ix = ix
+          Emis_source(ii)%country_ISO = trim(Country(ix)%code)
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
