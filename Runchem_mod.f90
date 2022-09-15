@@ -28,11 +28,11 @@ module RunChem_mod
                               , OH_ix,NH3_ix,SO2_ix,SO4_ix, NO_ix, C5H8_ix
   use Debug_module,      only: DebugCell, DEBUG  & ! -> DEBUG%RUNCHEM
                               ,DEBUG_EMISSTACKS ! MKPS
-  use DefPhotolysis_mod, only: setup_phot
+  ! use DefPhotolysis_mod, only: setup_phot
   use DerivedFields_mod, only: f_2d
   use DryDep_mod,        only: drydep
   use DustProd_mod,      only: WindDust  !DUST -> USES%DUST
-  use FastJ_mod,         only: setup_phot_fastj,phot_fastj_interpolate
+  use CloudJ_mod,        only: setup_phot_cloudj, write_jvals
   use GridValues_mod,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_mod,      only: datewrite
   use LocalFractions_mod,only: lf_chem,lf_aero_pre,lf_aero_pos,lf
@@ -47,10 +47,11 @@ module RunChem_mod
   use PointSource_mod,    only: pointsources, get_pointsources
   use SeaSalt_mod,       only: SeaSalt_flux
   use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis
-  use ZchemData_mod,only: first_call, &
+  use ZchemData_mod,only: first_call, rcphotslice, &
                               M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
   use TimeDate_mod,      only: current_date,daynumber,print_date
+  use DefPhotolysis_mod
 !--------------------------------
   implicit none
   private
@@ -69,6 +70,7 @@ subroutine runchem()
   logical ::  Jan_1st
   logical ::  debug_flag    ! =>   Set true for selected i,j
   logical, save :: first_tstep = .true. ! J16 
+  integer, save :: photstep=-999
   character(len=*), parameter :: sub='RunChem:'
 ! =============================
   nmonth = current_date%month
@@ -145,13 +147,38 @@ subroutine runchem()
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USES%FASTJ)then
-!         call setup_phot_fastj(i,j,errcode,0)! recalculate the column
-        !interpolate (intelligently) from 3-hourly values
-         call  phot_fastj_interpolate(i,j,errcode)
+      if(USES%CLOUDJ)then
+        !call each model tstep or hourly (hard coded)
+        
+        call setup_phot(i,j,errcode) ! only if not all Jvalues are updated by cloudj (current setup)
+
+        if(USES%HRLYCLOUDJ) then
+          if(nhour>photstep) then
+            call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+          endif
+        else
+          call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+        endif
+
+        ! update only those photolysis rates with 1-to-1 correspondence to FastJ
+        rcphot(IDAO3,:) = rcphotslice(IDAO3,:,i,j)
+        rcphot(IDBO3,:) = rcphotslice(IDBO3,:,i,j)
+        rcphot(IDNO2,:) = rcphotslice(IDNO2,:,i,j)
+        rcphot(IDH2O2,:) = rcphotslice(IDH2O2,:,i,j)
+        rcphot(IDHNO3,:) = rcphotslice(IDHNO3,:,i,j)
+        rcphot(IDACH2O,:) = rcphotslice(IDACH2O,:,i,j)
+        rcphot(IDBCH2O,:) = rcphotslice(IDBCH2O,:,i,j)
+        rcphot(IDHONO,:) = rcphotslice(IDHONO,:,i,j)
+        rcphot(IDHO2NO2,:) = rcphotslice(IDHO2NO2,:,i,j)
+        rcphot(IDNO3,:) = rcphotslice(IDNO3,:,i,j)
+        rcphot(IDCH3O2H,:) = rcphotslice(IDCH3O2H,:,i,j)
+
+        ! rcphot(:,:) = rcphotslice(:,:,i,j)    ! uncomment to update all J-values instead
       else
          call setup_phot(i,j,errcode)
       end if
+
+      call write_jvals(i,j)
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
 
@@ -302,6 +329,14 @@ subroutine runchem()
     end do ! j
   end do ! i
   first_tstep = .false.   ! end of first call  over all i,j
+
+  if(nhour > photstep)then
+    if(nhour==23)then ! set hrly counter
+      photstep= -999
+    else
+      photstep= nhour
+    endif
+  endif
 
 end subroutine runchem
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

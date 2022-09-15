@@ -1120,15 +1120,15 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     end do
     sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
     
-    if(MasterProc)write(*,*)"Model pressure and height at level boundaries: (assuming standard atmosphere)"
+    if(MasterProc)write(*,*)"Model pressure and height at level boundaries: (assuming standard atmosphere and P0=Pref)"
     do k=1,KMAX_MID+1
 44    FORMAT(i4,F12.2,A3,F12.2,A3)
-      if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k),'Pa',1000*StandardAtmos_kPa_2_km((A_bnd(k)+P0*B_bnd(k))/1000),'m '
+      if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k),'Pa',1000*StandardAtmos_kPa_2_km((A_bnd(k)+Pref*B_bnd(k))/1000),'m '
     end do
     !test if the top is within the height defined in the meteo files
     if(MasterProc.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)+0.01<A_bnd_met(1)+P0*B_bnd_met(1)))then
-      write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+P0*B_bnd(1)
-      write(*,*)'Pressure at top defined in meteo files is ',A_bnd_met(1)+P0*B_bnd_met(1)
+      write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+Pref*B_bnd(1)
+      write(*,*)'Pressure at top defined from meteo files is ',A_bnd_met(1)+Pref*B_bnd_met(1)
       write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
       call StopAll('Top level too high! Change values in '//trim(Vertical_levelsFile))
     end if
@@ -1145,9 +1145,9 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     
     !test if the lowest levels is thick enough (twice height of highest vegetation?) about 550 Pa = about 46m
     !Deposition scheme is not designes for very thin lowest levels
-    if(MasterProc.and.A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID))<550.0)then
-      write(*,*)'WARNING: lowest level very shallow; ',A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1) -&
-      (A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID)),'Pa'
+    if(MasterProc.and.A_bnd(KMAX_MID+1)+Pref*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+Pref*B_bnd(KMAX_MID))<550.0)then
+      write(*,*)'WARNING: lowest level very shallow; ',A_bnd(KMAX_MID+1)+Pref*B_bnd(KMAX_MID+1) -&
+      (A_bnd(KMAX_MID)+Pref*B_bnd(KMAX_MID)),'Pa'
 !      call StopAll('Lowest level too thin! Change vertical levels definition in '//trim(Vertical_levelsFile))
     end if
     
@@ -1840,6 +1840,9 @@ end subroutine coord_check
 function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob,fix) result(in)
   !-------------------------------------------------------------------!
   ! Is coord (lon/lat) is inside global domain|local domain|grid cell?
+  ! Some longitude range errors can be corrected when fix=.true. (default),
+  ! this will reset the 'lon' argument to a value in [-180,180) ;
+  ! to prevent 'lon' from being changed, use 'fix=.false.'.
   !-------------------------------------------------------------------!
   character(len=*), intent(in) :: domain
   real, intent(inout) :: lon,lat
@@ -1849,9 +1852,13 @@ function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob,fix) result(in)
   logical :: in
   integer :: i,j
   logical :: with_fix
+  ! by default fix values of 'lon' to be inside [-180,180),
+  ! if necessary prevent this using optional flag:
   with_fix = .true.
   if ( present(fix) ) with_fix = fix
+  ! check:
   call coord_check("coord_in_"//trim(domain),lon,lat,fix=with_fix)
+  ! convert to grid cell indices:
   call lb2ij(lon,lat,i,j)
   if(present(iglob))iglob=i
   if(present(jglob))jglob=j
@@ -2126,9 +2133,9 @@ subroutine remake_vertical_levels_interpolation_coeff(filename)
       if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k)
     end do
     !test if the top is within the height defined in the meteo files
-    if(MasterProc.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)+0.01<A_bnd_met(1)+P0*B_bnd_met(1)))then
-      write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+P0*B_bnd(1)
-      write(*,*)'Pressure at top defined in meteo files is ',A_bnd_met(1)+P0*B_bnd_met(1)
+    if(MasterProc.and.External_Levels_Def.and.(A_bnd(1)+Pref*B_bnd(1)+0.01<A_bnd_met(1)+Pref*B_bnd_met(1)))then
+      write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+Pref*B_bnd(1)
+      write(*,*)'Pressure at top defined from meteo files is ',A_bnd_met(1)+P0*B_bnd_met(1)
       write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
       call StopAll('Top level too high! Change values in '//trim(Vertical_levelsFile))
     end if
@@ -2145,9 +2152,9 @@ subroutine remake_vertical_levels_interpolation_coeff(filename)
     
     !test if the lowest levels is thick enough (twice height of highest vegetation?) about 550 Pa = about 46m
     !Deposition scheme is not designes for very thin lowest levels
-    if(MasterProc.and.A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID))<550.0)then
+    if(MasterProc.and.A_bnd(KMAX_MID+1)+Pref*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+Pref*B_bnd(KMAX_MID))<550.0)then
       write(*,*)'WARNING: lowest level very shallow; ',A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1) -&
-      (A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID)),'Pa'
+      (A_bnd(KMAX_MID)+Pref*B_bnd(KMAX_MID)),'Pa'
 !      call StopAll('Lowest level too thin! Change vertical levels definition in '//trim(Vertical_levelsFile))
     end if
     

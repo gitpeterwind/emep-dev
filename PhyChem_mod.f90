@@ -127,17 +127,26 @@ subroutine phyche()
 
   if(USES%POLLEN) call pollen_read ()
   call Add_2timing(15,tim_after,tim_before,"nest: Read")
+
+  ! analysis enabled?
   if(ANALYSIS.and.first_call)then
-    call main_3dvar(status)   ! 3D-VAR Analysis for "Zero hour"
+    ! 3D-VAR Analysis for "Zero hour"
+    call main_3dvar(status)
     call CheckStop(status,"main_3dvar in PhyChem_mod/PhyChe")
+    ! update timing:
     call Add_2timing(T_3DVAR,tim_after,tim_before)
+    ! testing ...
     if(DEBUG_DA_1STEP)then
-      if(MasterProc)&
+      ! info ..
+      if ( MasterProc ) then
         write(*,*) 'ANALYSIS DEBUG_DA_1STEP: only 1st assimilation step'
+      end if
+      ! update derived output:
       call Derived(dt_advec,End_of_Day)
+      ! leave:
       return
-    end if
-  end if
+    end if ! debug da 1step
+  end if  ! analysis at zero hour
 
   ! For safety we initialise instant. values here to zero.
   ! Usually not needed, but sometimes
@@ -264,9 +273,12 @@ subroutine phyche()
 
   call Code_timer(tim_before)
   !====================================
+  ! data-assimilation enabled?
   if(ANALYSIS)then
-    call main_3dvar(status)   ! 3D-VAR Analysis for "non-Zero hours"
+    ! 3D-VAR Analysis for "non-Zero hours"
+    call main_3dvar( status )
     call CheckStop(status,"main_3dvar in PhyChem_mod/PhyChe")
+    ! end timing:
     call Add_2timing(T_3DVAR,tim_after,tim_before)
   end if
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting

@@ -14,6 +14,3 @@ cd ~/work/EMEP_MSC-W_model.rv4.45.OpenSource/Base
 #mpiexec ../code/emepctm # or
 #mpirun  ../code/emepctm # or
 mpprun   ../code/emepctm # depending on the HPC/queue
-
-
-
