@@ -46,6 +46,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Sep 2022, Peter 
+
+when emis_inputlist()%sector == 'GNFR', redefine as'GNFR_CAMS', for
+compatibility with treatment of sectors_name from the emission file (which was
+already redefined automatically).
+It was already done for the emissions in "new format", sectorsName
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 07 Sep 2022, Dave
 NEW TAG rv4.47
 

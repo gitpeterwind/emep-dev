@@ -1011,8 +1011,12 @@ contains
        fname = key2str(fname,'POLL',EMIS_FILE(1))
        call ReadSectorname(fname,cdf_sector_name)
 
-       if (emis_inputlist(iemislist)%sector /= "NOTSET" ) then
+       if (emis_inputlist(iemislist)%sector /= "NOTSET") then
           ! we will use this even if something else is defined in the file
+          if (emis_inputlist(iemislist)%sector == 'GNFR') then
+             if(MasterProc)write(*,*)'Redefined GNFR sector as GNFR_CAMS sector'
+             emis_inputlist(iemislist)%sector = 'GNFR_CAMS'
+          end if
        else if (emis_inputlist(iemislist)%type == "GNFR_CAMSsectors") then
           emis_inputlist(iemislist)%sector = 'GNFR_CAMS'
        else
