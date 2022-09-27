@@ -111,7 +111,7 @@ subroutine phyche()
 
   if(trim(fileName_O3_Top)/="NOTSET" .and.&
        mod(current_date%hour,3)==0.and.current_date%seconds==0)then
-     kstart=6!NB: must be the level corresponding to model top! Hardcoded for now
+     kstart=3!NB: must be the level corresponding to model top! Hardcoded for now
      if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'UPDATING TOP O3 with ',trim(fileName_O3_Top)
      !first available day is 2nd January for 2008,2009,2011,2012:
      nstart=max(1,8*(daynumber-2)+current_date%hour/3)
