@@ -55,6 +55,8 @@
       ,M                   & ! M - atmospheric conc. (was amk)
       ,o2, n2              & ! oxygen, nitrogen
       ,h2o                 & ! water
+      ,methane             & ! ch4
+      ,hydrogen            & ! hydrogen gas
       ,temp                & ! temperature
       ,tinv                & ! inverse temp
       ,cN2O5               & ! mol speed, N2O5

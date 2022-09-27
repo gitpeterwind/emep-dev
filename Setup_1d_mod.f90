@@ -64,7 +64,7 @@ use ZchemData_mod,    only: &
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
   ,rct, rcphot          &  ! chemical reaction rates
   ,rh, temp, tinv, itemp,pp      &  !
-  ,M, o2, n2, h2o     &  ! Air concentrations
+  ,M, o2, n2, h2o, methane, hydrogen     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
   ,cNO2, cNO3              &  ! mol speeds, m/s, kHetero tests
   ,gamN2O5                 &  ! kHetero test - for printout
@@ -447,6 +447,8 @@ contains
    n2(:) = M(:) - o2(:)
 !   o2(:) = 0.2095 *M(:) ! more exact, but prefer o3+n2 to add to 100%
 !   n2(:) = 0.7808 *M(:)
+   methane(:) = 1834 * PPB * M(:) ! hardcoded methane and hydrogen background concentrations
+   hydrogen(:) = 500.0 * PPB * M(:)
    tinv(:) = 1./temp(:)
 
 

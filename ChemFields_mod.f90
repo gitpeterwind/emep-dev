@@ -139,6 +139,7 @@ contains
     allocate(deltaZcm(KCHEMTOP:KMAX_MID))
     rcemis = 0.0
     allocate(rh(KCHEMTOP:KMAX_MID),M(KCHEMTOP:KMAX_MID),o2(KCHEMTOP:KMAX_MID))
+    allocate(methane(KCHEMTOP:KMAX_MID),hydrogen(KCHEMTOP:KMAX_MID))
     allocate(n2(KCHEMTOP:KMAX_MID),h2o(KCHEMTOP:KMAX_MID),temp(KCHEMTOP:KMAX_MID))
     allocate(tinv(KCHEMTOP:KMAX_MID),pp(KCHEMTOP:KMAX_MID))
     allocate(itemp(KCHEMTOP:KMAX_MID))
