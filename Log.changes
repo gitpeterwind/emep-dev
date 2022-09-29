@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 Sep 2022, Dave
+
+Added output of "New format" emissions to RunLog, wth EMTBL label (cf EMTAB
+from emis_inputlist methods). Also produces summary table at end of
+RunLog.
+
+NOTE: only tested for simple annual emission input. BE CAREFUL and suspicious 
+for other situations.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Sep 2022, Peter 
 
 when emis_inputlist()%sector == 'GNFR', redefine as'GNFR_CAMS', for

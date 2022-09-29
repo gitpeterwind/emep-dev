@@ -583,17 +583,24 @@ contains
     logical, save ::first_call = .true.
     real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
     real, allocatable, dimension(:,:,:) :: sumemis_sec ! Sum of emissions per country and sector
+    real, allocatable, dimension(:,:) :: xsumemis ! DS testing for EMTBL output. Seems to work for Ncalls = 1, BUT BE CAREFUL
     logical :: writeoutsums
     logical :: writeout !if something to show and writeoutsums=T
+    integer, save :: ncalls = 0
 
     writeoutsums = first_call .or. step_main<10 .or. DEBUG%EMISSIONS
     writeout = .false. !init
+    ncalls = ncalls + 1
 
     ts1=make_timestamp(current_date)
     coming_date = current_date
     coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
     gridyear = GRIDWIDTH_M * GRIDWIDTH_M * 3600*24*nydays*1.0E-6!kg/m2/s -> kt/year
 
+    if ( ncalls == 1 .and. NEmisFile_sources > 0 ) then 
+      allocate(xsumemis(NLAND,NEMIS_FILE))
+      xsumemis = 0.0
+    end if
     do n = 1, NEmisFile_sources
        if(writeoutsums .or. EmisFiles(n)%periodicity=='monthly')then
           writeoutsums = .true.
@@ -829,6 +836,7 @@ contains
                    do j = 1,ljmax
                       do i = 1,limax
                          sumemis(iland,iem) = sumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
+                         xsumemis(iland,iem) = xsumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
                          if(SecEmisTotalsWanted)&
                               sumemis_sec(iland,is,iem) = sumemis_sec(iland,is,iem)&
                               + Emis_source_2D(i,j,is) * gridyear * xmd(i,j)
@@ -865,14 +873,17 @@ contains
           if(SecEmisTotalsWanted)CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis_sec,&
                NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
           if(me==0)then
-             write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
-             write(*     ,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)
+             !EMTABDS write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
+             call PrintLog("#EMTBL Total emissions by countries for "//trim(EmisFiles(n)%filename)//' (Gg/year) ')
+             write(*     ,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
+             write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
              fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
              do ic = 1, NLAND
                 ccsum = sum( sumemis(ic,:) )
                 icc=Country(ic)%icode
                 if ( ccsum > 0.0 )then
-                   write(*,     fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
+                   write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                   write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
                 end if
              end do
              if(SecEmisTotalsWanted)then
@@ -897,8 +908,26 @@ contains
        endif
     enddo
     if(writeout)then
-       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
-       if(me==0 .and. NEmisFile_sources>0)write(*     ,fmt)'EMTAB', 999,'TOTAL    ',emsum(:)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,xsumemis,&
+               NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
+       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
+       if(me==0 .and. NEmisFile_sources>0) then
+          call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
+          write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
+          write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
+          fmt="(a5,i9,i4,1x,a9,3x,30(f12.2,:))"  !# DSTMP add ncalls
+          do ic = 1, NLAND
+             ccsum = sum( xsumemis(ic,:) )
+             icc=Country(ic)%icode
+             if ( ccsum > 0.0 )then
+                write(*,     fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                write(IO_LOG,fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+             end if
+          end do
+          write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+          write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+       end if
+       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
     endif
     if (allocated(sumemis)) deallocate(sumemis)
