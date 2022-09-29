@@ -8,8 +8,9 @@ use Chemfields_mod,        only: xn_adv
 use ChemDims_mod,          only: NSPEC_SHL
 use ChemGroups_mod,        only: chemgroups
 use ChemSpecs_mod,         only: species_adv
+use Functions_mod,         only: Tpot_2_T
 use DerivedFields_mod,     only: f_3d,d_3d ! debug output
-use GridValues_mod,        only: A_mid,B_mid,A_bnd,B_bnd
+use GridValues_mod,        only: A_mid,B_mid,A_bnd,B_bnd, A_bnd_met, B_bnd_met
 use MetFields_mod,         only: roa,th,ps
 use Config_module,         only: KMAX_MID,KMAX_BND,dt_advec,MasterProc,&
                                 IOU_INST,num_lev3d,lev3d
@@ -97,17 +98,17 @@ subroutine gravset()
   do j = lj0,lj1
     do i = li0,li1
       do k = 1,KMAX_MID
-        ! dynamic viscosity of air after Prup.Klett in [Pa s]
-        tempc = th(i,j,k,1) - 273.15
+        p_mid(k) = A_mid(k)+B_mid(k)*ps(i,j,1)
+        ! dynamic viscosity of air after Prup.Klett in [Pa s] (1 Pa/s = 10 Poise). [T] in celsius
+        tempc = th(i,j,k,1)* Tpot_2_T( p_mid(k) ) - 273.15
         if (tempc >= 0.0 ) then
           zvis(k) = (1.718 + 0.0049*tempc)*1.E-5
         else
           zvis(k) = (1.718 + 0.0049*tempc - 1.2E-05*(tempc**2))*1.E-5
         end if
 
-        ! mean free path of air (Prupp. Klett) in [10^-6 m]
-        p_mid(k) = A_mid(k)+B_mid(k)*ps(i,j,1)
-        zlair(k) = 0.066 *(1.01325E+5/p_mid(k))*(th(i,j,k,1)/293.15)*1.E-06
+        ! mean free path of air (Prupp. Klett) in [10^-6 m], [T] in Kelvin
+        zlair(k) = 0.066 *(1.01325E+5/p_mid(k))*(th(i,j,k,1)* Tpot_2_T( p_mid(k) )/293.15)*1.E-06
 
         ! air mass auxiliary  variable --> zdp1 [kg/(m^2 *s)]
         p_full(k) = A_bnd(k)+B_bnd(k)*ps(i,j,1)
