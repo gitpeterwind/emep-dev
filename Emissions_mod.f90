@@ -914,7 +914,7 @@ contains
        if(me==0 .and. NEmisFile_sources>0) then
           call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
           write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
-          write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
+          write(IO_LOG,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
           fmt="(a5,i9,i4,1x,a9,3x,30(f12.2,:))"  !# DSTMP add ncalls
           do ic = 1, NLAND
              ccsum = sum( xsumemis(ic,:) )
