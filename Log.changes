@@ -46,6 +46,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Sep 2022, Willem
+
+Fixed a bug in the gravitational settling module(s) where potential temperature 
+was treated like absolute temperature in the calculations for the dynamical 
+viscosity and mean path of air. 
+
+Updated Setup_1d to include specified methane and hydrogen background 
+concentrations, which only come into effect when these species are defined 
+with <> brackets in the CM files (like H2O, O2 and N2 are in EmChem19).  
+
+Other minor tweaks involve cloud liquid water content being a mandatory field
+when CloudJ is used to calculate photolysis rates (as a bare minimum), and that
+the read-in level of the newly downloaded O3 top boundary files matches that
+of the EMEP top layer (maybe this hardcoding should be avoided in the future).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 29 Sep 2022, Dave
 
 Added output of "New format" emissions to RunLog, wth EMTBL label (cf EMTAB
