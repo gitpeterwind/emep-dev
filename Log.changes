@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 Oct 2022, Willem
+
+Fixed the equation that calculates the gravitational settling velocity (v_s) for ash
+and other aerosol particles. Previously, a wrong notation for the drag coefficient
+was used in determining a single expression for v_s. 
+
+Together with the temperature bug fix from below, newly calculated v_s values are 
+about a factor of two greater than before. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 Sep 2022, Willem
 
 Fixed a bug in the gravitational settling module(s) where potential temperature 

@@ -51,6 +51,7 @@ subroutine gravSettling()
   integer :: icmp, idef, ispec, nadv !DS
   real :: DpgV, tmpVal !DS
   logical :: dbgIJ
+  real                        :: quad_a, quad_b, quad_c
 
 ! need to calculate
 ! zvis -> dynamic viscosity of air.. dependent on temperature
@@ -155,17 +156,31 @@ subroutine gravSettling()
 
 
         do k = 1,KMAX_MID-1
+          ! combine equations for terminal fall velocity (v), drag coefficient (C_d), and Reynolds number (Re) into
+          ! a single quadratic expression in v. Equations from doi:10.5194/gmd-10-1927-2017
+          !
+          ! v**2 = (4 * g * ( density_p - density_a) * d ) / (3 * C_d * density_a)
+          ! C_d = (24 / Re) * F**-0.828 + 2 * SQRT(1.07 - F)
+          ! Re = v * density_a * d / zvis
+          !
+          ! Combing the above three expressions yields
+          !
+          ! [6 * density_a * SQRT(1.07 - F)] * v**2 + [72 * zvis * F**-0.828 / d] * v + [-4 * g * (density_p - density_a) * d] = 0
+
+          quad_a = 6.*roa(i,j,k,1)*SQRT(1.07-F) 
+          quad_b = 72.*zvis(k)*F**(-0.828)/DpgV
+          quad_c = -4.*GRAV*(density-roa(i,j,k,1))*DpgV
+
           knut = 2*zlair(k)/DpgV !DS grav_sed(b)%diameter
-          !DS ztemp = 2.*((grav_sed(b)%diameter/2)**2)*(density-roa(i,j,k,1))*GRAV/ &! roa [kg m-3]
-          ztemp = 2.*((DpgV/2)**2)*(density-roa(i,j,k,1))*GRAV/ &! roa [kg m-3]
-                  (9.*zvis(k))![m/s]
+          ! apply abc-formula (quadratic formula). 
+          ! The -b + SQRT(D) term is always positive, whereas -b - SQRT(D) is always negative (thus having no physical interpretation)
+          ztemp = (-quad_b + SQRT(quad_b**2 - 4.*quad_a*quad_c)) / (2 * quad_a) 
+
           ! with Cunningham slip-flow correction
           vt = ztemp*slinnfac*     &
               (1.+ 1.257*knut+0.4*knut*EXP(-1.1/(knut))) ![m/s]
           !DS Re = grav_sed(b)%diameter*vt/(zvis(k)/roa(i,j,k,1))
           Re = DpgV*vt/(zvis(k)/roa(i,j,k,1))
-          vt_old = vt
-          vt = vt/wil_hua
           num_sed(k)= vt
 
           ! calculation of sedimentation flux zflux[kg/(m^2 s)]=zsedl*zdp1
