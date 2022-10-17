@@ -46,6 +46,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 Oct 2022, Willem
+
+Bug fix in the call to LogNormFracBelow in Derived_mod.f90, used to calculate
+the PM25 fraction of coarse nitrate. Fraction changes from 0.13 to 0.20.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6 Oct 2022, Willem
 
 Fixed the equation that calculates the gravitational settling velocity (v_s) for ash
