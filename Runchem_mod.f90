@@ -148,10 +148,6 @@ subroutine runchem()
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
       if(USES%CLOUDJ)then
-        !call each model tstep or hourly (hard coded)
-        
-        call setup_phot(i,j,errcode) ! only if not all Jvalues are updated by cloudj (current setup)
-
         if(USES%HRLYCLOUDJ) then
           if(nhour>photstep) then
             call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
@@ -159,21 +155,7 @@ subroutine runchem()
         else
           call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
         endif
-
-        ! update only those photolysis rates with 1-to-1 correspondence to FastJ
-        rcphot(IDAO3,:) = rcphotslice(IDAO3,:,i,j)
-        rcphot(IDBO3,:) = rcphotslice(IDBO3,:,i,j)
-        rcphot(IDNO2,:) = rcphotslice(IDNO2,:,i,j)
-        rcphot(IDH2O2,:) = rcphotslice(IDH2O2,:,i,j)
-        rcphot(IDHNO3,:) = rcphotslice(IDHNO3,:,i,j)
-        rcphot(IDACH2O,:) = rcphotslice(IDACH2O,:,i,j)
-        rcphot(IDBCH2O,:) = rcphotslice(IDBCH2O,:,i,j)
-        rcphot(IDHONO,:) = rcphotslice(IDHONO,:,i,j)
-        rcphot(IDHO2NO2,:) = rcphotslice(IDHO2NO2,:,i,j)
-        rcphot(IDNO3,:) = rcphotslice(IDNO3,:,i,j)
-        rcphot(IDCH3O2H,:) = rcphotslice(IDCH3O2H,:,i,j)
-
-        ! rcphot(:,:) = rcphotslice(:,:,i,j)    ! uncomment to update all J-values instead
+        rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
       else
          call setup_phot(i,j,errcode)
       end if

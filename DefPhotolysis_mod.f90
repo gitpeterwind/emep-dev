@@ -93,14 +93,12 @@
             IDHONO = 18  & ! added as extended
            ,IDNO3_NO = 19 & ! added
            ,IDNO3_NO2 = 20 & ! added
-           ,IDMEK     = IDCH3COX & ! just name change CHECK
+           ,IDMEK     = IDCH3COX ! just name change CHECK
     !       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
-           ,IDRCOCHO  = IDHCOHCO & ! Just name change CHECK (these are the indices used in chem)
-           ,IDCHOCHO  = IDHCOHCO   ! Just name change CHECK
-    ! NB: if(uses%cloudj) IDRCOCHO = IDRCOHCO ! fastj includes mglyox dissociation
-    
+        integer, public, save :: IDRCOCHO
+        integer, public, save :: IDCHOCHO
     ! In EMEP code, we use IDBO3 for O1D production and IDAO3 for OP production
     ! MCM indices:
     
@@ -137,7 +135,21 @@
         integer, save, public :: photo_out_ix_no2 = -1
         integer, save, public :: photo_out_ix_o3a = -1
         integer, save, public :: photo_out_ix_o3b = -1
-    
+        integer, save, public :: photo_out_ix_h2o2 = -1
+        integer, save, public :: photo_out_ix_hno3 = -1
+        integer, save, public :: photo_out_ix_ach2o = -1
+        integer, save, public :: photo_out_ix_bch2o = -1
+        integer, save, public :: photo_out_ix_hono = -1
+        integer, save, public :: photo_out_ix_ho2no2 = -1
+        integer, save, public :: photo_out_ix_no3 = -1
+        integer, save, public :: photo_out_ix_ch3o2h = -1 
+        integer, save, public :: photo_out_ix_MEK = -1 
+        integer, save, public :: photo_out_ix_N2O5 = -1 
+        integer, save, public :: photo_out_ix_GLYOX = -1 
+        integer, save, public :: photo_out_ix_CH3CHO = -1 
+        integer, save, public :: photo_out_ix_ACETON = -1 
+        integer, save, public :: photo_out_ix_MGLYOX = -1 
+        integer, save, public :: photo_out_ix_BIACET = -1 
      !/ subroutines: 
     
       public :: readdiss
@@ -166,19 +178,35 @@
             if(newseason==4)season3='oct' 
     
             if(first_call)then
-               allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
-               allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
-               allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
+              IDRCOCHO  = IDHCOHCO ! business as usual when cloudj is not used
+              IDCHOCHO  = IDHCOHCO
+              if(uses%cloudj) IDRCOCHO = IDRCOHCO ! cloudj includes mglyox 
+
+              allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
+              allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
+              allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
     
-               if(allocated(f_3d)) &
-                 photo_out_ix_no2 = find_index("D3_J(NO2)", f_3d(:)%subclass)
-                 photo_out_ix_o3a = find_index("D3_J(O3a)", f_3d(:)%subclass)
-                 photo_out_ix_o3b = find_index("D3_J(O3b)", f_3d(:)%subclass)
-    
-               if(photo_out_ix_no2>0 .and. me==0)write(*,*)'will output tabulated J(NO2)', photo_out_ix_no2
-               if(photo_out_ix_o3a>0.and.me==0)write(*,*)'will output tabulated jO3a', photo_out_ix_o3a
-               if(photo_out_ix_o3b>0.and.me==0)write(*,*)'will output tabulated jO3b', photo_out_ix_o3b
-               
+              if(allocated(f_3d).and.uses%cloudj/=.true.) then
+                photo_out_ix_no2 = find_index("D3_J(NO2)", f_3d(:)%subclass)
+                photo_out_ix_o3a = find_index("D3_J(O3a)", f_3d(:)%subclass)
+                photo_out_ix_o3b = find_index("D3_J(O3b)", f_3d(:)%subclass)
+                photo_out_ix_h2o2 = find_index("D3_J(H2O2)", f_3d(:)%subclass)
+                photo_out_ix_hno3 = find_index("D3_J(HNO3)", f_3d(:)%subclass)
+                photo_out_ix_ach2o = find_index("D3_J(ACH2O)", f_3d(:)%subclass)
+                photo_out_ix_bch2o = find_index("D3_J(BCH2O)", f_3d(:)%subclass)
+                photo_out_ix_hono = find_index("D3_J(HONO)", f_3d(:)%subclass)
+                photo_out_ix_ho2no2 = find_index("D3_J(HO2NO2)", f_3d(:)%subclass)
+                photo_out_ix_no3 = find_index("D3_J(NO3)", f_3d(:)%subclass)
+                photo_out_ix_ch3o2h = find_index("D3_J(CH3O2H)", f_3d(:)%subclass)
+                photo_out_ix_MEK = find_index("D3_J(MEK)", f_3d(:)%subclass)
+                photo_out_ix_N2O5 = find_index("D3_J(N2O5)", f_3d(:)%subclass)
+                photo_out_ix_GLYOX = find_index("D3_J(GLYOX)", f_3d(:)%subclass)
+                photo_out_ix_CH3CHO = find_index("D3_J(CH3CHO)", f_3d(:)%subclass)
+                photo_out_ix_ACETON = find_index("D3_J(ACETON)", f_3d(:)%subclass)
+                photo_out_ix_MGLYOX = find_index("D3_J(MGLYOX)", f_3d(:)%subclass)
+                photo_out_ix_BIACET = find_index("D3_J(BIACET)", f_3d(:)%subclass)
+                if(me==0)write(*,*) 'Outputting tabulated J-values specified in config.'
+              end if              
             end if
     !    Open, read and broadcast clear sky rates
     !---------------
