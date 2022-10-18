@@ -55,6 +55,9 @@ forest fire (biomass burning), dust, and sulphate.
 CloudJ photolysis rates are now also mapped onto all photochemical reactions
 present in EmChem19. 
 
+Photolysis rate definitions for chemistry that includes explicit glyoxal 
+channels and PAN photolysis are now included.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 Oct 2022, Willem
 

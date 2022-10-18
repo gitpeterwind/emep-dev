@@ -72,6 +72,10 @@ MODULE CloudJ_mod
     integer, save :: photo_out_ix_ACETON_fj = -1
     integer, save :: photo_out_ix_MGLYOX_fj = -1 ! RCOCHO
     integer, save :: photo_out_ix_BIACET_fj = -1 ! IDCH3COY
+    integer, save :: photo_out_ix_PAN_fj = -1 
+    integer, save :: photo_out_ix_GLYOXA_fj = -1
+    integer, save :: photo_out_ix_GLYOXB_fj = -1 
+    integer, save :: photo_out_ix_GLYOXC_fj = -1 
 
     integer, save :: sulph_i, dustfroad_i, dustfwb_i, dustfsah_i
     integer, save :: dustcroad_i, dustcwb_i, dustcsah_i
@@ -297,6 +301,10 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             photo_out_ix_ACETON_fj = find_index("D3_J(ACETON)", f_3d(:)%subclass)
             photo_out_ix_MGLYOX_fj = find_index("D3_J(MGLYOX)", f_3d(:)%subclass)
             photo_out_ix_BIACET_fj = find_index("D3_J(BIACET)", f_3d(:)%subclass)
+            photo_out_ix_PAN_fj = find_index("D3_J(PAN)", f_3d(:)%subclass)
+            photo_out_ix_GLYOXA_fj = find_index("D3_J(GLYOXA)", f_3d(:)%subclass)
+            photo_out_ix_GLYOXB_fj = find_index("D3_J(GLYOXB)", f_3d(:)%subclass)
+            photo_out_ix_GLYOXC_fj = find_index("D3_J(GLYOXC)", f_3d(:)%subclass)
             if(me==0)write(*,*) 'Outputting CloudJ J-values specified in config.'
           endif
 
@@ -720,7 +728,13 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
           rcphotslice(IDHCOHCO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) + VALJXX(L,JIND(66)) + VALJXX(L,JIND(67)) ! Glyox channel qyields depend on wavelength (MCM webpage), EMEP reaction assumes fixed qyields
           rcphotslice(IDCH3COY,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(72)) ! BIACET cross-section and q-yield from MCM database
-      end do
+
+          ! cloud-j specific reactions which may be present in chemistry scheme
+          rcphotslice(IDGLYOXA,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) ! glyox channels a, b and c
+          rcphotslice(IDGLYOXB,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(66))
+          rcphotslice(IDGLYOXC,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(67))
+          rcphotslice(IDPAN,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(52))      
+    end do
 
     first_call=.false.
     LPRTJ=.false.
@@ -917,6 +931,26 @@ subroutine write_jvals(i_emep,j_emep)
     if(photo_out_ix_BIACET_fj>0)then
       d_3d(photo_out_ix_BIACET_fj,i_emep,j_emep,1:num_lev3d,IOU_INST) = &
         rcphot(IDCH3COY,max(KCHEMTOP,lev3d(1:num_lev3d))) 
+    endif
+
+    if(photo_out_ix_PAN_fj>0)then
+      d_3d(photo_out_ix_PAN_fj,i_emep,j_emep,1:num_lev3d,IOU_INST) = &
+        rcphot(IDPAN,max(KCHEMTOP,lev3d(1:num_lev3d))) 
+    endif
+
+    if(photo_out_ix_GLYOXA_fj>0)then
+      d_3d(photo_out_ix_GLYOXA_fj,i_emep,j_emep,1:num_lev3d,IOU_INST) = &
+        rcphot(IDGLYOXA,max(KCHEMTOP,lev3d(1:num_lev3d))) 
+    endif
+
+    if(photo_out_ix_GLYOXB_fj>0)then
+      d_3d(photo_out_ix_GLYOXB_fj,i_emep,j_emep,1:num_lev3d,IOU_INST) = &
+        rcphot(IDGLYOXB,max(KCHEMTOP,lev3d(1:num_lev3d))) 
+    endif
+
+    if(photo_out_ix_GLYOXC_fj>0)then
+      d_3d(photo_out_ix_GLYOXC_fj,i_emep,j_emep,1:num_lev3d,IOU_INST) = &
+        rcphot(IDGLYOXC,max(KCHEMTOP,lev3d(1:num_lev3d))) 
     endif
 
 end subroutine write_jvals

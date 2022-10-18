@@ -36,7 +36,7 @@
     
        integer, public, parameter :: &
                  NRCPHOT          = 17  &! Number of photolytic reactions
-                ,NRCPHOTextended  = 20
+                ,NRCPHOTextended  = 24
        
        integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
        real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
@@ -93,7 +93,11 @@
             IDHONO = 18  & ! added as extended
            ,IDNO3_NO = 19 & ! added
            ,IDNO3_NO2 = 20 & ! added
-           ,IDMEK     = IDCH3COX ! just name change CHECK
+           ,IDMEK     = IDCH3COX & ! just name change CHECK
+           ,IDPAN = 21 & ! some cloud j specific reactions here
+           ,IDGLYOXA = 22 &
+           ,IDGLYOXB = 23 & 
+           ,IDGLYOXC = 24
     !       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
