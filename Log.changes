@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 Oct 2022, Willem
+
+Added and expanded aerosol functionality in the photolysis rate calculations
+using Cloud-J. The latter now takes into account the effects of sea salt,
+forest fire (biomass burning), dust, and sulphate. 
+
+CloudJ photolysis rates are now also mapped onto all photochemical reactions
+present in EmChem19. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 Oct 2022, Willem
 
 Bug fix in the call to LogNormFracBelow in Derived_mod.f90, used to calculate
