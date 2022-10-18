@@ -115,16 +115,18 @@ logical,save:: &
   overwrite=.true. ! append to existing template_write if false
 
 type(date), parameter :: &
-  date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&
-  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch,&
-  date_first_alder=date_first_olive,date_last_alder=date_last_birch
+  date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&      ! Mar-Jul
+  date_first_olive=date(-1,1,1,0,0),date_last_olive=date(-1,7,1,0,0),&      ! Jan-Jun
+  date_first_alder=date_first_olive,date_last_alder=date_last_olive,&       ! Jan-Jun
+  ! ragweed uses HS_startday_rweed and EndCDThr_rweed
+  date_first_rweed=date(-1,6,1,0,0),date_last_rweed=date(-1,11,1,0,0)       ! Jun-Oct
 type(date), save :: & ! will be updated when grass_time.nc is read
-  date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0),&
-  date_first_mugwort1=date(-1,2,7,0,0),date_last_mugwort1=date(-1,9,23,0,0),&
-  date_first_mugwort2=date(-1,2,7,0,0),date_last_mugwort2=date(-1,9,23,0,0),&
-  date_first_mugwort3=date(-1,2,7,0,0),date_last_mugwort3=date(-1,9,23,0,0),&
-  date_first_mugwort4=date(-1,2,7,0,0),date_last_mugwort4=date(-1,9,23,0,0),&
-  date_first_mugwort5=date(-1,2,7,0,0),date_last_mugwort5=date(-1,9,23,0,0)
+  date_first_grass=date(-1,3,1,0,0),date_last_grass=date(-1,9,1,0,0),&      ! Mar-Aug
+  date_first_mugwort1=date_first_rweed,date_last_mugwort1=date_last_rweed,& ! Jun-Oct
+  date_first_mugwort2=date_first_rweed,date_last_mugwort2=date_last_rweed,&
+  date_first_mugwort3=date_first_rweed,date_last_mugwort3=date_last_rweed,&
+  date_first_mugwort4=date_first_rweed,date_last_mugwort4=date_last_rweed,&
+  date_first_mugwort5=date_first_rweed,date_last_mugwort5=date_last_rweed
 
 real, save, allocatable, dimension(:,:) :: &
   rweed_start,        & ! day when daylight length goes below 14.5h (StartCDThr)
