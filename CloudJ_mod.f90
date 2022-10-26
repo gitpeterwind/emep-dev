@@ -311,7 +311,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           write(*,*) 'Cloud water (1) and ice (2) for photolysis rate calculations: ' &
                      ,foundcloudwater, foundcloudicewater
 
-          if(foundcloudicewater/=.true.) write(*,*) 'WARNING: Running CloudJ without cloud ice water content: ' &
+          if(.not.foundcloudicewater) write(*,*) 'WARNING: Running CloudJ without cloud ice water content: ' &
                                                 , 'Might overestimate photolysis rates.'
     endif
 

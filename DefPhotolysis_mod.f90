@@ -190,7 +190,7 @@
               allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
               allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
     
-              if(allocated(f_3d).and.uses%cloudj/=.true.) then
+              if(allocated(f_3d).and.(.not.uses%cloudj)) then
                 photo_out_ix_no2 = find_index("D3_J(NO2)", f_3d(:)%subclass)
                 photo_out_ix_o3a = find_index("D3_J(O3a)", f_3d(:)%subclass)
                 photo_out_ix_o3b = find_index("D3_J(O3b)", f_3d(:)%subclass)
