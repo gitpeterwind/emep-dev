@@ -170,6 +170,7 @@ integer, public, parameter :: &
   IBC_CH4 = NGLOB_BC + 2,     &
   NTOT_BC  = NGLOB_BC + NMISC_BC
 
+real, public, save :: METHBGN ! for use in Setup_1d_mod
 ! misc_bc specifies concentrations of these species:
 real, public, allocatable,save, dimension(:,:) :: misc_bc
 
@@ -829,6 +830,7 @@ subroutine My_bcmap(iyr_trend)
      call PrintLog(txt)
   end if
 
+  METHBGN = top_misc_bc(IBC_CH4) ! for use in Setup_1d_mod fixed CH4 
   top_misc_bc(IBC_CH4) =  top_misc_bc(IBC_CH4) * PPB
   top_misc_bc(IBC_H2)  =  600.0 * PPB
 
