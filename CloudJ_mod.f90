@@ -721,7 +721,6 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           rcphotslice(IDNO3_NO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(11))  ! sometimes NO3 channels are separately defined
           rcphotslice(IDNO3_NO2,kmax_bnd-L,i_emep,j_emep)= VALJXX(L,JIND(12))  ! sometimes NO3 channels are separately defined
           rcphotslice(IDCH3O2H,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(8))   ! Methyl hydroperoxide. Used in many photolysis reactions. See Blitz et al. 2005
-          rcphotslice(IDN2O5,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(13))  ! 13 N2O5      PHOTON    NO2       NO3  NB: Not always in use, low concentrations during daytime due to NO3 photolysis (Wayne et al 2011)
           rcphotslice(IDCH3COX,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(61)) + VALJXX(L,JIND(62)) ! IDCH3COX = IDMEK. EMEP different assumption about channels (1.0/0.0 vs 0.85/0.15 for cloudJ) 
           rcphotslice(IDRCOCHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(64))  ! 64 CH3COCHO  PHOTON    CH3CO     CO  1.000 /MGlyxl/ NB: IDRCOCHO = IDRCOHCO = 12
           rcphotslice(IDCH3CHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(54))  ! 54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
