@@ -48,7 +48,7 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Nov 2022, Dave
 
-Added  ffire_c emissions line for EmChem19a, EmChem19r, EmChem19rp, since
+Added  ffire_c emissions line for EmChem19a, EmChem19p, EmChem19r, EmChem19rp, since
 GFAS has substantial emissions in coarse mode.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
