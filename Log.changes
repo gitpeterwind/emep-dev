@@ -46,6 +46,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 Nov 2022, Dave
+
+Adding nonForest as ecosystem category - everything which isn't forest (includes
+seminat, water, ..)
+
+EcoSystem_mod - adding nonForest 
+My_Derived_mod - adding Area outputs of Forest and nonForest
+
+Debug_module - switched DEBUG_ECOSYSTEMS to DEBUG%ECOSYSTEMS
+DryDep_mod   - switched DEBUG_ECOSYSTEMS to DEBUG%ECOSYSTEMS
+
+config_emep.nml - adding both Forest and nonForest to defaults
+                  updated runlabel2 to rv4_47
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Nov 2022, Dave
 
 Added  ffire_c emissions line for EmChem19a, EmChem19p, EmChem19r, EmChem19rp, since
@@ -53,7 +70,7 @@ GFAS has substantial emissions in coarse mode.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Oct 2022, Willem
-
+ryDe
 Added and expanded aerosol functionality in the photolysis rate calculations
 using Cloud-J. The latter now takes into account the effects of sea salt,
 forest fire (biomass burning), dust, and sulphate. 

@@ -47,7 +47,7 @@ use Config_module,        only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                               USES, MasterProc, PPBINV, IOU_INST,&
                               KUPPER, NLANDUSEMAX,&
                               SO2_ix,NH3_ix,NH4_f_ix,NO3_f_ix,NO2_ix,O3_ix
-use Debug_module,         only: DEBUG, DEBUG_ECOSYSTEMS
+use Debug_module,         only: DEBUG
 use DerivedFields_mod,    only: d_2d, f_2d, VGtest_out_ix
 use DO3SE_mod,            only: do3se
 use EcoSystem_mod,        only: EcoSystemFrac, Is_EcoSystem,  &
@@ -187,7 +187,7 @@ contains
    EcoSystemFrac(:,:,:) = 0.0
    do j = 1, ljmax
      do i = 1, limax
-       debug_flag = ( DEBUG_ECOSYSTEMS .and. debug_proc .and. &
+       debug_flag = ( DEBUG%ECOSYSTEMS .and. debug_proc .and. &
           i == debug_li .and. j == debug_lj )
 
        nlc = LandCover(i,j)%ncodes
@@ -198,7 +198,7 @@ contains
               if( Is_EcoSystem(iEco,lc) ) then
                  EcoSystemFrac(iEco,i,j) = EcoSystemFrac(iEco,i,j) + coverage
                 if( debug_flag ) then
-                     write(6,"(a,2i4,a12,3f10.4)") "ECOSYS AREA ",&
+                     write(6,"(a,2i4,a18,3f10.4)") "ECOSYS AREA ",&
                      ilc, lc, "=> "//trim(DEF_ECOSYSTEMS(iEco)), &
                          coverage, EcoSystemFrac(iEco,i,j)
                 end if

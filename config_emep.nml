@@ -2,7 +2,7 @@
   GRID      = 'EECCA',
   iyr_trend = 2018,
   runlabel1 = 'Base',
-  runlabel2 = 'rv4_42',
+  runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
   enddate   = 2018,01,01,24,
 
@@ -636,6 +636,8 @@ OutputVegO3=
 
   DDEP_ECOS =
    'Grid     ','YMD',
+   'Forest    ','YM',
+   'nonForest ','YM',
    'Conif    ','YM',
    'Seminat  ','YM',
    'Water_D  ','Y',
