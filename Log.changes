@@ -46,6 +46,24 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Nov 2022, Dave
+
+Adding ISORROPIA back as aerosol solver. PRELIMINARY!!! 
+  Needs more testing, and we need to add HCl etc, but it seems to work
+  numerically at least. (I had to add checks for negative concentrations
+  in AerosolCalls though, but the ones I saw were very small, and mass
+  balance hasn't deterioated verh much.)
+
+AeroConstants_mod  - just refer to ISORROPIA now, but can change in config anyway
+
+AerosolCalls - now has ISORROPIA as possibility
+
+Makefile - now with isocom.f90, isorev.f90, ISOFWD.f90 
+
+renamed FUTURE_xxx to xxx.f90 for xxx = isocom, isorev, ISOFWD
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4 Nov 2022, Dave
 
 Adding nonForest as ecosystem category - everything which isn't forest (includes

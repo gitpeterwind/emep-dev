@@ -16,6 +16,7 @@ module AeroConstants_mod
    type, public :: aero_t
      ! EMEP only
      character(len=15) :: EQUILIB  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics 
+                                            ! or IN TESTING (Nov 2022) : 'ISORROPIA'
      character(len=15) :: EQUILIB_WATER  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics for PM water
      logical          :: DYNAMICS = .false.
      integer          :: NSIZE    = 7
