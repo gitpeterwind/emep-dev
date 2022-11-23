@@ -46,6 +46,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 Nov 2022, Dave
+
+Prelim code changes to help Norwegian Tålegrenser project. To be completed by Qing.
+
+EcoSystem_mod.f90 - added CF and DF to DEF_ECOSYSTEMS, with new param LAST_ECO.
+  Should be continued with remaining land-cover categories for Norway work.
+
+My_Derived_mod.f90 - adding Area_ for CF, DF etc to D2_EXTRA
+
+MosaicOutputs - tiny comment change
+
+config_emep.nml - added CF, DF to DDEP_ECOS, and NO2 example in DDEP_WANTED
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Nov 2022, Dave
 
 Adding ISORROPIA back as aerosol solver. PRELIMINARY!!! 

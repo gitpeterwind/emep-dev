@@ -117,13 +117,18 @@ character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
 
 !============ Extra parameters for model evaluation: ===================!
 !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
+!Nov2022 Qing - adjust numbers here (from +2 to +16?)
+character(len=TXTLEN_DERIV), public, parameter, dimension(7+2) :: &
   D2_EXTRA = [character(len=TXTLEN_DERIV):: &
     ! all array members will have len=TXTLEN_DERIV
     "Area_Grid_km2","Area_Conif_Frac","Area_Decid_Frac",&
     "Area_Forest_Frac", &
     "Area_nonForest_Frac", &
-    "Area_Seminat_Frac","Area_Crops_Frac"]
+    "Area_Seminat_Frac","Area_Crops_Frac", &
+!Nov2022 Qing - add LCs here
+    "Area_CF_Frac", &
+    "Area_DF_Frac" &
+     ]
 !   "SoilWater_deep","SoilWater_uppr,&! See SMI_deep above
 !   "AreaPOLL"]                       ! Future usage. Should change name too
 
