@@ -31,11 +31,12 @@ integer, public, parameter :: FULL_LCGRID=0
 ! the grid in practice.
 
 ! Nov2022 - adding Tålegrenser LC. Qing - continue from here - same order as in Inputs_LandDefs !
-integer, public, parameter :: NDEF_ECOSYSTEMS = LAST_ECO + 2 ! 2 for CF, DF 
+integer, public, parameter :: NDEF_ECOSYSTEMS = LAST_ECO + 16 ! first 16 LC
 character(len=TXTLEN_SHORT),public,dimension(NDEF_ECOSYSTEMS),parameter :: &
   DEF_ECOSYSTEMS = [character(len=TXTLEN_SHORT):: &
     "Grid","Conif","Decid","Crops","Seminat","Forest","Water_D","nonForest", &
-     "CF", "DF"]  
+     "CF", "DF", "NF", "BF", "TC", "MC", "RC", "SNL", "GR", "MS", "WE", &
+     "TU", "DE", "W", "ICE", "U"]  
 
 type(Deriv),public,dimension(NDEF_ECOSYSTEMS)            ,save:: DepEcoSystem
 logical,    public,dimension(NDEF_ECOSYSTEMS,NLANDUSEMAX),save:: Is_EcoSystem

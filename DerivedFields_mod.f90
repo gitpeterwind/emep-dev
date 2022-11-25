@@ -7,7 +7,7 @@ module DerivedFields_mod
   private
 
   integer, public, parameter ::  &
-       MAXDEF_DERIV2D = 488 & ! Max. No. 2D derived fields to be defined
+       MAXDEF_DERIV2D = 1000 & ! Max. No. 2D derived fields to be defined
       ,MAXDEF_DERIV3D = 230    ! Max. No. 3D derived fields to be defined
 
 

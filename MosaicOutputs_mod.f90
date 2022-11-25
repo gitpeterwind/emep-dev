@@ -41,7 +41,7 @@ integer, public, save :: MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, &
 
 ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
 integer, public, save :: nMosaic = 0
-integer, public, parameter :: MAX_MOSAIC_OUTPUTS=150
+integer, public, parameter :: MAX_MOSAIC_OUTPUTS=1000
 logical, private, parameter :: T=.true., F=.false.
 
 type(Deriv), public, &

@@ -46,6 +46,21 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Nov 2022, Qing
+
+Complete the code example from 23 Nov 2022 by Dave.  
+
+EcoSystem_mod.f90 - complete first 16 LC for Norway work.
+
+My_Derived_mod.f90 - complete Area_ of 16 LC to D2_EXTRA
+
+Config_module.f90 - increase MAX_NUM_DDEP_ECOS from 9 to 25 to allow extra 16 LC output.
+                    increase MAX_NUM_DERIV2D from 343 to 600.
+
+DerivedFields_mod.f90 - increase MAXDEF_DERIV2D to 1000.
+
+MosaicOutputs_mod.f90 - increase MAX_MOSAIC_OUTPUTS from 150 to 500 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Nov 2022, Dave
 
 Prelim code changes to help Norwegian Tålegrenser project. To be completed by Qing.

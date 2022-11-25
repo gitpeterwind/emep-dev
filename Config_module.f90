@@ -385,8 +385,9 @@ character(len=TXTLEN_FILE),public, target, save :: &
 !Output_config variables
 
 integer, public, parameter ::       &
-  MAX_NUM_DERIV2D = 343,            &
-  MAX_NUM_DDEP_ECOS = 9,            & ! Grid, Conif, etc.
+  MAX_NUM_DERIV2D = 600,            &
+  MAX_NUM_DDEP_ECOS = 25,            & ! Grid, Conif, etc.  !increase from 9 to
+                                       ! 9+16 for first 16 LC 
   MAX_NUM_NEWMOS  = 30,             & !New system.
   ! Older system
   MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:

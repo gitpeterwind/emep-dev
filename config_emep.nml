@@ -654,8 +654,8 @@ OutputVegO3=
    'OXN      ','GROUP','mgN',
    'RDN      ','GROUP','mgN',
    'O3       ','SPEC' ,'mg' ,
-   'NO2      ','SPEC' ,'mg' ,
-!   'HO2NO2   ','SPEC' ,'mg' ,
+   'NO2      ','SPEC' ,'mgN' ,
+!   'HO2NO2   ','SPEC' ,'mgN' ,
    'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =
