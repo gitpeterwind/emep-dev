@@ -18,7 +18,9 @@ SRCS ?=	\
 	DryDep_mod.f90 DustProd_mod.f90 EcoSystem_mod.f90  \
  	emep_Main.f90 \
 	EmisDef_mod.f90 EmisGet_mod.f90 Emissions_mod.f90 ExternalBICs_mod.f90 \
-	FastJ_mod.f90 ForestFire_mod.f90 Functions_mod.f90 \
+	ForestFire_mod.f90 Functions_mod.f90 \
+	isocom.f90 isorev.f90 ISOFWD.f90 \
+	ModsCloudJ_mod.f90 CloudJ_mod.f90 \
         GasParticleCoeffs_mod.f90 \
 	GravSettling_mod.f90 \
 	Gravset_mod.f90 GridAllocate_mod.f90 GridValues_mod.f90 \

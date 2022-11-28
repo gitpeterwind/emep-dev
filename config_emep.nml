@@ -2,7 +2,7 @@
   GRID      = 'EECCA',
   iyr_trend = 2018,
   runlabel1 = 'Base',
-  runlabel2 = 'rv4_42',
+  runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
   enddate   = 2018,01,01,24,
 
@@ -633,20 +633,29 @@ OutputVegO3=
 !
 
 ! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+! the following ecosystem and land-cover categories need to exist in the EcoSystems_mod.f90 file.
+! Only those given here will be output though.
 
   DDEP_ECOS =
    'Grid     ','YMD',
+   'Forest    ','YM',
+   'nonForest ','YM',
    'Conif    ','YM',
    'Seminat  ','YM',
-   'Water_D  ','Y',
+!   'Water_D  ','Y',
    'Decid    ','Y',
    'Crops    ','Y',
+!Nov2022 additions
+   'CF       ','Y',
+   'DF       ','Y',
 
  DDEP_WANTED =
    'SOX      ','GROUP','mgS',
    'OXN      ','GROUP','mgN',
    'RDN      ','GROUP','mgN',
    'O3       ','SPEC' ,'mg' ,
+   'NO2      ','SPEC' ,'mgN' ,
+!   'HO2NO2   ','SPEC' ,'mgN' ,
    'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =

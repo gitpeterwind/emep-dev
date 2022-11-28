@@ -46,11 +46,234 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 6th July 2022, Peter
 
 LF with full chemistry: include voc derivatives through new emis system.
 borders (several countries in same gridcell, with different splits) are also
 accounted for now.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Nov 2022, Qing
+
+Complete the code example from 23 Nov 2022 by Dave.  
+
+EcoSystem_mod.f90 - complete first 16 LC for Norway work.
+
+My_Derived_mod.f90 - complete Area_ of 16 LC to D2_EXTRA
+
+Config_module.f90 - increase MAX_NUM_DDEP_ECOS from 9 to 25 to allow extra 16 LC output.
+                    increase MAX_NUM_DERIV2D from 343 to 600.
+
+DerivedFields_mod.f90 - increase MAXDEF_DERIV2D to 1000.
+
+MosaicOutputs_mod.f90 - increase MAX_MOSAIC_OUTPUTS from 150 to 500 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 Nov 2022, Dave
+
+Prelim code changes to help Norwegian Tålegrenser project. To be completed by Qing.
+
+EcoSystem_mod.f90 - added CF and DF to DEF_ECOSYSTEMS, with new param LAST_ECO.
+  Should be continued with remaining land-cover categories for Norway work.
+
+My_Derived_mod.f90 - adding Area_ for CF, DF etc to D2_EXTRA
+
+MosaicOutputs - tiny comment change
+
+config_emep.nml - added CF, DF to DDEP_ECOS, and NO2 example in DDEP_WANTED
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Nov 2022, Dave
+
+Adding ISORROPIA back as aerosol solver. PRELIMINARY!!! 
+  Needs more testing, and we need to add HCl etc, but it seems to work
+  numerically at least. (I had to add checks for negative concentrations
+  in AerosolCalls though, but the ones I saw were very small, and mass
+  balance hasn't deterioated verh much.)
+
+AeroConstants_mod  - just refer to ISORROPIA now, but can change in config anyway
+
+AerosolCalls - now has ISORROPIA as possibility
+
+Makefile - now with isocom.f90, isorev.f90, ISOFWD.f90 
+
+renamed FUTURE_xxx to xxx.f90 for xxx = isocom, isorev, ISOFWD
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 Nov 2022, Dave
+
+Adding nonForest as ecosystem category - everything which isn't forest (includes
+seminat, water, ..)
+
+EcoSystem_mod - adding nonForest 
+My_Derived_mod - adding Area outputs of Forest and nonForest
+
+Debug_module - switched DEBUG_ECOSYSTEMS to DEBUG%ECOSYSTEMS
+DryDep_mod   - switched DEBUG_ECOSYSTEMS to DEBUG%ECOSYSTEMS
+
+config_emep.nml - adding both Forest and nonForest to defaults
+                  updated runlabel2 to rv4_47
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 Nov 2022, Dave
+
+Added  ffire_c emissions line for EmChem19a, EmChem19p, EmChem19r, EmChem19rp, since
+GFAS has substantial emissions in coarse mode.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 Oct 2022, Willem
+ryDe
+Added and expanded aerosol functionality in the photolysis rate calculations
+using Cloud-J. The latter now takes into account the effects of sea salt,
+forest fire (biomass burning), dust, and sulphate. 
+
+CloudJ photolysis rates are now also mapped onto all photochemical reactions
+present in EmChem19. 
+
+Photolysis rate definitions for chemistry that includes explicit glyoxal 
+channels and PAN photolysis are now included.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 Oct 2022, Willem
+
+Bug fix in the call to LogNormFracBelow in Derived_mod.f90, used to calculate
+the PM25 fraction of coarse nitrate. Fraction changes from 0.13 to 0.20.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 Oct 2022, Willem
+
+Fixed the equation that calculates the gravitational settling velocity (v_s) for ash
+and other aerosol particles. Previously, a wrong notation for the drag coefficient
+was used in determining a single expression for v_s. 
+
+Together with the temperature bug fix from below, newly calculated v_s values are 
+about a factor of two greater than before. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Sep 2022, Willem
+
+Fixed a bug in the gravitational settling module(s) where potential temperature 
+was treated like absolute temperature in the calculations for the dynamical 
+viscosity and mean path of air. 
+
+Updated Setup_1d to include specified methane and hydrogen background 
+concentrations, which only come into effect when these species are defined 
+with <> brackets in the CM files (like H2O, O2 and N2 are in EmChem19).  
+
+Other minor tweaks involve cloud liquid water content being a mandatory field
+when CloudJ is used to calculate photolysis rates (as a bare minimum), and that
+the read-in level of the newly downloaded O3 top boundary files matches that
+of the EMEP top layer (maybe this hardcoding should be avoided in the future).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+29 Sep 2022, Dave
+
+Added output of "New format" emissions to RunLog, wth EMTBL label (cf EMTAB
+from emis_inputlist methods). Also produces summary table at end of
+RunLog.
+
+NOTE: only tested for simple annual emission input. BE CAREFUL and suspicious 
+for other situations.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Sep 2022, Peter 
+
+when emis_inputlist()%sector == 'GNFR', redefine as'GNFR_CAMS', for
+compatibility with treatment of sectors_name from the emission file (which was
+already redefined automatically).
+It was already done for the emissions in "new format", sectorsName
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 Sep 2022, Dave
+NEW TAG rv4.47
+
+- reflecting addition of CloudJ functionality, and changed results  from
+Willem's changes.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05 Sep 2022, Arjo Segers
+
+Extended error messages to trap incorrect records in listings of satellite data.
+
+  ZD_EmCso/cso_listing.F90
+  ZD_EmCso/cso_string.F90
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05 Sep 2022, Arjo Segers
+
+Added optional argument "fix" to "coord_in_domain" to prevent that
+longitudes are changes by a call to this routine.
+
+  GridValues_mod.f90
+
+Updated comment.
+
+  PhyChem_mod.f90
+
+Synchronized source files in "ZD_EmCso" extension with changes in base model.
+
+  ZD_EmCso/GridValues_mod.f90
+  ZD_EmCso/PhyChem_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug 2022, Wim van Caspel
+
+Introduced CloudJ functionality, which can be toggled on/off in Config_emep.f90.
+
+In the current setup, CloudJ can be used to calculate photolysis rates 
+for reactions having a 1-to-1 correspondence with those from the standard 
+CloudJ input files (which are most of the EMEP reactions, see Runchem_mod.f90). The 
+new code runs as 'stand alone' for all years. Between the years 2005 and 2021
+monthly mean lat-lon-altitude satellite ozone and temperature data are read in. 
+For other years, monthly climatologies based on these years are used instead. 
+
+IF USES%CLOUDJ = .true. CloudJ is used to update rcphot(:,:)
+IF USES%HRLYCLOUD = .true. CloudJ updates only once every model hour
+  rather than every model timestep, to save CPU time
+
+For global runs, hourly CloudJ calls lead to a ~10% increase in CPU time,
+whereas instantaneous CloudJ calls lead to a ~25% increase in CPU time.  
+
+An additional change includes a bug-fix to DefPhotolysis_mod.f90, which caused
+only clear-sky tabulated Jvalues to be used at all times. 
+
+IF USES%CLEARSKYTAB = .true. only clear-sky tabulated Jvalues are used, to comply
+  with the state of the model pre-bug-fix.
+
+Another minor change is that the 3d cloud cover array cc3d, used in 
+Aqueous_n_WetDep_mod.f90 and Met_mod.f90, is now interpolated 
+in time, for consistency with the other metfields used by CloudJ.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug , 15 sep 2022, Peter
+
+Emis new format: allow use countrycode as a number.
+LF: removed RUE from country predefined group
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Aug 2022, Peter , Hilde, Dave
+
+Average of daily max 8 hour mean:
+
+OutputMisc=
+   'AvgMDA8','AvgMDA8', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+   'AvgMDA8_6month','AvgMDA8AprSep', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+
+The first field is the name in the output,can be chosen freely.
+For AvgMDA8AprSep only the monthes from Apr to Sep are included for yearly, but 
+all month have a monthly value (i.e for monthly, AvgMDA8AprSep and AvgMDA8 are the same)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 July 2022, Peter & Massimo
+
+Bug in emis new format: the "%factor" attribute, when given in the config file
+for the the entire file, was not applied.
+>>>>>>> 02e166bd0f592b8b4323efa7ced5457f303fe106
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 June 2022, Agnes & Anna

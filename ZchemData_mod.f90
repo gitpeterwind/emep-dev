@@ -33,6 +33,8 @@
      ,rcbio             & !< Emissions rate coeff.  molec/cm3/s (BVOC, soil-NO, etc.)
      ,rcphot              !< Photolysis rates
 
+  real, public, save, allocatable, dimension(:,:,:,:) :: rcphotslice ! store time-slice of J-vals
+
   real, public, allocatable, dimension(:,:), save :: &
        xn_2d            ! Concentrations [molecules/cm3]
 
@@ -53,6 +55,8 @@
       ,M                   & ! M - atmospheric conc. (was amk)
       ,o2, n2              & ! oxygen, nitrogen
       ,h2o                 & ! water
+      ,methane             & ! ch4
+      ,hydrogen            & ! hydrogen gas
       ,temp                & ! temperature
       ,tinv                & ! inverse temp
       ,cN2O5               & ! mol speed, N2O5

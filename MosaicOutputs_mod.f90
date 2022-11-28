@@ -41,7 +41,7 @@ integer, public, save :: MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, &
 
 ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
 integer, public, save :: nMosaic = 0
-integer, public, parameter :: MAX_MOSAIC_OUTPUTS=150
+integer, public, parameter :: MAX_MOSAIC_OUTPUTS=1000
 logical, private, parameter :: T=.true., F=.false.
 
 type(Deriv), public, &
@@ -251,7 +251,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
     do n=1,size(DDEP_ECOS)
 
       if(dbg0) write(*,"(a,i4,a6,2a12)") dtxt//"DDEP_WANTED,b:", n, &
-        DDEP_ECOS(n)%ind, trim(DDEP_ECOS(n)%name), trim(xtyp)
+        DDEP_ECOS(n)%ind, trim(DDEP_ECOS(n)%name), trim(xtyp)   ! ind = e.g. 'YM'
       if(all(SCAN(DDEP_ECOS(n)%ind,IOU_KEY)==0)) exit
       nDD = nDD + 1
       nMosaic = nMosaic + 1

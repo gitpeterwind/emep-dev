@@ -109,7 +109,9 @@ module MetFields_mod
        th      &  ! Potential teperature  ( deg. k )
 !       ,q      &  ! Specific humidity
        ,roa    &  ! kg/m3
-       ,cw_met    ! cloudwater from meteo file (not always defined!)
+       ,cw_met  &  ! cloudwater from meteo file (not always defined!)
+       ,cc3d    & ! 3-d cloud cover (cc3d),
+       ,ciw_met ! ice cloudwater from meteo file (not always defined!)
   real,target,public, save,allocatable, dimension(:,:,:,:) :: &
         EtaKz    &! vertical diffusivity in Eta coords
        ,SigmaKz  &! vertical diffusivity in sigma coords
@@ -124,7 +126,6 @@ module MetFields_mod
   ! since pr,cc3d,cc3dmax,cnvuf,cnvdf used only for 1 time layer - define without NMET
   real,target,public, save,allocatable, dimension(:,:,:) :: &
         pr      & ! Precipitation in mm/s "passing" the layer
-       ,cc3d    & ! 3-d cloud cover (cc3d),
        ,cc3dmax & ! and maximum for layers above a given layer
        ,lwc     & !liquid water content
   ! QUERY - should xksig be MID, not BND? Is it needed at all?
@@ -243,6 +244,7 @@ module MetFields_mod
     ,foundv10_met= .false.   & ! false if no v10 from meteorology
     ,foundprecip= .false.    & ! false if no precipitationfrom meteorology
     ,foundcloudwater= .false.& !false if no cloudwater found
+    ,foundcloudicewater= .false.& !false if no ice cloudwater found
     ,foundSMI1= .true.& ! false if no Soil Moisture Index level 1 (shallow)
     ,foundSMI3= .true.& ! false if no Soil Moisture Index level 3 (deep)
     ,foundrain= .false.& ! false if no rain found or used
@@ -254,7 +256,7 @@ module MetFields_mod
 
 ! specific indices of met
   integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_cc3d, ix_pr, &
-      ix_cw_met, ix_cnvuf, ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz,&
+      ix_cw_met, ix_ciw_met, ix_cnvuf, ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz,&
       ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, ix_u_mid, ix_v_mid, ix_ps, &
       ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
@@ -383,15 +385,15 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%name             = '3D_cloudcover'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .false.
+  met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .false.
   met(ix)%found            => foundcc3d 
-  allocate(cc3d(LIMAX,LJMAX,KMAX_MID))
+  allocate(cc3d(LIMAX,LJMAX,KMAX_MID,NMET))
   cc3d=0.0
-  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:1)  => cc3d
+  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:NMET)  => cc3d
   met(ix)%zsize = KMAX_MID
-  met(ix)%msize = 1
+  met(ix)%msize = NMET
   ix_cc3d=ix
 
   ix=ix+1
@@ -413,9 +415,10 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%name             = 'cloudwater'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .false.
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .true.
   met(ix)%needed           = .false.
+  if(USES%CLOUDJ) met(ix)%needed = .true.
   met(ix)%found            => foundcloudwater
   allocate(cw_met(LIMAX,LJMAX,KMAX_MID,NMET))
   cw_met=0.0
@@ -423,6 +426,21 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
   ix_cw_met=ix
+
+  ix=ix+1
+  met(ix)%name             = 'cloudice'
+  met(ix)%dim              = 3
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .true. 
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundcloudicewater
+  allocate(ciw_met(LIMAX,LJMAX,KMAX_MID,NMET))
+  ciw_met=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:NMET)  => ciw_met
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = NMET
+  ix_ciw_met=ix
 
   ix=ix+1
   met(ix)%name             = 'convective_updraft_flux'

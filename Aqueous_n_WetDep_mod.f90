@@ -316,7 +316,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! and cloud fractions are above limit values
      kcloudtop = -1               ! k-level of cloud top
      do k = KUPPER, ksubcloud-1
-        b(k) = cc3d(i,j,k)
+        b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
         ! ==> cloudwater (volume mixing ratio of water to air in cloud
         ! (when devided by cloud fraction b )

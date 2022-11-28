@@ -58,7 +58,6 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
      ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
 use Debug_module,       only: DEBUG, DEBUG_LANDIFY 
-use FastJ_mod,          only: setup_phot_fastj,rcphot_3D
 use Functions_mod,      only: Exner_tab, Exner_nd
 use Functions_mod,      only: T_2_Tpot, StandardAtmos_kPa_2_km 
 use GridValues_mod,     only: glat, xm_i, xm_j, xm2         &
@@ -645,27 +644,27 @@ subroutine MeteoRead()
   if(foundcc3d)then
     if(WRF_MET_CORRECTIONS)then
       !WRF clouds in fraction, multiply by 100:
-      cc3d(:,:,:) = 100*cc3d(:,:,:)
+      cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)) = 100*cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))
     end if
     if(trim(met(ix_cc3d)%validity)/='averaged'.and.write_now)&
       write(*,*)'WARNING: 3D cloud cover are instantaneous values'
-    cc3d(:,:,:) = 0.01*max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds to fraction
+      cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)) = 0.01*max(0.0,min(100.0,cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))))!0-100 % clouds to fraction
   else !if available, will use cloudwater to determine the height of release
      if(write_now)write(*,*)'WARNING: deriving 3D cloud cover (cc3d) from cloud water '
      namefield='cloudwater'
      call Getmeteofield(meteoname,namefield,nrec,3,unit,validity,&
-            cc3d(:,:,:),needed=met(ix_cw_met)%needed,found=foundcloudwater)
+            cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)),needed=met(ix_cw_met)%needed,found=foundcloudwater)
      call CheckStop(.not.foundcloudwater,&
             "meteo field not found: 3D_cloudcover and"//trim(namefield))
-     cc3d(:,:,:)=0.01*max(0.0,min(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds to fraction
+     cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))=0.01*max(0.0,min(100.0,cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))*CW2CC))!from kg/kg water to % clouds to fraction
   end if
   !    maximum of cloud fractions for layers above a given layer
-  cc3dmax(:,:,1) = cc3d(:,:,1)
+  cc3dmax(:,:,1) = cc3d(:,:,1,min(met(ix_cc3d)%msize,nr))
   do k=2,KMAX_MID
-    cc3dmax(:,:,k) = amax1(cc3dmax(:,:,k-1),cc3d(:,:,k-1))
+    cc3dmax(:,:,k) = amax1(cc3dmax(:,:,k-1),cc3d(:,:,k-1,min(met(ix_cc3d)%msize,nr)))
   end do
 
-  lwc = 0.6e-6*cc3d
+  lwc = 0.6e-6*cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))
 
   if(foundprecip .and. USES%NO_3DPRECIP)then
     call PrintLog("WARNING: ignoring 3D precipitations", MasterProc)
@@ -1449,16 +1448,6 @@ subroutine MeteoRead()
   end if
   if (neighbor(SOUTH) .ne. NOPROC) then
     CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
-  end if
-
-  if(USES%FASTJ)then
-    !compute photolysis rates from FastJ
-    if(nr==2)rcphot_3D(:,:,:,:,1)=rcphot_3D(:,:,:,:,2)
-    do j = 1,ljmax
-      do i = 1,limax
-        call setup_phot_fastj(i,j,INFO,nr)
-      end do
-    end do
   end if
 
   if(first_call.and.next_inptime%hour<nhour_first)&

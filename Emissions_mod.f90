@@ -218,6 +218,7 @@ contains
     !1) define lowest level default values
     Emis_sources_defaults%units = 'mg/m2/h'
     Emis_sources_defaults%country_ISO = 'N/A'
+    Emis_sources_defaults%countrycode = -1
     Emis_sources_defaults%sector = 0
     Emis_sources_defaults%factor = 1.0
     Emis_sources_defaults%include_in_local_fractions = .true.
@@ -241,6 +242,7 @@ contains
     Emisfile_defaults%units = Emis_sources_defaults%units
     EmisFile_defaults%sector = Emis_sources_defaults%sector
     EmisFile_defaults%country_ISO = Emis_sources_defaults%country_ISO
+    EmisFile_defaults%countrycode = Emis_sources_defaults%countrycode
 
     EmisFiles(:) = EmisFile_defaults
 
@@ -306,9 +308,11 @@ contains
           if(Emis_sourceFiles(n)%mask_ID_reverse /= Emisfile_undefined%mask_ID_reverse) EmisFiles(i)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse
           if(Emis_sourceFiles(n)%species /= Emisfile_undefined%species) EmisFiles(i)%species = Emis_sourceFiles(n)%species
           if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) EmisFiles(i)%units = Emis_sourceFiles(n)%units
+          if(Emis_sourceFiles(n)%countrycode /= Emisfile_undefined%countrycode) EmisFiles(i)%countrycode = Emis_sourceFiles(n)%countrycode
           if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) EmisFiles(i)%country_ISO = Emis_sourceFiles(n)%country_ISO
           if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) EmisFiles(i)%sector = Emis_sourceFiles(n)%sector
           if(Emis_sourceFiles(n)%sectorsName /= Emisfile_undefined%sectorsName) EmisFiles(i)%sectorsName = Emis_sourceFiles(n)%sectorsName
+          if(Emis_sourceFiles(n)%factor /= Emisfile_undefined%factor) EmisFiles(i)%factor = Emis_sourceFiles(n)%factor
           ! correct for old notations
           if(EmisFiles(n)%sectorsName == 'SNAPsectors') EmisFiles(i)%sectorsName = 'SNAP'
           if(EmisFiles(n)%sectorsName == 'GNFRsectors') EmisFiles(i)%sectorsName = 'GNFR_CAMS'
@@ -324,6 +328,7 @@ contains
           !set source default = file parameter if they are set. Defines default for sources in this file, can be also be redefined for individual sources
           if(Emis_sourceFiles(n)%species /= Emisfile_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%species
           if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%units
+          if(Emis_sourceFiles(n)%countrycode /= Emisfile_undefined%countrycode) Emis_source(ii)%countrycode = Emis_sourceFiles(n)%countrycode
           if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%country_ISO
           if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%sector
           Emis_source(ii)%periodicity = EmisFiles(i)%periodicity !NB: periodicity cannot be set individually for variables
@@ -344,6 +349,7 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%units /= Emis_id_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%source(isource)%units
              if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
              if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
+             if(Emis_sourceFiles(n)%source(isource)%countrycode /= Emis_id_undefined%countrycode) Emis_source(ii)%countrycode = Emis_sourceFiles(n)%source(isource)%countrycode
              if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
              if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
              if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
@@ -360,12 +366,17 @@ contains
              if(Emis_sourceFiles(n)%source(isource)%injection_k /= Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
           endif
           ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
+          if(trim(Emis_source(ii)%country_ISO)=="N/A")then
+             ix = find_index(Emis_source(ii)%countrycode ,Country(:)%icode, first_only=.true.)
+          end if
           if(ix<0)then
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined. '
+             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined for '//trim(Emis_source(ii)%varname)
+             ix = find_index("N/A" ,Country(:)%code, first_only=.true.)
           else
-             Emis_source(ii)%country_ix = ix
-             if(dbg)write(*,*)dtxt//'country found '//trim(Emis_source(ii)%country_ISO), ix, NEmis_sources
+             if(dbg)write(*,*)dtxt//'country found '//trim(Country(ix)%code), ix, NEmis_sources
           endif
+          Emis_source(ii)%country_ix = ix
+          Emis_source(ii)%country_ISO = trim(Country(ix)%code)
 
           !find if it is defined as an individual species
           ix = find_index(Emis_source(ii)%species, species(:)%name )
@@ -572,17 +583,24 @@ contains
     logical, save ::first_call = .true.
     real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
     real, allocatable, dimension(:,:,:) :: sumemis_sec ! Sum of emissions per country and sector
+    real, allocatable, dimension(:,:) :: xsumemis ! DS testing for EMTBL output. Seems to work for Ncalls = 1, BUT BE CAREFUL
     logical :: writeoutsums
     logical :: writeout !if something to show and writeoutsums=T
+    integer, save :: ncalls = 0
 
     writeoutsums = first_call .or. step_main<10 .or. DEBUG%EMISSIONS
     writeout = .false. !init
+    ncalls = ncalls + 1
 
     ts1=make_timestamp(current_date)
     coming_date = current_date
     coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
     gridyear = GRIDWIDTH_M * GRIDWIDTH_M * 3600*24*nydays*1.0E-6!kg/m2/s -> kt/year
 
+    if ( ncalls == 1 .and. NEmisFile_sources > 0 ) then 
+      allocate(xsumemis(NLAND,NEMIS_FILE))
+      xsumemis = 0.0
+    end if
     do n = 1, NEmisFile_sources
        if(writeoutsums .or. EmisFiles(n)%periodicity=='monthly')then
           writeoutsums = .true.
@@ -818,6 +836,7 @@ contains
                    do j = 1,ljmax
                       do i = 1,limax
                          sumemis(iland,iem) = sumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
+                         xsumemis(iland,iem) = xsumemis(iland,iem) + Emis_source_2D(i,j,is) * gridyear * xmd(i,j) !now in kt/year
                          if(SecEmisTotalsWanted)&
                               sumemis_sec(iland,is,iem) = sumemis_sec(iland,is,iem)&
                               + Emis_source_2D(i,j,is) * gridyear * xmd(i,j)
@@ -854,14 +873,17 @@ contains
           if(SecEmisTotalsWanted)CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis_sec,&
                NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
           if(me==0)then
-             write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
-             write(*     ,"(a14,a5,3x,30(a12,:))")"EMTAB CC Land ","    ",EMIS_FILE(:)
+             !EMTABDS write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
+             call PrintLog("#EMTBL Total emissions by countries for "//trim(EmisFiles(n)%filename)//' (Gg/year) ')
+             write(*     ,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
+             write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
              fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
              do ic = 1, NLAND
                 ccsum = sum( sumemis(ic,:) )
                 icc=Country(ic)%icode
                 if ( ccsum > 0.0 )then
-                   write(*,     fmt) 'EMTAB', icc, Country(ic)%code, sumemis(ic,:)
+                   write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                   write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
                 end if
              end do
              if(SecEmisTotalsWanted)then
@@ -886,8 +908,26 @@ contains
        endif
     enddo
     if(writeout)then
-       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
-       if(me==0 .and. NEmisFile_sources>0)write(*     ,fmt)'EMTAB', 999,'TOTAL    ',emsum(:)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,xsumemis,&
+               NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
+       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
+       if(me==0 .and. NEmisFile_sources>0) then
+          call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
+          write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
+          write(IO_LOG,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
+          fmt="(a5,i9,i4,1x,a9,3x,30(f12.2,:))"  !# DSTMP add ncalls
+          do ic = 1, NLAND
+             ccsum = sum( xsumemis(ic,:) )
+             icc=Country(ic)%icode
+             if ( ccsum > 0.0 )then
+                write(*,     fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                write(IO_LOG,fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+             end if
+          end do
+          write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+          write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+       end if
+       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
     endif
     if (allocated(sumemis)) deallocate(sumemis)
@@ -1000,8 +1040,12 @@ contains
        fname = key2str(fname,'POLL',EMIS_FILE(1))
        call ReadSectorname(fname,cdf_sector_name)
 
-       if (emis_inputlist(iemislist)%sector /= "NOTSET" ) then
+       if (emis_inputlist(iemislist)%sector /= "NOTSET") then
           ! we will use this even if something else is defined in the file
+          if (emis_inputlist(iemislist)%sector == 'GNFR') then
+             if(MasterProc)write(*,*)'Redefined GNFR sector as GNFR_CAMS sector'
+             emis_inputlist(iemislist)%sector = 'GNFR_CAMS'
+          end if
        else if (emis_inputlist(iemislist)%type == "GNFR_CAMSsectors") then
           emis_inputlist(iemislist)%sector = 'GNFR_CAMS'
        else

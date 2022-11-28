@@ -64,12 +64,13 @@ use ZchemData_mod,    only: &
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
   ,rct, rcphot          &  ! chemical reaction rates
   ,rh, temp, tinv, itemp,pp      &  !
-  ,M, o2, n2, h2o     &  ! Air concentrations
+  ,M, o2, n2, h2o, methane, hydrogen     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
   ,cNO2, cNO3              &  ! mol speeds, m/s, kHetero tests
   ,gamN2O5                 &  ! kHetero test - for printout
   ,DpgNw, S_m2m3           &  ! for wet diameter and surf area
   ,aero_fom, aero_fbc, aero_fss, aero_fdust
+use BoundaryConditions_mod, only: METHBGN
  
 
 implicit none
@@ -447,6 +448,8 @@ contains
    n2(:) = M(:) - o2(:)
 !   o2(:) = 0.2095 *M(:) ! more exact, but prefer o3+n2 to add to 100%
 !   n2(:) = 0.7808 *M(:)
+   methane(:) = METHBGN * PPB * M(:) 
+   hydrogen(:) = 500.0 * PPB * M(:)
    tinv(:) = 1./temp(:)
 
 

@@ -587,6 +587,8 @@ contains
     if(status==nf90_noerr)EmisFile%sector = sector
     status = nf90_get_att(ncFileID,nf90_global,"country_ISO", name)
     if(status==nf90_noerr)EmisFile%country_ISO = trim(name)
+    status = nf90_get_att(ncFileID,nf90_global,"countrycode", i)
+    if(status==nf90_noerr)EmisFile%countrycode = i
 
     !init accounting of requested sources
     do i = 1,NEmis_sourcesMAX
@@ -634,6 +636,7 @@ contains
              if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
+             Emis_source(NEmis_sources)%countrycode = EmisFile%countrycode !default
              status = nf90_get_att(ncFileID,varid,"country", countrycode)
              if(status==nf90_noerr)then
                 ix = find_index(countrycode, Country(:)%icode)

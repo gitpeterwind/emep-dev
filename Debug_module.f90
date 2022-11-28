@@ -21,6 +21,7 @@ module Debug_module
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! 
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
+    ,ECOSYSTEMS      = .false. &
     ,EMISSIONS       = .false. & ! 
     ,EMISTIMEFACS    = .false. &
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
@@ -74,7 +75,6 @@ type(emep_debug), public, save :: DEBUG
 logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
   ,DEBUG_DERIVED        = .false. &
-  ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
   !!,DEBUG_DRYDEP         = .false. &
     ,DEBUG_MY_DRYDEP    = .false. &

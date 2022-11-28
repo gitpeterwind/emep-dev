@@ -2290,7 +2290,6 @@ subroutine add_lf_emis(s,i,j,iem,isec,iland)
               else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
               else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
               else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
-              else if(country_ix_list(ic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
               else if(country_ix_list(ic)/=iland)then
                  cycle
               endif

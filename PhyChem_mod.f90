@@ -111,7 +111,7 @@ subroutine phyche()
 
   if(trim(fileName_O3_Top)/="NOTSET" .and.&
        mod(current_date%hour,3)==0.and.current_date%seconds==0)then
-     kstart=6!NB: must be the level corresponding to model top! Hardcoded for now
+     kstart=3!NB: must be the level corresponding to model top! Hardcoded for now
      if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'UPDATING TOP O3 with ',trim(fileName_O3_Top)
      !first available day is 2nd January for 2008,2009,2011,2012:
      nstart=max(1,8*(daynumber-2)+current_date%hour/3)
@@ -127,17 +127,26 @@ subroutine phyche()
 
   if(USES%POLLEN) call pollen_read ()
   call Add_2timing(15,tim_after,tim_before,"nest: Read")
+
+  ! analysis enabled?
   if(ANALYSIS.and.first_call)then
-    call main_3dvar(status)   ! 3D-VAR Analysis for "Zero hour"
+    ! 3D-VAR Analysis for "Zero hour"
+    call main_3dvar(status)
     call CheckStop(status,"main_3dvar in PhyChem_mod/PhyChe")
+    ! update timing:
     call Add_2timing(T_3DVAR,tim_after,tim_before)
+    ! testing ...
     if(DEBUG_DA_1STEP)then
-      if(MasterProc)&
+      ! info ..
+      if ( MasterProc ) then
         write(*,*) 'ANALYSIS DEBUG_DA_1STEP: only 1st assimilation step'
+      end if
+      ! update derived output:
       call Derived(dt_advec,End_of_Day)
+      ! leave:
       return
-    end if
-  end if
+    end if ! debug da 1step
+  end if  ! analysis at zero hour
 
   ! For safety we initialise instant. values here to zero.
   ! Usually not needed, but sometimes
@@ -264,9 +273,12 @@ subroutine phyche()
 
   call Code_timer(tim_before)
   !====================================
+  ! data-assimilation enabled?
   if(ANALYSIS)then
-    call main_3dvar(status)   ! 3D-VAR Analysis for "non-Zero hours"
+    ! 3D-VAR Analysis for "non-Zero hours"
+    call main_3dvar( status )
     call CheckStop(status,"main_3dvar in PhyChem_mod/PhyChe")
+    ! end timing:
     call Add_2timing(T_3DVAR,tim_after,tim_before)
   end if
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting

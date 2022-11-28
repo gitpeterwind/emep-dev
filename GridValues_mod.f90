@@ -1837,17 +1837,28 @@ subroutine coord_check(msg,lon,lat,fix)
      call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.true.)
   end if
 end subroutine coord_check
-function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob) result(in)
+function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob,fix) result(in)
   !-------------------------------------------------------------------!
   ! Is coord (lon/lat) is inside global domain|local domain|grid cell?
+  ! Some longitude range errors can be corrected when fix=.true. (default),
+  ! this will reset the 'lon' argument to a value in [-180,180) ;
+  ! to prevent 'lon' from being changed, use 'fix=.false.'.
   !-------------------------------------------------------------------!
   character(len=*), intent(in) :: domain
   real, intent(inout) :: lon,lat
   integer, intent(inout),optional :: iloc,jloc
   integer, intent(out)  ,optional :: iglob,jglob
+  logical, intent(in)   ,optional :: fix
   logical :: in
   integer :: i,j
-  call coord_check("coord_in_"//trim(domain),lon,lat,fix=.true.)
+  logical :: with_fix
+  ! by default fix values of 'lon' to be inside [-180,180),
+  ! if necessary prevent this using optional flag:
+  with_fix = .true.
+  if ( present(fix) ) with_fix = fix
+  ! check:
+  call coord_check("coord_in_"//trim(domain),lon,lat,fix=with_fix)
+  ! convert to grid cell indices:
   call lb2ij(lon,lat,i,j)
   if(present(iglob))iglob=i
   if(present(jglob))jglob=j
