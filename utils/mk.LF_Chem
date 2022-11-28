@@ -14,8 +14,9 @@ then
   echo "CM_Reactions1.inc already adapted to LF calculations!"
 else
 
-rm CM_Reactions1_tmp.inc >/dev/null &
+rm CM_Reactions1_tmp.inc >/dev/null 2>&1
 touch CM_Reactions1_tmp.inc
+echo '' >>CM_Reactions1_tmp.inc
 echo 'if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' >>CM_Reactions1_tmp.inc
 cat CM_Reactions1.inc>> CM_Reactions1_tmp.inc
 echo 'endif' >>CM_Reactions1_tmp.inc
@@ -32,9 +33,9 @@ sed -i '/sum(xnew_lf/i do i_lf = 1,Nd' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/s/xnew_lf(:/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
 
-for species in NO NO2 CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK
+for species in NO NO2 CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK CH3CHO GLYOX MGLYOX
 do
-  sed -i "/ xnew_lf(:,$species) =.*/i  P_lf(NSPEC_fullchem_lf+1:Nd) = P_lf(NSPEC_fullchem_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species)" CM_Reactions1_tmp.inc
+  sed -i "/ xnew_lf(:,$species) =.*/i  P_lf(NSPEC_fullchem_lf+1:Nd) = P_lf(NSPEC_fullchem_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
 
 
