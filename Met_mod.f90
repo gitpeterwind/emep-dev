@@ -318,6 +318,7 @@ subroutine MeteoRead()
   integer :: INFO,i_large,j_large
   logical, save:: ps_in_hPa = .true.
   logical, save:: precip_accumulated = .false.
+  logical      :: precipitations_ready = .false.
   logical, save:: rh2m_in_percent  = .true.
   if(.not. first_call)then
      if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
@@ -453,7 +454,7 @@ subroutine MeteoRead()
         met(ix)%found=.true.
         met(ix_fh)%validity='averaged'!should be softified
         met(ix_fl)%validity='averaged'!should be softified
-      else
+     else
         call Getmeteofield(meteoname,namefield,nrec,ndim,unit,met(ix)%validity,&
                 met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,&
                 found=met(ix)%found)
@@ -487,84 +488,6 @@ subroutine MeteoRead()
   end do
 
   !==============  now correct and complete the metfields as needed!  ==========================
-  if(MANUAL_GRID)then
-    !rotate the wind fields
-    !non-staggered grid here
-    do k=1,KMAX_MID
-      do j=1,ljmax
-        do i=1,limax
-          x=u_xmj(i,j,k,nr)
-          y=v_xmi(i,j,k,nr)
-          u_xmj(i,j,k,nr) = x*cos(rot_angle(i,j))-y*sin(rot_angle(i,j))
-          v_xmi(i,j,k,nr) = x*sin(rot_angle(i,j))+y*cos(rot_angle(i,j))
-        end do
-      end do
-    end do
-
-    !Now must stagger the wind fields
-    !must first fetch values from neighbors
-    if (neighbor(WEST) .ne. NOPROC) then
-      if(neighbor(WEST) .ne. me)then
-        buf_uw(:,:) = u_xmj(1,:,:,nr)
-        CALL MPI_ISEND(buf_uw, 8*LJMAX*KMAX_MID, MPI_BYTE, &
-             neighbor(WEST), MSG_EAST2, MPI_COMM_CALC, request_w, IERROR)
-      else
-        ! cyclic grid: own neighbor
-        ue(:,:,nr) = u_xmj(1,:,:,nr)
-      end if
-    end if
-    if (neighbor(SOUTH) .ne. NOPROC) then
-      buf_vs(:,:) = v_xmi(:,1,:,nr)
-      CALL MPI_ISEND(buf_vs, 8*LIMAX*KMAX_MID, MPI_BYTE, &
-          neighbor(SOUTH), MSG_NORTH2, MPI_COMM_CALC, request_s, IERROR)
-    end if
-
-    if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
-      CALL MPI_RECV(ue(1,1,nr), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(EAST), MSG_EAST2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    end if
-    if (neighbor(NORTH) .ne. NOPROC) then
-      CALL MPI_RECV(vn(1,1,nr), 8*LIMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(NORTH), MSG_NORTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    end if
-
-    if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
-      CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
-    end if
-    if (neighbor(SOUTH) .ne. NOPROC) then
-      CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
-    end if
-
-    do k=1,KMAX_MID
-      do j=1,ljmax
-        do i=1,limax-1
-          u_xmj(i,j,k,nr) = 0.5*(u_xmj(i,j,k,nr)+u_xmj(i+1,j,k,nr))
-        end do
-      end do
-    end do
-    do k=1,KMAX_MID
-      do j=1,ljmax
-       do i=limax,limax
-         u_xmj(i,j,k,nr) = 0.5*(u_xmj(i,j,k,nr)+ue(j,k,nr))
-       end do
-      end do
-    end do
-
-    do k=1,KMAX_MID
-      do j=1,ljmax-1
-        do i=1,limax
-          v_xmi(i,j,k,nr) = 0.5*(v_xmi(i,j,k,nr)+v_xmi(i,j+1,k,nr))
-        end do
-      end do
-    end do
-    do k=1,KMAX_MID
-      do j=ljmax,ljmax
-        do i=1,limax
-          v_xmi(i,j,k,nr) = 0.5*(v_xmi(i,j,k,nr)+vn(i,k,nr))
-        end do
-      end do
-    end do
-  end if ! MANUAL_GRID
 
   !extend the i or j index to 0
   if (neighbor(EAST) .ne. NOPROC) then
@@ -664,62 +587,157 @@ subroutine MeteoRead()
     cc3dmax(:,:,k) = amax1(cc3dmax(:,:,k-1),cc3d(:,:,k-1,min(met(ix_cc3d)%msize,nr)))
   end do
 
+  
+  if (.not.foundcloudicewater) then
+     !try AROME name
+     ix = ix_ciw_met
+     nrix=min(met(ix)%msize,nr)
+     met(ix)%name = 'mass_fraction_of_cloud_ice_in_air_ml'
+     call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
+          met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
+     if (met(ix)%found) then
+        if(write_now )write(*,*)'found ',trim(met(ix)%name)
+     end if
+  end if
+  
+  if (.not. foundcloudwater) then
+     !try AROME name
+     ix =ix_cw_met
+     nrix=min(met(ix)%msize,nr)
+     met(ix)%name = 'mass_fraction_of_cloud_condensed_water_in_air_ml'
+     call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
+          met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
+     if (met(ix)%found) then
+        if(write_now )write(*,*)'found ',trim(met(ix)%name)
+     end if
+  end if
+  
+  !not sure where this came from. but values are not liquid water content! used in Aqueous
   lwc = 0.6e-6*cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))
 
   if(foundprecip .and. USES%NO_3DPRECIP)then
     call PrintLog("WARNING: ignoring 3D precipitations", MasterProc)
     foundprecip=.false.
   end if
-  if(.not.foundprecip)then
-    !Will construct 3D precipitations from 2D precipitations
-    if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
 
-    ix = ix_surface_precip
-    met(ix)%found = .false.
-    if(.not. precip_accumulated)then
-      call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
-           met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
-      if(met(ix)%found)then
-         if(write_now )write(*,*)'2D precipitations sum of large_scale and convective precipitations'
-         ix = ix_convective_precip
-         call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
-              met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
-         surface_precip = surface_precip + convective_precip
-      else
-         !only set once
-         if(write_now )write(*,*)trim(met(ix)%name),' not found. assuming accumulated'
-         precip_accumulated = .true.
-      endif
-    endif
-    ix = ix_surface_precip
-    if(precip_accumulated)then
-       !assume accumulated precipitations (AROME)
-       ix = ix_surface_precip
-       met(ix)%name = 'precipitation_amount_acc' 
-       if(me==0)write(*,*)'assuming 2D precipitations accumulated and named '//trim(met(ix)%name)
-       call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
-            met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
-       buff=surface_precip !save to save in old below
-       if(nr == 1 .and. nhour_first>0) buff=0.0 !the first reading of metdata is not from 00:00
-       !must first check that precipitation is increasing. At some dates acc maybe restarted!
-       minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
-       
-       CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
-            MPI_MIN, MPI_COMM_CALC, IERROR)
-       minprecip=x_out
-       if(minprecip<-1)then
-          if(me==0)write(*,*)'WARNING: found negative precipitations. '&
-             ,' accumulated precipitations restarted!',minprecip
-          surface_precip = max(0.0,surface_precip*0.001/(METSTEP*3600))
-       else
-          surface_precip = max(0.0, & ! get only the variation. mm ->m/s
-             (surface_precip - surface_precip_old))*0.001/(METSTEP*3600)
-       end if
-       surface_precip_old = buff ! Accumulated precipitation
+  if(.not.foundprecip)then
+     !Will construct 3D precipitations from 2D precipitations
+     if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
+     precipitations_ready = .false.
+     ix = ix_surface_precip
+     met(ix)%found = .false.
+     if(.not. precip_accumulated)then
+        call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+             met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+        if(met(ix)%found)then
+           if(write_now )write(*,*)'2D precipitations sum of large_scale and convective precipitations'
+           ix = ix_convective_precip
+           call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+                met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+           surface_precip = surface_precip + convective_precip
+        else
+           !only set once
+           if(write_now )write(*,*)trim(met(ix)%name),' not found. assuming accumulated'
+           precip_accumulated = .true.
+       endif
+     endif
+     ix = ix_surface_precip
+     if(precip_accumulated)then
+        !assume accumulated precipitations (AROME)
+        ix = ix_surface_precip
+        met(ix)%name = 'precipitation_amount_acc' 
+        if(me==0)write(*,*)'assuming 2D precipitations accumulated and named '//trim(met(ix)%name)
+        call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+             met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+        buff=surface_precip !save to save in old below
+        if(nr == 1 .and. nhour_first>0) buff=0.0 !the first reading of metdata is not from 00:00
+        !must first check that precipitation is increasing. At some dates acc maybe restarted!
+        minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
+        
+        CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
+             MPI_MIN, MPI_COMM_CALC, IERROR)
+        minprecip=x_out
+        if(minprecip<-1)then
+           if(me==0)write(*,*)'WARNING: found negative precipitations. '&
+                ,' accumulated precipitations restarted!',minprecip
+           surface_precip = max(0.0,surface_precip*0.001/(METSTEP*3600))
+        else
+           surface_precip = max(0.0, & ! get only the variation. mm ->m/s
+                (surface_precip - surface_precip_old))*0.001/(METSTEP*3600)
+        end if
+        surface_precip_old = buff ! Accumulated precipitation
+        
+        !we try to find AROME 3D fields that can be used to make the 3D profile
+        ix = ix_rain
+        nrix=min(met(ix)%msize,nr)
+        met(ix)%name = 'mass_fraction_of_rain_in_air_ml'
+        call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+            met(ix)%validity,met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
+        if (met(ix)%found) then
+           if (write_now) write(*,*)'3D profile of precipitations derived from '//trim(met(ix)%name)
+           
+           ix = ix_buff3D
+           met(ix)%name = 'mass_fraction_of_graupel_in_air_ml'
+           call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+                met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+           if (met(ix)%found) then
+              if (write_now) write(*,*)'3D profile of precipitations also using '//trim(met(ix)%name)
+              do k=1,kmax_mid
+                 do j=1,ljmax
+                    do i=1,limax
+                       rain(i,j,k,nr)=rain(i,j,k,nr)+buff3D(i,j,k)
+                    end do
+                 end do
+              end do
+           end if
+          
+           met(ix)%name = 'mass_fraction_of_snow_in_air_ml'
+           call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+                met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+           if (met(ix)%found) then
+              if (write_now) write(*,*)'3D profile of precipitations also using '//trim(met(ix)%name)
+              do k=1,kmax_mid
+                 do j=1,ljmax
+                    do i=1,limax
+                       rain(i,j,k,nr)=rain(i,j,k,nr)+buff3D(i,j,k)
+                    end do
+                 end do
+              end do
+           end if
+           !smooth rain, because it is instantaneous but rain may move
+           do k=1,kmax_mid
+              call smoosp(rain(1,1,k,nr),0.0,1.0E10)
+           end do
+           do j=1,ljmax
+              do i=1,limax
+                 if(surface_precip(i,j)>1E-9 .and. &
+                      rain(i,j,kmax_mid,1)+rain(i,j,kmax_mid,nr)>1E-8)then
+                    pr(i,j,kmax_mid)=surface_precip(i,j)*METSTEP*3600.0*1000.0 !now surface_precip in m/s and pr in mm/metstep
+                    x=max(x,pr(i,j,kmax_mid))
+                    do k=kmax_mid-1, 1, -1
+                       pr(i,j,k)=min(pr(i,j,k+1),&
+                            surface_precip(i,j)*METSTEP*3600.0*1000.0*(rain(i,j,k,1)+rain(i,j,k,nr))&
+                            /(rain(i,j,kmax_mid,1)+rain(i,j,kmax_mid,nr)))
+                       if (pr(i,j,k) < 0.01) then
+                          do kk = k-1, 1, -1
+                             pr(i,j,kk) = 0.0
+                          end do
+                          exit
+                       end if
+                    end do                    
+                 else
+                    do k=1,kmax_mid
+                       pr(i,j,k)=0.0
+                    end do
+                 endif
+              end do
+           end do
+           !we have made 3D precipitations
+           precipitations_ready = .true.
+        end if
      end if
 
-    !write(*,*)'precip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
-    if(WRF_MET_CORRECTIONS) then
+     if(WRF_MET_CORRECTIONS) then
       if(found_wrf_bucket)then
         !wrf "bucket" definition for surface precipitation:
         !surface_precip = I_RAINNC*bucket + RAINNC + I_RAINC*bucket + RAINC
@@ -756,7 +774,9 @@ subroutine MeteoRead()
     call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
            met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
 
-    if(foundrain)then
+    if (precipitations_ready) then
+      !nothing more to do, we are done
+    else if(foundrain)then
       if(write_now)&
         write(*,*)'release profile for 3D precipitations derived from QRAIN'
       do j=1,ljmax

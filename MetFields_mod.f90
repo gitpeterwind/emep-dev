@@ -164,8 +164,8 @@ module MetFields_mod
        ,ice_nwp         & ! QUERY why real?
        ,sst       &  ! SST Sea Surface Temprature- ONLY from 2002 in PARLAM
        ,ws_10m    &  ! wind speed 10m
-       ,hmix         ! same as pzpbl, but interpolated in time
-
+       ,hmix      &  ! same as pzpbl, but interpolated in time
+       ,buff3D       ! can be used for temporary storage 
  real,target,public, save,allocatable, dimension(:,:) :: &
      u_ref             & ! wind speed m/s at 45m (real, not projected)
     ,rho_surf          & ! Surface density
@@ -261,7 +261,7 @@ module MetFields_mod
       ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
       ix_surface_precip, ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, &
-      ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp 
+      ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp, ix_buff3D 
 ! integer, public, save   :: ix_tsurf_nwp
 
   type,  public :: metfield
@@ -289,7 +289,6 @@ module MetFields_mod
   type(metfield),  public :: derivmet(20)  !DSA15 To put the metfields derived from NWP, eg for output
   logical, target :: metfieldfound(NmetfieldsMax)=.false. !default for met(ix)%found 
   integer, public, save   :: Nmetfields! number of fields defined in met
-  integer, public, save   :: N3Dmetfields! number of 3D fields defined in met
   real,target, public,save,allocatable, dimension(:,:,:) :: uw,ue
   real,target, public,save,allocatable, dimension(:,:,:) :: vs,vn
 
@@ -621,9 +620,22 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
   ix_v_mid=ix
+  ix=ix+1
 
-  N3Dmetfields=ix
-!  write(*,*)'number of 3D metfields: ',N3Dmetfields
+  met(ix)%name             = 'buffer_3D'
+  met(ix)%dim              = 3
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            = .false.
+  allocate(buff3D(LIMAX,LJMAX,KMAX_MID))
+  buff3D=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:1)  => buff3D
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = 1
+  ix_buff3D=ix
+
 !________________________________________________________________
 ! 2D fields
 
@@ -1125,9 +1137,27 @@ if(USES%WRF_MET_NAMES)then
    TopoFile = date2string(meteo,startdate,mode='YMDH')
 
 !... addmore
+else 
+   !AROME definitions may be used for precipitations.
+   !Use RAIN fields to make 3D precip profiles from 2D. NB not accumulated, so cannot be used directly
+  ix=ix+1
+  met(ix)%name             = 'mass_fraction_of_rain_in_air_ml'
+  met(ix)%dim              = 3
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.!to get new and old value stored
+  met(ix)%read_meteo       = .false.!set tot true if necessary
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundrain
+  allocate(rain(LIMAX,LJMAX,KMAX_MID,NMET))
+  !rain=0.0 !leave commented out, so that if never used will not use memory
+  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:NMET)  => rain
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = 1
+  ix_rain=ix
+   
 end if
 
-  Nmetfields=ix
+Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then
      write(*,*)"Increase NmetfieldsMax! "
      stop

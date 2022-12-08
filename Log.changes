@@ -46,8 +46,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Dec 2022 Peter, Heiko
 
-6th July 2022, Peter
+AROME meteorology:
+Included more advenced treatment of 3D precipitations reconstruction.
+cloud_ice and cloudwater.
+
+NB: lwc in Aqueous is completely wrong! (has been for a while)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+6th July 2022, (But pushed 28 Nov) Peter 
 
 LF with full chemistry: include voc derivatives through new emis system.
 borders (several countries in same gridcell, with different splits) are also

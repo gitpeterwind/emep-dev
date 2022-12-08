@@ -321,8 +321,8 @@ subroutine Setup_Clouds(i,j,debug_flag)
         ! ==> cloudwater (volume mixing ratio of water to air in cloud
         ! (when devided by cloud fraction b )
         ! cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
-        if(lwc(i,j,k)>CW_LIMIT) then
-           cloudwater(k) = lwc(i,j,k) / b(k) ! value of cloudwater in the
+        if(lwc(i,j,k)>CW_LIMIT .and. b(k) > 1E-4) then
+           cloudwater(k) = lwc(i,j,k) / b(k)  ! value of cloudwater in the
            ! cloud fraction of the grid
            
            !hf : alternative if cloudwater exists (and can be used) from met model
