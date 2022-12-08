@@ -791,7 +791,7 @@ character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.S
 !SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
 character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/CloudJ_7.3e/'
-character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs/'
+character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v2/'
 character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
