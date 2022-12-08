@@ -19,13 +19,13 @@ MODULE CloudJ_mod
     use MetFields_mod,         only: ps,foundcloudwater,q,th,cc3d,  &
                                      roa, z_bnd, cw_met, &
                                      foundcloudicewater, ciw_met
-    use GasParticleCoeffs_mod, only: DDdefs
+    use GasParticleCoeffs_mod, only: DDspec
     use Config_module,         only: KMAX_BND,KMAX_MID,KCHEMTOP,METSTEP,USES, &
                                      NPROC, IOU_INST, num_lev3d,lev3d, cloudjx_strat, &
                                      MasterProc
     use Par_mod,               only: me,LIMAX,LJMAX
     use TimeDate_mod,          only: daynumber,current_date,date
-    use ZchemData_mod,         only: rcphot, rcphotslice
+    use ZchemData_mod,         only: rcphot, rcphotslice, rh
     use Functions_mod,         only: Tpot_2_T
     use TimeDate_ExtraUtil_mod,only: date2string
     use SmallUtils_mod,        only: find_index
@@ -35,7 +35,7 @@ MODULE CloudJ_mod
     use ChemDims_mod,          only: NSPEC_ADV
     use ChemSpecs_mod
     use PhysicalConstants_mod, only: AVOG, ATWAIR
-    use AeroFunctions_mod,     only: LogNormFracBelow
+    use AeroFunctions_mod,     only: LogNormFracBelow, GerberWetRad, GerberWetSig, pmH2O_gerberSig, DpgN2DpgV
                                   
 
     IMPLICIT NONE
@@ -54,25 +54,25 @@ MODULE CloudJ_mod
     integer                    :: NICA,JCOUNT
     character*6, dimension(JVN_)  ::  TITLJXX
 
-    integer, save :: photo_out_ix_no2_fj = -1
-    integer, save :: photo_out_ix_o3a_fj = -1
-    integer, save :: photo_out_ix_o3b_fj = -1
-    integer, save :: photo_out_ix_h2o2_fj = -1
-    integer, save :: photo_out_ix_hno3_fj = -1
-    integer, save :: photo_out_ix_ach2o_fj = -1
-    integer, save :: photo_out_ix_bch2o_fj = -1
-    integer, save :: photo_out_ix_hono_fj = -1
+    integer, save :: photo_out_ix_no2_fj    = -1
+    integer, save :: photo_out_ix_o3a_fj    = -1
+    integer, save :: photo_out_ix_o3b_fj    = -1
+    integer, save :: photo_out_ix_h2o2_fj   = -1
+    integer, save :: photo_out_ix_hno3_fj   = -1
+    integer, save :: photo_out_ix_ach2o_fj  = -1
+    integer, save :: photo_out_ix_bch2o_fj  = -1
+    integer, save :: photo_out_ix_hono_fj   = -1
     integer, save :: photo_out_ix_ho2no2_fj = -1
-    integer, save :: photo_out_ix_no3_fj = -1
+    integer, save :: photo_out_ix_no3_fj    = -1
     integer, save :: photo_out_ix_ch3o2h_fj = -1 
-    integer, save :: photo_out_ix_MEK_fj = -1
-    integer, save :: photo_out_ix_N2O5_fj = -1
-    integer, save :: photo_out_ix_GLYOX_fj = -1  ! HCOHCO 
+    integer, save :: photo_out_ix_MEK_fj    = -1
+    integer, save :: photo_out_ix_N2O5_fj   = -1
+    integer, save :: photo_out_ix_GLYOX_fj  = -1  ! HCOHCO 
     integer, save :: photo_out_ix_CH3CHO_fj = -1 
     integer, save :: photo_out_ix_ACETON_fj = -1
     integer, save :: photo_out_ix_MGLYOX_fj = -1 ! RCOCHO
     integer, save :: photo_out_ix_BIACET_fj = -1 ! IDCH3COY
-    integer, save :: photo_out_ix_PAN_fj = -1 
+    integer, save :: photo_out_ix_PAN_fj    = -1 
     integer, save :: photo_out_ix_GLYOXA_fj = -1
     integer, save :: photo_out_ix_GLYOXB_fj = -1 
     integer, save :: photo_out_ix_GLYOXC_fj = -1 
@@ -163,22 +163,22 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     integer :: la, lo, w, z
     integer, save :: dim_lon, dim_lat, dim_alt, OZ_TOP, oz_month=-999, IO_OZONE=78, NAERMAX=25
     integer, save :: year, month, naerosol=15 ! max number of included EMEP aerosol
-    real, allocatable, save :: lon_ozone(:), lat_ozone(:), alt_ozone(:)
+    real, allocatable, save :: lon_ozone(:), lat_ozone(:), hpa_ozone(:)
     real, allocatable, save :: temp_ozone(:,:,:), pres_ozone(:,:,:), ozon_ozone(:,:,:)
     real, allocatable, save :: temp_obs(:,:,:), pres_obs(:,:,:), ozon_obs(:,:,:)
     character(len=150), save  :: fname_ozone
-    real,  save :: dlat, dlon, dalt
+    real,  save :: dlat, dlon
 
     ! mass fraction mapping between EMEP fine/coarse mode aerosol and CloudJ UMich bins
     real, save  :: SS_bin1, SS_bin2, SS_bin3 ,SS_bin4 
     real, save  :: DU_bin1, DU_bin2, DU_bin3 ,DU_bin4
+    real, save  :: dry_d, wet_d_ssf, sig_wet_ssf, wet_d_ssc, sig_wet_ssc, pmH2O_wet
+    real, save  :: wet_mmd_ssf, wet_mmd_ssc, dust_f_mmd, dust_c_mmd
     
     !---fast-JX:  INIT_JX is called only once to read in & store all fast-JX data: 
     !             also sets up random sequence for cloud-JX. 
     ! JVN_ = 101 (max number of J values read in from CloudJ)
     ! NJXX = number of derived Jvalues, set in RD_XXX 
-
-    ! if(me==0.and.i_emep==1.and.j_emep==1)write(*,*) 'this is a test', LWEPAR 
 
     ! set time-variables; nr_local = 1 uses current meteorology timestep 
     nr_local=1
@@ -203,9 +203,9 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
           ! define path based on model year & month and read in monthly lon-lat-alt satellite obs. data        
           if(year < 2005 .or. year > 2021) then 
-                fname_ozone = trim(cloudjx_strat)//trim('clim_')//date2string("MM",current_date)//trim('.dat')
+            fname_ozone = trim(cloudjx_strat)//date2string("/clim_MM.dat",current_date)
           else
-                fname_ozone = trim(cloudjx_strat)//date2string("YYYYMM",current_date)//trim('.dat')
+            fname_ozone = trim(cloudjx_strat)//date2string("/YYYYMM.dat",current_date) 
           endif
           if(me==0)write(*,*) 'Opening satellite O3/T obs. file: ', fname_ozone 
           
@@ -216,10 +216,9 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                 ! i/o arrays necessary for strat ozone files
                 allocate(lon_ozone(dim_lon))
                 allocate(lat_ozone(dim_lat))
-                allocate(alt_ozone(dim_alt))
+                allocate(hpa_ozone(dim_alt))
 
                 allocate(temp_ozone(dim_lon,dim_lat,dim_alt))
-                allocate(pres_ozone(dim_lon,dim_lat,dim_alt))
                 allocate(ozon_ozone(dim_lon,dim_lat,dim_alt))
 
                 allocate(temp_obs(LIMAX,LJMAX,dim_alt))
@@ -249,15 +248,13 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
           read(IO_OZONE) lon_ozone ! -180 to 180 degrees, as in EMEP
           read(IO_OZONE) lat_ozone ! -90 to 90 degrees, as in EMEP
-          read(IO_OZONE) alt_ozone ! altitude levels in km
+          read(IO_OZONE) hpa_ozone ! interface levels in hPa 
 
           dlon = lon_ozone(2) - lon_ozone(1) ! grid spacing in degrees
           dlat = lat_ozone(2) - lat_ozone(1) 
-          dalt = alt_ozone(2) - alt_ozone(1) ! vertical spacing in km
 
-          read(IO_OZONE) temp_ozone ! temperature (K)
-          read(IO_OZONE) pres_ozone ! pressure (hPa)
-          read(IO_OZONE) ozon_ozone ! ozone (molec/cm2)
+          read(IO_OZONE) temp_ozone ! temperature (K) mid-lvls
+          read(IO_OZONE) ozon_ozone ! ozone (molec/cm2) mid-lvls
 
           close(IO_OZONE)     
 
@@ -270,7 +267,6 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                       la = min(dim_lat, la)
 
                       temp_obs(w,z,:) = temp_ozone(lo,la,:)
-                      pres_obs(w,z,:) = pres_ozone(lo,la,:)
                       ozon_obs(w,z,:) = ozon_ozone(lo,la,:)
                 end do
           end do
@@ -283,25 +279,25 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           call INIT_FJX(TITLJXX,JVN_,NJXX) 
 
           if(allocated(f_3d))then ! if output fields requested in config file, set index
-            photo_out_ix_no2_fj = find_index("D3_J(NO2)", f_3d(:)%subclass)
-            photo_out_ix_o3a_fj = find_index("D3_J(O3a)", f_3d(:)%subclass)
-            photo_out_ix_o3b_fj = find_index("D3_J(O3b)", f_3d(:)%subclass)
-            photo_out_ix_h2o2_fj = find_index("D3_J(H2O2)", f_3d(:)%subclass)
-            photo_out_ix_hno3_fj = find_index("D3_J(HNO3)", f_3d(:)%subclass)
-            photo_out_ix_ach2o_fj = find_index("D3_J(ACH2O)", f_3d(:)%subclass)
-            photo_out_ix_bch2o_fj = find_index("D3_J(BCH2O)", f_3d(:)%subclass)
-            photo_out_ix_hono_fj = find_index("D3_J(HONO)", f_3d(:)%subclass)
+            photo_out_ix_no2_fj    = find_index("D3_J(NO2)",    f_3d(:)%subclass)
+            photo_out_ix_o3a_fj    = find_index("D3_J(O3a)",    f_3d(:)%subclass)
+            photo_out_ix_o3b_fj    = find_index("D3_J(O3b)",    f_3d(:)%subclass)
+            photo_out_ix_h2o2_fj   = find_index("D3_J(H2O2)",   f_3d(:)%subclass)
+            photo_out_ix_hno3_fj   = find_index("D3_J(HNO3)",   f_3d(:)%subclass)
+            photo_out_ix_ach2o_fj  = find_index("D3_J(ACH2O)",  f_3d(:)%subclass)
+            photo_out_ix_bch2o_fj  = find_index("D3_J(BCH2O)",  f_3d(:)%subclass)
+            photo_out_ix_hono_fj   = find_index("D3_J(HONO)",   f_3d(:)%subclass)
             photo_out_ix_ho2no2_fj = find_index("D3_J(HO2NO2)", f_3d(:)%subclass)
-            photo_out_ix_no3_fj = find_index("D3_J(NO3)", f_3d(:)%subclass)
+            photo_out_ix_no3_fj    = find_index("D3_J(NO3)",    f_3d(:)%subclass)
             photo_out_ix_ch3o2h_fj = find_index("D3_J(CH3O2H)", f_3d(:)%subclass)
-            photo_out_ix_MEK_fj = find_index("D3_J(MEK)", f_3d(:)%subclass)
-            photo_out_ix_N2O5_fj = find_index("D3_J(N2O5)", f_3d(:)%subclass)
-            photo_out_ix_GLYOX_fj = find_index("D3_J(GLYOX)", f_3d(:)%subclass)
+            photo_out_ix_MEK_fj    = find_index("D3_J(MEK)",    f_3d(:)%subclass)
+            photo_out_ix_N2O5_fj   = find_index("D3_J(N2O5)",   f_3d(:)%subclass)
+            photo_out_ix_GLYOX_fj  = find_index("D3_J(GLYOX)",  f_3d(:)%subclass)
             photo_out_ix_CH3CHO_fj = find_index("D3_J(CH3CHO)", f_3d(:)%subclass)
             photo_out_ix_ACETON_fj = find_index("D3_J(ACETON)", f_3d(:)%subclass)
             photo_out_ix_MGLYOX_fj = find_index("D3_J(MGLYOX)", f_3d(:)%subclass)
             photo_out_ix_BIACET_fj = find_index("D3_J(BIACET)", f_3d(:)%subclass)
-            photo_out_ix_PAN_fj = find_index("D3_J(PAN)", f_3d(:)%subclass)
+            photo_out_ix_PAN_fj    = find_index("D3_J(PAN)",    f_3d(:)%subclass)
             photo_out_ix_GLYOXA_fj = find_index("D3_J(GLYOXA)", f_3d(:)%subclass)
             photo_out_ix_GLYOXB_fj = find_index("D3_J(GLYOXB)", f_3d(:)%subclass)
             photo_out_ix_GLYOXC_fj = find_index("D3_J(GLYOXC)", f_3d(:)%subclass)
@@ -317,6 +313,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
     ! find available aerosol indices from chemistry
     if(first_call)then
+
       sulph_i      = find_index( "SO4           ", species_adv(:)%name )
       dustfroad_i  = find_index( "Dust_road_f   ", species_adv(:)%name )
       dustfwb_i    = find_index( "Dust_wb_f     ", species_adv(:)%name )
@@ -332,10 +329,11 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
       ffirec_i     = find_index( "ffire_c       ", species_adv(:)%name )
 
       ! aerosol properties 
-      DDdep_ssf   = find_index(  'SSf',DDdefs(:)%name, any_case=.true. )
-      DDdep_ssc   = find_index(  'SSc',DDdefs(:)%name, any_case=.true. )
-      DDdep_dustf = find_index(  'DUf',DDdefs(:)%name, any_case=.true. )
-      DDdep_dustc = find_index(  'DUc',DDdefs(:)%name, any_case=.true. )
+      DDdep_ssf   = find_index(  'SSf',DDspec(:)%name, any_case=.true. )
+      DDdep_ssc   = find_index(  'SSc',DDspec(:)%name, any_case=.true. )
+      DDdep_dustf = find_index(  'DUf',DDspec(:)%name, any_case=.true. )
+      DDdep_dustc = find_index(  'DUc',DDspec(:)%name, any_case=.true. )
+
     endif
 
     !inputs for SOLAR_JX 
@@ -378,9 +376,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           temperature = th(i_emep,j_emep,k,nr_local)* Tpot_2_T( Pres_mid )
           TTT(L) = temperature
 
-          !specific -> relative humidity
-          swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65)) !saturation water pressure
-          RRR(L) = q(i_emep,j_emep,k,nr_local)*(Pres_mid)/0.622/swp
+          if (k >= KCHEMTOP) RRR(L) = rh(k) ! use RH calculated in setup_1d; only defined up to chemtop
 
           !cloud cover stored as fraction from 0 to 1 (line 652 Met_mod.f90)
           DeltZ(L) = z_bnd(i_emep,j_emep,k)-z_bnd(i_emep,j_emep,k+1)
@@ -399,30 +395,9 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                 endif
           end if
 
-          ! for aerosols, positive indices set std atmos defs. 
-          
-          ! name(a12)_| R-eff   rho| notes
-          ! 1 Str-Bkgd| 0.221 1.630| backgrd strat sulf
-          ! 2 Str-Volc| 0.386 1.630| volcanic strat sulf
-          ! 3 UT-sulf1| 0.166 1.769| upper-trop sulf1
-          ! 4 UT-sulf2| 0.166 1.769| upper-trop sulf2
-          ! 5 UT-sulfM| 0.140 1.769| upper-trop sulf (UMich)
-          ! 6 UM-BC1  | 0.140 1.500| UMich w/Mie code
-          ! 7 UM-BC2  | 0.140 1.500| UMich w/Mie code
-          ! 8 UM-BB08C| 0.149 1.230| UMich w/Mie code 8%BC 0%RH
-          ! 9 UM-FF04C| 0.140 1.212| UMich w/Mie code 4%BC 0%RH
-          !10 UM-FF10C| 0.140 1.230| UMich w/Mie code 10%BC 0%RH
-          !11 HDust.15| 0.150 2.600| Harvard R.V.Martin generated (original)
-          !12 HDust.25| 0.250 2.600
-          !13 HDust.40| 0.400 2.600
-          !14 HDust.80| 0.800 2.600
-          !15 HDust1.5| 1.500 2.600
-          !16 HDust2.5| 2.500 2.600
-          !17 HDust4.0| 4.000 2.600
-
-          ! negative indices give UMich aerosol definitions, which include RH effects. FF/BB as a function of BC content (%).
-          ! FF = Fossil Fuel, BB = Biomass Burning
-
+          ! negative aerosol indices give UMich aerosol definitions (include RH effects). FF and BB as a function of 
+          ! black carbon (BC) mass content (%). FF = Fossil Fuel, BB = Biomass Burning.
+          ! 
           ! 1 SULF    2 SS-1    3 SS-2    4 SS-3    5 SS-4    6 DD-1    7 DD-2
           ! 8 DD-3    9 DD-4    10 FF00   11 FF02   12 FF04   13 FF06   14 FF08
           ! 15 FF10   16 FF12   17 FF14   18 BB00   19 BB02   20 BB04   21 BB06
@@ -430,6 +405,9 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           ! 29 BB22   30 BB24   31 BB26   32 BB28   33 BB30
 
           IF(USES%CLOUDJAEROSOL) then
+            ! emissions are in molecules / cm3 / s and are used to populate xn_2d,
+            ! which is then converted to ppb before being put into xn_adv (i.e., a ratio).
+            !
             ! atmos. densities from kg/m3 to g/m3 to moles/m3 to moles/m2 to grams/m2 of aerosol
             if(sulph_i>0) SULF(L)   = xn_adv(sulph_i,i_emep,j_emep,k)            &
                                     * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR     &
@@ -461,26 +439,66 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                                         * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR           &
                                         * DeltZ(L) * species_adv(dustcsah_i)%molwt
 
-            ! ----sea salt
-            if(seasaltf_i>0) SEAS_F(L)  = xn_adv(seasaltf_i,i_emep,j_emep,k)               & 
-                                        * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR           &
-                                        * DeltZ(L) * species_adv(seasaltf_i)%molwt
+            ! ----fine sea salt; hygroscopic growth mass gain using Gerber functions
+            if (seasaltf_i>0) then 
 
-            if(seasaltc_i>0) SEAS_C(L)  = xn_adv(seasaltc_i,i_emep,j_emep,k)               & 
-                                        * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR           &
-                                        * DeltZ(L) * species_adv(seasaltc_i)%molwt
-                         
+              SEAS_F(L)  = xn_adv(seasaltf_i,i_emep,j_emep,k)               & 
+                         * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR           &
+                         * species_adv(seasaltf_i)%molwt   ! here still in g/m3
+
+              ! calculate H2O mass using Gerber functions for geom. mean radius growth and geom. std growth
+              dry_d       = DDspec(DDdep_ssf)%DpgN ! geometric mean diameter in meters
+              wet_d_ssf   = 2 * GerberWetRad( dry_d * 0.5, RRR(L), DDspec(DDdep_ssf)%Gb )
+              sig_wet_ssf = GerberWetSig( dry_d * 0.5, DDspec(DDdep_ssf)%sigma, RRR(L), DDspec(DDdep_ssf)%Gb )
+
+              wet_mmd_ssf = DpgN2DpgV( wet_d_ssf, sig_wet_ssf ) ! mass median diam. for use in mass-frac calculations
+
+              pmH2O_wet = pmH2O_gerberSig( SEAS_F(L) * 1e6,                          &  ! micrograms of seasalt per m3 as input
+                          rho_kgm3=DDspec(DDdep_ssf)%rho_p,Dp=dry_d,Dpw=wet_d_ssf,   &
+                          sigma_d=DDspec(DDdep_ssf)%sigma,sigma_w=sig_wet_ssf ) * 1e-6  ! output in micrograms per m3, convert to g/m3
+
+              SEAS_F(L) = ( SEAS_F(L) + pmH2O_wet ) * DeltZ(L) ! g/m2 of wet fine sea salt
+
+            endif ! fine sea salt
+            
+            ! ----coarse sea salt; include hygroscopic growth effect using Gerber functions
+            if (seasaltc_i>0) then
+
+              SEAS_C(L)  = xn_adv(seasaltc_i,i_emep,j_emep,k)               &
+                         * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR           &
+                         * species_adv(seasaltc_i)%molwt   ! here still in g/m3
+
+              ! calculate H2O mass using Gerber functions for geom. mean radius growth and geom. std growth
+              dry_d       = DDspec(DDdep_ssc)%DpgN ! geometric mean diameter in meters
+              wet_d_ssc   = 2 * GerberWetRad( dry_d * 0.5, RRR(L), DDspec(DDdep_ssc)%Gb )
+              sig_wet_ssc = GerberWetSig( dry_d * 0.5, DDspec(DDdep_ssc)%sigma, RRR(L), DDspec(DDdep_ssc)%Gb )
+
+              wet_mmd_ssc = DpgN2DpgV( wet_d_ssc, sig_wet_ssc ) ! mass median diam. for use in mass-frac calculations
+
+              pmH2O_wet = pmH2O_gerberSig( SEAS_C(L) * 1e6,                          &  ! micrograms of seasalt per m3 as input
+                          rho_kgm3=DDspec(DDdep_ssc)%rho_p,Dp=dry_d,Dpw=wet_d_ssc,   &
+                          sigma_d=DDspec(DDdep_ssc)%sigma,sigma_w=sig_wet_ssc ) * 1e-6  ! output in micrograms per m3, convert to g/m3
+
+              SEAS_C(L) = ( SEAS_C(L) + pmH2O_wet ) * DeltZ(L) ! g/m2 of wet coarse sea salt
+
+            endif ! coarse sea salt
+     
             ! ----forest fire
             if(ffirebc_i>0) Forest_F(L)   = xn_adv(ffirebc_i,i_emep,j_emep,k)                 & 
                                           * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR            &
                                           * DeltZ(L) * species_adv(ffirebc_i)%molwt
 
-            ! undo 1.7 EMEP conversion factor from organic carbon aerosols to organic matter
+            ! CMXbb:# The tricky bit: we read in BC, OC and PM25 from FINN, but want BC, OM and
+            ! CMXbb:# rempPM25 for EmChem19a , CRI etc. We solve this by using FINN's
+            ! CMXbb:# OC to estimate OM (factor 1.7), and subtracting both BC and OM from
+            ! CMXbb:# PM25 to get remPM25.   (ForestFire_mod will prevent zeros).
+            !
+            ! hence remppm2.5 = pm2.5 - 1.7*OC - 1.0*BC
+            ! such that for cloudj, forest fire pm2.5 = remppm2.5 + 1.7*OC (=OM) + 1.0*BC
             if(ffireom_i>0) Forest_F(L)   = Forest_F(L) + xn_adv(ffireom_i,i_emep,j_emep,k)   & 
                                           * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR            &
-                                          * DeltZ(L) * species_adv(ffireom_i)%molwt / 1.7
+                                          * DeltZ(L) * species_adv(ffireom_i)%molwt
 
-            ! remainder of pm2.5
             if(ffireppm25_i>0) Forest_F(L)= Forest_F(L) + xn_adv(ffireppm25_i,i_emep,j_emep,k)& 
                                           * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR            &
                                           * DeltZ(L) * species_adv(ffireppm25_i)%molwt
@@ -494,23 +512,23 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             AER(L,1)=SULF(L)   ! aerosol [g/m2]
             NAA(L,1)=-1        ! aerosol index
 
-            ! UMich sea salt bin RADIUS range
-            ! 0.05-0.63, 0.63-1.26, 1.26-2.50, 2.50-10 um
-            ! EMEP fine mode sea salt MMDiameter = 0.33 um, sigma = 1.8
-            ! EMEP coarse mode sea salt MMDiameter = 4.00 um, sigma = 2.0
-            if(first_call .and. L==1) then
-              SS_bin1 = (LogNormFracBelow(DDdefs(DDdep_ssf)%umDpgV,DDdefs(DDdep_ssf)%sigma,1.26) &
-                     - LogNormFracBelow(DDdefs(DDdep_ssf)%umDpgV,DDdefs(DDdep_ssf)%sigma,0.10) )
-          
-              SS_bin2 = (LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,2.52) &
-                       - LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,1.26) ) 
+            ! UMich sea salt bin RADIUS range 0.05-0.63, 0.63-1.26, 1.26-2.50, 2.50-10 um
+            ! EMEP fine mode and coarse mode from wet radius calculations; bin1 covers basically all of fine mode
+            if (seasaltf_i>0) SS_bin1 = (LogNormFracBelow(wet_mmd_ssf,sig_wet_ssf,1.26e-6) &
+                                       - LogNormFracBelow(wet_mmd_ssf,sig_wet_ssf,0.10e-6) )
+        
+            if (seasaltc_i>0) then 
 
-              SS_bin3 = (LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,5.00) & 
-                       - LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,2.52) )
+              SS_bin2 = (LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,2.52e-6) &
+                       - LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,1.26e-6) ) 
 
-              SS_bin4 = (LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,20.00)&
-                       - LogNormFracBelow(DDdefs(DDdep_ssc)%umDpgV,DDdefs(DDdep_ssc)%sigma,5.00) )
-            endif
+              SS_bin3 = (LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,5.00e-6) & 
+                       - LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,2.52e-6) )
+
+              SS_bin4 = (LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,20.00e-6)&
+                       - LogNormFracBelow(wet_mmd_ssc,sig_wet_ssc,5.00e-6) )
+                       
+            end if
 
             AER(L,2)=SEAS_F(L) * SS_bin1 ! aerosol [g/m2] 
             NAA(L,2)=-2                  ! aerosol index
@@ -528,18 +546,22 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             ! 0.05-0.63, 0.63-1.26, 1.26-2.50, 2.50-10 um
             ! EMEP fine mode dust MMDiameter = 0.33 um, sigma = 1.8 
             ! EMEP coarse mode dust MMDiameter = 5.00 um, sigma = 2.2
-            if(first_call .and. L==1) then
-              DU_bin1 = (LogNormFracBelow(DDdefs(DDdep_dustf)%umDpgV,DDdefs(DDdep_dustf)%sigma,1.26) &
-                      - LogNormFracBelow(DDdefs(DDdep_dustf)%umDpgV,DDdefs(DDdep_dustf)%sigma,0.10) )
+            if(first_call .and. L==1) then ! dust bins are time-invariant because no hygroscopic growth
+
+              dust_f_mmd = DpgN2DpgV( DDspec(DDdep_dustf)%DpgN, DDspec(DDdep_dustf)%sigma )
+              dust_c_mmd = DpgN2DpgV( DDspec(DDdep_dustc)%DpgN, DDspec(DDdep_dustc)%sigma )
+
+              DU_bin1 = (LogNormFracBelow(dust_f_mmd,DDspec(DDdep_dustf)%sigma,1.26e-6) &
+                       - LogNormFracBelow(dust_f_mmd,DDspec(DDdep_dustf)%sigma,0.10e-6) )
           
-              DU_bin2 = (LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,2.52) &
-                      - LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,1.26) )
+              DU_bin2 = (LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,2.52e-6) &
+                       - LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,1.26e-6) )
 
-              DU_bin3 = (LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,5.00) &
-                      - LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,2.52) )
+              DU_bin3 = (LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,5.00e-6) &
+                       - LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,2.52e-6) )
 
-              DU_bin4 = (LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,20.00)&
-                      - LogNormFracBelow(DDdefs(DDdep_dustc)%umDpgV,DDdefs(DDdep_dustc)%sigma,5.00) )
+              DU_bin4 = (LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,20.00e-6)&
+                       - LogNormFracBelow(dust_c_mmd,DDspec(DDdep_dustc)%sigma,5.00e-6) )
 
               if(masterproc) &
                 write(*,*) 'CloudJ seasalt bin mass fractions: ',SS_bin1, SS_bin2, SS_bin3, SS_bin4, &
@@ -559,19 +581,23 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             NAA(L,9)=-9                  ! aerosol index
 
             AER(L,10)=Forest_F(L) ! aerosol [g/m2]
+
             ! convert ratio to index matching aerosol carbon-ratio input file
             ! index -10 to -17 fossil fuel, index -18 to -33 for biomas burn
-            FF_BC_index = -18
+            FF_BC_index = -18 ! first index for biomass burning in UMa.dat
+
             if(ffirebc_i>0) then 
               FF_BCratio_real = xn_adv(ffirebc_i,i_emep,j_emep,k) &
                               * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR  &
                               * DeltZ(L) * species_adv(ffirebc_i)%molwt / Forest_F(L)
           
+              ! tabulated in 2% increments
               FF_BC_index = max( 0,nint( FF_BCratio_real / 0.02) ) ! round to nearest int
               FF_BC_index = min( FF_BC_index, 15 )
               FF_BC_index = -FF_BC_index - 18 ! from -18 to -33
             endif
             NAA(L,10)=FF_BC_index
+
           endif ! if uses%cloudjaerosol
     end do ! EMEP temperature, relative humidity, cloud water path & aerosol done
 
@@ -581,7 +607,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           PPP(L) =A_bnd(k)/100.0 + B_bnd(k)*PSURF ! PSURF in hPa
     end do
     
-    L=0 ! EMEP ozone, derived using interface pressure
+    L=0 ! EMEP ozone path (molec/cm^2), derived using interface pressure
     do k=KMAX_MID,1,-1
           L=L+1
           OOO(L) = xn_adv(IXADV_O3,i_emep,j_emep,k)*(PPP(L)-PPP(L+1))*MASFAC
@@ -596,7 +622,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           K = K + 1
           OOO(L) = ozon_obs(i_emep,j_emep,K)
           TTT(L) = temp_obs(i_emep,j_emep,K)
-          PPP(L+1) = pres_obs(i_emep,j_emep,K) 
+          PPP(L+1) = hpa_ozone(K) 
     end do
     
     !-----------------------------------------------------------------------
@@ -683,8 +709,8 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     !=======================================================================
     ! outputs Jvalues (VALJXX), NICA and JCOUNT
     !
-    ! inputs PPP in Pascal, ZZZ in cm, TTT in Kelvin, DDD in molec/cm2,
-    ! RRR as RH (0-100%), OOO in molec/cm2, LWP in g/m2, IWP in g/m2
+    ! inputs PPP in hPa, ZZZ in cm, TTT in Kelvin, DDD in molec/cm2,
+    ! RRR as RH (0.00->1.00), OOO in molec/cm2, LWP in g/m2, IWP in g/m2
     !=======================================================================
     call CLOUD_JX (U0,SZA,REFLB,SOLF,FG0,LPRTJ,PPP,ZZZ,TTT,             &
                 DDD,RRR,OOO,LWP,IWP,REFFL,REFFI,CLF,CLDCOR,CLDIW, &
@@ -724,7 +750,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           rcphotslice(IDCH3COX,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(61)) + VALJXX(L,JIND(62)) ! IDCH3COX = IDMEK. EMEP different assumption about channels (1.0/0.0 vs 0.85/0.15 for cloudJ) 
           rcphotslice(IDRCOCHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(64))  ! 64 CH3COCHO  PHOTON    CH3CO     CO  1.000 /MGlyxl/ NB: IDRCOCHO = IDRCOHCO = 12
           rcphotslice(IDCH3CHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(54))  ! 54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
-          rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
+          rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! not in EmChem19 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
           rcphotslice(IDHCOHCO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) + VALJXX(L,JIND(66)) + VALJXX(L,JIND(67)) ! Glyox channel qyields depend on wavelength (MCM webpage), EMEP reaction assumes fixed qyields
           rcphotslice(IDCH3COY,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(72)) ! BIACET cross-section and q-yield from MCM database
 

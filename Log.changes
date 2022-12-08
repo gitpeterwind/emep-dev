@@ -46,6 +46,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 8th Dec 2022 Peter, Heiko
 
 AROME meteorology:
@@ -53,6 +54,35 @@ Included more advenced treatment of 3D precipitations reconstruction.
 cloud_ice and cloudwater.
 
 NB: lwc in Aqueous is completely wrong! (has been for a while)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+8th Dec 2022, Willem
+
+- Improved CloudJ aerosol handling by allowing hygroscopic growth of sea salt
+  using Gerber functions (for now), considerably increasing sea salt aerosol path.
+
+- Fixed CloudJ issue where forest fire organic matter (OM) was divided by 1.7
+  to get original OC values from emissions, causing the total forest fire
+  aerosol loading to be misrepresented.
+
+- CloudJ default stratospheric O3 observational input folder changed to
+  OzoneObs_v2. These files more accurately represent pressure interface
+  levels starting from EMEP 100 hPa top and the ozone path between these
+  levels. Negligible change on simulation results. Next version (v3) will
+  be more flexible in how it handles EMEP model top.
+
+- Added aerosol functions in AeroFunctions_mod. Not all currently in use, and 
+  if used, only in CloudJ for now. Sig functions include effects of geometric
+  standard deviation growth using Gerber's (1985) function. Lewis & Schwartz 
+  can be used to describe sea salt growth.
+
+       - GerberWetSig
+       - pmSurfAreaSig
+       - pmH2O_gerberSig
+       - LewisSchwartz
+
+- EmChem19rc added ffire_c emissions line 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
