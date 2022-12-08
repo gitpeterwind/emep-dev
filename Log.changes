@@ -61,6 +61,16 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   levels. Negligible change on simulation results. Next version (v3) will
   be more flexible in how it handles EMEP model top.
 
+- Added aerosol functions in AeroFunctions_mod. Not all currently in use, and 
+  if used, only in CloudJ for now. Sig functions include effects of geometric
+  standard deviation growth using Gerber's (1985) function. Lewis & Schwartz 
+  can be used to describe sea salt growth.
+
+       - GerberWetSig
+       - pmSurfAreaSig
+       - pmH2O_gerberSig
+       - LewisSchwartz
+
 - EmChem19rc added ffire_c emissions line 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
