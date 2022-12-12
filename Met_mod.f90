@@ -609,6 +609,8 @@ subroutine MeteoRead()
           met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
      if (met(ix)%found) then
         if(write_now )write(*,*)'found ',trim(met(ix)%name)
+      else
+          call CheckStop(USES%CLOUDJ, "ERROR Cloudj needs cloudwater, but it is not found")
      end if
   end if
   

@@ -416,7 +416,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%needed           = USES%CLOUDJ
+  met(ix)%needed           = .false.
   met(ix)%found            => foundcloudwater
   allocate(cw_met(LIMAX,LJMAX,KMAX_MID,NMET))
   cw_met=0.0

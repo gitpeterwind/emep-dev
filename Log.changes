@@ -46,7 +46,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th Dec 2022 Peter
 
+CLOUDJ switch for cloudwater was broken.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Dec 2022 Peter, Heiko
 
 AROME meteorology:
