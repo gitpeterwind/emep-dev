@@ -50,6 +50,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 CLOUDJ switch for cloudwater was broken.
 
+Makefile and DataDir in config_emep.nml adapted for new machine Atos 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Dec 2022 Peter, Heiko
 
