@@ -128,7 +128,8 @@ contains
   !     Liquid aerosol species concentrations, expressed in moles/m3.
   !     AERLIQ(01) - H+(aq) !     AERLIQ(02) - Na+(aq) !     AERLIQ(03) - NH4+(aq) !     AERLIQ(04) - Cl-(aq)
   !     AERLIQ(05) - SO4--(aq) !     AERLIQ(06) - HSO4-(aq) !     AERLIQ(07) - NO3-(aq) !     AERLIQ(08) - H2O
-  !     AERLIQ(09) - NH3(aq) (undissociated) !     AERLIQ(10) - HNCl(aq) (undissociated) !     AERLIQ(11) - HNO3(aq) (undissociated) !     AERLIQ(12) - OH-(aq)
+  !     AERLIQ(09) - NH3(aq) (undissociated) !     AERLIQ(10) - HNCl(aq) (undissociated) !
+  !     AERLIQ(11) - HNO3(aq) (undissociated) !     AERLIQ(12) - OH-(aq)
   !     AERLIQ(13) - Ca2+(aq) !     AERLIQ(14) - K+(aq) !     AERLIQ(15) - Mg2+(aq)
 
   !  4. [AERSLD] !     real array of length [19].
@@ -165,6 +166,7 @@ contains
     xn_2d(NH3_ix,k)  = max(0.0, gas(1)) * molesm3_to_Ncm3
     xn_2d(HNO3_ix,k) = max(0.0, gas(2)) * molesm3_to_Ncm3
     !xn_2d(HCl,k) = gas(3) * molesm3_to_Ncm3
+!XXX PMwater = aerliq(8)
 
    ! aerosol outputs are in moles/m3(air)
    ! 1=H+, 2=Na+, 3=NH4+, 4=Cl-, 5=SO42-, 6=HSO4-, 7=NO3-, 8=Ca2+
