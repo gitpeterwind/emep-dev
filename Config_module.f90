@@ -331,6 +331,9 @@ logical,  public, save ::    &
 character(len=TXTLEN_SHORT),  public, save :: BBMODE="DAILY_REC"
 character(len=TXTLEN_FILE),  public, save :: &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
+  ! change in config:
+  !v2.5: FINN_PATTERN = 'FINN_ForestFireEmis_modvrs_v25_YYYY.nc',&
+  !v1.5:
   FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
@@ -771,7 +774,7 @@ character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOT
 !character(len=*), parameter :: ZCMDIR= 'DataDir/ZCM_CRI-R5-emep/'
 character(len=TXTLEN_FILE), target, save, public :: &
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
- ,cmxBiomassBurning_FINNv1p5 = 'ZCMDIR/CMX_BiomassBurning_FINNv1p5.txt' &
+ ,cmxBiomassBurning_FINN     = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt' & ! works for 1.5 also
  ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt' &
 !POLL replaced by name of pollutant in EmisSplit
  ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
@@ -884,7 +887,7 @@ subroutine Config_Constants(iolog)
    ,HourlyFacSpecialsFile&
    ,hourly_emisfac& !2D mapped hourly timefactors
    ,cmxbicDefaultFile&
-   ,cmxBiomassBurning_FINNv1p5&
+   ,cmxBiomassBurning_FINN&
    ,cmxBiomassBurning_GFASv1&
    ,SplitDefaultFile&
    ,SplitSpecialsFile&
@@ -1051,7 +1054,7 @@ subroutine Config_Constants(iolog)
   call associate_File(HourlyFacFile)
   call associate_File(HourlyFacSpecialsFile)
   call associate_File(cmxbicDefaultFile)
-  call associate_File(cmxBiomassBurning_FINNv1p5)
+  call associate_File(cmxBiomassBurning_FINN)
   call associate_File(cmxBiomassBurning_GFASv1)
   call associate_File(SplitDefaultFile)
   call associate_File(SplitSpecialsFile)

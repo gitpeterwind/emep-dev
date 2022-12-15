@@ -46,6 +46,33 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Dec 2022 Dave
+
+Enabled PM10 and ffire_c and FINNv2.5 usage. (1.5 still works, just change FINN_PATTERN in config as below)
+
+ForestFire_mod:
+
+  Added PM10 to 
+  also notation change, removing 1p5 from FINN variables
+
+Config_mod
+
+  v2.5 mentioned, and small notation change, but not default. Choose in config:
+
+config_emep.nml
+
+  ! Dec 2022: can use same mapping file for 1.5 and 2.5, but need different FINN patterns:
+  !v1.5 here:
+  FINN_PATTERN = 'DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc'
+  !v2.5 here:
+  FINN_PATTERN = 'DataDir/ForestFire/FINN/work/v25_convert/ForestFire_Emis_modvrs_v25_YYYY.nc'
+
+  cmxBiomassBurning_FINN = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt',  ! works also for v1.5
+
+
+Also, tiny re-format in AerosolCalls. To remind me of something...
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Dec 2022 Peter
 
 CLOUDJ switch for cloudwater was broken.

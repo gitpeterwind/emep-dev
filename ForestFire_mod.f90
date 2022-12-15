@@ -43,7 +43,7 @@ use ChemSpecs_mod
 use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
                                 IOU_INST,BBMODE,BBverbose,persistence,&
                                 fire_year,&
-                                cmxBiomassBurning_FINNv1p5, &
+                                cmxBiomassBurning_FINN, &
                                 cmxBiomassBurning_GFASv1, &
                                 BBneed_file,BBneed_date,BBneed_poll,&
                                 BBMAP,GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
@@ -107,11 +107,12 @@ integer :: iemep
 ! list of possible species names from the FINN and GFAS inputs.
 ! Note: not all species are needed (some names change for different years and
 ! versions), but only species from these lists are allowed.
-character(len=TXTLEN_SHORT), dimension(23) :: &
-  POSSIBLE_FINNv1p5_SPECS  = [ character(len=TXTLEN_SHORT):: &
+! 2022-12-15 added PM10 to cope with FINNv2.5. Still works with 1.5 data
+character(len=TXTLEN_SHORT), dimension(24) :: &
+  POSSIBLE_FINNv2p5_SPECS  = [ character(len=TXTLEN_SHORT):: &
    'CO', 'NO' ,'NO2' ,'SO2' ,'NH3' , &
    'ACET' ,'ALD2' ,'ALK4' ,'C2H6' ,'C3H8', &
-   'CH2O', 'MEK','PRPE' ,'PM25' ,'OC' ,&
+   'CH2O', 'MEK','PRPE' ,'PM25' ,'PM10', 'OC' ,&
    'BC' ,'C2H4' ,'GLYC' ,'HAC' ,'BENZ' ,&
    'TOLU','XYLE' ,'MGLY' ]
 
@@ -278,7 +279,7 @@ subroutine make_mapping()
   integer i,n
 
   if(BBMAP=='FINN') &
-     call readCMXmapping(cmxBiomassBurning_FINNv1p5, POSSIBLE_FINNv1p5_SPECS,&
+     call readCMXmapping(cmxBiomassBurning_FINN, POSSIBLE_FINNv2p5_SPECS,&
         NBB_DEFS,NEMEPSPECS,tmpFF_defs)
 
   if(BBMAP=='GFAS') &

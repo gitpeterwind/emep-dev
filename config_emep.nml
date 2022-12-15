@@ -1,5 +1,5 @@
 &Model_config
-  GRID      = 'EECCA',
+  GRID      = 'EMEP0302',
   iyr_trend = 2018,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
@@ -302,8 +302,16 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   BBneed_poll = F,  ! Avoids problems with missing ISOP in later FINN data
   BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
-  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
   GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc'
+
+  ! Dec 2022: can use same mapping file for 1.5 and 2.5, but need different FINN patterns:
+  !v1.5 here:
+  FINN_PATTERN = 'DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc'
+  !v2.5 here:
+  FINN_PATTERN = 'DataDir/ForestFire/FINN/work/v25_convert/ForestFire_Emis_modvrs_v25_YYYY.nc'
+
+  cmxBiomassBurning_FINN = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt',  ! works also for v1.5
+
 
 
 !-------- Read/Write MODEs
@@ -549,6 +557,7 @@ OutputConcs=
       'FFIRE_BC'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_REMPPM25'   ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
       'FFIRE_OM'         ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+      'FFIRE_C'          ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
 !SPECIAL SIA25 will only include NO3_c < 2.5 um
       'SURF_ug_SIA25'        ,'ug' ,'2d','SIA25'    ,'MISC','YMD',
 !SPECIAL PM25 will be sum of fine + fraction coarse
