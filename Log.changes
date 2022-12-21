@@ -46,6 +46,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Dec 2022 Peter, Heiko
+
+The met levels are checked against they mid values instead of bnd values.
+Bnd values will have no sense if not all levels are present in the met file
+(In Arome, we want to store only the required levels in the metdata)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Dec 2022 Dave
 
 Enabled PM10 and ffire_c and FINNv2.5 usage. (1.5 still works, just change FINN_PATTERN in config as below)

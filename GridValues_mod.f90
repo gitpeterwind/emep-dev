@@ -537,7 +537,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
   real :: x1,x2,x3,x4,P0,x,y,mpi_out,r,t
   logical::found_hybrid=.false.,found_metlevels=.false.
   real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
-  real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lat
+  real :: P,rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lat
   integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
   real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
@@ -1057,7 +1057,8 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
         if(MasterProc)write(*,*)"Vertical levels from met, P at level boundaries:"
       end if
       do k=1,KMAX_MET+1
-        if(MasterProc)write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
+         P=A_bnd_met(k)+P0*B_bnd_met(k)
+        if(MasterProc)write(*,44)k, P, 'Pa', 1000*StandardAtmos_kPa_2_km(P/1000), 'm '
       end do
     else
       call check(nf90_get_var(ncFileID, varID, P0 ))
@@ -1071,14 +1072,18 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
         call check(nf90_get_var(ncFileID, varID, B_bnd_met, count=(/KMAX_MET/) )) !read mid values!
         A_bnd_met(KMAX_MET+1)=0.0
         B_bnd_met(KMAX_MET+1)=1.0
+        !NB: even if we store A_bnd_met, they do not need to make sense, only
+        !    mid values (defined as values in the middle of the bnd pressures) are actually used
+        ! if not all levels are present in the metfile, the bnd values will not make sense.
         do k=KMAX_MET,1,-1
           A_bnd_met(k)=A_bnd_met(k+1)-2.0*(A_bnd_met(k+1)-A_bnd_met(k))!from mid to bnd values!
           B_bnd_met(k)=B_bnd_met(k+1)-2.0*(B_bnd_met(k+1)-B_bnd_met(k))!from mid to bnd values!
         end do
         
-        if(MasterProc)write(*,*)'Metdata pressure at level boundaries:'
-        do k=1,KMAX_MET+1
-          if(MasterProc)write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
+        if(MasterProc)write(*,*)'Metdata at mid levels:'
+        do k=1,KMAX_MET
+           P=0.5*(A_bnd_met(k)+A_bnd_met(k+1))+0.5*P0*(B_bnd_met(k)+B_bnd_met(k+1))
+           if(MasterProc)write(*,44)k, P, 'Pa', 1000*StandardAtmos_kPa_2_km(P/1000), 'm '
         end do
         found_metlevels=.true.
         
@@ -1126,11 +1131,13 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       if(MasterProc)write(*,44)k, A_bnd(k)+P0*B_bnd(k),'Pa',1000*StandardAtmos_kPa_2_km((A_bnd(k)+Pref*B_bnd(k))/1000),'m '
     end do
     !test if the top is within the height defined in the meteo files
-    if(MasterProc.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)+0.01<A_bnd_met(1)+P0*B_bnd_met(1)))then
-      write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+Pref*B_bnd(1)
-      write(*,*)'Pressure at top defined from meteo files is ',A_bnd_met(1)+Pref*B_bnd_met(1)
-      write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
-      call StopAll('Top level too high! Change values in '//trim(Vertical_levelsFile))
+    if(MasterProc.and.External_Levels_Def)then
+       if(A_bnd(2)+P0*B_bnd(2)+0.01<0.5*(A_bnd_met(1)+A_bnd_met(2))+0.5*P0*(B_bnd_met(1)+B_bnd_met(2)))then
+          write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+Pref*B_bnd(1)
+          write(*,*)'Pressure at middle of highest met level is ',0.5*(A_bnd_met(1)+A_bnd_met(2))+0.5*P0*(B_bnd_met(1)+B_bnd_met(2))
+          write(*,*)'Pressure at top must be higher (lower altitude) than top defined in meteo '
+          call StopAll('Top level too high! Change values in '//trim(Vertical_levelsFile))
+       end if
     end if
     
     !test if the levels can cope with highest mountains (400 hPa)
