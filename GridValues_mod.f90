@@ -1132,8 +1132,10 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     end do
     !test if the top is within the height defined in the meteo files
     if(MasterProc.and.External_Levels_Def)then
-       if(A_bnd(2)+P0*B_bnd(2)+0.01<0.5*(A_bnd_met(1)+A_bnd_met(2))+0.5*P0*(B_bnd_met(1)+B_bnd_met(2)))then
+       if(A_bnd(3)+P0*B_bnd(3)+0.01<0.5*(A_bnd_met(1)+A_bnd_met(2))+0.5*P0*(B_bnd_met(1)+B_bnd_met(2)))then
           write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+Pref*B_bnd(1)
+          write(*,*)'Pressure at 2nd highest level is ',A_bnd(2)+Pref*B_bnd(2)
+          write(*,*)'Pressure at 3rd highest level is ',A_bnd(3)+Pref*B_bnd(3)
           write(*,*)'Pressure at middle of highest met level is ',0.5*(A_bnd_met(1)+A_bnd_met(2))+0.5*P0*(B_bnd_met(1)+B_bnd_met(2))
           write(*,*)'Pressure at top must be higher (lower altitude) than top defined in meteo '
           call StopAll('Top level too high! Change values in '//trim(Vertical_levelsFile))
