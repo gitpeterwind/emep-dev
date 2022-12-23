@@ -46,6 +46,30 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Dec 2022 Peter, Svetlana, Dave
+
+Removed lwc variable which was used as a = cc3d *0.6*1-6
+In Aqueous use cw_met instead which is the variable using cloudwater from the 
+metdata.
+Make cw_met from cc3d if cloudwater not defined in metdata.
+Make cc3d from cw_met if cc3d not defined in metdata.
+Stop if cw_met and cc3d not defined in metdata.
+
+surface pressure was used for all levels! (corrected in this version)
+
+Changed CW_LIMIT from 1e-10 to 1e-7, since now it is used againt cw_met which 
+is multiplied by roa and 1e-3
+
+Changed CW2CC from 1.e6 to 1.e4, but it is not used for cc3d in fraction units. 
+So no net change of value.
+
+In Aqueous, lwc was used, i.e. lwc=cc3d *0.6*1e-6. Now if cloudwater was not found 
+in metdata, (1/CW2CC)*1e-3 is used instead. So the net effect is that 0.1*1e-6 
+is no applied instead of 0.6*1e-6.
+ 
+Time interpolation is done now (before cc3d was constant during METSTEP)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Dec 2022 Peter, Heiko
 
 The met levels are checked against they mid values instead of bnd values.

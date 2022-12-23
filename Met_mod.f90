@@ -564,23 +564,44 @@ subroutine MeteoRead()
      call read_surf_elevation(ix_elev)
   endif
 
+  if (.not. foundcloudwater) then
+     !try AROME name
+     ix =ix_cw_met
+     nrix=min(met(ix)%msize,nr)
+     met(ix)%name = 'mass_fraction_of_cloud_condensed_water_in_air_ml'
+     call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
+          met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
+     if (met(ix)%found) then
+        if(write_now )write(*,*)'found ',trim(met(ix)%name)
+      else
+          call CheckStop(USES%CLOUDJ, "ERROR Cloudj needs cloudwater, but it is not found")
+     end if
+  end if
+
   if(foundcc3d)then
     if(WRF_MET_CORRECTIONS)then
       !WRF clouds in fraction, multiply by 100:
-      cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)) = 100*cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))
+      cc3d(:,:,:,nr) = 100*cc3d(:,:,:,nr)
     end if
     if(trim(met(ix_cc3d)%validity)/='averaged'.and.write_now)&
       write(*,*)'WARNING: 3D cloud cover are instantaneous values'
-      cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)) = 0.01*max(0.0,min(100.0,cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))))!0-100 % clouds to fraction
-  else !if available, will use cloudwater to determine the height of release
+      cc3d(:,:,:,nr) = 0.01*max(0.0,min(100.0,cc3d(:,:,:,nr))) !convert 0-100 % clouds to fraction (0 to 1) 
+  else !if available, will use cloudwater to 
+    if (foundcloudwater) then
      if(write_now)write(*,*)'WARNING: deriving 3D cloud cover (cc3d) from cloud water '
-     namefield='cloudwater'
-     call Getmeteofield(meteoname,namefield,nrec,3,unit,validity,&
-            cc3d(:,:,:,min(met(ix_cc3d)%msize,nr)),needed=met(ix_cw_met)%needed,found=foundcloudwater)
-     call CheckStop(.not.foundcloudwater,&
-            "meteo field not found: 3D_cloudcover and"//trim(namefield))
-     cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))=0.01*max(0.0,min(100.0,cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))*CW2CC))!from kg/kg water to % clouds to fraction
+     !make crude cc3d from cloudwater
+       cc3d(:,:,:,nr)=max(0.0,min(1.0,cw_met(:,:,:,nr)*CW2CC))!from kg/kg water to clouds to fraction (0 to 1)
+    else !if (.not. foundcloudwater .and. .not. foundcc3d) then
+      call StopAll("Did not cloud water AND did not find 3D cloudcover")
+    end if
   end if
+
+  if (foundcloudwater .and. .not. foundcc3d) then
+    !make crude cloudwater from cc3d
+    if(write_now)write(*,*)'WARNING: deriving cloud water from 3D cloud cover (cc3d)'
+    cw_met(:,:,:,nr) = cc3d(:,:,:,nr)/CW2CC !NB:cc3d in fraction units here (0 to 1)
+  end if
+
   !    maximum of cloud fractions for layers above a given layer
   cc3dmax(:,:,1) = cc3d(:,:,1,min(met(ix_cc3d)%msize,nr))
   do k=2,KMAX_MID
@@ -600,23 +621,7 @@ subroutine MeteoRead()
      end if
   end if
   
-  if (.not. foundcloudwater) then
-     !try AROME name
-     ix =ix_cw_met
-     nrix=min(met(ix)%msize,nr)
-     met(ix)%name = 'mass_fraction_of_cloud_condensed_water_in_air_ml'
-     call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
-          met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
-     if (met(ix)%found) then
-        if(write_now )write(*,*)'found ',trim(met(ix)%name)
-      else
-          call CheckStop(USES%CLOUDJ, "ERROR Cloudj needs cloudwater, but it is not found")
-     end if
-  end if
   
-  !not sure where this came from. but values are not liquid water content! used in Aqueous
-  lwc = 0.6e-6*cc3d(:,:,:,min(met(ix_cc3d)%msize,nr))
-
   if(foundprecip .and. USES%NO_3DPRECIP)then
     call PrintLog("WARNING: ignoring 3D precipitations", MasterProc)
     foundprecip=.false.

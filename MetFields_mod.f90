@@ -127,7 +127,6 @@ module MetFields_mod
   real,target,public, save,allocatable, dimension(:,:,:) :: &
         pr      & ! Precipitation in mm/s "passing" the layer
        ,cc3dmax & ! and maximum for layers above a given layer
-       ,lwc     & !liquid water content
   ! QUERY - should xksig be MID, not BND? Is it needed at all?
        ,Kz_m2s     ! estimated Kz, in intermediate sigma levels, m2/s
 
@@ -257,7 +256,7 @@ module MetFields_mod
 ! specific indices of met
   integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_cc3d, ix_pr, &
       ix_cw_met, ix_ciw_met, ix_cnvuf, ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz,&
-      ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, ix_u_mid, ix_v_mid, ix_ps, &
+      ix_Etadot, ix_cc3dmax, ix_Kz_m2s, ix_u_mid, ix_v_mid, ix_ps, &
       ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
       ix_surface_precip, ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, &
@@ -559,22 +558,6 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
   ix_cc3dmax=ix
-
-  ix=ix+1
-  met(ix)%name             = 'cloud_liquid_water'
-  met(ix)%dim              = 3
-  met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .false.
-  met(ix)%needed           = .false.
-  met(ix)%found            = .false.
-  allocate(lwc(LIMAX,LJMAX,KMAX_MID))
-  lwc=0.0
-  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:1)  => lwc
-  met(ix)%zsize = KMAX_MID
-  met(ix)%msize = 1
-  ix_lwc=ix
-
   ix=ix+1
   met(ix)%name             = 'Kz'
   met(ix)%dim              = 3
