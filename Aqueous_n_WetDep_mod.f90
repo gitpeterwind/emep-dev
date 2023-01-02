@@ -320,8 +320,8 @@ subroutine Setup_Clouds(i,j,debug_flag)
      do k = KUPPER, ksubcloud-1
         b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
-        ! ==> cloudwater (volume mixing ratio of water to air in cloud
-        ! (when devided by cloud fraction b )
+        ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
+        ! (it is divided by cloud fraction b )
 
         if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
            ! value of cloudwater in the cloud fraction of the grid in units vol(water)/vol(air)
@@ -525,16 +525,16 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   do k = KUPPER,KMAX_MID
      if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
-     !pw QUERY (December 2022):
-     !we should only dissolve the part which is inside the cloud,
-     !i.e. multiply by b (=cloud fraction). But not clear how this combines with "frac_aq"
+     !pwjoj (Jan 2023):
+     !we dissolve only the part which is inside the cloud,
+     !So the concentrations on the lhs are concentrations within the cloud (0 otherwise) 
 !For pH calculations:
 !Assume total uptake of so4,no3,hno3,nh4+
 !For pH below 5, all NH3 will be dissolved, at pH=6 around 50%
 !Effectively all dissolved NH3 will ionize to NH4+ (Seinfeldt)
     so4_aq(k)= (xn_2d(SO4,k)*1000./AVOG)/cloudwater(k) !xn_2d=molec cm-3
                                                 !cloudwater volume mix. ratio
-                                                !so4_aq= mol/l
+                                                !so4_aq= mol/l 
     no3_aq(k)= ( (xn_2d(NO3_F,k)+xn_2d(HNO3,k))*1000./AVOG)/cloudwater(k)
     if (NH4_F>0) then
        nh4_aq(k) =  ( xn_2d(NH4_F,k) *1000./AVOG )/cloudwater(k)!only nh4+ now

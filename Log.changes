@@ -46,7 +46,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23rd Dec 2022 Peter, Svetlana, Dave
+23rd Dec 2022 -2 Jan2023 Peter, Svetlana, Dave
 
 Removed lwc variable which was used as a = cc3d *0.6*1-6
 In Aqueous use cw_met instead which is the variable using cloudwater from the 
@@ -68,6 +68,8 @@ in metdata, (1/CW2CC)*1e-3 is used instead. So the net effect is that 0.1*1e-6
 is no applied instead of 0.6*1e-6.
  
 Time interpolation is done now (before cc3d was constant during METSTEP)
+
+2nd Jan 2023: changed some comments, but no code change.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Dec 2022 Peter, Heiko
