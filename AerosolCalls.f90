@@ -31,7 +31,7 @@ module AerosolCalls
  !/-- public           !!  true if wanted
 
  public :: AerosolEquilib
- public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_rh50, Aero_Water_MARS
+ public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_MARS, Aero_Water_rh50
  private :: emep2isorropia
                     
 !    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
