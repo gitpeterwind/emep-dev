@@ -168,13 +168,19 @@
   !-----------------NEW for FJX72 parameters for cloud grid now here------
   !
         integer, parameter :: &
-              LPAR= 45, LWEPAR=20  &   !this can be set by CTM code. LWEPAR = number of lvls with cloud calcs
-             ,L_=LPAR, L1_=L_+1 &   ! L_ = number of CTM layers
-             ,L2_=2*L_+2 &        ! no. levels in the Fast-JX grid that
-                         ! includes both layer edges and layer mid-points
-             ,JVL_=LPAR &  ! vertical(levels) dim for J-values sent to CTM
-             ,JVN_=101 &   ! max no. of J-values
+            !   LPAR= 45, LWEPAR=20  &   !this can be set by CTM code. LWEPAR = number of lvls with cloud calcs
+            !  ,L_=LPAR, L1_=L_+1 &   ! L_ = number of CTM layers
+            !  ,L2_=2*L_+2 &        ! no. levels in the Fast-JX grid that
+            !              ! includes both layer edges and layer mid-points
+            !  ,JVL_=LPAR &  ! vertical(levels) dim for J-values sent to CTM
+             JVN_=101 &   ! max no. of J-values
              ,AN_=25       ! # FJX aerosols in layer (needs NDX for each)
+
+        integer, save :: LPAR, LWEPAR  &   !this can be set by CTM code. LWEPAR = number of lvls with cloud calcs
+        ,L_, L1_ &   ! L_ = number of CTM layers
+        ,L2_ &       ! no. levels in the Fast-JX grid that
+                     ! includes both layer edges and layer mid-points
+        ,JVL_        ! vertical(levels) dim for J-values sent to CTM
   
   !-----------------------------------------------------------------------
         ! variables used to map fast-JX J's onto CTM J's
