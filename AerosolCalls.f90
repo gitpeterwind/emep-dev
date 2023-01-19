@@ -31,7 +31,7 @@ module AerosolCalls
  !/-- public           !!  true if wanted
 
  public :: AerosolEquilib
- public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_rh50, Aero_Water_MARS
+ public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_MARS, Aero_Water_rh50
  private :: emep2isorropia
                     
 !    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
@@ -128,8 +128,7 @@ contains
   !     Liquid aerosol species concentrations, expressed in moles/m3.
   !     AERLIQ(01) - H+(aq) !     AERLIQ(02) - Na+(aq) !     AERLIQ(03) - NH4+(aq) !     AERLIQ(04) - Cl-(aq)
   !     AERLIQ(05) - SO4--(aq) !     AERLIQ(06) - HSO4-(aq) !     AERLIQ(07) - NO3-(aq) !     AERLIQ(08) - H2O
-  !     AERLIQ(09) - NH3(aq) (undissociated) !     AERLIQ(10) - HNCl(aq) (undissociated) !
-  !     AERLIQ(11) - HNO3(aq) (undissociated) !     AERLIQ(12) - OH-(aq)
+  !     AERLIQ(09) - NH3(aq) (undissociated) !     AERLIQ(10) - HNCl(aq) (undissociated) !     AERLIQ(11) - HNO3(aq) (undissociated) !     AERLIQ(12) - OH-(aq)
   !     AERLIQ(13) - Ca2+(aq) !     AERLIQ(14) - K+(aq) !     AERLIQ(15) - Mg2+(aq)
 
   !  4. [AERSLD] !     real array of length [19].
@@ -166,7 +165,6 @@ contains
     xn_2d(NH3_ix,k)  = max(0.0, gas(1)) * molesm3_to_Ncm3
     xn_2d(HNO3_ix,k) = max(0.0, gas(2)) * molesm3_to_Ncm3
     !xn_2d(HCl,k) = gas(3) * molesm3_to_Ncm3
-!XXX PMwater = aerliq(8)
 
    ! aerosol outputs are in moles/m3(air)
    ! 1=H+, 2=Na+, 3=NH4+, 4=Cl-, 5=SO42-, 6=HSO4-, 7=NO3-, 8=Ca2+
@@ -467,7 +465,8 @@ end subroutine emep2isorropia
 
 
     !..................................................................
-    ! EQSAM4clim calculates PM water at ambient conditions
+    ! EQSAM4clim calculates PM water 1. at ambient conditions and 
+    !          2. at Rh=50% and T=20C (comparison with gravimentric PM)
     !..................................................................
 
  integer, intent(in)  :: i, j
@@ -475,30 +474,32 @@ end subroutine emep2isorropia
 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
+ !===  For ambient conditions =====================
 
  !.. local
 
-  real    :: so4in(KCHEMTOP:KMAX_MID),   &
-             no3in(KCHEMTOP:KMAX_MID),   &
-             nh4in(KCHEMTOP:KMAX_MID),   &
-             hno3in(KCHEMTOP:KMAX_MID),  &
-             nh3in(KCHEMTOP:KMAX_MID),   &
-             aH2Oin(KCHEMTOP:KMAX_MID),  &
-             NAin(KCHEMTOP:KMAX_MID),    &
-             CLin(KCHEMTOP:KMAX_MID),    &
+  real    :: so4in(KCHEMTOP:KMAX_MID), so4ins(KMAX_MID:KMAX_MID),  &
+             no3in(KCHEMTOP:KMAX_MID), no3ins(KMAX_MID:KMAX_MID),  &
+             nh4in(KCHEMTOP:KMAX_MID), nh4ins(KMAX_MID:KMAX_MID),  &
+             hno3in(KCHEMTOP:KMAX_MID),hno3ins(KMAX_MID:KMAX_MID), &
+             nh3in(KCHEMTOP:KMAX_MID), nh3ins(KMAX_MID:KMAX_MID),  &
+             aH2Oin(KCHEMTOP:KMAX_MID),aH2Oins(KMAX_MID:KMAX_MID), &
+             NAin(KCHEMTOP:KMAX_MID),  Nains(KMAX_MID:KMAX_MID),   &
+             CLin(KCHEMTOP:KMAX_MID),  CLins(KMAX_MID:KMAX_MID),   &
 !.. output
-             aSO4out(KCHEMTOP:KMAX_MID), &
-             aNO3out(KCHEMTOP:KMAX_MID), &
-             aH2Oout(KCHEMTOP:KMAX_MID), &
-             aNH4out(KCHEMTOP:KMAX_MID), & 
-             gNH3out(KCHEMTOP:KMAX_MID), &
-             gNO3out(KCHEMTOP:KMAX_MID), &
-             aNAout(KCHEMTOP:KMAX_MID),  &
-             aCLout(KCHEMTOP:KMAX_MID),  &
-             gCLout(KCHEMTOP:KMAX_MID),  &
-             gSO4out(KCHEMTOP:KMAX_MID), &
+             aSO4out(KCHEMTOP:KMAX_MID), aSO4outs(KMAX_MID:KMAX_MID), &
+             aNO3out(KCHEMTOP:KMAX_MID), aNO3outs(KMAX_MID:KMAX_MID), &
+             aH2Oout(KCHEMTOP:KMAX_MID), aH2Oouts(KMAX_MID:KMAX_MID), &
+             aNH4out(KCHEMTOP:KMAX_MID), aNH4outs(KMAX_MID:KMAX_MID), & 
+             gNH3out(KCHEMTOP:KMAX_MID), gNH3outs(KMAX_MID:KMAX_MID), &
+             gNO3out(KCHEMTOP:KMAX_MID), gNO3outs(KMAX_MID:KMAX_MID), &
+             aNAout(KCHEMTOP:KMAX_MID),  aNAouts(KMAX_MID:KMAX_MID),  &
+             aCLout(KCHEMTOP:KMAX_MID),  aCLouts(KMAX_MID:KMAX_MID),  &
+             gCLout(KCHEMTOP:KMAX_MID),  gCLouts(KMAX_MID:KMAX_MID),  &
+             gSO4out(KCHEMTOP:KMAX_MID), gSO4outs(KMAX_MID:KMAX_MID), &
 
-             rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
+             rlhum(KCHEMTOP:KMAX_MID), tmpr(KCHEMTOP:KMAX_MID),  &
+             rlhums(KMAX_MID:KMAX_MID),tmprs(KMAX_MID:KMAX_MID)
 
  !-----------------------------------
 
@@ -531,6 +532,38 @@ end subroutine emep2isorropia
 !//....aerosol water (ug/m**3) 
 
       PM25_water(i,j,KCHEMTOP:KMAX_MID) = max(0., aH2Oout(KCHEMTOP:KMAX_MID) )
+
+
+
+ !===  PM water for Rh=50% and T=20C  conditions ================================
+
+!//.... molec/cm3 -> micromoles/m**3
+      so4ins  = so4in(KMAX_MID:KMAX_MID)
+      hno3ins = hno3in(KMAX_MID:KMAX_MID)
+      nh3ins  = nh3in(KMAX_MID:KMAX_MID)
+      no3ins  = no3in(KMAX_MID:KMAX_MID)
+      nh4ins  = nh4in(KMAX_MID:KMAX_MID)
+      NAins   = NAin(KMAX_MID:KMAX_MID)
+      CLins   = CLin(KMAX_MID:KMAX_MID)
+
+!//.... Only for the lowest layer KMAX_MID
+
+      rlhums = 0.5
+      tmprs  = 293.15
+
+
+ !--------------------------------------------------------------------------                
+   
+    call EQSAM4clim (so4ins, hno3ins,no3ins,nh3ins,nh4ins,NAins,CLins, rlhums, tmprs,  & 
+                     aSO4outs, aNO3outs, aNH4outs, aNAouts, aCLouts,               &
+                     gSO4outs, gNH3outs, gNO3outs, gClouts, aH2Oouts, KMAX_MID, KMAX_MID)     
+
+ !--------------------------------------------------------------------------
+
+!//....aerosol water (ug/m**3) 
+
+      PM25_water_rh50 (i,j)             = max(0., aH2Oouts(KMAX_MID) )
+
 
  end subroutine Aero_water
 

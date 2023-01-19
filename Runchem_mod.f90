@@ -9,7 +9,7 @@ module RunChem_mod
 
   use AeroConstants_mod,only: AERO
   use AerosolCalls,     only: AerosolEquilib & !-> My_MARS, My_EQSAM, &
-                             ,Aero_water, Aero_water_rh50, Aero_water_MARS 
+                             ,Aero_water, Aero_water_MARS  !ST:10.01.23, Aero_water_rh50 
   use My_Timing_mod,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
   use AOD_PM_mod,        only: AOD_Ext
@@ -291,9 +291,9 @@ subroutine runchem()
       !  T=20C and Rh=50% for comparability with gravimetric PM
 
       if(AERO%EQUILIB_WATER=='EQSAM')then
-         !.. Water from EQSAM .......
+         !.. Water from EQSAM: ambient and for Rh=50% T=20C 
          call Aero_water     (i,j, debug_flag)  !  For real conditions (3D) 
-         call Aero_water_rh50(i,j, debug_flag)  !  Rh=50% T=20C                     
+!ST:10.01.23         call Aero_water_rh50(i,j, debug_flag)  !  Rh=50% T=20C          
       else
          call Aero_water_MARS(i,j, debug_flag)         
       endif

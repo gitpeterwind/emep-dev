@@ -276,6 +276,15 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
     ! initialize requested (in config file) J-value output arrays
     if(first_call)then 
+          ! parameters from FJX_CMN_MOD used to initialize cloud-j arrays
+          LPAR   = OZ_TOP              ! this can be set by CTM code. 
+          LWEPAR = KMAX_MID - KCHEMTOP ! LWEPAR = number of lvls with cloud calcs
+          L_     = LPAR
+          L1_    = L_ + 1              ! L_ = number of CTM layers
+          L2_    = 2*L_ + 2            ! no. levels in the Fast-JX grid that
+                                       ! includes both layer edges and layer mid-points
+          JVL_   = KMAX_MID - KCHEMTOP ! vertical(levels) dim for J-values sent to CTM
+          
           call INIT_FJX(TITLJXX,JVN_,NJXX) 
 
           if(allocated(f_3d))then ! if output fields requested in config file, set index
@@ -586,7 +595,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             ! index -10 to -17 fossil fuel, index -18 to -33 for biomas burn
             FF_BC_index = -18 ! first index for biomass burning in UMa.dat
 
-            if(ffirebc_i>0) then 
+            if(ffirebc_i>0 .and. Forest_F(L)>1e-18) then ! avoid dividing by zero 
               FF_BCratio_real = xn_adv(ffirebc_i,i_emep,j_emep,k) &
                               * 1000 * roa(i_emep,j_emep,k,1) / ATWAIR  &
                               * DeltZ(L) * species_adv(ffirebc_i)%molwt / Forest_F(L)
@@ -732,7 +741,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     ! populate 3D Jvalue array with CloudJ values for the photochemical reactions in EMEP
     if(.not.(allocated(rcphotslice))) allocate(rcphotslice(NRCPHOTextended,KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
     
-    do L=1,KMAX_BND-KCHEMTOP ! KMAX_BND = 21, KMAX_MID = 20, KCHEMTOP = 2
+    do L=1,KMAX_BND-KCHEMTOP 
           ! reactions having a 1-to-1 correspondence with tabulated reactions. Note: All of these CloudJ reactions have been checked to be non-zero.
           rcphotslice(IDAO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(3))   ! JIND(J))  *JFACTA(J)   ZPJ(L,3)!3 O3   PHOTON    O2    O(total)   1.000 /O3    /
           rcphotslice(IDBO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(4))   ! ZPJ(L,4)!4  O3        PHOTON    O2        O(1D)                   1.000 /O3(1D) /           
