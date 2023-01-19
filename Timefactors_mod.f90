@@ -566,7 +566,7 @@ contains
           end do
           close(IO_TIMEFACS)
        else
-          if(me==0) write(*,*)dtxt//'Special hourly factors not found (but not needed): ',trim(fname2)
+          if(me==0 .and. fname2/= 'NOTSET') write(*,*)dtxt//'Special hourly factors not found (but not needed): ',trim(fname2)
        endif          
     end do ! NEMIS_FILE
     if(.not.found_HourlyFacFile)&

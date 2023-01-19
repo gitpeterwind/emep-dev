@@ -24,8 +24,7 @@ use DefPhotolysis_mod, only: IDHONO,IDNO3,IDNO2
 use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
                              nlandcode,landcode,&
                              TFAC_IDX_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
-                             NEmis_sources, Emis_source_2D, Emis_source, EmisMaskIntVal,&
-                             gridrcemis
+                             EmisMaskIntVal,gridrcemis
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              emis_masscorr,  &  ! 1/molwt for most species
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac

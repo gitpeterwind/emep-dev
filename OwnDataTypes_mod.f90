@@ -269,6 +269,7 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_NAME) :: sectorsName ='NOTSET' !SNAP or GNFR_CAMS or user defined name
    integer :: countrycode = -1 !default countrycode
    integer :: sector = -1 !default sector
+   integer :: nsectors = 1 !Number of sectors stored in each variable. Will only change how many sources are read at each variable read
    character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file .NB: not read from attributes
    character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file .NB: not read from attributes
    integer :: ncFileID = -1 !internal: shows the netcdf file ID if the file is open, or must be < 0.

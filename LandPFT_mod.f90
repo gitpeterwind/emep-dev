@@ -130,7 +130,7 @@ return ! JAN31TEST
            varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft))
 
            call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&
-              lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)
+              lpj,month,interpol='zero_order',needed=.true.,debug_flag=.false.)
 
            pft_bvoc(:,:,pft, ivar ) = lpj(:,:)
 

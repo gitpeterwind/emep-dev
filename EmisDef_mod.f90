@@ -192,19 +192,16 @@ real,  public, allocatable :: EmisMaskValues(:,:,:) ! size will be (LIMAX,LJMAX,
 type(Emis_id_type), public, save:: Emis_id(50)
 type(EmisFile_id_type), public, save:: EmisFiles(50) !list of emission files after validation
 integer, public, save, allocatable, dimension(:,:):: EmisMaskIntVal
-!MOVED to config, Feb 2022
-!CONFIG integer,  public, parameter:: NEmis_sourcesMAX = 400 ! 20000 ! 400
-!CONFIG type(Emis_id_type), public, save:: Emis_source(NEmis_sourcesMAX) !list of valid sources found in the emission files
-!CONFIG integer,  public, save :: ix3Dmap(NEmis_sourcesMAX) = 0
-!allocate Emis_source(NEmis_sourcesMAX) !list of valid sources found in the emission files
-!allocate ix3Dmap(NEmis_sourcesMAX) = 0
-!ix3Dmap(:) = 0
-type(Emis_id_type), public, save,allocatable:: Emis_source(:) ! (NEmis_sourcesMAX) !list of valid sources found in the emission files
+integer, public, parameter :: NEmis_sourcesMAX = 50000 ! max number of sources
+type(Emis_id_type), public, save :: Emis_source(NEmis_sourcesMAX) ! list of valid sources found in the emission files
 integer,  public, save :: NEmis_sources = 0
 integer,  public, save :: NEmis_3Dsources = 0
 integer,  public, save :: NEmisFile_sources = 0
-integer,  public, save, allocatable  :: ix3Dmap(:) ! (NEmis_sourcesMAX) = 0
-real, allocatable, public, save,  dimension(:,:,:):: Emis_source_2D !One 2D map for each source
+integer,  public, save :: ix3Dmap(NEmis_sourcesMAX) = 0
+real, allocatable, public, save,  dimension(:,:):: Emis_source_ij !source value for a given ij and index
+integer, allocatable, public, save,  dimension(:):: NEmis_source_ij !number of valid source values for a given ij
+integer, allocatable, public, save,  dimension(:,:):: Emis_source_ij_ix !source index, for a given ij and index
+integer, public, parameter :: NEmis_source_ijMAX = 500 ! max number of non zero sources at any ij
 real, allocatable, public, save,  dimension(:,:,:,:):: Emis_source_3D !One 3D map for each source
 integer, allocatable, public, save,  dimension(:,:,:):: Emis_country_map !country indices for each gridcell
 !type(Emis_id_type), public, save:: Emis_source(10)

@@ -8,7 +8,6 @@ use Config_module,     only: NPROC, MasterProc,USES,step_main,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              IIFULLDOM,JJFULLDOM, &
                              SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile,&
-                             NEmis_sourcesMAX, & ! Feb2022
                              startdate
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
@@ -26,7 +25,7 @@ use EmisDef_mod,       only: NSECTORS, NCMAX, &
                             ,femis_lonlat_internal &
                             ,Emis_field, NEmis_id, Emis_id, NEmis_sources&
                             ,EmisFiles, NEmisFile_sources, Emis_source &
-                            !Feb2022 ,NEmis_sourcesMAX
+                            ,NEmis_sourcesMAX&
                             ,SECTORS&
                             ,Emis_heights_sec_pre,Emis_Nlevel_pre, Emis_h_pre, Emis_Zlevels_pre&
                             ,Emis_h, Emis_Zlevels &
@@ -51,7 +50,8 @@ use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
 use SmallUtils_mod,    only: wordsplit, find_index, key2str
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
-                             nf90_global,nf90_get_var,nf90_get_att
+                             nf90_global,nf90_get_var,nf90_get_att,&
+                             nf90_inq_dimid,nf90_inquire_dimension
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod, only     : date
 use TimeDate_ExtraUtil_mod, only : nctime2date,date2nctime, date2string
@@ -127,7 +127,7 @@ contains
     type(date), intent(in) :: date_wanted
     integer :: ncFileID
     real :: date_wanted_in_days, TimesInDays(1)
-    integer :: record
+    integer :: record,i
     logical, save :: dbg= .false., first_call = .true.
     character(len=*), parameter :: dtxt = 'Emis_GetCdf:'
     integer, save :: readcounter = 0
@@ -136,6 +136,7 @@ contains
       dbg =  ( MasterProc .and. DEBUG%GETEMIS )
       first_call = .false.
     end if
+
     fname = date2string(EmisFile%filename,date_wanted,mode='YMDH')    
     if (EmisFile%ncFileID < 0 .and. trim(EmisFile%projection) /= 'native') then
        !open file (much faster if it is done once only, and not for each variable)
@@ -148,7 +149,7 @@ contains
        !we close and reopen the file, because otherwise the code may use
        !lots of memory with some compilers
        call check(nf90_close(EmisFile%ncFileID))
-        call check(nf90_open(path = fname, mode = nf90_nowrite, ncid = ncFileID))
+       call check(nf90_open(path = fname, mode = nf90_nowrite, ncid = ncFileID))
        EmisFile%ncFileID = ncFileID
        readcounter = 0      
     end if
@@ -210,7 +211,7 @@ contains
        endif
     else
        if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
-            write(*,*)trim(Emis_source%varname)//' reading new emis from '//trim(fname)//', record ',record
+            write(*,*)trim(Emis_source%varname)//' read from '//trim(fname)//', record ',record
        if(Emis_source%units(1:5) == 'kt/m2'  &
             .or. Emis_source%units(1:6) == 'kt m-2'  &
             .or. Emis_source%units(1:9) == 'tonnes/m2'  &
@@ -254,12 +255,24 @@ contains
           !per gridcell unit (can be per time unit or not)
           if(me==0 .and. DEBUG%EMISSIONS)&
                write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
-         call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
-               known_projection=trim(EmisFile%projection),&
-               interpol='mass_conservative',&
-               Grid_resolution_in = EmisFile%grid_resolution,&
-               needed=.true.,UnDef=0.0,&
-               debug_flag=.false., ncFileID_given=ncFileID)
+          if (EmisFile%nsectors == 1) then
+             !default read one sector at a time
+             call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
+                  known_projection=trim(EmisFile%projection),&
+                  interpol='mass_conservative',&
+                  Grid_resolution_in = EmisFile%grid_resolution,&
+                  needed=.true.,UnDef=0.0,&
+                  debug_flag=.false., ncFileID_given=ncFileID)
+          else
+             !read EmisFile%nsectors at a time
+             call ReadField_CDF(fname,Emis_source%varname,Emis_XD(1),record,&
+                  kstart = 1, kend = EmisFile%nsectors,&
+                  known_projection=trim(EmisFile%projection),&
+                  interpol='mass_conservative',&
+                  Grid_resolution_in = EmisFile%grid_resolution,&
+                  needed=.true.,UnDef=0.0,&
+                  debug_flag=.false., ncFileID_given=ncFileID)
+          end if
        else
           call StopAll("EmisGet: Unit for emissions not recognized: "//trim(Emis_source%units)//' '//trim(Emis_source%varname))
        endif
@@ -512,7 +525,7 @@ contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine Emis_init_GetCdf(EmisFile_in, EmisFile, names_in, nnames)
 
-    !read in emissions from one file and set parameters
+    !set all the internal parameters for the emissions file
 
     character(len=*),intent(in) :: names_in(*)
     type(Emis_sourceFile_id_type),intent(in) :: EmisFile_in
@@ -525,18 +538,17 @@ contains
     integer :: n, nn, i, ix, varid, status, sector, iem, isec, iqrc, itot, f
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
     real :: x, resolution, default_resolution, Rlat(2)
-    integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10)
+    integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10),secdimID
     real, allocatable ::Rlat2D(:,:)
     character(len=*), parameter :: dtxt='Em_inicdf:'
-    integer :: countrycode
-    logical :: apply_femis
+    integer :: countrycode, file_nsectors
+    logical :: apply_femis, species_found
     logical :: my_first_call = .true.
     integer, allocatable :: source_found(:)
-    if(my_first_call) then
-      allocate(source_found(NEmis_sourcesMAX))
-      my_first_call = .true.
-    end if
-      
+    
+    my_first_call = .true.      
+    
+    allocate(source_found(NEmis_sourcesMAX))
 
     fname=trim(date2string(EmisFile_in%filename,startdate,mode='YMDH'))
     status=nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID)
@@ -598,28 +610,64 @@ contains
        if(EmisFile_in%source(i)%varname /= 'NOTSET')source_found(i)=1
     end do
 
+    status = nf90_inq_dimid(ncFileID,"sector"  ,secdimID)
+    if (status==nf90_noerr) then
+       status = nf90_inquire_dimension(ncid = ncFileID, dimID = secdimID, len=file_nsectors )       
+       if (status==nf90_noerr) then
+          !the file stores all sectors in the same variables
+          EmisFile%nsectors = file_nsectors
+       end if
+    end if
+  
     nemis_old = NEmis_sources
     !loop over all variables
     call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes))
     do varid=1,nVariables
        call check(nf90_Inquire_Variable(ncFileID,varid,cdfvarname,xtype,ndims))
-       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)
-
+       species_found = .false.
+       status = nf90_get_att(ncFileID,varid,"species",cdfspecies)       
+       if( status==nf90_noerr) then
+          ! we also demand that species is defined
+          iem = find_index(cdfspecies,EMIS_FILE(:))
+          if (iem >0 ) then
+             species_found = .true.
+          else
+             !check if it is defined as individual species (i.e not emitted as a group that is split)
+             iqrc = 0
+             do iem = 1,NEMIS_FILE
+                do f = 1,emis_nsplit(iem)
+                   iqrc = iqrc + 1
+                   itot = iqrc2itot(iqrc)
+                   if(trim(species(itot)%name)==trim(cdfspecies))then
+                      species_found = .true.
+                      exit
+                   end if
+                end do
+                if (species_found) exit
+             end do
+          end if
+       end if
        nn = 0
        do i = 1,size(EmisFile_in%source)
           !if ( debugm0 ) write(*,*) dtxt//'source:',trim(EmisFile_in%source(i)%varname)
           if(EmisFile_in%source(i)%varname == cdfvarname)then
              nn = nn + 1
              source_found(i) = 0 !mark as found
+             species_found = .true.
              call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"lf: too many sources. Increase NEmis_sourcesMAX")
              Emis_source(NEmis_sources+nn)%ix_in=i
              if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
           endif
        enddo
-       if((status==nf90_noerr .and. ndims>=2) .or. nn>0 )then
+       if (EmisFile%nsectors >1) then
+          call CheckStop(nn>0,"nn>0 and more than 1 sector per variable not implemented") 
+          nn = EmisFile%nsectors !all sectors in same variable. One source will be defined per sector
+       end if
+
+       if(species_found .and. ndims>=2 )then
           !can be that one source must be taken several times (for instance
           ! into different vertical levels)
-           do i = 1,max(1,nn)
+          do i = 1,max(1,nn)
              !we define a new emission source
              call CheckStop(NEmis_sources+1 > NEmis_sourcesMAX,"lf: too many sources. Please, increase NEmis_sourcesMAX")
              NEmis_sources = NEmis_sources + 1
@@ -632,8 +680,12 @@ contains
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
              Emis_source(NEmis_sources)%sector = EmisFile%sector !default
-             status = nf90_get_att(ncFileID,varid,"sector", sector)
-             if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
+             if (EmisFile%nsectors > 1) then
+                Emis_source(NEmis_sources)%sector = i
+             else
+                status = nf90_get_att(ncFileID,varid,"sector", sector)
+                if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
+             end if
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
              Emis_source(NEmis_sources)%countrycode = EmisFile%countrycode !default
@@ -693,7 +745,7 @@ contains
    !-------------
     end associate
    !-------------
-
+    if(allocated(source_found))deallocate(source_found)
   end subroutine Emis_init_GetCdf
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

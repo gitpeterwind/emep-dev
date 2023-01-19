@@ -2972,8 +2972,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(data3D)then
         call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-        call CheckStop(name/='k'.and.name/='N'.and.name/='lev'.and.name/='height'.and.name/='tsteps',&
-          "vertical coordinate (k, lev, N or height) not found")
+        call CheckStop(name/='k'.and.name/='N'.and.name/='lev'.and.name/='height'.and.name/='tsteps'.and.name/='sector',&
+          "unexpected third coordinate (k, lev, N, height or sector) not found. found "//trim(name))
      end if
 
      !NB: we assume regular grid

@@ -35,8 +35,8 @@ use Config_module,    only:  &
 use Debug_module,     only: DebugCell, DEBUG_MASS, DEBUG !->DEBUG%SETUP_1DCHEM
 use DerivedFields_mod,only: d_2d, f_2d
 use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS, SplitEmisOut, EmisOut&
-                                , NEmis_sources, Emis_source, Emis_source_2D
+                            , O_NH3, O_DMS, SplitEmisOut, EmisOut&
+                            , NEmis_source_ij, Emis_source, Emis_source_ij_ix, Emis_source_ij
 use EmisGet_mod,      only:  nrcemis, iqrc2itot, emis_nsplit, emis_masscorr
 use ForestFire_mod,   only: Fire_rcemis, burning
 use Functions_mod,    only:  Tpot_2_T
@@ -51,7 +51,7 @@ use LocalVariables_mod,   only: Grid
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
-use Par_mod,          only: me,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
+use Par_mod,          only: me,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG,limax
 use PhysicalConstants_mod,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_mod,    only: PARfrac, Wm2_uE
 use SmallUtils_mod,   only: find_index
@@ -559,7 +559,7 @@ subroutine setup_rcemis(i,j)
   integer, intent(in) ::  i,j     ! coordinates of column
 
   !  local
-  integer :: iqrc, k, itot, iem ,f
+  integer :: iqrc, k, itot, iem ,f, ij, is
   real    :: Kw,fac, eland   ! for Pb210  - emissions from land
 
   integer :: i_Emis_4D,n
@@ -593,16 +593,18 @@ subroutine setup_rcemis(i,j)
 
    ! add emissions from new format which are "pure", i.e. not defined as one of
    ! the splitted or sector species
-    do n = 1, NEmis_sources      
-       itot = Emis_source(n)%species_ix
-       if(itot>0 .and. Emis_source(n)%sector<=0)then
-          k = Emis_source(n)%injection_k
-          rcemis(itot,k) = rcemis(itot,k)   &
-               + Emis_source_2D(i,j,n)*ehlpcom0    &
-               /species(itot)%molwt&
-               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-       endif
-    enddo
+   ij = i+limax*(j-1)
+   do is = 1, NEmis_source_ij(ij)
+      n = Emis_source_ij_ix(ij,is)
+      itot = Emis_source(n)%species_ix
+      if(itot>0 .and. Emis_source(n)%sector<=0)then
+         k = Emis_source(n)%injection_k
+         rcemis(itot,k) = rcemis(itot,k)   &
+              + Emis_source_ij(ij,is)*ehlpcom0    &
+              /species(itot)%molwt&
+              *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
+      endif
+   enddo
 
   ! Volcanic emissions (SO2 and ASH),
   ! and Contribution from Emergeny scenarios

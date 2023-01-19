@@ -148,7 +148,12 @@ contains
     if(MasterProc) then
         write(*,*)  dtxt//" NLand_codes ", NLand_codes
         write(*,*)  dtxt//" Codes: ", Land_codes
-        write(*,*)  dtxt//" LandCoverInputs: ", LandCoverInputs
+        write(*,*)  dtxt//" LandCoverInputs: "
+        write(*,*)  trim(LandCoverInputs%MapFile(1))
+        write(*,*)  trim(LandCoverInputs%MapFile(2))
+        write(*,*)  trim(LandCoverInputs%LandDefs)
+        write(*,*)  trim(LandCoverInputs%Do3seDefs)
+        write(*,*)  trim(LandCoverInputs%mapMed)
     end if
 
     call Init_LandDefs(LandCoverInputs%LandDefs,NLand_codes, &
@@ -518,7 +523,7 @@ contains
    ! MERGE inner and outer maps (Euro and Glob usually)
 
     if ( nFiles > 1 ) then  ! we need to merge
-      if ( debug_proc ) write(*,*) '(a,i3,f12.4,5i6)', "F3  START", &
+      if ( debug_proc ) write(*,'(a,i3,f12.4,5i6)'), "F3  START", &
            NLand_codes, landuse_tot(debug_li,debug_lj), me, &
                     limax, ljmax, debug_li, debug_lj
       do j = 1, ljmax

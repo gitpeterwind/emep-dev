@@ -229,7 +229,6 @@ logical,  public, save :: &
 
 integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read froms config
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
-integer,  public, save:: NEmis_sourcesMAX = 400 ! use e.g. 6000, 10000 for non-fractional files
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
 type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
@@ -257,7 +256,7 @@ character(len=TXTLEN_FILE), public, save :: &
   OwnInputDir = '.',  &  ! user-defined location
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
-  DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
+  DegreeDayFactorsFile = 'MetDirHDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 integer, public, save :: out_startdate(4)=(/-1,-1,-1,-1/) ! start of the output of data
@@ -846,7 +845,6 @@ subroutine Config_Constants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,SECTORS_ADD           & ! additional definitions of sectors
-   ,NEmis_sourcesMAX      & ! Feb2022
    ,EMIS_OUT, emis_inputlist, EmisDir&
    ,EmisSplit_OUT         & ! Output of species emissions
    ,ZCMDIR                & ! location of emissplit and CMXfiles
