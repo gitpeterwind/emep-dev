@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 Jan 2023, Peter
+
+Upgrade of emissions in "new format". Can read sectors as extra dimension in
+NetCDF file. Much faster. Use less memory.
+
+Extra utility file: utils/ReadWriteEmis.f90 which converts a file in old
+format into a file in new format (model results are unchanged). This code
+will still improve.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Jan 2023, Svetlana
 
 1. AerosolCalls.f90: Aero_Water - calculates both PM25_water and PM25_water_rh50 
