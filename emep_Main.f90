@@ -103,6 +103,8 @@ program emep_Main
   logical :: End_of_Run=.false.
   real :: tim_before0 !private
   character(len=*), parameter :: dtxt='eMain:'
+!NB: the value of giversion may be overwritten later by the cpp. Keep lower cases
+  character(len=200) :: gitversion='git version not set ' 
 
   associate ( yyyy => current_date%year, mm => current_date%month, &
        dd => current_date%day,  hh => current_date%hour)
@@ -127,9 +129,7 @@ program emep_Main
   call assign_startandenddate()
  
   if(MasterProc)then
-#ifdef GITVERSION
-     call PrintLog(GITVERSION)
-#endif     
+     call PrintLog(trim(GITVERSION)) !NB: the value may be set by the cpp. Keep upper cases
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))
      call PrintLog(date2string("startdate = YYYYMMDDhh",startdate(1:4)))
