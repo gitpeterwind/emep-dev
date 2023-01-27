@@ -128,7 +128,7 @@ program emep_Main
  
   if(MasterProc)then
 #ifdef GITVERSION
-     call PrintLog("GITVERSION")
+     call PrintLog(GITVERSION)
 #endif     
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))
