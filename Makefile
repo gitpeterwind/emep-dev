@@ -103,6 +103,10 @@ NetCDF_mod.o:NetCDF_mod.f90
 	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
 endif
 
+# inject git info into logs
+emep_Main.o: DFLAGS += -D GITVERSION="git describe: $(shell git describe)\ngit status: $(shell git status --branch --short -uno)"
+emep_Main.o: Makefile Makefile.SRCS $(SRCS)
+
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
 $(PROG): .depend
@@ -113,9 +117,7 @@ include .depend
 depend: Makefile Makefile.SRCS $(SRCS)
 	test -n "$(MAKEDEPF90)" && $(MAKEDEPF90) $(SRCS) $(DFLAGS) \
 	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .$@
-.version: version
-version: Makefile Makefile.SRCS $(SRCS)
-	svnversion -n > .$@
+
 
 clean: diskclean touchdepend depend
 

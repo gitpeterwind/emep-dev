@@ -127,6 +127,9 @@ program emep_Main
   call assign_startandenddate()
  
   if(MasterProc)then
+#ifdef GITVERSION
+     call PrintLog("GITVERSION")
+#endif     
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))
      call PrintLog(date2string("startdate = YYYYMMDDhh",startdate(1:4)))
