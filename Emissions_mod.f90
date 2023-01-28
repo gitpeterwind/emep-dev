@@ -51,7 +51,7 @@ use EmisDef_mod,       only: &
      ,QROADDUST_CO  & ! coarse road dust emis
      ,ROADDUST_FINE_FRAC  & ! fine (PM2.5) fraction of road dust emis
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors
-     ,nGridEmisCodes,GridEmisCodes,GridEmis&
+     ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
      ,secemis,roaddust_emis_pot,SplitEmisOut,EmisOut&
      ,SecEmisOut,NSecEmisOutWanted,isec2SecOutWanted&
      ,nlandcode,landcode&
@@ -906,6 +906,7 @@ contains
              call check(nf90_close(EmisFiles(n)%ncFileID))
              EmisFiles(n)%ncFileID = -1 !mark as closed
           end if
+          deallocate(cdfemis)
        endif
        if(writeout)then
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
@@ -945,8 +946,7 @@ contains
           do iem = 1, NEMIS_FILE
              emsum(iem)= emsum(iem)+sum(sumemis(:,iem))
           end do
-          deallocate(cdfemis)
-       endif
+        endif
     enddo
     if(writeout)then
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxfound,1,MPI_INTEGER,MPI_MAX,MPI_COMM_CALC,IERROR)
@@ -1302,6 +1302,7 @@ contains
     allocate(Emis_field(LIMAX,LJMAX,10))
     NEmis_id = 0
 
+    allocate(cdfemis(LIMAX,LJMAX))
     allocate(nGridEmisCodes(LIMAX,LJMAX))
     allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
     allocate(GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
