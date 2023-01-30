@@ -46,6 +46,9 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Jan 2023,  Dave
+NEW TAG rv4.48a = bug-fixed 4.48
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 Jan 2023,  Peter
 
 Bug fix: the code had an array not allocated. (Introduced 19th jan)
