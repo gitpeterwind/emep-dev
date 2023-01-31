@@ -13,7 +13,7 @@ NEW_SRCS = cso_comm.F90 cso_logging.F90 cso_tools.F90 \
            EMEP_CSO_mod.f90
 
 # local files that replace versions from the main directory:
-RENEW_SRCS = GridValues_mod.f90 PhyChem_mod.f90 emep_Main.f90
+RENEW_SRCS = PhyChem_mod.f90 emep_Main.f90
 
 # renew source list:
 # - files from main directory with '../' added as prefix,
