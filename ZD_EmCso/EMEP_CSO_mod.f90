@@ -120,6 +120,8 @@ module EMEP_CSO_mod
   !  'center'     :  based on center only
   !  'footprint'  :  based on corners
   character(len=16)                     ::  cso_mapping_select_by
+  ! target directory:
+  character(len=1024)                   ::  cso_output_dir
   
   
 contains
@@ -184,6 +186,8 @@ contains
     integer                               ::  cso_mapping_levels
     ! loop variables:
     integer                               ::  icso
+    ! length:
+    integer                               ::  n
 
     ! --- begin ----------------------------------
     
@@ -227,6 +231,21 @@ contains
     ! read:
     call cso_rcf%Init( cso_rcfile, status )
     IF_NOT_OK_RETURN(status=1)
+    
+    ! target directory:
+    call cso_rcf%Get( 'cso.output.dir', cso_output_dir, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! add path seperation if necessary;
+    !~ length of path:
+    n = len_trim(cso_output_dir)
+    !~ not empty?
+    if ( n > 0 ) then
+      !~ does not end with path seperation yet?
+      if ( cso_output_dir(n:n) /= '/' ) then
+        ! add seperation:
+        cso_output_dir = trim(cso_output_dir)//'/'
+      end if ! no sep yet
+    end if ! n > 0
 
     ! list with rckey prefixes:
     call cso_rcf%Get( 'cso.keys', cso_line, status )
@@ -350,6 +369,7 @@ contains
     use CSO                   , only : Pretty
     use CSO                   , only : Precisely
     use CSO                   , only : operator(+), operator(-), operator(*), operator(>=)
+    use CSO                   , only : CSO_Format
 
     use Config_module         , only : KMAX_MID
     use TimeDate_mod          , only : current_date
@@ -360,8 +380,10 @@ contains
     use SmallUtils_mod        , only : find_index
     use Units_mod             , only : Units_Scale
     use GridValues_mod        , only : A_bnd, B_bnd
-    use MetFields_mod         , only : ps
-    use MetFields_mod         , only : roa
+    use MetFields_mod         , only : ps       ! (nx,ny,1) surface pressure [Pa]
+    use MetFields_mod         , only : roa      ! (nx,ny,nz,1) air density
+    use MetFields_mod         , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface [m]
+    use MetFields_mod         , only : pzpbl    ! (nx,ny) boundary layer height [m]
 
     ! --- in/out ----------------------------
 
@@ -391,6 +413,9 @@ contains
     real, pointer                     ::  glb_clons(:,:)   ! (nglb,4)
     real, pointer                     ::  glb_clats(:,:)   ! (nglb,4)
     logical, pointer                  ::  glb_select(:)    ! (nglb)
+    ! adhoc fix ..
+    real                              ::  lon0
+    logical                           ::  outside
     ! loop variable:
     integer                           ::  iglb
     ! corner variables:
@@ -505,8 +530,11 @@ contains
               ! loop over global pixels:
               do iglb = 1, nglb
                 !~ decide if pixel center is part of local domain;
-                !  do not adjust to prefered domain since this gives problems at date-line:
-                glb_select(iglb) = coord_in_domain( 'local', glb_lon(iglb), glb_lat(iglb), fix=.false. )
+                !  due to packing/unpacking some lon values might be
+                !  slightly out of [-180,180], truncate them on input:
+                lon0 = min( max( -180.0, glb_lon(iglb) ), 180.0 )
+                ! check location:
+                glb_select(iglb) = coord_in_domain( 'local', lon0, glb_lat(iglb), fix=.false. )
               end do ! iglb
 
             !~ based on entire footprint
@@ -524,6 +552,16 @@ contains
               do iglb = 1, nglb
                 ! by default no overlap:
                 glb_select(iglb) = .false.
+                ! first quick check if pixel does not cross dateline
+                outside = .false.
+                do icrnr = 1, ncrnr
+                  ! check on longitudes:
+                  outside = (glb_clons(icrnr,iglb) < -180.0) .or. (glb_clons(icrnr,iglb) > 180.0)
+                  ! leave loop?
+                  if ( outside ) exit
+                end do
+                ! outside world map? pixel is not selected, next pixel:
+                if ( outside ) exit      
                 !~ check if footprint overlaps (partly) with domain;
                 !  do not adjust to prefered domain since this gives problems at date-line:
                 do icrnr = 1, ncrnr
@@ -533,6 +571,7 @@ contains
                 ! ... and if it is entirely in global domain;
                 !  do not adjust to prefered domain:
                 do icrnr = 1, ncrnr
+                  ! also check global model domain:
                   glb_select(iglb) = glb_select(iglb) .and. &
                       coord_in_domain( 'global', glb_clons(icrnr,iglb), glb_clats(icrnr,iglb), fix=.false. )
                 end do ! icrnr
@@ -582,6 +621,16 @@ contains
               case ( 'model_layeri' )
                 ! define number of layer interfaces (model layers + 1 extra strato layer):
                 call cso_sstate(icso)%SetDim( udimname, KMAX_MID+2, status )
+                IF_NOT_OK_RETURN(status=1)
+              !~ 2-layer troposphere:
+              case ( 'tropo' )
+                ! define number of layers:
+                call cso_sstate(icso)%SetDim( udimname, 2, status )
+                IF_NOT_OK_RETURN(status=1)
+              !~ 2-layer troposphere interfaces:
+              case ( 'tropoi' )
+                ! define number of layer interfaces:
+                call cso_sstate(icso)%SetDim( udimname, 2+1, status )
                 IF_NOT_OK_RETURN(status=1)
               !~ unknown ...
               case default
@@ -711,9 +760,67 @@ contains
                         ! loop over source contributions:
                         do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
                           ! add contribution,
-                          ! comppute half level pressures using hybride coeff;
+                          ! compute half level pressures using hybride coeff;
                           ! first record of surface pressure is said to be the correct one ..
                           data1(2:KMAX_MID+2,ipix) = data1(2:KMAX_MID+2,ipix) + (A_bnd + B_bnd * ps(ii(iw),jj(iw),1)) * ww(iw)/areas(ipix)
+                        end do ! iw
+                      end if ! nw > 0
+                    end do ! ipix
+  
+                  !~ model half-level heights:
+                  case ( 'mod_hh' )
+                  
+                    ! info ...
+                    write (gol,'(a,":   extract heights from model data ...")') rname; call goPr
+
+                    ! check units:
+                    if ( trim(uvarunits(iuvar)) /= 'm' ) then
+                      write (gol,'(a,": variable `",a,"` requires conversion to `",a,"` from `",a,"`")') &
+                              rname, trim(uvarnames(iuvar)), trim(uvarunits(iuvar)), 'm'; call goErr
+                    end if
+                    ! get pointer to target array with shape (nlev+1,npix):
+                    call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data1=data1 )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! loop over pixels:
+                    do ipix = 1, npix
+                      ! any source contributions?
+                      if ( nw(ipix) > 0 ) then
+                        ! init sums:
+                        data1(:,ipix) = 0.0
+                        ! loop over source contributions:
+                        do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
+                          ! stratosphere in layer 1 (top-down order!) is in space:
+                          data1(           1,ipix) = data1(           1,ipix) +                100.0e3 * ww(iw)/areas(ipix)
+                          ! add contribution:
+                          data1(2:KMAX_MID+2,ipix) = data1(2:KMAX_MID+2,ipix) + z_bnd(ii(iw),jj(iw),:) * ww(iw)/areas(ipix)
+                        end do ! iw
+                      end if ! nw > 0
+                    end do ! ipix
+  
+                  !~ model boundary layer heights:
+                  case ( 'mod_blh' )
+                  
+                    ! info ...
+                    write (gol,'(a,":   extract boundary layer height from model data ...")') rname; call goPr
+
+                    ! check units:
+                    if ( trim(uvarunits(iuvar)) /= 'm' ) then
+                      write (gol,'(a,": variable `",a,"` requires conversion to `",a,"` from `",a,"`")') &
+                              rname, trim(uvarnames(iuvar)), trim(uvarunits(iuvar)), 'm'; call goErr
+                    end if
+                    ! get pointer to target array with shape (npix):
+                    call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data0=data0 )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! loop over pixels:
+                    do ipix = 1, npix
+                      ! any source contributions?
+                      if ( nw(ipix) > 0 ) then
+                        ! init sum:
+                        data0(ipix) = 0.0
+                        ! loop over source contributions:
+                        do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
+                          ! add contribution:
+                          data0(ipix) = data0(ipix) + pzpbl(ii(iw),jj(iw)) * ww(iw)/areas(ipix)
                         end do ! iw
                       end if ! nw > 0
                     end do ! ipix
@@ -760,18 +867,24 @@ contains
           ! enabled?
           if ( putout ) then
   
-            ! target file for selected data:
-            write (cso_output_filename,'("CSO_output_",i4.4,2i2.2,"_",2i2.2,"_",a,"_data.nc")') &
-                       cso_t%year, cso_t%month, cso_t%day, cso_t%hour, cso_t%minute, &
-                       trim(cso_keys(icso))
+            ! template for target file for selected data,
+            ! path has seperation character included:
+            write (cso_output_filename,'(a,"CSO_output_%Y%m%d_%H%M_",a,"_data.nc")') &
+                     trim(cso_output_dir), trim(cso_keys(icso))
+            ! evaluate time templates:
+            call CSO_Format( cso_output_filename, cso_t, status )
+            IF_NOT_OK_RETURN(status=1)
             ! setup output arrays and output weights:
             call cso_sdata(icso)%PutOut( cso_output_filename, status )
             IF_NOT_OK_RETURN(status=1)
 
-            ! target file for simulation state:
-            write (cso_output_filename,'("CSO_output_",i4.4,2i2.2,"_",2i2.2,"_",a,"_state.nc")') &
-                       cso_t%year, cso_t%month, cso_t%day, cso_t%hour, cso_t%minute, &
-                       trim(cso_keys(icso))
+            ! template for target file for simulation state,
+            ! path has seperation character included:
+            write (cso_output_filename,'(a,"CSO_output_%Y%m%d_%H%M_",a,"_state.nc")') &
+                     trim(cso_output_dir), trim(cso_keys(icso))
+            ! evaluate time templates:
+            call CSO_Format( cso_output_filename, cso_t, status )
+            IF_NOT_OK_RETURN(status=1)
             ! write output selection:
             call cso_sstate(icso)%PutOut( cso_sdata(icso), cso_output_filename, status )
             IF_NOT_OK_RETURN(status=1)
