@@ -224,6 +224,18 @@
 !     call wrtcsol( 'time step  : ', dt ); call csoPr
 !     call wrtcsol( 'time range : ', t1, ' to ', t2 ); call csoPr
 !
+!  Evaluate time templates in string:
+!     %Y    : 4-digit year
+!     %m    : 2-digit month
+!     %d    : 2 digit day
+!     %H    : 2 digit hour
+!     %M    : 2 digit minute
+!     %S    : 2 digit second
+!  
+!     t = TDate( year=2021, month=9, day=6, hour=0, min=0 )
+!     line = 'file_%Y%m%d_%H%M.txt'
+!     call CSO_Format( line, t, status )
+!
 !
 ! DEFAULTS
 !
@@ -233,6 +245,12 @@
 !     call CSO_DateTimeDefaults( [calendar='gregorian'] )
 !
 !
+! HISTORY
+!
+!   2022-09, Arjo Segers
+!     Added `CSO_Format` routine.
+!
+!  
 !### macro's ##################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,i6,")")') rname, __FILE__, __LINE__ ; call csoErr
@@ -303,6 +321,7 @@ module CSO_DateTimes
   public      ::  Pretty
   public      ::  wrtcsol
   public      ::  PrintDate
+  public      ::  CSO_Format
 
   ! --- const -----------------------------------
 
@@ -3637,6 +3656,57 @@ contains
     write (*,'(a,a)') msg, trim(s)
 
   end subroutine PrintDate
+    
+    
+  ! **
+
+  
+  !
+  ! Evaluate time templates:
+  !   %Y    : 4-digit year
+  !   %m    : 2-digit month
+  !   %d    : 2 digit day
+  !   %H    : 2 digit hour
+  !   %M    : 2 digit minute
+  !   %S    : 2 digit second
+  !
+  
+  subroutine CSO_Format( s, t, status )
+  
+    use CSO_String, only : CSO_Replace
+  
+    ! --- in/out ---------------------------------
+    
+    character(len=*), intent(inout)     ::  s
+    type(T_CSO_DateTime), intent(in)    ::  t
+    integer, intent(out)                ::  status
+    
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/CSO_Format'
+    
+    ! --- local ----------------------------------
+    
+    ! --- begin ----------------------------------
+    
+    ! replace templates:
+    call CSO_Replace( s, '%Y', '(i4.4)', t%year  , status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_Replace( s, '%m', '(i2.2)', t%month , status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_Replace( s, '%d', '(i2.2)', t%day   , status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_Replace( s, '%H', '(i2.2)', t%hour  , status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_Replace( s, '%M', '(i2.2)', t%minute, status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_Replace( s, '%S', '(i2.2)', t%second, status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ok
+    status = 0
+    
+  end subroutine CSO_Format
 
 
 end module CSO_DateTimes
