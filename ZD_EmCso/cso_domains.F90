@@ -12,6 +12,12 @@
 ! - MPI 3.0 manual:
 !     http://mpi-forum.org/docs/mpi-3.0/mpi30-report.pdf
 !
+! HISTORY
+!
+!   2023-01, Arjo Segers
+!     Support integer(1) and character variables.
+!
+!
 !### macro's ###########################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -92,7 +98,7 @@ module CSO_Domains
     logical                         ::  with_root
     ! number of selected elements per pe
     ! (needed on root only)
-    integer, allocatable            ::  nsel_all(:)   ! npes
+    integer, allocatable            ::  nsel_all(:)   ! (npes)
     ! total number of selected elements
     ! (sum over ns)
     integer                         ::  nsel_tot
@@ -111,16 +117,24 @@ module CSO_Domains
   contains
     procedure   ::  Init        =>  CSO_Selection1D_Init
     procedure   ::  Done        =>  CSO_Selection1D_Done
+    procedure   ::                  CSO_Selection1D_Copy_i1_1d
     procedure   ::                  CSO_Selection1D_Copy_r_1d
+    procedure   ::                  CSO_Selection1D_Copy_c1_2d
     procedure   ::                  CSO_Selection1D_Copy_r_2d
     procedure   ::                  CSO_Selection1D_Copy_r_3d
-    generic     ::  Copy        =>  CSO_Selection1D_Copy_r_1d, &
+    generic     ::  Copy        =>  CSO_Selection1D_Copy_i1_1d, &
+                                    CSO_Selection1D_Copy_r_1d, &
+                                    CSO_Selection1D_Copy_c1_2d, &
                                     CSO_Selection1D_Copy_r_2d, &
                                     CSO_Selection1D_Copy_r_3d
+    procedure   ::                  CSO_Selection1D_ScatterV_i1_1d
     procedure   ::                  CSO_Selection1D_ScatterV_r_1d
+    procedure   ::                  CSO_Selection1D_ScatterV_c1_2d
     procedure   ::                  CSO_Selection1D_ScatterV_r_2d
     procedure   ::                  CSO_Selection1D_ScatterV_r_3d
-    generic     ::  ScatterV    =>  CSO_Selection1D_ScatterV_r_1d, &
+    generic     ::  ScatterV    =>  CSO_Selection1D_ScatterV_i1_1d, &
+                                    CSO_Selection1D_ScatterV_r_1d, &
+                                    CSO_Selection1D_ScatterV_c1_2d, &
                                     CSO_Selection1D_ScatterV_r_2d, &
                                     CSO_Selection1D_ScatterV_r_3d
   end type T_CSO_Selection1D
@@ -647,6 +661,54 @@ contains
   ! Copy elements from global array.
   !
 
+  subroutine CSO_Selection1D_Copy_i1_1d( self, glb, loc, status )
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Selection1D), intent(in)     ::  self
+    integer(1), intent(in)                   ::  glb(:)  ! (nglb)
+    integer(1), intent(out)                  ::  loc(:)  ! (nsel)
+    integer, intent(out)                     ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Selection1D_Copy_i1_1d'
+
+    ! --- local ----------------------------------
+    
+    integer     ::  isel
+
+    ! --- begin ----------------------------------
+    
+    ! check ...
+    if ( any( shape(glb) /= (/self%nglb/) ) ) then
+      write (csol,'("shape of glb (",i0,") while expected (",i0,")")') &
+                       shape(glb), self%nglb; call csoErr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! any selected?
+    if ( self%nsel > 0 ) then
+      ! check ...
+      if ( any( shape(loc) /= (/self%nsel/) ) ) then
+        write (csol,'("shape of loc (",i0,") while expected (",i0,")")') &
+                         shape(glb), self%nglb; call csoErr
+        TRACEBACK; status=1; return
+      end if
+      ! loop over target elements:
+      do isel = 1, self%nsel
+        ! copy:
+        loc(isel) = glb(self%iglb_sel(isel))
+      end do ! i
+    end if ! nsel > 0
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Selection1D_Copy_i1_1d
+  
+  ! *
+
   subroutine CSO_Selection1D_Copy_r_1d( self, glb, loc, status )
 
     ! --- in/out ---------------------------------
@@ -692,6 +754,58 @@ contains
     status = 0
 
   end subroutine CSO_Selection1D_Copy_r_1d
+  
+  ! *
+
+  subroutine CSO_Selection1D_Copy_c1_2d( self, glb, loc, status )
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Selection1D), intent(in)     ::  self
+    character(len=1), intent(in)             ::  glb(:,:)  ! (n1,nglb)
+    character(len=1), intent(out)            ::  loc(:,:)  ! (n1,nsel)
+    integer, intent(out)                     ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Selection1D_Copy_c1_2d'
+
+    ! --- local ----------------------------------
+    
+    integer     ::  n1
+    integer     ::  isel
+
+    ! --- begin ----------------------------------
+    
+    ! shape:
+    n1 = size(glb,1)
+    
+    ! check ...
+    if ( any( shape(glb) /= (/n1,self%nglb/) ) ) then
+      write (csol,'("shape of glb (",i0,",",i0,") while expected (",i0,",",i0,")")') &
+                       shape(glb), n1, self%nglb; call csoErr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! any selected?
+    if ( self%nsel > 0 ) then
+      ! check ...
+      if ( any( shape(loc) /= (/n1,self%nsel/) ) ) then
+        write (csol,'("shape of loc (",i0,",",i0,") while expected (",i0,",",i0,")")') &
+                         shape(glb), n1, self%nglb; call csoErr
+        TRACEBACK; status=1; return
+      end if
+      ! loop over target elements:
+      do isel = 1, self%nsel
+        ! copy:
+        loc(:,isel) = glb(:,self%iglb_sel(isel))
+      end do ! i
+    end if ! nsel > 0
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Selection1D_Copy_c1_2d
   
   ! *
 
@@ -805,6 +919,70 @@ contains
   ! Scatter selections from global array on root
   !
 
+  subroutine CSO_Selection1D_ScatterV_i1_1d( self, glb, loc, status )
+  
+    use CSO_Comm, only : csoc
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Selection1D), intent(in)     ::  self
+    integer(1), intent(in)                   ::  glb(:)  ! (nglb)
+    integer(1), intent(out)                  ::  loc(:)  ! (nsel)
+    integer, intent(out)                     ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Selection1D_ScatterV_i1_1d'
+
+    ! --- local ----------------------------------
+    
+    integer                     ::  itot
+    integer(1), allocatable     ::  sendbuf(:)
+
+    ! --- begin ----------------------------------
+    
+    ! check ...
+    if ( .not. self%with_root ) then
+      write (csol,'("could not scatter if info is not collected on root")'); call csoPr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! data to be scattered:
+    if ( csoc%root ) then
+      ! check ..
+      if ( any( shape(glb) /= (/self%nglb/) ) ) then
+        write (csol,'("shape of glb (",i0,") while expected (",i0,")")') &
+                         shape(glb), self%nglb; call csoErr
+        TRACEBACK; status=1; return
+      end if
+      ! storage:
+      allocate( sendbuf(self%nsel_tot), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      ! fill:
+      do itot = 1, self%nsel_tot
+        sendbuf(itot) = glb(self%iglb_tot(itot))
+      end do
+    else
+      ! dummy:
+      allocate( sendbuf(1), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+    end if
+    
+    ! scatter:
+    call csoc%ScatterV( sendbuf, loc, status, nloc=self%nsel )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! clear:
+    deallocate( sendbuf, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Selection1D_ScatterV_i1_1d
+  
+  ! *
+
   subroutine CSO_Selection1D_ScatterV_r_1d( self, glb, loc, status )
   
     use CSO_Comm, only : csoc
@@ -866,6 +1044,74 @@ contains
     status = 0
 
   end subroutine CSO_Selection1D_ScatterV_r_1d
+  
+  ! *
+
+  subroutine CSO_Selection1D_ScatterV_c1_2d( self, glb, loc, status )
+  
+    use CSO_Comm, only : csoc
+
+    ! --- in/out ---------------------------------
+
+    class(T_CSO_Selection1D), intent(in)     ::  self
+    character(len=1), intent(in)             ::  glb(:,:)  ! (n1,nglb) on root
+    character(len=1), intent(out)            ::  loc(:,:)  ! (n1,nsel)
+    integer, intent(out)                     ::  status
+
+    ! --- const ----------------------------------
+
+    character(len=*), parameter   ::  rname = mname//'/CSO_Selection1D_ScatterV_c1_2d'
+
+    ! --- local ----------------------------------
+    
+    integer                           ::  n1
+    integer                           ::  itot
+    character(len=1), allocatable     ::  sendbuf(:,:)
+
+    ! --- begin ----------------------------------
+    
+    ! shape:
+    n1 = size(glb,1)
+    
+    ! check ...
+    if ( .not. self%with_root ) then
+      write (csol,'("could not scatter if info is not collected on root")'); call csoPr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! data to be scattered:
+    if ( csoc%root ) then
+      ! check ..
+      if ( any( shape(glb) /= (/n1,self%nglb/) ) ) then
+        write (csol,'("shape of glb (",i0,",",i0,") while expected (",i0,",",i0,")")') &
+                         shape(glb), n1, self%nglb; call csoErr
+        TRACEBACK; status=1; return
+      end if
+      ! storage:
+      allocate( sendbuf(n1,self%nsel_tot), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      ! fill:
+      do itot = 1, self%nsel_tot
+        sendbuf(:,itot) = glb(:,self%iglb_tot(itot))
+      end do
+    else
+      ! dummy:
+      allocate( sendbuf(1,1), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+    end if
+    
+    ! scatter:
+    call csoc%ScatterV( sendbuf, loc, status, nloc=self%nsel )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! clear:
+    deallocate( sendbuf, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+
+  end subroutine CSO_Selection1D_ScatterV_c1_2d
   
   ! *
 

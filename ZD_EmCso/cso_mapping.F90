@@ -2,6 +2,13 @@
 !
 ! Mapping from model cells to pixel footprings
 !
+!
+! HISTORY
+!
+!   2022-09, Arjo Segers
+!     Support input and output of packed variables.
+!
+!
 !###############################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -725,7 +732,8 @@ contains
   ! ***
 
 
-  subroutine Mapping_NcDef( self, ncid, dimid_pixel, status )
+  subroutine Mapping_NcDef( self, ncid, dimid_pixel, status, &
+                              deflate_level, packed )
 
     use NetCDF, only : NF90_INT, NF90_FLOAT
     use NetCDF, only : NF90_Def_Dim
@@ -738,13 +746,16 @@ contains
     integer, intent(in)                           ::  ncid
     integer, intent(in)                           ::  dimid_pixel
     integer, intent(out)                          ::  status
+    integer, intent(in), optional                 ::  deflate_level
+    logical, intent(in), optional                 ::  packed
   
     ! --- const ----------------------------------
     
     character(len=*), parameter  ::  rname = mname//'/Mapping_NcDef'
     
     ! --- local ----------------------------------
-
+   
+    logical                   ::  with_packed
     integer                   ::  dimid_mapping
     integer                   ::  varid
     
@@ -752,51 +763,92 @@ contains
     
     ! any mappings defined?
     if ( self%nmap_all > 0 ) then
+
+      ! packed?
+      with_packed = .false.
+      if ( present(packed) ) with_packed = packed
+
       ! define dimension:
       status = NF90_Def_Dim( ncid, 'mapping', self%nmap_all, dimid_mapping )
       IF_NF90_NOT_OK_RETURN(status=1)
 
       ! define variable:
-      status = NF90_Def_Var( ncid, 'mapping_n', NF90_INT, (/dimid_pixel/), varid )
+      status = NF90_Def_Var( ncid, 'mapping_n', NF90_INT, (/dimid_pixel/), varid, &
+                                deflate_level=deflate_level )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! attributes:
       status = NF90_Put_Att( ncid, varid, 'long_name', 'number of mapping elements' )
       IF_NF90_NOT_OK_RETURN(status=1)
       status = NF90_Put_Att( ncid, varid, 'units', '1' )
       IF_NF90_NOT_OK_RETURN(status=1)
+      ! packing enabled?
+      if ( with_packed ) then
+        ! initialize attributes, will be filled with actual values when data is known:
+        status = NF90_Put_Att( ncid, varid, 'add_offset', 0.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( ncid, varid, 'scale_factor', 1.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      end if
       ! store:
       self%varid_n_out = varid
       
       ! define variable:
-      status = NF90_Def_Var( ncid, 'mapping_i', NF90_INT, (/dimid_mapping/), varid )
+      status = NF90_Def_Var( ncid, 'mapping_i', NF90_INT, (/dimid_mapping/), varid, &
+                                deflate_level=deflate_level )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! attributes:
       status = NF90_Put_Att( ncid, varid, 'long_name', 'mapping source cell longitude index' )
       IF_NF90_NOT_OK_RETURN(status=1)
       status = NF90_Put_Att( ncid, varid, 'units', '1' )
       IF_NF90_NOT_OK_RETURN(status=1)
+      ! packing enabled?
+      if ( with_packed ) then
+        ! initialize attributes, will be filled with actual values when data is known:
+        status = NF90_Put_Att( ncid, varid, 'add_offset', 0.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( ncid, varid, 'scale_factor', 1.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      end if
       ! store:
       self%varid_ii_out = varid
 
       ! define variable:
-      status = NF90_Def_Var( ncid, 'mapping_j', NF90_INT, (/dimid_mapping/), varid )
+      status = NF90_Def_Var( ncid, 'mapping_j', NF90_INT, (/dimid_mapping/), varid, &
+                                deflate_level=deflate_level )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! attributes:
       status = NF90_Put_Att( ncid, varid, 'long_name', 'mapping source cell latitude index' )
       IF_NF90_NOT_OK_RETURN(status=1)
       status = NF90_Put_Att( ncid, varid, 'units', '1' )
       IF_NF90_NOT_OK_RETURN(status=1)
+      ! packing enabled?
+      if ( with_packed ) then
+        ! initialize attributes, will be filled with actual values when data is known:
+        status = NF90_Put_Att( ncid, varid, 'add_offset', 0.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( ncid, varid, 'scale_factor', 1.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      end if
       ! store:
       self%varid_jj_out = varid
 
       ! define variable:
-      status = NF90_Def_Var( ncid, 'mapping_w', NF90_FLOAT, (/dimid_mapping/), varid )
+      status = NF90_Def_Var( ncid, 'mapping_w', NF90_FLOAT, (/dimid_mapping/), varid, &
+                                deflate_level=deflate_level )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! attributes:
       status = NF90_Put_Att( ncid, varid, 'long_name', 'mapping source cell overlap' )
       IF_NF90_NOT_OK_RETURN(status=1)
       status = NF90_Put_Att( ncid, varid, 'units', 'm2' )
       IF_NF90_NOT_OK_RETURN(status=1)
+      ! packing enabled?
+      if ( with_packed ) then
+        ! initialize attributes, will be filled with actual values when data is known:
+        status = NF90_Put_Att( ncid, varid, 'add_offset', 0.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        status = NF90_Put_Att( ncid, varid, 'scale_factor', 1.0 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      end if
       ! store:
       self%varid_ww_out = varid
 

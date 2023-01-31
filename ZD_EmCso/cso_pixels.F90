@@ -2,6 +2,26 @@
 !
 ! Pixels - storage for satellite data
 !
+!
+! HISTORY
+!
+! 2022-09, Arjo Segers
+!   When evaluating formula 'LayerAverage( hp, mod_hp, mod_conc )', use a
+!   slightly lower model surface when scaling towards satellite profile.
+!   Added formula `PartialColumns` for sum over all layers.
+!   Support input and output of packed variables.
+!   Use loop over elements instead of `matmul` after compiler error.
+! 2022-11, Arjo Segers
+!   Trap undefined values in kernel application.
+! 2022-12, Arjo Segers
+!   Added formula 'TropoPressures' to create variable with half-level pressures
+!   at surface, top of boundary layer, and top of troposhere.
+! 2023-01, Arjo Segers
+!   Do not pack 'time' variables.
+! 2023-01, Arjo Segers
+!   Support integer(1) and character variables.
+!
+!
 !###############################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -16,10 +36,13 @@
   
 module CSO_Pixels
 
+  use NetCDF, only : NF90_StrError, NF90_NOERR
+
   use CSO_Logging, only : csol, csoPr, csoErr
   use CSO_NcFile , only : T_NcAttrs
   use CSO_NcFile , only : T_NcDims
-  use NetCDF     , only : NF90_StrError, NF90_NOERR
+  use CSO_NcFile , only : rwp__out
+  use CSO_NcFile , only : iwp__packed
 
   implicit none
   
@@ -38,9 +61,6 @@ module CSO_Pixels
   
   character(len=*), parameter   ::  mname = 'CSO_Pixels'
   
-  ! output real kind:
-  integer, parameter            ::  wpr = 4
-
 
   ! --- types --------------------------------
   
@@ -48,8 +68,8 @@ module CSO_Pixels
   type T_PixelData
     ! name:
     character(len=32)         ::  name
-    ! type description: 0D_i,0D, 1D, 2D
-    character(len=4)          ::  dtype
+    ! type description: 0D_i1, 0D_i,0D, 1D, 2D
+    character(len=8)          ::  dtype
     ! global pixel list, same on all domains?
     ! this is used to store footprints for selection:
     logical                   ::  glb
@@ -60,15 +80,18 @@ module CSO_Pixels
     character(len=32)         ::  dimnames(7)
     integer                   ::  shp(7)
     ! storage:
+    integer(1), pointer       ::  data0_i1(:)    ! (npix)
     integer, pointer          ::  data0_i(:)    ! (npix)
     real, pointer             ::  data0(:)      ! (npix)
     real, pointer             ::  data1(:,:)    ! (nv,npix)
+    character(len=1), pointer ::  data1_c(:,:)  ! (nchar,npix)
     real, pointer             ::  data2(:,:,:)  ! (mv,nv,npix)
     ! flag:
     logical                   ::  alloced
     ! source values:
+    integer(1)                ::  source_i1
     integer                   ::  source_i
-    real(wpr)                 ::  source
+    real                      ::  source
     ! attributes:
     type(T_NcAttrs)           ::  attrs
     ! formula:
@@ -79,8 +102,12 @@ module CSO_Pixels
     logical                   ::  read_by_me
     ! netcdf output:
     integer                   ::  varid
+    integer(1)                ::  fill_value_i1
     integer                   ::  fill_value_i
-    real(wpr)                 ::  fill_value
+    real                      ::  fill_value
+    real(rwp__out)            ::  fill_value__out
+    integer(iwp__packed)      ::  fill_value__packed
+    logical                   ::  packed
     !
   contains
     procedure :: Init            => PixelData_Init
@@ -88,6 +115,7 @@ module CSO_Pixels
     procedure :: Alloc           => PixelData_Alloc
     procedure :: NcInit          => PixelData_NcInit
     procedure :: Get             => PixelData_Get
+    procedure :: GatherData      => PixelData_GatherData
     procedure :: Set             => PixelData_Set
     procedure :: SetPixelZero    => PixelData_SetPixelZero
     procedure ::                    PixelData_SetPixel_0D
@@ -133,6 +161,7 @@ module CSO_Pixels
     procedure :: InqID           => PixelDatas_InqID
     procedure :: Get             => PixelDatas_Get
     procedure :: GetData         => PixelDatas_GetData
+    procedure :: GatherData      => PixelDatas_GatherData
     procedure :: SetData         => PixelDatas_SetData
     procedure :: Def             => PixelDatas_Def
     procedure :: NcInit          => PixelDatas_NcInit
@@ -180,6 +209,9 @@ module CSO_Pixels
     character(len=1024)   ::  long_name
     ! netcdf output:
     integer               ::  varid
+    ! write packed?
+    logical               ::  packed
+    !
   contains
     procedure ::                     Track_Init
     procedure ::                     Track_InitCopy
@@ -195,7 +227,9 @@ module CSO_Pixels
     ! storage:
     real, pointer         ::  data(:,:)  ! (ntx,nty)
     ! netcdf output:
-    real(wpr)             ::  fill_value
+    real                  ::  fill_value
+    real(rwp__out)        ::  fill_value__out
+    integer(iwp__packed)  ::  fill_value__packed
   contains
     procedure :: Init            => Track_0D_Init
     procedure :: InitCopy        => Track_0D_InitCopy
@@ -214,7 +248,10 @@ module CSO_Pixels
     ! storage:
     real, pointer         ::  data(:,:,:)  ! (nv,ntx,nty)
     ! netcdf output:
-    real(wpr)             ::  fill_value
+    real                  ::  fill_value
+    real(rwp__out)        ::  fill_value__out
+    integer(iwp__packed)  ::  fill_value__packed
+    !
   contains
     procedure :: Init            => Track_1D_Init
     procedure :: InitCopy        => Track_1D_InitCopy
@@ -237,10 +274,11 @@ contains
 
 
   subroutine PixelData_Init( self, name, status, &
-                                dtype, shp, glb, source, source_i, &
+                                dtype, shp, glb, source, source_i, source_i1, &
                                 read_on_root )
                                 
-    use CSO_Comm, only : csoc
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : iwp__packed
   
     ! --- in/out ---------------------------------
     
@@ -252,6 +290,7 @@ contains
     integer, intent(in), optional             ::  shp(:)
     logical, intent(in), optional             ::  glb
     integer, intent(in), optional             ::  source_i
+    integer(1), intent(in), optional          ::  source_i1
     real, intent(in), optional                ::  source
     logical, intent(in), optional             ::  read_on_root
 
@@ -277,17 +316,21 @@ contains
     self%shp  = -999
     
     ! fill values:
-    self%fill_value_i = huge(1)
-    self%fill_value   = huge(real(1.0,kind=wpr))
+    self%fill_value_i1      = - huge(int(1,kind=1))
+    self%fill_value_i       = - huge(1)
+    self%fill_value         = - huge(1.0)
+    self%fill_value__out    = - huge(real(1.0,kind=rwp__out))
+    self%fill_value__packed = - huge(int(1,kind=iwp__packed))
     
     ! no data allocated yet:
     self%alloced = .false.
     ! source values when allocated:    
-    self%source_i = self%fill_value_i
-    self%source   = self%fill_value
+    self%source_i1 = self%fill_value_i1
+    self%source_i  = self%fill_value_i
+    self%source    = self%fill_value
     ! reset?
     if ( present(source_i) ) self%source_i = source_i
-    if ( present(source  ) ) self%source   = real(source,kind=wpr)
+    if ( present(source  ) ) self%source   = source
     
     ! read by root and scatter?
     self%read_on_root = .false.
@@ -337,6 +380,10 @@ contains
     ! switch:
     select case ( trim(self%dtype) )
       !~
+      case ( '0D_i1' )
+        deallocate( self%data0_i1, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      !~
       case ( '0D_i' )
         deallocate( self%data0_i, stat=status )
         IF_NOT_OK_RETURN(status=1)
@@ -347,6 +394,10 @@ contains
       !~
       case ( '1D' )
         deallocate( self%data1, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      !~
+      case ( '1D_c' )
+        deallocate( self%data1_c, stat=status )
         IF_NOT_OK_RETURN(status=1)
       !~
       case ( '2D' )
@@ -406,6 +457,20 @@ contains
         allocate( self%data0_i(max(1,self%npix)), source=self%source_i, stat=status )
         IF_NOT_OK_RETURN(status=1)
       !~
+      case ( '0D_i1' )
+        ! check ...
+        if ( size(shp) /= 1 ) then
+          write (csol,'("expected shape (npix), received size: ",i0)') size(shp); call csoErr
+          TRACEBACK; status=1; return
+        end if
+        ! set dims::
+        self%ndim = 0
+        self%npix = shp(1)
+        self%shp(1) = shp(1)
+        ! storage:
+        allocate( self%data0_i1(max(1,self%npix)), source=self%source_i1, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      !~
       case ( '0D' )
         ! check ...
         if ( size(shp) /= 1 ) then
@@ -432,6 +497,20 @@ contains
         self%shp(1:2) = shp(1:2)
         ! storage:
         allocate( self%data1(shp(1),max(1,self%npix)), source=real(self%source), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      !~
+      case ( '1D_c' )
+        ! check ...
+        if ( size(shp) /= 2 ) then
+          write (csol,'("expected shape (npix), received size: ",i0)') size(shp); call csoErr
+          TRACEBACK; status=1; return
+        end if
+        ! set dims::
+        self%ndim = 1
+        self%npix = shp(2)
+        self%shp(1:2) = shp(1:2)
+        ! storage:
+        allocate( self%data1_c(shp(1),max(1,self%npix)), source=char(0), stat=status )
         IF_NOT_OK_RETURN(status=1)
       !~
       case ( '2D' )
@@ -468,9 +547,7 @@ contains
   subroutine PixelData_NcInit( self, ncid, varname, status, &
                                   slc, only_here )
   
-    use NetCDF, only : NF90_Inq_DimID, NF90_Inquire_Dimension
-    use NetCDF, only : NF90_Inq_VarID, NF90_Inquire_Variable, NF90_Get_Var
-
+    use CSO_NcFile , only : T_NcFile
     use CSO_Comm   , only : csoc
     use CSO_Domains, only : T_CSO_Selection1D
   
@@ -490,18 +567,22 @@ contains
     
     ! --- local ----------------------------------
     
-    logical                 ::  with_bcast
-    integer                 ::  varid
-    integer                 ::  ndims
-    integer                 ::  dimids(7)
-    integer                 ::  xshp(7)
-    integer                 ::  shp(7)
-    integer                 ::  idim
-    integer                 ::  ipix
-    integer, allocatable    ::  data0_i(:)    ! (npix)
-    real, allocatable       ::  data0(:)      ! (npix)
-    real, allocatable       ::  data1(:,:)    ! (nv,npix)
-    real, allocatable       ::  data2(:,:,:)  ! (mv,nv,npix)
+    logical                           ::  with_bcast
+    type(T_NcFile)                    ::  ncf
+    character(len=128)                ::  description
+    character(len=128)                ::  dunits
+    integer                           ::  varid
+    integer                           ::  ndims
+    integer                           ::  xshp(7)
+    integer                           ::  shp(7)
+    integer                           ::  idim
+    integer                           ::  ipix
+    integer, allocatable              ::  data0_i(:)    ! (npix)
+    integer(1), allocatable           ::  data0_i1(:)   ! (npix)
+    real, allocatable                 ::  data0(:)      ! (npix)
+    real, allocatable                 ::  data1(:,:)    ! (nv,npix)
+    character(len=1), allocatable     ::  data1_c(:,:)  ! (nchar,npix)
+    real, allocatable                 ::  data2(:,:,:)  ! (mv,nv,npix)
     
     ! --- begin ----------------------------------
     
@@ -512,10 +593,10 @@ contains
     
     ! number of dims (except pixel dimension):
     select case ( trim(self%dtype) )
-      case ( '0D', '0D_i' ) ; self%ndim = 0
-      case ( '1D'         ) ; self%ndim = 1
-      case ( '2D'         ) ; self%ndim = 2
-      case ( '3D'         ) ; self%ndim = 3
+      case ( '0D', '0D_i', '0D_i1' ) ; self%ndim = 0
+      case ( '1D', '1D_c'          ) ; self%ndim = 1
+      case ( '2D'                  ) ; self%ndim = 2
+      case ( '3D'                  ) ; self%ndim = 3
       case default
         write (csol,'("unsupported data type `",a,"`")') trim(self%dtype); call csoErr
         TRACEBACK; status=1; return
@@ -524,17 +605,20 @@ contains
     ! read here?
     if ( self%read_by_me ) then
 
-      ! get variable id:
-      status = NF90_Inq_Varid( ncid, varname, varid )
-      if (status/=NF90_NOERR) then
-        csol=nf90_strerror(status); call csoErr
-        write (csol,'("variable name: ",a)') trim(varname); call csoErr
-        TRACEBACK; status=1; return
-      end if
+      ! init file, already opened:
+      call ncf%Init( 'None', 'o', status, ncid=ncid )
+      IF_NOT_OK_RETURN(status=1)
 
-      ! number of dimensions in file:
-      status = NF90_Inquire_Variable( ncid, varid, ndims=ndims )
-      IF_NF90_NOT_OK_RETURN(status=1)
+      ! variable description:
+      description = 'var_name='//trim(varname)
+
+      ! get variable id:
+      call ncf%Inq_VarID( description, varid, status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! number of dimensions of variable in file:
+      call ncf%Inq_Variable( varid, status, ndims=ndims )
+      IF_NOT_OK_RETURN(status=1)
       ! check ..
       if ( ndims /= self%ndim+1 ) then
         write (csol,'("variable `",a,"` has ",i0," dimension(s), while expecting ",i0,"+1 :")') &
@@ -546,15 +630,9 @@ contains
         TRACEBACK; status=1; return
       end if
 
-      ! get dimension id's:
-      status = NF90_Inquire_Variable( ncid, varid, dimids=dimids(1:self%ndim+1) )
-      IF_NF90_NOT_OK_RETURN(status=1)
-      ! loop over dimensions:
-      do idim = 1, self%ndim+1
-        ! get size:
-        status = NF90_Inquire_Dimension( ncid, dimids(idim), len=xshp(idim) )
-        IF_NF90_NOT_OK_RETURN(status=1)
-      end do
+      ! get variable shape:
+      call ncf%Inq_Variable( varid, status, shp=xshp(1:self%ndim+1) )
+      IF_NOT_OK_RETURN(status=1)
 
     end if ! read by me
     ! need to broadcast?
@@ -581,6 +659,51 @@ contains
         select case ( trim(self%dtype) )
                     
           !~
+          case ( '0D_i1' )
+
+            ! need to scatter?
+            if ( self%read_on_root ) then
+            
+              ! read from here?
+              if ( csoc%root ) then
+                ! storage for all data:
+                allocate( data0_i1(xshp(1)), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+                ! read data and units from variable defined by description:
+                call ncf%Get_Var( description, data0_i1, dunits, status )
+                IF_NOT_OK_RETURN(status=1)
+              else
+                ! dummy ...
+                allocate( data0_i1(1), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+
+              ! scatter selections:
+              call slc%ScatterV( data0_i1, self%data0_i1, status )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! clear:
+              deallocate( data0_i1, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              
+            else
+
+              ! storage for all data:
+              allocate( data0_i1(xshp(1)), stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              ! read data and units from variable defined by description:
+              call ncf%Get_Var( description, data0_i1, dunits, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! copy selections:
+              call slc%Copy( data0_i1, self%data0_i1, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! clear:
+              deallocate( data0_i1, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+
+            end if  ! root or all
+                    
+          !~
           case ( '0D' )
 
             ! need to scatter?
@@ -591,9 +714,9 @@ contains
                 ! storage for all data:
                 allocate( data0(xshp(1)), stat=status )
                 IF_NOT_OK_RETURN(status=1)
-                ! read:
-                status = NF90_Get_Var( ncid, varid, data0 )
-                IF_NF90_NOT_OK_RETURN(status=1)
+                ! read data and units from variable defined by description:
+                call ncf%Get_Var( description, data0, dunits, status )
+                IF_NOT_OK_RETURN(status=1)
               else
                 ! dummy ...
                 allocate( data0(1), stat=status )
@@ -613,9 +736,9 @@ contains
               ! storage for all data:
               allocate( data0(xshp(1)), stat=status )
               IF_NOT_OK_RETURN(status=1)
-              ! read:
-              status = NF90_Get_Var( ncid, varid, data0 )
-              IF_NF90_NOT_OK_RETURN(status=1)
+              ! read data and units from variable defined by description:
+              call ncf%Get_Var( description, data0, dunits, status )
+              IF_NOT_OK_RETURN(status=1)
               ! copy selections:
               call slc%Copy( data0, self%data0, status )
               IF_NOT_OK_RETURN(status=1)
@@ -636,9 +759,9 @@ contains
                 ! storage for all data:
                 allocate( data1(xshp(1),xshp(2)), stat=status )
                 IF_NOT_OK_RETURN(status=1)
-                ! read:
-                status = NF90_Get_Var( ncid, varid, data1 )
-                IF_NF90_NOT_OK_RETURN(status=1)
+                ! read data and units from variable defined by description:
+                call ncf%Get_Var( description, data1, dunits, status )
+                IF_NOT_OK_RETURN(status=1)
               else
                 ! dummy ...
                 allocate( data1(1,1), stat=status )
@@ -658,14 +781,59 @@ contains
               ! storage for all data:
               allocate( data1(xshp(1),xshp(2)), stat=status )
               IF_NOT_OK_RETURN(status=1)
-              ! read:
-              status = NF90_Get_Var( ncid, varid, data1 )
-              IF_NF90_NOT_OK_RETURN(status=1)
+              ! read data and units from variable defined by description:
+              call ncf%Get_Var( description, data1, dunits, status )
+              IF_NOT_OK_RETURN(status=1)
               ! copy selections:
               call slc%Copy( data1, self%data1, status )
               IF_NOT_OK_RETURN(status=1)
               ! clear:
               deallocate( data1, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+
+            end if  ! root or all
+          
+          !~
+          case ( '1D_c' )
+
+            ! need to scatter?
+            if ( self%read_on_root ) then
+            
+              ! read from here?
+              if ( csoc%root ) then
+                ! storage for all data:
+                allocate( data1_c(xshp(1),xshp(2)), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+                ! read data and units from variable defined by description:
+                call ncf%Get_Var( description, data1_c, dunits, status )
+                IF_NOT_OK_RETURN(status=1)
+              else
+                ! dummy ...
+                allocate( data1_c(1,1), stat=status )
+                IF_NOT_OK_RETURN(status=1)
+              end if
+
+              ! scatter selections:
+              call slc%ScatterV( data1_c, self%data1_c, status )
+              IF_NOT_OK_RETURN(status=1)
+
+              ! clear:
+              deallocate( data1_c, stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              
+            else
+
+              ! storage for all data:
+              allocate( data1_c(xshp(1),xshp(2)), stat=status )
+              IF_NOT_OK_RETURN(status=1)
+              ! read data and units from variable defined by description:
+              call ncf%Get_Var( description, data1_c, dunits, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! copy selections:
+              call slc%Copy( data1_c, self%data1_c, status )
+              IF_NOT_OK_RETURN(status=1)
+              ! clear:
+              deallocate( data1_c, stat=status )
               IF_NOT_OK_RETURN(status=1)
 
             end if  ! root or all
@@ -681,9 +849,9 @@ contains
                 ! storage for all data:
                 allocate( data2(xshp(1),xshp(2),xshp(3)), stat=status )
                 IF_NOT_OK_RETURN(status=1)
-                ! read:
-                status = NF90_Get_Var( ncid, varid, data2 )
-                IF_NF90_NOT_OK_RETURN(status=1)
+                ! read data and units from variable defined by description:
+                call ncf%Get_Var( description, data2, dunits, status )
+                IF_NOT_OK_RETURN(status=1)
               else
                 ! dummy ...
                 allocate( data2(1,1,1), stat=status )
@@ -703,9 +871,9 @@ contains
               ! storage for all data:
               allocate( data2(xshp(1),xshp(2),xshp(3)), stat=status )
               IF_NOT_OK_RETURN(status=1)
-              ! read:
-              status = NF90_Get_Var( ncid, varid, data2 )
-              IF_NF90_NOT_OK_RETURN(status=1)
+              ! read data and units from variable defined by description:
+              call ncf%Get_Var( description, data2, dunits, status )
+              IF_NOT_OK_RETURN(status=1)
               ! copy selections:
               call slc%Copy( data2, self%data2, status )
               IF_NOT_OK_RETURN(status=1)
@@ -723,7 +891,7 @@ contains
 
       !end if ! npix > 0
     
-    else
+    else  ! no selection
     
       ! storage, this also sets self%shp and self%npix:
       call self%Alloc( xshp(1:self%ndim+1), status )
@@ -732,12 +900,26 @@ contains
       ! switch:
       select case ( trim(self%dtype) )
         !~
+        case ( '0D_i1' )
+          ! read here?
+          if ( self%read_by_me ) then
+            ! read data and units from variable defined by description:
+            call ncf%Get_Var( description, self%data0_i1, dunits, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if ! read by me
+          ! need to broadcast?
+          if ( self%read_on_root .and. with_bcast ) then
+            ! broadcast from root:
+            call csoc%BCast( csoc%root_id, self%data0_i1, status )
+            IF_NOT_OK_RETURN(status=1)
+          end if  ! broadcast
+        !~
         case ( '0D_i' )
           ! read here?
           if ( self%read_by_me ) then
-            ! read:
-            status = NF90_Get_Var( ncid, varid, self%data0_i )
-            IF_NF90_NOT_OK_RETURN(status=1)
+            ! read data and units from variable defined by description:
+            call ncf%Get_Var( description, self%data0_i, dunits, status )
+            IF_NOT_OK_RETURN(status=1)
           end if ! read by me
           ! need to broadcast?
           if ( self%read_on_root .and. with_bcast ) then
@@ -749,9 +931,9 @@ contains
         case ( '0D' )
           ! read here?
           if ( self%read_by_me ) then
-            ! read:
-            status = NF90_Get_Var( ncid, varid, self%data0 )
-            IF_NF90_NOT_OK_RETURN(status=1)
+            ! read data and units from variable defined by description:
+            call ncf%Get_Var( description, self%data0, dunits, status )
+            IF_NOT_OK_RETURN(status=1)
           end if ! read by me
           ! need to broadcast?
           if ( self%read_on_root .and. with_bcast ) then
@@ -763,9 +945,9 @@ contains
         case ( '1D' )
           ! read here?
           if ( self%read_by_me ) then
-            ! read:
-            status = NF90_Get_Var( ncid, varid, self%data1 )
-            IF_NF90_NOT_OK_RETURN(status=1)
+            ! read data and units from variable defined by description:
+            call ncf%Get_Var( description, self%data1, dunits, status )
+            IF_NOT_OK_RETURN(status=1)
           end if ! read by me
           ! need to broadcast?
           if ( self%read_on_root .and. with_bcast ) then
@@ -777,9 +959,9 @@ contains
         case ( '2D' )
           ! read here?
           if ( self%read_by_me ) then
-            ! read:
-            status = NF90_Get_Var( ncid, varid, self%data2 )
-            IF_NF90_NOT_OK_RETURN(status=1)
+            ! read data and units from variable defined by description:
+            call ncf%Get_Var( description, self%data2, dunits, status )
+            IF_NOT_OK_RETURN(status=1)
           end if ! read by me
           ! need to broadcast?
           if ( self%read_on_root .and. with_bcast ) then
@@ -798,6 +980,13 @@ contains
     ! read attributes:
     call self%attrs%NcGet( ncid, varid, status, only_here=only_here )
     IF_NOT_OK_RETURN(status=1)
+
+    ! read here?
+    if ( self%read_by_me ) then
+      ! done:
+      call ncf%Done(status )
+      IF_NOT_OK_RETURN(status=1)
+    end if
 
     ! ok
     status = 0
@@ -852,8 +1041,9 @@ contains
 
   subroutine PixelData_Get( self, status, &
                               name, dnames, xtype, &
-                              data0, data1, data2, isfc_pressure, &
-                              npix, xshp, nval, valtype, glb )
+                              data0, data1, data2, fill_value, isfc_pressure, &
+                              npix, xshp, nval, valtype, glb, &
+                              gdata1 )
     
     ! --- in/out ---------------------------------
     
@@ -866,12 +1056,15 @@ contains
     real, pointer, optional                   ::  data0(:)       ! (npix)
     real, pointer, optional                   ::  data1(:,:)     ! (nr,npix)
     real, pointer, optional                   ::  data2(:,:,:)   ! (mr,nr,npix)
+    real, intent(out), optional               ::  fill_value
     integer, intent(out), optional            ::  isfc_pressure
     integer, intent(out), optional            ::  npix
     integer, intent(out), optional            ::  xshp(:)
     integer, intent(out), optional            ::  nval
     character(len=*), intent(in), optional    ::  valtype
     logical, intent(out), optional            ::  glb
+    
+    real, intent(out), optional               ::  gdata1(:,:)     ! (nr,nout)
   
     ! --- const ----------------------------------
     
@@ -879,9 +1072,11 @@ contains
     
     ! --- local ----------------------------------
     
-    integer     ::  idim
-    integer     ::  ipix
-    logical     ::  nval_without_formulated
+    integer                 ::  idim
+    integer                 ::  ipix
+    logical                 ::  nval_without_formulated
+
+    real, allocatable       ::  data1_all(:,:)    ! (:,npix_all)
     
     ! --- begin ----------------------------------
     
@@ -941,7 +1136,7 @@ contains
     end if ! data0
     
     ! pointer to data?
-    if ( present(data1) ) then  
+    if ( present(data1) ) then
       ! check ...
       if ( trim(self%dtype) /= '1D' ) then
         write (csol,'("argument `data1` requires dtype `1D`, not `",a,"`")') trim(self%dtype); call csoErr
@@ -985,6 +1180,11 @@ contains
       end do ! ipix
     end if ! isfc_pressure
     
+    ! fill value?
+    if ( present(fill_value) ) then
+      fill_value = self%fill_value
+    end if
+    
     ! number of data values per pixel:
     if ( present(nval) ) then
       ! check ...
@@ -1027,6 +1227,364 @@ contains
 
 
   ! ***
+  
+  
+  ! 
+  ! Gather pixel data from domains, similar as in NcPutGather
+  !
+  
+  subroutine PixelData_GatherData( self, mapping, status, &
+                                     gdata0_i, gdata0_i1, gdata0, gdata1_c, gdata1, gdata2 )
+
+    use CSO_Comm, only : csoc
+    
+    ! --- in/out ---------------------------------
+    
+    class(T_PixelData), intent(in)      ::  self
+    integer, intent(in)                 ::  mapping(:)   ! (npix_all) target index
+    integer, intent(out)                ::  status
+    
+    integer(1), intent(out), optional         ::  gdata0_i1(:)    ! (nout)
+    integer, intent(out), optional            ::  gdata0_i(:)     ! (nout)
+    real, intent(out), optional               ::  gdata0(:)       ! (nout)
+    character(len=1), intent(out), optional   ::  gdata1_c(:,:)   ! (:,nout)
+    real, intent(out), optional               ::  gdata1(:,:)     ! (:,nout)
+    real, intent(out), optional               ::  gdata2(:,:,:)   ! (:,:,nout)
+  
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/PixelData_GatherData'
+    
+    ! --- local ----------------------------------
+    
+    integer                           ::  npix_all
+    integer(1), allocatable           ::  data0_i1_all(:)     ! (npix_all)
+    integer, allocatable              ::  data0_i_all(:)      ! (npix_all)
+    real, allocatable                 ::  data0_all(:)        ! (npix_all)
+    character(len=1), allocatable     ::  data1_c_all(:,:)    ! (:,npix_all)
+    real, allocatable                 ::  data1_all(:,:)      ! (:,npix_all)
+    real, allocatable                 ::  data2_all(:,:,:)    ! (:,:,npix_all)
+    integer                           ::  nout
+    integer                           ::  iout
+    integer                           ::  iall
+    
+    ! --- begin ----------------------------------
+    
+    ! gather array?
+    if ( present(gdata0_i1) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '0D_i1' ) then
+        write (csol,'("argument `gdata0_i1` requires dtype `0D_i1`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data0_i1_all(npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data0_i1_all(1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data0_i1, data0_i1_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! skip undefined source:
+          if ( data0_i1_all(iall) == self%fill_value_i ) cycle
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata0_i1(iout) = data0_i1_all(iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data0_i1_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata0_i1
+    
+    ! gather array?
+    if ( present(gdata0_i) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '0D_i' ) then
+        write (csol,'("argument `gdata0_i` requires dtype `0D_i`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data0_i_all(npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data0_i_all(1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data0_i, data0_i_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! skip undefined source:
+          if ( data0_i_all(iall) == self%fill_value_i ) cycle
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata0_i(iout) = data0_i_all(iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data0_i_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata0_i
+    
+    ! gather array?
+    if ( present(gdata0) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '0D' ) then
+        write (csol,'("argument `gdata0` requires dtype `0D`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data0_all(npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data0_all(1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data0, data0_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! skip undefined source:
+          if ( data0_all(iall) == self%fill_value ) cycle
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata0(iout) = data0_all(iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data0_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata0
+    
+    ! gather array?
+    if ( present(gdata1) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '1D' ) then
+        write (csol,'("argument `gdata1` requires dtype `1D`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data1_all(self%shp(1),npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data1_all(self%shp(1),1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data1, data1_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! check ..
+        if ( any( shape(gdata1) /= (/self%shp(1),nout/) ) ) then
+          write (csol,'("output `gdata1` has shape (",i0,",",i0,") while expected (",i0,",",i0,")")') &
+                           size(gdata1,1), size(gdata1,2), self%shp(1), nout; call csoErr
+          TRACEBACK; status=1; return
+        end if
+        ! init values:
+        gdata1 = real(self%fill_value)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! skip undefined source:
+          if ( data1_all(1,iall) == self%fill_value ) cycle
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata1(:,iout) = data1_all(:,iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data1_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata1
+    
+    ! gather array?
+    if ( present(gdata1_c) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '1D_c' ) then
+        write (csol,'("argument `gdata1` requires dtype `1D_c`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data1_c_all(self%shp(1),npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data1_c_all(self%shp(1),1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data1_c, data1_c_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! check ..
+        if ( any( shape(gdata1_c) /= (/self%shp(1),nout/) ) ) then
+          write (csol,'("output `gdata1` has shape (",i0,",",i0,") while expected (",i0,",",i0,")")') &
+                           size(gdata1_c,1), size(gdata1_c,2), self%shp(1), nout; call csoErr
+          TRACEBACK; status=1; return
+        end if
+        ! init values:
+        gdata1_c = char(0)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata1_c(:,iout) = data1_c_all(:,iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data1_c_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata1_c
+    
+    ! gather array?
+    if ( present(gdata2) ) then
+
+      ! check ...
+      if ( trim(self%dtype) /= '2D' ) then
+        write (csol,'("argument `gdata2` requires dtype `2D`, not `",a,"`")') trim(self%dtype); call csoErr
+        TRACEBACK; status=1; return
+      end if
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+        ! count:
+        npix_all = size(mapping)
+        ! storage for all data:
+        allocate( data2_all(self%shp(1),self%shp(2),npix_all), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      else
+        ! dummy ...
+        allocate( data2_all(self%shp(1),self%shp(2),1), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if ! root
+
+      ! gather data arrays on root, local size might be zero
+      call csoc%GatherV( self%data2, data2_all, status, nloc=self%npix )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! gather on root only ..
+      if ( csoc%root ) then
+
+        ! number of selected pixels:
+        nout = maxval(mapping)
+        ! loop over collected pixels:
+        do iall = 1, npix_all
+          ! skip undefined source:
+          if ( data2_all(1,1,iall) == self%fill_value ) cycle
+          ! target index:
+          iout = mapping(iall)
+          ! copy (might overwrite if pixels overlap with multiple domains):
+          gdata2(:,:,iout) = data2_all(:,:,iall)
+        end do ! iall
+
+      end if ! root
+
+      ! clear:
+      deallocate( data2_all, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+
+    end if ! gdata0
+    
+    ! ok
+    status = 0
+    
+  end subroutine PixelData_GatherData
+
+
+  ! ***
 
 
   subroutine PixelData_SetPixelZero( self, ipix, status )
@@ -1048,6 +1606,9 @@ contains
     ! switch:
     select case ( trim(self%dtype) )
       !~
+      case ( '0D_i1' )
+        self%data0_i1(ipix) = 0
+      !~
       case ( '0D_i' )
         self%data0_i(ipix) = 0
       !~
@@ -1056,6 +1617,9 @@ contains
       !~
       case ( '1D' )
         self%data1(:,ipix) = 0.0
+      !~
+      case ( '1D_c' )
+        self%data1_c(:,ipix) = char(0)
       !~
       case ( '2D' )
         self%data2(:,:,ipix) = 0.0
@@ -1232,6 +1796,13 @@ contains
     ! switch:
     select case ( trim(self%dtype) )
       !~
+      case ( '0D_i1' )
+        ! loop over selected pixels:
+        do ip = 1, np
+          ! copy values as floats:
+          values(1,ip) = real( self%data0_i1(ipixs(ip)) )
+        end do ! ip
+      !~
       case ( '0D_i' )
         ! loop over selected pixels:
         do ip = 1, np
@@ -1393,6 +1964,9 @@ contains
 
   !
   ! Copy array values into pixels.
+  ! If needed:
+  ! - convert from real to integer
+  ! - reshape from (nval) to (n,m,..)
   !
     
   subroutine PixelData_SetValues( self, values, status )
@@ -1411,7 +1985,8 @@ contains
     
     integer                         ::  np
     integer                         ::  nval
-    integer                         ::  ipix
+    integer                         ::  ipix    
+    real, pointer                   ::  qdata2(:,:,:)
     
     ! --- begin ----------------------------------
     
@@ -1450,8 +2025,20 @@ contains
         self%data1 = values
       !~
       case ( '2D' )
+        ! STRANGE: this gives a segmentation fault sometimes ..
+        !! copy values:
+        !self%data2(:,:,:) = reshape( values, (/self%shp(1),self%shp(2),np/) )
+        ! adhoc fix: new pointer allocation:
+        allocate( qdata2(self%shp(1),self%shp(2),np), stat=status )
+        IF_NOT_OK_RETURN(status=1)
         ! copy values:
-        self%data2 = reshape( values, (/self%shp(1),self%shp(2),np/) )
+        qdata2 = reshape( values, (/self%shp(1),self%shp(2),np/) )
+        ! clear current:
+        deallocate( self%data2, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        ! re-assign:
+        self%data2 => qdata2
+        
       !~
       case default
         write (csol,'("unsupported data type `",a,"`")') trim(self%dtype); call csoErr
@@ -1467,10 +2054,12 @@ contains
   ! ***
   
   
-  subroutine PixelData_NcDef( self, ncid, ncdims, dimid_pixel, status )
+  subroutine PixelData_NcDef( self, ncid, ncdims, dimid_pixel, status, &
+                                 deflate_level, packed )
   
-    use NetCDF, only : NF90_INT
-    use NetCDF, only : NF90_FLOAT
+    use NetCDF, only : NF90_CHAR
+    use NetCDF, only : NF90_INT, NF90_BYTE
+    use NetCDF, only : NF90_DOUBLE, NF90_FLOAT, NF90_SHORT
     use NetCDF, only : NF90_Def_Var
     use NetCDF, only : NF90_Put_Att
 
@@ -1483,6 +2072,8 @@ contains
     type(T_NcDims), intent(in)          ::  ncdims
     integer, intent(in)                 ::  dimid_pixel
     integer, intent(out)                ::  status
+    integer, intent(in), optional       ::  deflate_level
+    logical, intent(in), optional       ::  packed
 
     ! --- const ----------------------------------
     
@@ -1494,6 +2085,13 @@ contains
     integer       ::  dimids(7)
     
     ! --- begin ----------------------------------
+    
+    ! testing ..
+    write (csol,'(a,": define `",a,"` ...")') rname, trim(self%name); call csoPr
+    
+    ! packed?
+    self%packed = .false.
+    if ( present(packed) .and. (trim(self%name) /= 'time') ) self%packed = packed
     
     ! loop over dimensions:
     do idim = 1, self%ndim
@@ -1508,9 +2106,20 @@ contains
     select case ( trim(self%dtype) )
 
       !~
+      case ( '0D_i1' )
+        ! define variable:
+        status = NF90_Def_Var( ncid, trim(self%name), NF90_BYTE, dimids(1:self%ndim+1), &
+                                 self%varid, deflate_level=deflate_level )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! define sepecial attribute:
+        status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value_i1 )
+        IF_NF90_NOT_OK_RETURN(status=1)
+
+      !~
       case ( '0D_i' )
         ! define variable:
-        status = NF90_Def_Var( ncid, trim(self%name), NF90_INT, dimids(1:self%ndim+1), self%varid )
+        status = NF90_Def_Var( ncid, trim(self%name), NF90_INT, dimids(1:self%ndim+1), &
+                                 self%varid, deflate_level=deflate_level )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! define sepecial attribute:
         status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value_i )
@@ -1518,11 +2127,47 @@ contains
 
       !~
       case ( '0D', '1D', '2D' )
+        ! packing enabled?
+        if ( self%packed ) then
+
+          ! define variable, floats will be packed as short:
+          status = NF90_Def_Var( ncid, trim(self%name), NF90_SHORT, dimids(1:self%ndim+1), &
+                                    self%varid, deflate_level=deflate_level )
+          IF_NF90_NOT_OK_RETURN(status=1)
+          ! define sepecial attribute:
+          status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value__packed )
+          IF_NF90_NOT_OK_RETURN(status=1)
+
+          ! initialize attributes, will be filled with actual values when data is known:
+          status = NF90_Put_Att( ncid, self%varid, 'add_offset', 0.0 )
+          IF_NF90_NOT_OK_RETURN(status=1)
+          status = NF90_Put_Att( ncid, self%varid, 'scale_factor', 1.0 )
+          IF_NF90_NOT_OK_RETURN(status=1)
+
+        else if ( trim(self%name) == 'time' ) then
+
+          ! define variable:
+          status = NF90_Def_Var( ncid, trim(self%name), NF90_DOUBLE, dimids(1:self%ndim+1), &
+                                    self%varid, deflate_level=deflate_level )
+          IF_NF90_NOT_OK_RETURN(status=1)
+
+        else
+
+          ! define variable:
+          status = NF90_Def_Var( ncid, trim(self%name), NF90_FLOAT, dimids(1:self%ndim+1), &
+                                    self%varid, deflate_level=deflate_level )
+          IF_NF90_NOT_OK_RETURN(status=1)
+          ! define sepecial attribute:
+          status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value__out )
+          IF_NF90_NOT_OK_RETURN(status=1)
+          
+        end if
+
+      !~ character variables
+      case ( '1D_c' )
         ! define variable:
-        status = NF90_Def_Var( ncid, trim(self%name), NF90_FLOAT, dimids(1:self%ndim+1), self%varid )
-        IF_NF90_NOT_OK_RETURN(status=1)
-        ! define sepecial attribute:
-        status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value )
+        status = NF90_Def_Var( ncid, trim(self%name), NF90_CHAR, dimids(1:self%ndim+1), &
+                                  self%varid, deflate_level=deflate_level )
         IF_NF90_NOT_OK_RETURN(status=1)
 
       !~
@@ -1534,7 +2179,7 @@ contains
     ! put attributes:
     call self%attrs%NcPut( ncid, self%varid, status )
     IF_NOT_OK_RETURN(status=1)
-
+    
     ! ok
     status = 0
     
@@ -1546,15 +2191,16 @@ contains
 
   ! write from root, this is a global array
   
-  subroutine PixelData_NcPutGlbSelect( self, ncid, mapping, status )
+  subroutine PixelData_NcPutGlbSelect( self, ncf, mapping, status )
   
-    use NetCDF  , only : NF90_Put_Var
-    use CSO_Comm, only : csoc
+    use NetCDF    , only : NF90_Put_Var
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_PixelData), intent(in)      ::  self
-    integer, intent(in)                 ::  ncid
+    type(T_NcFile), intent(inout)       ::  ncf
     integer, intent(in)                 ::  mapping(:)  ! (nglb) target index, or <0 if not used
     integer, intent(out)                ::  status
 
@@ -1605,7 +2251,7 @@ contains
           end do ! glb
 
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data0_i )
+          status = NF90_Put_Var( ncf%ncid, self%varid, data0_i )
           IF_NF90_NOT_OK_RETURN(status=1)
 
           ! clear:
@@ -1616,7 +2262,7 @@ contains
         case ( '0D' )
         
           ! target array:
-          allocate( data0(n), source=real(self%fill_value), stat=status )
+          allocate( data0(n), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
 
           ! loop over global pixels:
@@ -1631,7 +2277,9 @@ contains
           end do ! glb
 
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data0 )
+          call ncf%Put_Var( self%varid, data0, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
 
           ! clear:
@@ -1642,7 +2290,7 @@ contains
         case ( '1D' )
         
           ! target array:
-          allocate( data1(self%shp(1),n), source=real(self%fill_value), stat=status )
+          allocate( data1(self%shp(1),n), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
 
           ! loop over global pixels:
@@ -1657,7 +2305,9 @@ contains
           end do ! glb
 
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data1 )
+          call ncf%Put_Var( self%varid, data1, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
 
           ! clear:
@@ -1668,7 +2318,7 @@ contains
         case ( '2D' )
         
           ! target array:
-          allocate( data2(self%shp(1),self%shp(2),n), source=real(self%fill_value), stat=status )
+          allocate( data2(self%shp(1),self%shp(2),n), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
 
           ! loop over global pixels:
@@ -1683,7 +2333,9 @@ contains
           end do ! glb
 
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data2 )
+          call ncf%Put_Var( self%varid, data2, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
 
           ! clear:
@@ -1713,15 +2365,16 @@ contains
   ! and write variable
   !
   
-  subroutine PixelData_NcPutGather( self, ncid, mapping, add, status )
+  subroutine PixelData_NcPutGather( self, ncf, mapping, add, status )
   
-    use NetCDF  , only : NF90_Put_Var
-    use CSO_Comm, only : csoc
+    use NetCDF    , only : NF90_Put_Var
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_PixelData), intent(in)    ::  self
-    integer, intent(in)               ::  ncid
+    type(T_NcFile), intent(inout)     ::  ncf
     integer, intent(in)               ::  mapping(:)   ! (npix_all) target index
     logical, intent(in)               ::  add          ! add contributions?
     integer, intent(out)              ::  status
@@ -1732,18 +2385,15 @@ contains
     
     ! --- local ----------------------------------
 
-    integer                 ::  npix_all
-    integer, allocatable    ::  data0_i_all(:)    ! (npix_all)
-    integer, allocatable    ::  data0_i(:)        ! (nout)
-    real, allocatable       ::  data0_all(:)      ! (npix_all)
-    real, allocatable       ::  data0(:)          ! (nout)
-    real, allocatable       ::  data1_all(:,:)    ! (:,npix_all)
-    real, allocatable       ::  data1(:,:)        ! (:,nout)
-    real, allocatable       ::  data2_all(:,:,:)  ! (:,:,npix_all)
-    real, allocatable       ::  data2(:,:,:)      ! (:,:,nout)
-    integer                 ::  nout
-    integer                 ::  iout
-    integer                 ::  iall
+    integer(1), allocatable           ::  gdata0_i1(:)        ! (nout)
+    integer, allocatable              ::  gdata0_i(:)        ! (nout)
+    real, allocatable                 ::  gdata0(:)          ! (nout)
+    real, allocatable                 ::  gdata1(:,:)        ! (:,nout)
+    character(len=1), allocatable     ::  gdata1_c(:,:)        ! (:,nout)
+    real, allocatable                 ::  gdata2(:,:,:)      ! (:,:,nout)
+    integer                           ::  nout
+    integer                           ::  iout
+    integer                           ::  iall
     
     !logical                 ::  debug
 
@@ -1756,61 +2406,65 @@ contains
     select case ( trim(self%dtype) )
 
       !~
-      case ( '0D_i' )
+      case ( '0D_i1' )
 
         ! gather on root only ..
         if ( csoc%root ) then
-          ! count:
-          npix_all = size(mapping)
-          ! storage for all data:
-          allocate( data0_i_all(npix_all), stat=status )
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata0_i1(nout), source=self%fill_value_i1, stat=status )
           IF_NOT_OK_RETURN(status=1)
         else
           ! dummy ...
-          allocate( data0_i_all(1), stat=status )
+          allocate( gdata0_i1(1), stat=status )
           IF_NOT_OK_RETURN(status=1)
         end if ! root
 
         ! gather data arrays on root, local size might be zero
-        call csoc%GatherV( self%data0_i, data0_i_all, status, nloc=self%npix )
+        call self%GatherData( mapping, status, gdata0_i1=gdata0_i1 )
         IF_NOT_OK_RETURN(status=1)
 
-        ! gather on root only ..
+        ! write on root only ..
         if ( csoc%root ) then
-
-          ! number of selected pixels:
-          nout = maxval(mapping)
-          ! target array:
-          allocate( data0_i(nout), source=self%fill_value_i, stat=status )
-          IF_NOT_OK_RETURN(status=1)
-          ! loop over collected pixels:
-          do iall = 1, npix_all
-            ! skip undefined source:
-            if ( data0_i_all(iall) >= self%fill_value_i ) cycle
-            ! target index:
-            iout = mapping(iall)
-            ! first contribution?
-            if ( data0_i(iout) == self%fill_value_i ) then
-              ! copy:
-              data0_i(iout) = data0_i_all(iall)
-            else if ( add ) then
-              ! add contribution:
-              data0_i(iout) = data0_i(iout) + data0_i_all(iall)
-            end if
-          end do ! iall
-
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data0_i )
+          status = NF90_Put_Var( ncf%ncid, self%varid, gdata0_i1 )
           IF_NF90_NOT_OK_RETURN(status=1)
-
-          ! clear:
-          deallocate( data0_i, stat=status )
-          IF_NOT_OK_RETURN(status=1)
-
         end if ! root
 
         ! clear:
-        deallocate( data0_i_all, stat=status )
+        deallocate( gdata0_i1, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+
+      !~
+      case ( '0D_i' )
+
+        ! gather on root only ..
+        if ( csoc%root ) then
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata0_i(nout), source=self%fill_value_i, stat=status )
+          IF_NOT_OK_RETURN(status=1)
+        else
+          ! dummy ...
+          allocate( gdata0_i(1), stat=status )
+          IF_NOT_OK_RETURN(status=1)
+        end if ! root
+
+        ! gather data arrays on root, local size might be zero
+        call self%GatherData( mapping, status, gdata0_i=gdata0_i )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! write on root only ..
+        if ( csoc%root ) then
+          ! write variable:
+          status = NF90_Put_Var( ncf%ncid, self%varid, gdata0_i )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! root
+
+        ! clear:
+        deallocate( gdata0_i, stat=status )
         IF_NOT_OK_RETURN(status=1)
 
       !~
@@ -1818,57 +2472,32 @@ contains
 
         ! gather on root only ..
         if ( csoc%root ) then
-          ! count:
-          npix_all = size(mapping)
-          ! storage for all data:
-          allocate( data0_all(npix_all), stat=status )
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata0(nout), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
         else
           ! dummy ...
-          allocate( data0_all(1), stat=status )
+          allocate( gdata0(1), stat=status )
           IF_NOT_OK_RETURN(status=1)
         end if ! root
 
         ! gather data arrays on root, local size might be zero
-        call csoc%GatherV( self%data0, data0_all, status, nloc=self%npix )
+        call self%GatherData( mapping, status, gdata0=gdata0 )
         IF_NOT_OK_RETURN(status=1)
 
-        ! gather on root only ..
+        ! write on root only ..
         if ( csoc%root ) then
-        
-          ! number of selected pixels:
-          nout = maxval(mapping)
-          ! target array:
-          allocate( data0(nout), source=real(self%fill_value), stat=status )
-          IF_NOT_OK_RETURN(status=1)
-          ! loop over collected pixels:
-          do iall = 1, npix_all
-            ! skip undefined source:
-            if ( data0_all(iall) >= self%fill_value ) cycle
-            ! target index:
-            iout = mapping(iall)
-            ! first contribution?
-            if ( data0(iout) == self%fill_value ) then
-              ! copy:
-              data0(iout) = data0_all(iall)
-            else if ( add ) then
-              ! add contribution:
-              data0(iout) = data0(iout) + data0_all(iall)
-            end if
-          end do ! iall
-
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data0 )
+          call ncf%Put_Var( self%varid, gdata0, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
-
-          ! clear:
-          deallocate( data0, stat=status )
-          IF_NOT_OK_RETURN(status=1)
-
         end if ! root
 
         ! clear:
-        deallocate( data0_all, stat=status )
+        deallocate( gdata0, stat=status )
         IF_NOT_OK_RETURN(status=1)
 
       !~
@@ -1876,57 +2505,63 @@ contains
 
         ! gather on root only ..
         if ( csoc%root ) then
-          ! count:
-          npix_all = size(mapping)
-          ! storage for all data:
-          allocate( data1_all(self%shp(1),npix_all), stat=status )
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata1(self%shp(1),nout), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
         else
           ! dummy ...
-          allocate( data1_all(self%shp(1),1), stat=status )
+          allocate( gdata1(self%shp(1),1), stat=status )
           IF_NOT_OK_RETURN(status=1)
         end if ! root
 
         ! gather data arrays on root, local size might be zero
-        call csoc%GatherV( self%data1, data1_all, status, nloc=self%npix )
+        call self%GatherData( mapping, status, gdata1=gdata1 )
         IF_NOT_OK_RETURN(status=1)
 
-        ! gather on root only ..
+        ! write on root only ..
         if ( csoc%root ) then
-
-          ! number of selected pixels:
-          nout = maxval(mapping)
-          ! target array:
-          allocate( data1(self%shp(1),nout), source=real(self%fill_value), stat=status )
-          IF_NOT_OK_RETURN(status=1)
-          ! loop over collected pixels:
-          do iall = 1, npix_all
-            ! skip undefined source:
-            if ( data1_all(1,iall) >= self%fill_value ) cycle
-            ! target index:
-            iout = mapping(iall)
-            ! first contribution?
-            if ( data1(1,iout) == self%fill_value ) then
-              ! copy:
-              data1(:,iout) = data1_all(:,iall)
-            else if ( add ) then
-              ! add contribution:
-              data1(:,iout) = data1(:,iout) + data1_all(:,iall)
-            end if
-          end do ! iall
-
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data1 )
+          call ncf%Put_Var( self%varid, gdata1, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
-
-          ! clear:
-          deallocate( data1, stat=status )
-          IF_NOT_OK_RETURN(status=1)
-
         end if ! root
 
         ! clear:
-        deallocate( data1_all, stat=status )
+        deallocate( gdata1, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+
+      !~
+      case ( '1D_c' )
+
+        ! gather on root only ..
+        if ( csoc%root ) then
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata1_c(self%shp(1),nout), stat=status )
+          IF_NOT_OK_RETURN(status=1)
+        else
+          ! dummy ...
+          allocate( gdata1_c(self%shp(1),1), stat=status )
+          IF_NOT_OK_RETURN(status=1)
+        end if ! root
+        
+        ! gather data arrays on root, local size might be zero
+        call self%GatherData( mapping, status, gdata1_c=gdata1_c )
+        IF_NOT_OK_RETURN(status=1)
+        
+        ! write on root only ..
+        if ( csoc%root ) then
+          ! write variable:
+          call ncf%Put_Var( self%varid, gdata1_c, status )
+          IF_NF90_NOT_OK_RETURN(status=1)
+        end if ! root
+
+        ! clear:
+        deallocate( gdata1_c, stat=status )
         IF_NOT_OK_RETURN(status=1)
 
       !~
@@ -1934,57 +2569,32 @@ contains
 
         ! gather on root only ..
         if ( csoc%root ) then
-          ! count:
-          npix_all = size(mapping)
-          ! storage for all data:
-          allocate( data2_all(self%shp(1),self%shp(2),npix_all), stat=status )
+          ! number of selected pixels:
+          nout = maxval(mapping)
+          ! target array:
+          allocate( gdata2(self%shp(1),self%shp(2),nout), source=self%fill_value, stat=status )
           IF_NOT_OK_RETURN(status=1)
         else
           ! dummy ...
-          allocate( data2_all(self%shp(1),self%shp(2),1), stat=status )
+          allocate( gdata2(self%shp(1),self%shp(2),1), stat=status )
           IF_NOT_OK_RETURN(status=1)
         end if ! root
 
         ! gather data arrays on root, local size might be zero
-        call csoc%GatherV( self%data2, data2_all, status, nloc=self%npix )
+        call self%GatherData( mapping, status, gdata2=gdata2 )
         IF_NOT_OK_RETURN(status=1)
 
-        ! gather on root only ..
+        ! write on root only ..
         if ( csoc%root ) then
-
-          ! number of selected pixels:
-          nout = maxval(mapping)
-          ! target array:
-          allocate( data2(self%shp(1),self%shp(2),nout), source=real(self%fill_value), stat=status )
-          IF_NOT_OK_RETURN(status=1)
-          ! loop over collected pixels:
-          do iall = 1, npix_all
-            ! skip undefined source:
-            if ( data2_all(1,1,iall) >= self%fill_value ) cycle
-            ! target index:
-            iout = mapping(iall)
-            ! first contribution?
-            if ( data2(1,1,iout) == self%fill_value ) then
-              ! copy:
-              data2(:,:,iout) = data2_all(:,:,iall)
-            else if ( add ) then
-              ! add contribution:
-              data2(:,:,iout) = data2(:,:,iout) + data2_all(:,:,iall)
-            end if
-          end do ! iall
-          
           ! write variable:
-          status = NF90_Put_Var( ncid, self%varid, data2 )
+          call ncf%Put_Var( self%varid, gdata2, status, &
+                            fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                            packed=self%packed, fill_value__packed=self%fill_value__packed )
           IF_NF90_NOT_OK_RETURN(status=1)
-
-          ! clear:
-          deallocate( data2, stat=status )
-          IF_NOT_OK_RETURN(status=1)
-
         end if ! root
 
         ! clear:
-        deallocate( data2_all, stat=status )
+        deallocate( gdata2, stat=status )
         IF_NOT_OK_RETURN(status=1)
 
       !~
@@ -2433,10 +3043,14 @@ contains
 
     ! type: 0D_i, 0D, 1D, ..
     select case ( trim(xtype_curr) )
+      case ( 'i1' )
+        write (dtype,'(i1,"D_i1")') p%ndim
       case ( 'integer' )
         write (dtype,'(i1,"D_i")') p%ndim
       case ( 'real' )
         write (dtype,'(i1,"D")') p%ndim
+      case ( 'character', 'c' )
+        dtype = '1D_c'
       case default
         write (csol,'("unsupported xtype `",a,"`")') trim(xtype_curr); call csoErr
         TRACEBACK; status=1; return
@@ -2503,7 +3117,7 @@ contains
     
     type(T_CSO_Selection1D), intent(in), optional   ::  slc        ! info to scatter after reading
     logical, intent(in), optional                   ::  glb
-    character(len=*), intent(in), optional          ::  xtype
+    character(len=*), intent(in), optional          ::  xtype      ! 'real', 'integer', 'i1'
     logical, intent(in), optional                   ::  only_here
 
     ! --- const ----------------------------------
@@ -2934,7 +3548,7 @@ contains
   subroutine PixelDatas_GetData( self, status, &
                                    id, name, &
                                    data0, data1, data2, &
-                                   units, isfc_pressure )
+                                   fill_value, units, isfc_pressure )
     
     ! --- in/out ---------------------------------
     
@@ -2943,9 +3557,10 @@ contains
     
     integer, intent(in), optional             ::  id
     character(len=*), intent(in), optional    ::  name
-    real, pointer, optional                   ::  data0(:)
-    real, pointer, optional                   ::  data1(:,:)
-    real, pointer, optional                   ::  data2(:,:,:)
+    real, pointer, optional                   ::  data0(:)      ! (npix)
+    real, pointer, optional                   ::  data1(:,:)    ! (:,npix)
+    real, pointer, optional                   ::  data2(:,:,:)  ! (:,:,npix)
+    real, intent(out), optional               ::  fill_value
     character(len=*), intent(out), optional   ::  units
     integer, intent(out), optional            ::  isfc_pressure
   
@@ -2978,7 +3593,8 @@ contains
     end if
     
     ! get:
-    call self%values(i)%p%Get( status, data0=data0, data1=data1, data2=data2, isfc_pressure=isfc_pressure )
+    call self%values(i)%p%Get( status, data0=data0, data1=data1, data2=data2, &
+                                         fill_value=fill_value, isfc_pressure=isfc_pressure )
     IF_NOT_OK_RETURN(status=1)
     
     ! units:
@@ -2995,6 +3611,61 @@ contains
     status = 0
     
   end subroutine PixelDatas_GetData
+
+
+  ! ***
+
+
+  subroutine PixelDatas_GatherData( self, mapping, status, &
+                                     id, name, &
+                                     gdata1 )
+    
+    ! --- in/out ---------------------------------
+    
+    class(T_PixelDatas), intent(in)      ::  self
+    integer, intent(in)                  ::  mapping(:)   ! (npix_all) target index
+    integer, intent(out)                 ::  status
+    
+    integer, intent(in), optional             ::  id
+    character(len=*), intent(in), optional    ::  name
+    real, intent(out), optional               ::  gdata1(:,:)   ! (:,nout)
+  
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/PixelDatas_GatherData'
+    
+    ! --- local ----------------------------------
+    
+    integer     ::  i
+    
+    ! --- begin ----------------------------------
+    
+    ! get id:
+    if ( present(id) ) then    
+      ! check .. 
+      if ( (id < 1) .or. (id > self%n) ) then
+        write (csol,'("pixeldata id (",i0,") should be in range 1,..,",i0)') id, self%n; call csoErr
+        TRACEBACK; status=1; return
+      end if
+      ! copy:
+      i = id
+    else if ( present(name) ) then
+      ! from name:
+      call self%InqID( name, i, status )
+      IF_NOT_OK_RETURN(status=1)
+    else
+      write (csol,'("no `id` or `name` arguments provided")'); call csoErr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! get:
+    call self%values(i)%p%GatherData( mapping, status, &
+                                         gdata1=gdata1 )
+    IF_NOT_OK_RETURN(status=1)
+    ! ok
+    status = 0
+    
+  end subroutine PixelDatas_GatherData
 
 
   ! ***
@@ -3684,7 +4355,7 @@ contains
     
     ! --- const ----------------------------------
     
-    character(len=*), parameter  ::  rname = mname//'/ PixelDatas_SetValues'
+    character(len=*), parameter  ::  rname = mname//'/PixelDatas_SetValues'
     
     ! --- local ----------------------------------
     
@@ -3725,7 +4396,7 @@ contains
     end do ! i
     ! check ..
     if ( iv2 /= size(values,1) ) then
-      write (csol,'("used values 1:",i2," while number available is ",i0)') iv2, size(values,1); call csoErr
+      write (csol,'("used values 1:",i2," while ",i0," values are available")') iv2, size(values,1); call csoErr
       TRACEBACK; status=1; return
     end if
 
@@ -3952,6 +4623,7 @@ contains
   subroutine PixelDatas_ApplyFormulas( self, pd, status )
 
     use CSO_Profile, only : T_ProfileMapping
+    use CSO_Tools  , only : LinInterp
   
     ! --- in/out ---------------------------------
     
@@ -3976,17 +4648,24 @@ contains
     integer                         ::  ipix
     integer                         ::  iretr
     integer                         ::  k1, k2
+    real                            ::  fill_value
 
     integer                         ::  nlayer
     integer                         ::  nz
     real, pointer                   ::  hp_data(:,:)  ! (nlayer,npix)
     character(len=64)               ::  hp_units
     integer                         ::  hp_isfc
-    real, pointer                   ::  mod_hp_data(:,:)  ! (nz,npix)
+    integer                         ::  hp_iblh
+    integer                         ::  hp_itop
+    real, pointer                   ::  mod_hp_data(:,:)  ! (nz+1,npix)
     character(len=64)               ::  mod_hp_units
     integer                         ::  mod_hp_isfc
-    real, pointer                   ::  mod_conc_data(:,:)  ! (nz,npix)
+    real, pointer                   ::  mod_conc_data(:,:)  ! (nz+1,npix)
     character(len=64)               ::  mod_conc_units
+    real, pointer                   ::  mod_hh_data(:,:)  ! (nz+1,npix)
+    character(len=64)               ::  mod_hh_units
+    real, pointer                   ::  mod_blh_data(:)  ! (npix)
+    character(len=64)               ::  mod_blh_units
     type(T_ProfileMapping)          ::  ProfileMapping
     real, allocatable               ::  mod_hpx(:)   ! (0:nz)
     real, allocatable               ::  mod_g(:)     ! (nz)
@@ -4089,11 +4768,20 @@ contains
                 do ipix = 1, npix
                   ! skip if no-data:
                   if ( mod_hp_data(1,ipix) == p%fill_value ) cycle
-                  ! scale model pressures to have same surface pressure as pixel:
-                  mod_hpx = mod_hp_data(:,ipix) / mod_hp_data(mod_hp_isfc,ipix) * hp_data(hp_isfc,ipix)
-                  ! compute weights for vertical mapping:
-                  call ProfileMapping%Setup( mod_hpx, hp_data(:,ipix), status )
-                  IF_NOT_OK_RETURN(status=1)
+                  ! scale model pressures to have same surface pressure as pixel,
+                  ! slightly lower surface to avoid tiny mismatches:
+                  mod_hpx = mod_hp_data(:,ipix) / mod_hp_data(mod_hp_isfc,ipix) * hp_data(hp_isfc,ipix)*1.0001
+                  ! compute weights for vertical mapping;
+                  ! remove tiny negative target pressures that might occure after unpacking:
+                  call ProfileMapping%Setup( mod_hpx, max(0.0,hp_data(:,ipix)), status )
+                  if ( status /= 0 ) then
+                    write (csol,'("could not compute profile mapping for pixel ",i0)') ipix; call csoErr
+                    write (csol,*) 'hp      = ', hp_data(:,ipix); call csoErr
+                    write (csol,*) 'mod_hp  = ', mod_hp_data(:,ipix); call csoErr
+                    write (csol,*) 'isfc    = ', mod_hp_isfc; call csoErr
+                    write (csol,*) 'mod_hpx = ', mod_hpx; call csoErr
+                    TRACEBACK; status=1; return
+                  end if
                   ! integral over pressure:
                   !   sum_i  c(i)  dp(i)
                   !          ppb    Pa
@@ -4209,6 +4897,70 @@ contains
           ! done with vertical mapping:
           call ProfileMapping%Done( status )
           IF_NOT_OK_RETURN(status=1)
+        
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        !~ pressure profile for boundary layer and free troposphere
+        case ( 'TropoPressures( mod_hp, mod_hh, mod_blh )' )
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          ! pointer to target array:
+          call self%GetData( status, id=id, data1=hp_data, units=hp_units )
+          IF_NOT_OK_RETURN(status=1)
+          call self%GetFormulaData( p%formula_terms, 'mod_hp', status, pd=pd, data1=mod_hp_data, &
+                                     units=mod_hp_units, isfc_pressure=mod_hp_isfc )
+          IF_NOT_OK_RETURN(status=1)
+          call self%GetFormulaData( p%formula_terms, 'mod_hh', status, pd=pd, data1=mod_hh_data, units=mod_hh_units )
+          IF_NOT_OK_RETURN(status=1)
+          call self%GetFormulaData( p%formula_terms, 'mod_blh', status, pd=pd, data0=mod_blh_data, units=mod_blh_units )
+          IF_NOT_OK_RETURN(status=1)
+          
+          ! check units ...
+          if ( trim(mod_hp_units) /= trim(hp_units) ) then
+            write (csol,'("output units `",a,"` should be equal to mod_hp units `",a,"`")') trim(hp_units), trim(mod_hp_units); call csoErr
+            write (csol,'("  formula       : ",a)') trim(p%formula); call csoErr
+            write (csol,'("  formula_terms : ",a)') trim(p%formula_terms); call csoErr
+            write (csol,'("  variable      : ",a)') trim(p%name); call csoErr
+            TRACEBACK; status=1; return
+          end if
+          if ( trim(mod_hh_units) /= trim(mod_blh_units) ) then
+            write (csol,'("input units of mod_hh `",a,"` should match with mod_blh units `",a,"`")') trim(mod_hh_units), trim(mod_blh_units); call csoErr
+            write (csol,'("  formula       : ",a)') trim(p%formula); call csoErr
+            write (csol,'("  formula_terms : ",a)') trim(p%formula_terms); call csoErr
+            write (csol,'("  variable      : ",a)') trim(p%name); call csoErr
+            TRACEBACK; status=1; return
+          end if
+          
+          ! check shape ..
+          if ( size(hp_data,1) /= 3 ) then
+            write (csol,'("output array has ",i0," layers, expected 3")') size(hp_data,1); call csoErr
+            TRACEBACK; status=1; return
+          end if
+
+          ! target layers:
+          if ( mod_hp_isfc == 1 ) then
+            hp_isfc = 1
+            hp_iblh = 2
+            hp_itop = 3
+          else
+            hp_isfc = 3
+            hp_iblh = 2
+            hp_itop = 1
+          end if
+          
+          ! loop over pixels:
+          do ipix = 1, npix
+            ! skip if no-data:
+            if ( mod_hp_data(1,ipix) == p%fill_value ) cycle
+            ! copy surface pressure:
+            hp_data(hp_isfc,ipix) = mod_hp_data(mod_hp_isfc,ipix)
+            ! linear interpolation of pressure to blh:
+            call LinInterp( mod_hh_data(:,ipix), mod_hp_data(:,ipix), &
+                              mod_blh_data(ipix), hp_data(hp_iblh,ipix), &
+                              status )
+            IF_NOT_OK_RETURN(status=1)
+            ! fill top, use 200 hPa from TROPOMI NO2:
+            hp_data(hp_itop,ipix) = 200.0e2 ! Pa
+          end do ! ipix
 
         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         !~ kernel convolution, no apriori
@@ -4221,7 +4973,7 @@ contains
           ! get pointers to source arrays:
           call self%GetFormulaData( p%formula_terms, 'A', status, pd=pd, data2=A_data, units=A_units )
           IF_NOT_OK_RETURN(status=1)
-          call self%GetFormulaData( p%formula_terms, 'x', status, pd=pd, data1=x_data, units=x_units )
+          call self%GetFormulaData( p%formula_terms, 'x', status, pd=pd, data1=x_data, units=x_units, fill_value=fill_value )
           IF_NOT_OK_RETURN(status=1)
           ! check units:
           if ( trim(A_units) /= '1' ) then
@@ -4240,8 +4992,21 @@ contains
           end if
           ! apply:
           do ipix = 1, npix
-            ! fill:
-            y_data(:,ipix) = matmul( A_data(:,:,ipix), x_data(:,ipix) )
+            ! filter on no-data ..
+            if ( x_data(1,ipix) == fill_value ) cycle
+            ! with some compilers problem using "matmul"; instead,
+            ! loop over target layers:
+            do iretr = 1, size(y_data,1)
+              ! fill with dot procuct:
+              y_data(iretr,ipix) = sum( A_data(iretr,:,ipix) * x_data(:,ipix) )
+              !! testing ...
+              !write (csol,*) 'xxx ipix = ', ipix, '; iretr = ', iretr; call csoPr
+              !write (csol,*) '..x A    = ', A_data(iretr,1:5,ipix); call csoPr
+              !write (csol,*) '..x x    = ', x_data(1:5,ipix); call csoPr
+              !write (csol,*) '..x xnan = ', fill_value, x_data(1,ipix) == fill_value; call csoPr
+              !write (csol,*) '..x y    = ', y_data(:,ipix); call csoPr
+              !TRACEBACK; status=1; return
+            end do ! iretr
           end do ! ipix
 
         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4280,6 +5045,41 @@ contains
           end do ! ipix
         
         !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        !~ partial column from local model:
+        !    y = sum_{l=1,n} x
+        case ( 'PartialColumns( x )' )
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          ! pointer to target array:
+          call self%GetData( status, id=id, data1=y_data, units=y_units )
+          IF_NOT_OK_RETURN(status=1)
+          ! get pointers to source arrays:
+          call self%GetFormulaData( p%formula_terms, 'x', status, pd=pd, data1=x_data, units=x_units, fill_value=fill_value )
+          IF_NOT_OK_RETURN(status=1)
+          ! check units:
+          if ( trim(x_units) /= trim(y_units) ) then
+            write (csol,'("x units `",a,"` should be equal to y units `",a,"`")') trim(x_units), trim(y_units); call csoErr
+            write (csol,'("  formula       : ",a)') trim(p%formula); call csoErr
+            write (csol,'("  formula_terms : ",a)') trim(p%formula_terms); call csoErr
+            write (csol,'("  variable      : ",a)') trim(p%name); call csoErr
+            TRACEBACK; status=1; return
+          end if
+          ! check number of retrieval layers, currently only 1 is supported ...
+          if ( size(y_data,1) /= 1 ) then
+            write (csol,'("number of retrieval layers is ",i0,", but no idea how assign input layers to these ...")') size(y_data,1); call csoErr
+            TRACEBACK; status=1; return
+          end if
+          ! loop over pixels:
+          do ipix = 1, npix
+            ! filter on no-data ..
+            if ( x_data(1,ipix) == fill_value ) cycle
+            ! single target layer ...
+            iretr = 1
+            ! fill sum over all input layers:
+            y_data(iretr,ipix) = sum(x_data(:,ipix))
+          end do ! ipix
+        
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         !~ partial columns from local model:
         !    y = sum_{l=1,nla} x
         case ( 'PartialColumns( nla, x )' )
@@ -4291,7 +5091,7 @@ contains
           ! get pointers to source arrays:
           call self%GetFormulaData( p%formula_terms, 'nla', status, pd=pd, data1=nla_data, units=nla_units )
           IF_NOT_OK_RETURN(status=1)
-          call self%GetFormulaData( p%formula_terms, 'x', status, pd=pd, data1=x_data, units=x_units )
+          call self%GetFormulaData( p%formula_terms, 'x', status, pd=pd, data1=x_data, units=x_units, fill_value=fill_value )
           IF_NOT_OK_RETURN(status=1)
           ! check units:
           if ( trim(x_units) /= trim(y_units) ) then
@@ -4303,6 +5103,8 @@ contains
           end if
           ! loop over pixels:
           do ipix = 1, npix
+            ! filter on no-data ..
+            if ( x_data(1,ipix) == fill_value ) cycle
             ! init index:
             k2 = 0
             ! loop over retrieval layers
@@ -4576,7 +5378,8 @@ contains
   !
   
   subroutine PixelDatas_GetFormulaData( self, formula_terms, term, status, &
-                                          pd, data0, data1, data2, units, isfc_pressure )
+                                          pd, data0, data1, data2, &
+                                          fill_value, units, isfc_pressure )
 
     use CSO_String, only : CSO_ReadFromLine
   
@@ -4591,6 +5394,7 @@ contains
     real, pointer, optional                    ::  data0(:)      ! (npix)
     real, pointer, optional                    ::  data1(:,:)    ! (n,npix)
     real, pointer, optional                    ::  data2(:,:,:)  ! (m,n,npix)
+    real, intent(out), optional                ::  fill_value
     character(len=*), intent(out), optional    ::  units
     integer, intent(out), optional             ::  isfc_pressure
 
@@ -4657,7 +5461,7 @@ contains
     if ( status == 0 ) then
       ! get pointers and units from self:
       call self%GetData( status, id=id, data0=data0, data1=data1, data2=data2, &
-                            units=units, isfc_pressure=isfc_pressure )
+                            units=units, fill_value=fill_value, isfc_pressure=isfc_pressure )
       IF_NOT_OK_RETURN(status=1)
     !~ not found
     else if ( status < 0 ) then
@@ -4669,7 +5473,7 @@ contains
         if ( status == 0 ) then
           ! get pointers and units from extra data:
           call pd%GetData( status, id=id, data0=data0, data1=data1, data2=data2, &
-                              units=units, isfc_pressure=isfc_pressure )
+                              units=units, fill_value=fill_value, isfc_pressure=isfc_pressure )
           IF_NOT_OK_RETURN(status=1)
         !~ not found ... 
         else if ( status < 0 ) then
@@ -4713,7 +5517,8 @@ contains
   ! Define nc variables for data sets.
   ! If 'vars' is associated it points to a list of selected variables.
   
-  subroutine PixelDatas_NcDef( self, ncid, dimid_pixel, vars, status )
+  subroutine PixelDatas_NcDef( self, ncid, dimid_pixel, vars, status, &
+                                       deflate_level, packed )
 
     ! --- in/out ---------------------------------
     
@@ -4722,6 +5527,8 @@ contains
     integer, intent(in)                   ::  dimid_pixel
     character(len=*), pointer             ::  vars(:)
     integer, intent(out)                  ::  status
+    integer, intent(in), optional         ::  deflate_level
+    logical, intent(in), optional         ::  packed
 
     ! --- const ----------------------------------
     
@@ -4757,7 +5564,8 @@ contains
         if ( .not. found ) cycle
       end if ! selection
       ! define variable in file:
-      call self%values(i)%p%NcDef( ncid, self%ncdims, dimid_pixel, status )
+      call self%values(i)%p%NcDef( ncid, self%ncdims, dimid_pixel, status, &
+                                     deflate_level=deflate_level, packed=packed )
       IF_NOT_OK_RETURN(status=1)
     end do ! i
 
@@ -4776,12 +5584,14 @@ contains
   !
   
   
-  subroutine PixelDatas_NcPutGlbSelect( self, ncid, mapping, status )
+  subroutine PixelDatas_NcPutGlbSelect( self, ncf, mapping, status )
+
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_PixelDatas), intent(in)   ::  self
-    integer, intent(in)               ::  ncid
+    type(T_NcFile), intent(inout)     ::  ncf
     integer, intent(in)               ::  mapping(:)  ! (nglb) target index, or <0 if not used
     integer, intent(out)              ::  status
   
@@ -4800,7 +5610,7 @@ contains
       ! filter:
       if ( .not. self%values(i)%p%glb ) cycle
       ! put out:
-      call self%values(i)%p%NcPutGlbSelect( ncid, mapping, status )
+      call self%values(i)%p%NcPutGlbSelect( ncf, mapping, status )
       IF_NOT_OK_RETURN(status=1)
     end do ! i
     
@@ -4820,12 +5630,14 @@ contains
   !
   
   
-  subroutine PixelDatas_NcPutGather( self, ncid, mapping, add, vars, status )
+  subroutine PixelDatas_NcPutGather( self, ncf, mapping, add, vars, status )
+
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_PixelDatas), intent(in)   ::  self
-    integer, intent(in)               ::  ncid
+    type(T_NcFile), intent(inout)     ::  ncf
     integer, intent(in)               ::  mapping(:)   ! (npix_all) target index
     logical, intent(in)               ::  add          ! add contributions?
     character(len=*), pointer         ::  vars(:)
@@ -4862,7 +5674,7 @@ contains
       ! filter:
       if ( self%values(i)%p%glb ) cycle
       ! put out:
-      call self%values(i)%p%NcPutGather( ncid, mapping, add, status )
+      call self%values(i)%p%NcPutGather( ncf, mapping, add, status )
       IF_NOT_OK_RETURN(status=1)
     end do ! i
     
@@ -5067,6 +5879,8 @@ contains
   subroutine Track_0D_Init( self, ntx, nty, status, &
                                   source, long_name, units )
   
+    use CSO_NcFile, only : iwp__packed
+
     ! --- in/out ---------------------------------
     
     class(T_Track_0D), intent(out)    ::  self
@@ -5090,9 +5904,11 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
     ! fill value:
-    self%fill_value = - huge(real(1.0,kind=wpr))
+    self%fill_value         = - huge(1.0)
+    self%fill_value__out    = - huge(real(1.0,kind=rwp__out))
+    self%fill_value__packed = - huge(int(1,kind=iwp__packed))
     ! storage:
-    allocate( self%data(self%ntx,self%nty), source=real(self%fill_value), stat=status )
+    allocate( self%data(self%ntx,self%nty), source=self%fill_value, stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! replace if necessary:
     if ( present(source) ) self%data = source
@@ -5174,15 +5990,14 @@ contains
   ! ***
 
 
-  subroutine Track_0D_NcInit( self, ncid, varname, status )
+  subroutine Track_0D_NcInit( self, ncf, varname, status )
   
-    use NetCDF, only : NF90_Inq_DimID, NF90_Inquire_Dimension
-    use NetCDF, only : NF90_Inq_VarID, NF90_Inquire_Variable, NF90_Get_Var
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
-    class(T_Track_0D), intent(out)   ::  self
-    integer, intent(in)               ::  ncid
+    class(T_Track_0D), intent(out)    ::  self
+    type(T_NcFile), intent(inout)     ::  ncf
     character(len=*), intent(in)      ::  varname
     integer, intent(out)              ::  status
 
@@ -5194,49 +6009,41 @@ contains
     
     ! --- local ----------------------------------
     
-    integer     ::  varid
-    integer     ::  dimids(ndim)
-    integer     ::  shp(ndim)
-    integer     ::  idim
+    character(len=128)    ::  description
+    integer               ::  varid
+    integer               ::  shp(ndim)
     
     ! --- begin ----------------------------------
-
+    
+    ! variable description:
+    description = 'var_name='//trim(varname)
+    
     ! get variable id:
-    status = NF90_Inq_Varid( ncid, varname, varid )
-    if (status/=NF90_NOERR) then
-      csol=nf90_strerror(status); call csoErr
-      write (csol,'("variable name: ",a)') trim(varname); call csoErr
-      TRACEBACK; status=1; return
-    end if
+    call ncf%Inq_VarID( description, varid, status )
+    IF_NOT_OK_RETURN(status=1)
 
-    ! get dimension id's:
-    status = NF90_Inquire_Variable( ncid, varid, dimids=dimids )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! loop over dimensions:
-    do idim = 1, ndim
-      ! get size:
-      status = NF90_Inquire_Dimension( ncid, dimids(idim), len=shp(idim) )
-      IF_NF90_NOT_OK_RETURN(status=1)
-    end do
+    ! get variable shape:
+    call ncf%Inq_Variable( varid, status, shp=shp )
+    IF_NOT_OK_RETURN(status=1)
 
     ! init storage:
     call self%Init( shp(1), shp(2), status )
     IF_NOT_OK_RETURN(status=1)
 
-    ! read attributes:
-    call self%NcGetAttrs( ncid, varid, status )
+    ! read standard attributes:
+    call self%NcGetAttrs( ncf%ncid, varid, status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! read:
-    status = NF90_Get_Var( ncid, varid, self%data )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! read data and units from variable defined by description:
+    call ncf%Get_Var( description, self%data, self%units, status )
+    IF_NOT_OK_RETURN(status=1)
     
       !! testing ...
       !write (csol,*) rname//': long_name = ', trim(self%long_name), ' ; varname = ', trim(varname); call csoPr
       !write (csol,*) rname//':   varid = ', varid; call csoPr
       !write (csol,*) rname//':   shape = ', shape(self%data); call csoPr
       !write (csol,*) rname//':   range = ', minval(self%data), maxval(self%data); call csoPr
-      
+
     ! ok
     status = 0
     
@@ -5246,19 +6053,24 @@ contains
   ! ***
 
 
-  subroutine Track_0D_NcDef( self, ncid, varname, dimids, status )
+  subroutine Track_0D_NcDef( self, ncf, varname, dimids, status, &
+                                     deflate_level, packed )
   
     use NetCDF, only : NF90_Def_Var
     use NetCDF, only : NF90_Put_Att
-    use NetCDF, only : NF90_FLOAT
+    use NetCDF, only : NF90_FLOAT, NF90_SHORT
+  
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_Track_0D), intent(inout)      ::  self
-    integer, intent(in)                   ::  ncid
+    type(T_NcFile), intent(inout)         ::  ncf
     character(len=*), intent(in)          ::  varname
     integer, intent(in)                   ::  dimids(:)
     integer, intent(out)                  ::  status
+    integer, intent(in), optional         ::  deflate_level
+    logical, intent(in), optional         ::  packed
 
     ! --- const ----------------------------------
     
@@ -5268,17 +6080,43 @@ contains
     
     ! --- begin ----------------------------------
     
-    ! define variable:
-    status = NF90_Def_Var( ncid, trim(varname), NF90_FLOAT, dimids, self%varid )
-    IF_NF90_NOT_OK_RETURN(status=1)
-
-    ! add attributes:
-    call self%NcPutAttrs( ncid, self%varid, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! define attribute:
-    status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! packed?
+    self%packed = .false.
+    if ( present(packed) ) self%packed = packed
     
+    ! packing enabled?
+    if ( self%packed ) then
+    
+      ! define variable:
+      status = NF90_Def_Var( ncf%ncid, trim(varname), NF90_SHORT, dimids, self%varid, &
+                                      deflate_level=deflate_level )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! define attribute:
+      status = NF90_Put_Att( ncf%ncid, self%varid, '_FillValue', self%fill_value__packed )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+      ! initialize packing attributes, will be filled with actual values when data is known:
+      status = NF90_Put_Att( ncf%ncid, self%varid, 'add_offset', 0.0 )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      status = NF90_Put_Att( ncf%ncid, self%varid, 'scale_factor', 1.0 )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      
+    else
+    
+      ! define variable:
+      status = NF90_Def_Var( ncf%ncid, trim(varname), NF90_FLOAT, dimids, self%varid, &
+                                      deflate_level=deflate_level )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! define attribute:
+      status = NF90_Put_Att( ncf%ncid, self%varid, '_FillValue', self%fill_value__out )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+    end if
+    
+    ! add attributes:
+    call self%NcPutAttrs( ncf%ncid, self%varid, status )
+    IF_NOT_OK_RETURN(status=1)
+
     ! ok
     status = 0
     
@@ -5290,15 +6128,15 @@ contains
 
   ! write global array from root, each pe has same copy
   
-  subroutine Track_0D_NcPutGlb( self, ncid, status )
+  subroutine Track_0D_NcPutGlb( self, ncf, status )
   
-    use NetCDF  , only : NF90_Put_Var
-    use CSO_Comm, only : csoc
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
-    class(T_Track_0D), intent(in)    ::  self
-    integer, intent(in)               ::  ncid
+    class(T_Track_0D), intent(in)     ::  self
+    type(T_NcFile), intent(inout)     ::  ncf
     integer, intent(out)              ::  status
     
     ! --- const ----------------------------------
@@ -5306,14 +6144,16 @@ contains
     character(len=*), parameter   :: rname = mname//'/Track_0D_NcPutGlb'
     
     ! --- local ----------------------------------
-
+    
     ! --- begin ----------------------------------
     
     ! write from root only ..
     if ( csoc%root ) then
       ! write variable:
-      status = NF90_Put_Var( ncid, self%varid, self%data )
-      IF_NF90_NOT_OK_RETURN(status=1)
+      call ncf%Put_Var( self%varid, self%data, status, &
+                          fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                          packed=self%packed, fill_value__packed=self%fill_value__packed )
+      IF_NOT_OK_RETURN(status=1)
     end if ! root
 
     ! ok
@@ -5332,6 +6172,8 @@ contains
   subroutine Track_1D_Init( self, shp, status, &
                                   source, long_name, units )
   
+    use CSO_NcFile, only : iwp__packed
+
     ! --- in/out ---------------------------------
     
     class(T_Track_1D), intent(out)    ::  self
@@ -5358,9 +6200,11 @@ contains
     self%nv   = shp(1)
 
     ! fill value:
-    self%fill_value = - huge(real(1.0,kind=wpr))
+    self%fill_value         = - huge(1.0)
+    self%fill_value__out    = - huge(real(1.0,kind=rwp__out))
+    self%fill_value__packed = - huge(int(1,kind=iwp__packed))
     ! storage:
-    allocate( self%data(self%nv,self%ntx,self%nty), source=real(self%fill_value), stat=status )
+    allocate( self%data(self%nv,self%ntx,self%nty), source=self%fill_value, stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! replace if necessary:
     if ( present(source) ) self%data = source
@@ -5398,7 +6242,8 @@ contains
     self%nv         = track%nv
     
     ! copy:
-    self%fill_value = track%fill_value
+    self%fill_value         = track%fill_value
+    self%fill_value__packed = track%fill_value__packed
     ! storage:
     allocate( self%data(self%nv,self%ntx,self%nty), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -5446,15 +6291,14 @@ contains
   ! ***
 
 
-  subroutine Track_1D_NcInit( self, ncid, varname, status )
+  subroutine Track_1D_NcInit( self, ncf, varname, status )
   
-    use NetCDF, only : NF90_Inq_DimID, NF90_Inquire_Dimension
-    use NetCDF, only : NF90_Inq_VarID, NF90_Inquire_Variable, NF90_Get_Var
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_Track_1D), intent(out)    ::  self
-    integer, intent(in)               ::  ncid
+    type(T_NcFile), intent(inout)     ::  ncf
     character(len=*), intent(in)      ::  varname
     integer, intent(out)              ::  status
 
@@ -5466,48 +6310,35 @@ contains
     
     ! --- local ----------------------------------
     
-    integer             ::  varid
-    integer             ::  nd
-    integer             ::  dimids(ndim)
-    integer             ::  shp(ndim)
-    integer             ::  idim
+    character(len=128)    ::  description
+    integer               ::  varid
+    integer               ::  nd
+    integer               ::  shp(ndim)
     
     ! --- begin ----------------------------------
 
+    ! variable description:
+    description = 'var_name='//trim(varname)
+    
     ! get variable id:
-    status = NF90_Inq_Varid( ncid, varname, varid )
-    if (status/=NF90_NOERR) then
-      csol=nf90_strerror(status); call csoErr
-      write (csol,'("variable name: ",a)') trim(varname); call csoErr
-      TRACEBACK; status=1; return
-    end if
+    call ncf%Inq_VarID( description, varid, status )
+    IF_NOT_OK_RETURN(status=1)
 
-    ! get dimension id's:
-    status = NF90_Inquire_Variable( ncid, varid, ndims=nd, dimids=dimids )
-    IF_NF90_NOT_OK_RETURN(status=1)
-    ! loop over dimensions:
-    do idim = 1, ndim
-      ! scalar?
-      if ( idim <= ndim-nd ) then
-        shp(idim) = 1
-      else
-        ! get size:
-        status = NF90_Inquire_Dimension( ncid, dimids(idim-(ndim-nd)), len=shp(idim) )
-        IF_NF90_NOT_OK_RETURN(status=1)
-      end if
-    end do
+    ! get variable shape:
+    call ncf%Inq_Variable( varid, status, shp=shp )
+    IF_NOT_OK_RETURN(status=1)
 
     ! init storage for all pixels:
     call self%Init( shp, status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! read attributes:
-    call self%NcGetAttrs( ncid, varid, status )
+    ! read standard attributes:
+    call self%NcGetAttrs( ncf%ncid, varid, status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! read:
-    status = NF90_Get_Var( ncid, varid, self%data )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! read data and units from variable defined by description:
+    call ncf%Get_Var( description, self%data, self%units, status )
+    IF_NOT_OK_RETURN(status=1)
 
     ! ok
     status = 0
@@ -5518,19 +6349,24 @@ contains
   ! ***
 
 
-  subroutine Track_1D_NcDef( self, ncid, varname, dimids, status )
+  subroutine Track_1D_NcDef( self, ncf, varname, dimids, status, &
+                                    deflate_level, packed )
   
     use NetCDF, only : NF90_Def_Var
     use NetCDF, only : NF90_Put_Att
-    use NetCDF, only : NF90_FLOAT
+    use NetCDF, only : NF90_FLOAT, NF90_SHORT
+  
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_Track_1D), intent(inout)      ::  self
-    integer, intent(in)                   ::  ncid
+    type(T_NcFile), intent(inout)         ::  ncf
     character(len=*), intent(in)          ::  varname
     integer, intent(in)                   ::  dimids(:)
     integer, intent(out)                  ::  status
+    integer, intent(in), optional         ::  deflate_level
+    logical, intent(in), optional         ::  packed
 
     ! --- const ----------------------------------
     
@@ -5540,17 +6376,43 @@ contains
     
     ! --- begin ----------------------------------
     
-    ! define variable:
-    status = NF90_Def_Var( ncid, trim(varname), NF90_FLOAT, dimids, self%varid )
-    IF_NF90_NOT_OK_RETURN(status=1)
-
-    ! add attributes:
-    call self%NcPutAttrs( ncid, self%varid, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! define attribute:
-    status = NF90_Put_Att( ncid, self%varid, '_FillValue', self%fill_value )
-    IF_NF90_NOT_OK_RETURN(status=1)
+    ! packed?
+    self%packed = .false.
+    if ( present(packed) ) self%packed = packed
     
+    ! packing enabled?
+    if ( self%packed ) then
+
+      ! define variable:
+      status = NF90_Def_Var( ncf%ncid, trim(varname), NF90_SHORT, dimids, self%varid, &
+                                      deflate_level=deflate_level )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! define attribute:
+      status = NF90_Put_Att( ncf%ncid, self%varid, '_FillValue', self%fill_value__packed )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+      ! initialize attributes, will be filled with actual values when data is known:
+      status = NF90_Put_Att( ncf%ncid, self%varid, 'add_offset', 0.0 )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      status = NF90_Put_Att( ncf%ncid, self%varid, 'scale_factor', 1.0 )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      
+    else
+
+      ! define variable:
+      status = NF90_Def_Var( ncf%ncid, trim(varname), NF90_FLOAT, dimids, self%varid, &
+                                      deflate_level=deflate_level )
+      IF_NF90_NOT_OK_RETURN(status=1)
+      ! define attribute:
+      status = NF90_Put_Att( ncf%ncid, self%varid, '_FillValue', self%fill_value__out )
+      IF_NF90_NOT_OK_RETURN(status=1)
+
+    end if
+    
+    ! add attributes:
+    call self%NcPutAttrs( ncf%ncid, self%varid, status )
+    IF_NOT_OK_RETURN(status=1)
+
     ! ok
     status = 0
     
@@ -5562,15 +6424,15 @@ contains
 
   ! write global array from root, each pe has same copy
   
-  subroutine Track_1D_NcPutGlb( self, ncid, status )
+  subroutine Track_1D_NcPutGlb( self, ncf, status )
   
-    use NetCDF  , only : NF90_Put_Var
-    use CSO_Comm, only : csoc
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
   
     ! --- in/out ---------------------------------
     
     class(T_Track_1D), intent(in)     ::  self
-    integer, intent(in)               ::  ncid
+    type(T_NcFile), intent(inout)     ::  ncf
     integer, intent(out)              ::  status
 
     ! --- const ----------------------------------
@@ -5584,8 +6446,10 @@ contains
     ! write from root only ..
     if ( csoc%root ) then
       ! write variable:
-      status = NF90_Put_Var( ncid, self%varid, self%data )
-      IF_NF90_NOT_OK_RETURN(status=1)
+      call ncf%Put_Var( self%varid, self%data, status, &
+                          fill_value=self%fill_value, fill_value__out=self%fill_value__out, &
+                          packed=self%packed, fill_value__packed=self%fill_value__packed )
+      IF_NOT_OK_RETURN(status=1)
     end if ! root
     
     ! ok

@@ -2,6 +2,21 @@
 !
 ! CSO_Sat - simulations of satellite retrievals
 !
+!
+! HISTORY
+!
+!   2022-09, Arjo Segers
+!     Support input and output of packed variables.
+!
+!   2023-01, Arjo Segers
+!     Support files with "sample" coordinate instead of "pixel",
+!     and without "corner" data (also implies no "area").
+!
+!   2023-01, Arjo Segers
+!     Added option to define datatype of variable;
+!     mainly used define dtype "i1" (integer(1)) or "c" (character)
+!     that are used for ground observation data.
+!
 !###############################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -16,13 +31,16 @@
   
 module CSO_Sat
 
-  use CSO_Logging     , only : csol, csoPr, csoErr
-  use NetCDF          , only : NF90_StrError, NF90_NOERR
-  use CSO_Pixels      , only : T_PixelDatas
-  use CSO_Pixels      , only : T_Track_0D, T_Track_1D
-  use CSO_Mapping     , only : T_Mapping
-  use CSO_Exchange    , only : T_Exchange
-  use CSO_Domains     , only : T_CSO_Selection1D
+  use NetCDF      , only : NF90_StrError, NF90_NOERR
+
+  use CSO_Logging , only : csol, csoPr, csoErr
+  use CSO_NcFile  , only : T_NcFile
+  use CSO_Pixels  , only : T_PixelDatas
+  use CSO_Pixels  , only : T_Track_0D, T_Track_1D
+  use CSO_Mapping , only : T_Mapping
+  use CSO_Exchange, only : T_Exchange
+  use CSO_Swapping, only : T_Swapping
+  use CSO_Domains , only : T_CSO_Selection1D
 
   implicit none
   
@@ -55,6 +73,7 @@ module CSO_Sat
     !
   contains
     procedure :: Init            => OutputSelection_Init
+    procedure :: InitCopy        => OutputSelection_InitCopy
     procedure :: Done            => OutputSelection_Done
   end type T_OutputSelection
   
@@ -67,6 +86,7 @@ module CSO_Sat
     !
   contains
     procedure :: Init            => OutputSelections_Init
+    procedure :: InitCopy        => OutputSelections_InitCopy
     procedure :: Done            => OutputSelections_Done
     procedure :: GetSelection    => OutputSelections_GetSelection
   end type T_OutputSelections
@@ -90,10 +110,19 @@ module CSO_Sat
     logical                           ::  read_by_me
     !
     !~ netcdf id's
-    integer                           ::  ncid
+    type(T_NcFile)                    ::  ncf
+    !  deflation level for output:
+    integer                           ::  deflate_level
+    !  pack variables on output?
+    logical                           ::  packed
     !
     !~ global pixel arrays,
     !  could be full track including pixels outside model domain
+    !
+    ! storage type:
+    !   'pixel'
+    !   'sample'
+    character(len=32)                 ::  storetype
     !
     ! number of pixels in global doamin:
     integer                           ::  nglb
@@ -140,6 +169,11 @@ module CSO_Sat
     ! flag:
     logical                           ::  exchange_is_setup
     !
+    ! info on how to swap pixels to other domain decomposition:
+    type(T_Swapping), pointer         ::  swp
+    ! flag:
+    logical                           ::  swap_is_setup
+    !
     ! pixel data:
     type(T_PixelDatas)                ::  pd
     !
@@ -177,8 +211,10 @@ module CSO_Sat
     !
   contains
     procedure :: Init            => CSO_Sat_State_Init
+    procedure :: InitSwap        => CSO_Sat_State_InitSwap
     procedure :: Done            => CSO_Sat_State_Done
     procedure :: GetData         => CSO_Sat_State_GetData
+    procedure :: GatherData      => CSO_Sat_State_GatherData
     procedure :: GetPixel        => CSO_Sat_State_GetPixel
     procedure :: SetPixel        => CSO_Sat_State_SetPixel
     procedure :: Get             => CSO_Sat_State_Get
@@ -254,6 +290,50 @@ contains
     status = 0
     
   end subroutine OutputSelection_Init
+
+
+  ! ***
+  
+
+  subroutine OutputSelection_InitCopy( self, outsel, status )
+  
+    use CSO_Comm  , only : csoc
+    use CSO_Rc    , only : T_CSO_RcFile
+    use CSO_String, only : CSO_SplitString
+
+    ! --- in/out ---------------------------------
+    
+    class(T_OutputSelection), intent(out)       ::  self
+    type(T_OutputSelection), intent(in)         ::  outsel
+    integer, intent(out)                        ::  status
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/OutputSelection_InitCopy'
+    
+    ! --- local ----------------------------------
+
+    integer                   ::  i
+
+    ! --- begin ----------------------------------
+    
+    ! copy number:
+    self%n = outsel%n
+    ! any?
+    if ( self%n > 0 ) then
+      ! storage:
+      allocate( self%vars(self%n), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      ! copy:
+      do i = 1, self%n
+        self%vars(i) = outsel%vars(i)
+      end do
+    end if ! n > 0
+
+    ! ok
+    status = 0
+    
+  end subroutine OutputSelection_InitCopy
   
   
   ! ***
@@ -340,6 +420,52 @@ contains
     status = 0
     
   end subroutine OutputSelections_Init
+
+  
+  ! ***
+  
+  
+  subroutine OutputSelections_InitCopy( self, out, status )
+  
+    use CSO_Comm  , only : csoc
+    use CSO_Rc    , only : T_CSO_RcFile
+    use CSO_String, only : CSO_SplitString
+
+    ! --- in/out ---------------------------------
+    
+    class(T_OutputSelections), intent(out)      ::  self
+    type(T_OutputSelections), intent(in)        ::  out
+    integer, intent(out)                        ::  status
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/OutputSelections_InitCopy'
+    
+    ! --- local ----------------------------------
+
+    integer                   ::  i
+
+    ! --- begin ----------------------------------
+    
+    ! copy:
+    self%n = out%n
+    ! any?
+    if ( self%n > 0 ) then
+      ! storage:
+      allocate( self%sels(self%n), stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      ! loop:
+      do i = 1, self%n
+        ! init selection:
+        call self%sels(i)%InitCopy( out%sels(i), status )
+        IF_NOT_OK_RETURN(status=1)
+      end do
+    end if ! n > 0
+
+    ! ok
+    status = 0
+    
+  end subroutine OutputSelections_InitCopy
   
   
   ! ***
@@ -493,12 +619,19 @@ contains
     call rcF%Get( trim(self%rcbase)//'.with_mapping', self%putout_mapping, status )
     IF_NOT_OK_RETURN(status=1)
     
+    ! on output: enable deflation?
+    call rcF%Get( trim(self%rcbase)//'.output.deflate_level', self%deflate_level, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! on output: pack floats to short int?
+    call rcF%Get( trim(self%rcbase)//'.output.packed', self%packed, status )
+    IF_NOT_OK_RETURN(status=1)
+    
     ! read on root, scatter to domains?
     ! by default .true. now, flag used for testing ...
     call rcF%Get( trim(self%rcbase)//'.read_on_root', self%read_on_root, status, &
                     default=.true. )
     IF_ERROR_RETURN(status=1)
-
+    
     ! read here?
     if ( self%read_on_root ) then
       ! only root:
@@ -511,44 +644,53 @@ contains
     ! read by this pe?
     if ( self%read_by_me ) then
     
-      ! check ...
-      inquire( file=trim(self%filename), exist=exist )
-      if ( .not. exist ) then
-        write (csol,'("file not found: ",a)') trim(self%filename); call csoErr
-        TRACEBACK; status=1; return
+      ! open file for reading:
+      call self%ncf%Init( trim(self%filename), 'r', status )
+      IF_NOT_OK_RETURN(status=1)
+
+      ! pixel or station dimension:
+      status = NF90_Inq_DimID( self%ncf%ncid, 'pixel', dimid )
+      if ( status == NF90_NOERR ) then
+        ! number of pixels
+        status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%nglb )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! set key ..
+        self%storetype = 'pixel'
+      else
+        ! no pixels, probably a stations file ...
+        status = NF90_Inq_DimID( self%ncf%ncid, 'sample', dimid )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! number of stations
+        status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%nglb )
+        IF_NF90_NOT_OK_RETURN(status=1)
+        ! set key ..
+        self%storetype = 'sample'
       end if
 
-      ! open file:
-      status = NF90_Open( trim(self%filename), NF90_NOWRITE, self%ncid )
-      IF_NF90_NOT_OK_RETURN(status=1)
-
-      ! pixel dimension:
-      status = NF90_Inq_DimID( self%ncid, 'pixel', dimid )
-      IF_NF90_NOT_OK_RETURN(status=1)
-      ! number of pixels
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nglb )
-      IF_NF90_NOT_OK_RETURN(status=1)
-
-      ! corner dimension:
-      status = NF90_Inq_DimID( self%ncid, 'corner', dimid )
-      IF_NF90_NOT_OK_RETURN(status=1)
-      ! number of pixels
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%ncorner )
-      IF_NF90_NOT_OK_RETURN(status=1)
+      ! OPTIONAL: corner dimension:
+      status = NF90_Inq_DimID( self%ncf%ncid, 'corner', dimid )
+      if ( status == NF90_NOERR ) then
+        ! number of corner values;
+        status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%ncorner )
+        IF_NF90_NOT_OK_RETURN(status=1)
+      else
+        ! dummy:
+        self%ncorner = -999
+      end if
 
       ! layer dimension (used for kernel):
-      status = NF90_Inq_DimID( self%ncid, 'layer', dimid )
+      status = NF90_Inq_DimID( self%ncf%ncid, 'layer', dimid )
       if ( status == NF90_NOERR ) then
-        status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nlayer )
+        status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%nlayer )
         IF_NF90_NOT_OK_RETURN(status=1)
       else
         self%nlayer = -999
       end if
 
       ! retrieval dimension:
-      status = NF90_Inq_DimID( self%ncid, 'retr', dimid )
+      status = NF90_Inq_DimID( self%ncf%ncid, 'retr', dimid )
       if ( status == NF90_NOERR ) then
-        status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nretr )
+        status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%nretr )
         IF_NF90_NOT_OK_RETURN(status=1)
       else
         self%nretr = -999
@@ -558,13 +700,15 @@ contains
     ! need to broadcast?
     if ( self%read_on_root ) then
       ! broadcast from root:
-      call csoc%BCast( csoc%root_id, self%nglb   , status )
+      call csoc%BCast( csoc%root_id, self%nglb     , status )
       IF_NOT_OK_RETURN(status=1)
-      call csoc%BCast( csoc%root_id, self%ncorner, status )
+      call csoc%BCast( csoc%root_id, self%storetype, status )
       IF_NOT_OK_RETURN(status=1)
-      call csoc%BCast( csoc%root_id, self%nlayer , status )
+      call csoc%BCast( csoc%root_id, self%ncorner  , status )
       IF_NOT_OK_RETURN(status=1)
-      call csoc%BCast( csoc%root_id, self%nretr  , status )
+      call csoc%BCast( csoc%root_id, self%nlayer   , status )
+      IF_NOT_OK_RETURN(status=1)
+      call csoc%BCast( csoc%root_id, self%nretr    , status )
       IF_NOT_OK_RETURN(status=1)
     end if
       
@@ -579,14 +723,17 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
     ! define pixel data, read from ncfile, store global arrays (all pixels) on each domain:
-    call self%pd%NcInit( 'longitude', '', self%ncid, 'longitude', status, glb=.true. )
+    call self%pd%NcInit( 'longitude', '', self%ncf%ncid, 'longitude', status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
-    call self%pd%NcInit( 'latitude' , '', self%ncid, 'latitude' , status, glb=.true. )
+    call self%pd%NcInit( 'latitude' , '', self%ncf%ncid, 'latitude' , status, glb=.true. )
     IF_NOT_OK_RETURN(status=1)
-    call self%pd%NcInit( 'longitude_bounds', 'corner', self%ncid, 'longitude_bounds', status, glb=.true. )
-    IF_NOT_OK_RETURN(status=1)
-    call self%pd%NcInit( 'latitude_bounds' , 'corner', self%ncid, 'latitude_bounds' , status, glb=.true. )
-    IF_NOT_OK_RETURN(status=1)
+    ! corners defined?
+    if ( self%ncorner > 0 ) then
+      call self%pd%NcInit( 'longitude_bounds', 'corner', self%ncf%ncid, 'longitude_bounds', status, glb=.true. )
+      IF_NOT_OK_RETURN(status=1)
+      call self%pd%NcInit( 'latitude_bounds' , 'corner', self%ncf%ncid, 'latitude_bounds' , status, glb=.true. )
+      IF_NOT_OK_RETURN(status=1)
+    end if
 
     ! storage for selection flags:
     allocate( self%glb_select(self%nglb), source=.false., stat=status )
@@ -596,33 +743,33 @@ contains
     if ( self%with_track .and. csoc%root ) then
 
       ! track dimension:
-      status = NF90_Inq_DimID( self%ncid, 'track_pixel', dimid )
+      status = NF90_Inq_DimID( self%ncf%ncid, 'track_pixel', dimid )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! number of pixels
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%ntx )
+      status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%ntx )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! track dimension:
-      status = NF90_Inq_DimID( self%ncid, 'track_scan', dimid )
+      status = NF90_Inq_DimID( self%ncf%ncid, 'track_scan', dimid )
       IF_NF90_NOT_OK_RETURN(status=1)
       ! number of pixels
-      status = NF90_Inquire_Dimension( self%ncid, dimid, len=self%nty )
+      status = NF90_Inquire_Dimension( self%ncf%ncid, dimid, len=self%nty )
       IF_NF90_NOT_OK_RETURN(status=1)
 
       ! info ...
       write (csol,'(a,":   shape of track: ",i0," x ",i0)') rname, self%ntx, self%nty; call csoPr
 
       ! read global arrays from file:
-      call self%glb_track_lon%NcInit( self%ncid, 'track_longitude', status )
+      call self%glb_track_lon%NcInit( self%ncf, 'track_longitude', status )
       IF_NOT_OK_RETURN(status=1)
-      call self%glb_track_lat%NcInit( self%ncid, 'track_latitude', status )
+      call self%glb_track_lat%NcInit( self%ncf, 'track_latitude', status )
       IF_NOT_OK_RETURN(status=1)
-      call self%glb_track_clons%NcInit( self%ncid, 'track_longitude_bounds', status )
+      call self%glb_track_clons%NcInit( self%ncf, 'track_longitude_bounds', status )
       IF_NOT_OK_RETURN(status=1)
-      call self%glb_track_clats%NcInit( self%ncid, 'track_latitude_bounds', status )
+      call self%glb_track_clats%NcInit( self%ncf, 'track_latitude_bounds', status )
       IF_NOT_OK_RETURN(status=1)
 
       ! read compressed index in track:
-      call self%pd%NcInit( 'pixel', '', self%ncid, 'pixel', status, &
+      call self%pd%NcInit( 'pixel', '', self%ncf%ncid, 'pixel', status, &
                               xtype='integer', glb=.true., only_here=.true. )
       IF_NOT_OK_RETURN(status=1)
 
@@ -657,6 +804,9 @@ contains
       ! not setup yet:
       self%exchange_is_setup = .false.
     end if ! npes > 0
+    
+    ! no swapping yet:
+    self%swap_is_setup = .false.
 
     ! ok
     status = 0
@@ -687,7 +837,6 @@ contains
     
     ! --- local ----------------------------------
     
-    type(T_Swapping)          ::  swp
     type(T_Swapping)          ::  mswp
     integer                   ::  pid
     
@@ -733,10 +882,15 @@ contains
     ! any pixels on some domain?
     if ( sdata%slc%nsel_tot > 0 ) then
     
+      ! reset flag:
+      self%swap_is_setup = .true.
+      ! storage:
+      allocate( self%swp, stat=status )
+      IF_NOT_OK_RETURN(status=1)
       ! info on swapping from current decomposition 'doms' to decomposition 'doms_f';
       ! use the mapping info to know with which of the new domains a pixel overplaps ;
       ! define for swapping of (npix) arrays:
-      call swp%Init( 'pix', sdata%mapping%map_n, sdata%mapping%map_ii, sdata%mapping%map_jj, &
+      call self%swp%Init( 'pix', sdata%mapping%map_n, sdata%mapping%map_ii, sdata%mapping%map_jj, &
                               doms, doms_f, status )
       IF_NOT_OK_RETURN(status=1)
       ! idem for (nmap) arrays:
@@ -745,13 +899,13 @@ contains
       IF_NOT_OK_RETURN(status=1)
 
       ! new number of local pixels:
-      self%npix = swp%nrecv
+      self%npix = self%swp%nrecv
 
       ! storage per local pixel for global index:
       allocate( self%iglb(max(1,self%npix)), stat=status )
       IF_NOT_OK_RETURN(status=1)
       ! swap global indices:
-      call swp%Swap( sdata%iglb, self%iglb, status )
+      call self%swp%Swap( sdata%iglb, self%iglb, status )
       IF_NOT_OK_RETURN(status=1)
       
     else
@@ -769,19 +923,18 @@ contains
     if ( sdata%slc%nsel_tot > 0 ) then
 
       ! swap pixel data to target decomposition:
-      call self%pd%InitSwap( sdata%pd, swp, status )
+      call self%pd%InitSwap( sdata%pd, self%swp, status )
       IF_NOT_OK_RETURN(status=1)
 
       ! swap mapping info, requires swapping of both pixel and mapping arrays:
-      call self%mapping%InitSwap( sdata%mapping, swp, mswp, status )
+      call self%mapping%InitSwap( sdata%mapping, self%swp, mswp, status )
       IF_NOT_OK_RETURN(status=1)
 
-      ! done:
-      call swp%Done( status )
-      IF_NOT_OK_RETURN(status=1)
+      ! clear:
       call mswp%Done( status )
       IF_NOT_OK_RETURN(status=1)
-    end if
+
+    end if ! any pixels on some domain
     
     ! exchange info needed?
     if ( csoc%npes > 1 ) then
@@ -857,10 +1010,13 @@ contains
         IF_NOT_OK_RETURN(status=1)
         deallocate( self%loc_lats, stat=status )
         IF_NOT_OK_RETURN(status=1)
-        deallocate( self%loc_clons, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        deallocate( self%loc_clats, stat=status )
-        IF_NOT_OK_RETURN(status=1)
+        ! corners defined?
+        if ( self%ncorner > 0 ) then
+          deallocate( self%loc_clons, stat=status )
+          IF_NOT_OK_RETURN(status=1)
+          deallocate( self%loc_clats, stat=status )
+          IF_NOT_OK_RETURN(status=1)
+        end if
       end if
       
     end if  ! nglb > 0
@@ -877,6 +1033,18 @@ contains
       deallocate( self%exch, stat=status )
       IF_NOT_OK_RETURN(status=1)
     end if ! npes > 0
+    
+    ! swap is used?
+    if ( self%swap_is_setup ) then
+      ! clear:
+      call self%swp%Done( status )
+      IF_NOT_OK_RETURN(status=1)
+      ! clear:
+      deallocate( self%swp, stat=status )
+      IF_NOT_OK_RETURN(status=1)
+      ! reset flag:
+      self%swap_is_setup = .false.
+    end if ! swap is used
 
     ! done with mapping info:
     call self%mapping%Done( status )
@@ -926,6 +1094,7 @@ contains
     character(len=32)       ::  vname
     character(len=256)      ::  dnames
     character(len=256)      ::  source
+    character(len=32)       ::  xtype
     real, pointer           ::  glb_lons(:)
     real, pointer           ::  glb_lats(:)
     real, pointer           ::  glb_clons(:,:)
@@ -1000,14 +1169,18 @@ contains
       ! source variable:
       call rcF%Get( trim(rcbase)//'.dvar.'//trim(vname)//'.source', source, status )
       IF_NOT_OK_RETURN(status=1)
+      ! source variable:
+      call rcF%Get( trim(rcbase)//'.dvar.'//trim(vname)//'.dtype', xtype, status, default='real' )
+      IF_ERROR_RETURN(status=1)
       ! info ...
       write (csol,'(a,":  variable `",a,"` ...")') rname, trim(vname); call csoPr
       write (csol,'(a,":    dimensions : ",a)') rname, trim(dnames); call csoPr
       write (csol,'(a,":    source     : ",a)') rname, trim(source); call csoPr
+      write (csol,'(a,":    dtype      : ",a)') rname, trim(xtype); call csoPr
 
       ! define variable, and read (local subset) from nc file:
-      call self%pd%NcInit( trim(vname), trim(dnames), self%ncid, trim(source), status, &
-                             slc=self%slc )
+      call self%pd%NcInit( trim(vname), trim(dnames), self%ncf%ncid, trim(source), status, &
+                             slc=self%slc, xtype=xtype )
       IF_NOT_OK_RETURN(status=1)
 
     end do ! dvars
@@ -1015,8 +1188,8 @@ contains
     ! file opened?
     if ( self%read_by_me ) then
       ! close:
-      status = NF90_Close( self%ncid )
-      IF_NF90_NOT_OK_RETURN(status=1)
+      call self%ncf%Done( status )
+      IF_NOT_OK_RETURN(status=1)
     end if ! read by me
 
     ! *
@@ -1028,19 +1201,25 @@ contains
       IF_NOT_OK_RETURN(status=1)
       call self%pd%GetData( status, name='latitude', data0=glb_lats )
       IF_NOT_OK_RETURN(status=1)
-      call self%pd%GetData( status, name='longitude_bounds', data1=glb_clons )
-      IF_NOT_OK_RETURN(status=1)
-      call self%pd%GetData( status, name='latitude_bounds', data1=glb_clats )
-      IF_NOT_OK_RETURN(status=1)
+      ! corners defined?
+      if ( self%ncorner > 0 ) then
+        call self%pd%GetData( status, name='longitude_bounds', data1=glb_clons )
+        IF_NOT_OK_RETURN(status=1)
+        call self%pd%GetData( status, name='latitude_bounds', data1=glb_clats )
+        IF_NOT_OK_RETURN(status=1)
+      end if
       ! storage:
       allocate( self%loc_lons(self%npix), stat=status )
       IF_NOT_OK_RETURN(status=1)
       allocate( self%loc_lats(self%npix), stat=status )
       IF_NOT_OK_RETURN(status=1)
-      allocate( self%loc_clons(self%ncorner,self%npix), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      allocate( self%loc_clats(self%ncorner,self%npix), stat=status )
-      IF_NOT_OK_RETURN(status=1)
+      ! corners defined?
+      if ( self%ncorner > 0 ) then
+        allocate( self%loc_clons(self%ncorner,self%npix), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        allocate( self%loc_clats(self%ncorner,self%npix), stat=status )
+        IF_NOT_OK_RETURN(status=1)
+      end if  ! ncorner > 0
       ! loop:
       do ipix = 1, self%npix
         ! global index:
@@ -1048,20 +1227,35 @@ contains
         ! copy:
         self%loc_lons(ipix)    = glb_lons(iglb)
         self%loc_lats(ipix)    = glb_lats(iglb)
-        self%loc_clons(:,ipix) = glb_clons(:,iglb)
-        self%loc_clats(:,ipix) = glb_clats(:,iglb)
+        ! corners defined?
+        if ( self%ncorner > 0 ) then
+          self%loc_clons(:,ipix) = glb_clons(:,iglb)
+          self%loc_clats(:,ipix) = glb_clats(:,iglb)
+        end if
       end do ! ipix
     end if
 
-    ! storage for pixel area, filled with zeros to ensure that 
-    ! after gathering the sum is correct:
-    call self%pd%Def( 'area', '', id, status, source=0.0 )
-    IF_NOT_OK_RETURN(status=1)
-    ! attributes:
-    call self%pd%SetAttr( id, 'long_name', 'pixel area', status )
-    IF_NOT_OK_RETURN(status=1)
-    call self%pd%SetAttr( id, 'units', 'm2', status )
-    IF_NOT_OK_RETURN(status=1)
+    ! specials ...
+    select case ( trim(self%storetype) )
+      !~ satellite pixels with footprint:
+      case ( 'pixel' )
+        ! storage for pixel area, filled with zeros to ensure that 
+        ! after gathering the sum is correct:
+        call self%pd%Def( 'area', '', id, status, source=0.0 )
+        IF_NOT_OK_RETURN(status=1)
+        ! attributes:
+        call self%pd%SetAttr( id, 'long_name', 'pixel area', status )
+        IF_NOT_OK_RETURN(status=1)
+        call self%pd%SetAttr( id, 'units', 'm2', status )
+        IF_NOT_OK_RETURN(status=1)
+      !~ samples
+      case ( 'sample' )
+        ! nothing to be done
+      !~
+      case default
+        write (csol,'("unsupported storetype `",a,"`")') trim(self%storetype); call csoErr
+        TRACEBACK; status=1; return
+    end select
     
     ! end definition phase, allocate arrays (if not done yet by NcInit),
     ! this is probably only the just defined 'area':
@@ -1085,12 +1279,15 @@ contains
   !   glb_lon    : pointer to (nglb) array with pixel center
   !   glb_lat    : pointer to (nglb) array with pixel center
   !
+  !   nout       : total number of selected pixels out of global arrays (put out)
+  !
 
   subroutine CSO_Sat_Data_Get( self, status, &
                                  nglb, glb_lon, glb_lat, glb_clons, glb_clats, glb_select, &
                                  npix, npix_all, nlayer, nretr, &
                                  lons, lats, clons, clats, &
-                                 nw, iw0, ii, jj, ww, areas )
+                                 nw, iw0, ii, jj, ww, areas, &
+                                 storetype, nout )
   
     use CSO_Comm, only : csoc
 
@@ -1122,6 +1319,9 @@ contains
     integer, pointer, optional                  ::  jj(:)      ! (nmap)
     real, pointer, optional                     ::  ww(:)      ! (nmap)
     real, pointer, optional                     ::  areas(:)   ! (npix)
+    
+    character(len=*), intent(out), optional     ::  storetype
+    integer, intent(out), optional              ::  nout
 
     ! --- const ----------------------------------
     
@@ -1194,8 +1394,26 @@ contains
     ! local footprints:
     if ( present(lons ) ) lons  => self%loc_lons
     if ( present(lats ) ) lats  => self%loc_lats
-    if ( present(clons) ) clons => self%loc_clons
-    if ( present(clats) ) clats => self%loc_clats
+    
+    ! corner locations:
+    if ( present(clons) ) then
+      ! check:
+      if ( self%ncorner <=0 ) then
+        write (csol,'("could not pointer to `clons`, no corners defined")'); call csoPr
+        TRACEBACK; status=1; return
+      end if
+      ! set pointer:
+      clons => self%loc_clons
+    end if
+    if ( present(clats) ) then
+      ! check:
+      if ( self%ncorner <=0 ) then
+        write (csol,'("could not pointer to `clats`, no corners defined")'); call csoPr
+        TRACEBACK; status=1; return
+      end if
+      ! set pointer:
+      clats => self%loc_clats
+    end if
     
     ! mapping arrays:
     if ( present(nw ) ) nw  => self%mapping%map_n
@@ -1209,6 +1427,12 @@ contains
       call self%pd%GetData( status, name='area', data0=areas )
       IF_NOT_OK_RETURN(status=1)
     end if
+
+    ! copy:
+    if ( present(storetype) ) storetype = self%storetype
+    
+    ! number of pixels put out (unique pixels)
+    if ( present(nout) ) nout = self%slc%nout
 
     ! ok
     status = 0
@@ -1428,10 +1652,13 @@ contains
       end if
     
       ! fill area:
-      call self%pd%InqID( 'area', id, status )
-      IF_NOT_OK_RETURN(status=1)
-      call self%pd%SetPixel( id, ipix, pix_area, status )
-      IF_NOT_OK_RETURN(status=1)
+      call self%pd%InqID( 'area', id, status, quiet=.true. )
+      if ( status == 0 ) then
+        call self%pd%SetPixel( id, ipix, pix_area, status )
+        IF_NOT_OK_RETURN(status=1)
+      else if ( status > 0 ) then
+        TRACEBACK; status=1; return
+      end if
       
       ! set mapping info:
       call self%mapping%SetPixel( ipix, self%npix, self%iglb(ipix), ii,  jj, ww, status )
@@ -1475,9 +1702,21 @@ contains
 
     ! --- begin ----------------------------------
     
-    ! store area:
-    call self%pd%SetData( status, name='area', data0=area )
-    IF_NOT_OK_RETURN(status=1)
+    ! specials ...
+    select case ( trim(self%storetype) )
+      !~ satellite pixels with footprint:
+      case ( 'pixel' )
+        ! store area:
+        call self%pd%SetData( status, name='area', data0=area )
+        IF_NOT_OK_RETURN(status=1)
+      !~ samples
+      case ( 'sample' )
+        ! nothing to be done
+      !~
+      case default
+        write (csol,'("unsupported storetype `",a,"`")') trim(self%storetype); call csoErr
+        TRACEBACK; status=1; return
+    end select
     
     ! store mapping info:
     call self%mapping%SetData( self%npix, self%iglb, nw, ii,  jj, ww, status )
@@ -1494,12 +1733,11 @@ contains
 
   subroutine CSO_Sat_Data_PutOut( self, filename, status )
 
-    use NetCDF , only : NF90_Create, NF90_Close
     use NetCDF , only : NF90_Def_Dim
     use NetCDF , only : NF90_EndDef
-    use NetCDF , only : NF90_NOCLOBBER, NF90_CLOBBER
   
-    use CSO_Comm        , only : csoc
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
     
     ! --- in/out ---------------------------------
     
@@ -1513,8 +1751,7 @@ contains
     
     ! --- local ----------------------------------
     
-    integer                       ::  cmode
-    integer                       ::  ncid
+    type(T_NcFile)                ::  ncf
     integer                       ::  dimid_tx, dimid_ty
     integer                       ::  dimid_pixel
     integer                       ::  dimid_corner
@@ -1557,85 +1794,95 @@ contains
       ! (in future, switch to support both?)
       if ( csoc%root ) then
 
-        ! set creation mode flag:
-        cmode = NF90_CLOBBER       ! overwrite existing files
-        !cmode = NF90_NOCLOBBER     ! do not overwrite existing files
-
         ! create file:
-        status = NF90_Create( filename, cmode, ncid )
-        if ( status /= NF90_NOERR ) then
-           write (csol,'("creating file :")'); call csoErr
-           write (csol,'("  ",a)') trim(filename); call csoErr
-           TRACEBACK; status=1; return
-        end if
+        call ncf%Init( filename, 'w', status )
+        IF_NOT_OK_RETURN(status=1)
 
         ! ~ define
 
         ! define dimensions:
-        status = NF90_Def_Dim( ncid, 'pixel', self%slc%nout, dimid_pixel )
+        status = NF90_Def_Dim( ncf%ncid, trim(self%storetype), self%slc%nout, dimid_pixel )
         IF_NF90_NOT_OK_RETURN(status=1)
         ! track defined?
         if ( self%with_track ) then
-          status = NF90_Def_Dim( ncid, 'track_pixel', self%ntx, dimid_tx )
+          status = NF90_Def_Dim( ncf%ncid, 'track_pixel', self%ntx, dimid_tx )
           IF_NF90_NOT_OK_RETURN(status=1)
-          status = NF90_Def_Dim( ncid, 'track_scan', self%nty, dimid_ty )
+          status = NF90_Def_Dim( ncf%ncid, 'track_scan', self%nty, dimid_ty )
           IF_NF90_NOT_OK_RETURN(status=1)
         end if ! track
 
         ! define netcdf variables:
-        call self%pd%NcDef( ncid, dimid_pixel, vars, status )
+        call self%pd%NcDef( ncf%ncid, dimid_pixel, vars, status, &
+                               deflate_level=self%deflate_level, &
+                               packed=self%packed )
         IF_NOT_OK_RETURN(status=1)
         
-        ! adhoc, not all into pd yet ...
-        call self%pd%ncdims%GetDim( 'corner', status, dimid=dimid_corner )
-        IF_NOT_OK_RETURN(status=1)
+        ! corners defined?
+        if ( self%ncorner > 0 ) then
+          ! adhoc, not all into pd yet ...
+          call self%pd%ncdims%GetDim( 'corner', status, dimid=dimid_corner )
+          IF_NOT_OK_RETURN(status=1)
+        end if
 
         ! track defined?
         if ( self%with_track ) then
           !~ global track arrays:
-          call self%glb_track_lon%NcDef( ncid, 'track_longitude', (/dimid_tx,dimid_ty/), status )
+          call self%glb_track_lon%NcDef( ncf, 'track_longitude', &
+                                           (/dimid_tx,dimid_ty/), status, &
+                                           deflate_level=self%deflate_level, &
+                                           packed=self%packed )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_lat%NcDef( ncid, 'track_latitude', (/dimid_tx,dimid_ty/), status )
+          call self%glb_track_lat%NcDef( ncf, 'track_latitude', &
+                                           (/dimid_tx,dimid_ty/), status, &
+                                           deflate_level=self%deflate_level, &
+                                           packed=self%packed )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_clons%NcDef( ncid, 'track_longitude_bounds', (/dimid_corner,dimid_tx,dimid_ty/), status )
+          call self%glb_track_clons%NcDef( ncf, 'track_longitude_bounds', &
+                                           (/dimid_corner,dimid_tx,dimid_ty/), status, &
+                                           deflate_level=self%deflate_level, &
+                                           packed=self%packed )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_clats%NcDef( ncid, 'track_latitude_bounds' , (/dimid_corner,dimid_tx,dimid_ty/), status )
+          call self%glb_track_clats%NcDef( ncf, 'track_latitude_bounds' , &
+                                           (/dimid_corner,dimid_tx,dimid_ty/), status, &
+                                           deflate_level=self%deflate_level, packed=self%packed )
           IF_NOT_OK_RETURN(status=1)
         end if ! track
         ! put out mapping arrays?
         if ( self%putout_mapping ) then
           ! define dims and variables:
-          call self%mapping%NcDef( ncid, dimid_pixel, status )
+          call self%mapping%NcDef( ncf%ncid, dimid_pixel, status, &
+                                    deflate_level=self%deflate_level, &
+                                    packed=self%packed )
           IF_NOT_OK_RETURN(status=1)
         end if ! mapping
 
         ! end defintion mode:
-        status = NF90_EndDef( ncid )
+        status = NF90_EndDef( ncf%ncid )
         IF_NF90_NOT_OK_RETURN(status=1)
         
         ! ~ write
 
         ! put selection of "glb" arrays:
-        call self%pd%NcPutGlbSelect( ncid, self%slc%iout_glb, status )
+        call self%pd%NcPutGlbSelect( ncf, self%slc%iout_glb, status )
         IF_NOT_OK_RETURN(status=1)
 
         ! track defined?
         if ( self%with_track ) then
           ! write track arrays available as global arrays:
-          call self%glb_track_lon%NcPutGlb( ncid, status )
+          call self%glb_track_lon%NcPutGlb( ncf, status )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_lat%NcPutGlb( ncid, status )
+          call self%glb_track_lat%NcPutGlb( ncf, status )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_clons%NcPutGlb( ncid, status )
+          call self%glb_track_clons%NcPutGlb( ncf, status )
           IF_NOT_OK_RETURN(status=1)
-          call self%glb_track_clats%NcPutGlb( ncid, status )
+          call self%glb_track_clats%NcPutGlb( ncf, status )
           IF_NOT_OK_RETURN(status=1)
         end if  ! track
         
         ! put out mapping arrays?
         if ( self%putout_mapping ) then
           ! write variables:
-          call self%mapping%NcPut( ncid, status )
+          call self%mapping%NcPut( ncf%ncid, status )
           IF_NOT_OK_RETURN(status=1)
         end if ! mapping
         
@@ -1643,14 +1890,14 @@ contains
       
       ! collect distributed arrays on root and write from there,
       ! values found on multiple domains are the same so no need to add them:
-      call self%pd%NcPutGather( ncid, self%slc%iout_tot, .false., vars, status )
+      call self%pd%NcPutGather( ncf, self%slc%iout_tot, .false., vars, status )
       IF_NOT_OK_RETURN(status=1)
 
       ! written on root...
       if ( csoc%root ) then
         ! close:
-        status = NF90_Close( ncid )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        call ncf%Done( status )
+        IF_NOT_OK_RETURN(status=1)
       end if  ! root
     
     else
@@ -2082,7 +2329,7 @@ contains
     ! --- begin ----------------------------------
     
     ! defaults:
-    self%description = 'simulated satellite retrievals'
+    self%description = 'simulated state'
     if ( present(description) ) self%description = trim(description)
     
     ! copy:
@@ -2208,6 +2455,198 @@ contains
     status = 0
     
   end subroutine CSO_Sat_State_Init
+
+
+  ! ***
+
+  
+  !
+  ! Init state (defined on domain "doms_f") as swapped version of "sstate" (defined on "doms"),
+  ! use the info in data "sdata_f" (already defined on "doms_f")
+  !
+
+  subroutine CSO_Sat_State_InitSwap( self, sdata_f, sstate, status )
+  
+    use CSO_Comm    , only : csoc
+!    use CSO_Domains , only : T_CSO_Domains
+!    use CSO_Swapping, only : T_Swapping
+  
+!    use CSO_String          , only : CSO_ReadFromLine
+  
+    ! --- in/out ---------------------------------
+    
+    class(T_CSO_Sat_State), intent(out)         ::  self
+    type(T_CSO_Sat_Data), intent(in)            ::  sdata_f
+    type(T_CSO_Sat_State), intent(in)           ::  sstate
+!    type(T_CSO_Domains), intent(in)             ::  doms
+!    type(T_CSO_Domains), intent(in)             ::  doms_f
+    integer, intent(out)                        ::  status
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/CSO_Sat_State_InitSwap'
+    
+    ! --- local ----------------------------------
+    
+!    type(T_Swapping)          ::  swp
+!    character(len=1024)       ::  line
+!    integer                   ::  ivar
+!    integer                   ::  iudim
+!    integer                   ::  mxdim
+!    integer                   ::  i
+!    character(len=32)         ::  vname
+!    character(len=256)        ::  xnames
+!    character(len=256)        ::  aname
+!    character(len=1024)       ::  avalue
+!    character(len=256)        ::  units
+    
+    ! --- begin ----------------------------------
+    
+    ! copy:
+    self%description = trim(sstate%description)
+    
+    ! copy:
+    self%npix   = sdata_f%npix
+    
+    ! any pixels in global domain?
+    if ( sdata_f%nglb > 0 ) then
+
+      ! info ...
+      write (csol,'(a,": define state variables ...")') rname; call csoPr
+    
+!      ! init extra output:
+!      call self%pd%Init( status )
+!      IF_NOT_OK_RETURN(status=1)
+!
+!      ! line with variable names:
+!      call rcF%Get( trim(rcbase)//'.vars', line, status )
+!      IF_NOT_OK_RETURN(status=1)
+!      ! loop over elements:
+!      do
+!        ! empty?
+!        if ( len_trim(line) == 0 ) exit
+!        ! next part:
+!        call CSO_ReadFromLine( line, vname, status, sep=' ' )
+!        IF_NOT_OK_RETURN(status=1)
+!        
+!        ! dimension names:
+!        call rcF%Get( trim(rcbase)//'.var.'//trim(vname)//'.dims', xnames, status )
+!        IF_NOT_OK_RETURN(status=1)
+!        ! info ...
+!        write (csol,'(a,":  variable `",a,"` ...")') rname, trim(vname); call csoPr
+!        !! testing ...
+!        !write (csol,'(a,":    dimensions : ",a)') rname, trim(xnames); call csoPr
+!
+!        ! define new variable, return index:
+!        call self%pd%Def( vname, xnames, ivar, status )
+!        IF_NOT_OK_RETURN(status=1)
+!        
+!        ! attribute names:
+!        call rcF%Get( trim(rcbase)//'.var.'//trim(vname)//'.attrs', xnames, status )
+!        IF_NOT_OK_RETURN(status=1)
+!        ! loop:
+!        do
+!          ! empty?
+!          if ( len_trim(xnames) == 0 ) exit
+!          ! next name:
+!          call CSO_ReadFromLine( xnames, aname, status, sep=' ' )
+!          IF_NOT_OK_RETURN(status=1)
+!          ! attribute value:
+!          call rcF%Get( trim(rcbase)//'.var.'//trim(vname)//'.attr.'//trim(aname), avalue, status )
+!          IF_NOT_OK_RETURN(status=1)
+!          ! store:
+!          call self%pd%SetAttr( ivar, aname, avalue, status )
+!          IF_NOT_OK_RETURN(status=1)
+!        end do ! attributes
+!        
+!        ! formula defined?
+!        call rcF%Get( trim(rcbase)//'.var.'//trim(vname)//'.formula', aname, status, default='' )
+!        IF_ERROR_RETURN(status=1)
+!        ! defined?
+!        if ( len_trim(aname) > 0 ) then
+!          ! read formula terms:
+!          call rcF%Get( trim(rcbase)//'.var.'//trim(vname)//'.formula_terms', avalue, status )
+!          IF_NOT_OK_RETURN(status=1)
+!          !! info ...
+!          !write (csol,'(a,":    formula    : ",a)') rname, trim(aname); call csoPr
+!          !write (csol,'(a,":      terms    : ",a)') rname, trim(avalue); call csoPr
+!          ! store:
+!          call self%pd%SetFormula( ivar, aname, avalue, status )
+!          IF_NOT_OK_RETURN(status=1)
+!        end if ! formula
+!
+!      end do ! elements
+
+      ! any pixels on some domain?
+      if ( sdata_f%slc%nsel_tot > 0 ) then
+      
+        ! check ..
+        if ( .not. sdata_f%swap_is_setup ) then
+          write (csol,'("swap of data is not setup yet; sdata structure not swapped yet?")'); call csoErr
+          TRACEBACK; status=1; return
+        end if
+
+        ! swap pixel data to target decomposition,
+        ! use the swapping info that was setup in "sdata_f":
+        call self%pd%InitSwap( sstate%pd, sdata_f%swp, status )
+        IF_NOT_OK_RETURN(status=1)
+        
+      end if ! any pixels on some domain
+
+!      ! extract counter for user defined variables:
+!      call self%pd%Get( status, n=self%nvar )
+!      IF_NOT_OK_RETURN(status=1)
+!
+!      ! extract total number of dimensions:
+!      call self%pd%Get( status, ndim=mxdim )
+!      IF_NOT_OK_RETURN(status=1)
+!      ! maximum storage for user defined dim names:
+!      allocate( self%udimnames(mxdim), stat=status )
+!      IF_NOT_OK_RETURN(status=1)
+!      ! init counter:
+!      iudim = 0
+!      ! loop over all dims:
+!      do i = 1, mxdim
+!        ! dimension name:
+!        call self%pd%GetDim( i, status, name=vname )
+!        IF_NOT_OK_RETURN(status=1)
+!        ! default or user defined?
+!        select case ( trim(vname) )
+!          !~ number of apriori layers:
+!          case ( 'layer' )
+!            ! set length:
+!            call self%pd%SetDim( vname, sdata%nlayer, status )
+!            IF_NOT_OK_RETURN(status=1)
+!          !~ number of retrieval layers:
+!          case ( 'retr' )
+!            ! set length:
+!            call self%pd%SetDim( vname, sdata%nretr, status )
+!            IF_NOT_OK_RETURN(status=1)
+!          !~ user defined:
+!          case default
+!            ! increase counter:
+!            iudim = iudim + 1
+!            ! store:
+!            self%udimnames(iudim) = trim(vname)
+!        end select
+!      end do ! dims
+!      ! store number of user defined dims:
+!      self%nudim = iudim
+!      
+!      ! output selections:
+!      call self%outkeys%Init( rcF, rcbase, status )
+!      IF_NOT_OK_RETURN(status=1)
+      
+      ! output selections:
+      call self%outkeys%InitCopy( sstate%outkeys, status )
+      IF_NOT_OK_RETURN(status=1)
+      
+    end if  ! any global pixels
+    
+    ! ok
+    status = 0
+    
+  end subroutine CSO_Sat_State_InitSwap
 
 
   ! ***
@@ -2421,9 +2860,9 @@ contains
     integer, intent(in), optional             ::  id
     character(len=*), intent(in), optional    ::  name
 
-    real, pointer, optional                   ::  data0(:)
-    real, pointer, optional                   ::  data1(:,:)
-    real, pointer, optional                   ::  data2(:,:,:)
+    real, pointer, optional                   ::  data0(:)     ! (npix)
+    real, pointer, optional                   ::  data1(:,:)   ! (:,npix)
+    real, pointer, optional                   ::  data2(:,:,:) ! (:,:,npix)
     character(len=*), intent(out), optional   ::  units
 
     ! --- const ----------------------------------
@@ -2444,6 +2883,46 @@ contains
     status = 0
     
   end subroutine CSO_Sat_State_GetData
+  
+  
+  ! ***
+
+
+  !
+  ! Get gathered data on root, specified by either "id" number or "name"
+  !
+
+  subroutine CSO_Sat_State_GatherData( self, sdata, status, id, name, gdata1 )
+  
+
+    ! --- in/out ---------------------------------
+    
+    class(T_CSO_Sat_State), intent(in)          ::  self
+    type(T_CSO_Sat_Data), intent(in)            ::  sdata
+    integer, intent(out)                        ::  status
+    
+    integer, intent(in), optional             ::  id
+    character(len=*), intent(in), optional    ::  name
+
+    real, intent(out), optional               ::  gdata1(:,:)   ! (:,nout)
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/CSO_Sat_State_GatherData'
+    
+    ! --- local ----------------------------------
+    
+    ! --- begin ----------------------------------
+    
+    ! get units:
+    call self%pd%GatherData( sdata%slc%iout_tot, status, id=id, name=name, &
+                                gdata1=gdata1 )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ok
+    status = 0
+    
+  end subroutine CSO_Sat_State_GatherData
 
 
   ! ***
@@ -2796,9 +3275,9 @@ contains
     use NetCDF , only : NF90_Create, NF90_Close
     use NetCDF , only : NF90_Def_Dim
     use NetCDF , only : NF90_EndDef
-    use NetCDF , only : NF90_NOCLOBBER, NF90_CLOBBER
   
-    use CSO_Comm        , only : csoc
+    use CSO_Comm  , only : csoc
+    use CSO_NcFile, only : T_NcFile
     
     ! --- in/out ---------------------------------
     
@@ -2815,8 +3294,7 @@ contains
     
     ! --- local ----------------------------------
     
-    integer                     ::  cmode
-    integer                     ::  ncid
+    type(T_NcFile)              ::  ncf
     integer                     ::  dimid_pixel
     integer                     ::  dimid_retr
     integer                     ::  dimid_mod_layer
@@ -2844,28 +3322,22 @@ contains
       ! collect on root, this is much faster than parallel write ...
       if ( csoc%root ) then
 
-        ! set creation mode flag:
-        cmode = NF90_CLOBBER       ! overwrite existing files
-        !cmode = NF90_NOCLOBBER     ! do not overwrite existing files
-
         ! create file:
-        status = NF90_Create( filename, cmode, ncid )
-        if ( status /= NF90_NOERR ) then
-           write (csol,'("creating file :")'); call csoErr
-           write (csol,'("  ",a)') trim(filename); call csoErr
-           TRACEBACK; status=1; return
-        end if
+        call ncf%Init( filename, 'w', status )
+        IF_NOT_OK_RETURN(status=1)
 
         ! pixel dimension:
-        status = NF90_Def_Dim( ncid, 'pixel', sdata%slc%nout, dimid_pixel )
+        status = NF90_Def_Dim( ncf%ncid, 'pixel', sdata%slc%nout, dimid_pixel )
         IF_NF90_NOT_OK_RETURN(status=1)
 
         ! user output:
-        call self%pd%NcDef( ncid, dimid_pixel, vars, status )
+        call self%pd%NcDef( ncf%ncid, dimid_pixel, vars, status, &
+                              deflate_level=sdata%deflate_level, &
+                              packed=sdata%packed )
         IF_NOT_OK_RETURN(status=1)
 
         ! end defintion mode:
-        status = NF90_EndDef( ncid )
+        status = NF90_EndDef( ncf%ncid )
         IF_NF90_NOT_OK_RETURN(status=1)
         
       end if ! root
@@ -2876,14 +3348,14 @@ contains
       !IF_NOT_OK_RETURN(status=1)
       !~ contributions from different domains have been exchanged already,
       !  so no need to add contributions:
-      call self%pd%NcPutGather( ncid, sdata%slc%iout_tot, .false., vars, status )
+      call self%pd%NcPutGather( ncf, sdata%slc%iout_tot, .false., vars, status )
       IF_NOT_OK_RETURN(status=1)
       
       ! written on root...
       if ( csoc%root ) then
         ! close:
-        status = NF90_Close( ncid )
-        IF_NF90_NOT_OK_RETURN(status=1)
+        call ncf%Done( status )
+        IF_NOT_OK_RETURN(status=1)
       end if  ! root
 
     else
