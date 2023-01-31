@@ -339,7 +339,7 @@ contains
       else
         write (csol,'("found empty leading part while no default specified:")'); call csoErr
         write (csol,'("  line   : `",a,"`")') trim(s); call csoErr
-        write (csol,'("  sep    : `",a,"`")') thesep; call csoErr
+        write (csol,'("  sep    : `",a,"`")') trim(thesep); call csoErr
         TRACEBACK; status=1; return
       end if
     else
