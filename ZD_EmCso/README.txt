@@ -80,5 +80,50 @@ Read on root, scatter to domains.
   cso_domains.F90
   cso_pixels.F90
   cso_sat.F90
-  
- 
+
+Merged updates from main model code.
+  emep_Main.f90
+  PhyChem_mod.f90
+
+Deleted file that is not different from main code.
+  GridValues_mod.f90
+	Makefile.SRCS
+
+Added `CSO_Format` routine.
+	cso_datetime.F90
+
+Added `CSO_CheckDir` routine.
+	cso_file.F90
+
+Extended error messages.
+	cso_listing.F90
+	cso_string.F90
+
+Support input and output of packed variables.
+	cso_mapping.F90
+	cso_ncfile.F90
+	cso_pixels.F90
+	cso_sat.F90
+
+Added `GetWeightsCell` methodes to assign points to grid cells.
+	cso_grid.F90
+
+Support integer(1) and character variables.
+	cso_comm.F90
+	cso_domains.F90
+	cso_ncfile.F90
+	cso_pixels.F90
+	cso_sat.F90
+
+Trap undefined values in kernel application.
+Do not pack `time` variables.
+	cso_pixels.F90
+
+Added `LinInterp` routine to perform linear interpolation.
+	cso_tools.F90
+
+Added formula `TropoPressures` to create variable with half-level pressures
+at surface, top of boundary layer, and top of troposhere.
+	cso_pixels.F90
+	EMEP_CSO_mod.f90
+
