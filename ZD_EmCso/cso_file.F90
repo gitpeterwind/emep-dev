@@ -1,6 +1,12 @@
 !#################################################################
 !
 ! File tools.
+!
+! HISTORY
+!
+!   2022-09, Arjo Segers
+!     Added `CSO_CheckDir` routine.
+!
 !  
 !#################################################################
 !
@@ -24,6 +30,7 @@ module CSO_File
   
   public  ::  CSO_GetFU
   public  ::  CSO_GetDirname
+  public  ::  CSO_CheckDir
   public  ::  T_CSO_TextFile
 
 
@@ -171,6 +178,86 @@ contains
     status = 0
 
   end subroutine CSO_GetDirname
+  
+  ! *
+  
+  subroutine CSO_CheckDir( filename, status )
+
+#ifdef __INTEL_COMPILER
+    use IFPort, only : System
+    use IFPort, only : IErrNo
+    use IFPort, only : E2BIG, ENOENT, ENOEXEC, ENOMEM
+#endif
+
+    ! --- in/out -----------------------
+    
+    character(len=*), intent(in)              ::  filename
+    integer, intent(out)                      ::  status
+    
+    ! --- const --------------------------
+    
+    character(len=*), parameter   ::  rname = mname//'/CSO_CheckDir'
+    
+    ! --- local --------------------------
+    
+    character(len=1024)     ::  dirname
+    logical                 ::  exist
+    character(len=1024)     ::  command
+#ifdef __INTEL_COMPILER
+    integer                 ::  ierr
+#endif
+
+    ! --- begin --------------------------
+    
+    ! directory name:
+    call CSO_GetDirname( filename, dirname, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! directory in path?
+    if ( len_trim(dirname) > 0 ) then
+      ! check presence:
+      inquire( file=trim(dirname)//'/.', exist=exist )
+      ! not present?
+      if ( .not. exist ) then
+        ! command create including parent directories:
+        command = 'mkdir -p '//trim(dirname)
+        ! switch:
+#ifdef __INTEL_COMPILER
+        !~ use function from IFPort library:
+        status = System( command )
+        if ( status /= 0 ) then
+          write (csol,'("return status ",i0," from system call:")') status; call csoErr
+          write (csol,'("  ",a)') trim(command); call csoErr
+          ierr = IErrNo()
+          select case ( ierr )
+            case ( E2BIG )
+              write (csol,'("The argument list is too long.")'); call csoErr
+            case ( ENOENT )
+              write (csol,'("The command interpreter cannot be found.")'); call csoErr
+            case ( ENOEXEC )
+              write (csol,'("The command interpreter file has an invalid format and is not executable.")'); call csoErr
+            case ( ENOMEM )
+              write (csol,'("Not enough system resources are available to execute the command.")'); call csoErr
+            case default
+              write (csol,'("unsupported error code ",i0)') ierr; call csoErr
+          end select
+          TRACEBACK; status=1; return
+        end if
+#else
+        !~ non-standard routine:
+        call system( command, status )
+        if ( status /= 0 ) then
+          write (csol,'("return status ",i0," from system call:")') status; call csoErr
+          write (csol,'("  ",a)') trim(command); call csoErr
+          TRACEBACK; status=1; return
+        end if
+#endif
+      end if ! dir not present yet
+    end if ! dirname included
+    
+    ! ok
+    status = 0
+
+  end subroutine CSO_CheckDir
 
 
   ! ==============================================================
