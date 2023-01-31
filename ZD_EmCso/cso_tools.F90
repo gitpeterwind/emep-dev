@@ -2,6 +2,13 @@
 !
 ! CSO_Tools
 !
+!
+! HISTORY
+!
+! 2022-11, Arjo Segers
+!   Added 'LinInterp' routine to perform linear interpolation.
+!
+!
 !###############################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -42,6 +49,7 @@ module CSO_Tools
   public    ::  LonLatTriangleArea
   public    ::  LonLatRectangleArea  
   public    ::  GetPolygonPoints
+  public    ::  LinInterp
   
   
   ! --- const ------------------------------
@@ -570,6 +578,122 @@ contains
     status = 0
     
   end subroutine GetPolygonPoints
+  
+  
+  ! ***
+  
+  !
+  ! Linear interpolation values y(1:n) defined on x(1:n) to target location xp.
+  ! Use 'extrapolate=.true.' to allow extrapolation outside bounds of x.
+  ! Coordinate x should be strictly increasing or decreasing.
+  !
+  
+  subroutine LinInterp( x, y, xp, yp, status, extrapolate )
+
+    ! --- in/out ---------------------------------
+    
+    real, intent(in)                     ::  x(:)   ! (n)
+    real, intent(in)                     ::  y(:)   ! (n)
+    real, intent(in)                     ::  xp
+    real, intent(out)                    ::  yp
+    integer, intent(out)                 ::  status
+    logical, intent(in), optional        ::  extrapolate
+ 
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/LinInterp'
+    
+    ! --- local ----------------------------------
+    
+    integer                 ::  n
+    integer                 ::  xdir
+    integer                 ::  i
+    integer                 ::  ip
+    logical                 ::  extrapol
+
+    ! --- begin ----------------------------------
+    
+    ! flag
+    extrapol = .false.
+    if ( present(extrapolate) ) extrapol = extrapolate
+    
+    ! sizxe:
+    n = size(x)
+    
+    ! check ...
+    if ( size(y) /= n ) then
+      write (csol,'("size of y (",i0,") should match size of x (",i0,")")') size(y), n; call csoErr
+      TRACEBACK; status=1; return
+    end if
+
+    ! check direction:
+    if ( x(n) > x(1) ) then
+      ! direction factor:
+      xdir = 1
+    else
+      ! direction factor:
+      xdir = -1
+    end if
+    ! coordinate should be strictly increasing:
+    if ( any( xdir*( x(2:n) - x(1:n-1) ) <= 0.0 ) ) then
+      write (csol,'("coordinate should be strictly increasing or decreasing:")'); call csoErr
+      do i = 1, n
+        write (csol,'("  ",i6," ",f16.6)') i, x(i); call csoErr
+      end do
+      TRACEBACK; status=1; return
+    end if
+    
+    ! search interval 1,..,n-1 holding xp:
+    !~ left from coordinates?
+    if ( xdir*xp < xdir*x(1) ) then
+      ! allowed?
+      if ( extrapol ) then
+        ! extrapolate from first cell:
+        ip = 1
+      else
+        write (csol,'("xp ",es16.6," outside x range [",es16.6,",",es16.6,"]")') xp, x(1), x(n); call csoErr
+        TRACEBACK; status=1; return
+      end if
+    !~ right from coordinates?
+    else if ( xdir*xp > xdir*x(n) ) then
+      ! allowed?
+      if ( extrapol ) then
+        ! extrapolate from last cell:
+        ip = n-1
+      else
+        write (csol,'("xp ",es16.6," outside x range [",es16.6,",",es16.6,"]")') xp, x(1), x(n); call csoErr
+        TRACEBACK; status=1; return
+      end if
+    !~ within coordinates:
+    else
+      ! loop over end points of intervals:
+      do i = 2, n
+        ! below end of interval? then this holds the target point:
+        if ( xdir*xp <= xdir*x(i) ) then
+          ! interpolate from cell with this end-point:
+          ip = i - 1
+          exit
+        end if
+      end do ! i
+    end if  ! interpolate or extrapolate:
+    
+    ! linear interpolation (or extrapolation):
+    yp = ( ( x(ip+1) - xp ) * y(ip) + ( xp - x(ip) ) * y(ip+1) )/( x(ip+1) - x(ip) )
+    
+    !! testing ..
+    !write (csol,'("interpolation on x of y to xp:")'); call csoPr
+    !do i = 1, n
+    !  write (csol,'("  ",i6," ",2f16.6)') i, x(i), y(i); call csoPr
+    !  if ( i == ip ) then
+    !    write (csol,'("    ---> ",2f16.6)') xp, yp; call csoPr
+    !  end if
+    !end do
+  
+    ! ok
+    status = 0
+    
+  end subroutine LinInterp
+  
   
 
 end module CSO_Tools
