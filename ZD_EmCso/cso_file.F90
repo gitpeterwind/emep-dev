@@ -7,7 +7,9 @@
 !   2022-09, Arjo Segers
 !     Added `CSO_CheckDir` routine.
 !
-!  
+!   2023-01, Arjo Segers
+!     Fixed problem with creation of output directories when using Intel compiler.
+!
 !#################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -183,12 +185,6 @@ contains
   
   subroutine CSO_CheckDir( filename, status )
 
-#ifdef __INTEL_COMPILER
-    use IFPort, only : System
-    use IFPort, only : IErrNo
-    use IFPort, only : E2BIG, ENOENT, ENOEXEC, ENOMEM
-#endif
-
     ! --- in/out -----------------------
     
     character(len=*), intent(in)              ::  filename
@@ -203,9 +199,9 @@ contains
     character(len=1024)     ::  dirname
     logical                 ::  exist
     character(len=1024)     ::  command
-#ifdef __INTEL_COMPILER
-    integer                 ::  ierr
-#endif
+    integer                 ::  exitstat
+    integer                 ::  cmdstat
+    !character(len=1024)     ::  cmdmsg
 
     ! --- begin --------------------------
     
@@ -214,43 +210,33 @@ contains
     IF_NOT_OK_RETURN(status=1)
     ! directory in path?
     if ( len_trim(dirname) > 0 ) then
-      ! check presence:
-      inquire( file=trim(dirname)//'/.', exist=exist )
+#ifdef __INTEL_COMPILER
+      ! check presence; the "directory" argument only works with ifort:
+      inquire( directory=trim(dirname), exist=exist )
+#else
+      ! check presence as if it is a file:
+      inquire( file=trim(dirname)//'.', exist=exist )
+#endif
       ! not present?
       if ( .not. exist ) then
-        ! command create including parent directories:
+        ! command to create directory including parent directories;
+        ! for Intel compiler could not use the non-standard "MakeDirQQ" command
+        ! since that cannot create the parent directories ...
         command = 'mkdir -p '//trim(dirname)
-        ! switch:
-#ifdef __INTEL_COMPILER
-        !~ use function from IFPort library:
-        status = System( command )
-        if ( status /= 0 ) then
-          write (csol,'("return status ",i0," from system call:")') status; call csoErr
-          write (csol,'("  ",a)') trim(command); call csoErr
-          ierr = IErrNo()
-          select case ( ierr )
-            case ( E2BIG )
-              write (csol,'("The argument list is too long.")'); call csoErr
-            case ( ENOENT )
-              write (csol,'("The command interpreter cannot be found.")'); call csoErr
-            case ( ENOEXEC )
-              write (csol,'("The command interpreter file has an invalid format and is not executable.")'); call csoErr
-            case ( ENOMEM )
-              write (csol,'("Not enough system resources are available to execute the command.")'); call csoErr
-            case default
-              write (csol,'("unsupported error code ",i0)') ierr; call csoErr
-          end select
+        ! execute and trap errors from executing the command (could it be executed at all?),
+        ! and from the command itself (could it do what was intended);
+        ! if the optional "cmdmsg" is provided, the call sometimes hangs ...
+        call Execute_Command_Line( command, cmdstat=cmdstat, exitstat=exitstat )!, cmdmsg=cmdmsg )
+        if ( (exitstat /= 0) .or. (cmdstat /= 0) ) then
+          if ( cmdstat /= 0 ) then
+            write (csol,'("from executing command : ",a)') trim(command); call csoErr
+            write (csol,'("  cmdstat : ",i0)') cmdstat; call csoErr
+          else
+            write (csol,'("from command: ",a)') trim(command); call csoErr
+            write (csol,'("  exitstat : ",i0)') exitstat; call csoErr
+          end if
           TRACEBACK; status=1; return
         end if
-#else
-        !~ non-standard routine:
-        call system( command, status )
-        if ( status /= 0 ) then
-          write (csol,'("return status ",i0," from system call:")') status; call csoErr
-          write (csol,'("  ",a)') trim(command); call csoErr
-          TRACEBACK; status=1; return
-        end if
-#endif
       end if ! dir not present yet
     end if ! dirname included
     
