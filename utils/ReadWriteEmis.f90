@@ -1,31 +1,44 @@
 !Reads the local fractions type emissions, and rewrite them in "new" format
-!uses about 30GBB memory for a global file (0.5 deg resolution)
-!mpif90 -r8 -O2 Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
+!uses about 30GB memory for a global file (0.5 deg resolution)
+!mpif90 -r8 -O2 -o RWEmis Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
 !debug:
 !mpif90 -r8 -check all -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
 program rwemis
   use netcdf
-  use Country_mod !MAXNLAND, NLAND
+  use Country_mod
   implicit none
-  character(len = 200) ::fileName,filenameOut,varname,speciesnames(100),projection,periodicity,SECTORS_NAME
+  character(len = 200) ::path,fileName,filenameOut,varname,speciesnames(100),projection,periodicity,SECTORS_NAME
   integer :: i,j, imax, jmax, ic, ix
   integer :: itime, ntime, isec, nsectors, ispec, nspecies, found, size, iland,nlandfound
   real  :: lonstart,latstart,dlon,dlat
   integer :: NCMAX = 10 !Max number of countries in one gridcell
   integer :: countrycodes(MAXNLAND),Countryicode(MAXNLAND)
   real, allocatable :: cdfemis(:,:),cdfemisOut(:,:),emisSecC(:,:,:,:),fractions(:,:,:)
-  real, allocatable :: landcode(:,:,:),nlandcode(:,:)
+  real, allocatable :: landcode(:,:,:),nlandcode(:,:),speciessum(:,:)
   integer :: ncFileID, ncFileIDOut
 
   call init_Country()
-  filename='/nobackup/forsk/sm_petwi/Data/Emis_ECLIPSEv6b_GNFR/Emis_ECLIPSEv6b_CLE_GNFR_05deg_1990.nc'
   filename='/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/GNFREmis_EMEP01_2018_05062020.nc'
   filenameOut='EMEP01New.nc'
+  read(*,'(A)')path
+  read(*,'(A)')filename
+  if(trim(path)=='./')then
+    write(*,*)'Do not want to overwrite!'
+    stop
+  end if
+  filenameOut=trim(filename)
+  filename=trim(path)//trim(filename)
+  write(*,*)'convert '//trim(filename)
+  write(*,*)' into '//trim(filenameOut)
 
   !1) read metadata
   nsectors = 13 !modify if different
   call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
   call ReadMetadata(ncFileID, imax, jmax, ntime, nspecies, lonstart, dlon, latstart, dlat,projection, speciesnames, SECTORS_NAME)
+  if(SECTORS_NAME/='GNFR')then
+    write(*,*)'Only GNFR sectors fully implemented'
+    stop
+  end if
   if (ntime==1) then
      periodicity='yearly'
   else if(ntime==12) then
@@ -49,6 +62,7 @@ program rwemis
      Countryicode(i)=Country(i)%icode
   end do
   allocate(cdfemis(imax,jmax))
+  allocate(speciessum(imax,jmax))
   allocate(cdfemisOut(imax,jmax))
   allocate(emisSecC(imax,jmax,nsectors,MAXNLAND))!NB: very large array
   allocate(fractions(imax,jmax,NCMAX))
@@ -89,10 +103,11 @@ program rwemis
   do itime = 1, ntime
      do ispec = 1, nspecies
         emisSecC=0.0
+        speciessum=0.0
         do isec = 1, nsectors
            !3) read data and country fractions
            write(varname,"(A,I2.2)")trim(speciesnames(ispec))//'_sec',isec
-           write(*,*)'Reading ',trim(varname)
+!           write(*,*)'Reading ',trim(varname)
            call readCDF(ncFileID, 'fractions_'//varname, fractions, size*NCMAX, itime, found)
            cdfemis=0.0
            call readCDF(ncFileID, varname, cdfemis, size, itime, found)
@@ -102,9 +117,7 @@ program rwemis
                  do ic=1,nint(nlandcode(i,j))
                     call find_index(nint(landcode(i,j,ic)),Countryicode, MAXNLAND, ix)
                     emisSecC(i,j,isec,ix)=emisSecC(i,j,isec,ix) + cdfemis(i,j)*fractions(i,j,ic)
-                    if(i==497.and.j==108.and.isec==3)then
-                       write(*,*)ic,ix,cdfemis(i,j),fractions(i,j,ic),emisSecC(i,j,isec,ix)
-                    endif
+                    speciessum(i,j)=speciessum(i,j) + cdfemis(i,j)*fractions(i,j,ic)
                  end do
               end do
            end do
@@ -116,6 +129,9 @@ program rwemis
            write(varname,"(A)")trim(country(ic)%code)
            call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), emisSecC(1,1,1,ic), imax,jmax,nsectors, itime)
         end do
+        !4b) write totals for all countries and sectors
+        varname=''
+        call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), speciessum, imax,jmax,0, itime)
      end do
   end do
   call check(nf90_close(ncFileID))
@@ -234,14 +250,29 @@ subroutine createNetCDF(filename,imax,jmax,nsectors,projection,periodicity,SECTO
 
 end subroutine createNetCDF
 
+
+subroutine find_index(wanted, list, lsize, Index)
+  integer, intent(in) :: wanted
+  integer, dimension(1:lsize), intent(in) :: list
+  integer ::   n
+  Index = -1
+  do n = 1, lsize
+     if (wanted == list(n)) then
+        Index = n
+        exit
+     end if
+  end do
+end subroutine find_index
+  
 subroutine  createnewsectorvariable(ncFileID,varname,speciesname,countrycode,units)
   use netcdf
+  use Country_mod
   implicit none
   integer ,intent(in) ::ncFileID
   character (len = *),intent(in) ::varname,speciesname,countrycode, units
   integer :: idimID, jdimID,secdimID,timeDimID,varID,xtype,ndims
   character*100 ::name
-  integer :: imax, jmax, nsectors
+  integer :: imax, jmax, nsectors, ix
   
   call check(nf90_redef(ncid = ncFileID))
   call check(nf90_inq_dimid(ncFileID,"lon"  ,idimID),"dim:lon")
@@ -262,11 +293,68 @@ subroutine  createnewsectorvariable(ncFileID,varname,speciesname,countrycode,uni
   
   call check(nf90_put_att(ncFileID, varID, "units", units))
   call check(nf90_put_att(ncFileID, varID, "species", trim(speciesname)))
+  if(trim(speciesname)=='nox')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 46.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else  if(trim(speciesname)=='sox')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 64.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else   if(trim(speciesname)=='nh3')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 17.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else   if(trim(speciesname)=='co')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 28.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  end if
   call check(nf90_put_att(ncFileID, varID, "country_ISO", trim(countrycode)))
+  call find_index( trim(countrycode),Country(:)%code, MAXNLAND, ix)
+  call check(nf90_put_att(ncFileID, varID, "countrycode", Country(ix)%icode))
 
   call check(nf90_enddef(ncid = ncFileID))
   
 end subroutine createnewsectorvariable
+subroutine  createnewvariable(ncFileID,varname,units)
+  use netcdf
+  implicit none
+  integer ,intent(in) ::ncFileID
+  character (len = *),intent(in) ::varname, units
+  integer :: idimID, jdimID,timeDimID,varID,xtype,ndims
+  character*100 ::name
+  integer :: imax, jmax
+  
+  call check(nf90_redef(ncid = ncFileID))
+  call check(nf90_inq_dimid(ncFileID,"lon"  ,idimID),"dim:lon")
+  call check(nf90_inq_dimid(ncFileID,"lat"  ,jdimID),"dim:lat")
+  call check(nf90_inq_dimid(ncFileID,"time"  ,timedimID),"dim:time")
+
+  call check(nf90_inquire_dimension(ncFileID,idimID,len=imax))
+  call check(nf90_inquire_dimension(ncFileID,jdimID,len=jmax))
+  call check(nf90_def_var(ncFileID,varname,nf90_float,&
+             [iDimID,jDimID,timeDimID],varID),"defvar:"//trim(varname))
+!define variable as to be compressed
+  call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
+       deflate_level=4),"compress:"//trim(varname))
+  call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
+       (/min(IMAX,100),min(JMAX,100),1/)),"chunk2D:"//trim(varname))
+  
+  call check(nf90_put_att(ncFileID, varID, "units", units))
+  if(trim(varname)=='nox')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 46.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else  if(trim(varname)=='sox')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 64.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else   if(trim(varname)=='nh3')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 17.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  else   if(trim(varname)=='co')then
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight", 28.0))
+    call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
+  end if
+
+  call check(nf90_enddef(ncid = ncFileID))
+  
+end subroutine createnewvariable
 
 subroutine readCDF(ncFileID, varname, Rvar, size, itime, found)
   use netcdf
@@ -320,7 +408,11 @@ subroutine ReadMetadata(ncFileID, imax, jmax, ntime, nspecies, lonstart, dlon, l
   integer :: ndims, nVariables, nAttributes, unlimitedDimId
   real :: rvar(2)
   
-  call check(nf90_get_att(ncFileID, nf90_global, "SECTORS_NAME", SECTORS_NAME ))
+  status = nf90_get_att(ncFileID, nf90_global, "SECTORS_NAME", SECTORS_NAME )
+  if(status /= nf90_noerr) then     
+    write(*,*)'Did not find global attribute SECTORS_NAME. Assuming GNFR'
+    SECTORS_NAME='GNFR'
+  end if
   call check(nf90_get_att(ncFileID, nf90_global, "projection", projection))
   if(trim(projection) /= 'lon lat')then
      write(*,*)'Sorry, can only handle lon lat projection!'
@@ -376,40 +468,42 @@ subroutine writeCDFsector(ncFileID, speciesname, countrycode, Rvar, imax, jmax,n
   integer :: i,j,xtype, ndims,varID,dimids(NF90_MAX_VAR_DIMS),nAtts,status
   character*100 ::name,varname,units
   integer :: startvec(NF90_MAX_VAR_DIMS),count(NF90_MAX_VAR_DIMS)
-  write(varname,"(A)")trim(speciesname)//'_'//trim(countrycode)
-
+  if(nsectors>0)then
+     write(varname,"(A)")trim(speciesname)//'_'//trim(countrycode)
+  else
+     write(varname,"(A)")trim(speciesname)
+  end if
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status /= nf90_noerr) then     
      !make new variable
      units = 'tonnes/year'
-     call createnewsectorvariable(ncFileID,varname,speciesname,countrycode,units)     
+     if(nsectors>0)then
+        call createnewsectorvariable(ncFileID,varname,speciesname,countrycode,units)            
+     else
+        call createnewvariable(ncFileID,varname,units)
+     end if
   endif
-  write(*,*)'writing ',trim(varname)
+  !write(*,*)'writing ',trim(varname)
   call check(nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID))
-  startvec=1
-  startvec(4)=itime
-  count=0
-  count(1)=imax
-  count(2)=jmax
-  count(3)=nsectors
-  count(4)=1
+  if (nsectors>0) then
+     startvec=1
+     startvec(4)=itime
+     count=0
+     count(1)=imax
+     count(2)=jmax
+     count(3)=nsectors
+     count(4)=1
+  else
+     startvec=1
+     startvec(3)=itime
+     count=0
+     count(1)=imax
+     count(2)=jmax
+     count(3)=1
+  end if
   call check(nf90_put_var(ncFileID, VarID, Rvar,start=startvec,count=count) )
   call check(nf90_inq_varid(ncid = ncFileID, name = 'time', varID = VarID))
   call check(nf90_put_var(ncFileID, VarID, [itime],start=[itime],count=[1]) )!overwrite even if already defined for simplicity
 
-end subroutine 
-
-subroutine find_index(wanted, list, lsize, Index)
-  integer, intent(in) :: wanted
-  integer, dimension(1:lsize), intent(in) :: list
-  integer ::   n
-  Index = -1
-  do n = 1, lsize
-     if (wanted == list(n)) then
-        Index = n
-        exit
-     end if
-  end do
-  
-end subroutine find_index
+end subroutine writeCDFsector
