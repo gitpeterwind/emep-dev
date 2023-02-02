@@ -4,9 +4,21 @@
 ! Used to simulate satellite retrievals from model.
 !
 ! HISTORY
+!
 !   2021-09, Arjo Segers
 !     Extracted content from 3D-var analysis codes to allow
 !     simulation from standard model.
+!
+!   2022-11, Arjo Segers
+!     Support output of boundary layer heights.
+!
+!   2023-01, Arjo Segers
+!     Support simulation of surface observations.
+!     Added grid mapping for point locations,
+!     this is used if corner locations are not available.
+!     Introduced ObsCompInfo type to accumulate tracer (for total PM)
+!     and apply unit conversions.
+!
 !
 !*****************************************************************************!
 !
@@ -83,13 +95,46 @@ module EMEP_CSO_mod
     real, pointer             ::  all_area(:)  ! (npix)
     !
   contains
-    procedure ::  Init         =>  EMEP_GridMapping_Init
-    procedure ::  Done         =>  EMEP_GridMapping_Done
-    procedure ::                   EMEP_GridMapping_GetWeights_0d
-    procedure ::                   EMEP_GridMapping_GetWeights_1d
-    generic   ::  GetWeights   =>  EMEP_GridMapping_GetWeights_0d, &
-                                   EMEP_GridMapping_GetWeights_1d
+    procedure ::  Init            =>  EMEP_GridMapping_Init
+    procedure ::  Done            =>  EMEP_GridMapping_Done
+    procedure ::                      EMEP_GridMapping_GetWeights_0d
+    procedure ::                      EMEP_GridMapping_GetWeights_1d
+    generic   ::  GetWeights      =>  EMEP_GridMapping_GetWeights_0d, &
+                                      EMEP_GridMapping_GetWeights_1d
+    procedure ::                      EMEP_GridMapping_GetWeightsCell_0d
+    procedure ::                      EMEP_GridMapping_GetWeightsCell_1d
+    generic   ::  GetWeightsCell  =>  EMEP_GridMapping_GetWeightsCell_0d, &
+                                      EMEP_GridMapping_GetWeightsCell_1d
   end type T_EMEP_GridMapping
+
+  ! *
+
+  ! observed component is linear combination of advected species:
+  type T_ObsCompInfo
+    ! component name and units:
+    character(len=32)                ::  name
+    character(len=32)                ::  units
+    ! number of model species:
+    integer                          ::  nspec
+    ! indices of model advected species:
+    integer, allocatable             ::  ispec(:)     ! (nspec)
+    ! weights in sum:
+    real, allocatable                ::  w(:)         ! (nspec)
+    ! unit conversion:
+    real, allocatable                ::  unitconv(:)  ! (nspec)
+    logical, allocatable             ::  unitroa(:)
+    ! add coarse NO3 aerosol fraction (assigned to PM25) ?
+    logical                          ::  with_no3c_frac
+    ! add aerosol water?
+    logical                          ::  with_pmwater
+    !
+  contains
+    procedure :: Init                         => ObsCompInfo_Init
+    procedure :: Done                         => ObsCompInfo_Done
+    procedure :: Show                         => ObsCompInfo_Show
+    procedure :: Fill_ML                      => ObsCompInfo_Fill_ML
+    procedure :: Fill_SFC                     => ObsCompInfo_Fill_SFC
+  end type T_ObsCompInfo  
 
 
   ! --- var -------------------------------------------
@@ -376,12 +421,8 @@ contains
     use Par_mod               , only : gi0, gj0
     use GridValues_mod        , only : coord_in_domain
     use ChemFields_mod        , only : xn_adv           ! (NSPEC_ADV,LIMAX,LJMAX,KMAX_MID)
-    use ChemSpecs_mod         , only : species_adv
-    use SmallUtils_mod        , only : find_index
-    use Units_mod             , only : Units_Scale
     use GridValues_mod        , only : A_bnd, B_bnd
     use MetFields_mod         , only : ps       ! (nx,ny,1) surface pressure [Pa]
-    use MetFields_mod         , only : roa      ! (nx,ny,nz,1) air density
     use MetFields_mod         , only : z_bnd    ! (nx,ny,1:nz+1) gph bounds relative to surface [m]
     use MetFields_mod         , only : pzpbl    ! (nx,ny) boundary layer height [m]
 
@@ -450,10 +491,11 @@ contains
     character(len=64), allocatable    ::  uvarnames(:)  ! (nuvar)
     character(len=64), allocatable    ::  uvarunits(:)  ! (nuvar)
     
-    ! conversion:
-    integer                           ::  ispec
-    real                              ::  fscale
-    logical                           ::  needroa
+    ! concentrations:
+    type(T_ObsCompInfo)               ::  ObsCompInfo
+    integer                           ::  lnx, lny
+    real, allocatable                 ::  xn_obs_sfc(:,:)   ! (lnx,lny)
+    real, allocatable                 ::  xn_obs_ml(:,:,:)  ! (lnx,lny,KMAX_MID)
 
     ! target file:
     character(len=1024)               ::  cso_output_filename
@@ -647,22 +689,36 @@ contains
           if ( npix > 0 ) then
 
             ! pointers to (*,pixel) arrays:
-            ! - footprint centers  (not used, for inspiration ..)
-            ! - footprint corners
-            ! - half level pressure profiles
+            ! - footprint centers
+            ! - footprint corners (could be null)
             call cso_sdata(icso)%Get( status, lons=lons, lats=lats, clons=clons, clats=clats )
             IF_NOT_OK_RETURN(status=1)
 
             ! info ...
             write (gol,'(a,": compute mapping weights ...")') rname; call goPr
-            ! get pointers to mapping arrays for all pixels:
-            ! - areas(1:npix)            : pixel area [m2]
-            ! - iw0(1:npix), nw(1:npix)  : offset and number of elements in ii/jj/ww
-            ! - ii(:), jj(:), ww(:)      : cell and weight arrays for mapping to footprint,
-            call emep_grid_mapping%GetWeights( clons, clats, &
-                                                areas, iw0, nw, ii, jj, ww, status )
-            IF_NOT_OK_RETURN(status=1)
-
+            ! use footprints if possible ..
+            if ( associated(clons) .or. associated(clats) ) then
+              ! check ..
+              if ( .not. (associated(clons) .and. associated(clats)) ) then
+                write (gol,'("either none or both of `clons` and `clats` should be associated ...")'); call goErr
+                TRACEBACK; status=1; return
+              end if
+              ! get pointers to mapping arrays for all pixels:
+              ! - areas(1:npix)            : pixel area [m2]
+              ! - iw0(1:npix), nw(1:npix)  : offset and number of elements in ii/jj/ww
+              ! - ii(:), jj(:), ww(:)      : cell and weight arrays for mapping to footprint,
+              call emep_grid_mapping%GetWeights( clons, clats, &
+                                                  areas, iw0, nw, ii, jj, ww, status )
+              IF_NOT_OK_RETURN(status=1)
+            else
+              ! get pointers to mapping arrays for all pixels:
+              ! - areas(1:npix)            : pixel area [m2], here dummy value of 1.0
+              ! - iw0(1:npix), nw(1:npix)  : offset and number of elements in ii/jj/ww
+              ! - ii(:), jj(:), ww(:)      : cell and weight arrays for mapping to footprint,
+              call emep_grid_mapping%GetWeightsCell( lons, lats, &
+                                                       areas, iw0, nw, ii, jj, ww, status )
+            end if ! corners or centers only
+              
             ! info ...
             write (gol,'(a,":   store ...")') rname; call goPr
             ! store mapping weights, might be saved to check,
@@ -697,19 +753,29 @@ contains
                 ! switch:
                 select case ( trim(uvarnames(iuvar)) )
   
-                  !~ model concentrations
+                  !~ model concentration profiles:
                   case ( 'mod_conc', 'mod_conc_an' )
                   
                     ! info ...
                     write (gol,'(a,":   simulate concentrations [",a,"] from tracer `",a,"` ...")') &
                             rname, trim(uvarunits(iuvar)), trim(cso_tracer(icso)); call goPr
-  
-                    ! find index of tracer:
-                    ispec = find_index( cso_tracer(icso), species_adv(:)%name )
-  
-                    ! conversion factor, multipication with air density?
-                    call Units_Scale( uvarunits(iuvar), ispec, fscale, &
-                                             needroa=needroa, debug_msg=TRACELINE )
+                    
+                    ! initialize tracer sum, conversion factors, etc:
+                    call ObsCompInfo%Init( cso_tracer(icso), uvarunits(iuvar), status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! testing ..
+                    call ObsCompInfo%Show( status )
+                    IF_NOT_OK_RETURN(status=1)
+                    
+                    ! dims:
+                    lnx = size(xn_adv,2)
+                    lny = size(xn_adv,3)
+                    ! storage for simulated fields:
+                    allocate( xn_obs_ml(lnx,lny,KMAX_MID), stat=status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! fill observed concentrations:
+                    call ObsCompInfo%Fill_ML( xn_obs_ml, status )
+                    IF_NOT_OK_RETURN(status=1)
   
                     ! get pointer to target array with shape (nlev+1,npix):
                     call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data1=data1 )
@@ -722,20 +788,67 @@ contains
                         data1(:,ipix) = 0.0
                         ! loop over source contributions:
                         do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
-                          ! convert concentrations using air density?
-                          if ( needroa ) then
-                            data1(2:KMAX_MID+1,ipix) = data1(2:KMAX_MID+1,ipix) &
-                                                     + xn_adv(ispec,ii(iw),jj(iw),:) &
-                                                         * roa(ii(iw),jj(iw),:,1) &
-                                                         * fscale * ww(iw)/areas(ipix)
-                          else
-                            data1(2:KMAX_MID+1,ipix) = data1(2:KMAX_MID+1,ipix) &
-                                                     + xn_adv(ispec,ii(iw),jj(iw),:) &
-                                                         * fscale * ww(iw)/areas(ipix)
-                          end if ! need roa
+                          ! add fraction:
+                          data1(2:KMAX_MID+1,ipix) = data1(2:KMAX_MID+1,ipix) &
+                                                     + xn_obs_ml(ii(iw),jj(iw),:) * ww(iw)/areas(ipix)
                         end do ! iw
                       end if ! nw > 0
                     end do ! ipix
+                    
+                    ! clear:
+                    deallocate( xn_obs_ml, stat=status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! clear:
+                    call ObsCompInfo%Done( status )
+                    IF_NOT_OK_RETURN(status=1)
+  
+                  !~ model surface concentrations:
+                  case ( 'sfc_conc' )
+                  
+                    ! info ...
+                    write (gol,'(a,":   simulate surface concentrations [",a,"] from tracer `",a,"` ...")') &
+                            rname, trim(uvarunits(iuvar)), trim(cso_tracer(icso)); call goPr
+                    
+                    ! initialize tracer sum, conversion factors, etc:
+                    call ObsCompInfo%Init( cso_tracer(icso), uvarunits(iuvar), status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! testing ..
+                    call ObsCompInfo%Show( status )
+                    IF_NOT_OK_RETURN(status=1)
+                    
+                    ! dims:
+                    lnx = size(xn_adv,2)
+                    lny = size(xn_adv,3)
+                    ! storage for simulated fields:
+                    allocate( xn_obs_sfc(lnx,lny), stat=status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! fill observed concentrations:
+                    call ObsCompInfo%Fill_SFC( xn_obs_sfc, status )
+                    IF_NOT_OK_RETURN(status=1)
+  
+                    ! get pointer to target array with shape (npix):
+                    call cso_sstate(icso)%GetData( status, name=uvarnames(iuvar), data0=data0 )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! loop over pixels:
+                    do ipix = 1, npix
+                      ! any source contributions?
+                      if ( nw(ipix) > 0 ) then
+                        ! init sum, strato in 1 (top down order!) will remain zero:
+                        data0(ipix) = 0.0
+                        ! loop over source contributions:
+                        do iw = iw0(ipix)+1, iw0(ipix)+nw(ipix)
+                          ! add contribution:
+                          data0(ipix) = data0(ipix) + xn_obs_sfc(ii(iw),jj(iw)) * ww(iw)/areas(ipix)
+                        end do ! iw
+                      end if ! nw > 0
+                    end do ! ipix
+                    
+                    ! clear:
+                    deallocate( xn_obs_sfc, stat=status )
+                    IF_NOT_OK_RETURN(status=1)
+                    ! clear:
+                    call ObsCompInfo%Done( status )
+                    IF_NOT_OK_RETURN(status=1)
   
                   !~ model half-level pressures:
                   case ( 'mod_hp' )
@@ -1141,6 +1254,7 @@ contains
     integer                 ::  i1, i2, j1, j2
     integer                 ::  ip
     logical                 ::  inside
+    real                    ::  x2, y2
     integer                 ::  i, j
     integer                 ::  k
     integer                 ::  np
@@ -1178,8 +1292,11 @@ contains
       !i = ceiling( (self%xxp(ip)-self%west )/self%dlon ) - self%ilon0
       !j = ceiling( (self%yyp(ip)-self%south)/self%dlat ) - self%ilat0
       ! test if location is in local domain, also return indices (if defined),
-      ! do not adjust to prefered domain since this gives problems at date-line:
-      inside = coord_in_domain( 'local', self%xxp(ip), self%yyp(ip), &
+      ! do not adjust to prefered domain since this gives problems at date-line
+      ! because intent of x and y are out we need a local copy anyway:
+      x2 = self%xxp(ip)
+      y2 = self%yyp(ip)
+      inside = coord_in_domain( 'local', x2, y2, &
                                   iloc=i, jloc=j, fix=.false. )
       ! in local domain?
       if ( inside ) then
@@ -1351,6 +1468,572 @@ contains
     status = 0
     
   end subroutine EMEP_GridMapping_GetWeights_1d
+  
+  !
+  ! ***
+  !
+  
+  !
+  ! Assign points (x,y) to grid cell (i,j).
+  ! The interpolation weight w is set to 1.0.
+  ! The area is for footprints used to normalize,
+  ! here set to 1.0 to avoid division by zero.
+  !
+  
+  subroutine EMEP_GridMapping_GetWeightsCell_0d( self, x, y, area, i, j, w, status )
+  
+    use GridValues_mod      , only : coord_in_domain
+
+    ! --- in/out ---------------------------------
+    
+    class(T_EMEP_GridMapping), intent(inout)  ::  self
+    real, intent(in)                          ::  x, y          ! [degree]
+    real, intent(out)                         ::  area
+    integer, intent(out)                      ::  i, j
+    real , intent(out)                        ::  w
+    integer, intent(out)                      ::  status
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/EMEP_GridMapping_GetWeightsCell_0d'
+    
+    ! --- local ----------------------------------
+
+    logical                 ::  inside
+    real                    ::  x2, y2
+    
+    ! --- begin ----------------------------------
+
+    ! test if location is in local domain, also return indices (if defined);
+    ! do not adjust to prefered domain since this gives problems at date-line,
+    ! because intent of x and y are out we need a local copy anyway:
+    x2 = x
+    y2 = y
+    inside = coord_in_domain( 'local', x2, y2, iloc=i, jloc=j, fix=.false. )
+    ! in local domain?
+    if ( inside ) then
+      ! full weight:
+      w = 1.0
+    else
+      ! outside map, no weight:
+      w = 0.0
+    end if
+    
+    ! dummy "pixel" area; used for normization with weights, so set to unity:
+    area = 1.0
+
+    ! ok
+    status = 0
+    
+  end subroutine EMEP_GridMapping_GetWeightsCell_0d
+
+  ! *
+  
+  !
+  ! Array of pixel centers, select corresponding cell.
+  ! Input:
+  !   x, y       : pixel centers
+  ! Ouptut:
+  !   area       : pixel area (here 1.0, corners are unknown)
+  !   iw0, nw    : per pixel the offset and number of elements in ii/jj/ww arrays ;
+  !                here nw==1 for all pixels
+  !   ii, jj     : source cell indices
+  !   ww         : source cell weights (here always 1.0)
+  !
+  
+  subroutine EMEP_GridMapping_GetWeightsCell_1d( self, x, y, &
+                                              area, iw0, nw, ii, jj, ww, status )
+
+    use CSO_PArray, only : CSO_PArray_Reshape
+
+    ! --- in/out ---------------------------------
+    
+    class(T_EMEP_GridMapping), intent(inout)  ::  self
+    real, intent(in)                          ::  x(:), y(:)        ! (npix) [degree]
+    real, pointer                             ::  area(:)           ! (npix) [m2]
+    integer, pointer                          ::  iw0(:)            ! (npix)
+    integer, pointer                          ::  nw(:)             ! (npix)
+    integer, pointer                          ::  ii(:), jj(:)      ! (nw)
+    real, pointer                             ::  ww(:)             ! (nw) [m2]
+    integer, intent(out)                      ::  status
+
+    ! --- const ----------------------------------
+    
+    character(len=*), parameter   :: rname = mname//'/EMEP_GridMapping_GetWeightsCell_1d'
+    
+    ! --- local ----------------------------------
+    
+    integer                   ::  npix
+    integer                   ::  ipix
+    real                      ::  pix_area
+    integer                   ::  pix_i, pix_j
+    real                      ::  pix_w
+    integer                   ::  pix_nw
+    integer                   ::  nnew
+
+    ! --- begin ----------------------------------
+
+    ! number of pixels:
+    npix = size(x)
+    ! check ...
+    if ( size(y) /= npix ) then
+      write (gol,'("arrays x (",i0,") and y (",i0,") should have same shape")') &
+                size(x), size(y); call goErr
+      TRACEBACK; status=1; return
+    end if
+    
+    ! storage for pixel area; check current storage:
+    call CSO_PArray_Reshape( self%all_area, npix, status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_PArray_Reshape( self%all_iw0 , npix, status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_PArray_Reshape( self%all_nw  , npix, status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! reset counter:
+    self%nall = 0
+    self%all_nw = 0
+    
+    ! loop over pixels:
+    do ipix = 1, npix
+
+      ! pixel mapping weights:
+      call self%GetWeightsCell( x(ipix), y(ipix), &
+                                   pix_area, pix_i, pix_j, pix_w, status )
+      if ( status /= 0 ) then
+        write (gol,'("could not compute mapping weights for pixel ",i0)') ipix; call goErr
+        write (gol,*) '  xx = ', x(ipix); call goErr
+        write (gol,*) '  yy = ', y(ipix); call goErr
+        TRACEBACK; status=ipix; return
+      end if
+      ! single source cell:
+      pix_nw = 1
+
+      ! store pixel area:
+      self%all_area(ipix) = pix_area
+
+      ! offset and number of overlapping cells (might be 0 ...):
+      self%all_iw0 (ipix) = self%nall
+      self%all_nw  (ipix) = pix_nw
+
+      ! any overlap? some pixels might not overlap with domain ...
+      if ( pix_nw > 0 ) then
+        ! exceeds maximum storage?
+        if ( self%nall + pix_nw > self%mxall ) then
+          ! new size, extend with 1 value extra per cell until it fits ...
+          do
+            self%mxall = self%mxall + self%nlon*self%nlat
+            if ( self%nall + pix_nw <= self%mxall ) exit
+          end do
+          ! extend arrays, copy current:
+          call CSO_PArray_Reshape( self%all_ii , self%mxall, status )
+          IF_NOT_OK_RETURN(status=1)
+          call CSO_PArray_Reshape( self%all_jj , self%mxall, status )
+          IF_NOT_OK_RETURN(status=1)
+          call CSO_PArray_Reshape( self%all_ww , self%mxall, status )
+          IF_NOT_OK_RETURN(status=1)
+        end if
+        ! store pixel mapping:
+        self%all_ii  (self%nall+1:self%nall+pix_nw) = pix_i
+        self%all_jj  (self%nall+1:self%nall+pix_nw) = pix_j
+        self%all_ww  (self%nall+1:self%nall+pix_nw) = pix_w
+        ! increase counter:
+        self%nall = self%nall + pix_nw
+      end if ! nw > 0
+      
+    end do ! ipix
+    
+    ! truncate to length that is actually used:
+    call CSO_PArray_Reshape( self%all_ii , self%nall, status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_PArray_Reshape( self%all_jj , self%nall, status )
+    IF_NOT_OK_RETURN(status=1)
+    call CSO_PArray_Reshape( self%all_ww , self%nall, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! reset maximum size:
+    self%mxall = self%nall
+
+    ! set pointers:
+    area => self%all_area
+    iw0  => self%all_iw0
+    nw   => self%all_nw
+    ii   => self%all_ii
+    jj   => self%all_jj
+    ww   => self%all_ww
+    
+    ! ok
+    status = 0
+    
+  end subroutine EMEP_GridMapping_GetWeightsCell_1d
+
+
+  !=========================================================================
+  !===
+  !=== observed components
+  !===
+  !=========================================================================
+
+  
+  subroutine ObsCompInfo_Init( self, name, units, status )
+  
+    use ChemGroups_mod  , only : PMFINE_GROUP, PM10_GROUP
+    use ChemDims_mod    , only : NSPEC_SHL  ! number of short-lived tracers, offseet to PM groups
+    use ChemSpecs_mod   , only : species_adv
+    use SmallUtils_mod  , only : find_index
+    use Units_mod       , only : Units_Scale
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(out)       ::  self
+    character(len=*), intent(in)            ::  name
+    character(len=*), intent(in)            ::  units
+    integer, intent(out)                    ::  status
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_Init'
+    
+    ! --- local -----------------------------
+    
+    integer         ::  ispec
+    integer         ::  i
+    
+    ! --- begin -----------------------------
+    
+    ! store name:
+    self%name  = trim(name)
+    self%units = trim(units)
+    
+    ! defaults:
+    self%with_pmwater   = .false.
+    self%with_no3c_frac = .false.
+    
+    ! switch:
+    select case ( trim(self%name) )
+    
+      ! total aerosol, fine part:
+      case ( 'pm25', 'PM25' )
+    
+        ! add aerosol water:
+        self%with_pmwater = .true.
+        ! include fraction of coarse nitrate aerosol too ...
+        self%with_no3c_frac = .true.
+
+        ! number, one extra for coarse nitrate part:
+        self%nspec = size(PMFINE_GROUP) + 1
+    
+        ! storage for indices:
+        allocate( self%ispec(self%nspec), source=-999, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        ! storage for weight in accumulation:
+        allocate( self%w(self%nspec), source=1.0, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! use group defined in 'CM_ChemGroups_mod',
+        ! for index in xn_adv remove the offset for short-lived species;
+        self%ispec(1:self%nspec-1) = PMFINE_GROUP - NSPEC_SHL
+
+        ! find index of coarse nitrate:
+        ispec = find_index( 'NO3_C', species_adv(:)%name, any_case=.true.)
+        ! check ..
+        if ( ispec <= 0 ) then
+          write (gol,'("could not find index for `NO3_c`")'); call goErr
+          TRACEBACK; status=1; return
+        end if
+        ! store index:
+        self%ispec(self%nspec) = ispec
+        ! add 27% of weight:
+        self%w(self%nspec) = 0.27
+    
+      ! total aerosol, coarse part:
+      case ( 'pm10', 'PM10' )
+    
+        ! add aerosol water:
+        self%with_pmwater = .true.
+
+        ! number:
+        self%nspec = size(PMFINE_GROUP)
+    
+        ! storage for indices:
+        allocate( self%ispec(self%nspec), source=-999, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        ! storage for weight in accumulation:
+        allocate( self%w(self%nspec), source=1.0, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+
+        ! use group defined in 'CM_ChemGroups_mod',
+        ! for index in xn_adv remove the offset for short-lived species;
+        self%ispec = PM10_GROUP - NSPEC_SHL
+        
+      ! single tracer:
+      case default
+
+        ! number:
+        self%nspec = 1
+    
+        ! storage for indices:
+        allocate( self%ispec(self%nspec), source=-999, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        ! storage for weight in accumulation:
+        allocate( self%w(self%nspec), source=1.0, stat=status )
+        IF_NOT_OK_RETURN(status=1)
+        
+        ! find index:
+        ispec = find_index( name, species_adv(:)%name, any_case=.true.)
+        ! check ..
+        if ( ispec <= 0 ) then
+          write (gol,'("could not find index for `",a,"`")') trim(name); call goErr
+          TRACEBACK; status=1; return
+        end if
+        ! store:
+        self%ispec(1) = ispec
+        
+    end select
+
+    ! storage for unit conversion factor:
+    allocate( self%unitconv(self%nspec), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! storage for air density flag:
+    allocate( self%unitroa(self%nspec), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! loop over input species:
+    do i = 1, self%nspec
+      ! obtain unit conv factor to convert from ispec units to "units":
+      call Units_Scale( units, self%ispec(i), &
+                         self%unitconv(i), needroa=self%unitroa(i), debug_msg=TRACELINE )
+    end do ! specs
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_Init
+
+
+  ! ***
+  
+  
+  subroutine ObsCompInfo_Done( self, status )
+  
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(inout)   ::  self
+    integer, intent(out)                  ::  status
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_Done'
+    
+    ! --- local -----------------------------
+    
+    ! --- begin -----------------------------
+    
+    ! clear:
+    deallocate( self%ispec, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( self%w, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( self%unitconv, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( self%unitroa, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_Done
+
+
+  ! ***
+
+      
+  subroutine ObsCompInfo_Show( self, status )
+
+    use ChemSpecs_mod, only : species_adv
+  
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    integer, intent(out)                  ::  status
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_Show'
+    
+    ! --- local -----------------------------
+    
+    integer               ::  i
+    integer               ::  ispec
+    character(len=6)      ::  rholab
+    
+    ! --- begin -----------------------------
+    
+    ! intro ...
+    write (gol,'(a,": observed component : ",a)') rname, trim(self%name); call goPr
+    write (gol,'(a,":   units            : ",a)') rname, trim(self%units); call goPr
+    write (gol,'(a,":   source species   : ",i0)') rname, self%nspec; call goPr
+    ! loop:
+    do i = 1, self%nspec
+      ! tracer index in concentration array:
+      ispec = self%ispec(i)
+      ! multiply with density?
+      rholab = '      '
+      if ( self%unitroa(i) ) rholab = ' * rho'
+      ! show:
+      write (gol,'(a,":   ",i3," ",a20," * ",es12.4,a," * ",f8.2)') rname, &
+               ispec, trim(species_adv(ispec)%name), self%unitconv(i), rholab, self%w(i); call goPr
+    end do
+    ! aerosol water?
+    if ( self%with_pmwater ) then
+      ! dummy:
+      ispec = -99
+      rholab = '      '
+      ! extra line:
+      write (gol,'(a,":   ",i3," ",a20,"               ",a," * ",f8.2)') rname, &
+               ispec, 'PM25_water', rholab, 1.0; call goPr
+    end if
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_Show
+
+
+  ! ***
+  
+  !
+  ! Simulate observed component from model species in "xn_adv"
+  ! and return this in arguments:
+  !   xn_obs_sfc   : sfc field (or 2D field of columns)
+  !   xn_obs_ml    : model level field
+  !   xn_obs_units
+  !
+  
+  subroutine ObsCompInfo_Fill_ML( self, xn_obs_ml, status )
+  
+    use ChemFields_mod, only : xn_adv    ! (nspec_adv,lnx,lny,nlev)
+    use Chemfields_mod, only : PM25_water
+    use MetFields_mod , only : roa
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(out)                     ::  xn_obs_ml(:,:,:)   ! (lnx,lny,nlev)
+    integer, intent(out)                  ::  status
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_Fill_ML'
+    
+    ! --- local -----------------------------
+    
+    integer             ::  i
+    integer             ::  ispec
+    
+    ! --- begin -----------------------------
+    
+    ! init sum for surface field:
+    xn_obs_ml  = 0.0
+    ! loop:
+    do i = 1, self%nspec
+      ! current:
+      ispec = self%ispec(i)
+      ! include density conversion for this tracer?
+      if ( self%unitroa(i) ) then
+        ! add weighted contribution:
+        xn_obs_ml  = xn_obs_ml  + self%w(i) * xn_adv(ispec,:,:,:) &
+                                            * self%unitconv(i)    &  ! unit conversion
+                                            * roa(:,:,:,1)           ! air density
+      else
+        ! add weighted contribution:
+        xn_obs_ml  = xn_obs_ml  + self%w(i) * xn_adv(ispec,:,:,:) &
+                                            * self%unitconv(i)       ! unit conversion
+      end if  ! density conversion
+    end do  ! specs
+
+    ! add water?
+    if ( self%with_pmwater ) then
+      ! check ..
+      if ( self%units /= 'ug/m3' ) then
+        write (gol,'("unexpected target units `",a,"` for adding pm water")') trim(self%units); call goErr
+        TRACEBACK; status=1; return
+      end if
+      ! add:
+      xn_obs_ml  = xn_obs_ml  + PM25_water
+    endif
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_Fill_ML
+  
+  ! *
+  
+  subroutine ObsCompInfo_Fill_SFC( self, xn_obs_sfc, status )
+  
+    use ChemFields_mod, only : xn_adv    ! (nspec_adv,lnx,lny,nlev)
+    use ChemFields_mod, only : cfac
+    use Chemfields_mod, only : PM25_water_rh50
+    use MetFields_mod , only : roa
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(out)                     ::  xn_obs_sfc(:,:)    ! (lnx,lny)
+    integer, intent(out)                  ::  status
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_Fill_SFC'
+    
+    ! --- local -----------------------------
+    
+    integer             ::  i
+    integer             ::  ispec
+    integer             ::  k
+    
+    ! --- begin -----------------------------
+    
+    ! init sum for surface field:
+    xn_obs_sfc = 0.0
+    ! loop:
+    do i = 1, self%nspec
+      ! current:
+      ispec = self%ispec(i)
+      ! include density conversion for this tracer?
+      if ( self%unitroa(i) ) then
+        ! take surface concentrations from bottom layer, scale with "cfac":
+        k = size(xn_adv,4)
+        ! add weighted contribution:
+        xn_obs_sfc = xn_obs_sfc + self%w(i) * xn_adv(ispec,:,:,k) &
+                                            * self%unitconv(i)    &  ! unit conversion
+                                            * roa(:,:,k,1)        &  ! air density
+                                            * cfac(ispec,:,:)        ! 50 m -> 3 m
+      else
+        ! surface from bottom layer:
+        k = size(xn_adv,4)
+        ! add weighted contribution:
+        xn_obs_sfc = xn_obs_sfc + self%w(i) * xn_adv(ispec,:,:,k) &
+                                            * self%unitconv(i)    &  ! unit conversion
+                                            * cfac(ispec,:,:)        ! 50 m -> 3 m
+      end if  ! density conversion
+    end do  ! specs
+
+    ! add water?
+    if ( self%with_pmwater ) then
+      ! check ..
+      if ( self%units /= 'ug/m3' ) then
+        write (gol,'("unexpected target units `",a,"` for adding pm water")') trim(self%units); call goErr
+        TRACEBACK; status=1; return
+      end if
+      ! add:
+      xn_obs_sfc = xn_obs_sfc + PM25_water_rh50
+    endif
+    
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_Fill_SFC
 
 
 end module EMEP_CSO_mod

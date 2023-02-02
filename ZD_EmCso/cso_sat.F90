@@ -17,6 +17,10 @@
 !     mainly used define dtype "i1" (integer(1)) or "c" (character)
 !     that are used for ground observation data.
 !
+!   2023-01, Arjo Segers
+!     Return null pointers for corner locations if these are not available.
+!
+!
 !###############################################################################
 !
 #define TRACEBACK write (csol,'("in ",a," (",a,", line",i5,")")') rname, __FILE__, __LINE__; call csoErr
@@ -1310,8 +1314,8 @@ contains
 
     real, pointer, optional                     ::  lons(:)     ! (npix)
     real, pointer, optional                     ::  lats(:)     ! (npix)
-    real, pointer, optional                     ::  clons(:,:)  ! (ncorner,npix)
-    real, pointer, optional                     ::  clats(:,:)  ! (ncorner,npix)
+    real, pointer, optional                     ::  clons(:,:)  ! (ncorner,npix)  ! null if no corners available
+    real, pointer, optional                     ::  clats(:,:)  ! (ncorner,npix)  ! null if no corners available
 
     integer, pointer, optional                  ::  nw(:)      ! (npix)
     integer, pointer, optional                  ::  iw0(:)     ! (npix)
@@ -1325,7 +1329,7 @@ contains
 
     ! --- const ----------------------------------
     
-    character(len=*), parameter   :: rname = mname//'/CSO_Sat_Data_Init'
+    character(len=*), parameter   :: rname = mname//'/CSO_Sat_Data_Get'
     
     ! --- local ----------------------------------
     
@@ -1399,20 +1403,22 @@ contains
     if ( present(clons) ) then
       ! check:
       if ( self%ncorner <=0 ) then
-        write (csol,'("could not pointer to `clons`, no corners defined")'); call csoPr
-        TRACEBACK; status=1; return
+        ! not available ...
+        clons => null()
+      else
+        ! set pointer:
+        clons => self%loc_clons
       end if
-      ! set pointer:
-      clons => self%loc_clons
     end if
     if ( present(clats) ) then
       ! check:
       if ( self%ncorner <=0 ) then
-        write (csol,'("could not pointer to `clats`, no corners defined")'); call csoPr
-        TRACEBACK; status=1; return
+        ! not available ...
+        clats => null()
+      else
+        ! set pointer:
+        clats => self%loc_clats
       end if
-      ! set pointer:
-      clats => self%loc_clats
     end if
     
     ! mapping arrays:
