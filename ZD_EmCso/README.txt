@@ -127,3 +127,12 @@ at surface, top of boundary layer, and top of troposhere.
 	cso_pixels.F90
 	EMEP_CSO_mod.f90
 
+Added grid mapping for point locations, this is used if corner locations are not available.
+	cso_sat.F90
+	EMEP_CSO_mod.f90
+  
+Introduced ObsCompInfo type to accumulate tracers (for example for total PM) and apply unit conversions.
+	EMEP_CSO_mod.f90
+
+Fixed problem with creation of output directories when using Intel compiler.
+  cso_file.F90
