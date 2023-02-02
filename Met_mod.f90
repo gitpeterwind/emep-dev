@@ -1189,20 +1189,19 @@ subroutine MeteoRead()
     write(*,*)dtxt//' WARNING: ice_nwp coverage (%) not found '
 
 
-  if(foundws10_met)then
-    namefield='v10' !second component of ws_10m
-    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
-        buff(:,:),needed=.false.,found=foundws10_met)
-    if(.not.foundws10_met)then
-      namefield='V10' !second component of ws_10m
-      call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
-           buff(:,:),needed=met(ix_ws_10m)%needed,found=foundws10_met)
-    end if
-    if(foundws10_met)then
-      if(write_now)write(*,*)dtxt//' found v component of 10m wind '
-      ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
-      if(LANDIFY_MET) call landify(ws_10m(:,:,nr),"WS10")
-    end if
+  if(foundu10_met .and. foundv10_met)then
+    ws_10m(:,:,nr)=sqrt(u10(:,:,nr)**2+v10(:,:,nr)**2)
+    if(LANDIFY_MET) call landify(ws_10m(:,:,nr),"WS10")
+    foundws10_met = .true.
+  else
+    if(write_now)&
+    write(*,*)' WARNING: u10, v10 not found. Using staggered lowest level wind! '
+    do j = 1,ljmax
+       do i = 0,limax
+          ws_10m(i,j,nr)=sqrt((u_xmj(i,j,KMAX_MID,nr)*xm_j(i,j))**2+(v_xmi(i,j,KMAX_MID,nr)*xm_i(i,j))**2)
+       end do
+    end do
+    foundws10_met = .false. !should not be used if not necessary
   end if
 
 

@@ -46,6 +46,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Feb 2023, Peter, Heiko
+We store u10 and v10 (10m wind speed) in the model. 
+(previously only sqrt(u10**2+v10**2) was stored)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Jan 2023, Arjo Segers
 Updates for simulation at pixel and/or station locations in "ZD_EmCso" sub-code.
 

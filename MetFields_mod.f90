@@ -162,6 +162,8 @@ module MetFields_mod
        ,sdepth          & !  Snowdepth, m
        ,ice_nwp         & ! QUERY why real?
        ,sst       &  ! SST Sea Surface Temprature- ONLY from 2002 in PARLAM
+       ,u10    &  ! wind speed 10m x direction
+       ,v10    &  ! wind speed 10m y direction
        ,ws_10m    &  ! wind speed 10m
        ,hmix      &  ! same as pzpbl, but interpolated in time
        ,buff3D       ! can be used for temporary storage 
@@ -258,7 +260,8 @@ module MetFields_mod
       ix_cw_met, ix_ciw_met, ix_cnvuf, ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz,&
       ix_Etadot, ix_cc3dmax, ix_Kz_m2s, ix_u_mid, ix_v_mid, ix_ps, &
       ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
-      ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m,&
+      ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, &
+      ix_ws_10m, ix_u10, ix_v10,&
       ix_surface_precip, ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, &
       ix_rain,ix_irainc,ix_irainnc, ix_elev, ix_invL, ix_pblnwp, ix_buff3D 
 ! integer, public, save   :: ix_tsurf_nwp
@@ -854,12 +857,42 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_ice_nwp=ix
 
+  !NB: some modules have their own private definition of a variable named u10
   ix=ix+1
   met(ix)%name             = 'u10'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundu10_met
+  allocate(u10(LIMAX,LJMAX,NMET))
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => u10
+  met(ix)%zsize = 1
+  met(ix)%msize = NMET
+  ix_u10=ix
+
+  ix=ix+1
+  met(ix)%name             = 'v10'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundv10_met
+  allocate(v10(LIMAX,LJMAX,NMET))
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => v10
+  met(ix)%zsize = 1
+  met(ix)%msize = NMET
+  ix_v10=ix
+  
+
+  ix=ix+1
+  met(ix)%name             = 'ws_10m'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .false. !computed from u10 and v10
   met(ix)%needed           = .false.
   met(ix)%found            => foundws10_met
   allocate(ws_10m(LIMAX,LJMAX,NMET))
@@ -1107,7 +1140,8 @@ if(USES%WRF_MET_NAMES)then
    met(ix_fl)%name                = 'LH'
    met(ix_ustar_nwp)%name         = 'UST'
    met(ix_sst)%name               = 'SST'
-   met(ix_ws_10m)%name            = 'U10'
+   met(ix_u10)%name            = 'U10'
+   met(ix_v10)%name            = 'V10'
    met(ix_SoilWater_uppr)%name    = 'SMI1'!take first level. Do not change name! (name set in Getmeteofield)
    met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
    met(ix_sdepth)%name            = 'SNOWH'!snowdepth in m
