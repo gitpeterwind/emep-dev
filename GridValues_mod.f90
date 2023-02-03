@@ -694,6 +694,11 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
         call check(nf90_inq_varid(ncid=ncFileID, name="projection_lambert", varID=varID))
         call check(nf90_get_att(ncFileID,varID,"earth_radius",earth_radius_lambert))
       endif
+      if(MasterProc)then
+        if(abs(earth_radius - earth_radius_lambert)>1.0)&
+            write(*,*)'WARING: Using a new Earth Radius ',earth_radius_lambert
+      end if
+      earth_radius = earth_radius_lambert
       !status = nf90_get_att(ncFileID,nf90_global,"standard_parallel",(/lat_stand1_lambert,lat_stand2_lambert/))!standard latitude at which mapping factor=1
       !default lat_stand1_lambert=lat_stand2_lambert=lat0_lambert
       lat_stand1_lambert = lat0_lambert

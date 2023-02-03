@@ -14,9 +14,10 @@ real , public, parameter ::         &
 
                                         ! NB. ( J = N m2 = kg m2 s-2 )
                                         !       M = mol l-1
+real, public :: EARTH_RADIUS = 6.37e6 ! Is redefined if Lambert projection is used
+
 real, public, parameter  ::    &
      GRAV    = 9.807           &   ! Gravity, m s-2
-  ,  EARTH_RADIUS = 6.37e6     &   ! 
   ,  CP      = 1004.0          &   ! Specific heat at const. pressure
   ,  KAPPA   = RGAS_KG/CP      &   
   ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)

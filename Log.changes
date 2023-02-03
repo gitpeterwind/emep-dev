@@ -46,6 +46,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Feb 2023, Peter, Heiko
+For Lambert projection (EMEP4NO/AROME), we redefine the emep Earth radius as 
+the value found in the meteo file (not WRF though).
+Emep default Earth radius: 6370000 m
+Arome/Lambert Earth radius set to: 6371000 m
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Feb 2023, Peter, Heiko
 We store u10 and v10 (10m wind speed) in the model. 
 (previously only sqrt(u10**2+v10**2) was stored)
