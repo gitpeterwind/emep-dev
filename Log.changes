@@ -46,6 +46,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th Feb 2023, Peter
+
+Convection implemented for Local Fractions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Feb 2023, Peter, Heiko
 For Lambert projection (EMEP4NO/AROME), we redefine the emep Earth radius as 
 the value found in the meteo file (not WRF though).

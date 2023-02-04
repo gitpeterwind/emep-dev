@@ -97,9 +97,9 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_mod, only: GRAV,ATWAIR ! gravity
-  use LocalFractions_mod, only: lf_adv_x, lf_adv_y, lf_adv_k, lf_diff, LF_SRC_TOTSIZE, lf_Nvert,&
-                                lf, loc_frac_src, loc_frac_src_1d
-  use VerticalDiffusion_mod, only: vertdiffn  !DSKZ
+  use LocalFractions_mod, only: lf_adv_x, lf_adv_y, lf_adv_k, lf_diff, lf_conv, LF_SRC_TOTSIZE&
+                                , lf_Nvert, lf, loc_frac_src, loc_frac_src_1d
+  use VerticalDiffusion_mod, only: vertdiffn
 
   implicit none
   private
@@ -261,7 +261,6 @@
     real dpdeta(LIMAX,LJMAX,KMAX_MID),psi
     real psw(3),pse(3)
     real psn(3),pss(3)
-    !DSKz real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     real xcmax(KMAX_MID,GJMAX),ycmax(KMAX_MID,GIMAX),scmax,sdcmax
     real dt_smax,dt_s
     real dt_x(LJMAX,KMAX_MID),dt_y(LIMAX,KMAX_MID)
@@ -694,10 +693,14 @@
     if(USES%CONVECTION)then
 
        call CheckStop(ADVEC_TYPE/=1, "ADVEC_TYPE no longer supported")
-
-!convection uses mixing ratio units
-       call convection_Eta(dt_advec)
-
+       do j = lj0,lj1
+          do i = li0,li1             
+             !convection uses mixing ratio units
+             if(USES%LocalFractions)call lf_conv(i,j,dt_advec)
+             call convection_Eta(i,j,dt_advec)
+          end do
+       end do
+       
     end if
 
     do k=1,KMAX_MID
@@ -754,11 +757,6 @@
 
     !________ vertical diffusion ______
     ndiff = 1 !number of vertical diffusion iterations (the larger the better)
-    !DSKz also done in VerticalDiffusion. Keep for lf_diff for now
-    !DSKz  do k = 2,KMAX_MID
-    !DSKz     ds3(k) = dt_advec*dhs1i(k)*dhs2i(k)
-    !DSKz    ds4(k) = dt_advec*dhs1i(k+1)*dhs2i(k)
-    !DSKz  end do
 
     ! sum is conserved under vertical diffusion
     !   sum = 0.
@@ -769,10 +767,8 @@
 
     do j = lj0,lj1
        do i = li0,li1
-          !DSKz if(USES%LocalFractions)call lf_diff(i,j,ds3,ds4,ndiff)
+
           if(USES%LocalFractions)call lf_diff(i,j,dt_advec,ndiff)
-          
-          !DSKz call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,1,EtaKz(i,j,1,1),ds3,ds4,dt_advec,ndiff)
           call vertdiffn(xn_adv(1,i,j,1),NSPEC_ADV,LIMAX*LJMAX,1,EtaKz(i,j,1,1),dt_advec,ndiff)
 
        end do
@@ -3943,84 +3939,4 @@ end if
 
   end subroutine adv_vert_fourth
 end module Advection_mod
-
-!DSKZ!=================================================================================
-!DSKZ! NOT IN MODULE
-!DSKZ!=================================================================================
-!DSKZ  subroutine vertdiffn(xn_adv,NSPEC,Nij,KMIN_in,SigmaKz,ds3,ds4,ndiff)
-!DSKZ
-!DSKZ!     executes vertical diffusion ndiff times
-!DSKZ
-!DSKZ! SigmaKz(k) mixes xn_adv(k) and xn_adv(k-1)
-!DSKZ!
-!DSKZ! adif(k) -> mixing of layers k and k+1:
-!DSKZ!            SigmaKz(k+1)*ds3(k+1)= SigmaKz(k+1)*dt_advec*dhs1i(k+1)*dhs2i(k+1)
-!DSKZ!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k+1)-sigma_mid(k))
-!DSKZ!
-!DSKZ! bdif(k) -> mixing of layers k and k-1:
-!DSKZ!            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
-!DSKZ!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
-!DSKZ!
-!DSKZ! KMIN is the minimum value of k to include for diffusion (1 is top)
-!DSKZ
-!DSKZuse Config_module,only: KMAX_MID, KMAX_BND
-!DSKZuse Par_mod,           only: me,LIMAX,LJMAX
-!DSKZ!    input
-!DSKZ    real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
-!DSKZ    real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
-!DSKZ    integer,intent(in)::  NSPEC,ndiff,Nij
-!DSKZ    integer,intent(in):: KMIN_in
-!DSKZ
-!DSKZ!    output
-!DSKZ    real ,intent(inout):: xn_adv(NSPEC,0:Nij*(KMAX_MID-1))
-!DSKZ
-!DSKZ!    local
-!DSKZ
-!DSKZ    integer  k,n,KMIN
-!DSKZ
-!DSKZ    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1
-!DSKZ
-!DSKZ    real ndiffi
-!DSKZ
-!DSKZ    if(KMIN_in==KMAX_MID)return!no diffusion from one cell to itself
-!DSKZ    KMIN = KMIN_in-1
-!DSKZ    KMIN = max(1,KMIN)
-!DSKZ
-!DSKZ    ndiffi=1./ndiff
-!DSKZ
-!DSKZ    do k = KMIN,KMAX_MID-1
-!DSKZ      adif(k-1) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)*ndiffi
-!DSKZ      bdif(k) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)*ndiffi
-!DSKZ    end do
-!DSKZ
-!DSKZ    cdif(KMAX_MID-1) = 1./(1. + bdif(KMAX_MID-1))
-!DSKZ    e1(KMAX_MID-1) = bdif(KMAX_MID-1)*cdif(KMAX_MID-1)
-!DSKZ
-!DSKZ    do k = KMAX_MID-2,KMIN,-1
-!DSKZ      cdif(k) = 1./(1. + bdif(k) + adif(k) - adif(k)*e1(k+1))
-!DSKZ      e1(k) = bdif(k)*cdif(k)
-!DSKZ    end do
-!DSKZ
-!DSKZ    cdif(KMIN-1) = 1./(1. + adif(KMIN-1) - adif(KMIN-1)*e1(KMIN))
-!DSKZ
-!DSKZ    do n=1,ndiff
-!DSKZ
-!DSKZ      xn_adv(:,Nij*(KMAX_MID-1)) = &
-!DSKZ         xn_adv(:,Nij*(KMAX_MID-1))*cdif(KMAX_MID-1)
-!DSKZ
-!DSKZ      do k = KMAX_MID-2,KMIN-1,-1
-!DSKZ         xn_adv(:,Nij*k) =         &
-!DSKZ           (xn_adv(:,Nij*k)        &
-!DSKZ           +adif(k)*xn_adv(:,Nij*(k+1)))*cdif(k)
-!DSKZ      end do
-!DSKZ
-!DSKZ      do k = KMIN,KMAX_MID-1
-!DSKZ         xn_adv(:,Nij*k) =            &
-!DSKZ            e1(k)*xn_adv(:,Nij*(k-1)) &
-!DSKZ           +xn_adv(:,Nij*k)
-!DSKZ      end do
-!DSKZ
-!DSKZ    end do ! ndiff
-!DSKZ
-!DSKZ  end subroutine vertdiffn
 

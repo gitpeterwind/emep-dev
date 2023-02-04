@@ -16,6 +16,7 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
                              PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix
+use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
@@ -65,6 +66,7 @@ public  :: lf_adv_x
 public  :: lf_adv_y
 public  :: lf_adv_k
 public  :: lf_diff
+public  :: lf_conv
 public  :: lf_chemrates
 public  :: lf_chemderiv
 public  :: lf_chem
@@ -1615,9 +1617,54 @@ subroutine lf_adv_k(fluxk,i,j)
           enddo
        enddo
     end do
-    call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffusion")
+    call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
 
 end subroutine lf_diff
+
+
+  subroutine lf_conv(i,j,dt_conv)
+
+    implicit none
+    integer, intent(in) :: i,j
+    real, intent(in) :: dt_conv
+    real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x
+    integer ::isec_poll1,isrc
+    integer ::k,n,ix,iix,dx,dy
+
+    call Code_timer(tim_before)
+    xn_k = 0.0
+    do k = 1,KMAX_MID
+       do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
+          x=0.0
+          do iix=1,lf_src(isrc)%Nsplit
+             ix=lf_src(isrc)%ix(iix)
+             !assumes mixing ratios units, but weight by mass
+             x=x+xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix)
+          end do
+          if(k>KMAX_MID-lf_Nvert)then ! lf zero above
+             do n=lf_src(isrc)%start, lf_src(isrc)%end
+                xn_k(n,k)=x*lf(n,i,j,k)
+             enddo
+          endif
+          xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k) = x
+      enddo
+    enddo
+
+    call convection_1d(xn_k,LF_SRC_TOTSIZE+Npoll,1,i,j,dt_conv)
+
+    do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+       do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
+          x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
+          do n=lf_src(isrc)%start, lf_src(isrc)%end
+             lf(n,i,j,k) = xn_k(n,k)*x
+          enddo
+       enddo
+    end do
+    call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
+
+end subroutine lf_conv
 
 subroutine lf_chemrates(k,i,dtchem,xnew)
   real, intent(in) :: dtchem, xnew(*)
