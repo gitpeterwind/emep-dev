@@ -199,7 +199,7 @@ program emep_Main
   call Init_emissions !new format
   call Emissions(yyyy)! should be set for the enddate year, not start?
 
-  call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
+  call Add_2timing(3,tim_after,tim_before,"Emissions read in")
 
   if(USES%LocalFractions) call lf_init
   
@@ -330,8 +330,10 @@ program emep_Main
     call Add_2timing(9,tim_after,tim_before,"Meteoread")
 
     call SetDailyBVOC() !daily
+    call Add_2timing(10,tim_after,tim_before,"Fires+BVOC")
 
     call EmisUpdate
+    call Add_2timing(3,tim_after,tim_before,"Emissions read in")
 
     if(USES%FOREST_FIRES) call Fire_Emis(daynumber)
 

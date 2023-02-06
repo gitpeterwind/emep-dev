@@ -46,6 +46,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Feb 2023, Peter
+
+The reading of global emission files in new format was *very* slow. The read
+time increases with the number of variables in the emission files EVEN if they
+are not read !! 
+It is solved by defining the time dimension in the file as fixed instead of
+unlimited. This simple trick divides the read time by a factor of 30 or so!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th Feb 2023, Peter
 
 Convection implemented for Local Fractions

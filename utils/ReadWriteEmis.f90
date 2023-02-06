@@ -2,7 +2,7 @@
 !uses about 30GB memory for a global file (0.5 deg resolution)
 !mpif90 -r8 -O2 -o RWEmis Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
 !debug:
-!mpif90 -r8 -check all -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
+!mpif90 -r8  -o RWEmis -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check Country_mod.f90 ReadWriteEmis.f90  `nc-config --fflags` `nc-config --flibs`
 program rwemis
   use netcdf
   use Country_mod
@@ -16,20 +16,23 @@ program rwemis
   real, allocatable :: cdfemis(:,:),cdfemisOut(:,:),emisSecC(:,:,:,:),fractions(:,:,:)
   real, allocatable :: landcode(:,:,:),nlandcode(:,:),speciessum(:,:)
   integer :: ncFileID, ncFileIDOut
-
+  logical :: createVariableOnly
+  
   call init_Country()
-  filename='/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/GNFREmis_EMEP01_2018_05062020.nc'
-  filenameOut='EMEP01New.nc'
+  filename='/nobackup/forsk/sm_petwi/Data/Emis_ECLIPSEv6b_GNFR/Emis_ECLIPSEv6b_CLE_GNFR_05deg_2015.nc'
+  filenameOut='testNew.nc'
+  path='notset'
   read(*,'(A)')path
   read(*,'(A)')filename
-  if(trim(path)=='./')then
+  filenameOut=trim(filename)
+  filename=trim(path)//'/'//trim(filename)
+  write(*,*)'convert '//trim(filename)
+  write(*,*)' into '//trim(filenameOut)
+
+  if(trim(path)=='./' .or. trim(path)=='.' .or. trim(path)=='')then
     write(*,*)'Do not want to overwrite!'
     stop
   end if
-  filenameOut=trim(filename)
-  filename=trim(path)//trim(filename)
-  write(*,*)'convert '//trim(filename)
-  write(*,*)' into '//trim(filenameOut)
 
   !1) read metadata
   nsectors = 13 !modify if different
@@ -72,7 +75,7 @@ program rwemis
   landcode = 0
   size=imax*jmax
   !2) create emisfile with metadata
-  call createNetCDF(filenameOut,imax,jmax,nsectors,projection,periodicity,SECTORS_NAME,lonstart,latstart,dlon,dlat)
+  call createNetCDF(filenameOut,imax,jmax,nsectors,ntime,projection,periodicity,SECTORS_NAME,lonstart,latstart,dlon,dlat)
   call check(nf90_open(trim(fileNameOut),nf90_share+nf90_write,ncFileIDOut)  )
   !first collect a list of all countries defined
   !we assume that the countries lsit does not change with time 
@@ -99,9 +102,33 @@ program rwemis
         end do
      end do
   end do
+  
   write(*,*)'found emissions defined for ', nlandfound,' countries'
+  !first we only create all the variables. This makes the file much smaller.
+  createVariableOnly = .true.
   do itime = 1, ntime
      do ispec = 1, nspecies
+!        if(trim(speciesnames(ispec))/='nox' .and.trim(speciesnames(ispec))/='sox' .and.trim(speciesnames(ispec))/='co' .and.trim(speciesnames(ispec))/='pm25' .and.trim(speciesnames(ispec))/='pmco' .and.trim(speciesnames(ispec))/='nh3' .and.trim(speciesnames(ispec))/='voc' )cycle
+        do ic=1,MAXNLAND
+           if (countrycodes(ic)<=0) cycle !we only write defined countries              
+           write(varname,"(A)")trim(country(ic)%code)
+           call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), emisSecC(1,1,1,ic), imax,jmax,nsectors, itime, createVariableOnly)
+        end do
+        !4b) write totals for all countries and sectors
+        varname=''
+        call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), speciessum, imax,jmax,0, itime, createVariableOnly)
+     end do
+  end do
+  write(*,*)'all variables created'
+  call check(nf90_close(ncFileIDOut))
+  call check(nf90_open(trim(fileNameOut),nf90_share+nf90_write,ncFileIDOut)  )
+  
+  createVariableOnly = .false.
+  do itime = 1, ntime
+     do ispec = 1, nspecies
+!        if(trim(speciesnames(ispec))/='nox' .and.trim(speciesnames(ispec))/='sox' .and.trim(speciesnames(ispec))/='co' .and.trim(speciesnames(ispec))/='pm25' .and.trim(speciesnames(ispec))/='pmco' .and.trim(speciesnames(ispec))/='nh3' .and.trim(speciesnames(ispec))/='voc' )cycle
+        write(*,*)' Reading ',trim(speciesnames(ispec))
+
         emisSecC=0.0
         speciessum=0.0
         do isec = 1, nsectors
@@ -127,11 +154,11 @@ program rwemis
         do ic=1,MAXNLAND
            if (countrycodes(ic)<=0) cycle !we only write defined countries              
            write(varname,"(A)")trim(country(ic)%code)
-           call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), emisSecC(1,1,1,ic), imax,jmax,nsectors, itime)
+           call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), emisSecC(1,1,1,ic), imax,jmax,nsectors, itime,createVariableOnly)
         end do
         !4b) write totals for all countries and sectors
         varname=''
-        call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), speciessum, imax,jmax,0, itime)
+        call writeCDFsector(ncFileIDOut, trim(speciesnames(ispec)), trim(varname), speciessum, imax,jmax,0, itime,createVariableOnly)
      end do
   end do
   call check(nf90_close(ncFileID))
@@ -152,11 +179,11 @@ subroutine Check(status,errmsg)
   end if
 end subroutine Check
 
-subroutine createNetCDF(filename,imax,jmax,nsectors,projection,periodicity,SECTORS_NAME,lonstart,latstart,dlon,dlat)
+subroutine createNetCDF(filename,imax,jmax,nsectors,ntime,projection,periodicity,SECTORS_NAME,lonstart,latstart,dlon,dlat)
   use netcdf
   implicit none
   character(len=*),  intent(in)  :: fileName,projection,periodicity,SECTORS_NAME
-  integer ,  intent(in)  :: imax,jmax,nsectors
+  integer ,  intent(in)  :: imax,jmax,nsectors,ntime
   real ,  intent(in) :: lonstart,latstart,dlon,dlat
   integer :: i,j,timeDimID, iDimID, jDimID, varID, secDimID,ivarID, jvarID ,secvarID,timevarID,ncFileID
   character(len=10) :: created_date,created_hour
@@ -169,7 +196,10 @@ subroutine createNetCDF(filename,imax,jmax,nsectors,projection,periodicity,SECTO
   call check(nf90_def_dim(ncFileID,"lon",imax,iDimID),"dim:lon")
   call check(nf90_def_dim(ncFileID,"lat",jmax,jDimID),"dim:lat")
   call check(nf90_def_dim(ncFileID,"sector",nsectors,secDimID),"dim:sec")
-  call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID),"dim:time")
+  !NB: if the time dimension is defined as unlimited, the reading is VERY slow if many variables.
+  !seems to increase as the square of the number of variables in the file, even if the variables are not read(!!!)
+!  call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID),"dim:time")
+  call check(nf90_def_dim(ncFileID,"time",ntime,timeDimID),"dim:time")
 
   ! define coordinate variables
   call check(nf90_def_var(ncFileID,"lon",nf90_float,[idimID],ivarID))
@@ -264,6 +294,19 @@ subroutine find_index(wanted, list, lsize, Index)
   end do
 end subroutine find_index
   
+subroutine find_indexc(wanted, list, lsize, Index)
+  character(len=*), intent(in) :: wanted
+  character(len=*), dimension(1:lsize), intent(in) :: list
+  integer ::   n
+  Index = -1
+  do n = 1, lsize
+     if (wanted == list(n)) then
+        Index = n
+        exit
+     end if
+  end do
+end subroutine find_indexc
+  
 subroutine  createnewsectorvariable(ncFileID,varname,speciesname,countrycode,units)
   use netcdf
   use Country_mod
@@ -289,7 +332,8 @@ subroutine  createnewsectorvariable(ncFileID,varname,speciesname,countrycode,uni
   call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
        deflate_level=4),"compress:"//trim(varname))
   call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
-       (/min(IMAX,100),min(JMAX,100),nsectors,1/)),"chunk3D:"//trim(varname))
+       !small chunks give faster read for emep model
+       (/min(IMAX,40),min(JMAX,40),nsectors,1/)),"chunk3D:"//trim(varname))
   
   call check(nf90_put_att(ncFileID, varID, "units", units))
   call check(nf90_put_att(ncFileID, varID, "species", trim(speciesname)))
@@ -307,7 +351,7 @@ subroutine  createnewsectorvariable(ncFileID,varname,speciesname,countrycode,uni
     call check(nf90_put_att(ncFileID, varID, "molecular_weight_units", "g mole-1"))
   end if
   call check(nf90_put_att(ncFileID, varID, "country_ISO", trim(countrycode)))
-  call find_index( trim(countrycode),Country(:)%code, MAXNLAND, ix)
+  call find_indexc( trim(countrycode),Country(1:MAXNLAND)%code, MAXNLAND, ix)
   call check(nf90_put_att(ncFileID, varID, "countrycode", Country(ix)%icode))
 
   call check(nf90_enddef(ncid = ncFileID))
@@ -459,15 +503,17 @@ subroutine ReadMetadata(ncFileID, imax, jmax, ntime, nspecies, lonstart, dlon, l
   end do
 
 end subroutine ReadMetadata
-subroutine writeCDFsector(ncFileID, speciesname, countrycode, Rvar, imax, jmax,nsectors, itime)
+subroutine writeCDFsector(ncFileID, speciesname, countrycode, Rvar, imax, jmax,nsectors, itime, createVariableOnly)
   use netcdf
   implicit none
   character(len = *),intent(in) :: speciesname, countrycode
   integer ,intent(in) :: ncFileID, imax, jmax, itime, nsectors
   real, intent(in) :: Rvar(imax,jmax,nsectors)
+  logical, intent(in) :: createVariableOnly !NB: bus error if made optional !?
   integer :: i,j,xtype, ndims,varID,dimids(NF90_MAX_VAR_DIMS),nAtts,status
-  character*100 ::name,varname,units
+  character*600 ::name,varname,units
   integer :: startvec(NF90_MAX_VAR_DIMS),count(NF90_MAX_VAR_DIMS)
+  
   if(nsectors>0)then
      write(varname,"(A)")trim(speciesname)//'_'//trim(countrycode)
   else
@@ -476,7 +522,7 @@ subroutine writeCDFsector(ncFileID, speciesname, countrycode, Rvar, imax, jmax,n
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status /= nf90_noerr) then     
-     !make new variable
+    !make new variable
      units = 'tonnes/year'
      if(nsectors>0)then
         call createnewsectorvariable(ncFileID,varname,speciesname,countrycode,units)            
@@ -484,7 +530,8 @@ subroutine writeCDFsector(ncFileID, speciesname, countrycode, Rvar, imax, jmax,n
         call createnewvariable(ncFileID,varname,units)
      end if
   endif
-  !write(*,*)'writing ',trim(varname)
+  if(createVariableOnly) return
+
   call check(nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID))
   if (nsectors>0) then
      startvec=1
