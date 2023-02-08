@@ -46,6 +46,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Feb 2023, Willem
+
+Old ISORROPIA II code is replaced with Isorropia-lite (2022 code). 
+
+Aerosol water uptake is handled in the thermodynamics call to isorropia, for
+which the (i,j) grid indices are now included in the AerosolEquilib call.
+
+The new config option AERO%INTERNALMIXED determines whether or not internal
+mixing is assumed. If set to true, Na and Cl from sea salt are included in the
+call to isorropia.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2023, Peter
 
 The reading of global emission files in new format was *very* slow. The read

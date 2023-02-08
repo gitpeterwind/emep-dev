@@ -809,7 +809,7 @@ integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
      NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
      HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
      PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,&
-     N2O5_ix
+     N2O5_ix, OM_ix, SSf_ix, SSc_ix
 
 
 !----------------------------------------------------------------------------
@@ -1168,6 +1168,9 @@ subroutine define_chemicals_indices()
   HO2_ix = find_index('HO2' ,species(:)%name)
   NO_ix = find_index('NO' ,species(:)%name)
   OH_ix = find_index('OH' ,species(:)%name)
+  OM_ix = find_index('OM25_p' ,species(:)%name)
+  SSf_ix = find_index('SeaSalt_f' ,species(:)%name)
+  SSc_ix = find_index('SeaSalt_c' ,species(:)%name)
 
   HONO_ix = find_index('HONO' ,species(:)%name)
   OP_ix = find_index('OP' ,species(:)%name)
