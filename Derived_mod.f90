@@ -31,7 +31,7 @@ use Chemfields_mod,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             Fgas3d, & ! FSOA
                             Extin_coeff, PM25_water, PM25_water_rh50 &
                           , PMco_water_rh50   !JUN21AERO
-use Chemfields_mod ,   only: so2nh3_24hr,Grid_snow, Dobson
+use Chemfields_mod ,   only: so2nh3_24hr,Grid_snow, Dobson, pH
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
 use ChemGroups_mod          ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_mod           ! IXADV_ indices etc
@@ -1196,6 +1196,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "TotDobs" ) ! Dobson populated in CloudJ_mod.f90
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Dobson(i,j)
+      end forall
+
+    case ( "pH_surface" ) ! surface pH from AerosolCalls
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = pH(i,j)
       end forall
 
     case ( "SNratio" )

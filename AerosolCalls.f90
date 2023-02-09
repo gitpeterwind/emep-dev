@@ -16,6 +16,7 @@ module AerosolCalls
  use ChemSpecs_mod,         only: species
  use Chemfields_mod,        only: PM25_water, PM25_water_rh50, & !H2O_eqsam, & !PMwater 
                                    cfac
+use Chemfields_mod,         only: pH
  use Config_module,         only: KMAX_MID, KCHEMTOP, MasterProc, USES,&
                                   SO4_ix, HNO3_ix, NO3_f_ix, NH3_ix, NH4_f_ix, OM_ix, &
                                   SSf_ix, SSc_ix
@@ -211,10 +212,14 @@ contains
         ! OM25_p is the sum of the particle-phase OM25, and currently has MW 1 for simplicity
         wo(1) = xn_2d(OM_ix,k) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter
         wo(2) = 0.15 ! kappa organic aerosol; standard value from stand-alone input file
-        wo(3) = 1000 ! aerosol density kg/m3; standard value from stand-alone input file
+        wo(3) = 1400 ! aerosol density kg/m3; Based on observations (Kakavas, 2023) & florou et al., 2014
 
         call isoropia ( wi, wo, rh(k),  temp(k), CNTRL, &       
                         wt, gas, aerliq, aersld, scase, other )  
+
+        ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. m3 --> dm3: - 3 factor in log10 base
+        if ( k == KMAX_MID) &
+          pH(i,j) = -log10( aerliq(1)/aerliq(8) ) - 3 
 
         ! gas outputs are in moles/m3(air)
         xn_2d(NH3_ix ,k) = max( gas(1), CONMIN ) * molesm3_to_Ncm3
