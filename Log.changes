@@ -50,6 +50,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Added option to output surface pH, calculated using ISORROPIA-lite.
 
+Edit: removed unintentionally added (undefined) variable, and added
+a min concentration limit to aerosol water content to avoid division by zero. 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Feb 2023, Willem
 

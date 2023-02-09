@@ -218,7 +218,7 @@ contains
 
         ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. m3 --> dm3: - 3 factor in log10 base
         if ( k == KMAX_MID) &
-          pH(i,j) = -log10( aerliq(1)/aerliq(8) ) - 3 
+          pH(i,j) = -log10( aerliq(1) / MAX(aerliq(8), CONMIN) ) - 3 
 
         ! gas outputs are in moles/m3(air)
         xn_2d(NH3_ix ,k) = max( gas(1), CONMIN ) * molesm3_to_Ncm3
