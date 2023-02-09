@@ -161,7 +161,6 @@ contains
 
    ! wet DpgN and defaults from dry values
     allocate(DpgNw(NSAREA_DEF, KCHEMTOP:KMAX_MID))
-    allocate(sig_wet(NSAREA_DEF, KCHEMTOP:KMAX_MID))
 
     allocate(S_m2m3(NSAREA_DEF, KCHEMTOP:KMAX_MID)) ! GERBER
     S_m2m3=0.0

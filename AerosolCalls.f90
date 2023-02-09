@@ -15,8 +15,7 @@ module AerosolCalls
  use ChemDims_mod,          only: NSPEC_SHL
  use ChemSpecs_mod,         only: species
  use Chemfields_mod,        only: PM25_water, PM25_water_rh50, & !H2O_eqsam, & !PMwater 
-                                   cfac
-use Chemfields_mod,         only: pH
+                                   cfac, pH
  use Config_module,         only: KMAX_MID, KCHEMTOP, MasterProc, USES,&
                                   SO4_ix, HNO3_ix, NO3_f_ix, NH3_ix, NH4_f_ix, OM_ix, &
                                   SSf_ix, SSc_ix
