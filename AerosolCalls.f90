@@ -216,9 +216,10 @@ contains
         call isoropia ( wi, wo, rh(k),  temp(k), CNTRL, &       
                         wt, gas, aerliq, aersld, scase, other )  
 
-        ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. m3 --> dm3: - 3 factor in log10 base
+        ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. mol/m3 h2o to kg/m3 as 1e-3 * MWH20.
+        ! 1 liter water ~ 1 kg, such that pH = -log10( [H+] / ([H2O] * MWH2O * 1e-3) )
         if ( k == KMAX_MID) &
-          pH(i,j) = -log10( aerliq(1) / MAX(aerliq(8), CONMIN) ) - 3 
+          pH(i,j) = -log10( aerliq(1) / MAX(aerliq(8) * MWH2O, CONMIN) ) - 3
 
         ! gas outputs are in moles/m3(air)
         xn_2d(NH3_ix ,k) = max( gas(1), CONMIN ) * molesm3_to_Ncm3
