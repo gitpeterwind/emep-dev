@@ -30,7 +30,7 @@
         ! WX_  = dim = no. of wavelengths in input file
         integer, parameter ::  WX_=18
         ! X_   = dim = max no. of X-section data sets (input data)  
-        integer, parameter ::  X_=72
+        integer, parameter ::  X_=201
         ! A_   = dim = no. of Aerosol/cloud Mie sets (input data)
         integer, parameter ::  A_=40
         ! C_   = dim = no. of cld-data sets (input data)

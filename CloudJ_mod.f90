@@ -730,44 +730,50 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     !---map multiplication factors to J-values from fast-JX using JIND & JFACTA.
     !---For example, JFACTA(1) from photochemistry scheme maps to FJX(4)
 
-    ! apply multiplication factors for reactions that are based on other reactions
-    do L = 1,OZ_TOP-1
-          do J = 1,NRATJ
-                ! only if J-value defined (memory issues otherwise)
-                if(JIND(J)>0) VALJXX(L,JIND(J)) = VALJXX(L,JIND(J))*JFACTA(J)
-          end do
-    end do
+    ! ! apply multiplication factors for reactions that are based on other reactions
+    ! do L = 1,OZ_TOP-1
+    !       do J = 1,NRATJ
+    !             ! only if J-value defined (memory issues otherwise)
+    !             if(JIND(J)>0) VALJXX(L,JIND(J)) = VALJXX(L,JIND(J))*JFACTA(J)
+    !       end do
+    ! end do
     
     ! populate 3D Jvalue array with CloudJ values for the photochemical reactions in EMEP
     if(.not.(allocated(rcphotslice))) allocate(rcphotslice(NRCPHOTextended,KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
     
     do L=1,KMAX_BND-KCHEMTOP 
-          ! reactions having a 1-to-1 correspondence with tabulated reactions. Note: All of these CloudJ reactions have been checked to be non-zero.
-          rcphotslice(IDAO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(3))   ! JIND(J))  *JFACTA(J)   ZPJ(L,3)!3 O3   PHOTON    O2    O(total)   1.000 /O3    /
-          rcphotslice(IDBO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(4))   ! ZPJ(L,4)!4  O3        PHOTON    O2        O(1D)                   1.000 /O3(1D) /           
-          rcphotslice(IDNO2,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(9))   !  9 NO2       PHOTON    N2        O                       1.000 /NO2   /
-          rcphotslice(IDH2O2,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(7))   !  7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
-          rcphotslice(IDHNO3,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(15))  ! 15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
-          rcphotslice(IDACH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(5))   !  5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
-          rcphotslice(IDBCH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(6))   !  6 H2CO      PHOTON    CO        H2                      1.000 /H2COb /
-          rcphotslice(IDHONO,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(14))  ! 14 HNO2      PHOTON    NO       OH    
-          rcphotslice(IDHO2NO2,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(16))  ! emep ratio is 0.667 for NO2 + HO2 
-          rcphotslice(IDNO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(11)) + VALJXX(L,JIND(12)) ! emep ratio is 0.873 to 0.127, fastj ratio is 0.886 to 0.114
-          rcphotslice(IDNO3_NO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(11))  ! sometimes NO3 channels are separately defined
-          rcphotslice(IDNO3_NO2,kmax_bnd-L,i_emep,j_emep)= VALJXX(L,JIND(12))  ! sometimes NO3 channels are separately defined
-          rcphotslice(IDCH3O2H,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(8))   ! Methyl hydroperoxide. Used in many photolysis reactions. See Blitz et al. 2005
-          rcphotslice(IDCH3COX,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(61)) + VALJXX(L,JIND(62)) ! IDCH3COX = IDMEK. EMEP different assumption about channels (1.0/0.0 vs 0.85/0.15 for cloudJ) 
-          rcphotslice(IDRCOCHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(64))  ! 64 CH3COCHO  PHOTON    CH3CO     CO  1.000 /MGlyxl/ NB: IDRCOCHO = IDRCOHCO = 12
-          rcphotslice(IDCH3CHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(54))  ! 54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
-          rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! not in EmChem19 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
-          rcphotslice(IDHCOHCO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) + VALJXX(L,JIND(66)) + VALJXX(L,JIND(67)) ! Glyox channel qyields depend on wavelength (MCM webpage), EMEP reaction assumes fixed qyields
-          rcphotslice(IDCH3COY,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(72)) ! BIACET cross-section and q-yield from MCM database
 
-          ! cloud-j specific reactions which may be present in chemistry scheme
-          rcphotslice(IDGLYOXA,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) ! glyox channels a, b and c
-          rcphotslice(IDGLYOXB,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(66))
-          rcphotslice(IDGLYOXC,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(67))
-          rcphotslice(IDPAN,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(52))      
+      ! populate the photolysis array. NRATJ is number of phot reactions from j2j input file
+      do J=1,NRATJ
+        if(JIND(J)>0) rcphotslice(J,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(J))*JFACTA(J)
+      end do
+
+    !       ! reactions having a 1-to-1 correspondence with tabulated reactions. Note: All of these CloudJ reactions have been checked to be non-zero.
+    !       rcphotslice(IDAO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(3))   ! JIND(J))  *JFACTA(J)   ZPJ(L,3)!3 O3   PHOTON    O2    O(total)   1.000 /O3    /
+    !       rcphotslice(IDBO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(4))   ! ZPJ(L,4)!4  O3        PHOTON    O2        O(1D)                   1.000 /O3(1D) /           
+    !       rcphotslice(IDNO2,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(9))   !  9 NO2       PHOTON    N2        O                       1.000 /NO2   /
+    !       rcphotslice(IDH2O2,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(7))   !  7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
+    !       rcphotslice(IDHNO3,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(15))  ! 15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
+    !       rcphotslice(IDACH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(5))   !  5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
+    !       rcphotslice(IDBCH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(6))   !  6 H2CO      PHOTON    CO        H2                      1.000 /H2COb /
+    !       rcphotslice(IDHONO,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(14))  ! 14 HNO2      PHOTON    NO       OH    
+    !       rcphotslice(IDHO2NO2,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(16))  ! emep ratio is 0.667 for NO2 + HO2 
+    !       rcphotslice(IDNO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(11)) + VALJXX(L,JIND(12)) ! emep ratio is 0.873 to 0.127, fastj ratio is 0.886 to 0.114
+    !       rcphotslice(IDNO3_NO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(11))  ! sometimes NO3 channels are separately defined
+    !       rcphotslice(IDNO3_NO2,kmax_bnd-L,i_emep,j_emep)= VALJXX(L,JIND(12))  ! sometimes NO3 channels are separately defined
+    !       rcphotslice(IDCH3O2H,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(8))   ! Methyl hydroperoxide. Used in many photolysis reactions. See Blitz et al. 2005
+    !       rcphotslice(IDCH3COX,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(61)) + VALJXX(L,JIND(62)) ! IDCH3COX = IDMEK. EMEP different assumption about channels (1.0/0.0 vs 0.85/0.15 for cloudJ) 
+    !       rcphotslice(IDRCOCHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(64))  ! 64 CH3COCHO  PHOTON    CH3CO     CO  1.000 /MGlyxl/ NB: IDRCOCHO = IDRCOHCO = 12
+    !       rcphotslice(IDCH3CHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(54))  ! 54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
+    !       rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! not in EmChem19 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
+    !       rcphotslice(IDHCOHCO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) + VALJXX(L,JIND(66)) + VALJXX(L,JIND(67)) ! Glyox channel qyields depend on wavelength (MCM webpage), EMEP reaction assumes fixed qyields
+    !       rcphotslice(IDCH3COY,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(72)) ! BIACET cross-section and q-yield from MCM database
+
+    !       ! cloud-j specific reactions which may be present in chemistry scheme
+    !       rcphotslice(IDGLYOXA,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) ! glyox channels a, b and c
+    !       rcphotslice(IDGLYOXB,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(66))
+    !       rcphotslice(IDGLYOXC,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(67))
+    !       rcphotslice(IDPAN,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(52))      
     end do
 
     first_call=.false.
