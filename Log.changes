@@ -46,6 +46,10 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NEW TAG rv4.49 = Tagging for isorropia_lite version
+(Applied 13th Feb. 2023, but added here 7th Mar 2023)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2023, Willem
 
 Added option to output surface aerosol pH, calculated using ISORROPIA-lite.
