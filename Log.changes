@@ -46,6 +46,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Mar 2023, Dave
+
+Config_module: cmxBiomassBurning_GFASv1 now modified to 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt', instead of v1.txt. The v1a data adds PM emissions.
+Results will change for GFAS users!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG rv4.49 = Tagging for isorropia_lite version
 (Applied 13th Feb. 2023, but added here 7th Mar 2023)
 

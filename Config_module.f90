@@ -774,7 +774,7 @@ character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOT
 character(len=TXTLEN_FILE), target, save, public :: &
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
  ,cmxBiomassBurning_FINN     = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt' & ! works for 1.5 also
- ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt' &
+ ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt' &
 !POLL replaced by name of pollutant in EmisSplit
  ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
  ,SplitSpecialsFile          = 'ZCMDIR/emissplit_run/emissplit.specials.POLL'
