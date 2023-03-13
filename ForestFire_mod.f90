@@ -2,6 +2,21 @@ module ForestFire_mod
 !----------------------------------------------------------------
 ! Uses emissions from either:
 !
+! 0) FINNv2.5
+!      mod    - 2002-2021
+!      modvrs - 2012 - 2021
+!    Converted  (by Qing Mu) from 
+!MODIS
+!wget https://www.acom.ucar.edu/Data/fire/data/finn2/FINNv2.5_mod_GEOSCHEM_2019_c20211213.txt.gz
+!MODIS+VIIRS
+!wget https://www.acom.ucar.edu/Data/fire/data/finn2/FINNv2.5_modvrs_GEOSCHEM_2019_c20211213.txt.gz
+! REFERENCES:
+!Wiedinmyer, C.; Kimura, Y.; McDonald-Buller, E. C.; Emmons, L. K.; Buchholz, R.
+!R.; Tang, W.; Seto, K.; Joseph, M. B.; Barsanti, K. C.; Carlton, A. G. &
+!Yokelson, R. The Fire Inventory from NCAR version 2.5: an updated global fire
+!emissions model for climate and chemistry applications EGUsphere, 2023, 2023,
+!1-45, https://egusphere.copernicus.org/preprints/egusphere-2023-124/ 
+
 ! 1) FINNv1.5 daily data 2002 - 2015
 !  http://bai.acom.ucar.edu/Data/fire/
 ! REFERENCES:
@@ -185,7 +200,7 @@ subroutine Config_Fire()
   character(len=*), parameter :: dtxt='BB:Config'
 
   if(.not.first_call) return
-  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
+  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP,',', BBMODE
 
   select case(BBMAP)
     case("GFED")
@@ -194,7 +209,7 @@ subroutine Config_Fire()
     case("FINN")
       persistence=1  ! 1-day records
       bbinterp = 'mass_conservative'
-      BiomassBurningMapping = "FINNv1.5"
+      BiomassBurningMapping = "FINNv1.5"  ! ok for 2.5 also
    case("GFAS")
       persistence=3  ! 1-day records, valid for 3 day in forecast runs
       bbinterp = 'conservative'
@@ -275,6 +290,7 @@ subroutine make_mapping()
   integer :: emep_used(NSPEC_TOT)
   integer :: ncmx_defs,ncmx_emep
   type(bbtype), dimension(100) :: tmpFF_defs
+  character(len=*), parameter :: dtxt='BB:makemap'
   
   integer i,n
 
@@ -292,12 +308,12 @@ subroutine make_mapping()
 
 
   if(MasterProc) then
-     write(*,fmt='(A,I5,A,I5,A)') 'Forest Fire will read ',NBB_DEFS,&
+     write(*,fmt='(A,I5,A,I5,A)') dtxt//' will read ',NBB_DEFS,&
         ' species, mapped into ',NEMEPSPECS,' emep species'
   end if
   
   do i = 1, NBB_DEFS
-     if(masterproc)write(*,*)i,'ForestFire: '//trim(FF_defs_BB(i)%BBName)&
+     if(masterproc)write(*,*)i,dtxt//' '//trim(FF_defs_BB(i)%BBName)&
            //' maps to '//species(FF_defs_BB(i)%emep)%name
   enddo
 
@@ -351,10 +367,10 @@ subroutine Fire_Emis(daynumber)
   hh   = current_date%hour
   if(fire_year>1) yyyy=fire_year
   if(debug_me)then
-    write(*,'(a,7i5)') "current date and time BB-"//trim(BBMODE),&
+    write(*,'(a,7i5)') dtxt//"current date and time -"//trim(BBMODE),&
       yyyy,mm,dd,fire_year, nn_old, mm
     if(allocated(BiomassBurningEmis)) &
-      write(*,'(a,es12.3)') dtxt//'BBsum', sum(BiomassBurningEmis(1,:,:))
+      write(*,'(a,es12.3)') dtxt//'sum', sum(BiomassBurningEmis(1,:,:))
   end if
   select case(BBMODE)
     case("HOURLY_REC","H","h")
