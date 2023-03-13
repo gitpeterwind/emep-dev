@@ -52,6 +52,11 @@ Config_module: cmxBiomassBurning_GFASv1 now modified to 'ZCMDIR/CMX_BiomassBurni
 Results will change for GFAS users!
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th March 2023 Dave
+
+ForestFire_mod - small improvements in debug output
+GridValues_mod - i4 to i5 on coord output
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG rv4.49 = Tagging for isorropia_lite version
 (Applied 13th Feb. 2023, but added here 7th Mar 2023)
 
