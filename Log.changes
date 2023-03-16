@@ -69,6 +69,15 @@ which in config_emep.nml can be set by
 
 USES%CLOUDICE       = F,
 
+Also added a flag for climatological overhead stratospheric ozone for use
+in the Cloud-J photolysis rate calculations. Default is to use climatology,
+until the effects of monthly means (between 2005 and 2019) on surface ozone
+trends is investigated in more detail. 
+
+Using monthly-means for the available years can be set through
+
+USES%CLIMSTRATO3    = T,
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Mar 2023, Dave
 

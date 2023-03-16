@@ -178,6 +178,7 @@ type, public :: emep_useconfig
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
     ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
+    ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
     ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
