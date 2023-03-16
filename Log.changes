@@ -45,6 +45,22 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+NEW TAG: rv4.50
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Mar 2023, Dave
+
+New default for soil emissions, using climatological data.
+
+Emissions_mod.f90:  Implemented v2.4 climatological emissions. CLimatology triggered by
+  file name: cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc
+  (Needs a more elegant solution one day, but not today.)
+
+Config_module.f90: added extra outouts (MonthlyFacFile etc) to RunLog.out outputs), and reverted default MonthlyFacs to xJune2012 settings. Needs to be followed up!
+
+config_emep.nml: removed MonthlyFacFile, MonthlyFacBasis.
+
+Results will change a bit.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Mar 2023, Willem
 
