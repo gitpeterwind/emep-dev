@@ -177,6 +177,7 @@ type, public :: emep_useconfig
     ,CLOUDJ           = .false. & ! use CloudJ_mod for computing rcphot 
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
+    ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
     ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
