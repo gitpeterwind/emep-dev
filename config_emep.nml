@@ -33,10 +33,10 @@
   USES%SOILNOX = T,
   emis_inputlist(1)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
   emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
-  MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_may2021/MonthlyFacs.POLL',
-
-  ! Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
-  MonthlyFacBasis = 'ECLIPSE',
+  !rv4.50: Not sure this is best. Revert to default xJune2012 MonthlyFacs from Config:
+  !MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_may2021/MonthlyFacs.POLL',
+  !Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
+  !MonthlyFacBasis = 'ECLIPSE',
 
 
 ! 1) GLOBAL
