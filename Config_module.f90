@@ -129,6 +129,9 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
     character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
+    character(len=TXTLEN_FILE) :: desert    = 'DataDir/Olson_2001_DEforEmep.nc'  ! Map of desert from Olson 2001
+    !character(len=TXTLEN_FILE) :: desert    = 'DataDir/Parajuli_SSM_1440x720.nc'  ! Sediment supply map from Parajuli & Zender, 2017
+    real ::                       ssmThreshold = 0.1  ! Threshold of SSM used to identify likely dust sources
   end type LandCoverInputs_t
   type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
@@ -1038,6 +1041,7 @@ subroutine Config_Constants(iolog)
   call associate_File(LandCoverInputs%LandDefs)
   call associate_File(LandCoverInputs%Do3seDefs)
   call associate_File(LandCoverInputs%mapMed)
+  call associate_File(LandCoverInputs%desert)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)
