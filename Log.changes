@@ -49,7 +49,20 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Mar 2023, Dave
 
  Adding deserts - prelim
- Config_module.f90 changes to allow LandInputs%deserts. Also testing git :-)
+
+ Config_module.f90 changes to allow LandInputs%deserts, LandInputs%ssmThreshold
+
+ Debug_module.f90 - changed DEBUG_DUST to DEBUG%DUST
+
+ DustProd_mod.f90 - Now allow Olson or ParajuliZender deserts to override
+  default settings. Removes deserts (and hence dust) in Spain, Scotland, etc.
+  Output PRINTCDF_Deserts_xxxxx shows original desert and modified desert.
+
+  Plus, re-organisation of code and formatting.
+
+ RESULTS WILL CHANGE if Olson or ParajuliZender chosen for LandInputs%deserts
+ BEST value for ssmThreshold is still beong investigated.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG: rv4.50
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

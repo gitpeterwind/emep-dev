@@ -130,8 +130,8 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
     character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
     character(len=TXTLEN_FILE) :: desert    = 'DataDir/Olson_2001_DEforEmep.nc'  ! Map of desert from Olson 2001
-    !character(len=TXTLEN_FILE) :: desert    = 'DataDir/Parajuli_SSM_1440x720.nc'  ! Sediment supply map from Parajuli & Zender, 2017
-    real ::                       ssmThreshold = 0.1  ! Threshold of SSM used to identify likely dust sources
+    !character(len=TXTLEN_FILE) :: desert    = 'DataDir/ParajuliZender_SSM_1440x720.nc'  ! Sediment supply map from Parajuli & Zender, 2017
+    real ::                       ssmThreshold = 0.2  ! Threshold of SSM used to identify likely dust sources. uncertain.
   end type LandCoverInputs_t
   type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
