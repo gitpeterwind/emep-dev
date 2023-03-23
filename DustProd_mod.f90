@@ -233,6 +233,7 @@
 
    do i = 1, LIMAX
      do j = 1, LJMAX
+       if ( glat(i,j) > 60.0 ) continue ! exclude northern deserts
        do ilu= 1, LandCover(i,j)%ncodes
          lu      = LandCover(i,j)%codes(ilu)
          if ( LandType(lu)%is_crop .or. &
