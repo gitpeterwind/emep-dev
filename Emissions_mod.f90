@@ -2562,24 +2562,78 @@ subroutine newmonth
 
   elseif(USES%SOILNOX) then ! Global soil NOx, default from 2021
 
+     !cf MonthlyDiurnalEmisFactor(months, tsteps, lat, lon)
     SoilNOx(:,:)=0.0
-    SoilNOx3D(:,:,:)=0.0
-    buffer3D(:,:,:)=0.0
+    SoilNOx3D(:,:,:)=0.0  ! careful: LIMAX,LJMAX,8
+    buffer3D(:,:,:)=0.0   !          8,LIMAX,LJMAX
     buffer(:,:)=0.0
-    if(debug_proc) write(*,*)' SOILNOx start', me, trim( USES%SOILNOX_METHOD )
+    if(debug_proc) write(*,*)dtxt//' SOILNOx start', me,&
+            ' '//trim( USES%SOILNOX_METHOD )//trim(soilnox_emission_File)
 
     if ( USES%SOILNOX_METHOD == 'Total' .or. USES%SOILNOX_METHOD =='NoFert' ) then
 
-      ! tmp checks. Will sort out climatological case later
-      ! tmp Will use 2018 for 2019...
-      ! BUT safety for < 2000 set here. (more likely to cause errors with
+
+   if ( index(soilnox_emission_File,'v2.4a_GLOBAL05_Clim2000') > 0) then
+     ! New format: tsteps in 4D array. No year info, just month.
+
+      nstart=current_date%month
+      i=debug_li
+      j=debug_lj
+
+      call ReadField_CDF(soilnox_emission_File,&
+           'TotalSoilEmis',buffer3D,&
+           nstart=current_date%month, kstart=1, kend=8,& !same variation every year
+           interpol='conservative',known_projection="lon lat",&
+           needed=.true.,debug_flag=.false.,UnDef=0.0)
+      do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
+          SoilNOx3D(:,:,n)=buffer3D(n,:,:)
+      end do
+      if ( debug_proc) write(*,"(a40,i3,2es12.3)") dtxt//'CLIMSOIL monthTot:',&
+         current_date%month, maxval(SoilNOx3D), SoilNOx3D(i,j,1)
+
+      if (USES%SOILNOX_METHOD == 'NoFert') then
+        !we must substract Fertilizer emissions
+        buffer3D(:,:,:)=0.0   !          8,LIMAX,LJMAX
+        call ReadField_CDF(soilnox_emission_File,&
+           'FertEmis',buffer3D,&
+           nstart=current_date%month, kstart=1, kend=8,& !same variation every year
+           interpol='conservative',known_projection="lon lat",&
+           needed=.true.,debug_flag=.false.,UnDef=0.0)
+        if ( debug_proc) write(*,"(a40,i3,2es12.3)") dtxt//'CLIMSOIL monthBuf:',&
+            current_date%month, maxval(buffer3D), buffer3D(1,i,j)
+        do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
+          SoilNOx3D(:,:,n)= SoilNOx3D(:,:,n) - buffer3D(n,:,:)
+        end do
+        if ( debug_proc) write(*,"(a40,i3,2es12.3)") dtxt//'CLIMSOIL monthFer:',&
+           current_date%month, maxval(SoilNOx3D), SoilNOx3D(i,j,1)
+      end if
+
+      SoilNOx3D = max(0.0, SoilNOx3D)
+
+      !just to get nice BioNat output in .nc files:
+      do n=1,8
+         SoilNOx(:,:) = SoilNOx(:,:) + SoilNOx3D(:,:,n)/8.0
+      end do
+      if ( debug_proc) write(*,"(a40,i3,2es12.3)") dtxt//'CLIMSOIL monthOut:',&
+         current_date%month, maxval(SoilNOx3D), SoilNOx3D(i,j,1)
+
+   else
+
+      ! safety for < 2000 set here. (more likely to cause errors with
       ! trends)
       !call CheckStop(current_date%year>2018,dtxt//'CAMS81 soil>2018')
       call CheckStop(current_date%year<2000,dtxt//'CAMS81 soil<2000')
 
-      if ( debug_proc) write(*,*) '3DSOIL file', trim(soilnox_emission_File)// 'XXX'
-
-      nstart=(min(2018,max(2000,current_date%year))-2000)*12 + current_date%month !12*19=228 years defined
+      ! CRUDE - will add variable later.
+      ! 19 or 20 years defined in files:
+      ! 12*19=228 months defined for < v2.4
+      ! 12*20=240 months defined for   v2.4
+      if ( index(soilnox_emission_File,'v2.4') > 0) then
+        nstart=(min(2019,max(2000,current_date%year))-2000)*12 + current_date%month
+      else
+        nstart=(min(2018,max(2000,current_date%year))-2000)*12 + current_date%month
+      end if
+      if ( debug_proc) write(*,*) 'YYSOIL file', trim(soilnox_emission_File)// 'XXX', nstart
 
       call ReadField_CDF(soilnox_emission_File,&
            'TotalSoilEmis',SoilNOx,&
@@ -2610,9 +2664,14 @@ subroutine newmonth
         if(debug_proc) write(*,*) dtxt//'3DSOIL ', current_date%month, i, &
             SoilNOx3D(debug_li,debug_lj,n)
       end do
+    end if
 
-      if(DEBUG%SOILNOX.and.debug_proc) write(*,*) dtxt//"CAMS81 SOILNO ", &
-           current_date%year, nstart, maxval(SoilNOx)
+      if(DEBUG%SOILNOX.and.debug_proc) then
+        write(*,*) dtxt//"CAMS81 SOILNO ", current_date%year, current_date%month, nstart, maxval(SoilNOx)
+        do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
+          write(*,*) dtxt//'3DSOIL ', current_date%month, n, SoilNOx3D(debug_li,debug_lj,n)
+        end do
+      end if
 
     else if (USES%SOILNOX_METHOD == 'Zaehle2011') then
       nstart=(current_date%year-1996)*12 + current_date%month

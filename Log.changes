@@ -45,6 +45,74 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+NEW TAG: rv4.50
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Mar 2023, Dave
+
+New default for soil emissions, using climatological data.
+
+Emissions_mod.f90:  Implemented v2.4 climatological emissions. CLimatology triggered by
+  file name: cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc
+  (Needs a more elegant solution one day, but not today.)
+
+Config_module.f90: added extra outouts (MonthlyFacFile etc) to RunLog.out outputs), and reverted default MonthlyFacs to xJune2012 settings. Needs to be followed up!
+
+config_emep.nml: removed MonthlyFacFile, MonthlyFacBasis.
+
+Results will change a bit.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Mar 2023, Willem
+
+Added config option to exclude reading in cloud ice meteorology fields,
+which in config_emep.nml can be set by 
+
+USES%CLOUDICE       = F,
+
+Also added a flag for climatological overhead stratospheric ozone for use
+in the Cloud-J photolysis rate calculations. Default is to use climatology,
+until the effects of monthly means (between 2005 and 2019) on surface ozone
+trends is investigated in more detail. 
+
+Using monthly-means for the available years can be set through
+
+USES%CLIMSTRATO3    = T,
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Mar 2023, Dave
+
+Config_module: cmxBiomassBurning_GFASv1 now modified to 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt', instead of v1.txt. The v1a data adds PM emissions.
+Results will change for GFAS users!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th March 2023 Dave
+
+ForestFire_mod - small improvements in debug output
+GridValues_mod - i4 to i5 on coord output
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NEW TAG rv4.49 = Tagging for isorropia_lite version
+(Applied 13th Feb. 2023, but added here 7th Mar 2023)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Feb 2023, Willem
+
+Added option to output surface aerosol pH, calculated using ISORROPIA-lite.
+
+Edit: removed unintentionally added (undefined) variable, and added
+a min concentration limit to aerosol water content to avoid division by zero. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Feb 2023, Willem
+
+Old ISORROPIA II code is replaced with Isorropia-lite (2022 code). 
+
+Aerosol water uptake is handled in the thermodynamics call to isorropia, for
+which the (i,j) grid indices are now included in the AerosolEquilib call.
+
+The new config option AERO%INTERNALMIXED determines whether or not internal
+mixing is assumed. If set to true, Na and Cl from sea salt are included in the
+call to isorropia.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd Mar 2023, Peter
 

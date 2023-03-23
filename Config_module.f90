@@ -177,6 +177,8 @@ type, public :: emep_useconfig
     ,CLOUDJ           = .false. & ! use CloudJ_mod for computing rcphot 
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
+    ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
+    ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
     ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
@@ -755,15 +757,18 @@ character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataD
 !Zahle2011:
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
-character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.3_GLOBAL05_2000_2018.nc'
+!rv4.49:character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.3_GLOBAL05_2000_2018.nc'
+!rv4.50: use this climatological file for all years, since year-to-year variation is small and uncertain
+character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
 !
 !2021: added ECLIPSE6b-based factors for non-European areas
 !MAY 2021: CAREFUL - set MonthlyFacFile consistent with MonthlyFacBasis
 !NEEDS THOUGHT BY USER!!! ECLIPSE or GENEMIS coded so far
 ! (though code will crudely check)
+!2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
-!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
+!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
+character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
@@ -774,7 +779,7 @@ character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOT
 character(len=TXTLEN_FILE), target, save, public :: &
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
  ,cmxBiomassBurning_FINN     = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt' & ! works for 1.5 also
- ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt' &
+ ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt' &
 !POLL replaced by name of pollutant in EmisSplit
  ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
  ,SplitSpecialsFile          = 'ZCMDIR/emissplit_run/emissplit.specials.POLL'
@@ -809,7 +814,7 @@ integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
      NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
      HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
      PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,&
-     N2O5_ix
+     N2O5_ix, OM_ix, SSf_ix, SSc_ix
 
 
 !----------------------------------------------------------------------------
@@ -941,11 +946,6 @@ subroutine Config_Constants(iolog)
   ! do not close(IO_NML), other modules will be read namelist on this file
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
-  if(MasterProc) then
-    write(logtxt,'(a,L2)') dtxt//'USES%SOILNOX ', USES%SOILNOX
-    write(*,*) trim(logtxt), IOLOG
-    write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
-  end if
 
   USES%LocalFractions = USES%LocalFractions .or. USES%uEMEP !for backward compatibility
 
@@ -1138,8 +1138,16 @@ subroutine WriteConfig_to_RunLog(iolog)
   integer, intent(in) :: iolog ! for Log file
   NAMELIST /OutUSES/ USES, PBL
   if(MasterProc)then
-     write(iolog,*) ' USES after 1st time-step'
-     write(iolog,nml=OutUSES)
+    write(iolog,*) ' USES after 1st time-step'
+    write(iolog,nml=OutUSES)
+    write(iolog,'(a)') 'soilnox_emission_File: '//trim(soilnox_emission_File)
+    write(iolog,'(a)') 'SplitDefaultFile:      '//trim(SplitDefaultFile)
+    write(iolog,'(a)') 'SplitSpecialsFile:     '//trim(SplitSpecialsFile)
+    write(iolog,'(a)') 'MonthlyFacFile:        '//trim(MonthlyFacFile)
+    write(iolog,'(a)') 'DailyFacFile:          '//trim(DailyFacFile)
+    write(iolog,'(a)') 'HourlyFacFile:         '//trim(HourlyFacFile)
+    write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
+    write(iolog,'(a)') 'HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
   endif
 end subroutine WriteConfig_to_RunLog
 
@@ -1168,6 +1176,9 @@ subroutine define_chemicals_indices()
   HO2_ix = find_index('HO2' ,species(:)%name)
   NO_ix = find_index('NO' ,species(:)%name)
   OH_ix = find_index('OH' ,species(:)%name)
+  OM_ix = find_index('OM25_p' ,species(:)%name)
+  SSf_ix = find_index('SeaSalt_f' ,species(:)%name)
+  SSc_ix = find_index('SeaSalt_c' ,species(:)%name)
 
   HONO_ix = find_index('HONO' ,species(:)%name)
   OP_ix = find_index('OP' ,species(:)%name)

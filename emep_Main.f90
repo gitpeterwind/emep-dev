@@ -129,6 +129,7 @@ program emep_Main
   call assign_startandenddate()
  
   if(MasterProc)then
+    !Jan 2023: GITVERSION is set by Makefile on compile. Otherwise gitversion from above is default.
      call PrintLog(trim(GITVERSION)) !NB: the value may be set by the cpp. Keep upper cases
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))

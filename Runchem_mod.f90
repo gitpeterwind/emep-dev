@@ -247,7 +247,7 @@ subroutine runchem()
       !  Check that one and only one eq is chosen
       if(mod(step_main,2)/=0) then
         if(USES%LocalFractions) call lf_aero_pre(i,j)
-        call AerosolEquilib(debug_flag)
+        call AerosolEquilib(i,j,debug_flag)
         if(USES%LocalFractions) call lf_aero_pos(i,j)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'D')
@@ -262,7 +262,7 @@ subroutine runchem()
         call Add_2timing(31,tim_after,tim_before,"Runchem:DryDep")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'F')
         if(USES%LocalFractions) call lf_aero_pre(i,j)
-        call AerosolEquilib(debug_flag)
+        call AerosolEquilib(i,j,debug_flag)
         if(USES%LocalFractions) call lf_aero_pos(i,j)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'G')
@@ -294,7 +294,7 @@ subroutine runchem()
          !.. Water from EQSAM: ambient and for Rh=50% T=20C 
          call Aero_water     (i,j, debug_flag)  !  For real conditions (3D) 
 !ST:10.01.23         call Aero_water_rh50(i,j, debug_flag)  !  Rh=50% T=20C          
-      else
+      elseif(AERO%EQUILIB_WATER=='MARS')then
          call Aero_water_MARS(i,j, debug_flag)         
       endif
 

@@ -73,7 +73,8 @@ private
 
   real, save, allocatable, public :: &
      Dobson(:,:) !total ozone, mostly stratospheric ozone from IFS
-
+  real, save, allocatable, public :: &
+     pH(:,:) !total ozone, mostly stratospheric ozone from IFS
   real, save, public :: cell_tinv  ! 1/temp,  tmp location
 
   public ::alloc_ChemFields
@@ -106,6 +107,8 @@ contains
     Grid_snow=0.0
     allocate(Dobson(LIMAX,LJMAX)) 
     Dobson=0.0
+    allocate(pH(LIMAX,LJMAX)) 
+    pH=0.0
     allocate(xn_2d_bgn(1,KCHEMTOP:KMAX_MID))
 
     allocate(xn_2d(NSPEC_TOT,KCHEMTOP:KMAX_MID))
