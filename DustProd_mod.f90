@@ -33,7 +33,7 @@
  use Io_RunLog_mod,      only: PrintLog
  use Landuse_mod,        only: LandCover, NLUMAX 
  use Landuse_mod,        only: water_fraction
- use LandDefs_mod,       only: LandType
+ use LandDefs_mod,       only: LandType, LandDefs
  use LocalVariables_mod, only: Grid
  use MetFields_mod,      only: z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
                                   t2_nwp, sdepth, fh, ps, surface_precip, &
@@ -46,7 +46,6 @@
  use MicroMet_mod,          only: Wind_at_h
  use NetCDF_mod,            only: ReadField_CDF,printCDF
  use Par_mod,               only: me,LIMAX,LJMAX
- use Par_mod,               only: limax, ljmax ! Debugging 
  use PhysicalConstants_mod, only: GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
  use SmallUtils_mod,     only: find_index
@@ -110,6 +109,8 @@
   real, dimension (Nsoil) :: mass_fr = (/ 0.036,  0.957, 0.007 /) 
   real, dimension (Nsoil) :: sig_soil= (/ 2.10,   1.9 ,  1.60  /)
   character(len=40) :: desertLabel
+  character(len=*), parameter :: dtxt="IniDUST:"
+  logical ::  dbg = .false.
 
 !  real, dimension (3) :: mass_fr = (/ 2.6e-6, 0.781,  0.219/) 
 !  real, dimension (3) :: dsoil   = (/ 0.0111, 2.524, 42.10 /)  ! [um] MMD 
@@ -171,8 +172,8 @@
 
     help_ustar_th = sqrt (k_help1 * k_help2 * help_ust)
 
-    if (DEBUG%DUST .and. MasterProc) write(6,'(a,2e12.4)') 'DUST: U*, U*t help =',&
-           help_ust, help_ustar_th
+    if (DEBUG%DUST .and. MasterProc) write(6,'(a,2e12.4)') dtxt//&
+     ' U*, U*t help =', help_ust, help_ustar_th
 
 !// =======================================
 !TEST       sand_frac = 0.6   ! sand fraction in soil
@@ -185,8 +186,8 @@
 
     if (DEBUG%DUST .and. MasterProc) then
       write(6,*)
-      write(6,*) 'DUST: >> fractions <<', Nsoil, Ndust
-      write(6,'(a,3e12.4)') 'DUST: Sigma =', (sig_soil(i),i=1,Nsoil)
+      write(6,*) dtxt//' >> fractions <<', Nsoil, Ndust
+      write(6,'(a,3e12.4)') dtxt//' Sigma =', (sig_soil(i),i=1,Nsoil)
     end if
 
     sum_soil(:) = 0.0
@@ -200,8 +201,9 @@
         x1 = log ( d1(idu) / dsoil(isoil) ) / y
         x2 = log ( d2(idu) / dsoil(isoil) ) / y
 
-        if (DEBUG%DUST .and. MasterProc) write (6,'(a,4e12.4)') 'DUST: TEST 3', &
-                               x1,x2,ERFfunc(x1),ERFfunc(x2)
+        if (DEBUG%DUST .and. MasterProc) &
+          write (6,'(a,4e12.4)') dtxt//' TEST 3', &
+              x1,x2,ERFfunc(x1),ERFfunc(x2)
 
         help_diff(isoil,idu) = 0.5 * ( ERFfunc(x2) - ERFfunc(x1) )  &
                                   * mass_fr(isoil)
@@ -217,15 +219,16 @@
 
    if (DEBUG%DUST .and. MasterProc)  then
      do idu = 1,Ndust 
-      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') 'DUST: frac in bins:',  &
+      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') dtxt//' frac in bins:',  &
              d1(idu), d2(idu), (help_diff(isoil,idu), isoil=1,3),         &
              sum_soil(idu),sum_soil(idu)/tot_soil
      end do
-     write (6,'(a,2f8.4)') 'DUST: ** FINE / COARSE **',frac_fine, frac_coar
+     write (6,'(a,2f8.4)') dtxt//' ** FINE / COARSE **',frac_fine, frac_coar
    end if
 
    ! Check which squares are potentially dusty:
 
+   dbg = (DEBUG%DUST .and. debug_proc )
    allocate(maybeDusty(LIMAX, LJMAX))
    allocate(desertFlag(LIMAX, LJMAX))
    maybeDusty = .false.   ! will set true in relevant desert/arable soils
@@ -233,13 +236,18 @@
 
    do i = 1, LIMAX
      do j = 1, LJMAX
-       if ( glat(i,j) > 60.0 ) continue ! exclude northern deserts
        do ilu= 1, LandCover(i,j)%ncodes
          lu      = LandCover(i,j)%codes(ilu)
          if ( LandType(lu)%is_crop .or. &
               LandType(lu)%is_desert ) maybeDusty(i,j) = .true.
          if ( water_fraction(i,j) > 0.99 )  maybeDusty(i,j) = .false.
          if ( LandType(lu)%is_desert ) desertFlag(i,j) = 1.0
+
+         if ( dbg .and. i==debug_li .and. j==debug_lj ) &
+           write(*,'(a,i3,3L2,f7.1,a,f5.1,f9.5)') dtxt//'LCin:', lu, LandType(lu)%is_crop, &
+            LandType(lu)%is_desert, maybeDusty(i,j),  glat(i,j), &
+            ' '//trim(LandDefs(lu)%code), desertFlag(i,j),  LandCover(i,j)%fraction(ilu)
+
        end do
      end do
    end do
@@ -248,6 +256,13 @@
    ! caused by bare-land/desert mis-classifications.
 
    allocate(tmpArray(LIMAX, LJMAX))
+   tmpArray = 0.0
+   if ( dbg ) then
+     i=debug_li
+     j=debug_lj
+     write(*,'(a,L2,f5.1)') dtxt//'Opts:', maybeDusty(i,j),  desertFlag(i,j)
+   end if
+
    desertLabel = "Deserts_Orig"
 
    if ( index(LandCoverInputs%desert,'Olson') > 0 )  then
@@ -258,12 +273,16 @@
               debug_flag=.false.,UnDef=-999.0)
 
    else if ( index(LandCoverInputs%desert,'Parajuli') > 0 )  then
+
       call ReadField_CDF(LandCoverInputs%desert,'SSM', &
              tmpArray(:,:),1,interpol='zero_order',needed=.true.,&
               debug_flag=.false.,UnDef=-999.0)
+
       write(unit=desertLabel,fmt='(a,f3.1)') "Deserts_ParajaluZender_",&
          LandCoverInputs%ssmThreshold
-      where ( tmpArray < LandCoverInputs%ssmThreshold ) tmpArray = .false.
+      if ( dbg ) write(*,'(a,L2,2f7.1)') dtxt//'PZin:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
+      where ( tmpArray < LandCoverInputs%ssmThreshold ) tmpArray = 0.0
+      if ( dbg ) write(*,'(a,L2,2f7.1)') dtxt//'PZut:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
    else
       tmpArray = 1.0
       desertLabel = "Deserts_def"
@@ -271,6 +290,7 @@
 
    if ( desertLabel /= "Deserts_Orig" ) then
 
+     if ( dbg ) write(*,'(a,L2,2f7.1)') dtxt//'PREFIX:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
      where ( desertFlag >0.0 ) !  desert in EMEP original
        where ( tmpArray>0.0 )  ! also desert in Olson
          desertFlag = 2.0      ! change
@@ -278,9 +298,19 @@
          maybeDusty = .false.
        end where
      end where
+     if ( dbg ) write(*,'(a,L2,2f7.1)') dtxt//'POSFIX:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
    end if
 
+  ! Finally, exclude deserts north of 60N
+  ! - there were too many "false" deserts in Europe at least
+   where ( glat > 60.0 .and. desertFlag > 0.0 ) 
+     maybeDusty = .false.
+     desertFlag = 1.0      ! change
+   end where
+   if ( dbg ) write(*,'(a,L2,2es12.3)') dtxt//'60N:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
+
    call printCDF(desertLabel, desertFlag(:,:),'num')
+     
 
   end subroutine init_dust
 ! >=================================================================<
@@ -336,7 +366,7 @@
         if(MasterProc) write(*,'(a,i4,2L2,2i4)') dtxt//"I ",&
            ipoll, dust_found, debug_proc, inat_DUf, inat_DUc
 
-          my_first_call = .false.
+        my_first_call = .false.
 
     end if !  my_first_call
 !_______________________________________________________
@@ -352,18 +382,18 @@
 !       if( itot_DUf>0) rcemis( itot_DUc,KMAX_MID) = 0.0
 !    return 
 ! end if
- !++++++++++++++++++++++++++++
- if( inat_DUf>0) EmisNat( inat_DUf,i,j) = 0.0
- if( inat_DUc>0) EmisNat( inat_DUc,i,j) = 0.0
- if( itot_DUf>0) rcemis( itot_DUf,KMAX_MID) = 0.0
- if( itot_DUf>0) rcemis( itot_DUc,KMAX_MID) = 0.0
- !++++++++++++++++++++++++++++
- if ( .not. dust_found ) return
- !++++++++++++++++++++++++++++
- !END DS re-write:
+  !++++++++++++++++++++++++++++
+  if( inat_DUf>0) EmisNat( inat_DUf,i,j) = 0.0
+  if( inat_DUc>0) EmisNat( inat_DUc,i,j) = 0.0
+  if( itot_DUf>0) rcemis( itot_DUf,KMAX_MID) = 0.0
+  if( itot_DUf>0) rcemis( itot_DUc,KMAX_MID) = 0.0
+  !++++++++++++++++++++++++++++
+  if ( .not. dust_found ) return
+  !++++++++++++++++++++++++++++
+  !END DS re-write:
 
 
-!/..  landuse types ..........
+  !/..  landuse types ..........
 
   dbg = ( DEBUG%DUST .and. debug_flag)
 
@@ -434,7 +464,7 @@
      if (daynumber <  LandCover(i,j)%SGS(ilu) .or.   &
          daynumber >  LandCover(i,j)%EGS(ilu) )      &
              arable = .true.
-       if ( dbg) write(*,*) dtxt//'Crops? ', ilu, lu, daynumber,&
+     if ( dbg) write(*,*) dtxt//'Crops? ', ilu, lu, daynumber,&
          LandCover(i,j)%EGS(ilu), LandCover(i,j)%EGS(ilu)
    end if
 
@@ -462,7 +492,7 @@
 !--------------------------------------------------------------
 
 !//__ Clay content in soil (limited to 0.2 ___
-     clay = min (clay_frac(i,j), 0.20) ! [frc]
+   clay = min (clay_frac(i,j), 0.20) ! [frc]
 
 !== Testing ==== 
 !    ln10 = log(10.0) 
@@ -476,97 +506,95 @@
 
 !//__ Threshold U* for saltation for particle (D_opt=70um) - dry ground
 
-     ustar_th = help_ustar_th / sqrt(roa(i,j,KMAX_MID,1)) ! [m s-1] 
+   ustar_th = help_ustar_th / sqrt(roa(i,j,KMAX_MID,1)) ! [m s-1] 
 
-     if( dbg) write(6,'(a,4f15.5)')  &
-         dtxt//' >> USTARS: U*/U*th/ro >>', ustar,help_ustar_th, ustar_th,roa(i,j,KMAX_MID,1)
+   if( dbg) write(6,'(a,4f15.5)')  &
+      dtxt//' >> USTARS: U*/U*th/ro >>', ustar,help_ustar_th, ustar_th,roa(i,j,KMAX_MID,1)
 
 
 !//___  Inhibition of saltation by soil moisture (Fecan et al., 1999)
 
-  ustar_moist_cor = 1.0
+   ustar_moist_cor = 1.0
 
 !//__ Minimal soil moisture at which U*_thresh icreases
-     if(SoilWaterSource /= "IFS")then
-        gwc_thr = (0.17 + 0.14 * clay)* clay    ! [kg/kg] [m3 m-3] 
-        gwc_thr = max ( gwc_thr, 0.1)   ! Lower threshold limit (Vautard, AE, 2005)
-     else
-        !use a threshold consistent with the one IFS uses
-        gwc_thr=pwp(i,j)
-     end if
+   if(SoilWaterSource /= "IFS")then
+      gwc_thr = (0.17 + 0.14 * clay)* clay    ! [kg/kg] [m3 m-3] 
+      gwc_thr = max ( gwc_thr, 0.1)   ! Lower threshold limit (Vautard, AE, 2005)
+   else
+      !use a threshold consistent with the one IFS uses
+      gwc_thr=pwp(i,j)
+   end if
  
 
-  if (foundSoilWater) then    ! Soil Moisture in met data
+   if (foundSoilWater) then    ! Soil Moisture in met data
 
-!__ Saturated volumetric water content (sand-dependent)
+     !__ Saturated volumetric water content (sand-dependent)
      vh2o_sat = 0.489-0.126 * sand_frac(i,j)       ! [m3 m-3] 
 
-!__ Bulk density of dry surface soil [Zender, (8)]
+     !__ Bulk density of dry surface soil [Zender, (8)]
      soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
 
-!__ Volumetric soil water content [m3/m3] 
-!Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
-!     v_h2o = SoilWater(i,j,1)
-!-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
-!   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
-!
-! *** BUT *** the following is using IFS pwp. This is likely
-! the best we can do for the grid-average, but for dust it might be more
-! appropriate to calculate for specific landcover PWP values.
-! 
-! (Note, v_h2o should not end up negative here, see Met_mod.f90)
+     !__ Volumetric soil water content [m3/m3] 
+     !Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
+     !     v_h2o = SoilWater(i,j,1)
+     !-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
+     !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
+     !
+     ! *** BUT *** the following is using IFS pwp. This is likely
+     ! the best we can do for the grid-average, but for dust it might be more
+     ! appropriate to calculate for specific landcover PWP values.
+     ! 
+     ! (Note, v_h2o should not end up negative here, see Met_mod.f90)
 
-  v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
-  if ( dbg) write(*,'(a,4es12.3)') dtxt//'SW='//trim(SoilWaterSource), &
-     SoilWater(i,j,1), pwp(i,j), fc(i,j), v_h2o
+     v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
+     if ( dbg) write(*,'(a,4es12.3)') dtxt//'SW='//trim(SoilWaterSource), &
+      SoilWater(i,j,1), pwp(i,j), fc(i,j), v_h2o
 
-  if( v_h2o < SMALL ) then
-   print "(a,2i4,9f10.4)"," DUSTY DRY!!",  i_fdom(i), j_fdom(j), &
-      v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
-     !v_h2o = max( 1.0e-12, v_h2o) 
-   call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
-  end if
-  if( v_h2o > fc(i,j) + 0.00001  ) then
-   print "(a,2i4,9f10.4)"," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
-    v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+     if( v_h2o < SMALL ) then
+       print "(a,2i4,9f10.4)"," DUSTY DRY!!",  i_fdom(i), j_fdom(j), &
+          v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+         !v_h2o = max( 1.0e-12, v_h2o) 
+       call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
+      end if
+      if( v_h2o > fc(i,j) + 0.00001  ) then
+       print "(a,2i4,9f10.4)"," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
+        v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+       call CheckStop(v_h2o > fc(i,j),  "DUSTY WET" )
+      end if
 
-    call CheckStop(v_h2o > fc(i,j),  "DUSTY WET" )
+      !__ Gravimetric soil water content [kg kg-1]  
+      gr_h2o = v_h2o * Ro_water/soil_dns_dry       
 
-  end if
+      !__ Put also gwc_thr (=pwp) in same unit
+      if(SoilWaterSource == "IFS")then
+        gwc_thr=gwc_thr* Ro_water/soil_dns_dry
+      end if
 
-!__ Gravimetric soil water content [kg kg-1]  
-        gr_h2o = v_h2o * Ro_water/soil_dns_dry       
-
-!__ Put also gwc_thr (=pwp) in same unit
-        if(SoilWaterSource == "IFS")then
-           gwc_thr=gwc_thr* Ro_water/soil_dns_dry
-        end if
-
-! Soil water correction
-     if (gr_h2o > gwc_thr) &
-       ustar_moist_cor = sqrt(1.0 + 1.21 *  &
+      ! Soil water correction
+      if (gr_h2o > gwc_thr) &
+        ustar_moist_cor = sqrt(1.0 + 1.21 *  &
                  (100.*(gr_h2o - gwc_thr))**0.68) ! [frc] FMB99 p.155(15) 
 
-     if( dbg ) then
+      if( dbg ) then
         write(6,'(a,f8.2,2f12.4)') dtxt//' Sand/Water_sat/soil_dens',  &
                                    sand_frac(i,j),vh2o_sat,soil_dns_dry
         write(6,'(a,3f15.5)') dtxt//' SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
         write(6,'(a,3f15.5)') dtxt//' SW COMPS ',SoilWater(i,j,1), fc(i,j), pwp(i,j)
         write(6,'(a,2f10.4)') dtxt//'>> U*_moist_corr  >>',gwc_thr, ustar_moist_cor
-     end if
- 
-  else  !.. No SoilWater in met.input; Moisture correction for U*t will be 1.
+      end if
+  
+   else  !.. No SoilWater in met.input; Moisture correction for U*t will be 1.
 
-!... Correction to U*th can be assigned dependent on the typical soil wetness:
-! 1.1-1.75 for sand (gr_h2o = 0.1-2%) ; 1.5-2.5 for loam (gr_h2o = 4-10%) and
-!                                               for clay (gr_h2o = 9-15%)
+     !... Correction to U*th can be assigned dependent on the typical soil wetness:
+     ! 1.1-1.75 for sand (gr_h2o = 0.1-2%) ; 1.5-2.5 for loam (gr_h2o = 4-10%) and
+     !                                               for clay (gr_h2o = 9-15%)
 
      if( dbg ) then
        write(6,'(a,f8.2,2f12.4)') dtxt//' ++ No SoilWater in meteorology++'
        write(6,'(a,f10.4)')  dtxt//' >> U*_moist_corr  >>', ustar_moist_cor                                 
      end if 
 
-  end if
+  end if ! SOIL water test
 
 ! ===================================
   

@@ -46,9 +46,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23 Mar 2023, Dave
+NEW TAG: rv4.51 (as desert mask changes results)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23-24 Mar 2023, Dave
 
- Adding deserts - prelim
+ Adding desert masks to prevent European areas producing sand - prelim default 
+  set to Olson mask.
 
  Config_module.f90 changes to allow LandInputs%deserts, LandInputs%ssmThreshold
 
@@ -61,7 +64,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   Plus, re-organisation of code and formatting.
 
  RESULTS WILL CHANGE if Olson or ParajuliZender chosen for LandInputs%deserts
- BEST value for ssmThreshold is still beong investigated.
+ BEST value for ssmThreshold is still unclear, hence the Olson mask seems
+ good-enough for now.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG: rv4.50
