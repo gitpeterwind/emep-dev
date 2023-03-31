@@ -432,7 +432,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
-  met(ix)%read_meteo       = .true. 
+  met(ix)%read_meteo       = USES%CLOUDICE 
   met(ix)%needed           = .false.
   met(ix)%found            => foundcloudicewater
   allocate(ciw_met(LIMAX,LJMAX,KMAX_MID,NMET))

@@ -129,6 +129,9 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
     character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
+    character(len=TXTLEN_FILE) :: desert    = 'DataDir/Olson_2001_DEforEmep.nc'  ! Map of desert from Olson 2001
+    !character(len=TXTLEN_FILE) :: desert    = 'DataDir/ParajuliZender_SSM_1440x720.nc'  ! Sediment supply map from Parajuli & Zender, 2017
+    real ::                       ssmThreshold = 0.2  ! Threshold of SSM used to identify likely dust sources. uncertain.
   end type LandCoverInputs_t
   type(LandCoverInputs_t),target, public, save :: LandCoverInputs=LandCoverInputs_t()
 
@@ -177,6 +180,8 @@ type, public :: emep_useconfig
     ,CLOUDJ           = .false. & ! use CloudJ_mod for computing rcphot 
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
+    ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
+    ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
     ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,AMINEAQ          = .false. & ! MKPS
@@ -756,15 +761,18 @@ character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataD
 !Zahle2011:
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
-character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.3_GLOBAL05_2000_2018.nc'
+!rv4.49:character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.3_GLOBAL05_2000_2018.nc'
+!rv4.50: use this climatological file for all years, since year-to-year variation is small and uncertain
+character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
 !
 !2021: added ECLIPSE6b-based factors for non-European areas
 !MAY 2021: CAREFUL - set MonthlyFacFile consistent with MonthlyFacBasis
 !NEEDS THOUGHT BY USER!!! ECLIPSE or GENEMIS coded so far
 ! (though code will crudely check)
+!2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
-!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
+!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
+character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
@@ -775,7 +783,7 @@ character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOT
 character(len=TXTLEN_FILE), target, save, public :: &
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
  ,cmxBiomassBurning_FINN     = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt' & ! works for 1.5 also
- ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1.txt' &
+ ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt' &
 !POLL replaced by name of pollutant in EmisSplit
  ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
  ,SplitSpecialsFile          = 'ZCMDIR/emissplit_run/emissplit.specials.POLL'
@@ -942,11 +950,6 @@ subroutine Config_Constants(iolog)
   ! do not close(IO_NML), other modules will be read namelist on this file
   if(MasterProc) write(*,*) dtxt//'DataPath',trim(DataPath(1))
 
-  if(MasterProc) then
-    write(logtxt,'(a,L2)') dtxt//'USES%SOILNOX ', USES%SOILNOX
-    write(*,*) trim(logtxt), IOLOG
-    write(IO_LOG,*) trim(logtxt)  ! Can't call PrintLog due to circularity
-  end if
 
   USES%LocalFractions = USES%LocalFractions .or. USES%uEMEP !for backward compatibility
 
@@ -1039,6 +1042,7 @@ subroutine Config_Constants(iolog)
   call associate_File(LandCoverInputs%LandDefs)
   call associate_File(LandCoverInputs%Do3seDefs)
   call associate_File(LandCoverInputs%mapMed)
+  call associate_File(LandCoverInputs%desert)
 
   call associate_File(femisFile)
   call associate_File(Vertical_levelsFile)
@@ -1139,8 +1143,16 @@ subroutine WriteConfig_to_RunLog(iolog)
   integer, intent(in) :: iolog ! for Log file
   NAMELIST /OutUSES/ USES, PBL
   if(MasterProc)then
-     write(iolog,*) ' USES after 1st time-step'
-     write(iolog,nml=OutUSES)
+    write(iolog,*) ' USES after 1st time-step'
+    write(iolog,nml=OutUSES)
+    write(iolog,'(a)') 'soilnox_emission_File: '//trim(soilnox_emission_File)
+    write(iolog,'(a)') 'SplitDefaultFile:      '//trim(SplitDefaultFile)
+    write(iolog,'(a)') 'SplitSpecialsFile:     '//trim(SplitSpecialsFile)
+    write(iolog,'(a)') 'MonthlyFacFile:        '//trim(MonthlyFacFile)
+    write(iolog,'(a)') 'DailyFacFile:          '//trim(DailyFacFile)
+    write(iolog,'(a)') 'HourlyFacFile:         '//trim(HourlyFacFile)
+    write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
+    write(iolog,'(a)') 'HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
   endif
 end subroutine WriteConfig_to_RunLog
 

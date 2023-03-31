@@ -21,6 +21,7 @@ module Debug_module
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! 
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
+    ,DUST            = .false. & ! Skips fast chemistry to save some CPU
     ,ECOSYSTEMS      = .false. &
     ,EMISSIONS       = .false. & ! 
     ,EMISTIMEFACS    = .false. &
@@ -88,7 +89,6 @@ logical, public, parameter ::    &
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-    ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_RB             = .false.
 

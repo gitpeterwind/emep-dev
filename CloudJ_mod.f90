@@ -204,7 +204,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           ! ##########################################################################################
 
           ! define path based on model year & month and read in monthly lon-lat-alt satellite obs. data        
-          if(year < 2005 .or. year > 2021) then 
+          if(year < 2005 .or. year > 2021 .or. USES%CLIMSTRATO3) then 
             fname_ozone = trim(cloudjx_strat)//date2string("/clim_MM.dat",current_date)
           else
             fname_ozone = trim(cloudjx_strat)//date2string("/YYYYMM.dat",current_date)
