@@ -5138,6 +5138,8 @@ end subroutine vertical_interpolate
       cdfstatus = nf90_get_att(ncFileID,nf90_global,'SECTORS_NAME',sector_name)
       call check(nf90_close(ncFileID))
       if (cdfstatus == nf90_noerr) cdf_sector_name = trim(sector_name)
+   else
+      call StopAll('Did not find file '//trim(filename))
    end if
 
  end subroutine ReadSectorName

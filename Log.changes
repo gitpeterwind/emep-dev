@@ -45,6 +45,16 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Mar 2023, Peter
+
+Refactoring of the treatment of emissions in LocalFractions.
+More unified between fullchem and other.
+Now all setting treat non-antropogenic emissions correctly.
+Fullchem accepts sectors and masks.
+
+
+
 NEW TAG: rv4.50
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Mar 2023, Dave

@@ -124,8 +124,7 @@ use Timefactors_mod,   only: &
     ,Read_monthly_timezones &
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
-use LocalFractions_mod, only : add_lf_emis,loc_frac&
-                               ,emis_lf, lf_emis_tot, emis_lf_cntry
+use LocalFractions_mod, only : save_lf_emis,loc_frac, emis_lf_cntry
 implicit none
 private
 
@@ -1991,9 +1990,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     totemadd(:)  = 0.
     gridrcemis(:,:,:,:) = 0.0
     SecEmisOut(:,:,:,:) = 0.0
-    if(USES%LocalFractions) emis_lf(:,:,:,:) = 0.0
-    if(USES%LocalFractions) lf_emis_tot(:,:,:,:) = 0.0
-    if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:,:) = 0.0
+    if(USES%LocalFractions) emis_lf_cntry(:,:,:,:,:) = 0.0
     if(USES%ROADDUST) gridrcroadd0(:,:,:) = 0.0
     !..........................................
 
@@ -2107,8 +2104,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
               end do ! f
-
-              if(USES%LocalFractions) call add_lf_emis(s,i,j,iem,isec,iland)
+              
+              if(USES%LocalFractions) call save_lf_emis(s,i,j,iem,isec,iland)
 
             end do ! iem
 
@@ -2119,7 +2116,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                      + tmpemis(iqrc)*ehlpcom0    &
                      *emis_kprofile(KMAX_BND-k,emish_idx) &
                      *emis_masscorr(iqrc)
-                !if( debug_tfac.and. iqrc==1 ) then
+               !if( debug_tfac.and. iqrc==1 ) then
                 !  write(*,"(a,2i3,2f8.3)") "KPROF ", &
                 !    isec, KMAX_BND-k, &
                 !    VERTFAC(KMAX_BND-k,sec2hfac_map(isec)),  &
@@ -2380,7 +2377,7 @@ end if
                 ! Add up emissions in ktonne
                 totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
                 
-                if(USES%LocalFractions) call add_lf_emis(s,i,j,iem,isec_idx,iland)
+                if(USES%LocalFractions) call save_lf_emis(s,i,j,iem,isec_idx,iland)
                 
                 !  Assign to height levels 1-KEMISTOP
                 do k=KEMISTOP,KMAX_MID

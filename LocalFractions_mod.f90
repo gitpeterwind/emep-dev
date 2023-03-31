@@ -1,3 +1,4 @@
+!TODO: avoid Ncountry_lf dimension in emis_lf_cntry (only max number of cntries per cell)
 module LocalFractions_mod
 !
 ! all subroutines for Local Fractions
@@ -23,7 +24,7 @@ use Country_mod,       only: MAXNLAND,NLAND,Country&
 
 use DefPhotolysis_mod, only: IDHONO,IDNO3,IDNO2
 use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
-                             nlandcode,landcode,&
+                             nlandcode,landcode,NCMAX,&
                              TFAC_IDX_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
                              EmisMaskIntVal,gridrcemis
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
@@ -67,14 +68,12 @@ public  :: lf_adv_y
 public  :: lf_adv_k
 public  :: lf_diff
 public  :: lf_conv
-public  :: lf_chemrates
-public  :: lf_chemderiv
+public  :: lf_chem_emis_deriv
 public  :: lf_chem
 public  :: lf_aero_pre, lf_aero_pos
 public  :: lf_drydep, lf_wetdep
-public  :: lf_emis
 public  :: lf_rcemis
-public  :: add_lf_emis
+public  :: save_lf_emis
 
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
   loc_frac&    ! Fraction of pollutants that are produced locally, surrounding sources
@@ -88,12 +87,10 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_tot ! concentrations of pollutants used for Local Fractions
 
-real, public, allocatable, dimension(:,:,:,:,:,:), save :: emis_lf_cntry
+real, public, allocatable, dimension(:,:,:,:,:), save :: emis_lf_cntry
 real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf &   ! Fraction of pollutants that are produced locally, for all defined sources
-  ,emis_lf &   ! 3D Emission defined for each source
-  ,lf_emis_tot &   ! sum of 3D Emission defined for each pollutant used for lf
   ,loc_frac_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,loc_tot_hour_inst&   !all contributions
@@ -117,6 +114,8 @@ real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
 real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf !may not be worth the cost?
 real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf!may not be worth the cost?
 real, allocatable, public, dimension(:,:), save ::rcemis_lf
+integer, allocatable, public, dimension(:,:), save ::nic
+integer, allocatable, public, dimension(:,:,:), save ::ic2iland
 real, allocatable, public, dimension(:), save ::L_lf, P_lf
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
@@ -146,7 +145,7 @@ integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
 integer, private, save :: isrc_NO3=-1, isrc_HNO3=-1
 integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
-integer, private, save :: isrc_oddO = -1, isrc_strato=-1, isrc_ini=-1
+integer, private, save :: isrc_strato=-1, isrc_ini=-1
 integer, private, save :: RO2POOL_ix=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 real, allocatable, private, save :: lf_NO3(:), lf_HNO3(:)
@@ -165,10 +164,10 @@ integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, save :: NSPEC_fullchem_inc_lf=0 ! number of species to included in CM_Reactions1
-integer, public, parameter :: N_lf_derivemisMAX = 2*5 ! max number of emissions to include in CM_Reactions1 derivatives
+integer, public, parameter :: N_lf_derivemisMAX = 100 ! max number of emission source to include in CM_Reactions1 derivatives
 integer, public, save :: N_lf_derivemis ! actual number of emissions to include in CM_Reactions1 derivatives
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2
-integer, public, save :: emis2iem(N_lf_derivemisMAX),emis2icis(N_lf_derivemisMAX)
+integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX)
 
 
 contains
@@ -226,8 +225,8 @@ contains
      if(me==0)write(*,*)'LF chemistry, max index of species included: ',NSPEC_fullchem_inc_lf
 
      !RO2POOL is not a proper chemical species and we must take care to avoid it when using derivatives!
-     RO2POOL_ix = find_index('RO2POOL' ,species(:)%name)     
-     
+     RO2POOL_ix = find_index('RO2POOL' ,species(:)%name)
+
   end if
 
   do i = Nsources + nfullchem + 1, Max_lf_sources
@@ -256,18 +255,20 @@ contains
      if (lf_src(isrc)%species == 'NOTSET') exit
      if (lf_src(isrc)%species == 'FULLCHEM') then
         if(me==0)write(*,*)isrc,' FULLCHEM '
-        call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
+        call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM. Not implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
         lf_src(isrc)%Npos = 0
         lf_src(isrc)%Nsplit = 0
         iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find nox emissions")  
+        call CheckStop(iem<=0, "LF: did not find nox emissions")
         iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find voc emissions")  
+        call CheckStop(iem<=0, "LF: did not find voc emissions")
         do i = 1, NSPEC_fullchem_lf !first source per advected species, tracking NOx
            Nsources = Nsources + 1
            lf_src(Nsources)%type = lf_src(isrc)%type
            lf_src(Nsources)%species = species_adv(i)%name
            lf_src(Nsources)%full_chem = .true.
+           !iem_deriv differs from iem, because it relates not to the source species, but the derivative.
+           !iem_deriv can be for voc, while the species is no2 
            iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
            lf_src(Nsources)%iem_deriv = iem_deriv
            lf_src(Nsources)%iem_lf = iem_lf_nox
@@ -279,7 +280,7 @@ contains
            if (lf_src(Nsources)%species =='NO3') isrc_NO3 = Nsources
            if (lf_src(Nsources)%species =='HNO3') isrc_HNO3 = Nsources
         end do
-        
+
         do i = 1, NSPEC_fullchem_lf !second source per advected species, tracking NMVOC
            Nsources = Nsources + 1
            lf_src(Nsources)%type = lf_src(isrc)%type
@@ -461,7 +462,7 @@ contains
      endif
 
      call RestrictDomain(lf_src(isrc)%DOMAIN)
-     
+
      iem=find_index(lf_src(isrc)%species ,EMIS_FILE(1:NEMIS_FILE))
 
      if(iem<1)then
@@ -494,28 +495,7 @@ contains
               lf_src(isrc)%ix(ii) = ix
               lf_src(isrc)%mw(ii) = species_adv(ix)%molwt
               lf_src(isrc)%Nsplit = ii ! will take value of the last ii
-           enddo
-        else if(lf_src(isrc)%species=='oddO') then
-           isrc_oddO = isrc
-           !oddO -> O3 + NO2 + 2*NO3 + 3* N2O5 + HNO3 + H2O2  (+ HO2 but short lived)
-           !The weights are taken into account through an effective mw, in units of NO2
-           lf_src(isrc_oddO)%ix(1) = O3_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(1) = species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%ix(2) = NO2_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(2) = species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%ix(3) = NO3_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(3) = 2*species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%ix(4) = N2O5_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(4) = 3*species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%ix(5) = HNO3_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(5) = species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%ix(6) = H2O2_ix - NSPEC_SHL
-           lf_src(isrc_oddO)%mw(6) = species(NO2_ix)%molwt
-           lf_src(isrc_oddO)%Nsplit = 6
-           lf_src(isrc_oddO)%iqrc = itot2iqrc(NO2_ix) !will set NO2 as single emitted species
-           call CheckStop(lf_src(isrc_oddO)%iqrc<=0, "Did not find iqrc for NO2")
-           iem = iqrc2iem(lf_src(isrc_oddO)%iqrc)
-           lf_src(isrc_oddO)%iem = iem
+           enddo        
          else
            !defined as single species (NO, NO2, O3..)
            lf_src(isrc)%Nsplit = 1
@@ -540,7 +520,7 @@ contains
               if(isrc>Nsources-2*NSPEC_fullchem_lf) then
                  ! sources that track NOx
                  if (EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc') lf_src(isrc)%iem = -1
-              end if              
+              end if
            end if
 
            if (.not. lf_src(Nsources)%full_chem) then
@@ -664,6 +644,7 @@ contains
         !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
      end if
   end do
+
   if (isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0)) then
      if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
      stop!may be relaxed in future
@@ -752,25 +733,10 @@ contains
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
-  allocate(emis_lf(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Nsources))
-  emis_lf = 0.0
-  if (nfullchem>0) then
-     allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,NEMIS_File))
-  else
-     allocate(lf_emis_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Npoll))
-  endif
-  lf_emis_tot = 0.0
-  if(Ncountry_lf*Ncountrysectors_lf>0)then
-     if (nfullchem>0) then
-!        allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf+Ncountry_group_lf,Ncountrysectors_lf,NEMIS_File))
-        allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf+Ncountry_group_lf,Nsectors,NEMIS_File))
-     else
-        allocate(emis_lf_cntry(LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID,Ncountry_lf+Ncountry_group_lf,Ncountrysectors_lf,Nsources))
-     endif
-     emis_lf_cntry=0.0
-  else
-     allocate(emis_lf_cntry(1,1,1,1,1,1))!So can be set to zero etc. without compiler complaining
-  endif
+
+  allocate(emis_lf_cntry(LIMAX,LJMAX,NCMAX,Nsectors,NEMIS_File))
+  emis_lf_cntry=0.0
+
   if(Ndrydep_lf>0)then
      allocate(loc_frac_drydep(LIMAX,LJMAX,Ndrydep_lf))
      loc_frac_drydep=0.0
@@ -803,8 +769,12 @@ contains
      xn_shl_lf = 0.0
      allocate(lf_NO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
+  else
+      allocate(rcemis_lf(Nsources*NCMAX,1)) !TODO: add sectors? make smaller?
   endif
-
+  allocate(nic(LIMAX,LJMAX))
+  nic = 0
+  allocate(ic2iland(LIMAX,LJMAX,NCMAX))
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
 
@@ -873,7 +843,7 @@ subroutine lf_out(iotyp)
   scale=1.0
   CDFtype=Real4
   dimSizes=1
-  
+
   dimSizes(1)=2*lf_src(1)%dist+1
   dimNames(1)='x_dist'
   dimSizes(2)=2*lf_src(1)%dist+1
@@ -944,7 +914,7 @@ subroutine lf_out(iotyp)
 
   iou_ix = iotyp2ix(iotyp)
   if (iou_ix == iou_ix_inst) av_fac(iotyp) = 1
-  
+
   !first loop only create all variables before writing into them (faster for NetCDF)
   do iter=1,2
      if(iter==1 .and. .not. first_call(iotyp))cycle
@@ -960,7 +930,6 @@ subroutine lf_out(iotyp)
      do isrc = 1, Nsources
         if (lf_src(isrc)%species == 'FULLCHEM') cycle
         if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2'  .and. lf_src(isrc)%species/='HNO3'.and. lf_src(isrc)%species/='NH3')cycle
-        if(isrc==isrc_oddO) lf_src(isrc)%species='O3' !NBNB!! we rename as O3!!
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
@@ -1028,7 +997,7 @@ subroutine lf_out(iotyp)
                  endif
                  if (lf_src(Nsources)%full_chem) then
                     !add emission species to name
-                    write(def2%name,"(A)")trim(def2%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))                    
+                    write(def2%name,"(A)")trim(def2%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                  end if
                  if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
                  def2%unit='ug/m3'
@@ -1077,12 +1046,12 @@ subroutine lf_out(iotyp)
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
            endif
-           scale=1.0           
+           scale=1.0
            call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
            overwrite=.false.
         endif
-       
+
 
         if(lf_src(isrc)%make_fracsum)then
            if (lf_src(isrc)%name/='NOTSET')then
@@ -1097,7 +1066,7 @@ subroutine lf_out(iotyp)
 
            call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-           
+
         endif
 
      enddo
@@ -1168,8 +1137,6 @@ subroutine lf_av(dt,End_of_Day)
               do i=1,limax
                  xtot=0.0
                  do iix=1,lf_src(isrc)%Nsplit
-                    !NB: for oddO we only include O3 (iix=1), with lf values for oddO
-                    if(isrc==isrc_oddO .and. iix>1) exit
                     ix = lf_src(isrc)%ix(iix)
                     if(lf_src(isrc)%type=='country')then
                        !3m height cfac correction
@@ -1182,7 +1149,6 @@ subroutine lf_av(dt,End_of_Day)
                        !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                     endif
                  end do
-                 if(isrc==isrc_oddO) xtot=xtot*species(O3_ix)%molwt/species(NO2_ix)%molwt !mw(NO2) -> mw(O3)
                  if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
                     if (iou_ix == iou_ix_inst) then
                        !not accumulated
@@ -1666,63 +1632,94 @@ end subroutine lf_diff
 
 end subroutine lf_conv
 
-subroutine lf_chemrates(k,i,dtchem,xnew)
-  real, intent(in) :: dtchem, xnew(*)
-  integer, intent(in) :: k,i
-
-  if (isrc_oddO<0) return
-
-  if(i==1) P_NO(k) = 0.0
-  if(i==1) P_NO2(k) = 0.0
-
-  ! production of NO excluding emissions
-  P_NO(k) =  P_NO(k) &
-       + (rct(17,k) * xnew(NO2_ix) * xnew(NO3_ix)  &
-       + rcphot(IDNO2,k) * xnew(NO2_ix)  &
-       + 0.127* rcphot(IDNO3,k) * xnew(NO3_ix)  &
-       + rcphot(IDHONO,k) * xnew(HONO_ix) ) * dtchem
-
-  P_NO2(k) =  P_NO2(k) &
-       + (rct(10,k) * xnew(OP_ix) * xnew(NO_ix)  &
-       + rct(11,k) * xnew(O3_ix) * xnew(NO_ix)  &
-       + 1* rct(15,k) * xnew(NO_ix) * xnew(NO3_ix)  & !NB: only one
-       + rct(16,k) * xnew(NO_ix) * xnew(HO2_ix)  &
-       + rct(29,k) * xnew(CH3O2_ix) * xnew(NO_ix)  &
-       + rct(38,k) * xnew(C2H5O2_ix) * xnew(NO_ix)  &
-       + rct(42,k) * xnew(CH3CO3_ix) * xnew(NO_ix)  &
-       + 0.917* rct(48,k) * xnew(C4H9O2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(MEKO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(ETRO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(PRRO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(OXYO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(C5DICARBO2_ix) * xnew(NO_ix)  &
-       + 0.9* rct(48,k) * xnew(ISRO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(MACRO2_ix) * xnew(NO_ix)  &
-       + rct(48,k) * xnew(TERPO2_ix) * xnew(NO_ix) ) * dtchem
-
-end subroutine lf_chemrates
-
-subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
+subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   real, intent(in) :: eps1,xn(NSPEC_TOT),xnew(NSPEC_TOT)
   integer, intent(in) :: i,j,k
-  integer :: n, n0, ispec, nispec, isrc,isrc_emis, iix,ix, ic, is, ics, iemis, ideriv, ncs, iem_deriv, isrc_deriv, ideriv0, found
-  real :: efac
+  integer :: n, n0, ispec, nispec, isrc,isrc_emis, ic, is, ics, ncs, ideriv0, found
+  real :: efac, xtot,totemis,emiss
   real :: xd(NSPEC_fullchem_lf,NSPEC_fullchem_lf)
-  
-  if (nfullchem <= 0) return
+  integer :: isec, iem, iix, ix, iiix,iemis, ideriv , iem_deriv, isrc_deriv
+
+
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
+
+  if (nfullchem <= 0) then
+     !case with no chemistry for local fractions
+     !Now species may be group of species (pm25...)
+
+     if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
+     !include emissions that are not created in chemical reactions, but only by emissions
+     call Code_timer(tim_before)
+     do isrc=1,Nsources
+        if (lf_src(isrc)%full_chem) cycle !included below
+        if (lf_src(isrc)%species == 'FULLCHEM') cycle
+        iem = lf_src(isrc)%iem     !pick out only this emissions
+        isec = lf_src(isrc)%sector !pick out only this sector
+
+        xtot=0.0
+        totemis = 0.0 ! all emis to isrc species
+        do iix=1,lf_src(isrc)%Nsplit
+           iiix=lf_src(isrc)%ix(iix)
+           !xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+           xtot=xtot + xn_2d(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)/dt_advec
+           totemis = totemis +  rcemis(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)
+        end do
+
+        if(totemis < 1e-20) cycle !no emissions here
+
+        if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then
+           !first dilute lf because of emissions
+           n0=lf_src(isrc)%start
+           do ic=1,Ncountry_lf+Ncountry_group_lf
+              do is=1,Ncountrysectors_lf
+                 lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
+                 n0=n0+1
+              end do
+           end do
+           !add emissions that are tracked
+           do iemis = 1, N_lf_derivemis
+              if(emis2isrc(iemis) /= isrc ) cycle
+
+              n0 = lf_src(isrc)%start + emis2icis(iemis)
+
+              lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
+
+           end do
+
+        else if(lf_src(isrc)%type=='relative')then
+           !first dilute lf because of emissions
+           do n0=lf_src(isrc)%start,lf_src(isrc)%end
+              lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
+           end do
+           !add emissions only at centre of window
+           n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
+           do iemis = 1, N_lf_derivemis
+              if(emis2isrc(iemis) /= isrc ) cycle
+              lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
+           end do
+
+        else
+           if(me==0)write(*,*)'LF type not recognized)'
+           stop
+        endif
+
+     enddo
+     call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
+
+  else
+     !case using Jacobian of chemical reactions and emissions are considered part of chemical reactions
   call Code_timer(tim_before)
 
   !make derivatives
   do ispec = 1, NSPEC_fullchem_lf!no loop over short lived
-     
+
      do ideriv = 1, NSPEC_fullchem_lf !loop over chemical derivatives
         if (xn(ideriv+NSPEC_SHL)>1000.0 .and. xnew(ispec+NSPEC_SHL)>1000.0 .and. ispec+NSPEC_SHL/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
            xderiv(ideriv,ispec) = (xnew_lf(ideriv,ispec+NSPEC_SHL) - xnew(ispec+NSPEC_SHL))/((eps1-1.0)*(xnew(ispec+NSPEC_SHL)))
-           
+
            !remove numerical noise
            xderiv(ideriv,ispec) = min(xderiv(ideriv,ispec),10.0)
            xderiv(ideriv,ispec) = max(xderiv(ideriv,ispec),-10.0)
@@ -1732,18 +1729,18 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
            xderiv(ideriv,ispec) = 0.0
         end if
      end do
-     
+
      do ideriv = 1, N_lf_derivemis !loop over emission derivatives
         if (xnew(ispec+NSPEC_SHL)>1000.0 .and. xnew_lf(ideriv+ NSPEC_fullchem_lf,ispec+NSPEC_SHL)>1000.0 .and. k>=KEMISTOP.and. ispec+NSPEC_SHL/=RO2POOL_ix ) then !units are molecules/cm3 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
            ederiv(ideriv,ispec) = (xnew_lf(ideriv + NSPEC_fullchem_lf ,ispec+NSPEC_SHL) - xnew(ispec+NSPEC_SHL))/((eps1-1.0)*(xnew(ispec+NSPEC_SHL)))
-           
+
            !remove numerical noise
            ederiv(ideriv,ispec) = min(ederiv(ideriv,ispec),10.0)
            ederiv(ideriv,ispec) = max(ederiv(ideriv,ispec),-10.0)
-              
+
         else
            !Note that concentrations reaching 0.0 are not treated correctly
            ederiv(ideriv,ispec) = 0.0
@@ -1753,49 +1750,51 @@ subroutine lf_chemderiv(i,j,k,xn,xnew,eps1)
 
   !remove RO2POOL which is not a proper species
   if (RO2POOL_ix>0) then
-     xderiv(:,RO2POOL_ix-NSPEC_SHL) = 0.0 
-     ederiv(:,RO2POOL_ix-NSPEC_SHL) = 0.0 
-     xderiv(RO2POOL_ix-NSPEC_SHL,:) = 0.0 
+     xderiv(:,RO2POOL_ix-NSPEC_SHL) = 0.0
+     ederiv(1:N_lf_derivemis,RO2POOL_ix-NSPEC_SHL) = 0.0
+     xderiv(RO2POOL_ix-NSPEC_SHL,:) = 0.0
   end if
-  
+
   ncs = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
 
   ! emissions derivatives taken into account for sensibility to changes of emis *during* chemical process
-  
-  do isrc = 1, Nsources  
-     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
-     n0 = lf_src(isrc)%start
-     n=1     
-     if (isrc > NSPEC_fullchem_lf) n = ncs + 1
-     !init
-     do ics = n0,  n0 + ncs - 1 !loop over sector and country contributions 
-        lf0_loc(n, ix) = lf(ics,i,j,k)        
-        lf(ics,i,j,k) = 0.0
-        n=n+1
-     end do
-     
-     !include emission derivatives
-     do iemis = 1, N_lf_derivemis
-        if(emis2iem(iemis) == lf_src(isrc)%iem_deriv ) then
-           n0 =lf_src(isrc)%start + emis2icis(iemis) 
-           lf(n0,i,j,k) = ederiv(iemis,ix) !contribution from emissions during this timestep
-        end if
-     end do     
-  end do
-  
-  ! concentrations have changed in the chemical reactions.
-  ! The derivatives give the sensitivity to each species
-  ! The local fraction are then propagated with the derivatives as weights
-  
-  lf_loc = matmul(lf0_loc, xderiv) !MAIN STEP
-  
-  do isrc = 1, Nsources  
+
+  do isrc = 1, Nsources
      ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
      n0 = lf_src(isrc)%start
      n=1
      if (isrc > NSPEC_fullchem_lf) n = ncs + 1
-     do ics = n0,  n0 + ncs - 1 !loop over sector and country contributions 
-        lf(ics,i,j,k) = lf(ics,i,j,k) + lf_loc(n, ix)           
+     !init
+     do ics = n0,  n0 + ncs - 1 !loop over sector and country contributions
+        lf0_loc(n, ix) = lf(ics,i,j,k)
+        lf(ics,i,j,k) = 0.0
+        n=n+1
+     end do
+
+     !include emission derivatives
+     do iemis = 1, N_lf_derivemis
+        if(emis2isrc(iemis) == lf_src(isrc)%iem_deriv ) then
+           n0 =lf_src(isrc)%start + emis2icis(iemis)
+           lf(n0,i,j,k) = ederiv(iemis,ix) !contribution from emissions during this timestep
+        end if
+     end do
+  end do
+
+  ! concentrations have changed in the chemical reactions.
+  ! The derivatives give the sensitivity to each species
+  ! The local fraction are then propagated with the derivatives as weights
+
+  lf_loc = matmul(lf0_loc, xderiv) !MAIN STEP
+
+  !Note that if a species has emissions and no chemistry, xderiv(x,x) = x(t)/(x(t)+E(dt)) /= 1
+
+  do isrc = 1, Nsources
+     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
+     n0 = lf_src(isrc)%start
+     n=1
+     if (isrc > NSPEC_fullchem_lf) n = ncs + 1
+     do ics = n0,  n0 + ncs - 1 !loop over sector and country contributions
+        lf(ics,i,j,k) = lf(ics,i,j,k) + lf_loc(n, ix)
         n=n+1
      end do
   end do
@@ -1806,7 +1805,7 @@ return
      write(*,*)'concentration after chem ',xnew(18)
      write(*,*)'prediction after 0.001 nox emis change',xnew(18)*(1.0+0.001*xderiv(NSPEC_fullchem_lf+1,18))
      write(*,*)'lf O3 ',lf(3,i,j,k)
-     write(*,*)'prediction after chem and 0.001 nox emis change',xnew(18)*(1+0.001*lf(3,i,j,k)) 
+     write(*,*)'prediction after chem and 0.001 nox emis change',xnew(18)*(1+0.001*lf(3,i,j,k))
   end if
   return
   67 format(10x,50(A11))
@@ -1821,57 +1820,25 @@ return
         write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(7,NSPEC_fullchem_lf)),xderiv(NSPEC_fullchem_lf+1,ispec)
      end do
         write(*,66)'sum             ',(sum(xderiv(n,1:NSPEC_SHL+NSPEC_fullchem_lf)),' ',n = 1, min(7,NSPEC_fullchem_lf))
-     
+
   endif
 
-
-end subroutine lf_chemderiv
+end if
+end subroutine lf_chem_emis_deriv
 
 subroutine lf_chem(i,j)
   !track through chemical reactions
   integer, intent(in) ::i,j
-  real :: oddO,oddO_new,VOC,HO2,O3,NO,NO2
-  real :: d_oddO,d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt,inv
+  real :: VOC,HO2,O3,NO,NO2
+  real :: d_O3,d_NO,d_NO2,d_VOC, k1,k2,J_phot,invt,inv
   real :: SO4,SO2, d_SO2, d_SO4
   real :: xn_new, xn_age
-  integer :: k, n, n_O3,n_oddO,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2, isrc
+  integer :: k, n, n_O3,n_NO,n_NO2,n_VOC,nsteps,nsteps1,nsteps2, isrc
   integer :: n_SO2,n_SO4,  n_EC_new, n_EC, n_age, n_new, iix, ix
   real :: k_OH, k_H2O2, k_O3
   real ::  d_age, ageing_rate(KCHEMTOP:KMAX_MID), lf_temp
 
   call Code_timer(tim_before)
-
-  if (isrc_NO>0 .and. isrc_NO2>0 .and. isrc_oddO>0) then
-    !emissions have been included into lf before runchem
-
-    !note that if sum_n(lf_NO(n)) = 1 and sum_n(lf_NO2(n)) = 1 and , then they are still 1 after summation
-    do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-       oddO=0.0
-       oddO_new=0.0
-       do iix=1,lf_src(isrc_oddO)%Nsplit
-          oddO = oddO + xn_adv(lf_src(isrc_oddO)%ix(iix),i,j,k)*M(k)
-          oddO_new = oddO_new + xn_2d(NSPEC_SHL+lf_src(isrc_oddO)%ix(iix),k)
-       end do
-       NO = xn_adv(NO_ix-NSPEC_SHL,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO,k)
-       NO2 = xn_adv(NO2_ix-NSPEC_SHL,i,j,k)*M(k) !xn_2d(NSPEC_SHL+ix_NO2,k)
-       d_NO = P_NO(k) !we assume all NO has been produce by (effective) NO2 conversion
-       d_NO2 = P_NO2(k) !we include only NO2 that has been produced by NO conversion
-       !d_oddO = (oddO_new-oddO-d_NO2) ! How much oddO is transformed (Loss) into non-NO2 equivalents
-       n_NO = lf_src(isrc_NO)%start
-       n_oddO = lf_src(isrc_oddO)%start
-       do n_NO2=lf_src(isrc_NO2)%start, lf_src(isrc_NO2)%end
-          lf_temp = lf(n_NO,i,j,k)
-          !Note: > 1.0E-30 is very important. Otherwise wrong results far from the country source.
-          if (d_NO > 1.0E-30) lf(n_NO,i,j,k) = (lf(n_NO,i,j,k)*NO + d_NO*lf(n_NO2,i,j,k))/(NO + d_NO)
-          if (d_NO2 > 1.0E-30) lf(n_NO2,i,j,k) = (lf(n_NO2,i,j,k)*NO2 + d_NO2*lf_temp)/(NO2 + d_NO2)
-          if (d_NO2 > 1.0E-30) lf(n_oddO,i,j,k) = (lf(n_oddO,i,j,k)*oddO + d_NO2*lf_temp)/(oddO + d_NO2)
-          n_NO = n_NO + 1
-          n_oddO = n_oddO + 1
-       end do
-    end do
-    !at each mixing, lf(n_NO2) gets closer to lf(n_NO)
-    ! min(f1,f2) < (f1*A+f2*B)/(A+B) < max(f1,f2) if A>0,B>0
- end if
 
   ageing_rate = EC_AGEING_RATE()
 
@@ -2157,397 +2124,267 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
 
 end subroutine lf_wetdep
 
-subroutine lf_emis(indate)
-!include emission contributions to local fractions
-
-  implicit none
-  type(date), intent(in) :: indate  ! Gives year..seconds
-  integer :: i, j, k, n       ! coordinates, loop variables
-  integer :: icc, ncc         ! No. of countries in grid.
-  integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over 1..NEMIS_FILE
-
-  ! Save daytime value between calls, initialise to zero
-  integer, save, dimension(MAXNLAND) ::  daytime(1:MAXNLAND) = 0  !  0=night, 1=day
-  integer, save, dimension(MAXNLAND) ::  localhour(1:MAXNLAND) = 1  ! 1-24 local hour in the different countries
-  integer                         ::  hourloc      !  local hour
-  real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
-  real ::  s       ! source term (emis) before splitting
-  integer ::icc_lf, iqrc, itot
-  integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iy,iix, iiix,dx, dy, isec_poll, iisec_poll, isec_poll1, isrc, ic, is
-  real::dt_lf, xtot
-  real :: lon, fac
-  integer :: jmin,jmax,imin,imax,n0
-
-  call Code_timer(tim_before)
-
-  do j = lj0,lj1
-    do i = li0,li1
-       ix=(gi0+i-2)/((GIMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !i coordinate in coarse domain
-       iy=(gj0+j-2)/((GJMAX+Ndiv_coarse-1)/Ndiv_coarse)+1 !j coordinate in coarse domain
-       do isrc=1,Nsources
-          if (lf_src(isrc)%full_chem) cycle !included in chemderiv
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
-          iem = lf_src(isrc)%iem
-          isec = lf_src(isrc)%sector
-          do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-             if(lf_src(isrc)%iqrc<0)then
-               if(lf_emis_tot(i,j,k,lf_src(isrc)%poll)<1.E-20)cycle
-                  
-            else
-               if(emis_lf(i,j,k,isrc)<1.E-20)cycle
-            endif
-            xtot=0.0
-            do iix=1,lf_src(isrc)%Nsplit
-               iiix=lf_src(isrc)%ix(iix)
-               xtot=xtot+(xn_adv(iiix,i,j,k)*lf_src(isrc)%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
-            end do
-            if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then
-               
-               n0=lf_src(isrc)%start
-               do ic=1,Ncountry_lf+Ncountry_group_lf
-                  do is=1,Ncountrysectors_lf
-                     lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf_cntry(i,j,k,ic,is,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-                     n0=n0+1
-                  end do
-               end do
-                  
-               cycle !only one fraction per country
-            else if(lf_src(isrc)%type=='relative' .or. lf_src(isrc)%type=='coarse')then
-               !Country constraints already included in emis_lf
-               if(lf_src(isrc)%type=='relative') n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
-               if(lf_src(isrc)%type=='coarse') n0 = lf_src(isrc)%start+ix-1+(iy-1)*Ndiv_coarse
-               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot+emis_lf(i,j,k,isrc))/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)
-            else
-               if(me==0)write(*,*)'LF type not recognized)'
-               stop
-            endif
-            do n = lf_src(isrc)%start, lf_src(isrc)%end
-               if(n==n0)cycle  !counted above
-               lf(n,i,j,k)=(lf(n,i,j,k)*xtot)/(xtot+lf_emis_tot(i,j,k,lf_src(isrc)%poll)+1.e-20)!fractions are diluted
-            enddo
-         enddo
-      enddo
-   end do ! i
- end do ! j
- call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
-
-end subroutine lf_emis
-
-subroutine add_lf_emis(s,i,j,iem,isec,iland)
-! save emission data
+subroutine save_lf_emis(s,i,j,iem,isec,iland)
+  ! save emission data
+  ! save without splits and k 
+  ! save all (anthropogenic) emissions, even if not used by LF
 
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
-  integer :: n, ii, iqrc, isrc, k, ipoll,ic,is,ig,emish_idx,split_idx
-  real :: emis, sdt, fac
-  integer :: ngroups, ig2ic(Max_lf_Country_groups)
+  integer :: n, ii, iqrc, isrc, k, ipoll,ic,iic,is,ig,emish_idx,split_idx
 
   call Code_timer(tim_before)
+  if (s<1.E-20) return
 
-  sdt = s * dt_advec
-
-  emish_idx = SECTORS(isec)%height
-  split_idx = SECTORS(isec)%split
-  if (nfullchem>0) then
-     !we store total emissions for each pollutant, WITHOUT SPLIT
-     do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-        lf_emis_tot(i,j,k,iem)= lf_emis_tot(i,j,k,iem)+ s * dt_advec * emis_kprofile(KMAX_BND-k,emish_idx)
-     end do
-     
-     !NB country_group not implemented!
-
-     !we store emissions per sector and country for each pollutant, WITHOUT SPLIT
-     if(Ncountry_lf>0)then
-        do ic=1,Ncountry_lf
-           if (ic <= Ncountry_mask_lf) then
-           else if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
-           else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
-           else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
-           else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
-           else if(country_ix_list(ic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
-           else if(country_ix_list(ic)/=iland)then
-              cycle
-           endif
-           fac = 1.0
-           if (country_mask_val(ic)>-99999) then
-              if(EmisMaskIntVal(i,j) /= country_mask_val(ic)) fac = 0.0 !remove all parts which are not covered by mask
-           end if
-           do is=1,Ncountrysectors_lf
-              if(lf_country%sector_list(is)/=isec .and. lf_country%sector_list(is)/=0)cycle
-              emis = s * fac !NB, no dt
-              
-              !we store emissions per sector and country for each pollutant, WITHOUT SPLIT
-              do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf_cntry(i,j,k,ic,isec,iem)=emis_lf_cntry(i,j,k,ic,isec,iem) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
-              end do
-              
-           end do
-        end do
-     end if
-
-  else
-     !not fullchem
-     
-     do n=1,iem2Nipoll(iem)
-        ipoll = iem2ipoll(iem,n)
-        if(ipoll2iqrc(ipoll)>0)then
-           !only extract that single pollutant
-           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(ipoll2iqrc(ipoll),split_idx,iland)&
-                   * emis_kprofile(KMAX_BND-k,emish_idx) !total over all sectors and countries for each pollutant
-           enddo
-        else
-           if (trim(iem2names(iem, n)) == 'pm25') then
-              !include only part of the splitted species
-              do ii=1, lf_src(isrc_pm25)%Nsplit
-                 iqrc=itot2iqrc(lf_src(isrc_pm25)%ix(ii)+NSPEC_SHL)
-                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                    lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
-                 end do
-              end do
-           else if (trim(iem2names(iem, n)) == 'pm25_new') then
-              !include only part of the splitted species
-              isrc_pm25_new = isrc_new(isrc_pm25)
-              if (isrc_pm25_new < 0) cycle
-              do ii=1, lf_src(isrc_pm25_new)%Nsplit
-                 iqrc=itot2iqrc(lf_src(isrc_pm25_new)%ix(ii)+NSPEC_SHL)
-                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                    lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
-                 end do
-              end do
-           else
-              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 lf_emis_tot(i,j,k,ipoll) = lf_emis_tot(i,j,k,ipoll) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) !total for each pollutant
-              enddo
-           end if
-        endif
-     enddo
-          
-     do isrc = 1, Nsources
-        if(lf_src(isrc)%iem /= iem) cycle
-        if (lf_src(isrc)%species == 'FULLCHEM') cycle
-        if(Ncountry_lf>0)then
-           !has to store more detailed info
-           do ic=1,Ncountry_lf
-              if (ic <= Ncountry_mask_lf) then
-              else if(country_ix_list(ic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
-              else if(country_ix_list(ic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
-              else if(country_ix_list(ic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
-              else if(country_ix_list(ic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
-              else if(country_ix_list(ic)/=iland)then
-                 cycle
-              endif
-              fac = 1.0
-              if (country_mask_val(ic)>-99999) then
-                 if(EmisMaskIntVal(i,j) /= country_mask_val(ic)) fac = 0.0 !remove all parts which are not covered by mask
-              end if
-              do is=1,Ncountrysectors_lf
-                 if(lf_country%sector_list(is)/=isec .and. lf_country%sector_list(is)/=0)cycle
-                 emis = s * dt_advec * fac
-                 
-                 if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-                 if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
-                    !include only a part of the pm25 splitted species
-                    do ii=1, lf_src(isrc)%Nsplit
-                       iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)
-                       do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                          emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx)
-                       end do
-                    end do
-                 else
-                    do k = max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                       emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
-                    end do
-                 end if
-              enddo
-           enddo
-        end if
-     end do
+  !include all countries
+  !we store emissions per sector and country for each pollutant, WITHOUT SPLIT and WITHOUT vertical distribution
+  do ic=1,nic(i,j)
+    if(iland==ic2iland(i,j,ic)) exit
+  end do
+  if (ic>nic(i,j)) then
+    nic(i,j) = nic(i,j) + 1
+    ic2iland(i,j,ic) = iland
   end if
-
-  do isrc = 1, Nsources
-
-     if(lf_src(isrc)%iem /= iem) cycle
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
-     if(Ncountry_group_lf>0)then
-        call CheckStop(nfullchem>0, " Country groups not implemented yet for fullchem" ) 
-        !has to store more detailed info
-        ngroups = 0
-        do ic=1,Ncountry_group_lf
-           !find all groups that include iland
-           if(any(lf_country%group(ic)%ix(:)==iland))then
-              ngroups = ngroups + 1
-              ig2ic(ngroups) = ic + Ncountry_lf
-           endif
-        enddo
-        do ig = 1, ngroups
-           ic = ig2ic(ig) ! index for country_group
-           do is=1,Ncountrysectors_lf
-              if(lf_country%sector_list(is)/=isec .and. lf_country%sector_list(is)/=0)cycle
-              if(lf_src(isrc)%iqrc>0)emis = emis *emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-              if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
-                 !include only a part of the pm25 splitted species
-                 do ii=1, lf_src(isrc)%Nsplit
-                    iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)
-                    do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                       emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + sdt  * emisfrac(iqrc,split_idx,iland) * emis_kprofile(KMAX_BND-k,emish_idx)
-                    end do
-                 end do
-              else
-                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                    emis_lf_cntry(i,j,k,ic,is,isrc)=emis_lf_cntry(i,j,k,ic,is,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx)
-                 enddo
-              end if
-           enddo
-        enddo
-     endif
-     
-     if(lf_src(isrc)%iqrc>0 .and. (Ncountry_lf>0.or.Ncountry_group_lf>0))then
-        !sum of all emissions for that species from all countries and sectors
-        do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-           emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) &
-                * emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-        enddo
-
-     else
-        if(lf_src(isrc)%sector /= isec .and. lf_src(isrc)%sector /= 0) cycle
-        if(lf_src(isrc)%country_ix>0 .and. lf_src(isrc)%country_ix/=iland) cycle
-        if(lf_src(isrc)%iqrc>0)then
-           !single pollutant, part of emitted group of pollutant
-           ipoll = lf_src(isrc)%poll
-           do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-              emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx) &
-                   * emisfrac(lf_src(isrc)%iqrc,split_idx,iland)
-           enddo
-        else
-           if (lf_src(isrc)%species == 'pm25' .or.  lf_src(isrc)%species == 'pm25_new') then
-              !include only a part of the pm25 splitted species
-              do ii=1, lf_src(isrc)%Nsplit
-                 iqrc=itot2iqrc(lf_src(isrc)%ix(ii)+NSPEC_SHL)
-                 emis = sdt * emisfrac(iqrc,split_idx,iland)
-                 do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                    emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + emis * emis_kprofile(KMAX_BND-k,emish_idx)
-                 enddo
-              enddo
-           else
-              do k=max(KEMISTOP,KMAX_MID-lf_Nvert+1),KMAX_MID
-                 emis_lf(i,j,k,isrc) = emis_lf(i,j,k,isrc) + sdt * emis_kprofile(KMAX_BND-k,emish_idx)
-              enddo
-           end if
-        endif
-     endif
-  enddo
+  emis_lf_cntry(i,j,ic,isec,iem)=emis_lf_cntry(i,j,ic,isec,iem) + s
 
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
 
-end subroutine add_lf_emis
+end subroutine save_lf_emis
 
 subroutine lf_rcemis(i,j,k,eps)
   !makes the emission differences to be used for derivatives wrt emissions
-  !we assume that all sources that are reduced within a gridcell have the same splits (this precludes sector reductions!). At boundaries that may be wrong/different from brute force
+  !We need to make rcemis_lf for each source (emitted species, country, sector) with emissions at this i,j
+
+  ! The number of emitting countries at i,j is nic(i,j) (small)
+  ! The emission without splits and k is emis_lf_cntry(i,j,ic,isec,iem) (ic runs over nic(i,j), i.e. corresponds to different countries in different gridcells)
+  ! for "fullchem": same lf_rcemis for all advected_species (but different for nox and voc sources), but lf countries dependent
+  ! for "fullchem" lf_rcemis is splitted, otherwise summed with mw weights
+  ! for "relative": country independent
   integer,intent(in) :: i,j,k
   real, intent(in) :: eps
-  integer :: n, n0, iem, iqrc, itot, ic, is, iland, isec, split_idx, nemis, found
+  integer :: n, n0, iem, iqrc, itot, ic, iic, ig, is, iland, isec, split_idx
+  integer :: emish_idx, nemis, found,iiix,isrc, nsectors_loop, iisec
   real :: ehlpcom0 = GRAV* 0.001*AVOG !0.001 = kg_to_g / m3_to_cm3
+  real :: emiss,fac ! multiply emissions by
 
   call Code_timer(tim_before)
 
-  rcemis_lf = 0.0 !default: no difference
+  rcemis_lf = 0.0 !default: no difference TODO: avoid setting entire array to zero!
   !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
-
+  if(k < KEMISTOP) return
   nemis = 0 !counts the number of source with non zero emissions in this particular gridcell (i,j,k)
-  if(k>=KEMISTOP)then
-     !we calculate the delta in emission for each country that has emissions
-     iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-     n0 = 0
-     do ic=1,Ncountry_lf+Ncountry_group_lf
-        do is=1,Ncountrysectors_lf
-           iland = country_ix_list(ic)
-           isec=lf_country%sector_list(is)
-           
-           if(isec==0)then
+  fac = 1.0
+  if (lf_fullchem) fac = eps
+  do iem = 1, NEMIS_File
+    if (iem2Nipoll(iem) <= 0) cycle
+    !for fullchem, we only treat nox and voc emissions
+    if(nfullchem >0 .and. EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc') cycle
+    !we calculate the delta in emission for each country that has emissions
+    if (.not.lf_fullchem) then
+       do isrc=1,Nsources
+          if (lf_src(isrc)%iem /= iem) cycle
+          if(lf_src(isrc)%type=="relative")then
+              !no lf_country involved, all countries are treated together 
+              n0 = 0
+              !do not loop over countries, only sectors
+              if(lf_src(isrc)%sector>0) then
+                 nsectors_loop = 1
+              else
+                nsectors_loop = NSECTORS
+              end if
               found = 0 !flag to show if nemis already increased
-              do isec=1,NSECTORS
-                 if(emis_lf_cntry(i,j,k,ic,isec,iem)>1.E-20)then
-                    if(found == 0) nemis = nemis + 1 !should be increased at most once for all sectors
-                    found = 1
-                    split_idx = SECTORS(isec)%split
-                    do n = 1, emis_nsplit(iem)
-                       iqrc = sum(emis_nsplit(1:iem-1)) + n
-                       itot = iqrc2itot(iqrc)
-                       if(itot<=NSPEC_fullchem_inc_lf)then !temporary: avoid SHIPNOx                          
-                          rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
-                               eps* emis_lf_cntry(i,j,k,ic,isec,iem)*ehlpcom0&
-                               *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
-                               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-                       end if
-                    end do
+              do iisec=1,nsectors_loop
+                 if(lf_src(isrc)%sector>0) then
+                    isec = lf_src(isrc)%sector
+                 else
+                    isec = iisec
                  end if
+                 
+                 do ic = 1,nic(i,j)
+                    iland = ic2iland(i,j,ic)
+                    if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
+                       if(found == 0) nemis = nemis + 1 !should be increased at most once for each isrc
+                       found = 1
+                       emish_idx = SECTORS(isec)%height
+                       split_idx = SECTORS(isec)%split
+                       do n = 1, lf_src(isrc)%Nsplit
+                          itot=lf_src(isrc)%ix(n)
+                          iqrc = itot2iqrc(itot+NSPEC_SHL)
+                          if (iqrc<0) cycle
+                          rcemis_lf(nemis,1) = rcemis_lf(nemis,1) +&
+                               fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                               *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
+                               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)                          
+                       end do
+                    end if
+                 end do
               end do
+              
               if (found == 1) then
                  !emissions found here
-                 emis2iem(nemis) = iem
-                 emis2icis(nemis) = n0
-             endif
-           else
-              write(*,*)'sectors fullchem not yet implemented'
-              stop
-           end if
-           n0 = n0 + 1
-        end do
-     end do
-
-     iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-     n0 = 0
-     do ic=1,Ncountry_lf+Ncountry_group_lf
-        do is=1,Ncountrysectors_lf
-           iland = country_ix_list(ic)
-           isec=lf_country%sector_list(is)
-           
-           if(isec==0)then
-              found = 0 !flag to show if nemis already increased
-              do isec=1,NSECTORS
-                 if(emis_lf_cntry(i,j,k,ic,isec,iem)>1.E-20)then
-                    if(found == 0) nemis = nemis + 1
-                    found = 1
-                    split_idx = SECTORS(isec)%split
-                    do n = 1, emis_nsplit(iem)
-                       iqrc = sum(emis_nsplit(1:iem-1)) + n
-                       itot = iqrc2itot(iqrc)
-                       if(itot<=NSPEC_fullchem_inc_lf)then 
-                          
-                          rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
-                               eps* emis_lf_cntry(i,j,k,ic,isec,iem)*ehlpcom0&
-                               *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
-                               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-                      end if
-                    end do
-                 end if
-              end do
-              if (found == 1) then
-                 !emissions found here
-                 emis2iem(nemis) = iem
-                 emis2icis(nemis) = n0
+                 !emis2icis(nemis) = n0 !not country/sector specific
+                 emis2isrc(nemis) = isrc
               endif
-           else
-              write(*,*)'sectors fullchem not yet implemented'
-              stop
+              
+           else if(lf_src(isrc)%type=="country")then
+             do ic=1,nic(i,j)
+                 iland = ic2iland(i,j,ic)
+                 !only pick one country at a time
+                 do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
+                   if(iic<=Ncountry_lf)then
+                     if (iic <= Ncountry_mask_lf) then
+                       if (country_mask_val(iic)>-99999) then
+                         if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
+                       end if
+                     else if(country_ix_list(iic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+                     else if(country_ix_list(iic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+                     else if(country_ix_list(iic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+                     else if(country_ix_list(iic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+                     else if(country_ix_list(iic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+                     else if(country_ix_list(iic)/=iland)then
+                       cycle !only pick out one country 
+                     endif
+                   else
+                     !defined as a group of countries
+                     found = 0
+                     do ig = 1, MAX_lf_country_group_size
+                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
+                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                         found = 1
+                         exit
+                       end if
+                     end do
+
+                     if (found == 0) cycle 
+                   end if
+                   do is=1,Ncountrysectors_lf              
+                       isec=lf_country%sector_list(is)
+              
+                       if(lf_country%sector_list(is)>0) then
+                          nsectors_loop = 1
+                       else
+                          nsectors_loop = NSECTORS
+                       end if
+                       found = 0 !flag to show if nemis already increased
+                       do iisec=1,nsectors_loop
+                          if(lf_country%sector_list(is)>0) then
+                             isec = lf_country%sector_list(is)
+                          else
+                             isec = iisec
+                          end if
+                          
+                          if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
+                             if(found == 0) nemis = nemis + 1 !should be increased at most once if sector=0
+
+                             found = 1
+                             emish_idx = SECTORS(isec)%height
+                             split_idx = SECTORS(isec)%split
+                             do n = 1, lf_src(isrc)%Nsplit
+                                itot=lf_src(isrc)%ix(n)
+                                iqrc = itot2iqrc(itot+NSPEC_SHL)
+                                if (iqrc<0) cycle
+                                rcemis_lf(nemis,1) = rcemis_lf(nemis,1) +&
+                               fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                               *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
+                               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)
+                             end do
+                          end if
+                       end do
+                       if (found == 1) then
+                         !emissions found here
+                         emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+                         emis2isrc(nemis) = isrc
+                       endif
+                    end do
+                  end do
+              end do
+             
            end if
-           n0 = n0 + 1
-       end do
-     end do
-  end if
-  
-  N_lf_derivemis = nemis !final number of emis derivatives computed for this i,j,k
+        end do
+      else
+        !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n)?         
+        do ic=1,nic(i,j)
+          !iland is the country index f the emission treated
+          iland = ic2iland(i,j,ic)
+          !iic is the lf country index of the source
+          do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
+            if(iic<=Ncountry_lf)then
+              if (iic <= Ncountry_mask_lf) then
+                if (country_mask_val(iic)>-99999) then
+                  if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
+                end if
+              else if(country_ix_list(iic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+              else if(country_ix_list(iic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+              else if(country_ix_list(iic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+              else if(country_ix_list(iic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+              else if(country_ix_list(iic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+              else if(country_ix_list(iic)/=iland)then
+                cycle !only pick out one country 
+              endif
+            else
+              !defined as a group of countries
+              found = 0
+              do ig = 1, MAX_lf_country_group_size
+                if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
+                if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                  found = 1
+                  exit
+                end if
+              end do
+              if (found == 0) cycle 
+            end if
+            do is=1,Ncountrysectors_lf              
+              isec=lf_country%sector_list(is)
+              if(isec>0) then
+                nsectors_loop = 1
+              else
+                nsectors_loop = NSECTORS
+              end if
+              found = 0 !flag to show if nemis already increased
+              do iisec=1,nsectors_loop
+                if(lf_country%sector_list(is)>0) then
+                  isec = lf_country%sector_list(is)
+                else
+                  isec = iisec
+                end if
+                if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
+                  if(found == 0) nemis = nemis + 1 !should be increased at most once for each is
+                  found = 1
+                  emish_idx = SECTORS(isec)%height
+                  split_idx = SECTORS(isec)%split
+                  do n = 1, emis_nsplit(iem)
+                    iqrc = sum(emis_nsplit(1:iem-1)) + n
+                    itot = iqrc2itot(iqrc)
+                    
+                    if(itot<=NSPEC_fullchem_inc_lf .or. .not.lf_fullchem)then !temporary: avoid SHIPNOx
+                      rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
+                          fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                          *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
+                          *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) 
 
-  if(nemis>N_lf_derivemisMAX)then
-     write(*,*)i,j,k,nemis,N_lf_derivemisMAX
-     call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")
-  end if
+                   end if
+                  end do
+                end if
+              end do
+              if (found == 1) then
+                !emissions found here
+                emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+                emis2isrc(nemis) = iem
+              endif
+            end do
+          end do
+        end do
+      end if
+    end do
 
-  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
-end subroutine lf_rcemis
+    N_lf_derivemis = nemis !final number of emis derivatives computed for this i,j,k
+
+    if(nemis>N_lf_derivemisMAX)then
+      write(*,*)me,i,j,k,nemis,N_lf_derivemisMAX
+      call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")
+    end if
+    
+    call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
+  end subroutine lf_rcemis
 
 end module LocalFractions_mod

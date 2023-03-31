@@ -36,7 +36,7 @@
     use EmisDef_mod,        only: KEMISTOP
     use GridValues_mod,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_mod,             only : IO_LOG, datewrite
-    use LocalFractions_mod, only: lf_chemrates, lf_chemderiv, lf_Nvert, &
+    use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
                                   Dchem_lf, xn_shl_lf, rcemis_lf, lf_rcemis,&
                                   NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf, &
@@ -159,9 +159,13 @@ contains
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
-       if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
+       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
           !make rcemis_lf and N_lf_derivemis
           call lf_rcemis(i,j,k,eps1-1.0)
+       endif
+       if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
+          !compute chemistry with small changes in input concentrations
+          
           Nd = NSPEC_fullchem_lf + N_lf_derivemis !shorter
 
           !Careful sometimes the only difference between xnew and xnew_lf are from initial values (Dchem_lf and/or xn_shl_lf)
@@ -283,11 +287,7 @@ contains
                !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                
             end do !! End iterations
-            
-            if(USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
-               call lf_chemrates(k, ichem, dtchem(ichem),xnew)
-            end if
- 
+                        
             !YIELDs  Allows change of gas/aerosol yield, which currently is only used
             !for SOA species to be handled in CM_Reactions2
             
@@ -309,9 +309,11 @@ contains
        !     End of integration loop        *
        !*************************************
 
-       if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
-          
-          call lf_chemderiv(i,j,k, xn_2d(1,k), xnew, eps1)
+       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
+          !make rcemis_lf and N_lf_derivemis
+          call lf_chem_emis_deriv(i,j,k, xn_2d(1,k), xnew, eps1)
+       endif
+       if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then          
           !save tendencies for each derivative
           do n = 1, NSPEC_SHL
              do i_lf = 1, NSPEC_fullchem_lf

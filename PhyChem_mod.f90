@@ -64,7 +64,6 @@ use TimeDate_mod,      only: date,daynumber,day_of_year, add_secs, &
 use TimeDate_ExtraUtil_mod,only : date2string
 use Timefactors_mod,   only: NewDayFactors
 use Trajectory_mod,    only: trajectory_out     ! 'Aircraft'-type  outputs
-use LocalFractions_mod,         only: lf_emis
 
 !-----------------------------------------------------------------------------
 implicit none
@@ -219,8 +218,6 @@ subroutine phyche()
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
   call Code_timer(tim_before0)
-  !must be placed just before emissions are used
-  if(USES%LocalFractions)call lf_emis(current_date)
 
   !=========================================================!
   call debug_concs("PhyChe pre-chem ")
