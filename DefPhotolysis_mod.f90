@@ -33,10 +33,52 @@
        use ZchemData_mod,      only: rcphot
        implicit none
        private
-    
+
        integer, public, parameter :: &
-                 NRCPHOT          = 17  &! Number of photolytic reactions
-                ,NRCPHOTextended  = 24
+       NRCPHOT          = 17  & ! Number of photolytic reactions
+      ,NRCPHOTextended  = 172   ! currently max number, used for CRIv2R5
+
+       integer, public, parameter :: & ! cloud-j index declarations
+       CLJ1 = 1,CLJ2 = 2,CLJ3 = 3,CLJ4 = 4,CLJ5 = 5,CLJ6 = 6,CLJ7 = 7,CLJ8 = 8, CLJ9 = 9, & 
+       CLJ10=10,CLJ11=11,CLJ12=12,CLJ13=13,CLJ14=14,CLJ15=15,CLJ16=16,CLJ17=17, CLJ18=18, &
+       CLJ19=19,CLJ20=20,CLJ21=21,CLJ22=22,CLJ23=23,CLJ24=24,CLJ25=25,CLJ26=26, CLJ27=27, &
+       CLJ28=28,CLJ29=29,CLJ30=30,CLJ31=31,CLJ32=32,CLJ33=33,CLJ34=34,CLJ35=35, CLJ36=36, &
+       CLJ37=37,CLJ38=38,CLJ39=39,CLJ40=40,CLJ41=41,CLJ42=42,CLJ43=43,CLJ44=44, CLJ45=45, &
+       CLJ46=46,CLJ47=47,CLJ48=48,CLJ49=49,CLJ50=50,CLJ51=51,CLJ52=52,CLJ53=53, CLJ54=54, &
+       CLJ55=55,CLJ56=56,CLJ57=57,CLJ58=58,CLJ59=59,CLJ60=60,CLJ61=61,CLJ62=62, CLJ63=63, &
+       CLJ64=64,CLJ65=65,CLJ66=66,CLJ67=67,CLJ68=68,CLJ69=69,CLJ70=70,CLJ71=71, CLJ72=72, &
+       CLJ73=73,CLJ74=74,CLJ75=75,CLJ76=76,CLJ77=77,CLJ78=78,CLJ79=79,CLJ80=80, CLJ81=81, &
+       CLJ82=82,CLJ83=83,CLJ84=84,CLJ85=85,CLJ86=86,CLJ87=87,CLJ88=88,CLJ89=89, CLJ90=90, &
+       CLJ91=91,CLJ92=92,CLJ93=93,CLJ94=94,CLJ95=95,CLJ96=96,CLJ97=97,CLJ98=98, CLJ99=99, &
+       CLJ100=100,CLJ101=101,CLJ102=102,CLJ103=103,CLJ104=104,CLJ105=105,CLJ106=106, &
+       CLJ107=107,CLJ108=108,CLJ109=109,CLJ110=110,CLJ111=111,CLJ112=112,CLJ113=113, &
+       CLJ114=114,CLJ115=115,CLJ116=116,CLJ117=117,CLJ118=118,CLJ119=119,CLJ120=120, &
+       CLJ121=121,CLJ122=122,CLJ123=123,CLJ124=124,CLJ125=125,CLJ126=126,CLJ127=127, &
+       CLJ128=128,CLJ129=129,CLJ130=130,CLJ131=131,CLJ132=132,CLJ133=133,CLJ134=134, &
+       CLJ135=135,CLJ136=136,CLJ137=137,CLJ138=138,CLJ139=139,CLJ140=140,CLJ141=141, &
+       CLJ142=142,CLJ143=143,CLJ144=144,CLJ145=145,CLJ146=146,CLJ147=147,CLJ148=148, &
+       CLJ149=149,CLJ150=150,CLJ151=151,CLJ152=152,CLJ153=153,CLJ154=154,CLJ155=155, &
+       CLJ156=156,CLJ157=157,CLJ158=158,CLJ159=159,CLJ160=160,CLJ161=161,CLJ162=162, &
+       CLJ163=163,CLJ164=164,CLJ165=165,CLJ166=166,CLJ167=167,CLJ168=168,CLJ169=169, &
+       CLJ170=170,CLJ171=171,CLJ172=172
+    
+       ! EmChem19 definitions matching CloudJ indices from CloudJ_EmChem19 input folder/file
+      integer, public, parameter :: &
+      IDO3_O3P  = CLJ3 , IDO3_O1D = CLJ4 , IDNO2    = CLJ9 , IDHCHO_H = CLJ5 , &
+      IDHCHO_H2 = CLJ6 , IDH2O2   = CLJ7 , IDCH3O2H = CLJ8 , IDNO3    = CLJ74, &
+      IDHO2NO2  = CLJ16, IDRCOCHO = CLJ64, IDCH3COY = CLJ72, IDMEK    = CLJ75, &
+      IDCH3CHO  = CLJ54, IDGLYOXA = CLJ65, IDGLYOXB = CLJ66, IDGLYOXC = CLJ67, &
+      IDPAN     = CLJ52, IDHNO3   = CLJ15, IDHONO   = CLJ14, IDCHOCHO = CLJ73, &
+      IDNO3_NO  = CLJ11, IDNO3_NO2= CLJ12, IDACETON = CLJ68, IDN2O5   = CLJ13
+      
+      ! in CRIv2R5 IDO3_O1D = CLJ3, IDNO2 = CLJ11
+      ! in EmChem switch CLJ9 and CLJ11, and 3 and 4
+
+      ! copies with different names for situational use
+      integer, public, parameter :: &
+      IDAO3 = IDO3_O3P, IDBO3 = IDO3_O1D, IDBCH2O = IDHCHO_H2, IDACH2O = IDHCHO_H, &
+      IDHCOHCO = IDCHOCHO, IDCH3COX = CLJ75 
+
        
        integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
        real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
@@ -60,15 +102,14 @@
                        djcl1        &
                       ,djcl3
     
-    !  Indices of photolysis rates as available from Phodis files:
-    
+        ! Indices of photolysis rates as available from Phodis files:
         integer, public, parameter ::  &
-          IDAO3    =  1 , IDBO3    =  2 , IDNO2    =  3 , &
-          IDH2O2   =  4 , IDHNO3   =  5 , IDACH2O  =  6 , &
-          IDBCH2O  =  7 , IDCH3CHO =  8 , IDCH3COX =  9 , &
-          IDCH3COY = 10 , IDHCOHCO = 11 , IDRCOHCO = 12 , &
-          IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
-          IDHO2NO2 = 16 , IDACETON = 17
+          IDAO3_tb    =  1 , IDBO3_tb    =  2 , IDNO2_tb    =  3 , &
+          IDH2O2_tb   =  4 , IDHNO3_tb   =  5 , IDACH2O_tb  =  6 , &
+          IDBCH2O_tb  =  7 , IDCH3CHO_tb =  8 , IDCH3COX_tb =  9 , &
+          IDCH3COY_tb = 10 , IDHCOHCO_tb = 11 , IDRCOHCO_tb = 12 , &
+          IDNO3_tb    = 13 , IDN2O5_tb   = 14 , IDCH3O2H_tb = 15 , &
+          IDHO2NO2_tb = 16 , IDACETON_tb = 17
     
     ! Corresponding MCM-photolysis rates:
     ! IDAO3    =  1 = IDO3_O3P = MCM_J2
@@ -89,30 +130,20 @@
     ! IDHO2NO2 = 16 = NOT_IN_MCM?
     ! IDACETON = 17 = MCM_J21
     
-        integer, public, parameter ::&
-            IDHONO = 18  & ! added as extended
-           ,IDNO3_NO = 19 & ! added
-           ,IDNO3_NO2 = 20 & ! added
-           ,IDMEK     = IDCH3COX & ! just name change CHECK
-           ,IDPAN = 21 & ! some cloud j specific reactions here
-           ,IDGLYOXA = 22 &
-           ,IDGLYOXB = 23 & 
-           ,IDGLYOXC = 24
     !       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
     !       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
-        integer, public, save :: IDRCOCHO
-        integer, public, save :: IDCHOCHO
+    !    integer, public, save :: IDCHOCHO
     ! In EMEP code, we use IDBO3 for O1D production and IDAO3 for OP production
     ! MCM indices:
     
     !NEEDS FIXING. Changed from ESX to try to match above, but eg NO3 is difficult
-      integer, public, parameter :: & 
-        IDO3_O1D   = 2,IDO3_O3P  = 1, & !:BUG FIX RB Apr25
+    !  integer, public, parameter :: & 
+    !   IDO3_O1D   = 2,IDO3_O3P  = 1, & !:BUG FIX RB Apr25
     !    IDNO3_NO  = IDNO3  &
     !   ,IDNO3_NO2  = IDNO3 & !HONO NEEDS FIXING!
-        IDHCHO_H  = 6 & ! HCHO -> CO + 2 HO2
-       ,IDHCHO_H2 = 7 !&  ! HCHO -> CO + H2
+    !   IDHCHO_H  = 6 & ! HCHO -> CO + 2 HO2
+    !   ,IDHCHO_H2 = 7 !&  ! HCHO -> CO + H2
     !   ,MCM_J18   = 18, MCM_J20   = 20 &
     !   ,MCM_J22   = 22 , IDMEK     = 22 &
     !   ,IDCHOCHO_2CO  = 31 &! .. 33 QUERY
@@ -134,7 +165,6 @@
     !   ,IDiC3H7ONO2  = 54 &! Used for ISON
     !   ,IDCH3COO2H  = -1 &! QUERY ???
     !   ,IDN2O5    = -1 ! .. QUERY in PHUX; not MCM?
-    
     
         integer, save, public :: photo_out_ix_no2 = -1
         integer, save, public :: photo_out_ix_o3a = -1
@@ -182,10 +212,6 @@
             if(newseason==4)season3='oct' 
     
             if(first_call)then
-              IDRCOCHO  = IDHCOHCO ! business as usual when cloudj is not used
-              IDCHOCHO  = IDHCOHCO
-              if(uses%cloudj) IDRCOCHO = IDRCOHCO ! cloudj includes mglyox 
-
               allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
               allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
               allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
@@ -432,27 +458,139 @@
     
                 if(iclcat == 0)then
                   do k = KCHEMTOP,KMAX_MID
-                    do n=1,NRCPHOT
-                      rcphot(n,k)  = dj(n,k2P_PHODIS(k),Grid%izen,la)
-                    end do
+                      ! match tabulated rates with indices in EMEP
+                      rcphot(IDO3_O3P,k)  = dj(IDAO3_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDO3_O1D,k)  = dj(IDBO3_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDNO2,k)     = dj(IDNO2_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDH2O2,k)    = dj(IDH2O2_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDHNO3,k)    = dj(IDHNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDHCHO_H,k)  = dj(IDACH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDHCHO_H2,k) = dj(IDBCH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDCH3CHO,k)  = dj(IDCH3CHO_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDMEK,k)     = dj(IDCH3COX_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDCH3COY,k)  = dj(IDCH3COY_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDCHOCHO,k)  = dj(IDHCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDRCOCHO,k)  = dj(IDRCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDNO3,k)     = dj(IDNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDN2O5,k)    = dj(IDN2O5_tb,k2P_PHODIS(k),Grid%izen,la)  
+                      rcphot(IDCH3O2H,k)  = dj(IDCH3O2H_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDHO2NO2,k)  = dj(IDHO2NO2_tb,k2P_PHODIS(k),Grid%izen,la)
+                      rcphot(IDACETON,k)  = dj(IDACETON_tb,k2P_PHODIS(k),Grid%izen,la)
+
                   end do
                 else if(iclcat == 1)then
                   clear = cc3dmax(i,j,KMAX_MID)
                   do k = KCHEMTOP,KMAX_MID
-                    do n=1,NRCPHOT
-                      rcphot(n,k)  = (1. + clear*djcl1(n,k2P_PHODIS(k),Grid%izen)) &
-                                    * dj(n,k2P_PHODIS(k),Grid%izen,la)
-                    end do  !  n
+                      ! match tabulated rates with indices in EMEP
+                      rcphot(IDO3_O3P,k)  = (1. + clear*djcl1(IDAO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDAO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDO3_O1D,k)  = (1. + clear*djcl1(IDBO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDBO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDNO2,k)     = (1. + clear*djcl1(IDNO2_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDNO2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDH2O2,k)    = (1. + clear*djcl1(IDH2O2_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDH2O2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHNO3,k)    = (1. + clear*djcl1(IDHNO3_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDHNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHCHO_H,k)  = (1. + clear*djcl1(IDACH2O_tb,k2P_PHODIS(k),Grid%izen))  &
+                                          * dj(IDACH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHCHO_H2,k) = (1. + clear*djcl1(IDBCH2O_tb,k2P_PHODIS(k),Grid%izen))  &
+                                          * dj(IDBCH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3CHO,k)  = (1. + clear*djcl1(IDCH3CHO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3CHO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDMEK,k)     = (1. + clear*djcl1(IDCH3COX_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3COX_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3COY,k)  = (1. + clear*djcl1(IDCH3COY_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3COY_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCHOCHO,k)  = (1. + clear*djcl1(IDHCOHCO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDHCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDRCOCHO,k)  = (1. + clear*djcl1(IDRCOHCO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDRCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDNO3,k)     = (1. + clear*djcl1(IDNO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDN2O5,k)    = (1. + clear*djcl1(IDN2O5_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDN2O5_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3O2H,k)  = (1. + clear*djcl1(IDCH3O2H_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3O2H_tb,k2P_PHODIS(k),Grid%izen,la)
+                                          
+                      rcphot(IDHO2NO2,k)  = (1. + clear*djcl1(IDHO2NO2_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDHO2NO2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDACETON,k)  = (1. + clear*djcl1(IDACETON_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDACETON_tb,k2P_PHODIS(k),Grid%izen,la)
+                    
                   end do   !  k
     
     
                 else
                   clear = cc3dmax(i,j,KMAX_MID)
                   do k = KCHEMTOP,KMAX_MID
-                    do n=1,NRCPHOT
-                      rcphot(n,k)  = (1. +     clear*djcl3(n,k2P_PHODIS(k),Grid%izen)) &
-                                   * dj(n,k2P_PHODIS(k),Grid%izen,la)
-                     end do
+                      ! match tabulated rates with indices in EMEP
+                      rcphot(IDO3_O3P,k)  = (1. + clear*djcl3(IDAO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDAO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDO3_O1D,k)  = (1. + clear*djcl3(IDBO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDBO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDNO2,k)     = (1. + clear*djcl3(IDNO2_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDNO2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDH2O2,k)    = (1. + clear*djcl3(IDH2O2_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDH2O2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHNO3,k)    = (1. + clear*djcl3(IDHNO3_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDHNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHCHO_H,k)  = (1. + clear*djcl3(IDACH2O_tb,k2P_PHODIS(k),Grid%izen))  &
+                                          * dj(IDACH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDHCHO_H2,k) = (1. + clear*djcl3(IDBCH2O_tb,k2P_PHODIS(k),Grid%izen))  &
+                                          * dj(IDBCH2O_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3CHO,k)  = (1. + clear*djcl3(IDCH3CHO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3CHO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDMEK,k)     = (1. + clear*djcl3(IDCH3COX_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3COX_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3COY,k)  = (1. + clear*djcl3(IDCH3COY_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3COY_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCHOCHO,k)  = (1. + clear*djcl3(IDHCOHCO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDHCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDRCOCHO,k)  = (1. + clear*djcl3(IDRCOHCO_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDRCOHCO_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDNO3,k)     = (1. + clear*djcl3(IDNO3_tb,k2P_PHODIS(k),Grid%izen))    &
+                                          * dj(IDNO3_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDN2O5,k)    = (1. + clear*djcl3(IDN2O5_tb,k2P_PHODIS(k),Grid%izen))   &
+                                          * dj(IDN2O5_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDCH3O2H,k)  = (1. + clear*djcl3(IDCH3O2H_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDCH3O2H_tb,k2P_PHODIS(k),Grid%izen,la)
+                                          
+                      rcphot(IDHO2NO2,k)  = (1. + clear*djcl3(IDHO2NO2_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDHO2NO2_tb,k2P_PHODIS(k),Grid%izen,la)
+
+                      rcphot(IDACETON,k)  = (1. + clear*djcl3(IDACETON_tb,k2P_PHODIS(k),Grid%izen)) &
+                                          * dj(IDACETON_tb,k2P_PHODIS(k),Grid%izen,la)
+
                   end do
                 end if
       

@@ -30,7 +30,7 @@
         ! WX_  = dim = no. of wavelengths in input file
         integer, parameter ::  WX_=18
         ! X_   = dim = max no. of X-section data sets (input data)  
-        integer, parameter ::  X_=72
+        integer, parameter ::  X_=201
         ! A_   = dim = no. of Aerosol/cloud Mie sets (input data)
         integer, parameter ::  A_=40
         ! C_   = dim = no. of cld-data sets (input data)
@@ -232,6 +232,7 @@
 ! !USES:
 !
       USE FJX_CMN_MOD
+      use Config_module, only: cloudjx_initf, USES, MasterProc
 
       IMPLICIT NONE
 !
@@ -2062,7 +2063,7 @@
       integer J,K,L, IV
 
       if (NJXU .lt. NJX) then
-        write(6,'(A,2I5)')  'NJXU<NJX',NJXU,NJX
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(A,2I5)')  'NJXU<NJX',NJXU,NJX
         call EXITC(' JRATET:  CTM has not enough J-values dimensioned')
       endif
       do L = 1,LU
@@ -2174,12 +2175,12 @@
       integer  I,J,K,L
       real*8   COLO2,COLO3,ZKM,DELZ,ZTOP,DAIR,DOZO
 
-      write(6,'(4a)') '   L z(km)     p      T   ', &
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(4a)') '   L z(km)     p      T   ', &
        '    d(air)   d(O3)','  col(O2)  col(O3)     d-TAU   SS-alb', &
        '  g(cos) CTM lyr=>'
 
       L = LU+2
-      write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
             L,ZZJ(L)*1.d-5,PPJ(L)
 
           COLO2 = 0.d0
@@ -2195,7 +2196,7 @@
           DAIR = DDJ(L)/DELZ
           DOZO = OOJ(L)/DELZ
 
-      write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
             L,ZKM,PPJ(L),TTJ(L),DAIR,DOZO,COLO2,COLO3,DTAU6(L), &
             POMEG6(1,L),POMEG6(2,L)/3.d0, JXTRA(L+L),JXTRA(L+L-1)
 
@@ -2218,11 +2219,11 @@
 !-----------------------------------------------------------------------
       integer  I,J,K,L
       real*8   COLO2,COLO3,ZKM,DELZ,ZTOP
-      write(6,'(4a)') '   L z(km)     p      T   ', &
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(4a)') '   L z(km)     p      T   ', &
        '    d(air)   d(O3)','  col(O2)  col(O3)     d-TAU   SS-alb', &
        '  g(cos) CTM lyr=>'
       L = LU+2
-      write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
             L,ZZJ(L)*1.d-5,PPJ(L)
           COLO2 = 0.d0
           COLO3 = 0.d0
@@ -2233,7 +2234,7 @@
           DELZ = ZTOP-ZZJ(L)
           ZTOP = ZZJ(L)
           ZKM = ZZJ(L)*1.d-5
-      write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,i3,0p,f6.2,f10.3,f7.2,1p,4e9.2,0p,f10.4,2f8.5,2i3)') &
             L,ZKM,PPJ(L),TTJ(L),DDJ(L)/DELZ,OOJ(L)/DELZ, &
             COLO2,COLO3
         enddo
@@ -2485,7 +2486,7 @@
 !
       USE FJX_CMN_MOD
 
-      use Config_module, only: cloudjx_initf
+      use Config_module, only: cloudjx_initf, USES, MasterProc
 
       USE FJX_SUB_MOD, ONLY : EXITC
 
@@ -2510,7 +2511,7 @@
 
       integer  JXUNIT,J, RANSEED
 
-      write(6,*) ' fast-JX ver-7.3 standalone CTM code'
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,*) ' fast-JX ver-7.3 standalone CTM code'
 
       if (W_.ne.8 .and. W_.ne.12 .and. W_.ne.18) then
         call EXITC(' INIT_JX: invalid no. wavelengths')
@@ -2613,34 +2614,34 @@
       read (NUN,*,err=4)
       read (NUN,'(i5)',err=4) NWWW
 !print
-         write(6,'(1x,a120)') TIT_SPEC
-         write(6,'(i8)') NWWW
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a120)') TIT_SPEC
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(i8)') NWWW
        NW1 = 1
        NW2 = NWWW
 !----w-params:  1=w-bins, 2=solar(photons), 3=solar(W/m2), 4=Y-PAR spectrum, 5=Rayleigh Xsects
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
           T_XP,T_FL, (WL(IW),IW=1,NWWW)
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
           T_XP,T_FL, (FL(IW),IW=1,NWWW)
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
           T_XP,T_FL, (FW(IW),IW=1,NWWW)
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
           T_XP,T_FL, (FP(IW),IW=1,NWWW)
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
           T_XP,T_FL, (QRAYL(IW),IW=1,NWWW)
 
@@ -2662,7 +2663,7 @@
         TITLEJL(1) = TIT_J1L
         LQQ(1) = 3
 !print
-        write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
 
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
@@ -2679,7 +2680,7 @@
         TITLEJL(2) = TIT_J1L
         LQQ(2) = 3
 !print
-        write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
 
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
       read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
@@ -2696,7 +2697,7 @@
         TITLEJL(3) = TIT_J1L
         LQQ(3) = 3
 !print
-        write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
 
 
 !---Read remaining species:  X-sections at 1-2-3 T_s
@@ -2706,7 +2707,7 @@
     3 continue
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-        write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
         if (TIT_J1S .eq. 'endofJ') goto 1
 !---try to add a new Xsect
     2 continue
@@ -2721,7 +2722,7 @@
 !try to read a 2nd Temperature or Pressure
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-        write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
         if (TIT_J1S .eq. 'endofJ') goto 1
       if (TIT_J1S .eq. TITLEJX(JJ)) then
         LQ = 2
@@ -2731,7 +2732,7 @@
 !try to read a 3rd Temperature or Pressure
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
-         write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
          if (TIT_J1S .eq. 'endofJ') goto 1
        if (TIT_J1S .eq. TITLEJX(JJ)) then
         LQ = 3
@@ -2755,7 +2756,7 @@
 !---TROP-ONLY (W_ = 12 or 8) then drop the strat Xsects (labeled 'x')
 
       if (W_ .eq. 12 .or. W_ .eq. 8) then
-        write(6,'(a)')  &
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a)')  &
          ' >>>TROP-ONLY reduced wavelengths, drop strat X-sects'
         JJ = 3
         do J = 4,NJX
@@ -2780,7 +2781,7 @@
 
 !print-----
       do J = 1,NJX
-        write(6,'(a8,i5,2x,a6,2x,a16,2x,a1,i3,2x,3f6.1)') &
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a8,i5,2x,a6,2x,a16,2x,a1,i3,2x,3f6.1)') &
           ' X-sects',J,TITLEJX(J),TITLEJL(J),SQQ(J),LQQ(J),(TQQ(I,J),I=1,LQQ(J))
       enddo
 
@@ -2898,7 +2899,7 @@
 
         read (NUN,'(a120)',err=4) TITLE0
 !print----
-          write(6,'(a120)') TITLE0
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a120)') TITLE0
         read (NUN,*)
         read (NUN,*)
       do J = 1,C_
@@ -2915,7 +2916,7 @@
         enddo
          NCC = J
 !print----
-          write(6,'(i5,1x,a12,1x,7f7.3,1x,a80)')   &
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(i5,1x,a12,1x,7f7.3,1x,a80)')   &
            J,TITLCCJ,RCCJ,DCCJ,(QCC(K,J),K=1,5),TITLE0
        else
           goto 2
@@ -2929,7 +2930,7 @@
     2 continue
         close(NUN)
 !print----
-         write(6,'(a,2f9.5,i5)') ' ATAU/ATAU0/JMX',ATAU,ATAU0,JTAUMX
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a,2f9.5,i5)') ' ATAU/ATAU0/JMX',ATAU,ATAU0,JTAUMX
 
       END SUBROUTINE RD_CLD
 
@@ -2964,7 +2965,7 @@
 
       read (NUN,'(a120)',err=4) TITLE0
 !print----
-          write(6,'(a120)') TITLE0
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a120)') TITLE0
         read (NUN,*)
         read (NUN,*)
       do J = 1,A_
@@ -2981,7 +2982,7 @@
         enddo
          NAA = J
 !print----
-          write(6,'(i5,1x,a12,1x,7f7.3,1x,a80)')   &
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(i5,1x,a12,1x,7f7.3,1x,a80)')   &
            J,TITLAAJ,RAAJ,DAAJ,(QAA(K,J),K=1,5),TITLE0
        else
           goto 2
@@ -3018,7 +3019,7 @@
 
       read (NUN,'(a)',err=4) TITLE0
 !print----
-          write(6,'(a120)') TITLE0
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a120)') TITLE0
       read(NUN,'(5x,10f5.0)',err=4) WMM
 
 !---33 Different UM Aerosol Types:  SULF, SS-1,-2,-3,-4, DD-1,-2,-3,-4,
@@ -3048,7 +3049,7 @@
        enddo
 
 !print----
-        write(6,'(7(i5,1x,a4))') (L,TITLUM(L), L=1,33)
+        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(7(i5,1x,a4))') (L,TITLUM(L), L=1,33)
       goto 2
     4 continue
         call EXITC(' RD_UM: error in read')
@@ -3076,7 +3077,7 @@
       read (NJ2,'(A)') TITLE0
       read (NJ2,'(2I5)') NTLATS,NTMONS
 !      write(6,'(1X,A)') TITLE0
-      write(6,1000) NTLATS,NTMONS
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,1000) NTLATS,NTMONS
       N216  = min(216, NTLATS*NTMONS)
       do IA = 1,N216
         read (NJ2,'(1X,I3,3X,I2)') LAT, MON
@@ -3150,7 +3151,7 @@
       open (NUNIT,file=NAMFIL,status='old',form='formatted')
 
        read (NUNIT,'(a)') CLINE
-         write(6,'(a)') CLINE
+         if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a)') CLINE
       do J = 1,JVN_
        read (NUNIT,'(i4,1x,a50,4x,f5.3,2x,a6)') JJ,T_REACT,F_FJX,T_FJX
        if (JJ .gt. JVN_) exit
@@ -3172,15 +3173,15 @@
        enddo
       enddo
 
-      write(6,'(a,i4,a)')' Photochemistry Scheme with',NRATJ,' J-values'
+      if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a,i4,a)')' Photochemistry Scheme with',NRATJ,' J-values'
       do K=1,NRATJ
        if (JVMAP(K) .ne. '------' ) then
         J = JIND(K)
         if (J.eq.0) then
-         write(6,'(i5,a50,f6.3,a,1x,a6)') K,JLABEL(K),JFACTA(K), &
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(i5,a50,f6.3,a,1x,a6)') K,JLABEL(K),JFACTA(K), &
                ' no mapping onto fast-JX',JVMAP(K)
         else
-         write(6,'(i5,a50,f6.3,a,i4,1x,a6)') K,JLABEL(K),JFACTA(K), &
+          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(i5,a50,f6.3,a,i4,1x,a6)') K,JLABEL(K),JFACTA(K), &
                ' mapped to FJX:',J,TITLEJX(J)
         endif
        endif
@@ -3264,6 +3265,8 @@
       USE FJX_CMN_MOD
 
       USE FJX_SUB_MOD,  ONLY : EXITC, PHOTO_JX
+
+      use Config_module, only: cloudjx_initf, USES, MasterProc
 
       IMPLICIT NONE
 !-----------------------------------------------------------------------
