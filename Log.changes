@@ -46,6 +46,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th March 2023, Willem
+
+Polished Cloud-J code, now running with version 3 of the input stratospheric 
+ozone and temperature observations. The structure of this new input file makes  
+the cod compatible/function no matter the altitude (hPa) of the EMEP model top. 
+
+Also introduced new indexing in DefPhotolysis_mod to make the EMEP code 
+compatible with both the EmChem19 and CRIv2R5 chemical mechanisms. The
+CLJ1-CLJ172 indices are used in CRIv2R5, and the EmChem19 photolysis reactions
+are mapped to these for when the EmChem19 is used.
+
+Also added the USES%CLOUDJVERBOSE option in Config_module.f90 to toggle
+write-outs from the Cloud-J code in the model output file. Default set to F,
+to avoid lengthy output files.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG: rv4.51 (as desert mask changes results)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23-24 Mar 2023, Dave
@@ -115,7 +131,6 @@ GridValues_mod - i4 to i5 on coord output
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG rv4.49 = Tagging for isorropia_lite version
 (Applied 13th Feb. 2023, but added here 7th Mar 2023)
-
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2023, Willem
 
@@ -539,7 +554,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in emis new format: the "%factor" attribute, when given in the config file
 for the the entire file, was not applied.
->>>>>>> 02e166bd0f592b8b4323efa7ced5457f303fe106
+>>>>>> 02e166bd0f592b8b4323efa7ced5457f303fe106
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 June 2022, Agnes & Anna

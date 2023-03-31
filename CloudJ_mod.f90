@@ -42,14 +42,16 @@ MODULE CloudJ_mod
     PUBLIC
 
     real, parameter ::  PI180 = 3.141592653589793d0/180.d0 
+    real, parameter ::  molec_cm3 = 6.022140857e17 ! convert mol/m3 to molec/cm3
+    real, parameter ::  dobson_km = 2.24115e06     ! convert mol/m3 to Dobson Unit/km
     real  GMTAU, ALBEDO, XGRD, YGRD, PSURF, SCALEH
     real  CF, PMID, ZDEL, ICWC, F1
     integer I,J,K,L,N
     integer NRAN, NJXX
 
 !     --------------------params sent to CLOUD_JX-------------------------
-    real                     :: U0,SZA,REFLB,SOLF,CLDCOR,FG0
-    logical                    :: LPRTJ=.false.
+    real                       :: U0,SZA,REFLB,SOLF,CLDCOR,FG0
+    logical, save              :: LPRTJ=.false.
     integer                    :: CLDFLAG,NRANDO,IRAN,LNRG,ICNT
     integer                    :: NICA,JCOUNT
     character*6, dimension(JVN_)  ::  TITLJXX
@@ -156,7 +158,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     integer, allocatable, save :: NDXAER(:,:)
     real,  allocatable, save :: VALJXX(:,:)
 
-    real :: col_o3, BB_BCratio_real, FF_BCratio_real
+    real :: BB_BCratio_real, FF_BCratio_real
     integer :: BB_BC_index, FF_BC_index
 
     ! declarations used in reading/handling satellite stratospheric ozone data
@@ -167,7 +169,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     real, allocatable, save :: temp_ozone(:,:,:), pres_ozone(:,:,:), ozon_ozone(:,:,:)
     real, allocatable, save :: temp_obs(:,:,:), pres_obs(:,:,:), ozon_obs(:,:,:)
     character(len=150), save  :: fname_ozone
-    real,  save :: dlat, dlon
+    real,  save :: dlat, dlon, emep_top, satellite_altind
 
     ! mass fraction mapping between EMEP fine/coarse mode aerosol and CloudJ UMich bins
     real, save  :: SS_bin1, SS_bin2, SS_bin3 ,SS_bin4 
@@ -205,7 +207,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           if(year < 2005 .or. year > 2021 .or. USES%CLIMSTRATO3) then 
             fname_ozone = trim(cloudjx_strat)//date2string("/clim_MM.dat",current_date)
           else
-            fname_ozone = trim(cloudjx_strat)//date2string("/YYYYMM.dat",current_date) 
+            fname_ozone = trim(cloudjx_strat)//date2string("/YYYYMM.dat",current_date)
           endif
           if(me==0)write(*,*) 'Opening satellite O3/T obs. file: ', fname_ozone 
           
@@ -221,29 +223,10 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                 allocate(temp_ozone(dim_lon,dim_lat,dim_alt))
                 allocate(ozon_ozone(dim_lon,dim_lat,dim_alt))
 
+                ! arrays to hold the satellite data; pres at mid-lvls, temp and O3 at half-lvls (starting below 1st mid p-lvl)
                 allocate(temp_obs(LIMAX,LJMAX,dim_alt))
                 allocate(pres_obs(LIMAX,LJMAX,dim_alt))
                 allocate(ozon_obs(LIMAX,LJMAX,dim_alt))
-
-                ! total number of levels with O3/T data
-                OZ_TOP = KMAX_MID + dim_alt 
-
-                ! i/o arrays necessary for cloudj
-                allocate(PPP(OZ_TOP+1),ZZZ(OZ_TOP+1)) 
-                allocate(TTT(OZ_TOP),DDD(OZ_TOP),RRR(OZ_TOP),CLF(OZ_TOP))
-                allocate(OOO(OZ_TOP),LWP(OZ_TOP),IWP(OZ_TOP))
-                allocate(REFFI(OZ_TOP),CLDIW(OZ_TOP),REFFL(OZ_TOP))
-                allocate(NDXAER(OZ_TOP,naerosol),AERSP(OZ_TOP,naerosol))
-                allocate(VALJXX(OZ_TOP-1, JVN_))
-
-                allocate(CWIC(OZ_TOP),CWLC(OZ_TOP),DeltZ(OZ_TOP),CLWP(OZ_TOP))
-                allocate(DUST_F(OZ_TOP),DUST_C(OZ_TOP),CIWP(OZ_TOP))
-                allocate(SULF(OZ_TOP),SEAS_F(OZ_TOP),SEAS_C(OZ_TOP))
-                allocate(Biomas_B(OZ_TOP),Forest_F(OZ_TOP))
-                allocate(NAA(OZ_TOP, naerosol),AER(OZ_TOP,naerosol))
-          
-                if(USES%EtaCOORDINATES.and.A_bnd(1) < 1.e4) write(*,*) 'Warning: CloudJ stratospheric O3/T UNDEFINED! ', &
-                      'Top model level above 100 hPa.'
           end if
 
           read(IO_OZONE) lon_ozone ! -180 to 180 degrees, as in EMEP
@@ -270,11 +253,46 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
                       ozon_obs(w,z,:) = ozon_ozone(lo,la,:)
                 end do
           end do
+
+          if (first_call) then
+                ! calculate startpoint satellite lvls above emep model top
+                emep_top = (A_bnd(1) + B_bnd(1)*1e5) / 1e2 ! hPa based on mean surf_P; might be lower in some places
+                satellite_altind = 1
+
+                ! for information; satellite data starts at 200 hPa 
+                do while (emep_top < hpa_ozone(satellite_altind)) 
+                  satellite_altind = satellite_altind + 1
+                end do
+
+                ! pressure in Pa here
+                if(MasterProc .and. USES%EtaCOORDINATES .and. A_bnd(1) + B_bnd(1)*1e5 > 2.e4) write(*,*) & 
+                  'Warning: CloudJ satellite O3/T constant between 200 hPa down to model top.', A_bnd(1), A_bnd(1) + B_bnd(1)*1e5
+
+                ! total number of levels with O3/T data stacked on top EMEP levels
+                OZ_TOP = KMAX_MID + dim_alt - satellite_altind
+
+                if (MasterProc) write(*,*) 'strat lvls: ', dim_alt, satellite_altind
+
+                ! allocate i/o arrays necessary for cloudj
+                allocate(PPP(OZ_TOP+1), ZZZ(OZ_TOP+1)) 
+                allocate(TTT(OZ_TOP),   DDD(OZ_TOP),   RRR(OZ_TOP),   CLF(OZ_TOP))
+                allocate(OOO(OZ_TOP),   LWP(OZ_TOP),   IWP(OZ_TOP)               )
+                allocate(REFFI(OZ_TOP), CLDIW(OZ_TOP), REFFL(OZ_TOP)             )
+                allocate(NDXAER(OZ_TOP,naerosol),      AERSP(OZ_TOP,naerosol)    )
+                allocate(VALJXX(OZ_TOP-1,JVN_)                                   )
+
+                allocate(CWIC(OZ_TOP),         CWLC(OZ_TOP),   DeltZ(OZ_TOP), CLWP(OZ_TOP))
+                allocate(DUST_F(OZ_TOP),       DUST_C(OZ_TOP), CIWP(OZ_TOP)               )
+                allocate(SULF(OZ_TOP),         SEAS_F(OZ_TOP), SEAS_C(OZ_TOP)             )
+                allocate(Biomas_B(OZ_TOP),     Forest_F(OZ_TOP)                           )
+                allocate(NAA(OZ_TOP,naerosol), AER(OZ_TOP,naerosol)                       )
+          endif
+
     end if ! oz_month /= month
     
     oz_month = month
 
-    ! initialize requested (in config file) J-value output arrays
+    ! initialize requested (in config file) J-value output arrays & ModsCloudJ config
     if(first_call)then 
           ! parameters from FJX_CMN_MOD used to initialize cloud-j arrays
           LPAR   = OZ_TOP              ! this can be set by CTM code. 
@@ -310,14 +328,14 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
             photo_out_ix_GLYOXA_fj = find_index("D3_J(GLYOXA)", f_3d(:)%subclass)
             photo_out_ix_GLYOXB_fj = find_index("D3_J(GLYOXB)", f_3d(:)%subclass)
             photo_out_ix_GLYOXC_fj = find_index("D3_J(GLYOXC)", f_3d(:)%subclass)
-            if(me==0)write(*,*) 'Outputting CloudJ J-values specified in config.'
+            if(MasterProc)write(*,*) 'Outputting CloudJ J-values specified in config.'
           endif
 
-          write(*,*) 'Cloud water (1) and ice (2) for photolysis rate calculations: ' &
+          if (MasterProc) write(*,*) 'Cloud water (1) and ice (2) for photolysis rate calculations: ' &
                      ,foundcloudwater, foundcloudicewater
 
-          if(.not.foundcloudicewater) write(*,*) 'WARNING: Running CloudJ without cloud ice water content: ' &
-                                                , 'Might overestimate photolysis rates.'
+          if(MasterProc .and. .not. foundcloudicewater) write(*,*) 'WARNING: Running CloudJ without cloud ice water content: ' &
+                                                , 'Might overestimate surface photolysis rates.'
     endif
 
     ! find available aerosol indices from chemistry
@@ -613,7 +631,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     L=0
     do k=KMAX_BND,1,-1 ! EMEP level interface pressure
           L=L+1
-          PPP(L) =A_bnd(k)/100.0 + B_bnd(k)*PSURF ! PSURF in hPa
+          PPP(L) = A_bnd(k)/100.0 + B_bnd(k)*PSURF ! PSURF in hPa
     end do
     
     L=0 ! EMEP ozone path (molec/cm^2), derived using interface pressure
@@ -625,38 +643,46 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 !------------------------------------------------------------------------------------
 ! Set layers above the EMEP model
 !------------------------------------------------------------------------------------
-   
-    K = 0 ! populate stratospheric ozone and temperature
-    do L=KMAX_BND,OZ_TOP
+
+    K = 0 ! populate stratospheric temperature and pressure
+    do L=KMAX_BND,OZ_TOP ! KMAX_BND = KMAX_MID + 1
+          PPP(L+1) = hpa_ozone(K + satellite_altind)            ! interface
+          TTT(L) = temp_obs(i_emep,j_emep,K + satellite_altind) ! mid-lvl
           K = K + 1
-          OOO(L) = ozon_obs(i_emep,j_emep,K)
-          TTT(L) = temp_obs(i_emep,j_emep,K)
-          PPP(L+1) = hpa_ozone(K) 
+    end do
+
+    ! calculate density and geometric altitude (cm) for all levels
+    ZZZ(1) = 16.d5*log10(1013.25d0/PPP(1))
+
+    do L = 1,OZ_TOP 
+          DDD(L) = (PPP(L)-PPP(L+1))*MASFAC
+          SCALEH = 1.3806d-19*MASFAC*TTT(L)
+          ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH ) 
+    end do
+   
+    K = 0 ! populate stratospheric ozone; convert mol/m3 to molec/cm2
+    do L=KMAX_BND,OZ_TOP
+          OOO(L) = ozon_obs(i_emep,j_emep,K + satellite_altind) * molec_cm3 * &
+                   ( ZZZ(L+1) - ZZZ(L) ) ! lvl thickness
+          K = K + 1
     end do
     
     !-----------------------------------------------------------------------
     !---fast-JX:  SOLAR_JX is called only once per grid-square to set U0, etc. 
     call SOLAR_JX(GMTAU,IDAY,YGRD,XGRD,SZA,U0,SOLF)
 
-    LWP(:)  = 0.d0       ! liquid water path (g/m2)
-    IWP(:)  = 0.d0       ! ice water path (g/m2)
+    LWP(:)      = 0.d0   ! liquid water path (g/m2)
+    IWP(:)      = 0.d0   ! ice water path (g/m2)
     AERSP(:,:)  = 0.d0   ! aerosol path (g/m2)
     NDXAER(:,:) = 0      ! aerosol index type
-    CLDIW(:) = 0
+    CLDIW(:)    = 0
 
     REFFL(:) = 0.d0      ! R-effective(microns) in liquid cloud
     REFFI(:) = 0.d0      ! R-effective(microns) in ice cloud
-
-    ZZZ(1) = 16.d5*log10(1013.25d0/PPP(1))
     
-    Dobson(i_emep,j_emep) = 0. ! this array may now also be used simply to test
-    col_o3=0.
+    Dobson(i_emep,j_emep) = 0. ! array to store total dobson units of atmospheric column
 
-    do L = 1,OZ_TOP 
-          DDD(L) = (PPP(L)-PPP(L+1))*MASFAC
-          SCALEH = 1.3806d-19*MASFAC*TTT(L)
-          ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH ) ! can be changed to use DeltZ, to do
-          
+    do L = 1,OZ_TOP           
           ! CLDIW is an integer flag: 1 = water cld, 2 = ice cloud, 3 = both
           if (CWLC(L) > 1.d-11) CLDIW(L) = 1
           if (CWIC(L) > 1.d-11) CLDIW(L) = CLDIW(L) + 2
@@ -679,10 +705,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
           NDXAER(:,:) = NAA(:,:) ! populate aerosol arrays
           AERSP(:,:)  = AER(:,:)
           
-          if (L > KMAX_MID) &  ! ozone column above EMEP model layers
-                col_o3 = col_o3 + OOO(L)
-
-          dobson(i_emep,j_emep) = dobson(i_emep,j_emep) + OOO(L)/2.687e16 !1 DU = 2.687e16 molecules of O3 per square centimetre
+          dobson(i_emep,j_emep) = dobson(i_emep,j_emep) + OOO(L)/2.687e16 ! 1 DU = 2.687e16 molecules of O3 per square centimetre
     end do
 
     ! albedo read in as %. Get land-name, then read albedo and convert to fraction 
@@ -712,8 +735,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     NRANDO  = 5
     LNRG    = 6
 
-    LPRTJ = .false.
-    if(me==0.and.first_call) LPRTJ = .false. ! may want to choose verbose on first call 
+    if (first_call) LPRTJ = USES%CLOUDJVERBOSE
     
     !=======================================================================
     ! outputs Jvalues (VALJXX), NICA and JCOUNT
@@ -721,53 +743,18 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     ! inputs PPP in hPa, ZZZ in cm, TTT in Kelvin, DDD in molec/cm2,
     ! RRR as RH (0.00->1.00), OOO in molec/cm2, LWP in g/m2, IWP in g/m2
     !=======================================================================
-    call CLOUD_JX (U0,SZA,REFLB,SOLF,FG0,LPRTJ,PPP,ZZZ,TTT,             &
-                DDD,RRR,OOO,LWP,IWP,REFFL,REFFI,CLF,CLDCOR,CLDIW, &
-                AERSP,NDXAER,OZ_TOP,naerosol,VALJXX,JVN_,                    &
-                CLDFLAG,NRANDO,IRAN,LNRG,NICA,JCOUNT)
+    call CLOUD_JX (U0,SZA,REFLB,SOLF,FG0,LPRTJ,PPP,ZZZ,TTT,            &
+                   DDD,RRR,OOO,LWP,IWP,REFFL,REFFI,CLF,CLDCOR,CLDIW,   &
+                   AERSP,NDXAER,OZ_TOP,naerosol,VALJXX,JVN_,           &
+                   CLDFLAG,NRANDO,IRAN,LNRG,NICA,JCOUNT)
     !=======================================================================
-    
-    !---map multiplication factors to J-values from fast-JX using JIND & JFACTA.
-    !---For example, JFACTA(1) from photochemistry scheme maps to FJX(4)
-
-    ! apply multiplication factors for reactions that are based on other reactions
-    do L = 1,OZ_TOP-1
-          do J = 1,NRATJ
-                ! only if J-value defined (memory issues otherwise)
-                if(JIND(J)>0) VALJXX(L,JIND(J)) = VALJXX(L,JIND(J))*JFACTA(J)
-          end do
-    end do
-    
-    ! populate 3D Jvalue array with CloudJ values for the photochemical reactions in EMEP
-    if(.not.(allocated(rcphotslice))) allocate(rcphotslice(NRCPHOTextended,KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
-    
+        
+    ! populate 3D Jvalue array with CloudJ values for the photochemical reactions in EMEP    
     do L=1,KMAX_BND-KCHEMTOP 
-          ! reactions having a 1-to-1 correspondence with tabulated reactions. Note: All of these CloudJ reactions have been checked to be non-zero.
-          rcphotslice(IDAO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(3))   ! JIND(J))  *JFACTA(J)   ZPJ(L,3)!3 O3   PHOTON    O2    O(total)   1.000 /O3    /
-          rcphotslice(IDBO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(4))   ! ZPJ(L,4)!4  O3        PHOTON    O2        O(1D)                   1.000 /O3(1D) /           
-          rcphotslice(IDNO2,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(9))   !  9 NO2       PHOTON    N2        O                       1.000 /NO2   /
-          rcphotslice(IDH2O2,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(7))   !  7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
-          rcphotslice(IDHNO3,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(15))  ! 15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
-          rcphotslice(IDACH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(5))   !  5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
-          rcphotslice(IDBCH2O,kmax_bnd-L,i_emep,j_emep)  = VALJXX(L,JIND(6))   !  6 H2CO      PHOTON    CO        H2                      1.000 /H2COb /
-          rcphotslice(IDHONO,kmax_bnd-L,i_emep,j_emep)   = VALJXX(L,JIND(14))  ! 14 HNO2      PHOTON    NO       OH    
-          rcphotslice(IDHO2NO2,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(16))  ! emep ratio is 0.667 for NO2 + HO2 
-          rcphotslice(IDNO3,kmax_bnd-L,i_emep,j_emep)    = VALJXX(L,JIND(11)) + VALJXX(L,JIND(12)) ! emep ratio is 0.873 to 0.127, fastj ratio is 0.886 to 0.114
-          rcphotslice(IDNO3_NO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(11))  ! sometimes NO3 channels are separately defined
-          rcphotslice(IDNO3_NO2,kmax_bnd-L,i_emep,j_emep)= VALJXX(L,JIND(12))  ! sometimes NO3 channels are separately defined
-          rcphotslice(IDCH3O2H,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(8))   ! Methyl hydroperoxide. Used in many photolysis reactions. See Blitz et al. 2005
-          rcphotslice(IDCH3COX,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(61)) + VALJXX(L,JIND(62)) ! IDCH3COX = IDMEK. EMEP different assumption about channels (1.0/0.0 vs 0.85/0.15 for cloudJ) 
-          rcphotslice(IDRCOCHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(64))  ! 64 CH3COCHO  PHOTON    CH3CO     CO  1.000 /MGlyxl/ NB: IDRCOCHO = IDRCOHCO = 12
-          rcphotslice(IDCH3CHO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(54))  ! 54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
-          rcphotslice(IDACETON,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(68)) + VALJXX(L,JIND(69)) ! not in EmChem19 68 CH3COCH3  PHOTON    CH3CO     CH3   1.000 /Acet-a/ NB: Not always in use
-          rcphotslice(IDHCOHCO,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) + VALJXX(L,JIND(66)) + VALJXX(L,JIND(67)) ! Glyox channel qyields depend on wavelength (MCM webpage), EMEP reaction assumes fixed qyields
-          rcphotslice(IDCH3COY,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(72)) ! BIACET cross-section and q-yield from MCM database
-
-          ! cloud-j specific reactions which may be present in chemistry scheme
-          rcphotslice(IDGLYOXA,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(65)) ! glyox channels a, b and c
-          rcphotslice(IDGLYOXB,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(66))
-          rcphotslice(IDGLYOXC,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(67))
-          rcphotslice(IDPAN,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(52))      
+          ! NRATJ is number of phot reactions from j2j input file
+          do J=1,NRATJ
+                if(JIND(J)>0) rcphotslice(J,kmax_bnd-L,i_emep,j_emep) = VALJXX(L,JIND(J))*JFACTA(J)
+          end do
     end do
 
     first_call=.false.
@@ -778,8 +765,8 @@ end subroutine setup_phot_cloudj
 
 subroutine write_jvals(i_emep,j_emep)
 
-    ! this routine writes the desired 3D J-value output. Indices are set either by 
-    ! setp_phot_cloudj (CloudJ) or setup_phot (DefPhotolysisMod.f90, tabulated)
+    ! this routine writes the requested 3D J-value output. Indices are set either by 
+    ! setup_phot_cloudj (CloudJ) or setup_phot (DefPhotolysisMod.f90, tabulated)
     !
     ! there is surely a prettier way to do this....but this also works...
 
