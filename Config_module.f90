@@ -12,7 +12,7 @@ use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
 use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Zlevels, &
-                                 Emis_Zlevels, Emis_h_pre
+                                 Emis_Zlevels, Emis_h_pre,mask2name
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  emis_in, EmisFile_id_type, Emis_sourceFile_id_type,&
@@ -939,7 +939,8 @@ subroutine Config_Constants(iolog)
    ,hour_DOMAIN, out_startdate, spinup_enddate&
    ,num_lev3d,lev3d,lev3d_from_surface&
    ,LAST_CONFIG_LINE &
-   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names
+   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names&
+   ,mask2name
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default

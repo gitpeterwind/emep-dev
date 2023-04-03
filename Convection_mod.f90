@@ -14,9 +14,9 @@ module Convection_mod
 
 use Chemfields_mod,        only: xn_adv
 use ChemDims_mod,          only: NSPEC_ADV
-use Config_module,         only: KMAX_BND,KMAX_MID,PT,Pref
+use Config_module,         only: KMAX_BND,KMAX_MID,PT,Pref,USES
 use MetFields_mod ,        only: ps,cnvuf,cnvdf
-use GridValues_mod,        only: dA, dB, sigma_bnd
+use GridValues_mod,        only: dA, dB, sigma_bnd, glat
 use Par_mod,               only: LIMAX,LJMAX,limax,ljmax,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: GRAV
 
@@ -63,7 +63,7 @@ contains
     !-- mass_air=(dp/g)*gridarea
 
     n=3 !IXADV of species to test for mass balance (masstest)
-
+    if(USES%LocalFractions .and. abs(glat(i,j))>60.0) return !avoid pole regions, which migh get unstable
     !UPWARD
           totalmass = 0.0!total colomn mass of species n
           do k=1,KMAX_MID

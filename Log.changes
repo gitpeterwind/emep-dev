@@ -46,6 +46,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 Apr 2023, Peter
+
+Allow use of names for masks numbers (LF)
+For LF, avoid convections for latitudes larger than 60.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Mar 2023, Peter
 
 Refactoring of the treatment of emissions in LocalFractions.

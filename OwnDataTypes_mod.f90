@@ -323,7 +323,7 @@ type, public :: lf_sources
   character(len=TXTLEN_NAME) :: name = 'NOTSET' ! name as it appears in output. Only for "relative" type
   integer :: dist = -1 ! window dimension, if defined
   integer :: res = 1  ! half size of the single source square (square size is 2*res+1 x 2*res+1 )
-  integer :: Nvert = -1 ! vertical extend of the tracking/local rwindow
+  integer :: Nvert = 7 ! vertical extend of the tracking/local rwindow
   integer :: sector = 0 ! sector for this source. Zero is sum of all sectors
   integer :: poll = 1 !index of pollutant in loc_tot (set by model). One poll for all sources related to that poll
   integer :: start = 1 ! first position index in lf_src (set by model)

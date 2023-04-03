@@ -26,7 +26,8 @@ use DefPhotolysis_mod, only: IDHONO,IDNO3,IDNO2
 use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
                              nlandcode,landcode,NCMAX,&
                              TFAC_IDX_DOM,secemis, roaddust_emis_pot,KEMISTOP,&
-                             EmisMaskIntVal,gridrcemis
+                             EmisMaskIntVal,gridrcemis,&
+                             mask2name
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              emis_masscorr,  &  ! 1/molwt for most species
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
@@ -169,7 +170,6 @@ integer, public, save :: N_lf_derivemis ! actual number of emissions to include 
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX)
 
-
 contains
 
   subroutine lf_init
@@ -177,7 +177,8 @@ contains
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix, iem_deriv
     integer, allocatable :: MaskVal(:)
 ! pm25_new and pm25 are considered as two different emitted pollutants
-
+    if(DEBUG .and. me==0)write(*,*)'start init'
+    
   call Code_timer(tim_before)
   ix=0
   if(USES%uEMEP)then
@@ -371,7 +372,13 @@ contains
         Ncountry_mask_lf = Ncountry_mask_lf + 1
         Ncountry_lf = Ncountry_lf + 1
         country_mask_val(Ncountry_lf) = i
+        if(i>size(mask2name))then
+           write(mask2name(i),fmt='(A)')i
+        else
+           if(mask2name(i)=='NOTSET')write(mask2name(i),fmt='(A)')i
+        end if
      end do
+
      if (mask_val_max >= mask_val_min) deallocate(MaskVal)
 
      if (Ncountry_mask_lf>0 .and. MasterProc) then
@@ -777,6 +784,7 @@ contains
   allocate(ic2iland(LIMAX,LJMAX,NCMAX))
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
+  if(DEBUG .and. me==0)write(*,*)'end init'
 
 end subroutine lf_init
 
@@ -805,6 +813,7 @@ subroutine lf_out(iotyp)
   integer :: ncFileID
 
   call Code_timer(tim_before)
+  if(DEBUG .and. me==0)write(*,*)'start out'
 
   if(iotyp==IOU_HOUR_INST .and. lf_src(1)%HOUR_INST)then
      fileName = trim(runlabel1)//'_LF_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
@@ -985,8 +994,10 @@ subroutine lf_out(iotyp)
                  isec=lf_country%sector_list(j)
                  if(lf_country%sector_list(j)>=0)isec=lf_country%sector_list(j)
                  if(i<=Ncountry_mask_lf)then
-                    write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
-                    if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
+ !                   write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
+ !                   if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
+                    write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
+                    if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(i)))
                  else if(i<=Ncountry_lf)then
                     write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
                     if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
@@ -1106,6 +1117,7 @@ subroutine lf_out(iotyp)
   first_call(iotyp)=.false.
 
   call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
+  if(DEBUG .and. me==0)write(*,*)'end out'
 
 ! CALL MPI_BARRIER(MPI_COMM_CALC, I)
 
@@ -1119,6 +1131,7 @@ subroutine lf_av(dt,End_of_Day)
   integer ::i,j,k,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
   integer ::isec_poll
   logical :: pollwritten(Max_lf_spec)
+  if(DEBUG .and. me==0)write(*,*)'start av'
 
   call Code_timer(tim_before)
   if(.not. lf_src(1)%HOUR.and.&
@@ -1219,6 +1232,7 @@ subroutine lf_av(dt,End_of_Day)
   av_fac=av_fac+1
 
   call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: averaging")
+  if(DEBUG .and. me==0)write(*,*)'end av'
 
 end subroutine lf_av
 
@@ -1227,6 +1241,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
   integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm
+  if(DEBUG .and. me==0)write(*,*)'start advx'
 
   if(i==li0)then
      !copy small part (could be avoided, but simpler to copy)
@@ -1335,6 +1350,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
 
   call Add_2timing(NTIMING-8,tim_after,tim_before,"lf: adv_x")
 
+  if(DEBUG .and. me==0)write(*,*)'end advx'
 end subroutine lf_adv_x
 
 subroutine lf_adv_y(fluxy,i,j,k)
@@ -1342,6 +1358,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
   integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm
+  if(DEBUG .and. me==0)write(*,*)'start advy'
 
   if(j==lj0)then
      !copy small part (could be avoided, but simpler to copy)
@@ -1469,6 +1486,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
 
   enddo
   call Add_2timing(NTIMING-7,tim_after,tim_before,"lf: adv_y")
+  if(DEBUG .and. me==0)write(*,*)'end advy'
 
 end subroutine lf_adv_y
 
@@ -1478,6 +1496,7 @@ subroutine lf_adv_k(fluxk,i,j)
     real ::x,xn,xx,f_in,inv_tot
     integer ::n,k,iix,ix,dx,dy,isrc
     real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert+1:KMAX_MID)
+  if(DEBUG .and. me==0)write(*,*)'start advk'
 
     call Code_timer(tim_before)
     !need to be careful to always use non-updated values on the RHS
@@ -1536,6 +1555,7 @@ subroutine lf_adv_k(fluxk,i,j)
 
     end do
 
+  if(DEBUG .and. me==0)write(*,*)'end advk'
     call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_k")
   end subroutine lf_adv_k
 
@@ -1551,6 +1571,7 @@ subroutine lf_adv_k(fluxk,i,j)
     ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
     !ship emission are higher up and need to come down to diminish locfrac
     integer, parameter :: KUP = 2
+  if(DEBUG .and. me==0)write(*,*)'start diff'
 
     call Code_timer(tim_before)
     xn_k = 0.0
@@ -1584,6 +1605,7 @@ subroutine lf_adv_k(fluxk,i,j)
        enddo
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
+  if(DEBUG .and. me==0)write(*,*)'end diff'
 
 end subroutine lf_diff
 
@@ -1597,6 +1619,7 @@ end subroutine lf_diff
     integer ::isec_poll1,isrc
     integer ::k,n,ix,iix,dx,dy
 
+  if(DEBUG .and. me==0)write(*,*)'start conv'
     call Code_timer(tim_before)
     xn_k = 0.0
     do k = 1,KMAX_MID
@@ -1629,6 +1652,7 @@ end subroutine lf_diff
        enddo
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
+  if(DEBUG .and. me==0)write(*,*)'end conv'
 
 end subroutine lf_conv
 
@@ -1642,6 +1666,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 
 
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
+  if(DEBUG .and. me==0)write(*,*)'start chememis'
 
   if (nfullchem <= 0) then
      !case with no chemistry for local fractions
@@ -1800,6 +1825,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   end do
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+  if(DEBUG .and. me==0)write(*,*)'end chememis'
 return
   if(i_fdom(i)==108.and.j_fdom(j)==95 .and.k==kmax_mid )then
      write(*,*)'concentration after chem ',xnew(18)
@@ -1841,6 +1867,7 @@ subroutine lf_chem(i,j)
   call Code_timer(tim_before)
 
   ageing_rate = EC_AGEING_RATE()
+  if(DEBUG .and. me==0)write(*,*)'start chem'
 
   if (isrc_pm25 > 0) then
      do isrc = 1, Nsources_nonew
@@ -1891,6 +1918,7 @@ subroutine lf_chem(i,j)
  end if
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+  if(DEBUG .and. me==0)write(*,*)'end chem'
 end subroutine lf_chem
 
 subroutine lf_aero_pre(i,j) !called just before AerosolEquilib
@@ -1993,6 +2021,7 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   idep=0
   call Code_timer(tim_before)
 
+  if(DEBUG .and. me==0)write(*,*)'start drydep'
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%DryDep)cycle
      if (lf_src(isrc)%species == 'FULLCHEM') cycle
@@ -2049,6 +2078,7 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
      idep0 = idep
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+  if(DEBUG .and. me==0)write(*,*)'end drydep'
 end subroutine lf_drydep
 
 subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
@@ -2133,6 +2163,7 @@ subroutine save_lf_emis(s,i,j,iem,isec,iland)
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: n, ii, iqrc, isrc, k, ipoll,ic,iic,is,ig,emish_idx,split_idx
 
+  if(DEBUG .and. me==0)write(*,*)'start lf emis'
   call Code_timer(tim_before)
   if (s<1.E-20) return
 
@@ -2149,6 +2180,7 @@ subroutine save_lf_emis(s,i,j,iem,isec,iland)
 
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
 
+  if(DEBUG .and. me==0)write(*,*)'end lf emis'
 end subroutine save_lf_emis
 
 subroutine lf_rcemis(i,j,k,eps)
@@ -2168,6 +2200,7 @@ subroutine lf_rcemis(i,j,k,eps)
   real :: emiss,fac ! multiply emissions by
 
   call Code_timer(tim_before)
+  if(DEBUG .and. me==0)write(*,*)'start lf rcemis'
 
   rcemis_lf = 0.0 !default: no difference TODO: avoid setting entire array to zero!
   !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
@@ -2385,6 +2418,7 @@ subroutine lf_rcemis(i,j,k,eps)
     end if
     
     call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
+  if(DEBUG .and. me==0)write(*,*)'end lf rcemis'
   end subroutine lf_rcemis
 
 end module LocalFractions_mod
