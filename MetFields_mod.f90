@@ -1082,6 +1082,7 @@ if(USES%WRF_MET_NAMES)then
    met(ix_th)%name                = 'T'
    met(ix_cc3d)%name              = 'CLDFRA'
    met(ix_cw_met)%name            = 'QCLOUD'
+   met(ix_ciw_met)%name           = 'QICE'
 
 !Use QRAIN to make 3D precip profiles from 2D. NB not accumulated, so cannot be used directly
   ix=ix+1

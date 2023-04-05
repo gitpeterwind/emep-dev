@@ -46,6 +46,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 Apr 2023, Willem
+
+Removed old Fastj code, and the model now reads in WRF ice cloud meteorology 
+when present in WRF input file. 
+
+Also fixed a minor bug where the CloudJ photolysis rate calculations were called
+every model timestep between 23:00-24:00 hr UTC, even when hourly updates
+were requested. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Apr 2023, Peter
 
 Allow use of names for masks numbers (LF)
