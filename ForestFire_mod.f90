@@ -55,7 +55,7 @@ module ForestFire_mod
 use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemDims_mod ,         only: NSPEC_TOT, NSPEC_SHL
 use ChemSpecs_mod
-use Config_module,         only: MasterProc, DataDir, KMAX_MID, &
+use Config_module,         only: MasterProc, DataDir, KMAX_MID, USES, &
                                 IOU_INST,BBMODE,BBverbose,persistence,&
                                 fire_year,&
                                 cmxBiomassBurning_FINN, &
@@ -67,7 +67,7 @@ use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M, A_bnd,B_bnd
 use Io_mod,                only: datewrite, IO_NML, IO_TMP, open_file, ios
 use Io_RunLog_mod,         only: PrintLog
-use MetFields_mod,         only: z_bnd
+use MetFields_mod,         only: z_mid, z_bnd, hmix
 use netcdf,                only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_mod,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
@@ -80,6 +80,7 @@ use SmallUtils_mod,        only: find_index, key2str
 use TimeDate_mod,          only: current_date,day_of_year,max_day
 use TimeDate_ExtraUtil_mod,only: date2string,nctime2string,date2nctime,date2file
 use ZchemData_mod,         only: rcemis
+use EmisDef_mod,           only: Emis_CO_Profile   !FOR TESTING
 
 implicit none
 private
@@ -196,11 +197,14 @@ logical, save ::    &
 contains
 subroutine Config_Fire()
   logical, save :: first_call=.true.
+  logical :: dbg0  ! see also debug_level. Not harmonised
   integer :: ios, ne, n, k
   character(len=*), parameter :: dtxt='BB:Config'
+  integer ::  N_LEVELS  ! =9 for <rv4.50 code and standard 20 model levels
 
   if(.not.first_call) return
-  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP,',', BBMODE
+  dbg0 = (DEBUG%FORESTFIRE.and.MasterProc)
+  if(dbg0) write(*,*) dtxt//" selects ",BBMAP,',', BBMODE
 
   select case(BBMAP)
     case("GFED")
@@ -238,6 +242,8 @@ subroutine Config_Fire()
 
   allocate(BiomassBurningEmis(NEMEPSPECS,LIMAX,LJMAX),&
            burning(LIMAX,LJMAX),stat=ios)
+  allocate(Emis_CO_Profile(LIMAX,LJMAX,KMAX_MID))      !TESTING
+
   call CheckStop(ios,dtxt//" BiomassBurningEmis alloc problem")
   ne = 0     ! number-index of emep species
 
@@ -256,7 +262,8 @@ subroutine Config_Fire()
     if(ieCO<0 .and. species(iemep)%name=="CO" ) ieCO=ne
     if(ieCO<0 .and.FF_defs_BB(n)%BBname=="CO"    ) ieCO=ne
 
-    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,"(i4,1x,a,i4,2x,a)")ne,dtxt//" Mapping "//trim(FF_defs_BB(n)%BBName)//" onto " &
+    if(dbg0) write(*,"(i4,1x,a,i4,2x,a)")ne, &
+      dtxt//" Mapping "//trim(FF_defs_BB(n)%BBName)//" onto " &
       ,iemep, trim(species(iemep)%name)
   end do !n
   call CheckStop(ieCO<1,&
@@ -269,15 +276,24 @@ subroutine Config_Fire()
   call CheckStop(any(emep_used<1),&
      dtxt//"UNSET FFIRE EMEP "//BiomassBurningMapping)
 
-!crude release height defintion which is model levels independent 
-!highest level is the highest level boundary below 800 hPa = ca 2000 m (standard atmosphere)
+!P800 method is original version, used to rv4.52(??) = simple release height
+!defintion which is model levels independent. The highest level is the highest
+! level boundary below 800 hPa = ca 2000 m (standard atmosphere)
+! KEMISFIRE from this method is overwritten later if
+! USES%FFireDispMethod == 'PBL' , in the config_emep.nml file 
+  call CheckStop( .not. ( USES%FFireDispMethod == 'P800' .or. &
+                          USES%FFireDispMethod == 'PBL' ),    &
+        dtxt//"UNSET FFIRE Hmix Method "//trim(USES%FFireDispMethod) )
+
   do k = KMAX_MID+1,2,-1
+     if ( dbg0 ) write(*,*) dtxt//'Kcheck0', k
      if(A_bnd(k)+101325.0*B_bnd(k)< 80000.0)exit
   enddo
   KEMISFIRE = k
+  N_LEVELS = KMAX_MID - KEMISFIRE + 1 
+
   if(MasterProc .and. first_call)write(*,fmt='(A,I3,A)')&
-       'Forest Fire emissions will be distributed evenly into the',&
-       KMAX_MID - KEMISFIRE + 1,' lowest levels'
+    dtxt//'Orig (P800) Method => ', N_LEVELS, ' lowest levels'
 
   first_call=.false.
 end subroutine Config_Fire
@@ -358,6 +374,7 @@ subroutine Fire_Emis(daynumber)
   end if ! first
   
   debug_me=DEBUG%FORESTFIRE .and. debug_proc
+  if ( debug_me ) write(*,*)  'FFIREDEBUG!!', me, i_fdom(debug_li), j_fdom(debug_lj)
   debug_ff=debug_level(BBverbose)
   debug_nc=debug_level(BBverbose-1)
 
@@ -427,6 +444,7 @@ subroutine Fire_Emis(daynumber)
   end if
 
   BiomassBurningEmis(:,:,:) = 0.0
+  Emis_CO_Profile(:,:,:) = 0.0
   
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
@@ -471,6 +489,8 @@ subroutine Fire_Emis(daynumber)
         if(debug_me.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
            dtxt//" CO READ: ", nstart, trim(FF_poll), maxval(rdemis)
     end if
+    if(debug_me.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
+           dtxt//" FIRE DEBUGCO READ: ", nstart, me, rdemis(debug_li,debug_lj)
     !-------- 
 
     if ( BBfound ) then
@@ -543,6 +563,7 @@ subroutine Fire_Emis(daynumber)
 
     associate ( idbg=>loc_maxemis(1), jdbg=>loc_maxemis(2) )
 
+    write(*,*) 'FORESTFIRE DEBUGBURN', burning(debug_li,debug_lj), BiomassBurningEmis(ieCO,debug_li,debug_lj) 
     write(*,"(a,i4,i3,2i4,2i5,es12.3, 2i4)") dtxt//"SUM_FF CHECK ME: ", &
        daynumber, me, loc_maxemis, i_fdom(idbg), j_fdom(jdbg),&
          BiomassBurningEmis(n,idbg,jdbg), debug_li,debug_lj
@@ -671,7 +692,7 @@ subroutine Fire_rcemis(i,j)
 !  Disperses the fire emissions vertically and converts to molecules/cm3/s.
 
 !// Injection height: here over 8 levels. Alternative could be PBL
-!   or  equally upto ca. 2*PBL (suggested by Sofiev, GEMS)
+!   or  equally up to ca. 2*PBL (suggested by Sofiev, GEMS)
 !   QUERY - should the emissions be divided equally by level?
 !   - will give a higher mixing ratio for thinner levels
 
@@ -689,11 +710,30 @@ subroutine Fire_rcemis(i,j)
   P0 = 101325.0
   debug_flag = (DEBUG%FORESTFIRE.and.debug_proc .and.&
                 i==debug_li.and.j==debug_lj)
+  if ( debug_flag ) write(*,*)  'FFIREDEBUG-RC!!', me, i_fdom(i), j_fdom(j), debug_flag, BiomassBurningEmis(ieCO,i,j)
   if(debug_flag.and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
-    write(*,"(a,5i4,es12.3,f9.3)") dtxt//"DEBUG ", me, i,j, &
+  !if(DEBUG%FORESTFIRE.and.debug_proc .and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
+  !if(DEBUG%FORESTFIRE .and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
+    write(*,"(a,L1,5i4,es12.3,f9.3)") dtxt//"DEBUGRC",debug_flag, me, i,j, &
       i_fdom(i), j_fdom(j), BiomassBurningEmis(ieCO,i,j)
 
+!JEJ 3/22
+  if(USES%FFireDispMethod == 'PBL' )then
+    do k = KMAX_MID,2,-1
+       if ( debug_flag )  write(*,*) dtxt//'VERT:', k, z_bnd(i,j,k-1), hmix(i,j,1)
+       if(z_bnd(i,j,k-1) >  hmix(i,j,1)) exit
+!!     if(z_mid(i,j,k-1) >  hmix(i,j,1)) exit
+    enddo
+    KEMISFIRE = k
+  end if 
+
   N_LEVELS = KMAX_MID - KEMISFIRE + 1 
+
+  if ( debug_flag) then ! MasterProc .and. i == 2 and. j==2 ) then
+    write(6,"(a,2f8.1,i3,a)") dtxt//trim(USES%FFireDispMethod)//' => New H ',&
+      hmix(i,j,1), z_bnd(i,j,KEMISFIRE), N_LEVELS, ' lowest levels'
+  end if
+
 
   !// last conversion factors:
   ! The biomassBurning array is kept in kg/m2/s for consistency with other
@@ -728,18 +768,18 @@ subroutine Fire_rcemis(i,j)
     do k = KEMISFIRE, KMAX_MID
       rcemis(iem,k) = rcemis(iem,k) + BiomassBurningEmis(n,i,j)*invDeltaZfac(k)*fac&
            *(A_bnd(k+1)+P0*B_bnd(k+1) - (A_bnd(k)+P0*B_bnd(k)))/dP!scale with layer thickness
+
+     ! nb :::: ONLY FOR CO!
+      Emis_CO_Profile(i,j,k) = BiomassBurningEmis(n,i,j)*invDeltaZfac(k)*fac&
+           *(A_bnd(k+1)+P0*B_bnd(k+1) - (A_bnd(k)+P0*B_bnd(k)))/dP
     end do !k
 
     if(debug_flag) then
       k=KMAX_MID
       write(*,"(a,2i3,1x,a8,i4,es10.2,4es10.2)") dtxt//"FIRERC ",&
-        n, iem, trim(species(iem)%name), k, BiomassBurningEmis(iem,i,j),&
+        n, iem, trim(species(iem)%name), k, BiomassBurningEmis(n,i,j),&
         invDeltaZfac(k), origrc, rcemis(iem,k)
     end if
-
-!DSBB    !--  Add up emissions in ktonne ......
-!DSBB    !   totemadd(iem) = totemadd(iem) + &
-!DSBB    !   tmpemis(iqrc) * dtgrid * xmd(i,j)
 
   end do ! n
  !       call Export_FireNc() ! Caused problems on last attempt

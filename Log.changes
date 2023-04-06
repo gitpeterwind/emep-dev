@@ -5,11 +5,14 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19a
+    mk.ChemFiles EmChem19cj
 
   [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
+
+2023 UPDATE: 
+EmChem19cj - for CLOUDJ - new default
 
 2021 UPDATE: 
 EmChem19r,  EmChem19rp (=EmChem19r+pollen).
@@ -44,6 +47,23 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 April 2023, Joffen, Dave
+
+New Forest Fire vertical dispersion scheme
+
+Adding USES%FFireDispMethod - allows either:
+   "P800" = old, still default, or
+   "PBL"  = new option - disperses through PBL.
+
+Changes in:
+ Config_module.f90 - USES%FFireDispMethod
+                     Also USES%CLOUDJ is set true by default
+ Derived_mod       - can output  Emis_CO_Profile
+ EmisDef_mod       - adding Emis_CO_Profile
+ ForestFire_mod    - use of USES%FFireDispMethod
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 Apr 2023, Willem
