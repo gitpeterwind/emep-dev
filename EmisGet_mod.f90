@@ -587,6 +587,7 @@ contains
     endif
 
     status = nf90_get_att(ncFileID,nf90_global,"sectorsName", name) !SNAPsectors or GNFRsectors
+    if(status/=nf90_noerr)status = nf90_get_att(ncFileID,nf90_global,"SECTORS_NAME", name) !SNAPsectors or GNFRsectors
     if(status==nf90_noerr)EmisFile%sectorsName = trim(name)
 
 !default values for sources

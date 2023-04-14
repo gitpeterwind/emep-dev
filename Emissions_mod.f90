@@ -872,7 +872,7 @@ contains
                    do i=1,limax
                       ij=ij+1
                       do isec=1,EmisFiles(n)%nsectors
-                         if (cdfemis(isec,i,j)>1e-18) then
+                         if (cdfemis(isec,i,j)>1e-20) then
                             if(NEmis_source_ij(ij)>NEmis_source_ijMAX)write(*,*)me,i,j,NEmis_source_ij(ij)
                             call CheckStop(NEmis_source_ij(ij)>NEmis_source_ijMAX,'NEmis_source_ijMAX too small. Please increase it')
                             NEmis_source_ij(ij)=NEmis_source_ij(ij)+1
