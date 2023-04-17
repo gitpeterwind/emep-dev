@@ -46,6 +46,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 Apr 2023, Peter
+
+LF: Remove short lived from lf (all assumed equal to base case at start).
+N_lf_derivemisMAX now smaller; only one nemis per source.
+Setup_1d modified when LF_fullchem, to avoid difference with base case
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Apr 2023, Peter
 
 Allow use of names for masks numbers (LF)

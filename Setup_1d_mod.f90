@@ -47,7 +47,8 @@ use GridValues_mod,   only:  xmd, GridArea_m2, &
                              i_fdom, j_fdom
 use Io_Progs_mod,     only: datewrite !MASS
 use Landuse_mod,      only: water_fraction, ice_landcover
-use LocalVariables_mod,   only: Grid
+use LocalVariables_mod, only: Grid
+use LocalFractions_mod, only: lf_fullchem
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
@@ -284,6 +285,16 @@ contains
              ispec = PM10_GROUP(ipm)
 
              ugtmp  = xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+             if (lf_fullchem) then
+                !For LF remove all O3-active species             
+                if (  species(ispec)%name == 'SO4' ) then
+                   ugtmp = 0
+                else if ( index( species(ispec)%name, 'NO3_f' )>0) then
+                   ugtmp = 0
+                else if ( index( species(ispec)%name, 'NO3_c' )>0) then
+                   ugtmp = 0
+                end if
+             end if
              is_finepm = is_finepm_a(ipm)
              is_ssalt  = is_ssalt_a(ipm)
              is_dust   = is_dust_a(ipm)

@@ -38,7 +38,7 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  Dchem_lf, xn_shl_lf, rcemis_lf, lf_rcemis,&
+                                  Dchem_lf, rcemis_lf, lf_rcemis,&
                                   NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf, &
                                   N_lf_derivemis
     use Par_mod,            only: me, LIMAX, LJMAX
@@ -158,7 +158,7 @@ contains
 
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
-
+       
        if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
           !make rcemis_lf and N_lf_derivemis
           call lf_rcemis(i,j,k,eps1-1.0)
@@ -169,12 +169,11 @@ contains
           Nd = NSPEC_fullchem_lf + N_lf_derivemis !shorter
 
           !Careful sometimes the only difference between xnew and xnew_lf are from initial values (Dchem_lf and/or xn_shl_lf)
-          !short lives are derivative dependent
+          !Therefore we fix them to same values as base case. Saving the specific lf values for them can lead to instabilities.          
           do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf 
-                xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
-                x_lf(i_lf,n)    = xn_shl_lf(i_lf,n,k,i,j) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
-                x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
+             do i_lf = 1, NSPEC_fullchem_lf+ N_lf_derivemis 
+                xnew_lf(i_lf,n) = xnew(n)
+                x_lf(i_lf,n)    = x(n)                
              end do
           end do
           do n = NSPEC_SHL + 1, NSPEC_fullchem_inc_lf
@@ -187,7 +186,7 @@ contains
           !for emissions we use Dchem and not Dchem_lf. Because in some situations
           !the xnew_lf does not change because of emissions, but because of
           !differences in Dchem_lf only -> creates large derivatives.
-          do n = 1, NSPEC_fullchem_inc_lf
+          do n = NSPEC_SHL +1, NSPEC_fullchem_inc_lf
              do i_lf = NSPEC_fullchem_lf + 1, NSPEC_fullchem_lf + N_lf_derivemis
                 xnew_lf(i_lf,n) = xn_2d(n,k)
                 x_lf(i_lf,n)    = xn_2d(n,k) - Dchem(n,k,i,j)*dti(1)*1.5
@@ -314,12 +313,7 @@ contains
           call lf_chem_emis_deriv(i,j,k, xn_2d(1,k), xnew, eps1)
        endif
        if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then          
-          !save tendencies for each derivative
-          do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf
-                 Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_shl_lf(i_lf,n,k,i,j) )*dt_advec_inv
-            end do
-          end do 
+          !save tendencies for each derivative (not the short lived)
           do n = NSPEC_SHL+1, NSPEC_fullchem_inc_lf
              do i_lf = 1, NSPEC_fullchem_lf
                 Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_2d(n,k) )*dt_advec_inv
@@ -328,13 +322,6 @@ contains
           do i_lf = 1, NSPEC_fullchem_lf
              Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j) = (xnew_lf(i_lf,i_lf+NSPEC_SHL) - xn_2d(i_lf+NSPEC_SHL,k) * eps1)*dt_advec_inv
           end do
-          !save short lives for each derivatives
-          do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf
-                xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n)
-             end do
-          end do 
-
        end if
        
        !**  Saves tendencies Dchem and returns the new concentrations:
