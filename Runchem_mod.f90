@@ -70,13 +70,17 @@ subroutine runchem()
   logical ::  Jan_1st
   logical ::  debug_flag    ! =>   Set true for selected i,j
   logical, save :: first_tstep = .true. ! J16 
-  integer, save :: photstep=-999
+  integer, save :: photstep=-999, totday=-999
   character(len=*), parameter :: sub='RunChem:'
 ! =============================
   nmonth = current_date%month
   nday   = current_date%day
   nhour  = current_date%hour
 
+  if (daynumber > totday) then
+    totday = daynumber
+    photstep = -999
+  end if
 
   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
 
@@ -312,13 +316,7 @@ subroutine runchem()
   end do ! i
   first_tstep = .false.   ! end of first call  over all i,j
 
-  if(nhour > photstep)then
-    if(nhour==23)then ! set hrly counter
-      photstep= -999
-    else
-      photstep= nhour
-    endif
-  endif
+  photstep = nhour
 
 end subroutine runchem
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

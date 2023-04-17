@@ -186,6 +186,7 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
 real, public, save,  allocatable,dimension(:,:) ::  sumcdfemis ! Only used by MasterProc
 real, allocatable, public, save,  dimension(:,:) :: cdfemis
 real, allocatable, public, save,  dimension(:,:,:) :: Emis_field
+real, allocatable, public, save,  dimension(:,:,:) :: Emis_CO_Profile  ! Forest fire testing
 integer,  public, save :: NEmis_id
 integer,  public :: NEmisMask = 0 !number of masks defined (new format)
 real,  public, allocatable :: EmisMaskValues(:,:,:) ! size will be (LIMAX,LJMAX,NEmisMask)

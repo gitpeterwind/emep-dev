@@ -235,8 +235,8 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
     if(DEBUG%COLSRC .and. .not. USES%PreADV) &
       write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
     doEMS: do e=1,nems(v)
-      sbeg=date2string(emsdef(v,e)%sbeg,current_date)
-      send=date2string(emsdef(v,e)%send,current_date)
+      sbeg = emsdef(v,e)%sbeg
+      send = emsdef(v,e)%send
       if(snow<sbeg.or.send<=snow)& ! Outside time window
         cycle doEMS
       itot=emsdef(v,e)%spc
@@ -273,7 +273,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
 
           emiss(itot,k)=emiss(itot,k)+frac*emsdef(v,e)%rate*uconv        
         end do
-        if (.not. has_new_ash) cycle doLOC
+        if (.not. has_new_ash) cycle doEms
       else
         emiss(itot,k1:k0)=emiss(itot,k1:k0)+emsdef(v,e)%rate*uconv
       end if
@@ -667,7 +667,7 @@ function getDate(code,se,ee,dh,debug) result(str)
   case("ER")    ! End of the simulation
     str=date2string(SDATE_FMT,enddate,debug=dbg)
   case default
-    str=code
+    str=date2string(SDATE_FMT,string2date(code,SDATE_FMT,debug=dbg),debug=dbg)
   end select
 end function getDate
 end function ColumnRate

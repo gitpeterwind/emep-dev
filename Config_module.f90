@@ -177,7 +177,7 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,CLOUDJ           = .false. & ! use CloudJ_mod for computing rcphot 
+    ,CLOUDJ           = .true. & ! use CloudJ_mod for computing rcphot 
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
     ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
@@ -209,7 +209,11 @@ type, public :: emep_useconfig
   character(len=TXTLEN_SHORT), public, dimension(2) :: fPMc_specs = '-'
 
  ! If USES%EMISTACKS, need to set:
-  character(len=4)  :: PlumeMethod   = "PVDI" !MKPS:"ASME","NILU","PVDI"
+  character(len=4)  :: PlumeMethod    = "PVDI" !MKPS:"ASME","NILU","PVDI"
+
+ ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
+ ! methods later.
+  character(len=20) ::FFireDispMethod = "P800" ! to 800 hPa, std. atmos.
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this

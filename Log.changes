@@ -5,11 +5,14 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19a
+    mk.ChemFiles EmChem19cj
 
   [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
     are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
+
+2023 UPDATE: 
+EmChem19cj - for CLOUDJ - new default
 
 2021 UPDATE: 
 EmChem19r,  EmChem19rp (=EmChem19r+pollen).
@@ -51,7 +54,48 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 LF: Remove short lived from lf (all assumed equal to base case at start).
 N_lf_derivemisMAX now smaller; only one nemis per source.
 Setup_1d modified when LF_fullchem, to avoid difference with base case
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 April 2023, Heiko
 
+ColumnSource_mod - >10x performance improvement for many emissions, i.e. Eyja
+                 - fix pre-advection when locations contain several emissions, i.e. in different levels
+Makefile         - add ppi-r8 with opath
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 April 2023, Dave
+
+EmisGet_mod - small debug formatting changes 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 April 2023, Alvaro
+
+MonthlyFacBasis="CAMS_TEMPO" option
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 April 2023, Joffen, Dave
+
+New Forest Fire vertical dispersion scheme
+
+Adding USES%FFireDispMethod - allows either:
+   "P800" = old, still default, or
+   "PBL"  = new option - disperses through PBL.
+
+Changes in:
+ Config_module.f90 - USES%FFireDispMethod
+                     Also USES%CLOUDJ is set true by default
+ Derived_mod       - can output  Emis_CO_Profile
+ EmisDef_mod       - adding Emis_CO_Profile
+ ForestFire_mod    - use of USES%FFireDispMethod
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 Apr 2023, Willem
+
+Removed old Fastj code, and the model now reads in WRF ice cloud meteorology 
+when present in WRF input file. 
+
+Also fixed a minor bug where the CloudJ photolysis rate calculations were called
+every model timestep between 23:00-24:00 hr UTC, even when hourly updates
+were requested. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Apr 2023, Peter

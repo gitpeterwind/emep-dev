@@ -229,14 +229,19 @@ contains
    fac_cemm(:) = 1.0
 
    if(MasterProc) write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
-   if ( MonthlyFacBasis == 'ECLIPSE' ) then
+   select case(MonthlyFacBasis)
+   case("ECLIPSE")
       call CheckStop(index(MonthlyFacFile,'may2021')<1, & !CRUDE and TMP!
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
-      
-   else if ( MonthlyFacBasis == 'GENEMIS' ) then ! check eclipse not in FacFile
+
+   case("CAMS_TEMPO")
+      call CheckStop(index(MonthlyFacFile,'cams_tempo')<1, &
+         dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
+         
+   case("GENEMIS") ! check eclipse not in FacFile
      call CheckStop(index(MonthlyFacFile,'xJun2012')<1, &
          dtxt//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
-
+     
      fracchange=0.005*(iyr_trend -1990)
      fracchange=max(0.0,fracchange) !do not change before 1990
      fracchange=min(0.1,fracchange) !stop change after 2010 
@@ -252,9 +257,9 @@ contains
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
       write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") dtxt//"Change in fac_cemm ", mm,fac_cemm(mm)
      end do
-  else
+   case default
       call StopAll(dtxt//'ERROR MonthlyFac:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
-   end if ! MonthlyFacBasis
+   end select ! MonthlyFacBasis
    write(*,"(a,f8.4)") dtxt//"Mean fac_cemm ", sum( fac_cemm(:) )/12.0
    
    if( INERIS_SNAP1 ) fac_cemm(:) = 1.0
@@ -265,40 +270,49 @@ contains
 
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
-       call CheckStop( ios, &
-        dtxt//" IOS error in Monthlyfac")
-
        n = 0
        do 
-           read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
-                (buff(mm),mm=1,12)
-           maxidx = max(insec,maxidx)
-           if ( ios <  0 ) exit     ! End of file
-           if(insec>N_TFAC) cycle
-           ic=find_index(inland,Country(:)%icode)
-           if(ic<1.or.ic>NLAND)then
-              if(me==0.and.insec==1.and.iemis==1)write(*,*)dtxt//&
-                  "Monthlyfac code not used",inland
-              cycle
-           end if
-           fac_emm(ic,1:12,insec,iemis)=buff(1:12)
+         select case(MonthlyFacBasis)
+         case("ECLIPSE","GENEMIS")
+            read(IO_TIMEFACS,fmt=*,iostat=ios) inland,insec,(buff(mm),mm=1,12)
+            if( ios <  0 ) exit     ! End of file
+            call CheckStop( ios, dtxt//": Read error in Monthlyfac")
 
-           ! Temporary and crude implementation for BIDIR tests:
-            if ( EMIS_FILE(iemis) == 'nh3' .and. USES%MonthlyNH3 == 'LOTOS' ) then
-              fac_emm(ic,1:12,insec,iemis) = &
-                 [ 0.60, 0.66,1.50,1.36,1.02,1.17,1.19,1.27,0.93,0.89,0.77,0.64]
-            end if
-           !defined after renormalization and send to al processors:
-           ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
+            ic=find_index(inland,Country(:)%icode)
+         case("CAMS_TEMPO")
+            read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname,(buff(mm),mm=1,12)
+            if( ios <  0 ) exit     ! End of file
+            call CheckStop( ios, dtxt//": Read error in Monthlyfac")
 
-           if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
-              write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac ", &
-               inland,insec,iemis, fac_min(ic,insec,iemis),&
-                 " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
+            ic=find_index(code,Country(:)%code)
+            insec=find_index(secname,SECTORS(:)%longname)             
+         end select
+            
+         maxidx = max(insec,maxidx)
+         if(insec>N_TFAC) cycle
+         if(ic<1.or.ic>NLAND)then
+            if(MasterProc.and.insec==1.and.iemis==1)&
+               write(*,*)dtxt//" Monthlyfac code not used ",inland
+            cycle
+         end if
+         call CheckStop(insec>NSECTORS .or. insec<=0, trim(secname)//' not defined')
+         fac_emm(ic,1:12,insec,iemis)=buff(1:12)
 
-           call CheckStop( ios, dtxt//": Read error in Monthlyfac")
+         ! Temporary and crude implementation for BIDIR tests:
+         if ( EMIS_FILE(iemis) == 'nh3' .and. USES%MonthlyNH3 == 'LOTOS' ) then
+            fac_emm(ic,1:12,insec,iemis) = &
+               [ 0.60, 0.66,1.50,1.36,1.02,1.17,1.19,1.27,0.93,0.89,0.77,0.64]
+         end if
+         !defined after renormalization and send to al processors:
+         ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
-           n = n + 1
+         if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
+            write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac ", &
+            inland,insec,iemis, fac_min(ic,insec,iemis),&
+               " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
+
+
+         n = n + 1
        end do
 
        close(IO_TIMEFACS)
@@ -322,6 +336,7 @@ contains
              end do
           end do
        end do
+
        if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, " records from ", trim(fname2) 
    end do  ! iemis
 

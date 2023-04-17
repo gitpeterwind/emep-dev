@@ -266,12 +266,10 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
 
                 ! pressure in Pa here
                 if(MasterProc .and. USES%EtaCOORDINATES .and. A_bnd(1) + B_bnd(1)*1e5 > 2.e4) write(*,*) & 
-                  'Warning: CloudJ satellite O3/T constant between 200 hPa down to model top.', A_bnd(1), A_bnd(1) + B_bnd(1)*1e5
+                  'Warning: CloudJ satellite O3/T constant between 200 hPa down to model top.'
 
                 ! total number of levels with O3/T data stacked on top EMEP levels
                 OZ_TOP = KMAX_MID + dim_alt - satellite_altind
-
-                if (MasterProc) write(*,*) 'strat lvls: ', dim_alt, satellite_altind
 
                 ! allocate i/o arrays necessary for cloudj
                 allocate(PPP(OZ_TOP+1), ZZZ(OZ_TOP+1)) 

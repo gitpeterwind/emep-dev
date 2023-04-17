@@ -75,6 +75,12 @@ else ifeq ($(MACHINE),ppixenial) # ubuntu 16.04, ifort
   MAKEDEPF90=makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+else ifeq ($(MACHINE),ppir8) # rh8, ifort
+  LDFLAGS +=  $(shell nf-config --flibs)
+  F90FLAGS += $(shell nf-config --cflags)
+  MAKEDEPF90=makedepf90
+  OPT_FLAGS = -O2 -march=core-avx2
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else # default ubuntu etc.
   # sudo apt-get install makedepf90 libmpich-dev libnetcdf-dev libnetcdff-dev
   F90FLAGS = -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check

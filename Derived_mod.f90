@@ -59,7 +59,7 @@ use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3&
                             ,SecEmisOut, EmisOut, SplitEmisOut, &
-                            isec2SecOutWanted,SECTORS
+                            isec2SecOutWanted,SECTORS, Emis_CO_Profile
 use EmisGet_mod,       only: nrcemis,iqrc2itot
 use Functions_mod,      only: Tpot_2_T    ! Conversion function
 use GasParticleCoeffs_mod, only: DDdefs
@@ -396,7 +396,7 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
       iout  = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
       class = trim(OutputFields(ind)%txt4)
       select case(class)
-      case ('Z_MID','Z','Z_BND','Zlev','dZ_BND','dZ')
+      case ('Z_MID','Z','Z_BND','Zlev','dZ_BND','dZ','EmFFprof')
         iadv = -1
         unitscale=1.0
         unittxt="m"
@@ -811,10 +811,21 @@ Is3D = .true.
       call AddNewDeriv("D3_Zmid", "Z_MID", "-", "-", "m", &
                       -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
 
+    case ("EmFFprof")
+      if(find_index("EmFFprof",def_3d(:)%name,any_case=.true.)<1)&
+      call AddNewDeriv("EmFFprof", "EmFFprof", "-", "-", "m", &
+                      -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
+
      case ("D3_Zlev")
       if(find_index("D3_Zlev",def_3d(:)%name,any_case=.true.)<1)&
       call AddNewDeriv("D3_Zlev", "Z_BND", "-", "-", "m", &
            -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
+
+!    case ("D3_EmF_CO_")
+!      call AddNewDeriv("D3_EmF_CO","CO_Fire_Prof", "-","-",   "kg/m2", &
+!         -99, -99, F,  1.0,  F,  'YMD',     Is3D )
+ 
+
 
     end select
   end do
@@ -2512,7 +2523,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_3d(n,i,j,k,IOU_INST)=SUM(Extin_coeff(:,i,j,lev3d(k),wlen),MASK=ingrp)
       deallocate(ingrp)
 
-    case("USET")
+    case("EmFFprof")
+      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+           d_3d(n,i,j,k,IOU_INST) = Emis_CO_Profile(i,j,lev3d(k))
+
+   case("USET")
       if(dbgP) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_3d",&
         n, f_3d(n)%name, " is ", d_3d(n,debug_li,debug_lj,num_lev3d,IOU_INST)
 
@@ -2520,7 +2535,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       write(*,"(a,2i3,3a)") "*** NOT FOUND",n,ind, trim(f_3d(n)%name),&
                ";Class:", trim(f_3d(n)%class)
       write(unit=errmsg,fmt=*) "Derived 3D class NOT FOUND", n, ind, &
-                       trim(f_3d(n)%name),trim(f_3d(n)%class)
+                       trim(f_3d(n)%name)," ",trim(f_3d(n)%class)," ",trim(class)
       call CheckStop( errmsg )
     end select
 

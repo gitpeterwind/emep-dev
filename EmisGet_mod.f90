@@ -587,6 +587,7 @@ contains
     endif
 
     status = nf90_get_att(ncFileID,nf90_global,"sectorsName", name) !SNAPsectors or GNFRsectors
+    if(status/=nf90_noerr)status = nf90_get_att(ncFileID,nf90_global,"SECTORS_NAME", name) !SNAPsectors or GNFRsectors
     if(status==nf90_noerr)EmisFile%sectorsName = trim(name)
 
 !default values for sources
@@ -767,8 +768,7 @@ contains
       call open_file(IO_EMIS, "r", fname, needed=.false., iostat=ios)
 
       if(ios/=0)then
-         22 format(5A)
-         if(MasterProc)write(*,22)dtxt//'did not find ',trim(fname)
+         if(MasterProc)write(*,"(a)")dtxt//'did not find '//trim(fname)
          !try to write pollutant with capital letters
          newfname=trim(fname)
          newfname=key2str(newfname,'gridsox','gridSOx')
@@ -779,7 +779,7 @@ contains
          newfname=key2str(newfname,'gridpm25','gridPM25')
          newfname=key2str(newfname,'gridpmco','gridPMco')
          newfname=key2str(newfname,'gridpm10','gridPM10')
-         if(MasterProc)write(*,22)'trying: ',trim(newfname)
+         if(MasterProc)write(*,"(a)")'trying: '//trim(newfname)
          call open_file(IO_EMIS,"r",newfname,needed=.true.)
       end if
 READEMIS: do   ! ************* Loop over emislist files *******************
@@ -1461,7 +1461,7 @@ end if
        end if
 
 
-       if (debugm) write(*,*) "DEBUG%GETEMIS split defaults=", defaults,fname
+       if (debugm) write(*,*) dtxt//" split defaults=", defaults,fname
 
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
@@ -1478,69 +1478,66 @@ end if
 
         nsplit = nsplit - 2
 
-        if ( MasterProc ) then
-          if(DEBUG%GETEMIS) then
-             write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
-             write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
-          end if
-22      format(25A)
-          write(unit=6,fmt=22) "Splitting ", trim(EMIS_FILE(ie)), &
-             " emissions into ",&
+        if ( debugm ) then
+          write(unit=6,fmt=*) "Will try to split ", nsplit,&
+                " times, Emis_MolWt  = ", Emis_MolWt(ie)
+          write(unit=6,fmt="(25a)") "Splitting ", trim(EMIS_FILE(ie)), &
+            " emissions into ",&
                (trim(Headers(i+2)),' ',i=1,nsplit),'using ',trim(fname)
         end if
 
-           do i = 1, nsplit
-              intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
+        do i = 1, nsplit
+           intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
 
              ! Match spec against EMIS_SPECS:
 
-              call CountEmisSpecs( intext(idef,i) )
+           call CountEmisSpecs( intext(idef,i) )
 
-              if (debugm) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
+           if (debugm) write(*,"(a,2i3,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
 
-              itot = find_index(intext(idef,i), species(:)%name, any_case=.true. )
+           itot = find_index(intext(idef,i), species(:)%name, any_case=.true. )
 
-              if ( defaults ) then
-                if ( Headers(i+2) /= "UNREAC" ) then
-                  iqrc = iqrc + 1
-                  emis_nsplit(ie) = emis_nsplit(ie) + 1
+           if ( defaults ) then
+             if ( Headers(i+2) /= "UNREAC" ) then
+               iqrc = iqrc + 1
+               emis_nsplit(ie) = emis_nsplit(ie) + 1
 
-                  ! This error, itot<1, is quite common when eg emissplit
-                  ! files don't match chemistry. Add extensive output
-                  if ( itot<1 ) then
-                    print *, "EmisSplit FAILED idef ", me, idef, i, nsplit,&
-                      trim( intext(idef,i) )
-                    print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
-                      " emissions into ",&
-                       (trim(Headers(n+2)),' ',n=1,nsplit),'using ',trim(fname)
-                    print "(a, i3,30a10)", "EmisSplit FAILED headers ", &
-                        me, (intext(idef,n),n=1,nsplit)
-                    call StopAll( &
-                       "EmisSplit FAILED "//trim(intext(idef,i)) //&
-                       " possible incorrect Chem in run script?" )
-                  end if ! FAILURE
+               ! This error, itot<1, is quite common when eg emissplit
+               ! files don't match chemistry. Add extensive output
+               if ( itot<1 ) then
+                 print *, "EmisSplit FAILED idef ", me, idef, i, nsplit,&
+                   trim( intext(idef,i) )
+                 print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
+                   " emissions into ",&
+                    (trim(Headers(n+2)),' ',n=1,nsplit),'using ',trim(fname)
+                 print "(a, i3,30a10)", "EmisSplit FAILED headers ", &
+                     me, (intext(idef,n),n=1,nsplit)
+                 call StopAll( &
+                    "EmisSplit FAILED "//trim(intext(idef,i)) //&
+                    " possible incorrect Chem in run script?" )
+               end if ! FAILURE
 
-                  tmp_iqrc2itot(iqrc) = itot
-                  tmp_iqrc2iem(iqrc) = ie
-                  itot2iqrc(itot)     = iqrc
-                  iemsplit2itot(emis_nsplit(ie),ie) = itot
-                 ! Now, get factor needed for scaling emissions to molec
-                  if ( Emis_MolWt(ie) == 0 ) then
-                      tmp_emis_masscorr(iqrc) = 1.0/species(itot)%molwt
-                  else
-                      tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
-                  end if
-                end if ! defaults
-                if (debugm .and. itot>0 )  then
-                   write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
-                   "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
-                     trim(species(itot)%name ), " MW:", &
-                       1.0/tmp_emis_masscorr(iqrc)
-                end if
-              end if
-           end do
-           if (debugm ) write(6,"(a,i4,a,i4)") "Compare ns: used=", &
-                emis_nsplit(ie), "including any UNREAC:", nsplit
+               tmp_iqrc2itot(iqrc) = itot
+               tmp_iqrc2iem(iqrc) = ie
+               itot2iqrc(itot)     = iqrc
+               iemsplit2itot(emis_nsplit(ie),ie) = itot
+              ! Now, get factor needed for scaling emissions to molec
+               if ( Emis_MolWt(ie) == 0 ) then
+                   tmp_emis_masscorr(iqrc) = 1.0/species(itot)%molwt
+               else
+                   tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
+               end if
+             end if ! defaults
+             if (debugm .and. itot>0 )  then
+                write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
+                "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
+                  trim(species(itot)%name ), " MW:", &
+                    1.0/tmp_emis_masscorr(iqrc)
+             end if
+           end if
+       end do
+       if (debugm ) write(6,"(a,i4,a,i4)") "Compare ns: used=", &
+            emis_nsplit(ie), "including any UNREAC:", nsplit
 
         n = 0
 
@@ -1628,14 +1625,13 @@ end if
                 iqrc = sum(emis_nsplit(1:ie-1)) + i
                 tmp_emisfrac(iqrc,isec,iland) = 0.01 * tmp(i)
 
-                ! just a check
-                !if ( DEBUG .and. iland == 27.and.MasterProc ) then
-                if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
-                    itot = tmp_iqrc2itot(iqrc)
-                    write(*,"(a35,4i3,i4,a,f10.4)") &
-                      "DEBUG%GETEMIS splitdef UK", isec, ie, i,  &
-                       iqrc, itot, trim(species(itot)%name), &
-                         tmp_emisfrac(iqrc,isec,iland)
+                !CHANGED to AT:if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
+                if ( debugm .and. iland == 2 ) then
+                  itot = tmp_iqrc2itot(iqrc)
+                  write(*,"(a35,4i3,i4,a,f10.4)") &
+                    dtxt//" splitdef " //trim(Country(iland)%name), &
+                     isec, ie, i,  iqrc, itot, trim(species(itot)%name), &
+                       tmp_emisfrac(iqrc,isec,iland)
                 end if
              end do ! i
            end do ! iland
