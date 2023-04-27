@@ -43,6 +43,6 @@ done
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 
 echo "CM_Reactions1.inc successfully adapted to LF calculations"
-echo "remember to remove shipNOx from the LF part, and all reactions after SO2"
+echo "remember to remove all reactions after shipNOx in the lf part"
 
 fi

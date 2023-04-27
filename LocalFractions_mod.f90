@@ -212,8 +212,8 @@ contains
      lf_fullchem = .true.
 
      NSPEC_fullchem_lf = NSPEC_ADV !default include all
-     !We ASSUME that SO2 is the last species (highest index) involved in O3 chemistry
-     ix=find_index("SO2" ,species_adv(:)%name)
+     !We ASSUME that shipNOx is the last species (highest index) involved in O3 chemistry
+     ix=find_index("shipNOx" ,species_adv(:)%name)
      if(ix>0)NSPEC_fullchem_lf = ix
 
      !TEMPORARY, should be set to NSPEC_fullchem_lf+NSPEC_SHL
