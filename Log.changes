@@ -49,6 +49,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 May 2023, Svetlana
+
+EQSAM_mod.f90 updated from v10 to v11
+AerosolCalls.f90 - modified accordingly (EQSAM is called for fine aerosols, including 
+                   Na, Cl, Mg and K from Sea salt
+                   PM25_water and PM25_water_rh50 derived in same call (Aero_water and Aero_water_rh50 removed)
+Runchem_mod.f90 - modified accordingly 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 Apr 2023, Peter
 
 LF: Remove short lived from lf (all assumed equal to base case at start).
