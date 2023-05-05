@@ -67,6 +67,7 @@ public  :: lf_av
 public  :: lf_adv_x
 public  :: lf_adv_y
 public  :: lf_adv_k
+public  :: lf_adv_k_2nd
 public  :: lf_diff
 public  :: lf_conv
 public  :: lf_chem_emis_deriv
@@ -198,6 +199,12 @@ contains
   endif
 
   lf_Nvert = lf_src(1)%Nvert !Temporary
+  if (lf_Nvert>KMAX_MID-1) then
+     lf_Nvert = KMAX_MID-1
+     if(me==0)then
+        write(*,*)'WARNING: cannot track through level 1 (top). Reducing Nvert to ',lf_Nvert
+     end if
+  end if
   Nsources = 0
   nfullchem = 0
   do i = 1, Max_lf_sources
@@ -1524,12 +1531,10 @@ subroutine lf_adv_k(fluxk,i,j)
           !positive x or xx means incoming, negative means outgoing
           do iix=1,lf_src(isrc)%Nsplit
              ix=lf_src(isrc)%ix(iix)
-             xn=xn+xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix)
+             xn=xn+xn_2d(ix,k)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
              if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(isrc)%mw(iix)
              xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(isrc)%mw(iix)
           end do
-          !NB: here xn already includes the fluxes. Remove them!
-          xn=xn-xx-x
           xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux
           f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
           inv_tot=1.0/(xn+f_in+1.e-40)!incoming dilutes
@@ -1559,9 +1564,196 @@ subroutine lf_adv_k(fluxk,i,j)
 
     end do
 
-  if(DEBUGall .and. me==0)write(*,*)'end advk'
+    if(DEBUGall .and. me==0)write(*,*)'end advk'
     call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_k")
   end subroutine lf_adv_k
+
+  subroutine lf_adv_k_2nd(fluxk,i,j,sdot,dt_s,alfnew,alfbegnew,alfendnew)
+    !takes into account the terms that arise from the second order Bott scheme:
+    !the lf flux contributions are weighted by zzfl1, zzfl2 and zzfl3
+    real, intent(in)::fluxk(NSPEC_ADV,KMAX_MID)
+    real, intent(in)::alfnew(9,2:KMAX_MID,0:1),alfbegnew(3),alfendnew(3),sdot(0:LIMAX*LJMAX*KMAX_BND-1),dt_s
+    integer, intent(in)::i,j
+    real ::x,xn,xx,x0,xx0,f_in,inv_tot,fc1,fc2,fc3
+    integer ::n,k,iix,ix,dx,dy,isrc,n1k,k1,klimlow,klimhig
+    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert:KMAX_MID+3)
+    real :: w1,w2,w3 !weights from the used level for making the flux
+    !NB: level used for *incoming* fluxes:
+    !    fluxes incoming k from k-1: uses level k-2,k-1 and k to make flux(k)
+    !    fluxes incoming k from k+1: uses level k,k+1 and k+2 to make flux(k+1)
+    ! Eta=A/Pref+B , P = A + B*PS, high altitude means A and B and Eta decrease. Positive Etadot means downwind.
+    real fc(KMAX_MID),zzfl1(KMAX_MID-lf_Nvert:KMAX_MID),zzfl2(KMAX_MID-lf_Nvert:KMAX_MID),zzfl3(KMAX_MID-lf_Nvert:KMAX_MID)
+    real :: x1,x2,x3,xx1,xx2,xx3
+    if(DEBUGall .and. me==0)write(*,*)'start adv_k_2nd'
+
+    call Code_timer(tim_before)
+    !need to be careful to always use non-updated values on the RHS
+    do k = KMAX_MID-lf_Nvert+2,KMAX_MID + 1
+       do n = 1, LF_SRC_TOTSIZE
+          loc_frac_src_km1(n,k)=lf(n,i,j,k-1) !NB: k is shifted by 1 in loc_frac_src_km1
+       enddo
+    enddo
+    loc_frac_src_km1(:,KMAX_MID-lf_Nvert) = 0.0 ! everything above is not tracked, zero local fractions coming from above. but should not be used (w zero)
+    loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1) = 0.0 ! everything above is not tracked, zero local fractions coming from above. but should not be used (w zero)
+    loc_frac_src_km1(:,KMAX_MID+2) = 0.0 ! below surface. zero, but should not be used (w is zero)
+    loc_frac_src_km1(:,KMAX_MID+3) = 0.0 ! below surface. zero, but should not be used (w is zero)
+
+    !for stratosphere tracking: everything above the tracking region has lf=1
+    do n = 1, nstratos
+       loc_frac_src_km1(Stratos_ix(n),KMAX_MID-lf_Nvert+1) = 1.0 ! NB: k is shifted by 1 in loc_frac_src_km1, i.e. this is level k=1 if lf_Nvert = KMAX_MID - 1
+    end do
+
+    !we copy paste from advvk to get zzfl1,zzfl2,zzfl3
+    !we must make both the values used for making fluxk(ix,k) and fluxk(ix,k+1)
+    do k = 1,KMAX_MID-1
+      fc(k) = sdot(k*LIMAX*LJMAX)*dt_s
+    end do
+    fc(KMAX_MID) = -1.
+    klimlow = 1
+    if(fc(1).ge.0.)klimlow=2
+    klimhig = KMAX_MID-1
+    if(fc(KMAX_MID-1).lt.0.)klimhig = KMAX_MID-2
+
+    !could merge this loop with next one for better performance. Need only two k values for zzfl at a time
+    zzfl1 = 0
+    zzfl2 = 0
+    zzfl3 = 0
+    do k = KMAX_MID-lf_Nvert,KMAX_MID
+       if(k==1 .or. k==KMAX_MID) then
+          !all zzfl default
+       else if(k==2) then
+          if(fc(1).ge.0.)then
+             fc1 = fc(1)
+             fc2 = fc1*fc1
+             fc3 = fc1*fc2
+             zzfl2(k) = alfbegnew(1)*fc1 + alfbegnew(2)*fc2 + alfbegnew(3)*fc3
+             zzfl3(k) = alfnew(7,2,0)*fc1 + alfnew(8,2,0)*fc2 + alfnew(9,2,0)*fc3
+          end if
+       else if(k==KMAX_MID-1 .and. fc(KMAX_MID-1).lt.0.) then
+          fc1 = fc(KMAX_MID-1)
+          fc2 = fc1*fc1
+          fc3 = fc1*fc2
+          zzfl1(k) = alfnew(1,KMAX_MID,1)*fc1 + alfnew(2,KMAX_MID,1)*fc2 + alfnew(3,KMAX_MID,1)*fc3
+          zzfl2(k) = alfendnew(1)*fc1 + alfendnew(2)*fc2 + alfendnew(3)*fc3
+       else
+          fc1 = fc(k)
+          fc2 = fc1*fc1
+          fc3 = fc1*fc2
+          n1k = 0
+          if(fc1.lt.0)n1k=1
+          zzfl1(k) = alfnew(1,k+1,n1k)*fc1         &
+               + alfnew(2,k+1,n1k)*fc2         &
+               + alfnew(3,k+1,n1k)*fc3
+          zzfl2(k) = alfnew(4,k+1,n1k)*fc1         &
+               + alfnew(5,k+1,n1k)*fc2         &
+               + alfnew(6,k+1,n1k)*fc3
+          zzfl3(k) = alfnew(7,k+1,n1k)*fc1         &
+               + alfnew(8,k+1,n1k)*fc2         &
+               + alfnew(9,k+1,n1k)*fc3
+          k1 = k-1+n1k
+
+       end if
+    end do
+
+    do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+       do isrc=1,Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle          
+          xn=0.0
+          x=0.0  !net flux from k+1
+          xx=0.0 !net flux from k-1
+          xx1=0.0!dependence of flux xx on k-2  
+          xx2=0.0!dependence of flux xx on k-1
+          xx3=0.0!dependence of flux xx on k
+          x1=0.0 !dependence of flux x on k
+          x2=0.0 !dependence of flux x on k+1
+          x3=0.0 !dependence of flux x on k+2
+          !positive x or xx means incoming, negative means outgoing
+          do iix=1,lf_src(isrc)%Nsplit
+             ix=lf_src(isrc)%ix(iix)
+             xn=xn+xn_2d(ix,k)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
+             if(k<KMAX_MID)then
+                x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(isrc)%mw(iix)
+                x1=x1-dhs1i(k+1)*zzfl1(k)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
+                if(k<KMAX_MID-1)x2=x2-dhs1i(k+1)*zzfl2(k)*xn_2d(ix,k+1)*lf_src(isrc)%mw(iix)
+                if(k<KMAX_MID-2)x3=x3-dhs1i(k+1)*zzfl3(k)*xn_2d(ix,k+2)*lf_src(isrc)%mw(iix)
+             end if
+             xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(isrc)%mw(iix)
+             if(k>KCHEMTOP-1)xx1=xx1+dhs1i(k+1)*zzfl1(k-1)*xn_2d(ix,k-2)*lf_src(isrc)%mw(iix)
+             if(k>KCHEMTOP)xx2=xx2+dhs1i(k+1)*zzfl2(k-1)*xn_2d(ix,k-1)*lf_src(isrc)%mw(iix)             
+             xx3=xx3+dhs1i(k+1)*zzfl3(k-1)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
+          end do
+          
+          if(x<1e-30)then
+             x1=0
+             x2=0
+             x3=0
+             x=0
+          else if  (1e-3<abs(x1+x2+x3-x)/x) then
+             !this should not happen too often.
+             !It may happen when "totk" from advvk is not equal to one (gridcell is completely emptied)
+             !TODO: investigate if this can be done better... and if the normal vertical advection is sound (with ps3d normalization)
+             x1=0
+             x2=x !everything is assumed coming from upwind cell
+             x3=0
+          end if
+          if(xx<1e-30)then
+             xx1=0
+             xx2=0
+             xx3=0
+             xx=0
+          else if (1e-3<abs(xx1+xx2+xx3-xx)/xx) then
+             !this should not happen too often.
+             !It may happen when "totk" from advvk is not equal to one (gridcell is completely emptied)
+             !TODO: investigate if this can be done better... and if the normal vertical advection is sound (with ps3d normalization)
+             xx1=0
+             xx2=xx !everything is assumed coming from upwind cell
+             xx3=0
+          end if
+          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux
+          f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+          inv_tot=1.0/(xn+f_in+1.e-30)!incoming dilutes
+
+          x =max(0.0,x)*inv_tot!factor due to flux through bottom face
+          xx=max(0.0,xx)*inv_tot!factor due to flux through top face
+          if(k==KMAX_MID) x = 0.0 !no fraction coming from surface
+
+          !NB: xi and xxi can be negative! only sum must be>=0 
+          x1=x1*inv_tot
+          x2=x2*inv_tot
+          x3=x3*inv_tot
+          xx1=xx1*inv_tot
+          xx2=xx2*inv_tot
+          xx3=xx3*inv_tot
+          if(k==KMAX_MID) x1 = 0.0 !no fraction coming from surface
+          if(k==KMAX_MID) x2 = 0.0 !no fraction coming from surface
+          if(k==KMAX_MID) x3 = 0.0 !no fraction coming from surface
+          
+          xn = xn * inv_tot
+          !often either x or xx is zero
+          if(x>1.E-20)then
+             do n = lf_src(isrc)%start, lf_src(isrc)%end
+                 !lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x
+                lf(n,i,j,k) = lf(n,i,j,k)*xn+x1*loc_frac_src_km1(n,k+1)+x2*loc_frac_src_km1(n,k+2)+x3*loc_frac_src_km1(n,k+3)
+             enddo
+             if(xx>1.E-20)then
+                do n = lf_src(isrc)%start, lf_src(isrc)%end
+                   lf(n,i,j,k) = lf(n,i,j,k) + xx1*loc_frac_src_km1(n,k-1)+xx2*loc_frac_src_km1(n,k)+xx3*loc_frac_src_km1(n,k+1)
+                enddo
+             endif
+          else if (xx>1.E-20)then
+             do n = lf_src(isrc)%start, lf_src(isrc)%end
+                lf(n,i,j,k) = lf(n,i,j,k)*xn + xx1*loc_frac_src_km1(n,k-1)+xx2*loc_frac_src_km1(n,k)+xx3*loc_frac_src_km1(n,k+1)
+            enddo
+          else
+             !nothing to do if no incoming fluxes
+          endif
+       enddo
+
+    end do
+
+    if(DEBUGall .and. me==0)write(*,*)'end adv_k_2nd'
+    call Add_2timing(NTIMING-6,tim_after,tim_before,"lf: adv_k")
+  end subroutine lf_adv_k_2nd
 
   subroutine lf_diff(i,j,dt_diff,ndiff)
 
@@ -1575,7 +1767,7 @@ subroutine lf_adv_k(fluxk,i,j)
     ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
     !ship emission are higher up and need to come down to diminish locfrac
     integer, parameter :: KUP = 2
-  if(DEBUGall .and. me==0)write(*,*)'start diff'
+    if(DEBUGall .and. me==0)write(*,*)'start diff'
 
     call Code_timer(tim_before)
     xn_k = 0.0
@@ -1609,7 +1801,7 @@ subroutine lf_adv_k(fluxk,i,j)
        enddo
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
-  if(DEBUGall .and. me==0)write(*,*)'end diff'
+    if(DEBUGall .and. me==0)write(*,*)'end diff'
 
 end subroutine lf_diff
 
@@ -1623,7 +1815,7 @@ end subroutine lf_diff
     integer ::isec_poll1,isrc
     integer ::k,n,ix,iix,dx,dy
 
-  if(DEBUGall .and. me==0)write(*,*)'start conv'
+    if(DEBUGall .and. me==0)write(*,*)'start conv'
     call Code_timer(tim_before)
     xn_k = 0.0
     do k = 1,KMAX_MID
@@ -1656,7 +1848,7 @@ end subroutine lf_diff
        enddo
     end do
     call Add_2timing(NTIMING-5,tim_after,tim_before,"lf: diffconv")
-  if(DEBUGall .and. me==0)write(*,*)'end conv'
+    if(DEBUGall .and. me==0)write(*,*)'end conv'
 
 end subroutine lf_conv
 
@@ -1906,7 +2098,7 @@ subroutine lf_chem(i,j)
      do k = KMAX_MID-lf_Nvert+1,KMAX_MID
         SO4 = xn_2d(SO4_ix,k)
         n_SO4 = lf_src(isrc_SO4)%start
-        write(*,*)'SO2 stop'
+        write(*,*)'LF:SO2 not implemented stop'
         stop
         !SO4 produced by SO2 , without emitted SO4:
         !d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
@@ -2313,7 +2505,7 @@ subroutine lf_rcemis(i,j,k,eps)
 
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
                              if(found == 0) then
-                                !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):                                
+                                !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
                                 do n=1,nemis
                                    if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == iem)then
                                       ! add to this instead
