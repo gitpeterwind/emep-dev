@@ -191,7 +191,9 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 ! volcanic emissions from passive degassing and historical eruptions
 !------------------------------
   flocdef="DataDir/volcano_location.csv_20210525",
-  femsdef="DataDir/volcano_emission.csv_20210525",
+ !HK 2023: update in code and dataformat:
+  femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27042023",
+
 
   need_topo=T, ! Do not use column emissions if topography.nc not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef

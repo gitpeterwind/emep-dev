@@ -49,6 +49,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May 2023, Dave
+
+Config_module - prepping lines for BIDIR variables added
+
+config_emep.nml - switched to Heiko's new format file.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 May 2023, Svetlana
 
 EQSAM_mod.f90 updated from v10 to v11
