@@ -225,8 +225,13 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
 ! In development
-   logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
+  !< FUTURE Bi-directional exchange
+   logical :: BIDIR           = .false.
+   logical :: BiDirEuroXwater = .false. 
+   logical :: BiDirOrigXwater = .false. 
+   logical :: BIDIRrivm   = .false.  !< MARKER of potential RIVM changes
    character(len=20) :: BiDirMethod = 'NOTSET'  ! FUTURE
+  !< END FUTURE Bi-directional exchange
    character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
    ! Can be 'Total', 'NoFert', or 'OLD_EURO' (latter to get ACP2012 system)
    character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
@@ -814,6 +819,7 @@ character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014_month.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
+character(len=TXTLEN_FILE), target, save, public :: BiDirInputDir  = 'NOTSET' ! FUTURE
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
@@ -917,6 +923,7 @@ subroutine Config_Constants(iolog)
    ,NdepFile&
    ,lightningFile&
    ,BiDirInputFile&
+   ,BiDirInputDir&
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
