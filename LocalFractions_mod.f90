@@ -114,6 +114,7 @@ real, allocatable, public, dimension(:,:), save ::ederiv !dX_ispec/demis_n
 real, allocatable, public, dimension(:,:), save :: lf0_loc, lf_loc
 real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
 real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf !may not be worth the cost?
+real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf!may not be worth the cost?
 real, allocatable, public, dimension(:,:), save ::rcemis_lf
 integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
@@ -776,10 +777,12 @@ contains
      allocate(L_lf(NSPEC_fullchem_lf+N_lf_derivemisMAX))
      allocate(xold_lf(NSPEC_fullchem_lf+N_lf_derivemisMAX,NSPEC_fullchem_inc_lf))
      allocate(Dchem_lf(NSPEC_fullchem_lf,NSPEC_fullchem_inc_lf,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
+     allocate(xn_shl_lf(NSPEC_fullchem_lf,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
      Dchem_lf = 0.0
+     xn_shl_lf = 0.0
      allocate(lf_NO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   else
@@ -944,7 +947,7 @@ subroutine lf_out(iotyp)
      iwdep = 0
      do isrc = 1, Nsources
         if (lf_src(isrc)%species == 'FULLCHEM') cycle
-        if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2'  .and. lf_src(isrc)%species/='HNO3'.and. lf_src(isrc)%species/='NH3')cycle
+        if(lf_src(Nsources)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='NO'  .and. lf_src(isrc)%species/='NO2'  .and. lf_src(isrc)%species/='NO3'.and. lf_src(isrc)%species/='NH3')cycle
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
@@ -1574,37 +1577,48 @@ subroutine lf_adv_k(fluxk,i,j)
     real, intent(in)::fluxk(NSPEC_ADV,KMAX_MID)
     real, intent(in)::alfnew(9,2:KMAX_MID,0:1),alfbegnew(3),alfendnew(3),sdot(0:LIMAX*LJMAX*KMAX_BND-1),dt_s
     integer, intent(in)::i,j
-    real ::x,xn,xx,x0,xx0,f_in,inv_tot,fc1,fc2,fc3
+    real ::x,xn,xx,x0,xx0,f_in,inv_tot,fc1,fc2,fc3,xn_post
     integer ::n,k,iix,ix,dx,dy,isrc,n1k,k1,klimlow,klimhig
-    real loc_frac_src_km1(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert:KMAX_MID+3)
+    real loc_frac_src(LF_SRC_TOTSIZE,KMAX_MID-lf_Nvert-1:KMAX_MID+2)
     real :: w1,w2,w3 !weights from the used level for making the flux
     !NB: level used for *incoming* fluxes:
     !    fluxes incoming k from k-1: uses level k-2,k-1 and k to make flux(k)
     !    fluxes incoming k from k+1: uses level k,k+1 and k+2 to make flux(k+1)
     ! Eta=A/Pref+B , P = A + B*PS, high altitude means A and B and Eta decrease. Positive Etadot means downwind.
     real fc(KMAX_MID),zzfl1(KMAX_MID-lf_Nvert:KMAX_MID),zzfl2(KMAX_MID-lf_Nvert:KMAX_MID),zzfl3(KMAX_MID-lf_Nvert:KMAX_MID)
-    real :: x1,x2,x3,xx1,xx2,xx3
+    real :: x1,x2,x3,xx1,xx2,xx3,fk1,lfmax
+
     if(DEBUGall .and. me==0)write(*,*)'start adv_k_2nd'
 
     call Code_timer(tim_before)
+
+    lfmax=10.0 !limitation for extreme values
+    !note about extreme values:
+    ! in some cases, Bott will almost entirely empty a cell. If it is 99.999% or 99.9 % may be dependent on a neighboring gridcells concentration.
+    ! Since the final concentration is almost zero, the derivative divided by that amount can be large.
+
+
     !need to be careful to always use non-updated values on the RHS
-    do k = KMAX_MID-lf_Nvert+2,KMAX_MID + 1
-       do n = 1, LF_SRC_TOTSIZE
-          loc_frac_src_km1(n,k)=lf(n,i,j,k-1) !NB: k is shifted by 1 in loc_frac_src_km1
-       enddo
+    do k = KMAX_MID-lf_Nvert-1,KMAX_MID+2
+       if(k>=KMAX_MID-lf_Nvert+1 .and. k<=KMAX_MID)then
+          do n = 1, LF_SRC_TOTSIZE
+             loc_frac_src(n,k)=lf(n,i,j,k)
+          enddo
+       else
+          do n = 1, LF_SRC_TOTSIZE
+             loc_frac_src(n,k)=0.0
+          enddo
+       end if
     enddo
-    loc_frac_src_km1(:,KMAX_MID-lf_Nvert) = 0.0 ! everything above is not tracked, zero local fractions coming from above. but should not be used (w zero)
-    loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1) = 0.0 ! everything above is not tracked, zero local fractions coming from above. but should not be used (w zero)
-    loc_frac_src_km1(:,KMAX_MID+2) = 0.0 ! below surface. zero, but should not be used (w is zero)
-    loc_frac_src_km1(:,KMAX_MID+3) = 0.0 ! below surface. zero, but should not be used (w is zero)
 
     !for stratosphere tracking: everything above the tracking region has lf=1
     do n = 1, nstratos
-       loc_frac_src_km1(Stratos_ix(n),KMAX_MID-lf_Nvert+1) = 1.0 ! NB: k is shifted by 1 in loc_frac_src_km1, i.e. this is level k=1 if lf_Nvert = KMAX_MID - 1
+       loc_frac_src(Stratos_ix(n),KMAX_MID-lf_Nvert) = 1.0 ! this is level k=1 if lf_Nvert = KMAX_MID - 1
     end do
 
     !we copy paste from advvk to get zzfl1,zzfl2,zzfl3
     !we must make both the values used for making fluxk(ix,k) and fluxk(ix,k+1)
+
     do k = 1,KMAX_MID-1
       fc(k) = sdot(k*LIMAX*LJMAX)*dt_s
     end do
@@ -1655,100 +1669,125 @@ subroutine lf_adv_k(fluxk,i,j)
        end if
     end do
 
-    do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-       do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle          
+    do isrc=1,Nsources
+       if (lf_src(isrc)%species == 'FULLCHEM') cycle
+       fk1=0.0
+       do k = KMAX_MID-lf_Nvert,KMAX_MID-1
+
           xn=0.0
-          x=0.0  !net flux from k+1
-          xx=0.0 !net flux from k-1
-          xx1=0.0!dependence of flux xx on k-2  
-          xx2=0.0!dependence of flux xx on k-1
-          xx3=0.0!dependence of flux xx on k
-          x1=0.0 !dependence of flux x on k
-          x2=0.0 !dependence of flux x on k+1
-          x3=0.0 !dependence of flux x on k+2
-          !positive x or xx means incoming, negative means outgoing
-          do iix=1,lf_src(isrc)%Nsplit
-             ix=lf_src(isrc)%ix(iix)
-             xn=xn+xn_2d(ix,k)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
-             if(k<KMAX_MID)then
-                x=x-dhs1i(k+1)*fluxk(ix,k+1)*lf_src(isrc)%mw(iix)
-                x1=x1-dhs1i(k+1)*zzfl1(k)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
-                if(k<KMAX_MID-1)x2=x2-dhs1i(k+1)*zzfl2(k)*xn_2d(ix,k+1)*lf_src(isrc)%mw(iix)
-                if(k<KMAX_MID-2)x3=x3-dhs1i(k+1)*zzfl3(k)*xn_2d(ix,k+2)*lf_src(isrc)%mw(iix)
+          x=0.0
+          x1=0.0
+          x2=0.0
+          x3=0.0
+          !flux between k and k+1
+          !x, x1, x2, x3 >0
+          !dhs1i factor: use (k+1) if xn for level k is treated.
+
+          if(fc(k).lt.0)then
+             n1k=1
+             !fluxk(:,k+1) is made from xn(k), xn(k+1), xn(k+2)
+             !fluxk(:,k+1)<0 into k from k+1
+             do iix=1,lf_src(isrc)%Nsplit
+                ix=lf_src(isrc)%ix(iix)
+                xn=xn+xn_2d(ix,k)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
+                x=x-fluxk(ix,k+1)*lf_src(isrc)%mw(iix)
+                x1=x1+zzfl1(k)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
+                x2=x2+zzfl2(k)*xn_2d(ix,k+1)*lf_src(isrc)%mw(iix)
+                if(k<=KMAX_MID-2) x3=x3+zzfl3(k)*xn_2d(ix,k+2)*lf_src(isrc)%mw(iix)
+            end do
+             !normally x1+x2+x3=x. The exception is when flux limitations are in effect; in such cases we assume all flux is dependent on upwind cell only
+             !also if different splits have different fluxes, this may be the case.
+             if(1e-3<abs(x1+x2+x3-x)/(abs(x)+1e-20)) then
+                x1=0
+                x2=x
+                x3=0
              end if
-             xx=xx+dhs1i(k+1)*fluxk(ix,k)*lf_src(isrc)%mw(iix)
-             if(k>KCHEMTOP-1)xx1=xx1+dhs1i(k+1)*zzfl1(k-1)*xn_2d(ix,k-2)*lf_src(isrc)%mw(iix)
-             if(k>KCHEMTOP)xx2=xx2+dhs1i(k+1)*zzfl2(k-1)*xn_2d(ix,k-1)*lf_src(isrc)%mw(iix)             
-             xx3=xx3+dhs1i(k+1)*zzfl3(k-1)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
-          end do
-          
-          if(x<1e-30)then
-             x1=0
-             x2=0
-             x3=0
-             x=0
-          else if  (1e-3<abs(x1+x2+x3-x)/x) then
-             !this should not happen too often.
-             !It may happen when "totk" from advvk is not equal to one (gridcell is completely emptied)
-             !TODO: investigate if this can be done better... and if the normal vertical advection is sound (with ps3d normalization)
-             x1=0
-             x2=x !everything is assumed coming from upwind cell
-             x3=0
-          end if
-          if(xx<1e-30)then
-             xx1=0
-             xx2=0
-             xx3=0
-             xx=0
-          else if (1e-3<abs(xx1+xx2+xx3-xx)/xx) then
-             !this should not happen too often.
-             !It may happen when "totk" from advvk is not equal to one (gridcell is completely emptied)
-             !TODO: investigate if this can be done better... and if the normal vertical advection is sound (with ps3d normalization)
-             xx1=0
-             xx2=xx !everything is assumed coming from upwind cell
-             xx3=0
-          end if
-          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux
-          f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-          inv_tot=1.0/(xn+f_in+1.e-30)!incoming dilutes
 
-          x =max(0.0,x)*inv_tot!factor due to flux through bottom face
-          xx=max(0.0,xx)*inv_tot!factor due to flux through top face
-          if(k==KMAX_MID) x = 0.0 !no fraction coming from surface
-
-          !NB: xi and xxi can be negative! only sum must be>=0 
-          x1=x1*inv_tot
-          x2=x2*inv_tot
-          x3=x3*inv_tot
-          xx1=xx1*inv_tot
-          xx2=xx2*inv_tot
-          xx3=xx3*inv_tot
-          if(k==KMAX_MID) x1 = 0.0 !no fraction coming from surface
-          if(k==KMAX_MID) x2 = 0.0 !no fraction coming from surface
-          if(k==KMAX_MID) x3 = 0.0 !no fraction coming from surface
-          
-          xn = xn * inv_tot
-          !often either x or xx is zero
-          if(x>1.E-20)then
+             !out of k+1 (first time modified)
              do n = lf_src(isrc)%start, lf_src(isrc)%end
-                 !lf(n,i,j,k) = lf(n,i,j,k)*xn +lf(n,i,j,k+1)*x
-                lf(n,i,j,k) = lf(n,i,j,k)*xn+x1*loc_frac_src_km1(n,k+1)+x2*loc_frac_src_km1(n,k+2)+x3*loc_frac_src_km1(n,k+3)
+                lf(n,i,j,k+1) = -(x1*loc_frac_src(n,k)+x2*loc_frac_src(n,k+1)+x3*loc_frac_src(n,k+2))
              enddo
-             if(xx>1.E-20)then
-                do n = lf_src(isrc)%start, lf_src(isrc)%end
-                   lf(n,i,j,k) = lf(n,i,j,k) + xx1*loc_frac_src_km1(n,k-1)+xx2*loc_frac_src_km1(n,k)+xx3*loc_frac_src_km1(n,k+1)
-                enddo
-             endif
-          else if (xx>1.E-20)then
-             do n = lf_src(isrc)%start, lf_src(isrc)%end
-                lf(n,i,j,k) = lf(n,i,j,k)*xn + xx1*loc_frac_src_km1(n,k-1)+xx2*loc_frac_src_km1(n,k)+xx3*loc_frac_src_km1(n,k+1)
-            enddo
-          else
-             !nothing to do if no incoming fluxes
-          endif
-       enddo
+             xn_post=xn+(fk1+(x1+x2+x3))*dhs1i(k+1)
+             fk1=-(x1+x2+x3)
 
+             if (k>KMAX_MID-lf_Nvert) then
+                !into k  (already initialized. Divide by final concentration)
+                if (xn_post>1e-20) then
+                   do n = lf_src(isrc)%start, lf_src(isrc)%end
+                      lf(n,i,j,k) = (xn*loc_frac_src(n,k)+(lf(n,i,j,k)+x1*loc_frac_src(n,k)+x2*loc_frac_src(n,k+1)+x3*loc_frac_src(n,k+2))*dhs1i(k+1))/xn_post
+                      lf(n,i,j,k) =max(-lfmax,min(lfmax,lf(n,i,j,k)))
+                   enddo
+                else
+                   !if there are no concentration, we set the fractions to zero
+                   do n = lf_src(isrc)%start, lf_src(isrc)%end
+                      lf(n,i,j,k) = 0.0
+                   enddo
+                end if
+             end if
+          else
+             n1k=0
+             !fluxk(:,k+1) is made from xn(k-1), xn(k), xn(k+1)
+             !fluxk(:,k+1)>0 out of k into k+1
+             do iix=1,lf_src(isrc)%Nsplit
+                ix=lf_src(isrc)%ix(iix)
+                xn=xn+xn_2d(ix,k)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
+                x=x+fluxk(ix,k+1)*lf_src(isrc)%mw(iix)
+                if(k>=KCHEMTOP+1) x1=x1+zzfl1(k)*xn_2d(ix,k-1)*lf_src(isrc)%mw(iix)
+                if(k>=KCHEMTOP) x2=x2+zzfl2(k)*xn_2d(ix,k)*lf_src(isrc)%mw(iix)
+                x3=x3+zzfl3(k)*xn_2d(ix,k+1)*lf_src(isrc)%mw(iix)
+             end do
+             !normally x1+x2+x3=x/dhs1i(k+1). The exception is when flux limitations are in effect; in such cases we assume all flux is dependent on upwind cell only
+             if(1e-3<abs(x1+x2+x3-x)/(abs(x)+1e-20)) then
+                x1=0
+                x2=x
+                x3=0
+             end if
+
+             !into k+1 (first time, initialize)
+             do n = lf_src(isrc)%start, lf_src(isrc)%end
+                lf(n,i,j,k+1) =x1*loc_frac_src(n,k-1)+x2*loc_frac_src(n,k)+x3*loc_frac_src(n,k+1)
+             enddo
+
+             xn_post=xn+(fk1-(x1+x2+x3))*dhs1i(k+1)
+             fk1=(x1+x2+x3)
+             if (k>KMAX_MID-lf_Nvert) then
+                !out of k (already initialized. Divide by final concentration)
+                if (xn_post>1e-20) then
+                   do n = lf_src(isrc)%start, lf_src(isrc)%end
+                      lf(n,i,j,k) =(xn*loc_frac_src(n,k)+(lf(n,i,j,k)-(x1*loc_frac_src(n,k-1)+x2*loc_frac_src(n,k)+x3*loc_frac_src(n,k+1)))*dhs1i(k+1))/xn_post
+                      lf(n,i,j,k) =max(-lfmax,min(lfmax,lf(n,i,j,k)))
+                   enddo
+                else
+                   !if there are no concentration, we set the fractions to zero
+                   do n = lf_src(isrc)%start, lf_src(isrc)%end
+                      lf(n,i,j,k) = 0.0
+                   enddo
+                end if
+            end if
+          end if
+
+          if(k==KMAX_MID-1)then
+             !we won't come back to treat KMAX_MID. Need to divid by xn_post(k+1) now
+             xn=0.0
+             do iix=1,lf_src(isrc)%Nsplit
+                ix=lf_src(isrc)%ix(iix)
+                xn=xn+xn_2d(ix,k+1)*lf_src(isrc)%mw(iix) !xn_2d are the  unupdated values
+             end do
+             xn_post=xn+fk1*dhs1i(k+2)
+             if (xn_post>1e-20) then
+                do n = lf_src(isrc)%start, lf_src(isrc)%end
+                   lf(n,i,j,k+1) =(xn*loc_frac_src(n,k+1)+lf(n,i,j,k+1)*dhs1i(k+2))/xn_post
+                   lf(n,i,j,k+1) =max(-lfmax,min(lfmax,lf(n,i,j,k+1)))
+                enddo
+             else
+                !if there are no concentration, we set the fractions to zero
+                do n = lf_src(isrc)%start, lf_src(isrc)%end
+                   lf(n,i,j,k+1) = 0.0
+                enddo
+             end if
+          endif
+
+       end do
     end do
 
     if(DEBUGall .and. me==0)write(*,*)'end adv_k_2nd'

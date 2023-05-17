@@ -1132,7 +1132,7 @@
     if (USES%LocalFractions) then
        !save xn values before vertical advection
        !TODO: integrate to other loops?
-       do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+       do k = max(KMAX_MID-lf_Nvert-1,KCHEMTOP),KMAX_MID
           do n = 1, NSPEC_ADV !NB: no shl included, (not same as in Setup_1d)
              xn_2d(n,k)=xn_adv(n,(k-1)*LIMAX*LJMAX)
           end do
@@ -1209,7 +1209,7 @@
               +ps3d( k1   *LIMAX*LJMAX)*zzfl2       &
               +ps3d((k1+1)*LIMAX*LJMAX)*zzfl3)
         !note that here fluxk is always >=0 (signs and consistency taken care of below)
-    end do
+   end do
       if(fc(KMAX_MID-1).lt.0.)then
 
         fc1 = fc(KMAX_MID-1)
@@ -1228,9 +1228,7 @@
         fluxps(KMAX_MID) =                                           &
             max(0.,ps3d((KMAX_MID-2)*LIMAX*LJMAX)*zzfl1        &
                   +ps3d((KMAX_MID-1)*LIMAX*LJMAX)*zzfl2)
-
     end if
-
     k=1
     do while(k.lt.KMAX_MID)
       if(fc(k).lt.0.) then
@@ -1240,6 +1238,7 @@
           !Normally totk = 1, except when this would completely empty the cell
           fluxk(:,k+1) = -fluxk(:,k+1)*totk(:)
           fluxk(:,k+2) =  fluxk(:,k+2)*totk(:)
+
           xn_adv(:,(k-1)*LIMAX*LJMAX) =                         &
                  max(0.,xn_adv(:,(k-1)*LIMAX*LJMAX)             &
                       -(fluxk(:,k+1) - fluxk(:,k))*dhs1i(k+1))
@@ -1249,7 +1248,7 @@
 
           totps = min(ps3d(k*LIMAX*LJMAX)*dhs1(k+2)             &
                     /(fluxps(k+1) + fluxps(k+2)+ EPSIL),1.)
-          fluxps(k+1) = -fluxps(k+1)*totps
+           fluxps(k+1) = -fluxps(k+1)*totps
           fluxps(k+2) =  fluxps(k+2)*totps
           ps3d((k-1)*LIMAX*LJMAX) =                             &
                max(0.,ps3d((k-1)*LIMAX*LJMAX)                   &
@@ -3506,7 +3505,7 @@ end if
     if (USES%LocalFractions) then
        !save xn values before vertical advection
        !TODO: integrate to other loops?
-       do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+       do k = max(KMAX_MID-lf_Nvert-1,KCHEMTOP),KMAX_MID
           do n = 1, NSPEC_ADV !NB: no shl included, (not same as in Setup_1d)
              xn_2d(n,k)=xn_adv(n,(k-1)*LIMAX*LJMAX)
           end do
