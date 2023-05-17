@@ -16,7 +16,6 @@ program emep_Main
   use Advection_mod,     only: vgrid_Eta, assign_nmax, assign_dtadvec
   use Aqueous_mod,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_mod,       only: lightning
-  use BiDir_emep,        only : Init_BiDir  !  FUTURE
   use Biogenics_mod,     only: Init_BVOC, SetDailyBVOC
   use BoundaryConditions_mod, only: BoundaryConditions
   use CheckStop_mod,     only: CheckStop
@@ -213,8 +212,6 @@ program emep_Main
   call Init_Derived()        ! Derived field defs.
 
   call Init_BVOC()
-
-  call Init_BiDir()           ! BIDIR FUTURE 
 
   call tabulate()             ! sets up tab_esat, etc.
 

@@ -6,6 +6,7 @@ module Config_module
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
 use AeroConstants_mod,     only: AERO
+use BiDir_module,          only: BiDir
 use CheckStop_mod,         only: CheckStop
 use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
@@ -224,17 +225,10 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
-! In development
-  !< FUTURE Bi-directional exchange
-   logical :: BIDIR           = .false.
-   logical :: BiDirEuroXwater = .false. 
-   logical :: BiDirOrigXwater = .false. 
-   logical :: BIDIRrivm   = .false.  !< MARKER of potential RIVM changes
-   character(len=20) :: BiDirMethod = 'NOTSET'  ! FUTURE
-  !< END FUTURE Bi-directional exchange
-   character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
-   ! Can be 'Total', 'NoFert', or 'OLD_EURO' (latter to get ACP2012 system)
-   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
+  character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
+ ! Can be 'Total', 'NoFert', or 'OLD_EURO' (latter to get ACP2012 system)
+  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
+  logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
 type(emep_useconfig), public, save :: USES
@@ -818,8 +812,6 @@ character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt2
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014_month.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
-character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
-character(len=TXTLEN_FILE), target, save, public :: BiDirInputDir  = 'NOTSET' ! FUTURE
 character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
@@ -847,6 +839,7 @@ subroutine Config_Constants(iolog)
    ,END_OF_EMEPDAY &
    ,USES   & !
    ,AERO   & ! for aerosol equilibrium scheme
+   ,BiDir    & !
    ,PBL    & !
    ,EmBio  & !
    ,YieldModifications &  ! Allows dynamic change of chemical yields
@@ -922,8 +915,6 @@ subroutine Config_Constants(iolog)
    ,cloudjx_strat&
    ,NdepFile&
    ,lightningFile&
-   ,BiDirInputFile&
-   ,BiDirInputDir&
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
@@ -1087,7 +1078,6 @@ subroutine Config_Constants(iolog)
   call associate_File(cloudjx_strat)
   call associate_File(NdepFile)
   call associate_File(lightningFile)
-  call associate_File(BiDirInputFile)  ! FUTURE INPUT
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
