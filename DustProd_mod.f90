@@ -307,9 +307,10 @@
      maybeDusty = .false.
      desertFlag = 1.0      ! change
    end where
-   if ( dbg ) write(*,'(a,L2,2es12.3)') dtxt//'60N:', maybeDusty(i,j), tmpArray(i,j), desertFlag(i,j)
 
-   call printCDF(desertLabel, desertFlag(:,:),'num')
+   if ( dbg ) write(*,'(a,L2,2es12.3)') dtxt//'60N:', maybeDusty(i,j),&
+            tmpArray(i,j), desertFlag(i,j)
+   if(DEBUG%DUST)   call printCDF(desertLabel, desertFlag(:,:),'num')
      
 
   end subroutine init_dust

@@ -61,6 +61,8 @@ Prepping BiDir followi9ng NMR meeting.
   emep_Main.f90     - removed call to BiDir_Init
 
 
+Dust_mod: need DEBUG%DUST to call printCDF for deserts
+
 Volcano stuff:
   config_emep.nml - switched to Heiko's new format file.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
