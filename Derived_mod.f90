@@ -24,6 +24,8 @@ use AeroFunctions_mod, only: LogNormFracBelow !=> Frac Mass below Dp
 use AOD_PM_mod,        only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use AOTx_mod,          only: Calc_GridAOTx
+use BiDir_module,     only : Bidir_2d
+use BiDir_emep,       only : Bidir_Derived
 use Biogenics_mod,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_mod,     only: CheckStop, StopAll
 use Chemfields_mod,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
@@ -364,6 +366,22 @@ if( dbgP ) write(*,*) 'DBGUREF', u_ref(debug_li,debug_lj)
 
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  'YM' )
+!BIDIR
+!AddNewDeriv( 		name,	class,	subclass,	txt,	unit,&
+!			ind,	f2d,	dt_scale,	scale, 	avg,	iotype,	Is3D)
+  call AddNewDeriv( "ugXTOT ","ugXTOT",  "-","-",   "ug/m3", &
+               -99,  -99,  F,  1.0,  T,   'YMD' )
+  call AddNewDeriv( "ugNH3_3m ","ugNH3_3m",  "-","-",   "ug/m3", &
+               -99,  -99,  F,  1.0,  T,   'YMD' )
+  call AddNewDeriv( "ugXH3_3m ","ugXH3_3m",  "-","-",   "ug/m3", &
+               -99,  -99,  F,  1.0,  T,   'YMD' )
+!!Hazelhos, autumn 2019: Added BiDir_NHx_Emissions
+!DS see Emis_BioNatNH3
+!  call AddNewDeriv( "BiDir_NHx_Emissions ", "USET", "-", &
+!      "NH3 emissions BiDir", "ugN/m2/h", &
+!               -99,  -99,  F,   1.0, T, 'YMDI' )
+!END BIDIR
+
 
   if ( USES%TLEAF_FROM_HD )  &
     call AddNewDeriv( "dTleafHd","dTleafHd",  "-","-",   "deg. C", &
@@ -891,7 +909,7 @@ Is3D = .true.
       iou_list(iou)=(index(f_3d(i)%iotype,IOU_KEY(iou))>0)
     end do
   end do
-  
+
   VGtest_out_ix = 0
   if(allocated(f_2d)) &
        VGtest_out_ix = find_index("VgRatio", f_2d(:)%subclass)
@@ -978,7 +996,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
-  integer :: wlen,ispc,kmax,iem
+  integer :: wlen,ispc,kmax,iem, nerr=0
   integer :: isec_poll,isec,iisec,ii,ipoll,itemp
   real :: default_frac,tot_frac,loc_frac_corr
   character(len=*), parameter :: dtxt='Deriv:'
@@ -1190,6 +1208,15 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = t2_nwp(i,j,1) - 273.15
       end forall
+!BIDIR
+     case( "ugXTOT", "ugNH3_3m", "ugXH3_3m") !, "BiDir_NHx_Emissions" )
+      if ( USES%BIDIR ) then
+       call BiDir_Derived(class,n,limax,ljmax,nerr)
+       if (debug_proc) call write_debug(n,ind, class )
+       call CheckStop(nerr>0,'BIDIR ERROR'//trim(class) )
+      end if
+!END BIDIR
+
     case ( "dTleafHd" )
       if ( USES%TLEAF_FROM_HD ) then
         forall ( i=1:limax, j=1:ljmax )

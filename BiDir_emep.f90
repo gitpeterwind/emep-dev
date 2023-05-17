@@ -9,6 +9,7 @@ module BiDir_emep
   public :: BiDir_ijRGs
   public :: BiDir_ijFluxes
   public :: BiDir_ijFinish 
+  public :: BiDir_Derived
 
 contains
  subroutine BiDir_ijInit(i,j,NH3_ix)
@@ -28,5 +29,10 @@ contains
     real, intent(inout) :: gradfac
     real, intent(in)    :: sumLand, DepLoss
  end subroutine BiDir_ijFinish
+ subroutine BiDir_Derived(txt,n,limax,ljmax,nerr)
+    character(len=*), intent(in) :: txt
+    integer, intent(in) :: n,limax,ljmax
+    integer, intent(inout) :: nerr
+ end subroutine BiDir_Derived
 
 end module BiDir_emep
