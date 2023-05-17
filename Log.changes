@@ -60,6 +60,10 @@ Prepping BiDir followi9ng NMR meeting.
   SubMet_mod.f90    - use of BiDir%skipForestDisp 
   emep_Main.f90     - removed call to BiDir_Init
 
+ with in-progress files (NOT to be re-distributed) put here:
+  FUTURE_BiDir_emep.f90
+  FUTURE_BiDir_module.f90
+
 
 Dust_mod: need DEBUG%DUST to call printCDF for deserts
 
