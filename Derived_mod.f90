@@ -24,7 +24,7 @@ use AeroFunctions_mod, only: LogNormFracBelow !=> Frac Mass below Dp
 use AOD_PM_mod,        only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use AOTx_mod,          only: Calc_GridAOTx
-use BiDir_module,     only : Bidir_2d
+!PW: removed use BiDir_module,     only : Bidir_2d
 use BiDir_emep,       only : Bidir_Derived
 use Biogenics_mod,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_mod,     only: CheckStop, StopAll

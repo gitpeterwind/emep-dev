@@ -44,9 +44,10 @@ use MetFields_mod,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen
 use My_Timing_mod,     only: NTIMING, Code_timer, Add_2timing, &
                              tim_before, tim_before0, tim_after
-use NetCDF_mod,        only: ReadField_CDF,Real4
+use NetCDF_mod,        only: ReadField_CDF,Real4,ReadTimeCDF
 use Nest_mod,          only: readxn, wrtxn
 use OutputChem_mod,    only: WrtChem
+use OwnDataTypes_mod, only: TXTLEN_FILE
 use Par_mod,           only: me, LIMAX, LJMAX
 use PhysicalConstants_mod, only : ATWAIR 
 use Pollen_mod,        only: pollen_dump,pollen_read
@@ -57,11 +58,13 @@ use Radiation_mod,     only: SolarSetup,       &! sets up radn params
                             CloudAtten         !
 use Runchem_mod,       only: runchem   ! Calls setup subs and runs chemistry
 use Sites_mod,         only: siteswrt_surf, siteswrt_sondes    ! outputs
+  use SmallUtils_mod,  only: key2str
 use SoilWater_mod,     only: Set_SoilWater
 use TimeDate_mod,      only: date,daynumber,day_of_year, add_secs, &
                             current_date, timestamp,  &
                             make_timestamp, make_current_date
-use TimeDate_ExtraUtil_mod,only : date2string
+use TimeDate_ExtraUtil_mod,only : date2string, date2nctime, nctime2date, &
+                                  date_is_reached
 use Timefactors_mod,   only: NewDayFactors
 use Trajectory_mod,    only: trajectory_out     ! 'Aircraft'-type  outputs
 
@@ -77,11 +80,15 @@ contains
 subroutine phyche()
 
   logical, save :: End_of_Day = .false.
-  integer :: ndays,status,nstart,kstart
+  integer :: ndays,status,kstart
   real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
   character(len=*), parameter :: dtxt='phyche:'
+  integer, save :: O3record = -1 !initialize to show not set
+  real :: time_wanted, TimesInDays(1)
+  integer,save  :: O3_end_date(5) = (/0,0,0,0,0/)
+  character(len=TXTLEN_FILE), save :: fileName_O3_Top_current
 
 
   !------------------------------------------------------------------
@@ -109,16 +116,39 @@ subroutine phyche()
   end if
 
   if(trim(fileName_O3_Top)/="NOTSET" .and.&
-       mod(current_date%hour,3)==0.and.current_date%seconds==0)then
+       date_is_reached(O3_end_date))then
+     !read in new O3 top data
+     if(first_call .or. &
+        (current_date%hour<=3.and.current_date%day==1.and.current_date%month==1))then
+        !we redefine the file to be read and where to start
+        !should account for:
+        !   a) the first record (time 0:0 first of January) may be missing
+        !   b) we may start a new year after 31 Dec midnight 
+        fileName_O3_Top_current = key2str(fileName_O3_Top,'YYYY',current_date%year)
+        if(MasterProc)then
+           write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
+           write(*,*)trim(fileName_O3_Top_current)
+        end if
+        !read dates from files to find where to start
+        call date2nctime(current_date,time_wanted) !converts into real, number of days since 1900
+        O3record = 1 ! on input, means find one date only
+        !will find first date after or equal to current date
+        call ReadTimeCDF(trim(fileName_O3_Top_current),TimesInDays,O3record,time_wanted)
+        call nctime2date(O3_end_date, TimesInDays(1) + 3.0/24.0/2) !assumes 3-hourly values, instantaneous
+     else
+        O3record = O3record + 1 !next record
+        O3_end_date(4) = O3_end_date(4) + 3 !We assume 3-hourly values (ok if > 24!)
+     end if
+     
+     if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'Updating top O3 with record ',&
+          O3record,", file ",trim(fileName_O3_Top_current)
+     if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'valid until time ',O3_end_date(1),O3_end_date(2),O3_end_date(3),O3_end_date(4),O3_end_date(5)
+
      kstart=3!NB: must be the level corresponding to model top! Hardcoded for now
-     if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'UPDATING TOP O3 with ',trim(fileName_O3_Top)
-     !first available day is 2nd January for 2008,2009,2011,2012:
-     nstart=max(1,8*(daynumber-2)+current_date%hour/3)
-     !first available day is 2nd January for 2010:
-     if(current_date%year==2010)nstart=max(1,8*(daynumber-1)+current_date%hour/3)
-     call  ReadField_CDF(trim(fileName_O3_Top),'O3',xn_adv(O3_ix-NSPEC_SHL,:,:,1),&
-          nstart=nstart,kstart=kstart,kend=kstart,&
-          interpol='zero_order',debug_flag=.false.)     
+     call  ReadField_CDF(trim(fileName_O3_Top_current),'O3',xn_adv(O3_ix-NSPEC_SHL,:,:,1),&
+          nstart=O3record,kstart=kstart,kend=kstart,&
+          interpol='zero_order',debug_flag=.false.)
+   
   endif
 
   call Code_timer(tim_before)

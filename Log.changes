@@ -49,6 +49,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 May 2023, Peter
+
+Proper handling of dates for O3_Top.
+The intervall between records is assumed to be 3 hours, instantaneous values.
+Will updates at time close to the middle of two time stamps.
+Accept missing first record, or passing to a new year.
+The vertical level is still hardcoded.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16-17 May 2023, Dave
 
 Prepping BiDir followi9ng NMR meeting.

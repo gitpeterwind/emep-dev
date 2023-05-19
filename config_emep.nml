@@ -123,7 +123,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
   USES%testname         = 'EMEPSTD',
 !------------------------------
 ! Under consideration:
-!  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012 and 2015-2017
+!  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012 and 2015-2017
 !  fileName_CH4_ibcs   = 'DataDir/BoundaryConditions/ch4_fromRCP85.txt'  ! Uses CH4 from RCP for iyr_trend
 !------------------------------ 
   USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc

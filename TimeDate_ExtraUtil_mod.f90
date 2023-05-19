@@ -460,7 +460,7 @@ subroutine secs1970_to_int(id,nsecs,msg)
 end subroutine secs1970_to_int
 
 subroutine days1900_to_ts(ts,ndays,msg)
-!calculate date from seconds that have passed since the start of the year 1900
+!calculate date from days that have passed since the start of the year 1900
   type(timestamp), intent(out)            :: ts
   real(kind=8), intent(in)                :: ndays
   character(len=*), intent(in), optional  :: msg
