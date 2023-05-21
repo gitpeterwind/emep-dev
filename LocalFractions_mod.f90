@@ -104,6 +104,10 @@ real, public, allocatable, dimension(:,:,:), save :: &
   loc_frac_drydep  ! ddepositions per source (not fractions!)
 real, public, allocatable, dimension(:,:,:), save :: &
   loc_frac_wetdep  ! wdepositions per source (not fractions!)
+real, public, allocatable, dimension(:,:,:,:), save :: D8M !
+real, public, allocatable, dimension(:,:,:), save :: D8Max !
+real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av !
+real, public, allocatable, dimension(:,:,:), save :: hourM !
 real, public, allocatable, dimension(:,:,:,:), save :: &
   loc_frac_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
 real, public, allocatable, dimension(:,:), save :: &
@@ -129,7 +133,7 @@ integer, public, save :: Nsources=0, Nsources_nonew=0
 integer, public, save :: lf_Nvert=0
 
 integer, public, save :: LF_SRC_TOTSIZE
-integer, public, save :: iotyp2ix(IOU_MAX_MAX)
+integer, public, save :: iotyp2ix(IOU_MAX_MAX),ix2iotyp(IOU_MAX_MAX)
 integer, public, save :: av_fac(IOU_MAX_MAX)
 integer, public, save :: Niou_ix = 0 ! number of time periods to consider (hourly, monthly, full ...)
 integer, private, save :: iou_ix_inst = -2 !set if hourly-instantaneous are requested
@@ -283,6 +287,7 @@ contains
            lf_src(Nsources)%iem_lf = iem_lf_nox
            lf_src(Nsources)%make_fracsum = lf_src(isrc)%make_fracsum
            !lf_src(Nsources)%ix(1) = i set later also
+           if (lf_src(Nsources)%species =='O3') isrc_O3 = Nsources
            if (lf_src(Nsources)%species =='NO2') isrc_NO2 = Nsources
            if (lf_src(Nsources)%species =='NH4_f') isrc_NH4 = Nsources
            if (lf_src(Nsources)%species =='NH3') isrc_NH3 = Nsources
@@ -656,10 +661,6 @@ contains
      end if
   end do
 
-  if (isrc_O3>0 .and. (isrc_NO2<0 .or. isrc_NO<0)) then
-     if(me==0)write(*,*)'WARNING: O3 tracking requires NO2 and NO'
-     stop!may be relaxed in future
-  end if
   if (isrc_SO2>0 .and. (isrc_SO4<0)) then
      if(me==0)write(*,*)'WARNING: SO2 tracking requires SO4'
      stop!may be relaxed in future
@@ -719,23 +720,28 @@ contains
   if(lf_src(isrc)%HOUR)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_HOUR)=Niou_ix
+     iotyp2ix(Niou_ix)=IOU_HOUR
   endif
   if(lf_src(isrc)%HOUR_INST)then
      Niou_ix = Niou_ix + 1
      iou_ix_inst = Niou_ix !should not be accumulated
      iotyp2ix(IOU_HOUR_inst) = Niou_ix
+     iotyp2ix(Niou_ix)=IOU_HOUR_inst
   endif
   if(lf_src(isrc)%DAY)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_DAY)=Niou_ix
+     iotyp2ix(Niou_ix)=IOU_DAY
   endif
   if(lf_src(isrc)%MONTH)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_MON)=Niou_ix
+     iotyp2ix(Niou_ix)=IOU_MON
   endif
   if(lf_src(isrc)%YEAR)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_YEAR)=Niou_ix
+     iotyp2ix(Niou_ix)=IOU_YEAR
   endif
 
   if(isrc_NH4>0)then
@@ -791,6 +797,22 @@ contains
   allocate(nic(LIMAX,LJMAX))
   nic = 0
   allocate(ic2iland(LIMAX,LJMAX,NCMAX))
+
+  if (lf_src(1)%MDA8) then! maximum daily eight-hour mean concentration  
+    !we need one array to save the last 8 hourly concentrations, and one to make
+    !the average over the last hour
+    !index 0 is for the pure O3, and the other indices are for the sensibilities
+    allocate(D8M(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX,8)) ! running last 8 hour values
+    allocate(D8Max(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
+    allocate(D8Max_av(LIMAX,LJMAX,0:lf_src(isrc_O3)%Npos,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(hourM(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX)) ! hour Mean
+    
+    hourM = 0.0
+    D8Max = 0.0 !init with low value
+    D8M = 0.0 !init with low value
+    D8Max_av = 0.0 !init necessary
+   end if
+
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
   if(DEBUGall .and. me==0)write(*,*)'end init'
@@ -1051,6 +1073,19 @@ subroutine lf_out(iotyp)
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                  endif
+                 if(lf_src(1)%MDA8 .and. lf_src(isrc)%species=='O3'.and.EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox')then
+                      write(def2%name,"(A)")"MDA8_"//trim(def2%name)
+                      call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
+                      if(n1==1)then
+                         !also save Base MDA8
+                         def2%name="MDA8"
+                         call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
+                      end if
+                 end if
               enddo
            enddo
         else
@@ -1141,10 +1176,14 @@ end subroutine lf_out
 subroutine lf_av(dt,End_of_Day)
   real, intent(in)    :: dt                   ! time-step used in integrations
   logical, intent(in) :: End_of_Day           ! e.g. 6am for EMEP sites
-  real :: xtot, x
-  integer ::i,j,k,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
+  real :: xtot, x, O3_c
+  integer ::i,j,k,ii,l,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
   integer ::isec_poll
   logical :: pollwritten(Max_lf_spec)
+  integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
+  real :: w_m, w_y, timefrac
+  logical, save :: first_call=.true.
+
   if(DEBUGall .and. me==0)write(*,*)'start av'
 
   call Code_timer(tim_before)
@@ -1240,11 +1279,92 @@ subroutine lf_av(dt,End_of_Day)
            enddo
         end if
         pollwritten(ipoll) = .true.
-     enddo
-  enddo
+
+     end do
+        
+     if (lf_src(1)%MDA8) then! maximum daily eight-hour mean concentration
+        
+        if (iou_ix == 1) then !only once for (daily, monthly and yearly)
+           do j = 1,ljmax
+              do i = 1,limax
+                 ix=O3_ix-NSPEC_SHL
+                 O3_c = xn_adv(ix,i,j,KMAX_MID) * cfac(ix,i,j) * roa(i,j,KMAX_MID,1) * 1.0e9 * species_adv(ix)%molwt/ATWAIR
+                 hourM(0,i,j) = hourM(0,i,j) + O3_c
+                 !how much the hourly values will change for a small change of emissions * 100% (summed over hour, normalize later)
+                 do n=1, lf_src(isrc_O3)%Npos
+                    hourM(n,i,j) = hourM(n,i,j) + O3_c * lf(lf_src(isrc_O3)%start+n-1,i,j,KMAX_MID)
+                 end do
+              end do
+           end do
+           if (current_date%seconds == 0 .and. .not. first_call) then
+              !one hour has past since last time here        
+              !save last hour average
+              ii = mod(current_date%hour,8) + 1 !note: this works only because 24 is a multiple of 8!
+              timefrac = dt_advec/3600.0 ! inverse of number of timesteps in an hour
+              D8M(:,:,:,ii) =  hourM(:,:,:) * timefrac !save all hourly averages
+              hourM(:,:,:) = 0.0
+              !one hour has past since last time here        
+              ! update max value since 01:00
+              do j = 1,ljmax
+                 do i = 1,limax
+                    x = 0.0
+                    do l = 1, 8
+                       x = x + D8M(0,i,j,l) * 0.125 ! 8 hour average
+                    end do
+                    if(x > D8Max(0,i,j)) then
+                       !a new max is found. Update for all fractions too
+                       do n=0, lf_src(isrc_O3)%Npos
+                          D8Max(n,i,j) = D8M(n,i,j,1) * 0.125 ! 8 hour average, contribution from first hour
+                       end do
+                       do l = 2, 8
+                          do n=0, lf_src(isrc_O3)%Npos
+                             D8Max(n,i,j) = D8Max(n,i,j) + D8M(n,i,j,l) * 0.125 ! 8 hour average, contribution from second to eighth hour
+                          end do
+                       end do
+                    end if
+                 end do
+              end do
+           end if
+        end if
+        if (current_date%seconds == 0 .and. current_date%hour == 0 .and. .not. first_call) then
+           !end of day, save the values
+           if (current_date%day == 1 .and. iotyp2ix(iou_ix)==IOU_MON) then
+              !new month
+              count_AvgMDA8_m = 0
+              D8Max_av(:,:,:,iou_ix)=0.0
+           end if
+           count_AvgMDA8_m = count_AvgMDA8_m + 1
+           count_AvgMDA8_y = count_AvgMDA8_y + 1
+           w_m = 1.0/count_AvgMDA8_m
+           w_y = 1.0/count_AvgMDA8_y
+           do j = 1,ljmax
+              do i = 1,limax
+                 if (iotyp2ix(iou_ix)==IOU_DAY)then
+                    do n=0, lf_src(isrc_O3)%Npos
+                       D8Max_av(i,j,n,iou_ix) =  D8Max(n,i,j)
+                    end do
+                 else if(iotyp2ix(iou_ix)==IOU_MON)then
+                    do n=0, lf_src(isrc_O3)%Npos
+                       D8Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av(i,j,n,iou_ix) + w_m * D8Max(n,i,j)
+                    end do
+                 else if (iotyp2ix(iou_ix)==IOU_YEAR)then
+                    !we keep only days from April to September
+                    if(current_date%month>=4 .and. current_date%month<=9)then
+                       do n=0, lf_src(isrc_O3)%Npos
+                          D8Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av(i,j,n,iou_ix) + w_y * D8Max(n,i,j)
+                       end do
+                    end if
+                 end if
+              end do
+           end do
+           if(iou_ix == Niou_ix) D8Max = 0.0 !we are ready to start a new day
+        end if
+     end if
+  end do
 
   av_fac=av_fac+1
-
+  first_call=.false.
+  
   call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: averaging")
   if(DEBUGall .and. me==0)write(*,*)'end av'
 

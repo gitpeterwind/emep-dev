@@ -342,6 +342,7 @@ type, public :: lf_sources
   integer :: country_ix = -1 !Internal country index. Does not have any meaning outside of code
   logical :: DryDep = .false. ! if drydep is to be outputed
   logical :: WetDep = .false. ! if wetdep is to be outputed
+  logical :: MDA8 = .false. ! if MDA8 is to be outputed
   logical     :: YEAR =.true.! Output frequency
   logical     :: MONTH =.false.
   logical     :: make_fracsum =.false.

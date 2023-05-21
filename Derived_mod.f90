@@ -1802,7 +1802,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         end do
       end do
 
-      if (current_date%seconds == 0) then
+      if (current_date%seconds == 0 .and. .not. first_call) then
         !one hour has past since last time here        
         !save last hour average
         ii = mod(current_date%hour,8) + 1 !note: this works only because 24 is a multiple of 8!
@@ -1895,7 +1895,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             end do
 
           else if (class=="AvgMDA8") then
-            if (current_date%day == 1) count_AvgMDA8_m = 1 
+            if (current_date%day == 1) count_AvgMDA8_m = 0
             count_AvgMDA8_m = count_AvgMDA8_m + 1
             count_AvgMDA8_y = count_AvgMDA8_y + 1
             w_m = 1.0/count_AvgMDA8_m
@@ -1911,7 +1911,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             end do
 
           else if ( class=="AvgMDA8AprSep" ) then
-            if (current_date%day == 1) count_AvgMDA8AprSep_m = 1 
+            if (current_date%day == 1) count_AvgMDA8AprSep_m = 0 
             count_AvgMDA8AprSep_m = count_AvgMDA8AprSep_m + 1!for monthes we output all anyway!
             if(current_date%month>=4 .and. current_date%month<=9)count_AvgMDA8AprSep_y = count_AvgMDA8AprSep_y + 1
             w_m = 1.0/count_AvgMDA8AprSep_m
