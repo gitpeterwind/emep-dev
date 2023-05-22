@@ -147,7 +147,7 @@ logical, public, save :: wetdep_lf(NSPEC_ADV) = .false.
 
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
-integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
+integer, private, save :: isrc_O3=-1, isrc_O3_voc=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH4=-1, isrc_NH3=-1
 integer, private, save :: isrc_NO3=-1, isrc_HNO3=-1
 integer, private, save :: isrc_pm25_new=-1, isrc_pm25=-1
@@ -304,6 +304,7 @@ contains
            lf_src(Nsources)%iem_deriv = iem_deriv
            lf_src(Nsources)%iem_lf = iem_lf_voc
            lf_src(Nsources)%make_fracsum = lf_src(isrc)%make_fracsum
+           if (lf_src(Nsources)%species =='O3') isrc_O3_voc = Nsources
            !lf_src(Nsources)%ix(1) = i set later also
         end do
 
@@ -661,6 +662,7 @@ contains
      end if
   end do
 
+
   if (isrc_SO2>0 .and. (isrc_SO4<0)) then
      if(me==0)write(*,*)'WARNING: SO2 tracking requires SO4'
      stop!may be relaxed in future
@@ -802,10 +804,10 @@ contains
     !we need one array to save the last 8 hourly concentrations, and one to make
     !the average over the last hour
     !index 0 is for the pure O3, and the other indices are for the sensibilities
-    allocate(D8M(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX,8)) ! running last 8 hour values
-    allocate(D8Max(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
-    allocate(D8Max_av(LIMAX,LJMAX,0:lf_src(isrc_O3)%Npos,Niou_ix)) ! max value of the 8 hour mean since 00:00
-    allocate(hourM(0:lf_src(isrc_O3)%Npos,LIMAX,LJMAX)) ! hour Mean
+    allocate(D8M(0:lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos,LIMAX,LJMAX,8)) ! running last 8 hour values
+    allocate(D8Max(0:lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
+    allocate(D8Max_av(LIMAX,LJMAX,0:lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(hourM(0:lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos,LIMAX,LJMAX)) ! hour Mean
     
     hourM = 0.0
     D8Max = 0.0 !init with low value
@@ -1073,12 +1075,18 @@ subroutine lf_out(iotyp)
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                  endif
-                 if(lf_src(1)%MDA8 .and. lf_src(isrc)%species=='O3'.and.EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox')then
-                      write(def2%name,"(A)")"MDA8_"//trim(def2%name)
+                 if(lf_src(1)%MDA8 .and. lf_src(isrc)%species=='O3')then
+                    write(def2%name,"(A)")"MDA8_"//trim(def2%name)
+                    if(isrc==isrc_O3)then
                       call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                           fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    else
+                      !voc reduction
+                      call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,lf_src(isrc_O3)%Npos+n1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    endif
 
-                      if(n1==1)then
+                      if(n1==1 .and. isrc==isrc_O3)then
                          !also save Base MDA8
                          def2%name="MDA8"
                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
@@ -1294,6 +1302,9 @@ subroutine lf_av(dt,End_of_Day)
                  do n=1, lf_src(isrc_O3)%Npos
                     hourM(n,i,j) = hourM(n,i,j) + O3_c * lf(lf_src(isrc_O3)%start+n-1,i,j,KMAX_MID)
                  end do
+                 do n=1, lf_src(isrc_O3_voc)%Npos
+                    hourM(lf_src(isrc_O3)%Npos+n,i,j) = hourM(lf_src(isrc_O3)%Npos+n,i,j) + O3_c * lf(lf_src(isrc_O3_voc)%start+n-1,i,j,KMAX_MID)
+                 end do
               end do
            end do
            if (current_date%seconds == 0 .and. .not. first_call) then
@@ -1313,11 +1324,11 @@ subroutine lf_av(dt,End_of_Day)
                     end do
                     if(x > D8Max(0,i,j)) then
                        !a new max is found. Update for all fractions too
-                       do n=0, lf_src(isrc_O3)%Npos
+                       do n=0, lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos
                           D8Max(n,i,j) = D8M(n,i,j,1) * 0.125 ! 8 hour average, contribution from first hour
                        end do
                        do l = 2, 8
-                          do n=0, lf_src(isrc_O3)%Npos
+                          do n=0, lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos
                              D8Max(n,i,j) = D8Max(n,i,j) + D8M(n,i,j,l) * 0.125 ! 8 hour average, contribution from second to eighth hour
                           end do
                        end do
@@ -1340,17 +1351,17 @@ subroutine lf_av(dt,End_of_Day)
            do j = 1,ljmax
               do i = 1,limax
                  if (iotyp2ix(iou_ix)==IOU_DAY)then
-                    do n=0, lf_src(isrc_O3)%Npos
+                    do n=0, lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos
                        D8Max_av(i,j,n,iou_ix) =  D8Max(n,i,j)
                     end do
                  else if(iotyp2ix(iou_ix)==IOU_MON)then
-                    do n=0, lf_src(isrc_O3)%Npos
+                    do n=0, lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos
                        D8Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av(i,j,n,iou_ix) + w_m * D8Max(n,i,j)
                     end do
                  else if (iotyp2ix(iou_ix)==IOU_YEAR)then
                     !we keep only days from April to September
                     if(current_date%month>=4 .and. current_date%month<=9)then
-                       do n=0, lf_src(isrc_O3)%Npos
+                       do n=0, lf_src(isrc_O3)%Npos+lf_src(isrc_O3_voc)%Npos
                           D8Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av(i,j,n,iou_ix) + w_y * D8Max(n,i,j)
                        end do
                     end if
