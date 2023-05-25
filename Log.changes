@@ -49,6 +49,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 May 2023, Willem
+
+When ISORROPIA-Lite is used for fine-mode thermodynamics, this now runs with 
+internally mixed sea-salt assumption as well as base cations from dust as default. 
+These assumptions can be turned off by specifying AERO%CATIONS and 
+AERO%INTERALMIXED in config_emep.nml.
+
+SAFELOG10 function is now used in the aerosol pH calculations from ISORROPIA,
+avoiding any possible NaN and infinities, as well as dealing with any possible 
+negative H+ concentrations. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 May 2023, Peter
 
 Proper handling of dates for O3_Top.
