@@ -49,6 +49,28 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May 2023, Dave
+
+PARTIALLY UPDATE - STILL IN PROGRESS
+
+AeroConstants - defaults to Isorropia
+
+Config_module -defaults to:
+ CLOUDJ           = .true. + same for CLOUDJAEROSOL, HRLYCLOUDJ, CLOUDICE,CLIMSTRATO3
+ (+CLEARSKYTAB = F)
+ HmixMethod = "NWP" 
+ FFireDispMethod = "PBL"
+ soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
+ LandInputs%desert changed to DataDir/Olson_2001_DEforEmep.nc
+   
+Met_mod - check if USES%FFireDispMethod and PBL%HmixMethod are consistent
+
+config_emep.nml:
+   PARTIALLY CHANGED. To be continued
+  e.g.
+   FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_YYYY.nc',
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 May 2023, Willem
 
 When ISORROPIA-Lite is used for fine-mode thermodynamics, this now runs with 

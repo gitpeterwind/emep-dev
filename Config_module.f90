@@ -70,7 +70,8 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     !   keep a fixed value for smoothing.  (old comment?)
     real :: ZiMIN = 50.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                   ! maximum mixing height
-    character(len=10) :: HmixMethod = "JcRb_t2m"  ! Method used for Hmix
+    character(len=10) :: HmixMethod = "NWP"  ! Method used for Hmix
+     !rv4.52 character(len=10) :: HmixMethod = "JcRb_t2m"
       ! JcRb = Jericevic/Richardson number method
       ! JcRb_surfT is the new JcRb using pop T at skin
       ! JcRb_t2m is new JcRb using pop T at 2m
@@ -130,8 +131,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     character(len=TXTLEN_FILE) :: LandDefs = 'DataDir/Inputs_LandDefs.csv'   !  LAI, h, etc (was Inputs_LandDefs
     character(len=TXTLEN_FILE) :: Do3seDefs = 'DataDir/Inputs_DO3SE.csv'  !  DO3SE inputs
     character(len=TXTLEN_FILE) :: mapMed    = 'DataDir/mapMed_5x1.nc'  ! Map of Meditteranean region
-!PW: added LandInputs_Sep2021ms/
-    character(len=TXTLEN_FILE) :: desert    = 'DataDir/LandInputs_Sep2021ms/Olson_2001_DEforEmep.nc'  ! Map of desert from Olson 2001
+    character(len=TXTLEN_FILE) :: desert    = 'DataDir/Olson_2001_DEforEmep.nc'  ! Map of desert from Olson 2001
     !character(len=TXTLEN_FILE) :: desert    = 'DataDir/ParajuliZender_SSM_1440x720.nc'  ! Sediment supply map from Parajuli & Zender, 2017
     real ::                       ssmThreshold = 0.2  ! Threshold of SSM used to identify likely dust sources. uncertain.
   end type LandCoverInputs_t
@@ -184,7 +184,7 @@ type, public :: emep_useconfig
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
     ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
     ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
-    ,CLEARSKYTAB      = .true.  & ! use only clear-sky tabulated Jvalues
+    ,CLEARSKYTAB      = .false.  & ! use only clear-sky tabulated Jvalues.  Deprecated
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
@@ -199,7 +199,6 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf 
-!rv444    ,WETRAD           = .false.  &! for settling velocity. Will be set to default true soon!
     ,TIMEZONEMAP      = .true. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
@@ -215,7 +214,7 @@ type, public :: emep_useconfig
 
  ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
  ! methods later.
-  character(len=20) ::FFireDispMethod = "P800" ! to 800 hPa, std. atmos.
+  character(len=20) ::FFireDispMethod = "PBL" ! to PBL height. Alt=P800, to 800 hPa, std. atmos.
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
@@ -226,9 +225,8 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
-  character(len=20) :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
- ! Can be 'Total', 'NoFert', or 'OLD_EURO' (latter to get ACP2012 system)
-  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs user choices!
+  character(len=20) :: MonthlyNH3  = 'NOTSET'    ! can be 'LOTOS'
+  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
@@ -339,12 +337,11 @@ logical,  public, save ::    &
   BBneed_poll=.true.    ! stop if don't find pollutant
 character(len=TXTLEN_SHORT),  public, save :: BBMODE="DAILY_REC"
 character(len=TXTLEN_FILE),  public, save :: &
+  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc', &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
   ! change in config:
-  !v2.5: FINN_PATTERN = 'FINN_ForestFireEmis_modvrs_v25_YYYY.nc',&
-  !v1.5:
-  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
-  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
+  !v2.5: 
+  FINN_PATTERN = 'FINN_ForestFireEmis_mod_v25_YYYY.nc'
 
 ! Nest config
 character(len=TXTLEN_SHORT),public, save ::  &
@@ -765,8 +762,7 @@ character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataD
 !Zahle2011:
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
-!rv4.49:character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.3_GLOBAL05_2000_2018.nc'
-!rv4.50: use this climatological file for all years, since year-to-year variation is small and uncertain
+!rv4.50+: use this climatological file for all years, since year-to-year variation is small and uncertain
 character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
 !
 !2021: added ECLIPSE6b-based factors for non-European areas
@@ -788,9 +784,9 @@ character(len=TXTLEN_FILE), target, save, public :: &
   cmxbicDefaultFile          = 'ZCMDIR/CMX_BoundaryConditions.txt'   &
  ,cmxBiomassBurning_FINN     = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt' & ! works for 1.5 also
  ,cmxBiomassBurning_GFASv1   = 'ZCMDIR/CMX_BiomassBurning_GFASv1a.txt' &
-!POLL replaced by name of pollutant in EmisSplit
- ,SplitDefaultFile           = 'ZCMDIR/emissplit_run/emissplit.defaults.POLL' &
- ,SplitSpecialsFile          = 'ZCMDIR/emissplit_run/emissplit.specials.POLL'
+!POLL replaced by name of pollutant in EmisSplit. CHANGE in config_emep.nml
+ ,SplitDefaultFile           = 'ZCMDIR/emissplits_gnnfr/emissplit.defaults.POLL' &
+ ,SplitSpecialsFile          = 'ZCMDIR/emissplits_gnnfr/emissplit.specials.POLL'
 character(len=TXTLEN_FILE), target, save, public :: RoadMapFile = 'DataDir/RoadMap.nc'
 character(len=TXTLEN_FILE), target, save, public :: AVG_SMI_2005_2010File = 'DataDir/AVG_SMI_2005_2010.nc'
 character(len=TXTLEN_FILE), target, save, public :: Soil_TegenFile = 'DataDir/Soil_Tegen.nc'

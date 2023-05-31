@@ -110,10 +110,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
-!DS WILL UPDATE May 2020
+
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2021ms/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2021ms/Inputs_DO3SE.csv',
  LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2021ms/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2021ms/Olson_2001_DEforEmep.nc',
 
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
@@ -266,6 +267,7 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%DERIVED         = F,   ! Derived field processing
   DEBUG%DRYDEP          = F,   ! Dry deposition
+  DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
@@ -404,17 +406,24 @@ OutputMisc=
  'met2d_ps',       'MET2D','surface_pressure',          '-','hPa',  -99,-99,F,1.0,T,'YM',
 !'SHEAT_WRF',      'MET2D','HFX',                       '-','W/m2',-99,-99,F,1.0,T,'YM',
 !'met2d_LH_Wm2',   'MET2D','surface_flux_latent_heat',  '-','W/m2',-99,-99,F,1.0,T,'YMD',
-'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
+!'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
  'met2d_SMI_deep', 'MET2D','SMI3',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
  'met2d_SMI_uppr', 'MET2D','SMI1',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
-! 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMDH',
+ 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMDH',
 ! careful with precip.
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 !'met2d_LSPrec1',  'MET2D','large_scale_precipitations','-','mm'  ,-99,-99,F,1.0,F,'YMD',
 !
 !'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
- 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
-! 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
+!REM 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
+!REM 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YM,
+ 'MaxD8M_O3_26th','MaxD8M_26th', '',  'O3', 'ug/m3',  -1 , -1,   F,    1.0,   F, 'Y',
+ 'MaxD8M_O3_1st','MaxD8M_1st', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_2nd','MaxD8M_2nd', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_3rd','MaxD8M_3rd', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_4th','MaxD8M_4th', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3', 'MaxD8M',  '',  'O3', 'ug/m3',       -1 , -1, F, 1.0, F, 'YMD',
+ 'MaxD8M_CO', 'MaxD8M',  '',  'CO', 'ug/m3',       -1 , -1, F, 1.0, F, 'YMD',
 !====================================================================================
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
@@ -424,6 +433,9 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,'YM', !!
+!FF0      'EmFFprof'           ,'kg/m2'   ,'3d','EmFFprof'  ,'MISC' ,'YMD', 
+      'SURF_PM25water'      ,'ug' ,'2d','PM25water' ,'MISC' ,'YMD',
+
      ! Column data:
      ! - COLUMN        advected species.
      ! - COLUMN:GROUP  group of advected species.
@@ -432,22 +444,27 @@ OutputConcs=
      ! - these data are compiled just after the chemistry step.
      ! - boundary cells are not calculated, hence expect zeros on edges.
       'NO2',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'HCHO',         'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'CH4',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'CO',           'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'OH',           'molec/cm2','kmax','COLUMN:SHL','MISC','YMD',
      !----------------------------------------------------------------
 ! Some derived met
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
+!REM      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
-      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
 ! ug/m3                                                    
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!DS23 - just use ppb for Hourly gases, ug/m3 for pm 
+!aARgh Put bacl to fool aeroval
+      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+ !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+! PM10group sub-components
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -656,21 +673,19 @@ OutputVegO3=
    'nonForest ','YM',
    'Conif    ','YM',
    'Seminat  ','YM',
-!   'Water_D  ','Y',
-   'Decid    ','Y',
-   'Crops    ','Y',
+   'Water_D  ','YM',
+   'Decid    ','YM',
+   'Crops    ','YM',
 !Nov2022 additions
-   'CF       ','Y',
-   'DF       ','Y',
+!   'CF       ','YM',
+!   'DF       ','YM',
 
  DDEP_WANTED =
    'SOX      ','GROUP','mgS',
    'OXN      ','GROUP','mgN',
    'RDN      ','GROUP','mgN',
    'O3       ','SPEC' ,'mg' ,
-   'NO2      ','SPEC' ,'mgN' ,
-!   'HO2NO2   ','SPEC' ,'mgN' ,
-   'STO_O3   ','SPEC' ,'mg' ,
+  'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =
    'PREC     ','PREC ','mm ','YMD',
@@ -684,7 +699,7 @@ OutputVegO3=
  ! Uses s5 type
   NewMosaic =
      'Mosaic', 'VG', 'HNO3', 'Grid', 'cms', 'YM'
-     'Mosaic', 'VG', 'PAN', 'BDLF_DECD_TROP_TREE', 'cms', 'YM'
+!     'Mosaic', 'VG', 'PAN', 'BDLF_DECD_TROP_TREE', 'cms', 'YM'
   MOSAIC_METCONCS = 
     'USTAR', 
     'LAI', 
