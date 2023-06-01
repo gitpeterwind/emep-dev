@@ -49,6 +49,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 June 2023, Svetlana
+
+BoundaryConditions_mod.f90: Mace Head correction is added for 2021 
+as calculated by Anna
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 June 2023, Willem
 
 Background CH4 is now read from a default ch4 input file. This file
