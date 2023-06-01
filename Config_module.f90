@@ -735,8 +735,9 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "NOTSET"
-! Can use RCP values of CH4 for given iyr_trend.
-character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "NOTSET" ! eg ch4_rcp45
+! Can use values of CH4 based on iyr_trend based on input files (default).
+! Default files uses obs. based until 2019 and then CLE box-model calculations up to 2050.
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/bgnd_ch4/ch4_hist_CLE.txt" 
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 

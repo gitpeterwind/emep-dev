@@ -797,26 +797,33 @@ subroutine My_bcmap(iyr_trend)
       top_misc_bc(IBC_CH4) = 1780.0 + (iyr_trend-1990)*0.1*(1820-1780.0)
     else
       top_misc_bc(IBC_CH4) = 1780.0 * exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
-                                 !exp(-0.01*0.6633*(1975-iyr_trend)) ! Zander,1951-1975
+                                   !exp(-0.01*0.6633*(1975-iyr_trend)) ! Zander,1951-1975
     end if
-
-  else if ( fileName_CH4_ibcs /= 'NOTSET'  ) then ! use RCP26, 45 or 85, set in config_emep
-
-    call open_file(IO_TMP,'r',fileName_CH4_ibcs,needed=.true.)
-    call CheckStop(ios,dtxt//"CH4_ibcs error in "//trim(fileName_CH4_ibcs) )
-    do i=1, 9999  ! has 750 records while(.true.)
-       read(IO_TMP,'(a80)') txt
-       if ( txt(1:1) == '#' ) cycle
-       read(txt, *) yr_rcp, ch4_rcp
-       if ( yr_rcp == iyr_trend) exit
-    end do
-    close(IO_TMP)
-    top_misc_bc(IBC_CH4) =  ch4_rcp
-    if ( MasterProc ) write(*,*) dtxt//'CH4 SET from RCPs for CH4:', &
-      trim(fileName_CH4_ibcs), iyr_trend, ch4_rcp
   end if
 
-  ! Reset with namelist values if set
+  if ( fileName_CH4_ibcs /= 'NOTSET'  ) then ! CH4 input file overrides BGND_CH4 == -1, if found
+
+    call open_file(IO_TMP,'r',fileName_CH4_ibcs,needed=.false.)
+    ! call CheckStop(ios,dtxt//"CH4_ibcs error in "//trim(fileName_CH4_ibcs) )
+    if (ios /= 0) then
+      if (MasterProc) write(*,*) dtxt//'CH4 input file not found.'
+    else
+      if (MasterProc) write(*,*) dtxt//'CH4 input file found.'
+      call CheckStop(iyr_trend<1960 .or. iyr_trend > 2050,dtxt//"yr outside CH4 range"//trim(fileName_CH4_ibcs) )
+      do i=1, 9999 
+        read(IO_TMP,'(a80)') txt
+        if ( txt(1:1) == '#' ) cycle
+        read(txt, *) yr_rcp, ch4_rcp
+        if ( yr_rcp == iyr_trend) exit
+      end do
+      close(IO_TMP)
+      top_misc_bc(IBC_CH4) =  ch4_rcp
+      if ( MasterProc ) write(*,*) dtxt//'CH4 SET from RCPs for CH4:', &
+        trim(fileName_CH4_ibcs), iyr_trend, ch4_rcp
+    end if ! ios
+  end if ! filename
+
+  ! Reset with namelist value if set; this overrides all previous values
   if ( BGND_CH4 > 0 ) then
     if ( MasterProc ) write(*,*) dtxt//'CH4 OVERRIDE for CH4:', BGND_CH4
      top_misc_bc(IBC_CH4) = BGND_CH4

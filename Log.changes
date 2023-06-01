@@ -49,6 +49,24 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 June 2023, Willem
+
+Background CH4 is now read from a default ch4 input file. This file
+contains historical concentrations up to 2019 and projections made using the
+IIASA GP Review CLE scenario with Dirk's box-model. The folder containing the 
+default CLE CH4 file also contains files describing the SSP scenarios 
+discussed in CMIP6 AR6 Annex III.
+
+The default behavior is that the iyr_trend CH4 concentration (when BGND_CH4=-1) is 
+replaced by the value read in from the file, if the file is found and if iyr_trend 
+is between 1960-2050 (range of years in the input file).
+
+If the file is found but the year is out of range, the model stops. 
+
+When BGND_CH4 is set to something greater than zero in config_emep.nml, this 
+value overwrites the value from the input file. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May - 1st June 2023, Dave
 
 PARTIALLY UPDATE - STILL IN PROGRESS
