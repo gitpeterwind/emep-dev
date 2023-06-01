@@ -49,7 +49,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31 May 2023, Dave
+31 May - 1st June 2023, Dave
 
 PARTIALLY UPDATE - STILL IN PROGRESS
 
@@ -63,7 +63,17 @@ Config_module -defaults to:
  soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
  LandInputs%desert changed to DataDir/Olson_2001_DEforEmep.nc
    
+BiDir_emep - change intent out to intent inout to avoid Make warning
+
+Config_module - added YYYY change for fileName_O3_Top (Is this needed?)
+
+Derived_mod - reduced dbg output amount
+
 Met_mod - check if USES%FFireDispMethod and PBL%HmixMethod are consistent
+
+MosaicOutputs_mod - added any_case to find_index calls
+
+Runchem_mod - changed debug option to WindDust call.
 
 config_emep.nml:
    PARTIALLY CHANGED. To be continued

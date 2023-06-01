@@ -136,7 +136,7 @@ subroutine runchem()
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
       if(USES%DUST)     &
-        call WindDust(i,j,debug_flag)     ! sets rcemis(DUST...)
+          call WindDust(i,j,DEBUG%DUST.and.DebugCell)     ! sets rcemis(DUST...)
 
       if ( USES%EMISSTACKS ) then
          if ( pointsources(i,j) ) call get_pointsources(i,j,DEBUG_EMISSTACKS)

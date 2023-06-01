@@ -2712,7 +2712,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
   ParticlePhaseOutputs = ( (index(f_2d(n)%name, 'ug_PM' )>0) .or. &
                            (index(f_2d(n)%name, 'ugC_PM')>0) )
 
-  if( dbgP ) &
+  if( dbgP .and. first_call ) &
     write(*,"(a,L1,3i4,2a16,L2,i4)") dtxt//"SGROUP:",debug_proc,me,ik, kk, &
       trim(chemgroups(igrp)%name), trim(unit), semivol_wanted, iadv_OM25p
 
@@ -2747,7 +2747,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
         !  trim(species(itot)%name), FIRST_SEMIVOL, LAST_SEMIVOL
 
         !if(all([semivol_wanted,itot>=FIRST_SEMIVOL,itot<=LAST_SEMIVOL])) then
-        if ( dbgPt  ) write(*,'(a,3i4)')dtxt//'IOM_choice '//trim((f_2d(n)%name))//&
+        if ( dbgPt .and. first_call  ) write(*,'(a,3i4)')dtxt//'IOM_choice '//trim((f_2d(n)%name))//&
              ':'//trim(species(itot)%name), index(f_2d(n)%name, 'ug_PM' ), nspec, size(gspec)
 
         if(itot>=FIRST_SEMIVOL .and. itot<=LAST_SEMIVOL) then
@@ -2782,7 +2782,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
 
         !if(all([first_semivol_call,debug_proc,chemgroups(igrp)%name=='BSOA']))&
-        if ( dbgPt  ) &
+        if ( dbgPt .and. first_call  ) &
           write(*,"(2(1x,a25),L2,2i4,1x, 2es12.3, f12.5)") &
             dtxt//"GRP fac "//trim(chemgroups(igrp)%name), &
              trim(species(itot)%name), semivol_wanted, nspec, itot, &

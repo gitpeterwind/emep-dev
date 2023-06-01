@@ -1122,6 +1122,12 @@ subroutine Config_Constants(iolog)
     endif
   enddo
 
+  if(trim(fileName_O3_Top)/="NOTSET")then
+     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
+     if(MasterProc) write(*,*)dtxt//'Reading 3 hourly O3 at top from :', &
+                      trim(fileName_O3_Top)
+  endif
+
   if(trim(fileName_CH4_ibcs)/="NOTSET" .and. MasterProc)then
      write(*,*)dtxt//'Reading CH4 IBCs from:', iyr_trend, trim(fileName_CH4_ibcs)
   endif
