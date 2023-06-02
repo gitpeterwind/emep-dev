@@ -57,9 +57,6 @@
   !emis_inputlist(3)%name  = 'DataDir/Emis_ECLIPSEv6a_ships/emis_ECLIPSEv6a_YYYY_05deg_INTSHIP.nc',
   !emis_inputlist(3)%sector = 'SNAP',
 
-!Defaults splits are compatible with 'SNAP' sectors
-!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
-!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
 
 ! 1a) GLOBAL; using ECLIPSEv6 emissions:
 
@@ -96,15 +93,16 @@
 
 ! 2c) Splits compatible with GNFR_CAMS emissions
 ! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
-! inventory assumptions! Here we hav Ref2, which corresponds to
-! TNO's estimate of emissions with condensable organics. Sadly,
-! even the BC emissions are tied to this assumption.
-SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
-SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
+! inventory assumptions! Here we hav Ref2, which corresponds to TNO's
+! estimate of emissions with condensable organics. Sadly, even the BC
+! emissions are tied to this assumption.
 !
-!May 2021 possibility. If using EmChem19rnr (Res or NonRes emissions), for Ref2.1, use:
-!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
-!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
+! As many countries have updated to use condensables though, we assume Ref2 is
+! the best guess.  
+! If using EmChem19rnr (Res or NonRes emissions), use:
+
+SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_defaults_POLL.csv',
+SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_specials_POLL.csv',
 
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !
@@ -124,7 +122,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
   USES%testname         = 'EMEPSTD',
 !------------------------------
 ! 2023 added:
-  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012 and 2015-2017
+  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. 
   fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
 !------------------------------ 
   USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
@@ -135,13 +133,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
 
-! ZCMDIR system
+! ZCMDIR system (default set in Config_module)
 !  path used for emisplits, and CMX files for BiomassBurning and BICs
 ! ZCM_EmChem19 is default
 ! Although not necessary unless defaults are changed, we store these settings
 ! here for visibility, until all are used
-
-ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 
 !SecEmisOutWanted(2) = T, !output sector 2 separately
 
@@ -194,6 +190,8 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   flocdef="DataDir/volcano_location.csv_20210525",
  !HK 2023: update in code and dataformat:
   femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27042023",
+  flocdef="/nobackup/forsk/sm_agnny/volcano_location.csv_01062023",
+  femsdef="/nobackup/forsk/sm_agnny/volcano_emission.csv_Grimsvotn_fix_01062023"
 
 
   need_topo=T, ! Do not use column emissions if topography.nc not found

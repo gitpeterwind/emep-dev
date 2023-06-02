@@ -803,7 +803,7 @@ subroutine My_bcmap(iyr_trend)
 
   if ( fileName_CH4_ibcs /= 'NOTSET'  ) then ! CH4 input file overrides BGND_CH4 == -1, if found
 
-    call open_file(IO_TMP,'r',fileName_CH4_ibcs,needed=.false.)
+    call open_file(IO_TMP,'r',fileName_CH4_ibcs,needed=.true.)
     ! call CheckStop(ios,dtxt//"CH4_ibcs error in "//trim(fileName_CH4_ibcs) )
     if (ios /= 0) then
       if (MasterProc) write(*,*) dtxt//'CH4 input file not found.'

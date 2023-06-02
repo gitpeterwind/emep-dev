@@ -52,8 +52,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 June 2023, Dave
 
 Moved bgnd_ch4 dir to BoundaryConditions on nebula and atos.
+
 Changed Config_module and config_emep.nml to cope.
 Set appropriate fileName_O3_Top and fileName_CH4_ibcs in both.
+
+BiundaryConditions_mod - now, fileName_CH4 needed=.true. if used.
+
+CAMS REG.v5 emissplits set in config_emep-nml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 June 2023, Svetlana
