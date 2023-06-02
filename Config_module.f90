@@ -734,10 +734,11 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
-character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "NOTSET"
+!character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "NOTSET"
+character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "DataDir/ECera5_O3_TOP_YYYY.nc",
 ! Can use values of CH4 based on iyr_trend based on input files (default).
 ! Default files uses obs. based until 2019 and then CLE box-model calculations up to 2050.
-character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/bgnd_ch4/ch4_hist_CLE.txt" 
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/ch4_hist_CLE.txt" 
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
