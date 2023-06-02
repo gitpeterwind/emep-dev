@@ -31,12 +31,12 @@
 ! Common to all:
 
   USES%SOILNOX = T,
+
   emis_inputlist(1)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
   emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
-  !rv4.50: Not sure this is best. Revert to default xJune2012 MonthlyFacs from Config:
-  !MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_may2021/MonthlyFacs.POLL',
-  !Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
-  !MonthlyFacBasis = 'ECLIPSE',
+
+!TESTING:
+!  SitesFile = 'DataDir/sitesLLZ.txt',
 
 
 ! 1) GLOBAL
@@ -104,6 +104,25 @@
 SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_defaults_POLL.csv',
 SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_specials_POLL.csv',
 
+!DS TO-BE-DONE
+!Trends 2022 splits---------------
+!TODO!For 1990-2020
+!TODOSplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_defaults_POLL.csv',
+!TODO
+!TODO!For 1990-2004
+!TODO!SplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL_2005.csv',
+!TODO
+!TODO!For 2005-2019 change year
+!TODOSplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL_2018.csv',
+!TODO
+!TODO!For 2020
+!TODO!SplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL.csv',
+!TODO!  USES%DAYOFYEARTIMEFAC   = T,
+!TODO!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
+!TODO
+!Trends 2022 splits end-----------
+
+!
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !
 !additional config (will overwrite config from config_emep.nml)
@@ -121,10 +140,6 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !------------------------------
   USES%testname         = 'EMEPSTD',
 !------------------------------
-! 2023 added:
-  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. 
-  fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
-!------------------------------ 
   USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
   USES%SKIP_INCOMPLETE_OUTPUT = F,       ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
@@ -304,17 +319,20 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   BBneed_poll = F,  ! Avoids problems with missing ISOP in later FINN data
   BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
-  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc'
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
+ ! May 2023. use mod by default to get longer time-series than modvrs
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_YYYY.nc',
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v25modvrs/ForestFire_Emis_modvrs_v25_YYYY.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_YYYY.nc',
+ ! if climatology used:
+  ! fire_year=2015, ! use 2015 when finn1.5 climatology is used
+  ! FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_2005-2015.nc', has records stored as 2015 values
 
-  ! Dec 2022: can use same mapping file for 1.5 and 2.5, but need different FINN patterns:
-  !v1.5 here:
-  FINN_PATTERN = 'DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc'
-  !v2.5 here:
-  FINN_PATTERN = 'DataDir/ForestFire/FINN/work/v25_convert/ForestFire_Emis_modvrs_v25_YYYY.nc'
+!------------------------------------------------------------
+! Boundary condition stuff
 
-  cmxBiomassBurning_FINN = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt',  ! works also for v1.5
-
-
+  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. 
+  fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
 
 !-------- Read/Write MODEs
   NEST_MODE_READ = 'NONE',         ! do nothing
