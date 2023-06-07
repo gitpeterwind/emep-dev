@@ -285,6 +285,7 @@ contains
             call CheckStop( ios, dtxt//": Read error in Monthlyfac")
 
             ic=find_index(code,Country(:)%code)
+            inland = Country(ic)%icode ! just for print out
             insec=find_index(secname,SECTORS(:)%longname)             
          end select
             
@@ -307,7 +308,8 @@ contains
          ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
          if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
-            write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac ", &
+            write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac:"// &
+             trim(EMIS_FILE(iemis))//":"//trim(Country(ic)%code)//": ", &
             inland,insec,iemis, fac_min(ic,insec,iemis),&
                " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
 

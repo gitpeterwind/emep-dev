@@ -49,6 +49,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7 June 2023, Dave
+
+Timefactors.f90 - small tweak to debug output (tfacs:emm) to record which country
+ and sector is found when using CAMS_TEMPO.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 June 2023, Dave
 
 Moved bgnd_ch4 dir to BoundaryConditions on nebula and atos.
@@ -56,7 +61,7 @@ Moved bgnd_ch4 dir to BoundaryConditions on nebula and atos.
 Changed Config_module and config_emep.nml to cope.
 Set appropriate fileName_O3_Top and fileName_CH4_ibcs in both.
 
-BiundaryConditions_mod - now, fileName_CH4 needed=.true. if used.
+BoundaryConditions_mod - now, fileName_CH4 needed=.true. if used.
 
 CAMS REG.v5 emissplits set in config_emep-nml
 
