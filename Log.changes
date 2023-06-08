@@ -49,6 +49,30 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 June 2023, Dave, Alvaro
+
+  CAMS_TEMPO_CLIM methods enabled. Needs check, and possible bugs in 
+   CAMS_TEMPO and DAYOFYEARTIMEFAC need checking
+
+  So, we have two CAMS options:
+
+   CAMS_TEMPO (=from previous code, from 12/4/23)  - can read day-of-year variations
+
+  USES%DAYOFYEARTIMEFAC = T,
+
+   CAMS_TEMPO_CLIM = new - reads climatological monthly, day-of-week, and hour-of-day files
+    from CAMS-TEMPO system.
+
+   IMPORTANT:::
+
+    If MonthlyFacBasis set to "CAMS_TEMPO_CLIM" in config, needs to
+    uncomment/enable ADD_SECTORS lines in config_emep.nml to reset
+    time-factor indices to 1-19, instead of SNAP's 1-11.
+
+    *** Check if original CAMS_TEMPO and DAYOFYEARTIMEFAC methods should have
+        done this.  Maybe hourly data were from SNAP sectors?
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7 June 2023, Dave
 
 Timefactors.f90 - small tweak to debug output (tfacs:emm) to record which country
