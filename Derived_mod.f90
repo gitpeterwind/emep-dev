@@ -1089,7 +1089,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if( imet_tmp > 0 ) then
         !Note: must write bounds explicitly for "special2d" to work
-        met_p => met(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
+         if(met(imet_tmp)%dim==3) then
+            met_p => met(imet_tmp)%field(1:limax,1:ljmax,KMAX_MID:KMAX_MID,1) !take lowest level
+         else 
+            met_p => met(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
+         end if
       else
         imet_tmp = find_index(subclass, derivmet(:)%name )
         if ( imet_tmp > 0 )then
