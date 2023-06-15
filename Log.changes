@@ -49,6 +49,39 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 June 2023, Dave
+
+Config_mod 
+  - added TimeFacBasis:
+          If CAMS_TEMPO_CLIM then month, week and hour factors from that data. 
+          If MIXED - old behaviour
+
+config_emep.nml
+  - Fixed type on SECTORS_ADD GNFR_G 2nd index (from 7 2 7 to 7 8 7)
+ 
+
+Timefactors_mod 
+  - added TimeFacBasis:
+
+  code re-arrangement started:
+     to avoid if (.not.XXXX), and 
+     added labels to clarify loop start and end (e.g. HRLYLOOP)
+     replaced if (ios==0) then with if (ios/=0) cycle - saves a load of
+      indentation.
+
+New code deals with CAMS_TEMPO_CLIM Hourly as a "Specials" case. Should make
+default one day.
+
+EmisGet_mod - fixed output format error for debug_tfac line
+
+*** IMPORTANT ****
+  If CAMS_TEMPO_CLIM used  then use SECTORS_ADD in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 June 2023, Peter
+
+Fixed bug for MET2D outputting of 3D fields
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 June 2023, Dave, Alvaro
 
   CAMS_TEMPO_CLIM methods enabled. Needs check, and possible bugs in 
@@ -72,10 +105,6 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     *** Check if original CAMS_TEMPO and DAYOFYEARTIMEFAC methods should have
         done this.  Maybe hourly data were from SNAP sectors?
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-13 June 2023, Peter
-
-Fixed bug for MET2D outputting of 3D fields
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7 June 2023, Dave

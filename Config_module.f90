@@ -775,6 +775,7 @@ character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'Dat
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
 !character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
 character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
+character(len=TXTLEN_FILE), save, public :: TimeFacBasis = 'MIXED'  ! => mixed sources for Monthly, Daily, etc
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
@@ -888,6 +889,7 @@ subroutine Config_Constants(iolog)
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
    ,soilnox_emission_File&
+   ,TimeFacBasis&
    ,MonthlyFacFile&
    ,MonthlyFacBasis&
    ,DailyFacFile&
@@ -1151,6 +1153,7 @@ subroutine WriteConfig_to_RunLog(iolog)
     write(iolog,'(a)') 'MonthlyFacFile:        '//trim(MonthlyFacFile)
     write(iolog,'(a)') 'DailyFacFile:          '//trim(DailyFacFile)
     write(iolog,'(a)') 'HourlyFacFile:         '//trim(HourlyFacFile)
+    write(iolog,*)     'TimeFacBasis:          '//trim(TimeFacBasis)
     write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
     write(iolog,'(a)') 'HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
   endif

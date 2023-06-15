@@ -36,7 +36,7 @@
   emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
 
 !TESTING:
-!  SitesFile = 'DataDir/sitesLLZ.txt',
+  SitesFile = 'DataDir/sitesLLZ.txt',
 
 
 ! 1) GLOBAL
@@ -86,10 +86,79 @@
 
 ! 2b) Europe, using EMEP/CEIP GNFR emissions (SNOx in GNFR L):
   USES%SOILNOX_METHOD = 'NoFert',
-  EmisDir                 = 'DataDir/emis01deg_EMEP/GNFREmis_LATEST/', ! NEW Feb 2021!
+  !EmisDir                 = 'DataDir/emis01deg_EMEP/GNFREmis_LATEST/', ! NEW Feb 2021!
   !CAREFUL. Use of "latest" eases trend runs. Otherwise explicit is better
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_latest.nc',
+
+!Trends 2022 emis ------------------- 
+
+! PRELIM 2021:
+!  EmisDir='/nobackup/forsk/sm_agnny',
+! NEW FORMAT:
+!  Emis_sourceFiles(1)%filename = 'EmisDir/emis01degEMEP/emis_newFormat/GNFREmis_EMEP01_2021_26052023.nc',
+
+!For 2005-2020, change year
+  EmisDir                 = 'DataDir/emis_EMEPreport_2022',
+  emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_withREF2_sectorC_12092022.nc', 
+  !TESTTMP
+  !SOON EmisDir                 = '/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/new',
+  !SOON. Needs Emis_sourceFiles(1)%filename   emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_05062020.nc', 
+
+!For 2000-2004
+! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_21062022.nc', 
+
+!For 1990-1999
+! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_04072022.nc', 
+
+!Trends 2022 emis ends ----------------
+
+!Trends 2022 time factors -------------
+!For 1990-2019
+!BUG 2023   MonthlyFacBasis = 'GENEMIS', 
+!BUG 2023  USES%MonthlyNH3 = 'LOTOS', 
+!DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
+
+!June 2023 CAMS_TEMPO_CLIM option added - uses all time-factors from cams_temp_v2_3
+!!! Change time factor index to match CAMS_TEMPO
+! If used, uncomment to END-OF-CLIM
+ TimeFacBasis    = 'CAMS_TEMPO_CLIM',   ! sets also MonthlyFacBasis
+! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
+ MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
+ DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
+ HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
+
+! Change time factor index to match CAMS_TEMPO
+!                                                 tf  h  spl
+SECTORS_ADD(1) = 'GNFR_CAMS', 'GNFR_A',  'sec01',  1, 1,  1, 'Public Power', 'ALL',
+SECTORS_ADD(2) = 'GNFR_CAMS', 'GNFR_B',  'sec02',  2, 3,  2, 'Industry', 'ALL',
+SECTORS_ADD(3) = 'GNFR_CAMS', 'GNFR_C',  'sec03',  3, 2,  3, 'OtherStationaryComb', 'ALL',
+SECTORS_ADD(4) = 'GNFR_CAMS', 'GNFR_D',  'sec04',  4, 5,  4, 'Fugitive', 'ALL',
+SECTORS_ADD(5) = 'GNFR_CAMS', 'GNFR_E',  'sec05',  5, 2,  5, 'Solvents', 'ALL',
+SECTORS_ADD(6) = 'GNFR_CAMS', 'GNFR_F',  'sec06',  6, 2,  6, 'RoadTransport', 'ALL',
+SECTORS_ADD(7) = 'GNFR_CAMS', 'GNFR_G',  'sec07',  7, 8,  7, 'Shipping', 'ALL',
+SECTORS_ADD(8) = 'GNFR_CAMS', 'GNFR_H',  'sec08',  8, 7,  8, 'Aviation', 'ALL',
+SECTORS_ADD(9) = 'GNFR_CAMS', 'GNFR_I',  'sec09',  9, 2,  9, 'Offroad', 'ALL',
+SECTORS_ADD(10) = 'GNFR_CAMS', 'GNFR_J', 'sec10', 10, 6, 10, 'Waste', 'ALL',
+SECTORS_ADD(11) = 'GNFR_CAMS', 'GNFR_K', 'sec11', 11, 2, 11, 'AgriLivestock', 'ALL',
+SECTORS_ADD(12) = 'GNFR_CAMS', 'GNFR_L', 'sec12', 12, 2, 12, 'AgriOther', 'ALL',
+SECTORS_ADD(13) = 'GNFR_CAMS', 'GNFR_M', 'sec13', 13, 5, 13, 'Other', 'ALL',
+SECTORS_ADD(14) = 'GNFR_CAMS', 'GNFR_A1','sec14', 14, 1,  1, 'PublicPower_Point', 'ALL',
+SECTORS_ADD(15) = 'GNFR_CAMS', 'GNFR_A2','sec15', 15, 3,  1, 'PublicPower_Area', 'ALL',
+SECTORS_ADD(16) = 'GNFR_CAMS', 'GNFR_F1','sec16', 16, 2, 16, 'RoadTransportExhaustGasoline', 'ALL',
+SECTORS_ADD(17) = 'GNFR_CAMS', 'GNFR_F2','sec17', 17, 2, 17, 'RoadTransportExhaustDiesel', 'ALL',
+SECTORS_ADD(18) = 'GNFR_CAMS', 'GNFR_F3','sec18', 18, 2, 18, 'RoadTransportExhaustLPGgas', 'ALL',
+SECTORS_ADD(19) = 'GNFR_CAMS', 'GNFR_F4','sec19', 19, 2, 19, 'RoadTransportNonExhaustOther', 'ALL',
+!END-OF-CAMS-TEMPO-CLIM
+
+!For 2020
+!  USES%DAYOFYEARTIMEFAC   = T,
+!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
+
+!Trends 2022 time factors ends ---------
+
+
+  femisFile = 'DataDir/femis.dat',
 
 ! 2c) Splits compatible with GNFR_CAMS emissions
 ! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
@@ -121,32 +190,6 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !TODO!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
 !TODO
 
-!June 2023 CAMS_TEMPO_CLIM option added - uses all time-factors from cams_temp_v2_3
-! If used, uncomment to END-OF-CLIM
-! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
-! MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
-!!! Change time factor index to match CAMS_TEMPO
-!!!                                                tf  h  spl
-!SECTORS_ADD(1) = 'GNFR_CAMS', 'GNFR_A',  'sec01',  1, 1,  1, 'Public Power', 'ALL',
-!SECTORS_ADD(2) = 'GNFR_CAMS', 'GNFR_B',  'sec02',  2, 3,  2, 'Industry', 'ALL',
-!SECTORS_ADD(3) = 'GNFR_CAMS', 'GNFR_C',  'sec03',  3, 2,  3, 'OtherStationaryComb', 'ALL',
-!SECTORS_ADD(4) = 'GNFR_CAMS', 'GNFR_D',  'sec04',  4, 5,  4, 'Fugitive', 'ALL',
-!SECTORS_ADD(5) = 'GNFR_CAMS', 'GNFR_E',  'sec05',  5, 2,  5, 'Solvents', 'ALL',
-!SECTORS_ADD(6) = 'GNFR_CAMS', 'GNFR_F',  'sec06',  6, 2,  6, 'RoadTransport', 'ALL',
-!SECTORS_ADD(7) = 'GNFR_CAMS', 'GNFR_G',  'sec07',  7, 2,  7, 'Shipping', 'ALL',
-!SECTORS_ADD(8) = 'GNFR_CAMS', 'GNFR_H',  'sec08',  8, 7,  8, 'Aviation', 'ALL',
-!SECTORS_ADD(9) = 'GNFR_CAMS', 'GNFR_I',  'sec09',  9, 2,  9, 'Offroad', 'ALL',
-!SECTORS_ADD(10) = 'GNFR_CAMS', 'GNFR_J', 'sec10', 10, 6, 10, 'Waste', 'ALL',
-!SECTORS_ADD(11) = 'GNFR_CAMS', 'GNFR_K', 'sec11', 11, 2, 11, 'AgriLivestock', 'ALL',
-!SECTORS_ADD(12) = 'GNFR_CAMS', 'GNFR_L', 'sec12', 12, 2, 12, 'AgriOther', 'ALL',
-!SECTORS_ADD(13) = 'GNFR_CAMS', 'GNFR_M', 'sec13', 13, 5, 13, 'Other', 'ALL',
-!SECTORS_ADD(14) = 'GNFR_CAMS', 'GNFR_A1','sec14', 14, 1,  1, 'PublicPower_Point', 'ALL',
-!SECTORS_ADD(15) = 'GNFR_CAMS', 'GNFR_A2','sec15', 15, 3,  1, 'PublicPower_Area', 'ALL',
-!SECTORS_ADD(16) = 'GNFR_CAMS', 'GNFR_F1','sec16', 16, 2, 16, 'RoadTransportExhaustGasoline', 'ALL',
-!SECTORS_ADD(17) = 'GNFR_CAMS', 'GNFR_F2','sec17', 17, 2, 17, 'RoadTransportExhaustDiesel', 'ALL',
-!SECTORS_ADD(18) = 'GNFR_CAMS', 'GNFR_F3','sec18', 18, 2, 18, 'RoadTransportExhaustLPGgas', 'ALL',
-!SECTORS_ADD(19) = 'GNFR_CAMS', 'GNFR_F4','sec19', 19, 2, 19, 'RoadTransportNonExhaustOther', 'ALL',
-!END-OF-CLIM
 
 !For 2020
 !  USES%DAYOFYEARTIMEFAC   = T,
@@ -449,6 +492,7 @@ OutputMisc=
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
  !2D use MET2D. Can output also lowest level values of 3D fields. 
+ 'met2d_rho' ,'MET2D','air_density'      ,'-','kg/m3',-99,-99,F,1.0,T,'YMDH',
  'met2d_ustar_nwp','MET2D','ustar_nwp',                 '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_uref',     'MET2D','u_ref',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_test',     'MET2D','u_xxx',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',

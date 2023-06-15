@@ -54,8 +54,6 @@
 !  
 !  Sets the day/night emissions variation in day_factor
 !
-!  D. Simpson,    3/2/99-11 0 H. Fagerli, 2011
-!
 !  Gridded Monthly factors:
 !  If gridded monthly timefactors are choosen, the fac_emm only contains a 
 !  normalisation factor. This normalization factor ensures that (before 
@@ -80,6 +78,7 @@
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
                             Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
                             DayofYearFacFile,&
+                            TimeFacBasis, & ! MIXED or CAMS_TEMPO_CLIM - tmp solution
                             MonthlyFacBasis, & ! ECLIPSE or other
                             monthly_timezoneFile, &
                             HourlyFacFile,HourlyFacSpecialsFile,&
@@ -237,9 +236,21 @@ contains
   ! Summer/winter SNAP1 ratios reduced from 1990 to 2010 when using "older"
   ! MonthlyFacs (e.g. GENEMIS were from 1994-era).
   ! Follows data presented in Grennfelt & Hov, Ambio, 2005, see Simpson et al 2012
+
    fac_cemm(:) = 1.0
 
-   if(MasterProc) write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
+   if(TimeFacBasis == 'CAMS_TEMPO_CLIM' ) then
+      MonthlyFacBasis = 'CAMS_TEMPO_CLIM'
+   else ! TMP - until users get uses to new TimefacBasis
+      call CheckStop(MonthlyFacBasis=='CAMS_TEMP_CLIM','CLIMCHECK')
+   end if
+      
+
+   if(MasterProc) then
+     write(*,*) dtxt//"TimeFacBasis:"//trim(TimeFacBasis)
+     write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
+   end if
+
    select case(MonthlyFacBasis)
    case("ECLIPSE")
       call CheckStop(index(MonthlyFacFile,'may2021')<1, & !CRUDE and TMP!
@@ -350,64 +361,19 @@ contains
           end do
        end do
 
-       if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, " records from ", trim(fname2) 
+       if (dbgTF) write(unit=6,fmt='(a,i6,2a)') dtxt//"Read ", n, &
+               " MONTH records from ", trim(fname2) 
    end do  ! iemis
 
    else if (USES%DAYOFYEARTIMEFAC) then
       !set monthly and daily timefactore to 1.0 and use day of the year timefactor instead
       write(*,*)'Using Day of year timefactors. Setting standard Monthly and Daily factors to 1' 
-   end if
+   end if ! .not. USES%GRIDDED_EMIS_MONTHLY_FACTOR/USES%DAYOFYEARTIMEFAC
 
 ! #################################
 ! 2) Read in Daily factors
 
-   if (.not. USES%DAYOFYEARTIMEFAC ) then
-
-     do iemis = 1, NEMIS_FILE
-       fname2 = key2str(DailyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
-       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
-
-       call CheckStop( ios, dtxt//" Opening error in Dailyfac")
-
-       n = 0
-       do
-         if ( MonthlyFacBasis == "CAMS_TEMPO_CLIM") then
-           read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, (buff(i), i=1,7)
-           ic=find_index(code,Country(:)%code)
-           insec=find_index(secname,SECTORS(:)%longname)             
-         else
-           read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
-              (buff(i),i=1,7)         
-           ic=find_index(inland,Country(:)%icode)
-         end if
-         if ( ios <  0 ) exit   ! End of file
-
-         maxidx = max(insec,maxidx)
-         if(ic<1.or.ic>NLAND)then
-            if(me==0.and.insec==1.and.iemis==1)write(*,*)dtxt//"Dailyfac code not used",inland
-            cycle
-         end if
-         if(insec>N_TFAC) cycle
-         fac_edd(ic,1:7,insec,iemis)=buff(1:7)
-         call CheckStop( ios, dtxt//" Read error in Dailyfac")
-
-         n = n + 1
-
-         !-- Sum over days 1-7
-         xday =  sum( fac_edd(ic,1:7,insec,iemis) ) / 7.0
-
-         call CheckStop( xday > 1.001 .or. xday < 0.999, &
-                dtxt//" ERROR: Dailyfac - not normalised")
-
-       end do
-
-       close(IO_TIMEFACS)
-       if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, " WEEK records from ", trim(fname2)
-
-     end do  ! NEMIS_FILE
-
-   else
-       !use day of the year timefactors instead
+   if ( USES%DAYOFYEARTIMEFAC ) then !read directly day of the year timefactors
        fac_dayofyear = 1.0
        do iemis = 1, NEMIS_FILE
           fname2 = key2str(DayofYearFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
@@ -446,9 +412,57 @@ contains
           end do
           
           close(IO_TIMEFACS)
-          if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, " records from ", trim(fname2)
+          if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, &
+                  " DOY records from ", trim(fname2)
           
        end do  ! NEMIS_FILE
+
+   else ! Uses Monthly, Daily facs
+
+     do iemis = 1, NEMIS_FILE
+       fname2 = key2str(DailyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
+       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
+
+       call CheckStop( ios, dtxt//" Opening error in Dailyfac")
+
+       n = 0
+       do
+         if ( MonthlyFacBasis == "CAMS_TEMPO_CLIM") then ! txt-based indices
+           read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, (buff(i), i=1,7)
+           ic=find_index(code,Country(:)%code)
+           insec=find_index(secname,SECTORS(:)%longname)             
+         else
+           read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
+              (buff(i),i=1,7)         
+           ic=find_index(inland,Country(:)%icode)
+         end if
+         if ( ios <  0 ) exit   ! End of file
+
+         maxidx = max(insec,maxidx)
+         if(ic<1.or.ic>NLAND)then
+            if(me==0.and.insec==1.and.iemis==1)write(*,*)&
+                    dtxt//"Dailyfac code not used",inland
+            cycle
+         end if
+         if(insec>N_TFAC) cycle
+         fac_edd(ic,1:7,insec,iemis)=buff(1:7)
+         call CheckStop( ios, dtxt//" Read error in Dailyfac")
+
+         n = n + 1
+
+         !-- Sum over days 1-7
+         xday =  sum( fac_edd(ic,1:7,insec,iemis) ) / 7.0
+
+         call CheckStop( xday > 1.001 .or. xday < 0.999, &
+                dtxt//" ERROR: Dailyfac - not normalised")
+
+       end do
+
+       close(IO_TIMEFACS)
+       if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, &
+                " WEEK records from ", trim(fname2)
+
+     end do  ! NEMIS_FILE
 
    endif ! testing USES%DAYOFYEARTIMEFAC
 
@@ -459,45 +473,25 @@ contains
    ! EMEP2003 option has very simple day night
 !
   
-   if ( MonthlyFacBasis == "CAMS_TEMPO_CLIM") then
-     do iemis = 1, NEMIS_FILE
+   CLIMTEMPO: if ( MonthlyFacBasis == "CAMS_TEMPO_CLIM") then
 
-       fname2 = key2str(HourlyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
-       if(MasterProc) write(unit=6,fmt=*) dtxt//"Starting HOURLY-FACS from "//trim(fname2)
+   ! ===== START New June 2023 ===========================
 
-       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
-       n = 0
-       do 
-         read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, idd, tmp24(:)
-         if( ios <  0 ) exit     ! End of file
-         n = n + 1
-         call CheckStop( ios, dtxt//": Read error: CAMS_TEMPO_CLIM "//trim(fname2))
-         ic=find_index(code,Country(:)%code)
-         inland = Country(ic)%icode ! just for print out
-         insec=find_index(secname,SECTORS(:)%longname)             
-         sumfac = sum(tmp24)  ! should be 24
-         maxidx = max(insec,maxidx)
-         fac_ehh24x7(iemis,insec,:,idd,ic) = tmp24(:)*24/sumfac
-         !if(MasterProc.and.iemis==1) print '(a,3i6,2f8.3)', 'CAMfac:'//trim(code)//":"//trim(secname), &
-         !    ic,inland, insec,tmp24(1), fac_ehh24x7(iemis,insec,1,idd,ic)
-         if (dbgTF.and.inland==27) write(*,'(a,4i4,2f8.3)') dtxt//'FACuk', iemis,insec,idd,ic,&
-           fac_ehh24x7(iemis,insec,1,idd,ic), fac_ehh24x7(iemis,insec,13,idd,ic) 
+     HourlyFacSpecialsFile = HourlyFacFile  ! Will handle in Specials below.
+     found_HourlyFacFile=.false.
+     if ( dbgTF ) write(*,*) dtxt//' SKIPS 1st HourlyFac'
 
-       end do
-       close(IO_TIMEFACS)
-       
-     end do ! iemis
    ! ===== END New June 2023 ===========================
 
-   else
+   else  ! Reads older HourlyFacs, no country dependence
 
-    fname2 = trim(HourlyFacFile) ! From EURODELTA/INERIS/TNO or EMEP2003
-    write(unit=6,fmt=*) dtxt//"Starting HOURLY-FACS from "//trim(fname2)
-    call open_file(IO_TIMEFACS,"r",fname2,needed=.false.,iostat=ios)
-    found_HourlyFacFile=(ios==0)
-    if(found_HourlyFacFile)then
-      n = 0
-      do 
+     fname2 = trim(HourlyFacFile) ! From EURODELTA/INERIS/TNO or EMEP2003
+     write(unit=6,fmt=*) dtxt//"Starting HOURLY-FACS from "//trim(fname2)
+     call open_file(IO_TIMEFACS,"r",fname2,needed=.false.,iostat=ios)
+     found_HourlyFacFile=(ios==0)
+     FOUNDHRLY: if(found_HourlyFacFile)then
+       n = 0
+       HRLYLOOP: do 
          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
          n = n + 1
          !if(dbgTF)write(*,*) "HourlyFacs ", n, trim(inputline)
@@ -532,6 +526,7 @@ contains
            
          ! Use sumfac for mean, and normalise within each day/sector
          ! (Sector 10 had a sum of 1.00625)
+
          if(  idd > 0 ) then !day value defined
               sumfac = sum(fac_ehh24x7(1,insec,:,idd,1))/24.0
               !if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
@@ -552,96 +547,114 @@ contains
                  end do
               end do
          end if
-      end do
+       end do HRLYLOOP
 
-      if (dbgTF) write(unit=6,fmt=*) dtxt//"Read ", n, " records from ", trim(fname2)
-      call CheckStop ( any(fac_ehh24x7 < 0.0 ) , dtxt//"Unfilled efac_ehh24x7")
+       if (dbgTF) write(unit=6,fmt=*) dtxt//"Read ", n, &
+              " EHH24x7 records from ", trim(fname2)
+       call CheckStop ( any(fac_ehh24x7 < 0.0 ) , dtxt//"Unfilled efac_ehh24x7")
 
-      close(IO_TIMEFACS)
-    end if
+       close(IO_TIMEFACS)
+     end if FOUNDHRLY  ! (found_HourlyFacFile)then
+   end if  CLIMTEMPO ! CAMS_TEMPO_CLIM test 
+   if ( dbgTF ) write(*,*) dtxt//' EXIT CLIMTEMPO', found_HourlyFacFile
 
 !3.1)Additional country and species specific hourly time factors
-    do iemis = 1, NEMIS_FILE
+
+    SPECEMLOOP: do iemis = 1, NEMIS_FILE
        fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
-       if(ios==0)then
-          n = 0
-          do 
-             read(IO_TIMEFACS,"(a)",iostat=ios) inputline
-             n = n + 1
-             if(dbgTF)write(*,*) dtxt//"HourlyFacsSpecials ", n, trim(inputline)
-             if ( ios <  0 ) exit     ! End of file
-             if( index(inputline,"#")>0 ) then ! Headers
-                if(n==1) call PrintLog(trim(inputline))
-                cycle
-             else
-                read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
-                     (tmp24(ihh),ihh=1,24)
-                maxidx = max(insec,maxidx)
-                if(insec>N_TFAC) cycle
-                icc=find_index(inland,Country(:)%icode)
-                if( dbgTF ) write(*,*) dtxt//"HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
-                
-                if( icc<0 .and. inland/=0)then
-                   write(*,*)dtxt//"Warning: HourlyFacsSpecials, country code not recognized", inland
-                   cycle
-                endif
-             end if
-             if(  idd == 0 ) then ! same values every day
-                do idd2 = 1, 7
-                   do ihh=1,24
-                      if(inland/=0)then
-                         fac_ehh24x7(iemis,insec,ihh,idd2,icc) = tmp24(ihh)
-                      else
-                         fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
-                      end if
-                   end do
-                end do
-                if(inland/=0)then
-                   sumfac = sum(fac_ehh24x7(iemis,insec,:,1,icc))/24.0
-                   do idd2 = 1, 7
-                      fac_ehh24x7(iemis,insec,:,idd2,icc) = fac_ehh24x7(iemis,insec,:,idd2,icc) / sumfac
-                   end do
-                else
-                   sumfac = sum(fac_ehh24x7(iemis,insec,:,1,1))/24.0
-                   do idd2 = 1, 7
-                      fac_ehh24x7(iemis,insec,:,idd2,:) = fac_ehh24x7(iemis,insec,:,idd2,:) / sumfac
-                   end do
-                end if
-             else
-                do ihh=1,24
-                   if(inland/=0)then
-                      fac_ehh24x7(iemis,insec,ihh,idd,icc) = tmp24(ihh)
-                   else
-                      fac_ehh24x7(iemis,insec,ihh,idd,:) = tmp24(ihh)
-                   end if
-                end do
-                if(inland/=0)then
-                   sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,icc))/24.0
-                   fac_ehh24x7(iemis,insec,:,idd,icc) = fac_ehh24x7(iemis,insec,:,idd,icc) / sumfac
-                else
-                   sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,1))/24.0
-                   fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) / sumfac
-                end if
-             end if
-             
-             ! Use sumfac for mean, and normalise within each day/sector
-             if(inland==0)icc=1
-             if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
-                  dtxt//'HOURLY-FACS mean min max', idd, insec, sumfac, &
-                  minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
-                  maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
-             
-          end do
-          close(IO_TIMEFACS)
-       else
+       if(dbgTF) write(*,*) dtxt//'Hourly SPECIAL', iemis,.not.found_HourlyFacFile,ios, trim(fname2)
+       if ( ios /= 0 ) then
           if(me==0 .and. fname2/= 'NOTSET') write(*,*)dtxt//&
             'Special hourly factors not found (but not needed): ',trim(fname2)
-       endif          
-    end do ! NEMIS_FILE
+          cycle SPECEMLOOP
+       end if
+       n = 0
+       SPECLOOP: do 
+          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
+          n = n + 1
+          if(dbgTF)write(*,*) dtxt//"HourlyFacsSpecials ", n, trim(inputline)
+          if ( ios <  0 ) exit     ! End of file
+          if( index(inputline,"#")>0 ) then ! Headers
+             if(n==1) call PrintLog(trim(inputline))
+             cycle
+          else
+            ! ===== START New June 2023 ===========================
+            if ( TimeFacBasis == "CAMS_TEMPO_CLIM" ) then
+              read(inputline,fmt=*,iostat=ios) code,secname, idd, &
+                 (tmp24(ihh),ihh=1,24)
+              ic=find_index(code,Country(:)%code)
+              inland = Country(ic)%icode ! just for print out
+              insec=find_index(secname,SECTORS(:)%longname)             
+            ! ===== END New June 2023 ===========================
+             else
+               read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
+                  (tmp24(ihh),ihh=1,24)
+             end if ! JUNE 2023
+             maxidx = max(insec,maxidx)
+
+             if(insec>N_TFAC) cycle
+             icc=find_index(inland,Country(:)%icode)
+             if( dbgTF ) write(*,*) dtxt//"HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
+             
+             if( icc<0 .and. inland/=0)then
+                write(*,*)dtxt//"Warning: HourlyFacsSpecials, country code not recognized", inland
+                cycle
+             endif
+          end if
+
+          if(  idd == 0 ) then ! same values every day
+             do idd2 = 1, 7
+                do ihh=1,24
+                   if(inland/=0)then
+                      fac_ehh24x7(iemis,insec,ihh,idd2,icc) = tmp24(ihh)
+                   else
+                      fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
+                   end if
+                end do
+             end do
+             if(inland/=0)then
+                sumfac = sum(fac_ehh24x7(iemis,insec,:,1,icc))/24.0
+                do idd2 = 1, 7
+                   fac_ehh24x7(iemis,insec,:,idd2,icc) = fac_ehh24x7(iemis,insec,:,idd2,icc) / sumfac
+                end do
+             else
+                sumfac = sum(fac_ehh24x7(iemis,insec,:,1,1))/24.0
+                do idd2 = 1, 7
+                   fac_ehh24x7(iemis,insec,:,idd2,:) = fac_ehh24x7(iemis,insec,:,idd2,:) / sumfac
+                end do
+             end if
+          else
+             do ihh=1,24
+                if(inland/=0)then
+                   fac_ehh24x7(iemis,insec,ihh,idd,icc) = tmp24(ihh)
+                else
+                   fac_ehh24x7(iemis,insec,ihh,idd,:) = tmp24(ihh)
+                end if
+             end do
+             if(inland/=0)then
+                sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,icc))/24.0
+                fac_ehh24x7(iemis,insec,:,idd,icc) = fac_ehh24x7(iemis,insec,:,idd,icc) / sumfac
+             else
+                sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,1))/24.0
+                fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) / sumfac
+             end if
+          end if
+          
+          ! Use sumfac for mean, and normalise within each day/sector
+          if(inland==0)icc=1
+          if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+               dtxt//'HOURLY-FACS mean min max', idd, insec, sumfac, &
+               minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
+               maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
+          
+       end do SPECLOOP
+       close(IO_TIMEFACS)
+    end do SPECEMLOOP ! NEMIS_FILE
+
     if(.not.found_HourlyFacFile) call CheckStop( any(fac_ehh24x7 < 0.0 ) ,&
          dtxt//"Unfilled efac_ehh24x7")
-   end if ! CAMS_TEMPO_CLIM test
+
    if(N_TFAC/=maxidx .and. MasterProc) write(*,*)'WARNING: ',N_TFAC,&
     ' timefactor indices defined in SECTOR, but ',maxidx,' found in the timefactor files'
 
