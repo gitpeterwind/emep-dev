@@ -5,14 +5,14 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19cj
+    mk.ChemFiles EmChem19rc
 
-  [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
-    are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
+  [This will copy pre-made files from ZCM_EmChem19rc. The files in that directory
+    are usually prepared by Dave, Willem, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
 2023 UPDATE: 
-EmChem19cj - for CLOUDJ - new default
+EmChem19rc - for CLOUDJ - new default
 
 2021 UPDATE: 
 EmChem19r,  EmChem19rp (=EmChem19r+pollen).
@@ -47,6 +47,11 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 June 2023, Dave, Agnes
+
+  Changed EmChem19cj above to EmChem19rc - was mistake
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 June 2023, Dave
