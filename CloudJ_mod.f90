@@ -170,7 +170,7 @@ SUBROUTINE setup_phot_cloudj(i_emep,j_emep,errcode,mode)
     real, allocatable, save :: temp_obs(:,:,:), pres_obs(:,:,:), ozon_obs(:,:,:)
     character(len=150), save  :: fname_ozone
     real,  save :: dlat, dlon, emep_top
-    integer :: satellite_altind
+    integer, save :: satellite_altind
 
     ! mass fraction mapping between EMEP fine/coarse mode aerosol and CloudJ UMich bins
     real, save  :: SS_bin1, SS_bin2, SS_bin3 ,SS_bin4 
