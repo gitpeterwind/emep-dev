@@ -1039,6 +1039,10 @@ subroutine MeteoRead()
     end do
   end if ! PBL Hmix
 
+  ! Check if USES%FFireDispMethod and PBL%HmixMethod are consistent
+  call CheckStop(USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, &
+     'Inconsistent FFireDispMethod, PBL' //trim(namefield))
+
   if(USES%SOILWATER) then
     ! Soil water fields. Somewhat tricky.
     ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)

@@ -5,14 +5,14 @@ After checking out new code from dev, one has to copy the appropriate
 chemical mechanism files (CM) to the main directory, e.g. to get EmChem19
 chemistry, run:
 
-    mk.ChemFiles EmChem19cj
+    mk.ChemFiles EmChem19rc
 
-  [This will copy pre-made files from ZCM_EmChem19a. The files in that directory
-    are usually prepared by Dave, Robert or Alvaro, from the ecosx branch -
+  [This will copy pre-made files from ZCM_EmChem19rc. The files in that directory
+    are usually prepared by Dave, Willem, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
 2023 UPDATE: 
-EmChem19cj - for CLOUDJ - new default
+EmChem19rc - for CLOUDJ - new default
 
 2021 UPDATE: 
 EmChem19r,  EmChem19rp (=EmChem19r+pollen).
@@ -47,6 +47,160 @@ CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 June 2023, Peter
+
+Small bug: satellite_altind was declared as real, but is used as index in arrays.
+Did a small test, and it does not seem to make any difference.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 June 2023, Dave, Agnes
+
+  Changed EmChem19cj above to EmChem19rc - was mistake
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 June 2023, Dave
+
+Config_mod 
+  - added TimeFacBasis:
+          If CAMS_TEMPO_CLIM then month, week and hour factors from that data. 
+          If MIXED - old behaviour
+
+config_emep.nml
+  - Fixed type on SECTORS_ADD GNFR_G 2nd index (from 7 2 7 to 7 8 7)
+ 
+
+Timefactors_mod 
+  - added TimeFacBasis:
+
+  code re-arrangement started:
+     to avoid if (.not.XXXX), and 
+     added labels to clarify loop start and end (e.g. HRLYLOOP)
+     replaced if (ios==0) then with if (ios/=0) cycle - saves a load of
+      indentation.
+
+New code deals with CAMS_TEMPO_CLIM Hourly as a "Specials" case. Should make
+default one day.
+
+EmisGet_mod - fixed output format error for debug_tfac line
+
+*** IMPORTANT ****
+  If CAMS_TEMPO_CLIM used  then use SECTORS_ADD in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 June 2023, Peter
+
+Fixed bug for MET2D outputting of 3D fields
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 June 2023, Dave, Alvaro
+
+  CAMS_TEMPO_CLIM methods enabled. Needs check, and possible bugs in 
+   CAMS_TEMPO and DAYOFYEARTIMEFAC need checking
+
+  So, we have two CAMS options:
+
+   CAMS_TEMPO (=from previous code, from 12/4/23)  - can read day-of-year variations
+
+  USES%DAYOFYEARTIMEFAC = T,
+
+   CAMS_TEMPO_CLIM = new - reads climatological monthly, day-of-week, and hour-of-day files
+    from CAMS-TEMPO system.
+
+   IMPORTANT:::
+
+    If MonthlyFacBasis set to "CAMS_TEMPO_CLIM" in config, needs to
+    uncomment/enable ADD_SECTORS lines in config_emep.nml to reset
+    time-factor indices to 1-19, instead of SNAP's 1-11.
+
+    *** Check if original CAMS_TEMPO and DAYOFYEARTIMEFAC methods should have
+        done this.  Maybe hourly data were from SNAP sectors?
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7 June 2023, Dave
+
+Timefactors.f90 - small tweak to debug output (tfacs:emm) to record which country
+ and sector is found when using CAMS_TEMPO.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 June 2023, Dave
+
+Moved bgnd_ch4 dir to BoundaryConditions on nebula and atos.
+
+Changed Config_module and config_emep.nml to cope.
+Set appropriate fileName_O3_Top and fileName_CH4_ibcs in both.
+
+BoundaryConditions_mod - now, fileName_CH4 needed=.true. if used.
+
+CAMS REG.v5 emissplits set in config_emep-nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 June 2023, Svetlana
+
+BoundaryConditions_mod.f90: Mace Head correction is added for 2021 
+as calculated by Anna
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 June 2023, Willem
+
+Background CH4 is now read from a default ch4 input file. This file
+contains historical concentrations up to 2019 and projections made using the
+IIASA GP Review CLE scenario with Dirk's box-model. The folder containing the 
+default CLE CH4 file also contains files describing the SSP scenarios 
+discussed in CMIP6 AR6 Annex III.
+
+The default behavior is that the iyr_trend CH4 concentration (when BGND_CH4=-1) is 
+replaced by the value read in from the file, if the file is found and if iyr_trend 
+is between 1960-2050 (range of years in the input file).
+
+If the file is found but the year is out of range, the model stops. 
+
+When BGND_CH4 is set to something greater than zero in config_emep.nml, this 
+value overwrites the value from the input file. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May - 1st June 2023, Dave
+
+PARTIALLY UPDATE - STILL IN PROGRESS
+
+AeroConstants - defaults to Isorropia
+
+Config_module -defaults to:
+ CLOUDJ           = .true. + same for CLOUDJAEROSOL, HRLYCLOUDJ, CLOUDICE,CLIMSTRATO3
+ (+CLEARSKYTAB = F)
+ HmixMethod = "NWP" 
+ FFireDispMethod = "PBL"
+ soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
+ LandInputs%desert changed to DataDir/Olson_2001_DEforEmep.nc
+   
+BiDir_emep - change intent out to intent inout to avoid Make warning
+
+Config_module - added YYYY change for fileName_O3_Top (Is this needed?)
+
+Derived_mod - reduced dbg output amount
+
+Met_mod - check if USES%FFireDispMethod and PBL%HmixMethod are consistent
+
+MosaicOutputs_mod - added any_case to find_index calls
+
+Runchem_mod - changed debug option to WindDust call.
+
+config_emep.nml:
+   PARTIALLY CHANGED. To be continued
+  e.g.
+   FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_YYYY.nc',
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 May 2023, Willem
+
+When ISORROPIA-Lite is used for fine-mode thermodynamics, this now runs with 
+internally mixed sea-salt assumption as well as base cations from dust as default. 
+These assumptions can be turned off by specifying AERO%CATIONS and 
+AERO%INTERALMIXED in config_emep.nml.
+
+SAFELOG10 function is now used in the aerosol pH calculations from ISORROPIA,
+avoiding any possible NaN and infinities, as well as dealing with any possible 
+negative H+ concentrations. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 May 2023, Peter

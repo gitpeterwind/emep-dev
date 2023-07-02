@@ -311,7 +311,12 @@ subroutine Init_My_Deriv()
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
     tag_name(1) = "Emis_mgm2_BioNatTERP"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-!
+!2023 tests
+    tag_name(1) = "Emis_mgm2_BioNatDUST_wb_f"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+    tag_name(1) = "Emis_mgm2_BioNatDUST_wb_c"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+
   if(USES%BIDIR) then
     tag_name(1) = "Emis_mgm2_BioNatNH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)

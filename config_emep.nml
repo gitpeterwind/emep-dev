@@ -31,12 +31,12 @@
 ! Common to all:
 
   USES%SOILNOX = T,
+
   emis_inputlist(1)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
   emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
-  !rv4.50: Not sure this is best. Revert to default xJune2012 MonthlyFacs from Config:
-  !MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_may2021/MonthlyFacs.POLL',
-  !Newer system is ECLIPSE, but could be 'GENEMIS' for older (ACP2012) variations:
-  !MonthlyFacBasis = 'ECLIPSE',
+
+!TESTING:
+  SitesFile = 'DataDir/sitesLLZ.txt',
 
 
 ! 1) GLOBAL
@@ -57,9 +57,6 @@
   !emis_inputlist(3)%name  = 'DataDir/Emis_ECLIPSEv6a_ships/emis_ECLIPSEv6a_YYYY_05deg_INTSHIP.nc',
   !emis_inputlist(3)%sector = 'SNAP',
 
-!Defaults splits are compatible with 'SNAP' sectors
-!SplitDefaultFile ='ZCMDIR/emissplit_run/emissplit.defaults.POLL',
-!SplitSpecialsFile='ZCMDIR/emissplit_run/emissplit.specials.POLL',
 
 ! 1a) GLOBAL; using ECLIPSEv6 emissions:
 
@@ -89,31 +86,127 @@
 
 ! 2b) Europe, using EMEP/CEIP GNFR emissions (SNOx in GNFR L):
   USES%SOILNOX_METHOD = 'NoFert',
-  EmisDir                 = 'DataDir/emis01deg_EMEP/GNFREmis_LATEST/', ! NEW Feb 2021!
+  !EmisDir                 = 'DataDir/emis01deg_EMEP/GNFREmis_LATEST/', ! NEW Feb 2021!
   !CAREFUL. Use of "latest" eases trend runs. Otherwise explicit is better
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
   !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_latest.nc',
 
+!Trends 2022 emis ------------------- 
+
+! PRELIM 2021:
+!  EmisDir='/nobackup/forsk/sm_agnny',
+! NEW FORMAT:
+!  Emis_sourceFiles(1)%filename = 'EmisDir/emis01degEMEP/emis_newFormat/GNFREmis_EMEP01_2021_26052023.nc',
+
+!For 2005-2020, change year
+  EmisDir                 = 'DataDir/emis_EMEPreport_2022',
+  emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_withREF2_sectorC_12092022.nc', 
+  !TESTTMP
+  !SOON EmisDir                 = '/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/new',
+  !SOON. Needs Emis_sourceFiles(1)%filename   emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_05062020.nc', 
+
+!For 2000-2004
+! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_21062022.nc', 
+
+!For 1990-1999
+! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_04072022.nc', 
+
+!Trends 2022 emis ends ----------------
+
+!Trends 2022 time factors -------------
+!For 1990-2019
+!BUG 2023   MonthlyFacBasis = 'GENEMIS', 
+!BUG 2023  USES%MonthlyNH3 = 'LOTOS', 
+!DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
+
+!June 2023 CAMS_TEMPO_CLIM option added - uses all time-factors from cams_temp_v2_3
+!!! Change time factor index to match CAMS_TEMPO
+! If used, uncomment to END-OF-CLIM
+ TimeFacBasis    = 'CAMS_TEMPO_CLIM',   ! sets also MonthlyFacBasis
+! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
+ MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
+ DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
+ HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
+
+! Change time factor index to match CAMS_TEMPO
+!                                                 tf  h  spl
+SECTORS_ADD(1) = 'GNFR_CAMS', 'GNFR_A',  'sec01',  1, 1,  1, 'Public Power', 'ALL',
+SECTORS_ADD(2) = 'GNFR_CAMS', 'GNFR_B',  'sec02',  2, 3,  2, 'Industry', 'ALL',
+SECTORS_ADD(3) = 'GNFR_CAMS', 'GNFR_C',  'sec03',  3, 2,  3, 'OtherStationaryComb', 'ALL',
+SECTORS_ADD(4) = 'GNFR_CAMS', 'GNFR_D',  'sec04',  4, 5,  4, 'Fugitive', 'ALL',
+SECTORS_ADD(5) = 'GNFR_CAMS', 'GNFR_E',  'sec05',  5, 2,  5, 'Solvents', 'ALL',
+SECTORS_ADD(6) = 'GNFR_CAMS', 'GNFR_F',  'sec06',  6, 2,  6, 'RoadTransport', 'ALL',
+SECTORS_ADD(7) = 'GNFR_CAMS', 'GNFR_G',  'sec07',  7, 8,  7, 'Shipping', 'ALL',
+SECTORS_ADD(8) = 'GNFR_CAMS', 'GNFR_H',  'sec08',  8, 7,  8, 'Aviation', 'ALL',
+SECTORS_ADD(9) = 'GNFR_CAMS', 'GNFR_I',  'sec09',  9, 2,  9, 'Offroad', 'ALL',
+SECTORS_ADD(10) = 'GNFR_CAMS', 'GNFR_J', 'sec10', 10, 6, 10, 'Waste', 'ALL',
+SECTORS_ADD(11) = 'GNFR_CAMS', 'GNFR_K', 'sec11', 11, 2, 11, 'AgriLivestock', 'ALL',
+SECTORS_ADD(12) = 'GNFR_CAMS', 'GNFR_L', 'sec12', 12, 2, 12, 'AgriOther', 'ALL',
+SECTORS_ADD(13) = 'GNFR_CAMS', 'GNFR_M', 'sec13', 13, 5, 13, 'Other', 'ALL',
+SECTORS_ADD(14) = 'GNFR_CAMS', 'GNFR_A1','sec14', 14, 1,  1, 'PublicPower_Point', 'ALL',
+SECTORS_ADD(15) = 'GNFR_CAMS', 'GNFR_A2','sec15', 15, 3,  1, 'PublicPower_Area', 'ALL',
+SECTORS_ADD(16) = 'GNFR_CAMS', 'GNFR_F1','sec16', 16, 2, 16, 'RoadTransportExhaustGasoline', 'ALL',
+SECTORS_ADD(17) = 'GNFR_CAMS', 'GNFR_F2','sec17', 17, 2, 17, 'RoadTransportExhaustDiesel', 'ALL',
+SECTORS_ADD(18) = 'GNFR_CAMS', 'GNFR_F3','sec18', 18, 2, 18, 'RoadTransportExhaustLPGgas', 'ALL',
+SECTORS_ADD(19) = 'GNFR_CAMS', 'GNFR_F4','sec19', 19, 2, 19, 'RoadTransportNonExhaustOther', 'ALL',
+!END-OF-CAMS-TEMPO-CLIM
+
+!For 2020
+!  USES%DAYOFYEARTIMEFAC   = T,
+!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
+
+!Trends 2022 time factors ends ---------
+
+
+  femisFile = 'DataDir/femis.dat',
+
 ! 2c) Splits compatible with GNFR_CAMS emissions
 ! EMISSPLITS - IMPORTANT - Especially the PM splits depend on the
-! inventory assumptions! Here we hav Ref2, which corresponds to
-! TNO's estimate of emissions with condensable organics. Sadly,
-! even the BC emissions are tied to this assumption.
-SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_defaults_POLL.csv',
-SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit_specials_POLL.csv',
+! inventory assumptions! Here we hav Ref2, which corresponds to TNO's
+! estimate of emissions with condensable organics. Sadly, even the BC
+! emissions are tied to this assumption.
 !
-!May 2021 possibility. If using EmChem19rnr (Res or NonRes emissions), for Ref2.1, use:
-!SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_defaults_POLL.csv',
-!SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v4_2_yr2017_REF2_1_rnr/emissplit_specials_POLL.csv',
+! As many countries have updated to use condensables though, we assume Ref2 is
+! the best guess.  
+! If using EmChem19rnr (Res or NonRes emissions), use:
 
+SplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_defaults_POLL.csv',
+SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_specials_POLL.csv',
+
+!DS TO-BE-DONE
+!Trends 2022 splits---------------
+!TODO!For 1990-2020
+!TODOSplitDefaultFile ='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_DT_rnr/emissplit_defaults_POLL.csv',
+!TODO
+!TODO!For 1990-2004
+!TODO!SplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL_2005.csv',
+!TODO
+!TODO!For 2005-2019 change year
+!TODOSplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL_2018.csv',
+!TODO
+!TODO!For 2020
+!TODO!SplitSpecialsFile='EmisDir/emissplits_specials/emissplit_specials_POLL.csv',
+!TODO!  USES%DAYOFYEARTIMEFAC   = T,
+!TODO!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
+!TODO
+
+
+!For 2020
+!  USES%DAYOFYEARTIMEFAC   = T,
+!  DayofYearFacFile        = '/home/sm_alvva/EMEP/time_factors_2020/lockdown.POLL',
+
+!Trends 2022 splits end-----------
+
+!
 !***** END OF DOMAIN SETTINGS !!! USER DECISIONS NEEDED HERE *****************!
 !
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
-!DS WILL UPDATE May 2020
+
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2021ms/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2021ms/Inputs_DO3SE.csv',
  LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2021ms/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2021ms/Olson_2001_DEforEmep.nc',
 
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
@@ -122,10 +215,6 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !------------------------------
   USES%testname         = 'EMEPSTD',
 !------------------------------
-! Under consideration:
-!  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012 and 2015-2017
-!  fileName_CH4_ibcs   = 'DataDir/BoundaryConditions/ch4_fromRCP85.txt'  ! Uses CH4 from RCP for iyr_trend
-!------------------------------ 
   USES%PROGRESS_FILES    = F,            ! write to file.msg for each output in file.nc
   USES%SKIP_INCOMPLETE_OUTPUT = F,       ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
@@ -134,13 +223,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-AP_v2.2.1_2015_REF2/emissplit
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
 
-! ZCMDIR system
+! ZCMDIR system (default set in Config_module)
 !  path used for emisplits, and CMX files for BiomassBurning and BICs
 ! ZCM_EmChem19 is default
 ! Although not necessary unless defaults are changed, we store these settings
 ! here for visibility, until all are used
-
-ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 
 !SecEmisOutWanted(2) = T, !output sector 2 separately
 
@@ -190,9 +277,11 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 !------------------------------
 ! volcanic emissions from passive degassing and historical eruptions
 !------------------------------
-  flocdef="DataDir/volcano_location.csv_20210525",
+ !flocdef="DataDir/volcano_location.csv_20210525",
  !HK 2023: update in code and dataformat:
-  femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27042023",
+ !femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27042023",
+  flocdef="DataDir/volcano_location.csv_01062023",
+  femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_01062023"
 
 
   need_topo=T, ! Do not use column emissions if topography.nc not found
@@ -266,6 +355,7 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%DERIVED         = F,   ! Derived field processing
   DEBUG%DRYDEP          = F,   ! Dry deposition
+  DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
@@ -304,20 +394,23 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
   BBneed_poll = F,  ! Avoids problems with missing ISOP in later FINN data
   BBMAP = 'FINN',   !or GFAS, GFED
   GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
-  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc'
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
+ ! May 2023. use mod by default to get longer time-series than modvrs
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_YYYY.nc',
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v25modvrs/ForestFire_Emis_modvrs_v25_YYYY.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_YYYY.nc',
+ ! if climatology used:
+  ! fire_year=2015, ! use 2015 when finn1.5 climatology is used
+  ! FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_2005-2015.nc', has records stored as 2015 values
 
-  ! Dec 2022: can use same mapping file for 1.5 and 2.5, but need different FINN patterns:
-  !v1.5 here:
-  FINN_PATTERN = 'DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc'
-  !v2.5 here:
-  FINN_PATTERN = 'DataDir/ForestFire/FINN/work/v25_convert/ForestFire_Emis_modvrs_v25_YYYY.nc'
+!------------------------------------------------------------
+! Boundary condition stuff
 
-  cmxBiomassBurning_FINN = 'ZCMDIR/CMX_BiomassBurning_FINNv2p5.txt',  ! works also for v1.5
-
-
+  fileName_O3_Top   = 'DataDir/BoundaryConditions/O3_EC/EC_O3_TOP_YYYY.nc', ! Use O3 from EC every 3 hours. 
+  fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
 
 !-------- Read/Write MODEs
-  NEST_MODE_READ = 'NONE',         ! do nothing
+  NEST_MODE_READ = 'MONTH',        ! NONE=do nothing
 ! NEST_MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! NEST_MODE_READ = 'START',        ! at the start of run
 ! NEST_MODE_READ = 'RESTART',      ! at the start of run, without overwriting BC
@@ -331,12 +424,17 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 !  NEST_outdate(2)= 2016,1,1,7,0    ! second date to save
 
 !-------- File name templates for Nest I/O
-  NEST_template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
-  NEST_template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
+!  NEST_template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
+!  NEST_template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
   NEST_template_write   = 'EMEP_OUT.nc',  ! if needed.
   NEST_template_dump   =  'EMEP_Dump.nc',          ! used at NEST_outdate
 ! NEST_template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
 ! NEST_template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
+
+!  NEST_template_read_3D = 'DataDir/BoundaryConditions/BCs_SeaSaltDust_rv4_17aEmChem16a_2012-16.nc',
+  NEST_template_read_BC = 'DataDir/BoundaryConditions/BCs_SeaSaltDust_rv4_17aEmChem16a_2012-16.nc',
+
+
 
 !---- To save disk space, you can also indicate the domain of the inner (small) grid,
 !-----and the model will only save the BC data for that grid:
@@ -346,9 +444,10 @@ ZCMDIR='DataDir/ZCM_DIRS/ZCM_EmChem19',
 !-------- Sub domain for write modes 
 !NEST_out_DOMAIN  = 370, 420, 270, 320, !restrict the save data to this part
 
-  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
-  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
-
+  USE_EXTERNAL_BIC  = T,              ! .false. to deactivate
+  EXTERNAL_BIC_NAME    = 'EMEP_Clim',        ! No IC/BC will be read
+  EXTERNAL_BIC_VERSION = 'EMEP_Clim',        ! No IC/BC will be read
+  
 !
 ! START OF OUTPUT config
 !
@@ -393,6 +492,7 @@ OutputMisc=
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
  !2D use MET2D. Can output also lowest level values of 3D fields. 
+ 'met2d_rho' ,'MET2D','air_density'      ,'-','kg/m3',-99,-99,F,1.0,T,'YMDH',
  'met2d_ustar_nwp','MET2D','ustar_nwp',                 '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_uref',     'MET2D','u_ref',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_test',     'MET2D','u_xxx',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
@@ -404,17 +504,24 @@ OutputMisc=
  'met2d_ps',       'MET2D','surface_pressure',          '-','hPa',  -99,-99,F,1.0,T,'YM',
 !'SHEAT_WRF',      'MET2D','HFX',                       '-','W/m2',-99,-99,F,1.0,T,'YM',
 !'met2d_LH_Wm2',   'MET2D','surface_flux_latent_heat',  '-','W/m2',-99,-99,F,1.0,T,'YMD',
-'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
+!'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
  'met2d_SMI_deep', 'MET2D','SMI3',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
  'met2d_SMI_uppr', 'MET2D','SMI1',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
-! 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMDH',
+ 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMDH',
 ! careful with precip.
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 !'met2d_LSPrec1',  'MET2D','large_scale_precipitations','-','mm'  ,-99,-99,F,1.0,F,'YMD',
 !
 !'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
- 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
-! 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
+!REM 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
+!REM 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YM,
+ 'MaxD8M_O3_26th','MaxD8M_26th', '',  'O3', 'ug/m3',  -1 , -1,   F,    1.0,   F, 'Y',
+ 'MaxD8M_O3_1st','MaxD8M_1st', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_2nd','MaxD8M_2nd', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_3rd','MaxD8M_3rd', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3_4th','MaxD8M_4th', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
+ 'MaxD8M_O3', 'MaxD8M',  '',  'O3', 'ug/m3',       -1 , -1, F, 1.0, F, 'YMD',
+ 'MaxD8M_CO', 'MaxD8M',  '',  'CO', 'ug/m3',       -1 , -1, F, 1.0, F, 'YMD',
 !====================================================================================
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
@@ -424,6 +531,9 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,'YM', !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,'YM', !!
+!FF0      'EmFFprof'           ,'kg/m2'   ,'3d','EmFFprof'  ,'MISC' ,'YMD', 
+      'SURF_PM25water'      ,'ug' ,'2d','PM25water' ,'MISC' ,'YMD',
+
      ! Column data:
      ! - COLUMN        advected species.
      ! - COLUMN:GROUP  group of advected species.
@@ -432,22 +542,27 @@ OutputConcs=
      ! - these data are compiled just after the chemistry step.
      ! - boundary cells are not calculated, hence expect zeros on edges.
       'NO2',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
+      'HCHO',         'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'CH4',          'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'CO',           'molec/cm2','kmax','COLUMN'    ,'MISC','YMD',
       'OH',           'molec/cm2','kmax','COLUMN:SHL','MISC','YMD',
      !----------------------------------------------------------------
 ! Some derived met
 !     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
+!REM      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
-      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'NMVOC'               ,'ppbC','2d','AIR_CONCS','GROUP','YMD',
 ! ug/m3                                                    
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!DS23 - just use ppb for Hourly gases, ug/m3 for pm 
+!aARgh Put bacl to fool aeroval
+      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+ !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+! PM10group sub-components
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -652,24 +767,19 @@ OutputVegO3=
 
   DDEP_ECOS =
    'Grid     ','YMD',
-   'Forest    ','YM',
-   'nonForest ','YM',
-   'Conif    ','YM',
-   'Seminat  ','YM',
-!   'Water_D  ','Y',
-   'Decid    ','Y',
-   'Crops    ','Y',
-!Nov2022 additions
-   'CF       ','Y',
-   'DF       ','Y',
+   'Forest    ','YMD',
+   'nonForest ','YMD',
+   'Conif    ','YMD',
+   'Decid    ','YMD',
+   'Seminat  ','YMD',
+   'Water_D  ','YMD',
+   'Crops    ','YMD',
 
  DDEP_WANTED =
    'SOX      ','GROUP','mgS',
    'OXN      ','GROUP','mgN',
    'RDN      ','GROUP','mgN',
    'O3       ','SPEC' ,'mg' ,
-   'NO2      ','SPEC' ,'mgN' ,
-!   'HO2NO2   ','SPEC' ,'mgN' ,
    'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =
@@ -684,13 +794,15 @@ OutputVegO3=
  ! Uses s5 type
   NewMosaic =
      'Mosaic', 'VG', 'HNO3', 'Grid', 'cms', 'YM'
-     'Mosaic', 'VG', 'PAN', 'BDLF_DECD_TROP_TREE', 'cms', 'YM'
+!     'Mosaic', 'VG', 'Dust_WB_f', 'Grid', 'cms', 'YM'
+!     'Mosaic', 'VG', 'DUST_WB_C', 'Grid', 'cms', 'YM'
+!     'Mosaic', 'VG', 'PAN', 'BDLF_DECD_TROP_TREE', 'cms', 'YM'
   MOSAIC_METCONCS = 
     'USTAR', 
     'LAI', 
     'VG', 
-    'CanopyO3', 
-    'FstO3'
+!    'CanopyO3', 
+!    'FstO3'
   MET_LCS = 
     'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
   Mosaic_timefmt = 'YMD',
@@ -716,4 +828,13 @@ OutputVegO3=
 !spinup_enddate = 2016,01,02,00,!example spinup period
 
   LAST_CONFIG_LINE = 'End of standard nml'
+&end
+&ExternalBICs_bc
+! BC from GLOBAL05 2012-2016
+  description='EMEP_Clim','EMEP_Clim',4,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'Dust_wb_f'      ,'DUST_WB_F'    ,1.0,T,F,-1,
+    'Dust_wb_c'      ,'DUST_WB_C'    ,1.0,T,F,-1,
+    'SeaSalt_f'      ,'SEASALT_F'    ,1.0,T,F,-1,
+    'SeaSalt_c'      ,'SEASALT_C'    ,1.0,T,F,-1,
 &end

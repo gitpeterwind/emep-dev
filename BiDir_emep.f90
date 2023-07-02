@@ -17,7 +17,7 @@ contains
  end subroutine BiDir_ijInit
  subroutine BiDir_ijRGs(ncall,iL,Rsur,Gsto)
      integer, intent(in):: ncall, iL
-     real, intent(out) :: Rsur
+     real, intent(inout) :: Rsur
      real, intent(in)  :: Gsto
  end subroutine BiDir_ijRGs
  subroutine BiDir_ijFluxes(i,j,iL,Vg_ref,Vg_eff,Rb,Rsur,Gsto)

@@ -15,11 +15,12 @@ module AeroConstants_mod
 
    type, public :: aero_t
      ! EMEP only
-     character(len=15) :: EQUILIB  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics 
+     character(len=15) :: EQUILIB  ='ISORROPIA'  ! or 'EQSAM' or 'MARS' !aerosol thermodynamics 
                                             ! or IN TESTING (Nov 2022) : 'ISORROPIA'
-     character(len=15) :: EQUILIB_WATER  ='MARS'  ! or 'EQSAM' !aerosol thermodynamics for PM water
+     character(len=15) :: EQUILIB_WATER  ='ISORROPIA'  ! or 'MARS' or 'EQSAM' !aerosol thermodynamics for PM water
      logical          :: DYNAMICS = .false.
-     logical          :: INTERNALMIXED = .false.
+     logical          :: INTERNALMIXED = .true. ! sea salt assumption, now only used by ISORROPIA-Lite
+     logical          :: CATIONS = .true.       ! dust cat assumption, now only used by ISORROPIA-Lite
      integer          :: NSIZE    = 7
      integer :: PM_F=1,SS_F=2,DU_F=3,SS_C=4,DU_C=5,PM=6  ! Will be set in GasParticleCoeffs_mod
      logical :: JUN21AERO = .false.   ! Flag to trigger ST's 2021 EQSAM and Aero tests

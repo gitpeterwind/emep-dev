@@ -1897,7 +1897,7 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
      hour_iland = indate%hour + Country(iland)%timezone
      if ( USES%TIMEZONEMAP ) then ! we can add summertime :-)
        hour_iland = hour_iland + timezones%inc(i,j)
-       if(debug_tfac) write(*,"(a,2i6)") dtxt//"TIMEDST:",&
+       if(debug_tfac) write(*,"(a,3i6)") dtxt//"TIMEDST:",&
           Country(iland)%timezone, hour_iland, timezones%inc(i,j)
      end if
   end if
