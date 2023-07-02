@@ -64,7 +64,7 @@ contains
 subroutine runchem()
 
 !  local
-  integer :: i, j
+  integer :: i, j, deriv_iter
   integer :: errcode
   integer :: nmonth, nday, nhour     
   logical ::  Jan_1st
@@ -250,9 +250,7 @@ subroutine runchem()
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(step_main,2)/=0) then
-        if(USES%LocalFractions) call lf_aero_pre(i,j)
-        call AerosolEquilib(i,j,debug_flag)
-        if(USES%LocalFractions) call lf_aero_pos(i,j)
+        call AerosolEquilib(i,j,debug_flag)        
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'D')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
@@ -265,9 +263,7 @@ subroutine runchem()
         call DryDep(i,j)
         call Add_2timing(31,tim_after,tim_before,"Runchem:DryDep")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'F')
-        if(USES%LocalFractions) call lf_aero_pre(i,j)
         call AerosolEquilib(i,j,debug_flag)
-        if(USES%LocalFractions) call lf_aero_pos(i,j)
         call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'G')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 

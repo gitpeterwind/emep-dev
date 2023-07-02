@@ -285,8 +285,8 @@ contains
              ispec = PM10_GROUP(ipm)
 
              ugtmp  = xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-             if (lf_fullchem) then
-                !For LF remove all O3-active species             
+             if (.false. .and. lf_fullchem) then
+                !For LF test remove all O3-active species             
                 if (  species(ispec)%name == 'SO4' ) then
                    ugtmp = 0
                 else if ( index( species(ispec)%name, 'NO3_f' )>0) then

@@ -22,6 +22,7 @@ module AerosolCalls
  use Debug_module,          only: DEBUG   ! -> DEBUG%EQUIB
  use EQSAM4clim_ml,        only :  EQSAM4clim
 ! use EQSAM_v03d_mod,        only: eqsam_v03d
+ use LocalFractions_mod,    only: lf_aero_pre,lf_aero_pos,lf_Nvert,lf_fullchem
  use MARS_mod,              only: rpmares, rpmares_2900, DO_RPMARES_new
  use PhysicalConstants_mod, only: AVOG
  use SmallUtils_mod,        only: find_index
@@ -73,7 +74,7 @@ contains
       case ( 'EMEP' )
         call ammonium()
       case ( 'MARS' , 'MARS_2900', 'GEOSCHEM')
-        call emep2MARS(debug_flag)
+        call emep2MARS(i, j, debug_flag)
       case ( 'EQSAM' )
         call emep2EQSAM(i, j, debug_flag)
       case ( 'ISORROPIA' )
@@ -278,7 +279,7 @@ contains
 end subroutine emep2isorropia
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine emep2MARS(debug_flag)
+      subroutine emep2MARS(i,j,debug_flag)
 
  !..................................................................
  ! Pretty old F. Binkowski code from EPA CMAQ-Models3
@@ -286,6 +287,7 @@ end subroutine emep2isorropia
  !..................................................................
 
  logical, intent(in) :: debug_flag 
+ integer, intent(in) :: i,j
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
  real, parameter ::    FLOOR2 = 1.0E-9         ! minimum concentration  
 
@@ -293,7 +295,7 @@ end subroutine emep2isorropia
   real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
-  integer :: k, errmark
+  integer :: k, errmark, niter, iter
  !-----------------------------------
   call CheckStop( SO4_ix<1, "emep2MARS:SO4 not defined" )
   call CheckStop( NH4_f_ix<1, "emep2MARS:NH4_f not defined" )
@@ -301,11 +303,13 @@ end subroutine emep2isorropia
   call CheckStop( NO3_f_ix<1, "emep2MARS:NO3_f not defined" )
   call CheckStop( NH3_ix<1, "emep2MARS: NH3 not defined" )
 
-   coef = 1.e12 / AVOG
+  coef = 1.e12 / AVOG
 
-   do k = KCHEMTOP, KMAX_MID
-  
-
+  do k = KCHEMTOP, KMAX_MID
+      niter = 1
+      if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
+      do iter=1,niter !only used for LocalFractions
+      call lf_aero_pre(i,j,k,iter) !only used for LocalFractions
 !//.... molec/cm3 -> ug/m3
 ! Use FLOOR2 = 1.0e-8 molec/cm3 for input. Too many problems
       so4in  = max(FLOOR2, xn_2d(SO4_ix,k)) * species(SO4_ix)%molwt  *coef
@@ -314,8 +318,8 @@ end subroutine emep2isorropia
       no3in  = max(FLOOR2, xn_2d(NO3_f_ix,k)) * species(NO3_f_ix)%molwt  *coef
       nh4in  = max(FLOOR2, xn_2d(NH4_f_ix,k)) * species(NH4_f_ix)%molwt  *coef
 
- !--------------------------------------------------------------------------                
-      if(AERO%EQUILIB=='MARS')then 
+      !--------------------------------------------------------------------------                
+      if(AERO%EQUILIB=='MARS')then
          call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag) 
@@ -337,12 +341,13 @@ end subroutine emep2isorropia
         call CheckStop(aNO3out< 0.0, "XMARS: aNO3out")
         call CheckStop(aNH4out< 0.0, "XMARS: aNH4out")
       end if ! DEBUG%EQUIB
-
+      
       xn_2d(HNO3_ix,k)  = max (FLOOR, gNO3out / (species(HNO3_ix)%molwt *coef) )
       xn_2d(NH3_ix,k)   = max (FLOOR, gNH3out / (species(NH3_ix)%molwt  *coef) )
       xn_2d(NO3_f_ix,k)  = max (FLOOR, aNO3out / (species(NO3_f_ix)%molwt  *coef) )
       xn_2d(NH4_f_ix,k)  = max (FLOOR, aNH4out / (species(NH4_f_ix)%molwt  *coef) )
-
+      call lf_aero_pos(i,j,k,iter)
+      end do
    end do  ! K-levels
 
  end subroutine emep2MARS

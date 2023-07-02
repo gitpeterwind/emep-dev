@@ -38,9 +38,9 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  Dchem_lf, xn_shl_lf, rcemis_lf, lf_rcemis,&
-                                  NSPEC_fullchem_lf, NSPEC_fullchem_inc_lf, &
-                                  N_lf_derivemis
+                                  rcemis_lf, lf_rcemis,&
+                                  NSPEC_deriv_lf, N_lf_derivemis,&
+                                  lf_chem_pre, lf_chem_mid, lf_chem_pos
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -85,7 +85,7 @@ contains
 
     !  Local
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
-    integer ::  k, ichem, iter,n, i_lf, Nd    ! Loop indices
+    integer ::  k, ichem, iter,n, Nd   ! Loop indices
     integer, save ::  nchem         ! No chem time-steps
     real(kind=dp)    ::  dt2, accdt2, accdt
     real(kind=dp)    ::  P, L                ! Production, loss terms
@@ -159,56 +159,9 @@ contains
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
-       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
-          !make rcemis_lf and N_lf_derivemis
-          call lf_rcemis(i,j,k,eps1-1.0)
+       if (USES%LocalFractions) then          
+          call lf_chem_pre(i,j,k,dti(1),Nd)
        endif
-       if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
-          !compute chemistry with small changes in input concentrations
-
-          Nd = NSPEC_fullchem_lf + N_lf_derivemis !shorter
-
-          !Careful sometimes the only difference between xnew and xnew_lf are from initial values (Dchem_lf and/or xn_shl_lf)
-          !Saving the specific lf values for them can lead to instabilities.
-          !Therefore if the concentrations are low compared to the deltas, we fix them to same values as base case.
-          do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf
-                if(abs(xn_shl_lf(i_lf,n,k,i,j)- xnew(n))*100<xnew(n))then
-                   xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
-                   x_lf(i_lf,n)    = xn_shl_lf(i_lf,n,k,i,j) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
-                   x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
-                else
-                   xnew_lf(i_lf,n) = xnew(n)
-                   x_lf(i_lf,n)    = x(n)
-                end if
-             end do
-          end do
-
-          do n = NSPEC_SHL + 1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, NSPEC_fullchem_lf
-                xnew_lf(i_lf,n) = xn_2d(n,k)
-                x_lf(i_lf,n)    = xn_2d(n,k) - Dchem_lf(i_lf,n,k,i,j)*dti(1)*1.5
-                x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
-             end do
-          end do
-          !for emissions we use Dchem and not Dchem_lf. Because in some situations
-          !the xnew_lf does not change because of emissions, but because of
-          !differences in Dchem_lf only -> creates large derivatives.
-          do n = 1, NSPEC_fullchem_inc_lf
-             do i_lf = NSPEC_fullchem_lf + 1, NSPEC_fullchem_lf + N_lf_derivemis
-                xnew_lf(i_lf,n) = xnew(n)
-                x_lf(i_lf,n)    = x(n)
-             end do
-          end do
-
-          !increase slightly one of the concentrations for chemical derivatives
-          do i_lf = 1, NSPEC_fullchem_lf
-             xnew_lf(i_lf,i_lf+NSPEC_SHL) = xn_2d(i_lf+NSPEC_SHL,k) * eps1
-             x_lf(i_lf,i_lf+NSPEC_SHL)    = xn_2d(i_lf+NSPEC_SHL,k) * eps1 - Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j)*dti(1)*1.5
-             x_lf(i_lf,i_lf+NSPEC_SHL)    = max (x_lf(i_lf,i_lf+NSPEC_SHL), 0.0)
-          end do
-
-       end if
 
        !*************************************
        !     Start of integration loop      *
@@ -229,7 +182,6 @@ contains
        do ichem = 1, nchem
 
           do n=1,NSPEC_TOT
-
              if ( x(n) < 0.0  .or. xnew(n) < 0.0 ) then
                print '(a,3i4,a10,9es12.3)', dtxt//'NCHEM', me,  n, ichem,&
                  species(n)%name, x(n), xnew(n), Dchem(n,k,i,j),  &
@@ -242,21 +194,12 @@ contains
              xold(n) = max( xold(n), 0.0 )
              x(n) = xnew(n)
              xnew(n) = xextrapol
-
-             if (lf_fullchem .and. k > KMAX_MID-lf_Nvert .and. n <= NSPEC_fullchem_inc_lf) then
-                do i_lf = 1, Nd
-                   xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc(ichem)
-                   xold_lf(i_lf,n) = coeff1(ichem)*xnew_lf(i_lf,n) - coeff2(ichem)*x_lf(i_lf,n)
-                   xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )
-                   x_lf(i_lf,n) = xnew_lf(i_lf,n)
-                   xnew_lf(i_lf,n) = xextrapol
-                   if(xnew_lf(i_lf,n) < CPINIT )then
-                      xnew_lf(i_lf,n) = CPINIT
-                   end if
-                end do
-             end if
           end do
-
+          
+          if (USES%LocalFractions) then          
+             call lf_chem_mid(k,cc(ichem),coeff1(ichem),coeff2(ichem),CPINIT)
+          endif
+ 
           dt2  =  dti(ichem) !*(1.0+cc(ichem))/(1.0+2.0*cc(ichem))
           if ( DEBUG%RUNCHEM .and. DebugCell )  then
             accdt2 = accdt2 + dt2
@@ -315,33 +258,9 @@ contains
        !     End of integration loop        *
        !*************************************
 
-       if (USES%LocalFractions .and. k > KMAX_MID-lf_Nvert) then
-          !make rcemis_lf and N_lf_derivemis
+       if (USES%LocalFractions ) then
           call lf_chem_emis_deriv(i,j,k, xn_2d(1,k), xnew, eps1)
-       endif
-       if(lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
-          !save tendencies for each derivative
-          do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf
-                 Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_shl_lf(i_lf,n,k,i,j) )*dt_advec_inv
-              end do
-          end do
-          do n = NSPEC_SHL+1, NSPEC_fullchem_inc_lf
-             do i_lf = 1, NSPEC_fullchem_lf
-                Dchem_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n) - xn_2d(n,k) )*dt_advec_inv
-             end do
-          end do
-          !save shl
-          do n = 1, NSPEC_SHL
-             do i_lf = 1, NSPEC_fullchem_lf
-                 xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n) !save short lives for each derivatives
-              end do
-          end do
-          do i_lf = 1, NSPEC_fullchem_lf
-             Dchem_lf(i_lf,i_lf+NSPEC_SHL,k,i,j) = (xnew_lf(i_lf,i_lf+NSPEC_SHL) - xn_2d(i_lf+NSPEC_SHL,k) * eps1)*dt_advec_inv
-          end do
-
-
+          call lf_chem_pos(i,j,k)
        end if
 
        !**  Saves tendencies Dchem and returns the new concentrations:

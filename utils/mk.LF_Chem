@@ -6,7 +6,10 @@
 # so that it can be used by LocalFraction routines for full chemistry runs
 #
 
-# NB: using (:) instead of (1:Nd) is faster! (10-15%)
+# Note: using (:) instead of (1:Nd) is faster! (10-15%), but only if the array has dimension not much larger than Nd
+
+echo "Before starting, you should move the inert parts in CM_Reactions1 to CM_Reactions2"
+echo "and move SO4, NH3 and NO3_c from CM_Reactions2 to CM_Reactions1"
 
 #test if the CM_Reactions1.inc has already been transformed
 if grep P_lf CM_Reactions1.inc >/dev/null
@@ -21,21 +24,21 @@ echo 'if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' >>CM_Reactions1_tmp.inc
 cat CM_Reactions1.inc>> CM_Reactions1_tmp.inc
 echo 'endif' >>CM_Reactions1_tmp.inc
 
-sed -i 's/P \= P +/P_lf(:) \= P_lf(:) +/g' CM_Reactions1_tmp.inc
-sed -i 's/P \= /P_lf(:) \= /g' CM_Reactions1_tmp.inc
-sed -i 's/ dt2 \* P/  dt2 \* P_lf(:)/g' CM_Reactions1_tmp.inc
-sed -i 's/L = L +/L_lf(:) \= L_lf(:) +/g' CM_Reactions1_tmp.inc
-sed -i 's/L \=/L_lf(:) =/g' CM_Reactions1_tmp.inc
-sed -i 's/ L)/ L_lf(:))/g' CM_Reactions1_tmp.inc
-sed -i 's/xnew(/xnew_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i 's/xold(/xold_lf(:,/g' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/i do i_lf = 1,Nd' CM_Reactions1_tmp.inc
-sed -i '/sum(xnew_lf/s/xnew_lf(:/xnew_lf(i_lf/g' CM_Reactions1_tmp.inc
+sed -i 's/P \= P +/P_lf(1:Nd) \= P_lf(1:Nd) +/g' CM_Reactions1_tmp.inc
+sed -i 's/P \= /P_lf(1:Nd) \= /g' CM_Reactions1_tmp.inc
+sed -i 's/ dt2 \* P/  dt2 \* P_lf(1:Nd)/g' CM_Reactions1_tmp.inc
+sed -i 's/L = L +/L_lf(1:Nd) \= L_lf(1:Nd) +/g' CM_Reactions1_tmp.inc
+sed -i 's/L \=/L_lf(1:Nd) =/g' CM_Reactions1_tmp.inc
+sed -i 's/ L)/ L_lf(1:Nd))/g' CM_Reactions1_tmp.inc
+sed -i 's/xnew(/xnew_lf(1:Nd,/g' CM_Reactions1_tmp.inc
+sed -i 's/xold(/xold_lf(1:Nd,/g' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/i do n = 1,Nd' CM_Reactions1_tmp.inc
+sed -i '/sum(xnew_lf/s/xnew_lf(1:Nd/xnew_lf(n/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
 
-for species in NO NO2 CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK CH3CHO GLYOX MGLYOX
+for species in SO2 SO4 NH3 NO NO2 shipNOx CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK CH3CHO GLYOX MGLYOX
 do
-  sed -i "/ xnew_lf(:,$species) =.*/i  P_lf(NSPEC_fullchem_lf+1:Nd) = P_lf(NSPEC_fullchem_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
+  sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
 
 

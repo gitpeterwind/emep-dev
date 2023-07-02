@@ -131,6 +131,7 @@ contains
     logical, save :: dbg= .false., first_call = .true.
     character(len=*), parameter :: dtxt = 'Emis_GetCdf:'
     integer, save :: readcounter = 0
+    character(len=TXTLEN_NAME), save :: previousspecies='NOTSET' !to steer when to write info
 
     if ( first_call ) then
       dbg =  ( MasterProc .and. DEBUG%GETEMIS )
@@ -210,8 +211,9 @@ contains
                             needed=.true.)
        endif
     else
-       if(me==0 .and. (step_main==1 .or. DEBUG%EMISSIONS))&
-            write(*,*)trim(Emis_source%varname)//' read from '//trim(fname)//', record ',record
+       if(me==0 .and. ((step_main==1.and.previousspecies/=Emis_source%species) .or. DEBUG%EMISSIONS))&
+            write(*,*)trim(Emis_source%species)//' read from '//trim(fname)//', record ',record
+       previousspecies=Emis_source%species
        if(Emis_source%units(1:5) == 'kt/m2'  &
             .or. Emis_source%units(1:6) == 'kt m-2'  &
             .or. Emis_source%units(1:9) == 'tonnes/m2'  &
