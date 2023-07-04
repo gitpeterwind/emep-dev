@@ -1027,6 +1027,7 @@ contains
     logical country_owner_map(NLAND,NPROC)
     integer largestsplit !used only here to check value
     integer :: f, itot, iqrc
+    character(len=*), parameter :: dtxt='Emis:'
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -1367,7 +1368,7 @@ contains
     if( USES%EMISSTACKS ) call readstacks(IO_EMIS)
 
     if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
-       write(*,*) "Reading monthly and daily timefactors"
+       write(*,*) dtxt//"Reading monthly and daily timefactors"
        if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
           write(*,*)"Emissions using gridded monhtly timefactors "
           write(IO_LOG,*)"Emissions using gridded monhtly timefactors "
