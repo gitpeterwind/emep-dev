@@ -698,7 +698,7 @@ contains
        else
           do mm = 1, 12
              write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
-               fac_dayofyear(insec,ic,iemis,15+(mm*30)),&
+               fac_dayofyear(insec,ic,iemis,15+((mm-1)*30)),&
                 fac_emm(ic,mm,2,1), fac_edd(ic,1,2,1)
           end do ! mm
        end if
