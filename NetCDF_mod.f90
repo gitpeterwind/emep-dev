@@ -1881,26 +1881,32 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
 end subroutine  createnewvariable
 !_______________________________________________________________________
 
-subroutine CloseNetCDF
+subroutine CloseNetCDF(ncFileID_given)
 !close open files
 !NB the data in a NetCDF file is not "safe" before the file is closed.
 !The files are NOT automatically properly closed after end of program,
-! and data may be lost if the files are not closed explicitely.
+  ! and data may be lost if the files are not closed explicitely.
+  integer, optional :: ncFileID_given
   integer :: i,ncFileID
 
   if(MasterProc)then
-    do i=IOU_INST,IOU_HOUR_INST
-      ncFileID=ncFileID_iou(i)
-      if(ncFileID/=closedID)then
-        call check(nf90_close(ncFileID))
-        ncFileID_iou(i)=closedID
-      end if
-      ncFileID=LF_ncFileID_iou(i)
-      if(ncFileID/=closedID)then
-        call check(nf90_close(ncFileID))
-        LF_ncFileID_iou(i)=closedID
-      end if
-    end do
+     if(present(ncFileID_given))then
+        call check(nf90_close(ncFileID_given))
+     else
+        !close all
+        do i=IOU_INST,IOU_HOUR_INST
+           ncFileID=ncFileID_iou(i)
+           if(ncFileID/=closedID)then
+              call check(nf90_close(ncFileID))
+              ncFileID_iou(i)=closedID
+           end if
+           ncFileID=LF_ncFileID_iou(i)
+           if(ncFileID/=closedID)then
+              call check(nf90_close(ncFileID))
+              LF_ncFileID_iou(i)=closedID
+           end if
+        end do
+     end if
   end if
 end subroutine CloseNetCDF
 
@@ -2027,13 +2033,13 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
 end subroutine GetCDF
 
 subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
-                            unit,validity,i_start,j_start,imax_in,jmax_in,reverse_k,needed,found)
+                            unit,validity,i_start,j_start,imax_in,jmax_in,reverse_k,needed,found,ncFileID_in)
 ! open and reads CDF file
 ! The grid MUST be in the same projection and resolution as the model grid
 ! the field are read directly into the subdomains
 ! k_start,k_end are the vertical levels to read, k=k_start,k_end
 ! for instance k_start=KMAX_MID,k_end=KMAX_MID gives only surface
-! for instance k_start1,k_end=KMAX_MID gives all levels
+! for instance k_start=1,k_end=KMAX_MID gives all levels
 ! if reverse_k=.true. , the k dimension in the file is reversed
 ! i_start,j_start can give a new origin instead of (1,1); i_start=2, menas that only i>=2 is read.
 ! the dimensions of Rvar are assumed:
@@ -2047,6 +2053,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   real, intent(out) :: Rvar(*)
   character(len=*), optional, intent(out) ::unit,validity
   integer, optional, intent(in) :: i_start,j_start,imax_in,jmax_in
+  integer, optional, intent(inout) :: ncFileID_in
   logical, optional, intent(in) :: reverse_k,needed
   logical, optional, intent(out):: found
 
@@ -2088,15 +2095,32 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   if(present(needed))fileneeded=needed
   if(present(found))found=.false.
 
-  if(fileneeded)then
-    call check(nf90_open(trim(fileName),nf90_nowrite,ncFileID),&
-               trim(fileName)//" not found")
+  if(.not. present(ncFileID_in))then
+     if(fileneeded)then
+        call check(nf90_open(trim(fileName),nf90_nowrite,ncFileID),&
+             trim(fileName)//" not found")
+     else
+        status=nf90_open(trim(fileName),nf90_nowrite,ncFileID)
+        if(status/=nf90_noerr)then
+           if(MasterProc) write(*,*)trim(fileName),' not found (but not needed)'
+           return
+        end if
+     end if
   else
-    status=nf90_open(trim(fileName),nf90_nowrite,ncFileID)
-    if(status/=nf90_noerr)then
-      if(MasterProc) write(*,*)trim(fileName),' not found (but not needed)'
-      return
-    end if
+     if(ncFileID_in  == closedID)then
+        if(fileneeded)then
+           call check(nf90_open(trim(fileName),nf90_nowrite,ncFileID),&
+                trim(fileName)//" not found")
+        else
+           status=nf90_open(trim(fileName),nf90_nowrite,ncFileID)
+           if(status/=nf90_noerr)then
+              if(MasterProc) write(*,*)trim(fileName),' not found (but not needed)'
+              return
+           end if
+        end if
+        ncFileID_in = ncFileID
+     end if
+     ncFileID = ncFileID_in
   end if
 
   !test if the variable is defined and get varID:
@@ -2254,7 +2278,9 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   end if
 
   deallocate(Rvalues)
-  call check(nf90_close(ncFileID))
+  if(.not. present(ncFileID_in))then
+     call check(nf90_close(ncFileID))
+  end if
   if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
 end subroutine GetCDF_modelgrid
 

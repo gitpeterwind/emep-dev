@@ -34,7 +34,7 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
                              RestrictDomain
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
-use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou
+use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,GetCDF_modelgrid
 use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_country_group_size, &
                              Max_lf_spec, TXTLEN_NAME, TXTLEN_FILE, &
                              Max_lf_res, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups
@@ -77,6 +77,8 @@ public  :: lf_aero_pre, lf_aero_pos
 public  :: lf_drydep, lf_wetdep
 public  :: lf_rcemis
 public  :: save_lf_emis
+public  :: lf_saveall
+public  :: lf_read
 private  :: addsource
 
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
@@ -125,7 +127,7 @@ real, allocatable, public, dimension(:,:), save ::rcemis_lf
 integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
 real, allocatable, public, dimension(:), save ::L_lf, P_lf
-real, allocatable, private, dimension(:,:),save ::xn_aero
+real, private, dimension(5,0:4),save ::xn_aero
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
@@ -460,7 +462,14 @@ contains
      end do
      Ncountrysectors_lf=0
      do i = 1, Max_lf_sectors
-        if(lf_country%sector_list(i) < 0) exit
+        if(lf_country%sector_list(i) < 0) then
+           if(i==1)then
+              !default to only sector 0
+              lf_country%sector_list(i) = 0
+           else              
+            exit
+          end if
+        end if
         Ncountrysectors_lf=Ncountrysectors_lf+1
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
      end do
@@ -665,10 +674,12 @@ contains
         else
            write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
         end if
+        if (.not. lf_fullchem) then
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(lf_src(isrc)%ix(i))%name)//', mw ',lf_src(isrc)%mw(i),i=1,lf_src(isrc)%Nsplit)
         if (lf_src(isrc)%type/='country') write(*,"(A,I4,A,I4)")'sector:',lf_src(isrc)%sector,',  res:',lf_src(isrc)%res
         !write(*,"(A,30I4)")'ix:',(lf_src(isrc)%ix(i),i=1,lf_src(isrc)%Nsplit)
+        end if
      end if
   end do
 
@@ -696,7 +707,7 @@ contains
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      if(me==0)then
-        write(*,*)isrc,' ',trim(lf_src(isrc)%species)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end,LF_SRC_TOTSIZE
+        write(*,*)isrc,' ',trim(lf_src(isrc)%species)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end
      end if
 
   end do
@@ -823,15 +834,17 @@ contains
     D8Max = 0.0 !init with low value
     D8M = 0.0 !init with low value
     D8Max_av = 0.0 !init necessary
-   end if
+  end if
 
-   allocate(xn_aero(5,0:4))
-   
+  if (lf_src(1)%restart) then
+     !initialize lf with values save on disk
+     call lf_read
+  end if
+  
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
   if(DEBUGall .and. me==0)write(*,*)'end init'
 
 end subroutine lf_init
-
 
 subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
@@ -887,6 +900,8 @@ subroutine lf_out(iotyp)
      endif
   else if(iotyp==IOU_YEAR .and. lf_src(1)%YEAR)then
      fileName=trim(runlabel1)//'_LF_full.nc'
+     if(me==0)write(*,*)'saving ALL'
+     if (lf_src(1)%save) call lf_saveall
   else
      return
   endif
@@ -994,9 +1009,8 @@ subroutine lf_out(iotyp)
         ipoll=lf_src(isrc)%poll
         if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%species)
-           if(iter==1 .and. me==0)write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
+           if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
            scale=1.0/av_fac(iotyp)
-           if(me==0)write(*,*)def2%name
            call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
            pollwritten(ipoll) = .true.
@@ -1107,7 +1121,7 @@ subroutine lf_out(iotyp)
                  if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox' .and. (lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f'))then
                     if(iter==2)tmp_SIA_cntry(:,:,n1) = tmp_SIA_cntry(:,:,n1) + tmp_out_cntry(:,:,n1)
                     if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
-                       if(me==0)write(*,*)'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
+                       if(me==0 .and.  first_call(iotyp))write(*,*)'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
                        def2%name='SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                       fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
@@ -3019,7 +3033,7 @@ subroutine lf_rcemis(i,j,k,eps)
           stop
        end if
        lf_src(Nsources)%species = species_adv(ix)%name
-       if(me==0)write(*,*)lf_src(Nsources)%species
+       if(me==0 .and. DEBUG)write(*,*)lf_src(Nsources)%species
        lfspec2spec(Nlf_species) = ix + NSPEC_SHL
        spec2lfspec(ix + NSPEC_SHL) = Nlf_species
        lf_src(Nsources)%full_chem = .true.
@@ -3186,4 +3200,172 @@ subroutine lf_rcemis(i,j,k,eps)
        
   end subroutine lf_chem_pos
   
+  subroutine lf_saveall
+    !save all values of lf on disk, for future restart
+    character(len=200) ::filename, varname
+    real :: scale
+    integer ::i,j,k,kk,n,iter,isrc,n1,jsec,isec,ic
+    integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10),ncFileID
+    integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
+    character (len=20) ::dimNames(10),dimNames_tot(10)
+    type(Deriv) :: def1 ! definition of fields
+    logical ::overwrite, create_var_only
+    real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
+    
+    write(filename,"(A,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%day,current_date%month,current_date%year,'.nc'
+    ncFileID=closedID
+    call Code_timer(tim_before)
+
+    select case(projection)
+     case('lon lat')
+       dimNames(3)='lon'
+       dimNames(4)='lat'
+       dimNames_tot(1)='lon'
+       dimNames_tot(2)='lat'
+    case default
+       dimNames(3)='i'
+       dimNames(4)='j'
+       dimNames_tot(1)='i'
+       dimNames_tot(2)='j'
+    end select
+    
+    def1%class='LF' !written
+    def1%avg=.false.      !not used
+    def1%index=0          !not used
+    def1%scale=1.0      !not used
+    def1%name='notset'
+    def1%unit='ug/m3'
+    ndim_tot=3
+    kmax=lf_Nvert
+    scale=1.0
+    CDFtype=Real4
+    dimSizes=1
+    dimSizes_tot(3)=lf_Nvert
+    dimNames_tot(3)='klevel'
+    chunksizes_tot=1
+    chunksizes_tot(1)=MAXLIMAX
+    chunksizes_tot(2)=MAXLJMAX
+    chunksizes_tot(3)=dimSizes_tot(3)
+    if(me==0)write(*,*)'LF save name ',trim(filename)
+    allocate(tmp_out_cntry(LIMAX,LJMAX,lf_Nvert))
+    do iter=1,2
+       overwrite=.false. !only used once per file
+       if(iter==1)overwrite=.true.!overwrite file if it exists
+       create_var_only=.false.
+       if(iter==1)create_var_only=.true.!only create all variables before writing into them
+       do isrc = 1, Nsources
+          if (lf_src(isrc)%species == 'FULLCHEM') cycle
+          if (lf_src(isrc)%type/='country') then
+             write(*,*)'lf_saveall: only country type implemented'
+             stop
+          end if
+          n1=lf_src(isrc)%start
+          do ic=1,Ncountry_lf+Ncountry_group_lf
+             do jsec=1,Ncountrysectors_lf
+                !single cell source
+                isec=lf_country%sector_list(jsec)
+                if(lf_country%sector_list(jsec)>=0)isec=lf_country%sector_list(jsec)
+                if(ic<=Ncountry_mask_lf)then
+                   write(def1%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(ic)))
+                   if(isec==0) write(def1%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(ic)))
+                else if(ic<=Ncountry_lf)then
+                   write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(ic-Ncountry_mask_lf))
+                   if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(ic-Ncountry_mask_lf))
+                else
+                   !country group
+                   write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
+                   if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
+                endif
+                if (lf_src(isrc)%full_chem)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                if(iter==2)then
+                   !must transpose array
+                   kk=0
+                   do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+                      kk=kk+1
+                      do j=1,ljmax
+                         do i=1,limax
+                            tmp_out_cntry(i,j,kk) = lf(n1,i,j,k)
+                         end do
+                      end do
+                   end do
+                end if
+                n1 = n1 + 1
+                if(me==0 .and. create_var_only.and.DEBUG)write(*,*)'creating ',trim(def1%name)
+                if(me==0 .and. .not. create_var_only .and.DEBUG)write(*,*)'saving ',trim(def1%name)
+                call Out_netCDF(IOU_YEAR,def1,ndim_tot,kmax,tmp_out_cntry,scale,CDFtype,dimSizes_tot,dimNames_tot,&
+                     fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                overwrite=.false.
+             end do
+          end do
+       end do
+    end do
+    call CloseNetCDF(ncFileID)
+    deallocate(tmp_out_cntry)
+    call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
+  end subroutine lf_saveall
+
+  subroutine lf_read
+    !read all values of lf ofrom disk
+    character(len=200) ::filename, varname
+    real :: scale
+    integer ::i,j,k,kk,n,iter,isrc,n1,jsec,isec,ic
+    integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10),ncFileID
+    type(Deriv) :: def1 ! definition of fields
+    real,allocatable ::tmp_out_cntry(:,:,:)
+    logical :: needed = .true.
+    
+    ncFileID=closedID
+    call Code_timer(tim_before)
+    filename= 'LF_OUT.nc'
+    write(filename,"(A,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%day,current_date%month,current_date%year,'.nc'
+    if(me==0)write(*,*)'Initializing LF from '//trim(filename)
+
+    allocate(tmp_out_cntry(LIMAX,LJMAX,lf_Nvert))
+    do isrc = 1, Nsources
+       if (lf_src(isrc)%species == 'FULLCHEM') cycle
+       if (lf_src(isrc)%type/='country') then
+          write(*,*)'lf_read: only country type implemented'
+          stop
+       end if
+       n1=lf_src(isrc)%start
+       do ic=1,Ncountry_lf+Ncountry_group_lf
+          do jsec=1,Ncountrysectors_lf
+             !single cell source
+             isec=lf_country%sector_list(jsec)
+             if(lf_country%sector_list(jsec)>=0)isec=lf_country%sector_list(jsec)
+             if(ic<=Ncountry_mask_lf)then
+                write(def1%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(ic)))
+                if(isec==0) write(def1%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(ic)))
+             else if(ic<=Ncountry_lf)then
+                write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(ic-Ncountry_mask_lf))
+                if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(ic-Ncountry_mask_lf))
+             else
+                !country group
+                write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
+                if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
+             endif
+             if (lf_src(isrc)%full_chem)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+             if(me==0 .and. DEBUG)write(*,*)'Reading ',trim(def1%name),ncFileID
+             call GetCDF_modelgrid(def1%name,fileName,tmp_out_cntry,1,lf_Nvert,1,1,needed=needed,ncFileID_in=ncFileID)
+             !must transpose array
+             kk=0
+             do k = KMAX_MID-lf_Nvert+1,KMAX_MID
+                kk=kk+1
+                do j=1,ljmax
+                   do i=1,limax
+                      lf(n1,i,j,k) = tmp_out_cntry(i,j,kk)
+                   end do
+                end do
+             end do
+             n1 = n1 + 1          
+          end do
+       end do
+    end do
+
+    call CloseNetCDF(ncFileID)
+    deallocate(tmp_out_cntry)
+    call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
+  end subroutine lf_read
+
+
 end module LocalFractions_mod
