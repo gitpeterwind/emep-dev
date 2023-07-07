@@ -83,7 +83,7 @@ use Par_mod,               only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
      ,IRUNBEG,JRUNBEG, gi0,gj0, MSG_READ4, tlargegi0,tlargegj0
 use PhysicalConstants_mod, only: KARMAN, KAPPA, RGAS_KG, CP, GRAV
-use TimeDate_mod,          only: current_date, date,nmdays, &
+use TimeDate_mod,          only: current_date, print_date, date,nmdays, &
      add_secs,timestamp, make_timestamp, make_current_date
 use NetCDF_mod,        only: ReadField_CDF,vertical_interpolate,&
                          GetCDF_modelgrid,ReadTimeCDF,printCDF
@@ -154,7 +154,7 @@ subroutine MeteoRead_io()
       ts_now = make_timestamp(current_date)
       call add_secs(ts_now,nsec)
       if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
-        if(MasterProc)write(*,*)'Jumping over one day for meteo_date!'
+        if(MasterProc)write(*,*)dtxt//'Jumping over one day for meteo_date!'
         call add_secs(ts_now,24*3600.)
       end if
       next_inptime=make_current_date(ts_now)
@@ -172,15 +172,15 @@ subroutine MeteoRead_io()
         !hour 00:00 from 1st January may be missing;checking first:
         inquire(file=meteoname,exist=fexist)
         if(.not.fexist)then
-          if(MasterProc)write(*,*)trim(meteoname),&
+          if(MasterProc)write(*,*)dtxt//trim(meteoname),&
                ' does not exist; using data from previous day'
           meteoname=date2string(meteo,next_inptime,-24*3600.0,mode='YMDH')
           nrec=Nhh
         end if
       end if
-      if(ME_IO==0)write(*,*)'io procs reading ',trim(meteoname)
+      if(ME_IO==0)write(*,*)dtxt//'io procs reading ',trim(meteoname)
     end if
-    if(nrec_mult/=1 .and. MasterProc)write(*,*)'reading record ',nrec
+    if(nrec_mult/=1 .and. MasterProc)write(*,*)dtxt//'reading record ',nrec
 
     do ix=1,Nmetfields
       if(met(ix)%read_meteo)then
@@ -241,12 +241,12 @@ subroutine MeteoRead_io()
         end if
 
         if(me_io==0)then
-          if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
-          if(met(ix)%found.and.ndim==2)write(*,*)'typical value 2D = ',&
+          if(met(ix)%found)write(*,*)dtxt//'found ',trim(namefield),' in ',trim(meteoname)
+          if(met(ix)%found.and.ndim==2)write(*,*)dtxt//'typical value 2D = ',&
                 trim(namefield),me_io,met(ix)%field_shared(5,5,1)
-          if(met(ix)%found.and.ndim==3)write(*,*)'typical value 3D = ',&
+          if(met(ix)%found.and.ndim==3)write(*,*)dtxt//'typical value 3D = ',&
                 trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
-          if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),&
+          if(.not.met(ix)%found)write(*,*)dtxt//'did not find ',trim(namefield),&
                 ' in ',trim(meteoname)
         end if
       end if
@@ -409,7 +409,7 @@ subroutine MeteoRead()
         nrec=Nhh
       end if
     end if
-    if(MasterProc)write(*,*)dtxt//'reading ',trim(meteoname)
+    if(MasterProc)write(*,*)dtxt//'reading ',trim(adjustl(meteoname))
     !could open and close file here instead of in Getmeteofield
   end if
 
@@ -419,7 +419,7 @@ subroutine MeteoRead()
   write_now=MasterProc.and.(DEBUG%MET.or.first_call)
 
   if((nrec_mult/=1 .and. MasterProc) .or. write_now) &
-      write(*,*)dtxt//'reading record ',nrec
+      write(*,*)dtxt//'reading record ',nrec, ' of ',trim(adjustl(meteoname))
 
   !==============    Read the meteo fields  ================================================
 
@@ -461,13 +461,20 @@ subroutine MeteoRead()
       end if
       if(write_now)then
         if(met(ix)%found)then
-          write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
           select case(ndim)
           case(2)
-            write(*,*)'example values = ',met(ix)%field(5,5,1,nrix),&
+            write(*,'(a60,3es12.4)')print_date()//' '//dtxt// &
+             'example vals 2d ' //&
+              adjustl(namefield)//': ', &
+              met(ix)%field(5,5,1,nrix),&
+              minval(met(ix)%field(:,:,1,nrix)), &
               maxval(met(ix)%field(:,:,1,nrix))
           case(3)
-            write(*,*)'example values = ',met(ix)%field(5,5,kmax_mid,nrix),&
+            write(*,'(a60,3es12.4)')print_date()//' '//dtxt// &
+             'example vals 3d ' //&
+              adjustl(namefield)//': ', &
+              met(ix)%field(5,5,kmax_mid,nrix),&
+              minval(met(ix)%field(:,:,kmax_mid,nrix)), &
               maxval(met(ix)%field(:,:,kmax_mid,nrix))
           end select
         else
@@ -476,10 +483,10 @@ subroutine MeteoRead()
         if(me_calc<0)then
           select case(ndim)
           case(2)
-            write(*,*)'met compare 2D ',me,met(ix)%field(5,5,1,nrix),&
+            write(*,*)dtxt//'met compare 2D ',me,met(ix)%field(5,5,1,nrix),&
               met(ix)%field_shared(i_large,j_large,1)
           case(3)
-            write(*,*)'met compare 3D ',me,met(ix)%field(5,5,KMAX_MID,nrix),&
+            write(*,*)dtxt//'met compare 3D ',me,met(ix)%field(5,5,KMAX_MID,nrix),&
               met(ix)%field_shared(i_large,j_large,KMAX_MID)
           end select
         end if
@@ -550,9 +557,9 @@ subroutine MeteoRead()
   if(first_call)then
      if(maxval(ps)<2000.0)then
         ps_in_hPa = .true.
-        if(write_now)write(*,*)'Asuming surface pressure in hPa'
+        if(write_now)write(*,*)dtxt//'Asuming surface pressure in hPa'
       else
-        if(write_now)write(*,*)'Asuming surface pressure in Pa'
+        if(write_now)write(*,*)dtxt//'Asuming surface pressure in Pa'
         ps_in_hPa = .false.
      endif
   endif
@@ -572,9 +579,9 @@ subroutine MeteoRead()
      call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
           met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
      if (met(ix)%found) then
-        if(write_now )write(*,*)'found ',trim(met(ix)%name)
+        if(write_now )write(*,*)dtxt//'found ',trim(met(ix)%name)
       else
-          call CheckStop(USES%CLOUDJ, "ERROR Cloudj needs cloudwater, but it is not found")
+          call CheckStop(USES%CLOUDJ, dtxt//"ERROR Cloudj needs cloudwater, but it is not found")
      end if
   end if
 
@@ -584,21 +591,21 @@ subroutine MeteoRead()
       cc3d(:,:,:,nr) = 100*cc3d(:,:,:,nr)
     end if
     if(trim(met(ix_cc3d)%validity)/='averaged'.and.write_now)&
-      write(*,*)'WARNING: 3D cloud cover are instantaneous values'
+      write(*,*)dtxt//'WARNING: 3D cloud cover are instantaneous values'
       cc3d(:,:,:,nr) = 0.01*max(0.0,min(100.0,cc3d(:,:,:,nr))) !convert 0-100 % clouds to fraction (0 to 1) 
   else !if available, will use cloudwater to 
     if (foundcloudwater) then
-     if(write_now)write(*,*)'WARNING: deriving 3D cloud cover (cc3d) from cloud water '
+     if(write_now)write(*,*)dtxt//'WARNING: deriving 3D cloud cover (cc3d) from cloud water '
      !make crude cc3d from cloudwater
        cc3d(:,:,:,nr)=max(0.0,min(1.0,cw_met(:,:,:,nr)*CW2CC))!from kg/kg water to clouds to fraction (0 to 1)
     else !if (.not. foundcloudwater .and. .not. foundcc3d) then
-      call StopAll("Did not cloud water AND did not find 3D cloudcover")
+      call StopAll(dtxt//"Did not cloud water AND did not find 3D cloudcover")
     end if
   end if
 
   if (foundcloudwater .and. .not. foundcc3d) then
     !make crude cloudwater from cc3d
-    if(write_now)write(*,*)'WARNING: deriving cloud water from 3D cloud cover (cc3d)'
+    if(write_now)write(*,*)dtxt//'WARNING: deriving cloud water from 3D cloud cover (cc3d)'
     cw_met(:,:,:,nr) = cc3d(:,:,:,nr)/CW2CC !NB:cc3d in fraction units here (0 to 1)
   end if
 
@@ -617,7 +624,7 @@ subroutine MeteoRead()
      call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
           met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
      if (met(ix)%found) then
-        if(write_now )write(*,*)'found ',trim(met(ix)%name)
+        if(write_now )write(*,*)dtxt//'found ',trim(met(ix)%name)
      end if
   end if
   
@@ -629,7 +636,7 @@ subroutine MeteoRead()
 
   if(.not.foundprecip)then
      !Will construct 3D precipitations from 2D precipitations
-     if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
+     if(write_now)write(*,*)dtxt//'WARNING: deriving 3D precipitations from 2D precipitations '
      precipitations_ready = .false.
      ix = ix_surface_precip
      met(ix)%found = .false.
@@ -637,14 +644,14 @@ subroutine MeteoRead()
         call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
              met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
         if(met(ix)%found)then
-           if(write_now )write(*,*)'2D precipitations sum of large_scale and convective precipitations'
+           if(write_now )write(*,*)dtxt//'2D precipitations sum of large_scale and convective precipitations'
            ix = ix_convective_precip
            call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
                 met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
            surface_precip = surface_precip + convective_precip
         else
            !only set once
-           if(write_now )write(*,*)trim(met(ix)%name),' not found. assuming accumulated'
+           if(write_now )write(*,*)dtxt//trim(met(ix)%name),' not found. assuming accumulated'
            precip_accumulated = .true.
        endif
      endif
@@ -681,14 +688,14 @@ subroutine MeteoRead()
         call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
             met(ix)%validity,met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,found=met(ix)%found)
         if (met(ix)%found) then
-           if (write_now) write(*,*)'3D profile of precipitations derived from '//trim(met(ix)%name)
+           if (write_now) write(*,*)dtxt//'3D profile of precipitations derived from '//trim(met(ix)%name)
            
            ix = ix_buff3D
            met(ix)%name = 'mass_fraction_of_graupel_in_air_ml'
            call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
                 met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
            if (met(ix)%found) then
-              if (write_now) write(*,*)'3D profile of precipitations also using '//trim(met(ix)%name)
+              if (write_now) write(*,*)dtxt//'3D profile of precipitations also using '//trim(met(ix)%name)
               do k=1,kmax_mid
                  do j=1,ljmax
                     do i=1,limax
@@ -702,7 +709,7 @@ subroutine MeteoRead()
            call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
                 met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
            if (met(ix)%found) then
-              if (write_now) write(*,*)'3D profile of precipitations also using '//trim(met(ix)%name)
+              if (write_now) write(*,*)dtxt//'3D profile of precipitations also using '//trim(met(ix)%name)
               do k=1,kmax_mid
                  do j=1,ljmax
                     do i=1,limax
@@ -759,7 +766,7 @@ subroutine MeteoRead()
              MPI_MIN, MPI_COMM_CALC, IERROR)
       minprecip=x_out
       if(minprecip<-10)then
-        if(me==0)write(*,*)'WARNING: found negative precipitations. ',&
+        if(me==0)write(*,*)dtxt//'WARNING: found negative precipitations. ',&
           ' set precipitations to zero!',minprecip
         surface_precip = 0.0
       else
@@ -785,7 +792,7 @@ subroutine MeteoRead()
       !nothing more to do, we are done
     else if(foundrain)then
       if(write_now)&
-        write(*,*)'release profile for 3D precipitations derived from QRAIN'
+        write(*,*)dtxt//'release profile for 3D precipitations derived from QRAIN'
       do j=1,ljmax
         do i=1,limax
           !note that there is much noise in surface precipitations, because it is the difference of two large  number (1E5)
@@ -841,9 +848,9 @@ subroutine MeteoRead()
     elseif(foundcloudwater)then
 
       if(write_now)&
-        write(*,*)'release height for 3D precipitations derived from cloudwater'
+        write(*,*)dtxt//'release height for 3D precipitations derived from cloudwater'
       if(MasterProc.and.first_call)&
-        write(IO_LOG,*)"3D precipitations: derived from 2D and cloudwater"
+        write(IO_LOG,*)dtxt//"3D precipitations: derived from 2D and cloudwater"
       if(nr==1)cw_met(:,:,:,2)=cw_met(:,:,:,nr)!so that nr=2 also is defined
       do j=1,ljmax
         do i=1,limax
@@ -864,9 +871,9 @@ subroutine MeteoRead()
 
     else
       !will use RH to determine the height of release (less accurate than cloudwater)
-      if(write_now)write(*,*)'release height for 3D precipitations derived from humidity'
+      if(write_now)write(*,*)dtxt//'release height for 3D precipitations derived from humidity'
       if(MasterProc.and.first_call)write(unit=IO_LOG,fmt="(a)")&
-           "3D precipitations: derived from 2D and humidity"
+           dtxt//"3D precipitations: derived from 2D and humidity"
       do j=1,ljmax
         do i=1,limax
           pr(i,j,KMAX_MID)= surface_precip(i,j)*METSTEP*3600.0*1000.0!guarantees precip at surface
@@ -942,16 +949,16 @@ subroutine MeteoRead()
      if(first_call)then
         if(maxval(rh2m)<1.1)then
            rh2m_in_percent = .false.
-           if(write_now)write(*,*)'Asuming rh2m in fraction units'
+           if(write_now)write(*,*)dtxt//'Asuming rh2m in fraction units'
         else
-           if(write_now)write(*,*)'Asuming rh2m in percent units'
+           if(write_now)write(*,*)dtxt//'Asuming rh2m in percent units'
            rh2m_in_percent = .true.
         endif
      endif
     if (rh2m_in_percent) rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction
   else
     if(MasterProc.and.first_call)&
-      write(*,*)'WARNING: relative_humidity_2m not found'
+      write(*,*)dtxt//'WARNING: relative_humidity_2m not found'
     rh2m(:,:,nr) = -999.9  ! ?
   end if
 
@@ -1000,7 +1007,7 @@ subroutine MeteoRead()
   else
     !     For WRF we get u*, not tau. Since it seems better to
     !     interpolate tau than u*  between time-steps we convert
-    if(write_now)write(*,*)' tau derived from ustar_nwp'
+    if(write_now)write(*,*)dtxt//' tau derived from ustar_nwp'
     namefield=met(ix_ustar_nwp)%name
     call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
         ustar_nwp(:,:),needed=.true.,found=foundustar)
@@ -1013,7 +1020,7 @@ subroutine MeteoRead()
   end if
 
   if(.not.foundSST.and.write_now)&
-    write(*,*)' WARNING: sea_surface_temperature not found '
+    write(*,*)dtxt//' WARNING: sea_surface_temperature not found '
 
   ! Soil water fields. Somewhat tricky.
   ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
@@ -1199,7 +1206,7 @@ subroutine MeteoRead()
     foundws10_met = .true.
   else
     if(write_now)&
-    write(*,*)' WARNING: u10, v10 not found. Using staggered lowest level wind! '
+    write(*,*)dtxt//' WARNING: u10, v10 not found. Using staggered lowest level wind! '
     do j = 1,ljmax
        do i = 0,limax
           ws_10m(i,j,nr)=sqrt((u_xmj(i,j,KMAX_MID,nr)*xm_j(i,j))**2+(v_xmi(i,j,KMAX_MID,nr)*xm_i(i,j))**2)
@@ -1252,7 +1259,7 @@ subroutine MeteoRead()
   Etadot(:,:,KMAX_BND,nr)=0.0
   Etadot(:,:,1,nr)=0.0
   if( .not.met(ix_Etadot)%found)then
-    if(write_now)write(*,*)'WARNING: Etadot derived from horizontal winds '
+    if(write_now)write(*,*)dtxt//'WARNING: Etadot derived from horizontal winds '
     ! sdot derived from divergence=0 principle
     do j = 1,ljmax
       do i = 1,limax
@@ -1382,7 +1389,7 @@ subroutine MeteoRead()
     call CheckStop(.not.USES%EtaCOORDINATES,&
         "Conflict: requested etadot, but does not use eta coordinates")
     !convert from mid values to boundary values
-    if(write_now)write(*,*)'interpolating etadot from mid to boundary levels'
+    if(write_now)write(*,*)dtxt//'interpolating etadot from mid to boundary levels'
     do k = KMAX_MID,2,-1
       do j = 1,ljmax
         do i = 1,limax

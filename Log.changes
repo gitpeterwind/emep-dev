@@ -49,6 +49,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+04 July 2023, Peter
+Replace EmisDir before DataDir
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+04 July 2023, Dave
+
+ Timefactors_mod - BUG fixed. The code attempted to read the cams_tempo hourly
+  facs file with the older integer-based system when USES%DAYOFYEARTIMEFAC was T.
+  The relim bugfix is to use text-based when when the HourlyFacSpecialsFile
+  contains the text cams_tempo. Whole module needs re-factoring!
+
+ Emissions_mod: added a dtxt
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 June 2023, Peter
 
 Small bug: satellite_altind was declared as real, but is used as index in arrays.

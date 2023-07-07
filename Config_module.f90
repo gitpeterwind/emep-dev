@@ -1001,10 +1001,10 @@ subroutine Config_Constants(iolog)
   do i = 1, size(ExtraConfigFile)
      if(ExtraConfigFile(i)/="NOTSET")then
         !NB: replacements have not been made yet
-        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
         ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'GRID',GRID)
         ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'OwnInputDir',OwnInputDir)
         ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'EmisDir',EmisDir)
+        ExtraConfigFile(i) = key2str(ExtraConfigFile(i),'DataDir',DataDir)
         if(MasterProc) then
          write(*,*) dtxt//'Also reading namelist ',i,trim(ExtraConfigFile(i))
          write(*,*) dtxt//"LAST LINE:"//trim(LAST_CONFIG_LINE) ! for debugs
@@ -1098,8 +1098,8 @@ subroutine Config_Constants(iolog)
   do i = 1, size(Emis_sourceFiles)
      !part of a class cannot be a target (?) must therefore do this separately
      if(Emis_sourceFiles(i)%filename/='NOTSET')then
-        Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'DataDir',DataDir)
         Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'EmisDir',EmisDir)
+        Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'DataDir',DataDir)
         Emis_sourceFiles(i)%filename = key2str(Emis_sourceFiles(i)%filename,'GRID',GRID)
         Emis_sourceFiles(i)%filename = &
           key2str(Emis_sourceFiles(i)%filename,'OwnInputDir',OwnInputDir)
@@ -1107,8 +1107,8 @@ subroutine Config_Constants(iolog)
   enddo
   do i = 1, size(EmisMask)
      if(EmisMask(i)%filename/='NOTSET')then
-        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'DataDir',DataDir)
         EmisMask(i)%filename = key2str(EmisMask(i)%filename,'EmisDir',EmisDir)
+        EmisMask(i)%filename = key2str(EmisMask(i)%filename,'DataDir',DataDir)
         EmisMask(i)%filename = key2str(EmisMask(i)%filename,'GRID',GRID)
         EmisMask(i)%filename = &
           key2str(EmisMask(i)%filename,'OwnInputDir',OwnInputDir)
@@ -1117,8 +1117,8 @@ subroutine Config_Constants(iolog)
   do i = 1,size(InputFiles)
     if(associated(InputFiles(i)%filename))then
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'ZCMDIR',ZCMDIR)
-     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'DataDir',DataDir)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'EmisDir',EmisDir)
+     InputFiles(i)%filename =key2str(InputFiles(i)%filename,'DataDir',DataDir)
      InputFiles(i)%filename =key2str(InputFiles(i)%filename,'GRID',GRID)
      InputFiles(i)%filename = &
           key2str(InputFiles(i)%filename,'OwnInputDir',OwnInputDir)

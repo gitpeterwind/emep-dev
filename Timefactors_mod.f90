@@ -249,6 +249,7 @@ contains
    if(MasterProc) then
      write(*,*) dtxt//"TimeFacBasis:"//trim(TimeFacBasis)
      write(*,*) dtxt//"MonthlyFacBasis:"//trim(MonthlyFacBasis)
+     write(*,*) dtxt//"USES%DAOPFYEARTIMEFAC:", USES%DAYOFYEARTIMEFAC
    end if
 
    select case(MonthlyFacBasis)
@@ -580,12 +581,16 @@ contains
              cycle
           else
             ! ===== START New June 2023 ===========================
-            if ( TimeFacBasis == "CAMS_TEMPO_CLIM" ) then
+            !BUGFIX if ( TimeFacBasis == "CAMS_TEMPO_CLIM" ) then
+            !CRUDE hard-code for name cams_tempo for now:
+            if ( TimeFacBasis == "CAMS_TEMPO_CLIM".or. & 
+               index( HourlyFacSpecialsFile,'cams_tempo') > 0 ) then
               read(inputline,fmt=*,iostat=ios) code,secname, idd, &
                  (tmp24(ihh),ihh=1,24)
               ic=find_index(code,Country(:)%code)
               inland = Country(ic)%icode ! just for print out
               insec=find_index(secname,SECTORS(:)%longname)             
+              if( dbgTF ) write(*,'(a)') dtxt//"HOURLY SPECIAL=cams_tempo"
             ! ===== END New June 2023 ===========================
              else
                read(inputline,fmt=*,iostat=ios) inland, idd, insec, &
@@ -595,10 +600,14 @@ contains
 
              if(insec>N_TFAC) cycle
              icc=find_index(inland,Country(:)%icode)
-             if( dbgTF ) write(*,*) dtxt//"HOURLY SPECIAL=> ",icc, idd, insec, tmp24(1), tmp24(13)
+             if( dbgTF ) write(*,'(a,4i4,2f12.4)') dtxt//"HOURLY SPECIAL=> ",&
+                      icc, inland,idd, insec, tmp24(1), tmp24(13)
              
              if( icc<0 .and. inland/=0)then
-                write(*,*)dtxt//"Warning: HourlyFacsSpecials, country code not recognized", inland
+                !write(*,*)dtxt//"Warning: HourlyFacsSpecials, country code not recognized", inland
+                if(MasterProc) write(*,*)dtxt// &
+                 "Warning: HourlyFacsSpecials, country code not recognized:",&
+                   trim(inputline)
                 cycle
              endif
           end if
@@ -689,7 +698,8 @@ contains
        else
           do mm = 1, 12
              write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
-                  fac_dayofyear,fac_emm(27,mm,2,1), fac_edd(27,1,2,1)
+               fac_dayofyear(insec,ic,iemis,15+((mm-1)*30)),&
+                fac_emm(ic,mm,2,1), fac_edd(ic,1,2,1)
           end do ! mm
        end if
        write(*,"(a,4f8.3)") dtxt//" day factors traffic 24x7", &
