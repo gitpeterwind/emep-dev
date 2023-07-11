@@ -32,7 +32,7 @@ use Config_module,only: &
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, &
     hourly_emisfac
-use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
+use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
 use Debug_module,      only: DEBUG ! , & !DEBUG => DEBUG_EMISSIONS, &
                                 !DEBUG%EMISTIMEFACS
@@ -1255,7 +1255,8 @@ contains
        if (SECTORS(isec)%timefac ==  TFAC_IDX_DOM .or. IS_DOM(isec)) then
           IS_DOM(isec) = .true.
           i=1
-          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
+          if (MasterProc) write(*,'(a)',advance='no') dtxt//&
+             trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
           if(USES%DEGREEDAY_FACTORS) then
              if (MasterProc) write(*,*)', will be used with the Degree-Days method'
           else
@@ -1265,26 +1266,30 @@ contains
        if (SECTORS(isec)%timefac ==  TFAC_IDX_AGR .or. IS_AGR(isec)) then
           IS_AGR(isec) = .true.
           if (MasterProc) then
-             write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-             write(*,*)', will be recognized as an agricultur sector'
+             write(*,'(a)')dtxt//trim(SECTORS(isec)%longname)//" , "//&
+                trim(SECTORS(isec)%description) // &
+                ', will be recognized as an agricultur sector'
           end if
        end if
        if (SECTORS(isec)%timefac ==  TFAC_IDX_TRAF .or. IS_TRAF(isec)) then
           IS_TRAF(isec) = .true.
-          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-          if (MasterProc) write(*,*)', will be recognized as a traffic sector'
+          if (MasterProc) write(*,*)dtxt//trim(SECTORS(isec)%longname)//" , "//&
+             trim(SECTORS(isec)%description)// &
+             ', will be recognized as a traffic sector'
        end if
        if (SECTORS(isec)%timefac ==  TFAC_IDX_POW .or. IS_POW(isec)) then
           IS_POW(isec) = .true.
-          if (MasterProc) write(*,*)trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
-          if (MasterProc) write(*,*)', will be recognized as a Public Power sector'
+          if (MasterProc) write(*,*)dtxt//trim(SECTORS(isec)%longname)//" , "//&
+            trim(SECTORS(isec)%description)// &
+            ', will be recognized as a Public Power sector'
        end if
 
        N_TFAC  = max(N_TFAC, SECTORS(isec)%timefac)
        N_HFAC  = max(N_HFAC, SECTORS(isec)%height)
        largestsplit = max(largestsplit, SECTORS(isec)%split)
     end do
-    call CheckStop(USES%DEGREEDAY_FACTORS .and. i==0," did not find any sector corresponding to domestic")
+    call CheckStop(USES%DEGREEDAY_FACTORS .and. i==0,&
+            " did not find any sector corresponding to domestic")
 
     if(Emis_mask_allocate)then
        if(.not.allocated(Emis_mask))then
@@ -1907,7 +1912,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   real ::  oldtfac, lon
-  logical :: debug_tfac
+  logical :: debug_tfac, dbgPoll! dbgPoll set for cc=HU, poll=NH3 now
   integer :: tfac_idx, emish_idx, split_idx, isec_idx
 
   ! If timezone=-100, calculate time based on longitude rather than timezone
@@ -1983,8 +1988,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   end if ! hourchange
 
   if(DEBUG%EMISTIMEFACS.and.MasterProc) &
-    write(*,"(a,i4,2f8.3)") dtxt//" traffic? 24x7", N_TFAC, &
-      fac_ehh24x7(1,TFAC_IDX_TRAF,1,4,1),fac_ehh24x7(1,TFAC_IDX_TRAF,13,4,1)
+    write(*,"(a,i4,2f8.3, L2)") dtxt//" traffic? 24x7", N_TFAC, &
+      fac_ehh24x7(1,TFAC_IDX_TRAF,1,4,1),fac_ehh24x7(1,TFAC_IDX_TRAF,13,4,1),&
+      hourchange
   !..........................................
 
   if(hourchange) then
@@ -2040,7 +2046,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !  the found emission rates to gridrcemis as we go.
           !  ==================================================
           do isec = 1, NSECTORS       ! Loop over all defined sectors
-            ! NB: "isec" is just an indice and not necessarily meaningful (i.e isec=1 does not always mean "industry" or so, but just the first sector defined in SECTORS)
+            ! NB: "isec" is just an indice and not necessarily meaningful
+            ! (i.e isec=1 does not always mean "industry" or so, but just the
+            ! first sector defined in SECTORS)
             ! Calculate emission rates from secemis, time-factors, emis heights
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             do iem = 1, NEMIS_FILE
@@ -2057,10 +2065,13 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                        * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
                endif
 
-               if (debug_tfac.and.iem==1) then
-                if (isec==1) write(*,"(a,i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
-                     iland, glon(i,j), glat(i,j), Country(iland)%timezone
-                write(*,"(a,3i4,f8.3)")dtxt//"DAY TFAC:",isec,tfac_idx,hour_iland,tfac
+               !if (debug_tfac.and.iem==1) then
+               dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3')
+               if (dbgPoll) then
+                !if (isec==1) write(*,"(a,2i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
+                write(*,"(a,2i4,2f8.2,i6)")dtxt//"tfacs DAY TFAC loc:",&
+                     iland,isec, glon(i,j), glat(i,j), Country(iland)%timezone
+                write(*,"(a,3i4,f8.3)")dtxt//"tfacs DAY TFAC:",isec,tfac_idx,hour_iland,tfac
               end if
 
               !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
@@ -2268,16 +2279,23 @@ end if
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors
                    debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
-                   call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+                   dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3')
+
+                   call make_iland_for_time(debug_tfac, indate, i, j, iland,&
+                           wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                    tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
+
                    if (USES%DAYOFYEARTIMEFAC) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
+                      if(dbgPoll) write(*,*) dtxt//'tfacs HERE-DOY', tfac, iland_timefac, daynumber
                    else if(Emis_source(n)%periodicity == 'yearly')then
                       !apply monthly and daily factor on top of hourly factors
                       tfac = tfac * timefac(iland_timefac,tfac_idx,iem)
+                      if(dbgPoll) write(*,*) dtxt//'tfacs HERE-MD', tfac, iland_timefac, daynumber
                    else if(Emis_source(n)%periodicity == 'monthly')then
                       !apply daily factors, with renormalization to conserve monthly sums
                       tfac = tfac * fac_edd(iland_timefac,wday,tfac_idx,iem) * daynorm
+                      if(dbgPoll) write(*,*) dtxt//'tfacs HERE-MM', tfac, iland_timefac, daynumber
                    endif
                 else
                    !not monthly or yearly emissions, timefactors must be included in emission values
@@ -2331,16 +2349,26 @@ end if
                 itot = iemsplit2itot(f,iem)
                 call CheckStop(itot<0, "did not recognize split "//trim(Emis_source(n)%species))
                 iqrc = itot2iqrc(itot)
+
                 debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
+                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland_timefac==IC_HU )
+
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors
-                   call make_iland_for_time(debug_tfac, indate, i, j, iland, wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
+                   call make_iland_for_time(debug_tfac, indate, i, j, iland, &
+                           wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                    tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
+
                    if (USES%DAYOFYEARTIMEFAC) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
+                      if(dbgPoll) write(*,'(a,3i4,f12.4)') &
+                         dtxt//'tfacs HERE-DOYhu', tfac_idx, isec_idx, &
+                            daynumber, tfac
                    else if(Emis_source(n)%periodicity == 'yearly')then
                       !apply monthly and daily factor on top of hourly factors
                       tfac = tfac * timefac(iland_timefac,tfac_idx,iem)
+                      if(dbgPoll) write(*,'(a,3i4,f12.4)') dtxt//&
+                         'tfacs HERE-CLIMhu', tfac_idx, isec_idx, daynumber, tfac
                    else if(Emis_source(n)%periodicity == 'monthly')then
                       !apply daily factors, with renormalization to conserve monthly sums
                       tfac = tfac * fac_edd(iland_timefac,wday,tfac_idx,iem) * daynorm
@@ -2348,6 +2376,8 @@ end if
                 else
                    !not monthly or yearly emissions, timefactors must be included in emission values
                    tfac = 1.0
+                   if ( dbgPoll ) write(*,'(a,4i4,f12.4)') dtxt//'tfacsUnset HERE', IC_HU, &
+                          tfac_idx, isec_idx, daynumber, tfac
                 endif
 
                 if (USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac=tfac* GridTfac(i,j,tfac_idx,iem)
@@ -2355,7 +2385,10 @@ end if
                 !Degree days - only SNAP-2
                 if(USES%DEGREEDAY_FACTORS .and. &
                      IS_DOM(isec_idx) .and. Gridded_SNAP2_Factors .and. &
-                     (Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')) then
+                     (Emis_source(n)%periodicity == 'yearly' .or. &
+                      Emis_source(n)%periodicity == 'monthly')) then
+                   if(dbgPoll) write(*,*) dtxt//'tfacs HERE-PreHDD', tfac,& 
+                           isec,daynumber
                    oldtfac = tfac
                    ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                    ! we make use of a baseload even for SNAP2
@@ -2368,7 +2401,10 @@ end if
                         isec, tfac_idx,iland, daynumber, indate%hour, &
                         timefac(iland_timefac,tfac_idx,iem), t2_nwp(i,j,2)-273.15, &
                         fac_min(iland_timefac,tfac_idx,iem),  gridfac_HDD(i,j), tfac
+                   if(dbgPoll) write(*,*) dtxt//'tfacs HERE-HDD', tfac, isec,daynumber
                 end if ! =============== HDD
+
+                if(dbgPoll) write(*,*) dtxt//'tfacs HERE-PosHDD', tfac, isec,daynumber
 
                 s = Emis_source_ij(ij,is) * emisfrac(iqrc,split_idx,iland) * tfac
 

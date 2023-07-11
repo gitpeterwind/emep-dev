@@ -49,6 +49,10 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 July 2023, Dave
+ Emissions_mod: no change in coding, but lots of debug tweaks. Focus on
+  Hungaru and NH3 with dbgPoll.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 04 July 2023, Peter
 Replace EmisDir before DataDir
 
