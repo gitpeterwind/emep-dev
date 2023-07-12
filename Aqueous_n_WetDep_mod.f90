@@ -273,7 +273,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
   real, dimension(KUPPER:KMAX_MID) :: &
     b,           &  ! Cloud-area (fraction)
-    cloudwater,  &  ! Cloud-water (volume mixing ratio)
+    cloudwater,  &  ! Cloud-water (volume mixing ratio, H2O/air)
                     ! cloudwater = 1.e-6 same as 1.g m^-3
     pres            ! Pressure (Pa)
   integer :: k, SO4
@@ -324,8 +324,17 @@ subroutine Setup_Clouds(i,j,debug_flag)
         ! (it is divided by cloud fraction b )
 
         if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
-           ! value of cloudwater in the cloud fraction of the grid in units vol(water)/vol(air)
-           cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+           ! value of cloudwater in the cloud fraction of the grid in units
+           ! vol(water)/vol(air)
+           ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise
+           ! calculated from NWP values. (In future NWP will be used by default,
+           ! but we are invesigating some pH calculation issues. 
+           ! For safety, use FIXED_CLW
+           if ( USES%FIXED_CLW > 0.0  ) then
+             cloudwater(k) = USES%FIXED_CLW
+           else ! calculate from NWP data
+             cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+           end if 
            incloud(k) = .true.
            if(kcloudtop<0) kcloudtop = k
         end if

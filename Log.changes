@@ -49,6 +49,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 July 2023, Dave/Willem
+
+  Aqueous_n_WetDep_mod
+  Config_mod
+
+    USES%FIXED_CLW introduced, with defaul 0.6e-6 vol(H2O)/vol(air-in-cloud)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 July 2023, Dave
  Emissions_mod: no change in coding, but lots of debug tweaks. Focus on
   Hungaru and NH3 with dbgPoll.

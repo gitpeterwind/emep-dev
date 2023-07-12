@@ -203,6 +203,11 @@ type, public :: emep_useconfig
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
+! cloud liquid water (vol-H2O/vol-Air) ? 
+! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
+! from NWP values. (In future NWP will be used by default, but we are
+! invesigating some pH calculation issues. For safety, use FIXED_CLW 
+  real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
 !Species where we want to include "tail" of  course mode into PM25
