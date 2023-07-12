@@ -51,11 +51,18 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 July 2023, Dave/Willem
 
+Towards rv5.0 tag
+
   Aqueous_n_WetDep_mod
   Config_mod
 
     USES%FIXED_CLW introduced, with defaul 0.6e-6 vol(H2O)/vol(air-in-cloud)
+
+  AeroConstants_mod:
+    back to MARS by default
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 11 July 2023, Dave
  Emissions_mod: no change in coding, but lots of debug tweaks. Focus on
   Hungaru and NH3 with dbgPoll.
