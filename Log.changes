@@ -49,6 +49,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 July 2023, Dave
+
+ NEW TAG: rv5.0
+ code used for 2023 reporting and SR runs.
+ Defaults to MARS equilib, and FIXED_CLW = 1.0e-6, see 12th July commits.
+
+ config_emep.nml - just improved comments surrounding CAMS_TEMP_CLIM.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 July 2023, Dave/Willem
 
 Towards rv5.0 tag

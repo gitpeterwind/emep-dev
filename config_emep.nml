@@ -119,16 +119,18 @@
 !BUG 2023  USES%MonthlyNH3 = 'LOTOS', 
 !DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
 
-!June 2023 CAMS_TEMPO_CLIM option added - uses all time-factors from cams_temp_v2_3
-!!! Change time factor index to match CAMS_TEMPO
-! If used, uncomment to END-OF-CLIM
- TimeFacBasis    = 'CAMS_TEMPO_CLIM',   ! sets also MonthlyFacBasis
+!!! ****  START-OF-CAMS-TEMPO-CLIM ****
+!   CAMS_TEMPO_CLIM optionr: uses all time-factors from cams_temp_v2_3
+!   *** If used, uncomment to END-OF-CLIM
+!       and if TimeFacBasis=CAMSTEMPO_CLIM, sets also MonthlyFacBasis
+! NOTE: careful with USES%DEGREEDAYFACTORS and USES%DAYOFYEARTIMEFAC
+ TimeFacBasis    = 'CAMS_TEMPO_CLIM',   
 ! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
  MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
  DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
  HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
 
-! Change time factor index to match CAMS_TEMPO
+! Change time factor index to match CAMS_TEMPO sectors 1-19
 !                                                 tf  h  spl
 SECTORS_ADD(1) = 'GNFR_CAMS', 'GNFR_A',  'sec01',  1, 1,  1, 'Public Power', 'ALL',
 SECTORS_ADD(2) = 'GNFR_CAMS', 'GNFR_B',  'sec02',  2, 3,  2, 'Industry', 'ALL',
@@ -149,7 +151,7 @@ SECTORS_ADD(16) = 'GNFR_CAMS', 'GNFR_F1','sec16', 16, 2, 16, 'RoadTransportExhau
 SECTORS_ADD(17) = 'GNFR_CAMS', 'GNFR_F2','sec17', 17, 2, 17, 'RoadTransportExhaustDiesel', 'ALL',
 SECTORS_ADD(18) = 'GNFR_CAMS', 'GNFR_F3','sec18', 18, 2, 18, 'RoadTransportExhaustLPGgas', 'ALL',
 SECTORS_ADD(19) = 'GNFR_CAMS', 'GNFR_F4','sec19', 19, 2, 19, 'RoadTransportNonExhaustOther', 'ALL',
-!END-OF-CAMS-TEMPO-CLIM
+!!! ****  END-OF-CAMS-TEMPO-CLIM ****
 
 !For 2020
 !  USES%DAYOFYEARTIMEFAC   = T,
