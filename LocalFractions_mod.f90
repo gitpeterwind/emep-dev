@@ -1392,6 +1392,11 @@ subroutine lf_av(dt,End_of_Day)
               count_AvgMDA8_m = 0
               D8Max_av(:,:,:,iou_ix)=0.0
            end if
+           if (current_date%day == 1 .and. current_date%month == 4 .and. iotyp2ix(iou_ix)==IOU_YEAR) then
+              !new yearly max
+              count_AvgMDA8_y = 0
+              D8Max_av(:,:,:,iou_ix)=0.0
+           end if
            count_AvgMDA8_m = count_AvgMDA8_m + 1
            count_AvgMDA8_y = count_AvgMDA8_y + 1
            w_m = 1.0/count_AvgMDA8_m
