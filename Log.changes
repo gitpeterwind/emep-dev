@@ -49,6 +49,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+08 Aug 2023, Dave
+
+Met_mod: code will crash if HmixMethod = 'NWP', and no varable found. (var names
+          are one of  "pblh", "PBLH", "blh ")
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 July 2023, Dave
 
  NEW TAG: rv5.0

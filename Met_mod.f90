@@ -1044,9 +1044,10 @@ subroutine MeteoRead()
          exit
       end if
     end do
+    call CheckStop(.not. foundHmix, 'NWP Hmix: not found:' //meteoname)
   end if ! PBL Hmix
 
-  ! Check if USES%FFireDispMethod and PBL%HmixMethod are consistent
+  ! Check also if USES%FFireDispMethod and PBL%HmixMethod are consistent
   call CheckStop(USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, &
      'Inconsistent FFireDispMethod, PBL' //trim(namefield))
 
