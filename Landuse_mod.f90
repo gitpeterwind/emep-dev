@@ -210,13 +210,11 @@ contains
        do j = 1, ljmax
 
           dbgij = ( debug_proc .and. i == debug_li .and. j == debug_lj )
-        dbgij = ( debug_proc .and. i == 5 .and. j == 24 ) ! Alps max
 
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
              call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
                   "SetLandUse out of range" )
-             if( dbgij ) write(*,*) 'ALTLU'//trim(LandDefs(lu)%code), lu, LandDefs(lu)%SGS50
 
              if ( LandDefs(lu)%SGS50 > 0 ) then ! need to set growing seasons
 
@@ -242,8 +240,7 @@ contains
                 LandCover(i,j)%SGS(ilu) =  LandCover(i,j)%EGS(ilu) - 90
              end if
 
-             !TMP if ( DEBUG%LANDUSE>0 .and. dbgij ) &
-             if (  dbgij ) &
+             if ( DEBUG%LANDUSE>0 .and. dbgij ) &
                   write(*,"(a,i3,a20,3i4)")"LANDUSE: LU_SETGS", &
                   lu, LandDefs(lu)%name,&
                   LandCover(i,j)%SGS(ilu),LandCover(i,j)%ANTH(ilu), &

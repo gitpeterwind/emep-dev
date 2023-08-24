@@ -50,6 +50,10 @@ info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 Aug 2023, Dave
+
+Landuse_mod
+  removed some debug which was hard-coded for Alps.
+
 Met_mod:
  checkstop for USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, since
  ok to use PBL with non-NWP Hmix also
