@@ -49,6 +49,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 Aug 2023, Dave
+Met_mod:
+ checkstop for USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, since
+ ok to use PBL with non-NWP Hmix also
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 08 Aug 2023, Dave
 
 Met_mod: code will crash if HmixMethod = 'NWP', and no varable found. (var names

@@ -1048,8 +1048,8 @@ subroutine MeteoRead()
   end if ! PBL Hmix
 
   ! Check also if USES%FFireDispMethod and PBL%HmixMethod are consistent
-  call CheckStop(USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, &
-     'Inconsistent FFireDispMethod, PBL' //trim(namefield))
+  !A23 call CheckStop(USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, &
+  !A23    'Inconsistent FFireDispMethod, PBL' //trim(namefield))
 
   if(USES%SOILWATER) then
     ! Soil water fields. Somewhat tricky.
