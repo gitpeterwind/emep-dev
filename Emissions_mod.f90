@@ -292,7 +292,7 @@ contains
     allocate(Emis_source_ij(LIMAX*LJMAX,NEmis_source_ijMAX))
     allocate(Emis_source_ij_ix(LIMAX*LJMAX,NEmis_source_ijMAX))
     allocate(NEmis_source_ij(LIMAX*LJMAX))
-    NEmis_source_ij = 0.0
+    NEmis_source_ij=0
 
     !4)overwrite parameters with settings from config_emep.nml if they are set
     !first overwrite the global attributes: projection and periodicity
@@ -626,6 +626,7 @@ contains
     end do
     maxfound=0
     is0=0
+    NEmis_source_ij=0
     !loop over all sources and see which one need to be reread from files
     do n = 1, NEmisFile_sources
        if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
