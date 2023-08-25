@@ -49,6 +49,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Aug 2023, Alvaro
+
+Emissions_mod
+  reset NEmis_source_ijMAX on EmisUpdate, close #231
+  https://github.com/metno/emep-mscw/issues/231
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 Aug 2023, Dave
 
 Landuse_mod
