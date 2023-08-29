@@ -49,6 +49,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 Aug 2023, Heiko
+
+Gravset_mod
+  fix sizes in 7bin ash-sizes to be log-center of bins
+  rather than upper sizes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 Aug 2023, Alvaro
 
 Emissions_mod
