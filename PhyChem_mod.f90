@@ -34,7 +34,7 @@ use DryDep_mod,        only: init_drydep
 use EmisDef_mod,       only: NSECTORS
 use Emissions_mod,     only: EmisSet
 use Gravset_mod,       only: gravset
-use GravSettling_mod,  only: gravSettling ! EXPERIMENTAl!!
+!EXP use GravSettling_mod,  only: gravSettling ! EXPERIMENTAl!!
 use GridValues_mod,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use Io_Progs_mod,       only: datewrite
@@ -261,7 +261,7 @@ subroutine phyche()
   call debug_concs("PhyChe post-chem ")
 
   !*********************************************************!
-  if(USES%GRAVSET) call gravSettling ! After chem/emis?? EXPERIMENTAL!
+  !EXP if(USES%GRAVSET) call gravSettling ! After chem/emis?? EXPERIMENTAL!
   !========================================================!
 
 

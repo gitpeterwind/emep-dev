@@ -60,7 +60,9 @@ Peter pointed out numerical issues with basic method though, which still apply.
 
 Solution:
 git mv GravSettling_mod.f90 FUTURE_GravSettling_mod.f90k
-Makefile.SRCS - remove GravSettling_mod.f90
+Makefile.SRCS  - remove GravSettling_mod.f90
+PhyChem_mod    - comment out if(USES%GRAVSET) call gravSettling 
+Config_module  - comment out GRAVSET
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 Aug 2023, Heiko

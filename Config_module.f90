@@ -155,7 +155,7 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
 !    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
-    ,GRAVSET          = .false. &! gravitational settling (EXPERIMENTAL! DO NOT USE YET)
+!EXP    ,GRAVSET          = .false. &! gravitational settling (EXPERIMENTAL! DO NOT USE YET)
     ,SEASALT          = .true.  &! See also SEASALT_fFrac
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
