@@ -49,6 +49,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug 2023, Dave
+
+Heiko spotted two modules:
+  Gravset_mod.f90
+  GravSettling_mod.f90
+
+The latter was an incomplete attempt by Dave to expand from ASH to all PMc.
+Peter pointed out numerical issues with basic method though, which still apply.
+
+Solution:
+git mv GravSettling_mod.f90 FUTURE_GravSettling_mod.f90k
+Makefile.SRCS - remove GravSettling_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 Aug 2023, Heiko
 
 Gravset_mod

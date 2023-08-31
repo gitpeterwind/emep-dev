@@ -22,7 +22,6 @@ SRCS ?=	\
 	isocom.f90 isorev.f90 ISOFWD.f90 \
 	ModsCloudJ_mod.f90 CloudJ_mod.f90 \
         GasParticleCoeffs_mod.f90 \
-	GravSettling_mod.f90 \
 	Gravset_mod.f90 GridAllocate_mod.f90 GridValues_mod.f90 \
 	InterpolationRoutines_mod.f90 \
 	Io_mod.f90 Io_Nums_mod.f90 Io_Progs_mod.f90 Io_RunLog_mod.f90 \
