@@ -1339,13 +1339,20 @@ subroutine lf_av(dt,End_of_Day)
         end if
         if (current_date%seconds == 0 .and. current_date%hour == 0 .and. .not. first_call) then
            !end of day, save the values
-           if (current_date%day == 1 .and. iotyp2ix(iou_ix)==IOU_MON) then
+           !NB: at the end of the first day (day 2 hour 00:00), we actually start to write in the next month
+           if (current_date%day == 2 .and. iotyp2ix(iou_ix)==IOU_MON) then
               !new month
               count_AvgMDA8_m = 0
               D8Max_av(:,:,:,iou_ix)=0.0
            end if
-           count_AvgMDA8_m = count_AvgMDA8_m + 1
-           count_AvgMDA8_y = count_AvgMDA8_y + 1
+           if (current_date%day == 2 .and. current_date%month == 4 .and. iotyp2ix(iou_ix)==IOU_YEAR) then
+              !new yearly max
+              count_AvgMDA8_y = 0
+              D8Max_av(:,:,:,iou_ix)=0.0
+           end if
+
+           if(iotyp2ix(iou_ix)==IOU_MON)count_AvgMDA8_m = count_AvgMDA8_m + 1
+           if(iotyp2ix(iou_ix)==IOU_YEAR)count_AvgMDA8_y = count_AvgMDA8_y + 1
            w_m = 1.0/count_AvgMDA8_m
            w_y = 1.0/count_AvgMDA8_y
            do j = 1,ljmax

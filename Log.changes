@@ -49,6 +49,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Sep 2023, Peter, Willem
+
+MDA8: The first day of the month was not included (counted as zero).
+For AvgMDA8AprSep, it is only the very first day (1st April) which was counted as zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Aug 2023, Dave
 
 Heiko spotted two modules:
