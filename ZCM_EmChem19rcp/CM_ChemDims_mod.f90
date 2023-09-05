@@ -34,6 +34,6 @@ module ChemDims_mod
     integer, parameter, public :: NEMIS_File = 7
     
     ! No. emission Specss
-    integer, parameter, public :: NEMIS_Specs = 59
+    integer, parameter, public :: NEMIS_Specs = 60
 
 end module ChemDims_mod
