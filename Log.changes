@@ -49,6 +49,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 Sep 2023, Alvaro
+
+Add ZCM_EmChem19rcp, same as ZCM_EmChem19rc + Pollen tracers
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 Sep 2023, Willem
 
 Added a copy of the photolysis rate indices (with _c endings for 'copy'),
