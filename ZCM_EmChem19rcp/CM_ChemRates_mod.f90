@@ -25,25 +25,25 @@ contains
   
   subroutine setPhotolUsed()
     photol_used = (/ &
-        IDO3_O1D_C  &
-      , IDO3_O3P_C  &
-      , IDH2O2_C  &
-      , IDNO2_C  &
-      , IDNO3_C  &
-      , IDHONO_C  &
-      , IDHNO3_C  &
-      , IDHO2NO2_C  &
-      , IDHCHO_H_C  &
-      , IDHCHO_H2_C  &
-      , IDCH3CHO_C  &
-      , IDMEK_C  &
-      , IDRCOCHO_C  &
-      , IDCH3COY_C  &
-      , IDCH3O2H_C  &
-      , IDPAN_C  &
-      , IDGLYOXA_C  &
-      , IDGLYOXB_C  &
-      , IDGLYOXC_C  &
+        IDO3_O1D  &
+      , IDO3_O3P  &
+      , IDH2O2  &
+      , IDNO2  &
+      , IDNO3  &
+      , IDHONO  &
+      , IDHNO3  &
+      , IDHO2NO2  &
+      , IDHCHO_H  &
+      , IDHCHO_H2  &
+      , IDCH3CHO  &
+      , IDMEK  &
+      , IDRCOCHO  &
+      , IDCH3COY  &
+      , IDCH3O2H  &
+      , IDPAN  &
+      , IDGLYOXA  &
+      , IDGLYOXB  &
+      , IDGLYOXC  &
     /)  
   end subroutine setPhotolUsed
   
