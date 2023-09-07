@@ -97,7 +97,7 @@ contains
       L = Sub(iL)
 
       Sub(iL)%FstO3       = 0.0
-      if ( dbg ) write(*,"(a,i3,2f7.1,9es10.3)") dtxt//'LOOP', iL, L%hveg, L%z0, L%g_sun
+      !if ( dbg ) write(*,"(a,i3,2f7.1,9es10.3)") dtxt//'LOOP', iL, L%hveg, L%z0, L%g_sun
 
 
        ! take care of  temperate crops, outside growing season

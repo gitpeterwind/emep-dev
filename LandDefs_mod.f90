@@ -146,7 +146,6 @@ contains
       dbg = ( DEBUG%LANDDEFS .and. MasterProc ) 
 
       do n = 1, size(wanted_codes)
-         if(dbg) write(*,*) dtxt//' WANTED ', n, wanted_codes(n)
          wanted_found(n) = .false.
       end do
 
