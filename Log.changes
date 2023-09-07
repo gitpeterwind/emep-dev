@@ -49,6 +49,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7 Sep 2023, Alvaro
+
+Important change:
+
+ Landuse_mod.f90 - add use_eur array to avoid IAM_ calculations outside EUR.
+     (These IAM_ classes use European growing seasons, and results outside
+      this region are therefore senseless.)
+
+Other:
+ LandDefs.f90 - removed unneeded WANTED output
+ StoFlux_mod  - removed debug LOOP output
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 Sep 2023, Alvaro
 
 Add ZCM_EmChem19rcp, same as ZCM_EmChem19rc + Pollen tracers
