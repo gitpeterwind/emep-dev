@@ -560,7 +560,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
       WDspec(icmp)%name   = WDdefs(idef)%name
       WDspec(icmp)%W_sca  = WDdefs(idef)%W_sca
       WDspec(icmp)%W_sub  = WDdefs(idef)%W_sub
-      if(MasterProc) write(*,fmt) "GasPart:WD_Coeffs: "//WDspec(icmp)%name
+      if(MasterProc) write(*,*) "GasPart:WD_Coeffs: "//trim(WDspec(icmp)%name)
     end do
   end subroutine WetCoeffs
 
