@@ -660,6 +660,8 @@ character(len=TXTLEN_SHORT), public, save, dimension(20) ::  &
    FLUX_VEGS=""    & ! e.g. WinterWheat
   ,FLUX_IGNORE=""  & ! e.g. Water, desert..
   ,VEG_2dGS=""
+character(len=TXTLEN_SHORT), private, dimension(size(FLUX_VEGS)) ::  &
+   FLUX_VEGS_COPY =""     !  work array
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_mod
 
@@ -1143,6 +1145,24 @@ subroutine Config_Constants(iolog)
 
   call define_chemicals_indices() ! sets up species indices if they exist
   
+  ! For global runs we shout not allow IAM_ in FLUX_VEGS, because the
+  ! growing season and other characteristics are not really available.
+  ! For advice on how to trigger e.g. global wheat calculations, contact
+  ! d.simpson@met.no
+  
+  if ( USES%PFT_MAPS ) then
+    j=0
+    do i = 1, size(FLUX_VEGS)
+      if ( index(FLUX_VEGS(i),'IAM_') > 0 ) cycle
+      if ( FLUX_VEGS(i) == '' ) cycle
+      j = j + 1
+      FLUX_VEGS_COPY(j) = FLUX_VEGS(i)
+      if(masterProc) write(*,*) 'FLUX_VEGij',i,j, trim(FLUX_VEGS(i)), index(FLUX_VEGS(i),'IAM_')
+    end do
+    FLUX_VEGS = FLUX_VEGS_COPY
+    if(MasterProc) write(*,*) 'FLUX_VEGS', FLUX_VEGS
+  end if
+
 end subroutine Config_Constants
 
 ! PRELIM. Just writes out USES so far.

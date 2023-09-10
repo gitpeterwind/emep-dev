@@ -958,7 +958,7 @@ contains
           call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
           write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
           write(IO_LOG,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
-          fmt="(a5,i9,i4,1x,a9,3x,30(g12.2,:))"  !# DSTMP add ncalls
+          fmt="(a5,i9,i4,1x,a9,3x,30(g12.2,:))"
           do ic = 1, NLAND
              ccsum = sum( xsumemis(ic,:) )
              icc=Country(ic)%icode

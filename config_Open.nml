@@ -79,6 +79,8 @@
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
+!    Note - these are only applicable to European EMEP domain. For
+!    global-scale POD calculations, contact d.simpson@met.no
   FLUX_VEGS = 'IAM_DF','IAM_DF_MED', ! do not need all array elements
               'IAM_WH','IAM_WH_MED','IAM_WH_Irrig','IAM_WH_MED_Irrig',
               'IAM_SNL','IAM_SNL_MED',
@@ -184,17 +186,15 @@ OutputConcs=
 ! 'CO'                 ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
 ! 'HCHO'               ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
 
+!    Note - these POD outputs are only applicable to European EMEP domain. For
+!    global-scale POD calculations, contact d.simpson@met.no
 OutputVegO3=
   'POD1_IAM_DF'    ,'POD', 1.0,'MM','IAM_DF',F,0,999,'YM',
-  'POD0_IAM_DF'    ,'POD', 0.0,'MM','IAM_DF',F,0,999,'YM',
-  'POD1_IAM_MF'    ,'POD', 1.0,'MM','IAM_MF',F,0,999,'YM',
-  'POD0_IAM_MF'    ,'POD', 0.0,'MM','IAM_DF',F,0,999,'YM',
-  'POD1_DF'        ,'POD', 1.0,'MM','DF    ',F,0,999,'YM',
-  'POD1_CF'        ,'POD', 1.0,'MM','CF    ',F,0,999,'YM',
-  'POD3_TC'        ,'POD', 3.0,'MM','TC    ',F,0,999,'YM',
-  'POD1_IAM_CR'    ,'POD', 1.0,'MM','IAM_CR',F,0,999,'YM',
-  'POD0_IAM_CR'    ,'POD', 0.0,'MM','IAM_CR',F,0,999,'YM',
-  'POD3_IAM_CR'    ,'POD', 3.0,'MM','IAM_CR',F,0,999,'YM',
+  'POD1_IAM_DF_MED','POD', 1.0,'MM','IAM_DF_MED',F,0,999,'YM',
+  'POD3_IAM_WH'    ,'POD', 3.0,'MM','IAM_WH',F,0,999,'YM',
+  'POD3_IAM_WH_MED','POD', 3.0,'MM','IAM_WH_MED',F,0,999,'YM',
+  'POD3_IAM_SNL'    ,'POD', 3.0,'MM','IAM_WH',F,0,999,'YM',
+  'POD3_IAM_SNL_MED','POD', 3.0,'MM','IAM_WH_MED',F,0,999,'YM',
   'MMAOT40_TC'     ,'AOT',40.0,'MM','TC    ',F,0,999,'YM',
   'MMAOT40_IAM_DF' ,'AOT',40.0,'MM','IAM_DF',F,0,999,'YM',
   'MMAOT40_IAM_MF' ,'AOT',40.0,'MM','IAM_MF',F,0,999,'YM',

@@ -49,6 +49,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 Sep 2023, Dave
+
+ Config_module   - excludes IAM_ veg from VEG_FLUXES if global (USES%PFT_MAPS=T)
+ config_Open.nml - added comments about this
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 Sep 2023, Dave
 
  config_Open.nml    - removed IAM:CR, IAM_CROP
