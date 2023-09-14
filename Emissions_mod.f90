@@ -587,16 +587,18 @@ subroutine EmisUpdate
    integer :: n, i, j, ij, f, ix, is, is0, date_limit(5), iem, ic, icc, iqrc
    integer :: itot,isec,iland, i_femis_lonlat, ncFileID, maxfound
    type(date) :: coming_date
-   real :: fac, gridyear, ccsum,emsum(NEMIS_FILE)
+   real :: fac, gridyear, ccsum
    character(len=TXTLEN_NAME) :: fmt
    TYPE(timestamp)   :: ts1,ts2
    logical, save ::first_call = .true.
+   real, allocatable, dimension(:) :: emsum ! Sum of emissions per file
    real, allocatable, dimension(:,:) :: sumemis ! Sum of emissions per country
    real, allocatable, dimension(:,:,:) :: sumemis_sec ! Sum of emissions per country and sector
    real, save, allocatable, dimension(:,:) :: xsumemis ! DS testing for EMTBL output. Seems to work for Ncalls = 1, BUT BE CAREFUL
    real, allocatable, dimension(:,:,:) :: cdfemis !to send to  Emis_GetCdf
    logical :: writeoutsums
    logical :: writeout !if something to show and writeoutsums=T
+   logical :: read_new_emissions
    integer, save :: ncalls = 0
 
    writeoutsums = first_call .or. step_main<10 .or. DEBUG%EMISSIONS
@@ -608,40 +610,53 @@ subroutine EmisUpdate
    coming_date%seconds = coming_date%seconds + 1800!NB: end_of_validity_date is at end of period, for example 1-1-2018 for December 2017
    gridyear = GRIDWIDTH_M * GRIDWIDTH_M * 3600*24*nydays*1.0E-6!kg/m2/s -> kt/year
 
-   if ( ncalls == 1 .and. NEmisFile_sources > 0 ) then
-      allocate(xsumemis(NLAND,NEMIS_FILE))
-      xsumemis = 0.0
-   end if
+   read_new_emissions = .false.
    do n = 1, NEmisFile_sources
-      if(writeoutsums .or. EmisFiles(n)%periodicity=='monthly')then
+      if(EmisFiles(n)%periodicity=='monthly') &
          writeoutsums = .true.
-         ! sum emissions per countries
-         allocate(sumemis(NLAND,NEMIS_FILE))
-         if(SecEmisTotalsWanted)allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE))
-         if(SecEmisTotalsWanted)sumemis_sec = 0.0
-         sumemis = 0.0
-         emsum = 0.0
-         exit
-      end if
+
+      if (.not. date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date, 5))) &
+         cycle
+
+      if (MasterProc .and. writeoutsums) &
+         write(*,'(5(A,:,X))') sub,'current date has reached past update date',&
+            date2string("YYYY-MM-DD hh:mm:ss", EmisFiles(n)%end_of_validity_date),&
+            trim(EmisFiles(n)%periodicity)
+      read_new_emissions = .true.
    end do
+   if (.not. read_new_emissions) then
+      if (MasterProc .and. writeoutsums) &
+         write(*,*) sub // " no new emissions to read"
+      return
+    end if
+    if (MasterProc .and. writeoutsums) &
+       write(*,*) sub // " read new and old emissions"
+
+   if (writeoutsums) then
+      writeout = .true. ! at least something to write
+
+      allocate(emsum(NEMIS_FILE))
+      emsum = 0.0
+
+      allocate(sumemis(NLAND,NEMIS_FILE))
+      sumemis = 0.0
+
+      if(.not. allocated(xsumemis)) then
+         allocate(xsumemis(NLAND,NEMIS_FILE))
+         xsumemis = 0.0
+      end if
+
+      if(SecEmisTotalsWanted) then
+         allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE))
+         sumemis_sec = 0.0
+      end if
+   endif
    maxfound=0
    is0=0
    NEmis_source_ij=0
+
    !loop over all sources and see which one need to be reread from files
    do n = 1, NEmisFile_sources
-      if(date_is_reached(to_idate(EmisFiles(n)%end_of_validity_date,5 )))then
-         if(me==0 .and. writeoutsums)&
-            write(*,*)'Emis: current date has reached past update date ',&
-            EmisFiles(n)%end_of_validity_date,EmisFiles(n)%periodicity
-         if(writeoutsums) writeout = .true. ! at least something to write
-         if(writeoutsums .and. .not.allocated(sumemis))then
-            allocate(sumemis(NLAND,NEMIS_FILE))
-            if(SecEmisTotalsWanted)allocate(sumemis_sec(NLAND,NSECTORS,NEMIS_FILE))
-            emsum = 0.0
-         endif
-         !values are no more valid, fetch new one
-         if(writeoutsums)sumemis=0.0
-         if(writeoutsums .and. SecEmisTotalsWanted)sumemis_sec=0.0
          allocate(cdfemis(EmisFiles(n)%nsectors,LIMAX,LJMAX))  !NB: sector is first coordinate
          do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
             if(Emis_source(is)%is3D)then
@@ -886,6 +901,7 @@ subroutine EmisUpdate
                end do
             end if
          end do
+         deallocate(cdfemis)
 
          !update date of valitdity
          if(EmisFiles(n)%periodicity == 'yearly')then
@@ -906,8 +922,8 @@ subroutine EmisUpdate
             call check(nf90_close(EmisFiles(n)%ncFileID))
             EmisFiles(n)%ncFileID = -1 !mark as closed
          end if
-         deallocate(cdfemis)
-      endif
+         
+
       if(writeout)then
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
             NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
@@ -973,6 +989,7 @@ subroutine EmisUpdate
       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
    endif
+   if (allocated(emsum)) deallocate(emsum)
    if (allocated(sumemis)) deallocate(sumemis)
    if (allocated(sumemis_sec)) deallocate(sumemis_sec)
 

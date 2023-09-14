@@ -49,6 +49,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 Sep 2023, Alvaro
+
+Emissions_mod (EmisUpdate)
+  reset NEmis_source_ij before reading new emissions, close #231
+  https://github.com/metno/emep-mscw/issues/231
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 Sep 2023, Dave
 
  Config_module   - excludes IAM_ veg from VEG_FLUXES if global (USES%PFT_MAPS=T)
@@ -111,7 +118,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 Aug 2023, Alvaro
 
 Emissions_mod
-  reset NEmis_source_ijMAX on EmisUpdate, close #231
+  reset NEmis_source_ij on EmisUpdate, close #231
   https://github.com/metno/emep-mscw/issues/231
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
