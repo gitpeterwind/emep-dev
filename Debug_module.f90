@@ -38,6 +38,8 @@ module Debug_module
     ,MET             = .false. &
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
+    ,NETCDF          = .false. &
+    ,NETCDF_RF       = .false. & ! ReadField_CDF in NetCDF_mod
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
     ,POLLEN          = .false. &
@@ -84,8 +86,8 @@ logical, public, parameter ::    &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
-  ,DEBUG_NETCDF         = .false. &
-  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
+!  ,DEBUG_NETCDF         = .false. &
+!  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90

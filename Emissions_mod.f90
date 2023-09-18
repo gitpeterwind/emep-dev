@@ -417,7 +417,8 @@ contains
                       NSECTORS = NSECTORS + 1
                       call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                       SECTORS(NSECTORS) = SECTORS_ADD(isec_idx)
-                      if(MasterProc) write(*,*)'adding sector  ',trim(SECTORS_ADD(isec_idx)%longname),', total ',NSECTORS
+                      if(MasterProc) write(*,*) dtxt//'adding sector1st  ',&
+                         trim(SECTORS_ADD(isec_idx)%longname),', total ',NSECTORS
                       found = 1
                    end if
                 end do
@@ -1143,8 +1144,10 @@ end subroutine EmisUpdate
           do i = 1, NSECTORS_ADD_MAX
              if(SECTORS_ADD(i)%name ==  trim(emis_inputlist(iemislist)%sector)) then
                 NSECTORS = NSECTORS + 1
-                if(MasterProc) write(*,*)'adding sector  ',trim(SECTORS_ADD(i)%longname)
-                call CheckStop(NSECTORS > NSECTORS_MAX, "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
+                if(MasterProc) write(*,*) dtxt//'adding sector2nd  ',&
+                         trim(SECTORS_ADD(i)%longname), i
+                call CheckStop(NSECTORS > NSECTORS_MAX, &
+                    "NSECTORS_MAX too small, please increase value in EmisDef_mod.f90")
                 SECTORS(NSECTORS) = SECTORS_ADD(i)
                 found = 1
              end if
@@ -1237,11 +1240,14 @@ end subroutine EmisUpdate
     N_TFAC = 0
     N_HFAC = 0
     largestsplit = 0
-    if (MasterProc) write(*,*)NSECTORS,' sectors defined in total'
+    if (MasterProc) write(*,*)dtxt, NSECTORS,' sectors defined in total'
        if (MasterProc) write(*,*)"   name,   longname, cdfname, timefac,height,split, description"
     do isec = 1, NSECTORS
        91 format(A10,A10,A10,3I7,A)
-       if (MasterProc) write(*,91)trim(SECTORS(isec)%name),trim(SECTORS(isec)%longname),trim(SECTORS(isec)%cdfname),SECTORS(isec)%timefac,SECTORS(isec)%height,SECTORS(isec)%split,' '//trim(SECTORS(isec)%description)
+       if (MasterProc) write(*,91)trim(SECTORS(isec)%name), &
+          trim(SECTORS(isec)%longname),trim(SECTORS(isec)%cdfname),&
+          SECTORS(isec)%timefac,SECTORS(isec)%height,SECTORS(isec)%split,&
+          ' '//trim(SECTORS(isec)%description)
     end do
     ! find indices for special sectors
     do isec = NSECTORS, 1, -1 !reverse order so that TFAC_IDX get value from the lowest (= most "fundamental")
