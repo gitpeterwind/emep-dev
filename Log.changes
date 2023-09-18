@@ -51,19 +51,29 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Sep 2023, Dave
 
-Debug_module.f90
-NetCDF_mod.f90
+Emissions_mod.f90 - bugfix for issue #232
 
- Debug changes. Moved DEBUG_NETCDF and DEBUG_NETCDF_RF into DEBUG% system.
- Also needed changes since Emissions_mod used "debug" as an argument
- to various subroutines, conflictig with DEBUG. Changed to either
- debug_flag or dbg. Also smaller debug changes.
+Debug changes:
+
+ Debug_module.f90
+
+ Debug changes. Moved DEBUG_NETCDF, DEBUG_NETCDF_RF and many others
+ into DEBUG% system.
+
 
 Affected also:
 
+ Advection_mod.f90
  BoundaryConditions_mod.f90
+ EmisGet_mod.f90
  Emissions_mod.f90
+   Also needed changes since Emissions_mod used "debug" as an argument
+   to various subroutines, conflictig with DEBUG. Changed to either
+   debug_flag or dbg. Also smaller debug changes.
+ Met_mod.f90
  NetCDF_mod.f90
+ PointSource_mod.f90
+ Runchem_mod.f90
  Sites_mod.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

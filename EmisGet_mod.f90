@@ -1,4 +1,4 @@
-	module EmisGet_mod
+module EmisGet_mod
 
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
@@ -1861,8 +1861,8 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
   iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
 
   ! iland_timefacs are country codes for time factors.
-  if (debug_tfac) write(*,'(a,3i6)') dtxt//'TZLAND', iland, &
-     iland_timefac, iland_timefac_hour
+  if (debug_tfac) write(*,'(a,3i6)')dtxt//'TZLAND'//trim(Country(iland)%code),&
+       iland,  iland_timefac, iland_timefac_hour
 
 !if (Country(iland)%icode ==223)then
 ! write(*,*) 'TIMEZONE NZ', i_fdom(i),j_fdom(j),debug_tfac
@@ -1871,11 +1871,11 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
   itz = -999 ! if not set with USES%TIMEZONEMAP
 
   if ( USES%TIMEZONEMAP ) then
-     itJan = timezones%Jan(i,j)   ! Values -12 to +12
+     itJan = timezones%Jan(i,j)   ! Values -12 to +12 ? not used?
      itz   = timezones%map(i,j)
      if(debug_tfac)then
-      write(*,"(a,i3,f7.1,3i5)")dtxt//"TIMEZONE:"//trim(Country(iland)%code),&
-         indate%month,  glon(i,j),timezones%map(i,j), itJan, itz
+      write(*,"(a,2i4,f7.1,3i5)")dtxt//"TIMEZONE:"//trim(Country(iland)%code),&
+         iland, indate%month,  glon(i,j),timezones%map(i,j), itJan, itz
      end if
   end if ! USES%TIMEZONEMAP
 

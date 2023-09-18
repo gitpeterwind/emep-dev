@@ -2044,7 +2044,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     do j = 1,ljmax
       do i = 1,limax
         ncc = nlandcode(i,j)            ! No. of countries in grid
-        debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
+        debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc &
+                     .and.i==DEBUG_li.and.j==DEBUG_lj)
         ! find the approximate local time:
         lon = modulo(360+nint(glon(i,j)),360)
         if(lon>180.0)lon=lon-360.0
@@ -2087,7 +2088,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                        * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
                endif
 
-               !if (debug_tfac.and.iem==1) then
                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3')
                if (dbgPoll) then
                 !if (isec==1) write(*,"(a,2i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
@@ -2118,7 +2118,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               if (allocated(Emisfac2D)) then
                  if (Emisfac2D(1,1,iem)>-0.5) then
-                    if(me==NPROC/2 .and. i==2 .and. j==2 .and. icc == 1 .and. isec==1) write(*,*)'Warning: reseting all timefactors, and using only gridded hourly factors for '//trim(EMIS_FILE(iem))
+                    if(me==NPROC/2 .and. i==2 .and. j==2 .and. icc == 1 &
+                        .and. isec==1) write(*,*)'Warning: reseting all timefactors, and using only gridded hourly factors for '//trim(EMIS_FILE(iem))
                     !the hourly factors are defined for this pollutant
                     tfac = Emisfac2D(i,j,iem)
                  end if
@@ -2214,11 +2215,13 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                  roadfac=2.0
               end if
 
-if ( hour_iland<1) then
-    print *, dtxt//'HOURCHANGE', hourchange
-    print *, dtxt//'TZWRONGB', iland, hour_iland
-    print '(a,9i5)', 'ROAD TFAC :', iland, iem, Country(iland)%timezone, hour_iland
-end if
+              if ( hour_iland<1) then
+                  print *, dtxt//'HOURCHANGE', hourchange
+                  print *, dtxt//'TZWRONGB', iland, hour_iland
+                  print '(a,9i5)', 'ROAD TFAC :', iland, iem, Country(iland)%timezone, hour_iland
+                  call StopAll(dtxt//'ROADDUST')
+              end if
+              
               do iem = 1, NROAD_FILES
                  tfac = fac_ehh24x7(iem, TFAC_IDX_TRAF,hour_iland,wday_loc,iland_timefac_hour)
                  s = tfac * roadfac * roaddust_emis_pot(i,j,icc,iem)
@@ -2264,6 +2267,10 @@ end if
     do ij = 1,limax*ljmax
        i=mod(ij-1,limax)+1
        j=(ij-1)/limax+1
+
+       debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc&
+                    .and.i==DEBUG_li.and.j==DEBUG_lj)
+
        do is = 1,NEmis_source_ij(ij)
           n = Emis_source_ij_ix(ij,is)
 
@@ -2276,6 +2283,10 @@ end if
           split_idx = SECTORS(isec_idx)%split
 
           iland = Emis_source(n)%country_ix
+          if(debug_tfac) write(*,'(a,9i5)') dtxt//'NewFormStart'// &
+            ':'//trim(Emis_source(n)%periodicity), &
+              is, iland, itot,isec,isec_idx,me
+
           if(itot>0)then
              !the species is directly defined (no splits)
              iqrc = itot2iqrc(itot)
@@ -2283,6 +2294,10 @@ end if
                 call CheckStop(iqrc<=0,dtxt// &
                      "emitted sector species must be one of the splitted species")
                 iem = iqrc2iem(iqrc)
+
+                if(debug_tfac) write(*,'(a,9i5)') dtxt//'NewForm-itot'// &
+                  trim(EMIS_FILE(iem))//':'//trim(Emis_source(n)%periodicity), &
+                    is, iland, itot,isec,isec_idx
 
                 if(Emis_source(n)%periodicity == 'monthly')then
                    !make normalization factor for daily fac
@@ -2300,12 +2315,13 @@ end if
 
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors
-                   debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
                    dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3')
 
                    call make_iland_for_time(debug_tfac, indate, i, j, iland,&
                            wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                    tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
+                   if(debug_tfac) write(*,'(a,4i5,es12.3)') dtxt//'NH3tfacLand', &
+                           is, iland,  iland_timefac, tfac
 
                    if (USES%DAYOFYEARTIMEFAC) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
@@ -2322,6 +2338,8 @@ end if
                 else
                    !not monthly or yearly emissions, timefactors must be included in emission values
                    tfac = 1.0
+                   if(debug_tfac) write(*,'(a,9i5)') dtxt//'NewFormSet1.0',&
+                           is, iland,itot,isec,isec_idx
                 endif
 
                 s = Emis_source_ij(ij,is) * tfac
@@ -2351,6 +2369,10 @@ end if
           else
              !the species is defined as a sector emission
              iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
+
+             if(debug_tfac) write(*,'(a,9i5)'), dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
+              trim(Emis_source(n)%species)//trim(Emis_source(n)%periodicity ), &
+               is, iland, iem
              call CheckStop(iem<0, dtxt//"did not recognize species "//trim(Emis_source(n)%species))
              call CheckStop(Emis_source(n)%sector<=0,dtxt//" sector must be defined for "//trim(Emis_source(n)%varname))
 
@@ -2373,7 +2395,12 @@ end if
                 iqrc = itot2iqrc(itot)
 
                 debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
-                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland_timefac==IC_HU )
+
+                if(debug_tfac) write(*,*) 'NewFormsplit'// trim(EMIS_FILE(iem))//':'//&
+                   trim(Emis_source(n)%species)//trim(Emis_source(n)%periodicity ), &
+                    n, iem, iland
+
+                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland==IC_HU )
 
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors

@@ -1351,7 +1351,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
     !test first if the variable is already defined:
     status=nf90_inq_varid(ncFileID,varname,VarID)
     if(status==nf90_noerr)then
-!     print *, 'variable exists: ',varname
       if(DEBUG%NETCDF) write(*,*) 'Out_NetCDF: variable exists: ',varname
     else
       if(DEBUG%NETCDF) write(*,*) 'Out_NetCDF: creating variable: ',varname
@@ -1930,8 +1929,11 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   character*100::name
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
+  character(len=*), parameter :: dtxt='GerCDF'
+  logical :: dbg0  ! for MasterProc
 
-  if(MasterProc.and.DEBUG%NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
+  dbg0 = MasterProc.and.DEBUG%NETCDF
+  if(dbg0)print *,dtxt//' reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
   if(present(needed)) fileneeded=needed
@@ -1941,7 +1943,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   else
     status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
     if(status/= nf90_noerr)then
-      write(*,*)trim(fileName),' not found (but not needed)'
+      write(*,*)dtxt//trim(fileName),' not found (but not needed)'
       nfetch=0
       return
     end if
@@ -1957,11 +1959,12 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
 
   if(status == nf90_noerr) then
-    if(DEBUG%NETCDF)write(*,*) 'variable exists: ',trim(varname)
+    !if(DEBUG%NETCDF)write(*,*) 'variable exists: ',trim(varname)
+    if(dbg0)write(*,*) dtxt//'variable exists: ',trim(varname)
   else
-    print *, 'variable does not exist: ',trim(varname)
+    if(MasterProc) print *, dtxt//'variable does not exist: ',trim(varname)
     nfetch=0
-    call CheckStop(fileneeded, "NetCDF_mod : variable needed but not found")
+    call CheckStop(fileneeded, dtxt//"NetCDF_mod : variable needed but not found")
     return
   end if
 
@@ -1975,20 +1978,20 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   ! write(*,*)'size variable ',i,dims(i)
   end do
 
-  if(MasterProc.and.DEBUG%NETCDF)write(*,*)'dimensions ',(dims(i),i=1,ndims)
+  if(dbg0) write(*,*) dtxt//'dimensions ',(dims(i),i=1,ndims)
   if(dims(1)>varGIMAX.or.dims(2)>varGJMAX)then
-    write(*,*)'buffer too small',dims(1),varGIMAX,dims(2),varGJMAX
-    Call StopAll('GetCDF buffer too small')
+    write(*,*) dtxt//'buffer too small',dims(1),varGIMAX,dims(2),varGJMAX
+    Call StopAll(dtxt//' buffer too small')
   end if
 
   if(ndims>3.and.dims(3)>varKMAX)then
-    if(MasterProc.and.DEBUG%NETCDF)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
+    if(dbg0)write(*,*)dtxt//'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
   end if
 
   if(nstart+nfetch-1>dims(ndims))then
-    write(*,*)'WARNING: did not find all data'
+    write(*,*)'dtxt//WARNING: did not find all data'
     nfetch=dims(ndims)-nstart+1
-    if(nfetch<=0)Call StopAll('GetCDF  nfetch<0')
+    if(nfetch<=0)Call StopAll(dtxt//' nfetch<0')
   end if
 
   startvec=1
@@ -2019,10 +2022,10 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   case(NF90_FLOAT,NF90_DOUBLE)
     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
     if(DEBUG%NETCDF) &
-      write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
+      write(*,*)dtxt//'datatype real, read', me, maxval(Rvar), minval(Rvar)
   case default
-    write(*,*)'datatype not yet supported'!Char
-    Call StopAll('GetCDF  datatype not yet supported')
+    write(*,*)dtxt//'datatype not yet supported'!Char
+    Call StopAll(dtxt//'  datatype not yet supported')
   end select
 
   call check(nf90_close(ncFileID))
@@ -4688,7 +4691,9 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
   logical :: dbg0
 
 
+  if(DEBUG%NETCDF) write(*,*) dtxt//'STARTS:'//trim(fileName)
   dbg0 = (DEBUG%NETCDF.and.MasterProc)
+
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg=dtxt//" file not found: "//trim(fileName))
 
@@ -4698,8 +4703,10 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
 
   varname='time'
   status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+  if(DEBUG%NETCDF) write(*,*) dtxt//'HERE:'//trim(varname), NTime_Read, find_record, status
 
   if(status==nf90_noerr)then
+if(DEBUG%NETCDF) write(*,*) dtxt//'HEREB:'//trim(varname), NTime_Read, find_record, status
      if(dbg0)write(*,*)dtxt//'time variable exists: ',trim(varname)
      call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
      if(ndims>1)write(*,*)dtxt//'WARNING: time has more than 1 dimension!? ',ndims
@@ -4719,7 +4726,9 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
      call check(nf90_get_var(ncFileID, VarID, times, start = (/startrecord/),&
        count=(/NTime_Read/)), errmsg=dtxt//" StartCheck: "//trim(fileName) ) 
 
-     call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
+if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeA:',VarID,trim(fileName)
+     call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ),errmsg=dtxt//'TIMEUNIT'//timeunit)
+if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeB:'//trim(timeunit), NTime_Read, find_record, status
 
      if(trim(timeunit(1:16))=='day as %Y%m%d.%f')then
         if(dbg0)write(*,*)'time unit ',trim(timeunit(1:16))
@@ -4806,6 +4815,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
         else
            if(dbg0)&
                 write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+  if(DEBUG%NETCDF) write(*,*) dtxt//'HEREB:'//trim(varname), NTime_Read, find_record, status
            call CheckStop(period/='days',dtxt//"Error: only time in days implemented "//trim(period))
            !assume units = "days since 0-01-01 00:00"
            !and calendar = "365_day"
