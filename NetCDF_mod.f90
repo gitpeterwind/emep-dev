@@ -4689,7 +4689,6 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read,time_wanted)
 
 
   dbg0 = (DEBUG%NETCDF.and.MasterProc)
-  if(dbg0)write(*,*)dtxt//'time variable exists: ',trim(varname)
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg=dtxt//" file not found: "//trim(fileName))
 
