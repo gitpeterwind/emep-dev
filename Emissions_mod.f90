@@ -2376,9 +2376,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              call CheckStop(iem<0, dtxt//"did not recognize species "//trim(Emis_source(n)%species))
              call CheckStop(Emis_source(n)%sector<=0,dtxt//" sector must be defined for "//trim(Emis_source(n)%varname))
 
+             iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
              if(Emis_source(n)%periodicity == 'monthly')then
                 !make normalization factor for daily fac
-                iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
                 iwday = mod(wday-indate%day+35, 7) + 1
                 daynorm = 0.0
                 do id = 1, nmdays(indate%month)
@@ -2400,7 +2400,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    trim(Emis_source(n)%species)//trim(Emis_source(n)%periodicity ), &
                     n, iem, iland
 
-                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland==IC_HU )
+                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland_timefac==IC_HU )
 
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors
