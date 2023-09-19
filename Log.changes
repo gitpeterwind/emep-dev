@@ -65,6 +65,7 @@ Changes in:
  Emissions_mod.f90
  Timefactors_mod.f90
 
+Also, moved ZCM_ into ZCM_OLD for most EmChem16s
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Sep 2023, Dave
