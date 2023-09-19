@@ -151,7 +151,6 @@ type, public :: emep_useconfig
     ,EMIS             = .false. &! Uses ESX
     ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
-    ,DAYOFYEARTIMEFAC  = .false. &! Replace monthly and Daily by day of year timefactor
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
 !    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
@@ -199,7 +198,6 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf 
-    ,TIMEZONEMAP      = .true. & ! Uses new monthly_timezones_GLOBAL05 map
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
@@ -780,9 +778,12 @@ character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'Dat
 ! (though code will crudely check)
 !2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-!character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
-character(len=TXTLEN_FILE), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
-character(len=TXTLEN_FILE), save, public :: TimeFacBasis = 'MIXED'  ! => mixed sources for Monthly, Daily, etc
+!character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
+character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
+character(len=TXTLEN_SHORT), save, public :: TimeFacBasis = &
+   'MIXED'  ! => mixed sources for Monthly, Daily, etc
+    ! or CAMS_CLIM_TEMPO    ! Uses climatological month/day/hour CAMS-TEMPO data
+    ! or DAY_OF_YEAR        ! Replace monthly and Daily by day of year timefactor
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
@@ -1175,11 +1176,11 @@ subroutine WriteConfig_to_RunLog(iolog)
     write(iolog,'(a)') 'soilnox_emission_File: '//trim(soilnox_emission_File)
     write(iolog,'(a)') 'SplitDefaultFile:      '//trim(SplitDefaultFile)
     write(iolog,'(a)') 'SplitSpecialsFile:     '//trim(SplitSpecialsFile)
+    write(iolog,*)     'TimeFacBasis:          '//trim(TimeFacBasis)
+    write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
     write(iolog,'(a)') 'MonthlyFacFile:        '//trim(MonthlyFacFile)
     write(iolog,'(a)') 'DailyFacFile:          '//trim(DailyFacFile)
     write(iolog,'(a)') 'HourlyFacFile:         '//trim(HourlyFacFile)
-    write(iolog,*)     'TimeFacBasis:          '//trim(TimeFacBasis)
-    write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
     write(iolog,'(a)') 'HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
   endif
 end subroutine WriteConfig_to_RunLog

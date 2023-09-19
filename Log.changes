@@ -51,7 +51,20 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 Sep 2023, Dave
 
-Tweaked Emissions_mod for IC_HU
+Tidying up:
+
+TimeFacBasis = 'DAY_OF_YEAR' replaces v5.0 USES%DAYOFYEARTIMEFAC. This removes
+  some confusion about setting both TimefacBasis = 'CAMS_TEMP_CLIM' and USES%DAYOFYEARTIMEFAC = T.
+
+Removed USES%TIMEZONEMAP and made this default for all runs.
+
+Changes in:
+
+ Config_module.f90
+ EmisGet_mod.f90
+ Emissions_mod.f90
+ Timefactors_mod.f90
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Sep 2023, Dave
