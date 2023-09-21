@@ -68,6 +68,26 @@ Changes in:
 Also, moved ZCM_ into ZCM_OLD for most EmChem16s
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 Sep 2023, Dave
+
+Soil NO - now uses "official" CAMS soil-NO (from ECCAD), file 
+  (same results as previous EMEP equivalent)
+
+Adapted:
+
+ Emissions_mod.f90 - Note that coding is still crude, needing the names to be correct, i.e.:
+
+    if (  index(soilnox_emission_File,'v2.4a_GLOBAL05_Clim2000') > 0 .or. & ! EMEP-style
+           index(soilnox_emission_File,'v2.4clim') > 0) then                ! ECCAD-style
+
+ Config_module.f90 - defaults to ECCAD version
+ config_emep.nml
+ config_Open.nml
+
+Also:
+ Timefactors_mod - just changes in comments
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18 Sep 2023, Dave
 
 Emissions_mod.f90 - bugfix for issue #232

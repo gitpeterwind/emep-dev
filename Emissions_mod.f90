@@ -2636,7 +2636,8 @@ subroutine newmonth
     if ( USES%SOILNOX_METHOD == 'Total' .or. USES%SOILNOX_METHOD =='NoFert' ) then
 
 
-   if ( index(soilnox_emission_File,'v2.4a_GLOBAL05_Clim2000') > 0) then
+   if (  index(soilnox_emission_File,'v2.4a_GLOBAL05_Clim2000') > 0 .or. & ! EMEP-style
+         index(soilnox_emission_File,'v2.4clim') > 0) then                 ! ECCAD-style
      ! New format: tsteps in 4D array. No year info, just month.
 
       nstart=current_date%month
@@ -2647,7 +2648,7 @@ subroutine newmonth
            'TotalSoilEmis',buffer3D,&
            nstart=current_date%month, kstart=1, kend=8,& !same variation every year
            interpol='conservative',known_projection="lon lat",&
-           needed=.true.,debug_flag=.false.,UnDef=0.0)
+           needed=.true.,debug_flag=DEBUG%SOILNOX,UnDef=0.0)
       do n=1,8 ! hour= 1.5, 4.5, 7.5 ... 22.5
           SoilNOx3D(:,:,n)=buffer3D(n,:,:)
       end do

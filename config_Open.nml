@@ -22,7 +22,8 @@
   SondesFile            = 'DataDir/sondes.dat',
   Vertical_levelsFile   = 'DataDir/Vertical_levels20_EC.txt'
   AircraftEmis_FLFile   = 'DataDir/AircraftEmis_FL.nc',
-  soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc',
+ !from ECCAD:
+  soilnox_emission_File = 'DataDir/CAMS-GLOB-SOIL_Glb_0.5x0.5_soil_nox_v2.4clim_monthly.nc',
 !------------------------------
   ZCMDIR                     = 'DataDir/ZCM_EmChem19r',
   SplitDefaultFile           = 'ZCMDIR/emissplit_defaults_POLL.csv',

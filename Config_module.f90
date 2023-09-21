@@ -770,7 +770,10 @@ character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataD
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
 !rv4.50+: use this climatological file for all years, since year-to-year variation is small and uncertain
-character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
+!character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
+!ECCAD format:
+character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = &
+   'DataDir/CAMS-GLOB-SOIL_Glb_0.5x0.5_soil_nox_v2.4clim_monthly.nc'
 !
 !2021: added ECLIPSE6b-based factors for non-European areas
 !MAY 2021: CAREFUL - set MonthlyFacFile consistent with MonthlyFacBasis
