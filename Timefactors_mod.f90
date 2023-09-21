@@ -245,7 +245,7 @@ contains
    if(TimeFacBasis == 'CAMS_TEMPO_CLIM' ) then
       MonthlyFacBasis = 'CAMS_TEMPO_CLIM'
    else ! TMP - until users get uses to new TimefacBasis
-      call CheckStop(MonthlyFacBasis=='CAMS_TEMP_CLIM','CLIMCHECK')
+      call CheckStop(MonthlyFacBasis=='CAMS_TEMPO_CLIM','CLIMCHECK')
    end if
       
 
@@ -265,7 +265,7 @@ contains
          dtxt//'Incostistent:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
          
    case("GENEMIS") ! check eclipse not in FacFile
-     call CheckStop(index(MonthlyFacFile,'xJun2012')<1, &
+     call CheckStop(index(MonthlyFacFile,'xJun2012')<1, & !CRUDE and TMP!
          dtxt//'Incostistent:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
      
      fracchange=0.005*(iyr_trend -1990)
@@ -281,14 +281,14 @@ contains
      do mm=1,12
       !Assume max change for august and february
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
-      write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") dtxt//"Change in fac_cemm ", mm,fac_cemm(mm)
+      write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") dtxt//"S-W change in fac_cemm ", mm,fac_cemm(mm)
      end do
    case default
       call StopAll(dtxt//'ERROR MonthlyFac:'//trim(MonthlyFacBasis)//' vs '//MonthlyFacFile)
    end select ! MonthlyFacBasis
    write(*,"(a,f8.4)") dtxt//"Mean fac_cemm ", sum( fac_cemm(:) )/12.0
    
-   if( INERIS_SNAP1 ) fac_cemm(:) = 1.0
+   if( INERIS_SNAP1 ) fac_cemm(:) = 1.0   ! Hardly ever used.
 
    do iemis = 1, NEMIS_FILE
 
@@ -371,7 +371,7 @@ contains
 
    else if (TimeFacBasis == 'DAY_OF_YEAR' ) then
       !set monthly and daily timefactore to 1.0 and use day of the year timefactor instead
-      write(*,*)'Using Day of year timefactors. Setting standard Monthly and Daily factors to 1' 
+      write(*,*)'Using Day of year timefactors. Keeping standard Monthly and Daily factors to 1' 
    end if ! .not. USES%GRIDDED_EMIS_MONTHLY_FACTOR/'DAY_OF_YEAR'
 
 ! #################################
