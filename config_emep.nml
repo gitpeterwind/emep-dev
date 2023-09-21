@@ -514,7 +514,7 @@ OutputMisc=
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 !'met2d_LSPrec1',  'MET2D','large_scale_precipitations','-','mm'  ,-99,-99,F,1.0,F,'YMD',
 !
-!'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
+!'ws10m',          'MET2D','ws_10m','-','m/s' ,-99,-99,F,1.0,T,'YMD',
 !REM 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
 !REM 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YM,
  'MaxD8M_O3_26th','MaxD8M_26th', '',  'O3', 'ug/m3',  -1 , -1,   F,    1.0,   F, 'Y',
