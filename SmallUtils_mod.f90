@@ -23,6 +23,7 @@ module SmallUtils_mod
   public :: find_duplicates !< checks if an array of strings contains duplicates
   public :: trims        !> removes all blanks from string
   public :: str_replace  !> replaces string
+  public :: blank_replace !> replaces ' ' in string 
   public :: key2str      ! replace keyword occurence(s) on a string by given value
   private :: skey2str    !
   private :: ikey2str
@@ -312,6 +313,7 @@ end function find_index_i
   end do
 end function find_indices
 !=======================================================================
+! debug and debug_print disabled, since not gfortran compliant 
  function find_duplicates( list, debug)  result(dup_found)
   character(len=*), dimension(:), intent(in) :: list
   logical, intent(in), optional :: debug
@@ -321,7 +323,7 @@ end function find_indices
   character(len=*), parameter :: dtxt='find_dup:'
   logical :: debug_print
   !integer, dimension(size(list)) :: num
-  integer :: nw, nl, ndup
+  integer :: nw, nl
 
   dup_found = 'no'
   debug_print=.false.;if(present(debug))debug_print=debug
@@ -331,8 +333,8 @@ end function find_indices
     do nl = 1, size(list)
       if ( nw == nl ) cycle
       if ( trim(list(nw)) == trim(list(nl)) ) then
-        if(debug_print) print *, dtxt//'DUPLICATED '//trim( list(nw)), &
-          nl, nw, 'in:', list
+        !if(debug_print) print *, dtxt//'DUPLICATED '//trim( list(nw)), &
+        !  nl, nw, 'in:', list
         dup_found =list(nw)
         return
       end if
@@ -356,6 +358,24 @@ end function find_duplicates
 
  end function trims
 !============================================================================
+ function blank_replace(str_orig,rep)  result(new)
+  ! replaces blansḱs with "rep"lacement character. Typically '_'
+  character(len=*), intent(in) :: str_orig
+  character(len=len(str_orig)) :: new, str
+  character :: rep, c
+  integer :: i
+
+  str=adjustl(str_orig)
+  new(:) = ' '
+  
+  do i = 1, len_trim( str )
+     c = str(i:i)
+     if (  c == ' ' ) c = rep
+     new = trim(new) // c
+  end do
+
+ end function blank_replace
+!============================================================================
 ! Adapted from D. Frank code, string_functions
 ! Replaces 'text' in string s with 'rep'
 function str_replace (s,text,rep,dbg)  result(outs)
@@ -369,6 +389,7 @@ function str_replace (s,text,rep,dbg)  result(outs)
 
   outs = s
   nt = len_trim(text)
+  if(text==' ') nt = 1 ! SPECIAL CASE
   nr = len_trim(rep)
 
   do
@@ -545,7 +566,7 @@ subroutine Self_test()
   character(len=6), dimension(2) :: wanted2 = (/ " yy", "x1 " /)
   character(len=6), dimension(2) :: wanted3 = (/ "zz  ", "yy  " /)
   character(len=16),dimension(6) :: wantedx  = NOT_SET_STRING
-  character(len=100) :: errmsg
+  character(len=100) :: errmsg, tmpstr
   integer, parameter :: NWORD_MAX = 99
   character(len=20), dimension(NWORD_MAX) :: words
   integer :: nwords, errcode
@@ -597,6 +618,14 @@ subroutine Self_test()
 
   print *, 'TESTING num2str', trim(num2str(23)), ' ',trim(num2str(34.0))
 
+
+print *, 'INTO CHAR_R1'
+  tmpstr =  blank_replace(' ABC  D EF   ','_')
+  print *, 'TESTING blank_replace:'//  trim(tmpstr)//':END'
+  tmpstr =  blank_replace(' ABC  D EF   ','_')
+  print *, 'TESTING blank_replace:'// trim(blank_replace(' ABC  D EF   ','_')) //':END'
+  print *, 'TESTING str_replace:'//trim(  str_replace(' ABC D EF   ',' ','_'))//':END'
+  print *, 'TESTING str_replace w trim:'//trim(  str_replace(trim(adjustl(' ABC D EF   ')),'B','_'))// ':END'
   print *, 'TESTING find_duplicates', &
       find_duplicates(['AAA', 'BB ', 'AA ', 'CC ', 'DD ', 'AA ' ],debug=.true. )
 end subroutine Self_test

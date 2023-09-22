@@ -49,6 +49,36 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Sep 2023, Dave
+
+Wanted table of EMEP country codes and numbers. Now get from running
+
+  mk.testX Country_mod.f90
+
+  Produces: Results_Country_mod.txt 
+    $head Results_Country_mod.txt 
+   ncc  code           gains  incams   name
+     1  AL              ALBA       F   Albania                                                                         
+     2  AT              AUST       T   Austria   
+
+  (The incams logical is provisional, based on EUMACC2, and will be uodated soon.)
+
+Changes in:
+
+Country_mod.f90
+  writes out Results_Country_mod.txt
+  - also fprettify run on this.
+
+SmallUtils_mod.f90
+ - added blank_replace to swap " " for e.g. "_" (produces e.g. The_North_Sea in table names)
+ - removed print from find_duplicates, which are not allowed in gfortran
+   (thanks Heiko)
+  https://stackoverflow.com/questions/24923076/print-to-standard-output-from-a-function-defined-in-an-fortran-module
+  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=51286
+ - removed unused variable  to be --pedantic
+ - modified Self_test
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 Sep 2023, Dave
 
 Tidying up:
