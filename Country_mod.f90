@@ -1644,7 +1644,7 @@ contains
 
       open (newunit=iotab, file='Results_Country_mod.txt')
       !write(iotab,'(a4,a8,a14,a6,a)') 'ncc', 'code', 'gains', 'incams', 'name'
-      write (iotab, '(a)') ' ncc  code           gains  incams   name'
+      write (iotab, '(a)') ' ncc  code                 gains  incams   name'
 
       do ic = 1, NLAND
          !print '(a,i3,2x,a,i5,2x,a)', "IC ", ic, Country(ic)%code, &
