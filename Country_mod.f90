@@ -1662,7 +1662,7 @@ contains
 
          incams = find_index(Country(ic)%code, EUMACC2) > 0
 
-         write (iotab, '(i4,2x,a6,2x,a12, L8,3x,a)') Country(ic)%icode, &
+         write (iotab, '(i4,2x,a12,2x,a12, L8,3x,a)') Country(ic)%icode, &
             Country(ic)%code, Country(ic)%gains, incams, &
             blank_replace(Country(ic)%name, '_')
       end do
