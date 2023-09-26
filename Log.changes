@@ -52,7 +52,15 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Sep 2023, Dave
 
 Tidy ups:
+
+ All DEBUG_ variables now removed and/or added into DEBUG% structure :-)
+
  Debug_module, Rb_mod: removed DEBUG_RB
+ Debug_module: removed unused DEBUG_OUT_HOUR 
+ change _ to %:
+ Debug_module, OutputChem_mod: OUTPUTCHEM
+ Debug_module, Nest_mod, ExternalBICs_mod: NEST and NEST_ICBC
+ Debug_module, Setup_1d_mod (_MASS not used, removed),   MassBudget_mod
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Sep 2023, Dave

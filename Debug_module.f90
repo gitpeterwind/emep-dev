@@ -38,11 +38,15 @@ module Debug_module
     ,LANDDEFS        = .false. &
     ,LANDIFY         = .false. &
     ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
+    ,MASS            = .false. &
     ,MET             = .false. &
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
+    ,NEST            = .false. &
+    ,NEST_ICBC       = .false. & ! IFS-MOZART/C-IFS BC
     ,NETCDF          = .false. &
     ,NETCDF_RF       = .false. & ! ReadField_CDF in NetCDF_mod
+    ,OUTPUTCHEM      = .false. & ! Output of netcdf results
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
     ,POLLEN          = .false. &
@@ -77,12 +81,5 @@ module Debug_module
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
-! Older style, awaiting conversion
-logical, public, parameter ::    &
-   DEBUG_MASS           = .false. &
-  ,DEBUG_NEST           = .false. &
-  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
-  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
-  ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
 
 end module Debug_module
