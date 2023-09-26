@@ -49,6 +49,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Sep 2023, Dave
+
+Tidy ups:
+ Debug_module, Rb_mod: removed DEBUG_RB
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Sep 2023, Dave
 
 Wanted table of EMEP country codes and numbers. Now get from running

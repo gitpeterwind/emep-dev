@@ -84,17 +84,5 @@ logical, public, parameter ::    &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-  ,DEBUG_RB             = .false.
-!  ,DEBUG_LANDIFY        = .false. &
-!  ,DEBUG_DERIVED        = .false. &
-!   DEBUG_EMISSTACKS     = .false. &
-!   DEBUG_ADV            = .false. & moved to %
-!  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
-!    ,DEBUG_MY_DRYDEP    = .false. & NOT USED
-!    ,DEBUG_WETDEP       = .false. & NOT USED
-!,DEBUG_DRYDEP         = .false. &
-!    ,DEBUG_CLOVER       = .false. & NOT USED
-!  ,DEBUG_NETCDF         = .false. &
-!  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
 
 end module Debug_module
