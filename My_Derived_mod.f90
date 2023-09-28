@@ -26,7 +26,7 @@ module My_Derived_mod
 !  moving most definitions to the config namelist system.
 !---------------------------------------------------------------------------
 
-use AOTx_mod,          only: VEGO3_OUTPUTS, nOutputVegO3
+use AOTx_mod,          only: VEGO3_OUTPUTS
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv, xn_shl, cfac
 use ChemDims_mod          ! Use IXADV_ indices...
@@ -47,7 +47,7 @@ use Config_module,     only: MasterProc, SOURCE_RECEPTOR, & !
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,&
                             hour_DOMAIN, &
                             lev3d_from_surface,&
-                            MAX_NUM_DERIV2D,OutputVegO3
+                            MAX_NUM_DERIV2D,OutputVegO3, nOutputVegO3
 use Debug_module,      only: DEBUG ! => DEBUG_MY_DERIVED
 use EmisDef_mod,       only: NSECTORS, SECTORS, EMIS_FILE
 use EmisGet_mod,       only: nrcemis, iqrc2itot
@@ -179,7 +179,7 @@ subroutine Init_My_Deriv()
                 ! - older (gcc 4.1?) gfortran's had bug
   character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
   logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
-  character(len=12), save :: sub='InitMyDeriv:'
+  character(len=12), save :: dtxt='InitMyDeriv:'
   character(len=2)::  isec_char
   character(len=3)::  neigh_char
 
@@ -224,13 +224,15 @@ subroutine Init_My_Deriv()
   !! Find number of wanted OutoutConcs
   nOutputMisc  = find_index("-", OutputMisc(:)%name, first_only=.true. ) -1
   nOutputConcs = find_index("-", OutputConcs(:)%txt1, first_only=.true. ) -1
-  nOutputVegO3 = find_index("-", OutputVegO3(:)%name, first_only=.true. ) -1
+  !nOutputVegO3 now calculated in Landuse_mod.
+  !IAMVEG: nOutputVegO3 = find_index("-", OutputVegO3(:)%name, first_only=.true. ) -1
   nOutputWdep  = find_index("-", WDEP_WANTED(:)%txt1, first_only=.true. ) -1
   nOutputMosMet = find_index("-", MOSAIC_METCONCS(:), first_only=.true. ) -1
   nOutputMosLC  = find_index("-", MET_LCS(:), first_only=.true. ) -1
   nOutputNewMos = find_index("-", NewMosaic(:)%txt1, first_only=.true. ) -1
        
-  if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
+  if(MasterProc) write(*,"(a,i3)") dtxt//"NMLOUT nOUTMISC ", nOutputMisc
+  if(MasterProc) write(*,"(a,i3)") dtxt//"NMLOUT nOutputVegO3 ", nOutputVegO3
   found_3D_hourly = .false.
   found_3D_hourly_inst = .false.
   found_hourly_PS = .false.
@@ -392,10 +394,10 @@ subroutine Init_My_Deriv()
   end if ! SOURCE_RECEPTOR
 
 !------------- end LCC data for d_2d -------------------------
-  call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, sub//"too many nMosaics" )
+  call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, dtxt//"too many nMosaics" )
   call AddArray( MosaicOutput(1:nMosaic)%name, &
                     wanted_deriv2d, NOT_SET_STRING, errmsg)
-  call CheckStop( errmsg, sub//errmsg // "MosaicOutput too long" )
+  call CheckStop( errmsg, dtxt//errmsg // "MosaicOutput too long" )
 
   mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 

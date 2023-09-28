@@ -1,13 +1,12 @@
 ! <MosaicOutputs_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************!
 module MosaicOutputs_mod
-use AOTx_mod,          only: Calc_AOTx, Calc_POD, VEGO3_OUTPUTS,&
-                                nOutputVegO3
+use AOTx_mod,          only: Calc_AOTx, Calc_POD, VEGO3_OUTPUTS
 use CheckStop_mod,     only: CheckStop
 use ChemDims_mod,      only: NSPEC_ADV,NSPEC_SHL
 use ChemGroups_mod,    only: chemgroups
 use ChemSpecs_mod,     only: species_adv
-use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY,OutputVegO3
+use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY,OutputVegO3,nOutputVegO3
 use Debug_module,      only: DEBUG   ! -> DEBUG%MOSAICS
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &

@@ -7,7 +7,7 @@ module Config_module
 !----------------------------------------------------------------------------
 use AeroConstants_mod,     only: AERO
 use BiDir_module,          only: BiDir
-use CheckStop_mod,         only: CheckStop
+use CheckStop_mod,         only: CheckStop, StopAll
 use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
@@ -492,6 +492,8 @@ type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: &
 
 integer, parameter, private :: MAXNVO3  = 60
 type(O3cl_t), public, save, dimension(MAXNVO3) :: OutputVegO3 = O3cl_t()
+! will be set in Landuse_mod:
+integer, save, public :: nOutputVegO3 = 0
 
 ! Depositions
 type(typ_s1ind), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
@@ -655,7 +657,7 @@ real, public :: Zmix_ref = 50.0 !height at which concentration above different l
 !! We will put the filename, and params (SGS, EGS, etc) in
 !! the _Params array.
 character(len=TXTLEN_SHORT), public, save, dimension(20) ::  &
-   FLUX_VEGS=""    & ! e.g. WinterWheat
+   FLUX_VEGS=""    & ! e.g. DF, IAM_WH
   ,FLUX_IGNORE=""  & ! e.g. Water, desert..
   ,VEG_2dGS=""
 character(len=TXTLEN_SHORT), private, dimension(size(FLUX_VEGS)) ::  &
@@ -839,7 +841,7 @@ contains
 subroutine Config_Constants(iolog)
   integer, intent(in) :: iolog ! for Log file
 
-  integer :: i, j, ispec, iostat
+  integer :: i, j, nj, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
@@ -994,7 +996,9 @@ subroutine Config_Constants(iolog)
         do j=1,i-1
           write(*,*)trim(DataPath(j))
         end do
-        stop
+        !stop
+        !Hmmm... maybe above write statements are not flushed in time. Re-consider another day
+        call StopAll(dtxt//'WARNING: Could not find valid DataDir.')
       end if
       exit
     end if
@@ -1047,6 +1051,32 @@ subroutine Config_Constants(iolog)
     write(*,*)dtxt//'Defined DegreeDayFactorsFile as:'
     write(*,*)trim(DegreeDayFactorsFile)
   end if
+
+ ! Sep 2023 Get FLUX_VEG from OutputVeg
+ ! Note that at this stage we do not know if the Inputs_DO3SE/LandDefs files'
+ ! define these land-cover. Have to check later
+ !
+ ! Also, for global runs we should not allow IAM_ in FLUX_VEGS, because the
+ ! growing season and other characteristics are not really available.
+ ! For advice on how to trigger e.g. global wheat calculations, contact
+ ! d.simpson@met.no
+  
+!  if ( USES%PFT_MAPS .eqv. .false. ) then
+!    nj = 0
+!    do i=1, size(OutputVegO3)
+!      if(MasterProc) write(*,*) 'IAMVEG', i, trim(OutputVegO3(i)%name)//':'// trim(OutputVegO3(i)%txtLC)
+!      if ( index(OutputVegO3(i)%txtLC, 'IAM_') >0 .or. 
+!           index(OutputVegO3(i)%txtLC, 'Wheat') >0 ) then  ! CRUDE; but WinterWheat and SpringWheat are special
+!         j = find_index(OutputVegO3(i)%txtLC, FLUX_VEGS)
+!         if ( j < 1 ) then
+!            nj = nj + 1
+!            FLUX_VEGS(nj) = OutputVegO3(i)%txtLC
+!            if(MasterProc) write(*,*)'IAMind', i, nj, j, trim(FLUX_VEGS(nj))
+!          end if
+!      end if
+!    end do
+!  end if
+!  if(MasterProc) write(*,*) 'FLUX_VEGS', FLUX_VEGS
 
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
@@ -1154,18 +1184,6 @@ subroutine Config_Constants(iolog)
   ! For advice on how to trigger e.g. global wheat calculations, contact
   ! d.simpson@met.no
   
-  if ( USES%PFT_MAPS ) then
-    j=0
-    do i = 1, size(FLUX_VEGS)
-      if ( index(FLUX_VEGS(i),'IAM_') > 0 ) cycle
-      if ( FLUX_VEGS(i) == '' ) cycle
-      j = j + 1
-      FLUX_VEGS_COPY(j) = FLUX_VEGS(i)
-      if(masterProc) write(*,*) 'FLUX_VEGij',i,j, trim(FLUX_VEGS(i)), index(FLUX_VEGS(i),'IAM_')
-    end do
-    FLUX_VEGS = FLUX_VEGS_COPY
-    if(MasterProc) write(*,*) 'FLUX_VEGS', FLUX_VEGS
-  end if
 
 end subroutine Config_Constants
 

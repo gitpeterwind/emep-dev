@@ -49,6 +49,31 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 Sep 2023, Dave
+
+FLUX_VEGS now removed from config_Open.nml, config_emep.nml; these are now
+  discovered from the land-covers asked for in OutputVegO3.
+
+
+Changes in:
+
+ AOTnPOD_mod  = nOutputVegO3 change, plus use L%FstO3 to define day, not Grid%izen
+ Config_module - just move nOutputVegO3, and remove old PFT_MAPS/FLUX_VEGS stuff
+ DO3SE_mod - removed "OLDBUG" code
+ Landuse_mod - figures out FLUX_VEGS
+ Mosaics_mod - just move nOutputVegO3
+ My_Derived_mod - just move nOutputVegO3, and rename sub to dtxt
+
+ config_Open.nml - only has European IAM veg
+ config_emep.nml - has some example global IAMs (G-IAM)
+                 - also uses LandInputs_Sep2023 for e.g. Inputs_DO3SE.csv
+
++BUG fix
+ StoFlux_mod - remove test for old_gsun(i,j,1)<1.0e6 - caused "diamond" PODs
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Sep 2023, Dave
 
 Tidy ups:

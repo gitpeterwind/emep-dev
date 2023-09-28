@@ -226,7 +226,7 @@ contains
 
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
-            LandType(n)%is_iam    =  LandInput%code(1:4) == "IAM_" 
+            LandType(n)%is_iam    =  LandInput%code(1:3) == "IAM" 
             LandType(n)%is_clover =  LandInput%code(1:2) == "CV" 
             LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
            !Also:

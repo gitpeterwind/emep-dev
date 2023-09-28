@@ -84,12 +84,9 @@
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
   SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
-!--- 'fake' vegetation for ozone POD calculations
-!    Note - these are only applicable to European EMEP domain. For
-!    global-scale POD calculations, contact d.simpson@met.no
-  FLUX_VEGS = 'IAM_DF','IAM_DF_MED', ! do not need all array elements
-              'IAM_WH','IAM_WH_MED','IAM_WH_Irrig','IAM_WH_MED_Irrig',
-              'IAM_SNL','IAM_SNL_MED',
+!------------------------------
+! In v5.0, we do not give FLUX_VEGS as before. Set from OutputVegO3 landcovers.
+! Still need to ignore some classes:
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE',  ! Ignore these for FLUX calcs.
 !-------- volcanic emissions from passive degassing and historical eruptions
   flocdef='DataDir/columnsource_location.csv_2023',

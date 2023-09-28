@@ -6,6 +6,7 @@ module Landuse_mod
 use CheckStop_mod,   only: CheckStop,StopAll
 use Config_module,   only: NLANDUSEMAX, SEA_LIMIT, USES,  &
                             FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, &
+                            OutputVegO3, nOutputVegO3, &
                             VEG_2dGS, VEG_2dGS_Params, &
                             NPROC, IIFULLDOM, JJFULLDOM, &
                             MasterProc, LandCoverInputs
@@ -393,9 +394,10 @@ contains
     integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
     integer, dimension(size(FLUX_VEGS)):: iam_index = -1  !
     logical, dimension(NLANDUSEMAX)  :: is_veg
-    character(len=*), parameter :: dtxt='RdLanduseCDF:'
+    character(len=*), parameter :: dtxt='RdLndCDF:'
     logical, save :: mydbg=.false.  ! will set for debug_li, debug_lj
     logical :: dbgij
+    integer :: nFluxOut
 
     nFiles = find_index("NOTSET", LandCoverInputs%MapFile(:) ) - 1
     if ( nFiles < 1 ) nFiles = size( LandCoverInputs%MapFile(:) )
@@ -508,7 +510,7 @@ contains
           end if
 
           if ( debug_proc .and. DEBUG%LANDUSE>0) then
-               write(*,"(a,3i4,4es12.3,1x,a)") "F1 ", ifile,lu, ilu, &
+               write(*,"(a,3i4,4es12.3,1x,a)") dtxt//"F1 ", ifile,lu, ilu, &
                     landuse_tmp(debug_li,debug_lj), &
                     landuse_tot(debug_li,debug_lj), maxval(landuse_tmp(:,:)), &
                     landuse_glob(debug_li,debug_lj,lu), &
@@ -540,7 +542,7 @@ contains
                 landuse_in(i,j,ilu) = min(1.0, landuse_glob(i,j,ilu) )
                 dbgsum = dbgsum + landuse_in(i,j,ilu)
                 if ( dbgij ) then
-                   write(*, "(a,i3,3es15.6,1x,a)") "F4overwrite ", ilu, &
+                   write(*, "(a,i3,3es15.6,1x,a)") dtxt//"F4overwrite ", ilu, &
                       landuse_in(debug_li,debug_lj,ilu), &
                       landuse_tot(debug_li,debug_lj), dbgsum,&
                       trim(Land_Codes(ilu))
@@ -572,6 +574,52 @@ contains
   ! These are assigned very small land-area, using the mask which the IAM_VEG
   ! species gives.  We divide the area  by the nFluxVegs to keep the total area
   ! small.
+  ! G-IAM species (global Wheat_Irrigated etc.) are special in that G-POD is
+  ! calculated for a 365-accumulation period. Only species allowed when PFT_MAPS = T.
+
+   nFluxVegs = 0
+   nFluxOut  = 0
+   do i=1, size(OutputVegO3)
+
+      if( OutputVegO3(i)%name == '-' ) cycle
+
+      msg = trims( dtxt//'IAMVEG:'// OutputVegO3(i)%name//':' &
+                   // OutputVegO3(i)%txtLC )
+
+      j = 0
+      if ( USES%PFT_MAPS ) then  ! global. Only G-IAM make sense
+        if (  index(OutputVegO3(i)%txtLC, 'G-IAM') >0 ) then  
+         j = find_index(OutputVegO3(i)%txtLC, FLUX_VEGS)
+        end if
+      else if ( index(OutputVegO3(i)%txtLC, 'IAM') >0 ) then  
+         j = find_index(OutputVegO3(i)%txtLC, FLUX_VEGS)
+      end if
+
+      if ( j == 0 ) then
+         msg = trim(msg)//' - not used'
+      else
+         if ( j < 0 ) then ! wanted, new veg
+           nFluxVegs = nFluxVegs + 1
+           FLUX_VEGS(nFluxVegs) = OutputVegO3(i)%txtLC
+           msg = trim(msg)//' - new  LC:'
+           j = 888
+        else !   j>0  
+           OutputVegO3(nFluxOut)%txtLC =  OutputVegO3(i)%txtLC
+           msg = trim(msg)//' - more LC:'
+        end if
+
+        ! Overwrite early OutputVegO3 if wanted
+        nFluxOut = nFluxOut + 1
+        OutputVegO3(nFluxOut) =  OutputVegO3(i)
+       
+      end if
+
+      if(MasterProc)   write(*,'(a70,4i4)') adjustl(msg), i, nFluxVegs, nFluxOut, j
+  end do
+  nOutputVegO3 = nFluxOut
+
+
+  !if(MasterProc) write(*,*) dtxt//'FLUX_VEGS', FLUX_VEGS
 
   ! Append flux vegs to Land_codes
     do iam = 1, nFluxVegs
@@ -580,7 +628,7 @@ contains
             " flux vegs makes NLANDUSEMAX smaller than number of landuses defined")
        Land_codes(NLand_codes) = FLUX_vegs(iam)
        !Sep1 is_iam will be used below
-       LandType(NLand_codes)%is_iam =  FLUX_VEGS(iam)(1:4) == "IAM_" 
+       LandType(NLand_codes)%is_iam =  FLUX_VEGS(iam)(1:3) == "IAM" 
        iam_index(iam) = NLand_codes
        if ( mydbg ) write(*,*) dtxt//'IAM veg:'//trim(FLUX_VEGS(iam)), &
           iam, iam_index(iam)

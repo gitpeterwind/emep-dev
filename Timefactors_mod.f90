@@ -44,9 +44,9 @@
 !   CAMS_TEMPO_CLIM - reads climatological monthly, day-of-week, and hour-of-day files
 !    from CAMS-TEMPO system.
 !   DAY_OF_YEAR
-!   IMPORTANT CAMS_TEMPO_CLIM needs ADD_SECTORS lines in config_emep.nml to
-!   reset time-factor indices to 1-19, instead of SNAP's 1-11.
-!   *** Check if CAMS_TEMP day-of-year method should have done this.
+!  IMPORTANT CAMS_TEMPO_CLIM needs ADD_SECTORS lines in config_emep.nml to
+!  reset time-factor indices to 1-19, instead of SNAP's 1-11.
+!  *** Check if CAMS_TEMPO day-of-year method should have done this.
 !
 ! Older:
 !  Reads monthly and daily (GENEMIS) factors for all emissions from files
