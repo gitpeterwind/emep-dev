@@ -187,7 +187,7 @@ type, public :: emep_useconfig
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
-    ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European
+    ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
@@ -657,13 +657,9 @@ real, public :: Zmix_ref = 50.0 !height at which concentration above different l
 !! We will put the filename, and params (SGS, EGS, etc) in
 !! the _Params array.
 character(len=TXTLEN_SHORT), public, save, dimension(20) ::  &
-   FLUX_VEGS=""    & ! e.g. DF, IAM_WH
-  ,FLUX_IGNORE=""  & ! e.g. Water, desert..
+  FLUX_IGNORE=""  & ! e.g. Water, desert..
   ,VEG_2dGS=""
-character(len=TXTLEN_SHORT), private, dimension(size(FLUX_VEGS)) ::  &
-   FLUX_VEGS_COPY =""     !  work array
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
-integer, public, save :: nFluxVegs = 0 ! reset in Landuse_mod
 
 ! To use external maps of plant functional types we need to
 ! map between EMEP codes and netcdf file codes
@@ -880,7 +876,6 @@ subroutine Config_Constants(iolog)
    ,SecEmisTotalsWanted    & ! give total per sectors and countries
    ,HourlyEmisOut         & ! to output emissions hourly
    ,DailyEmisOut         & ! to output emissions daily
-   ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
@@ -1052,31 +1047,12 @@ subroutine Config_Constants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
- ! Sep 2023 Get FLUX_VEG from OutputVeg
- ! Note that at this stage we do not know if the Inputs_DO3SE/LandDefs files'
- ! define these land-cover. Have to check later
- !
- ! Also, for global runs we should not allow IAM_ in FLUX_VEGS, because the
- ! growing season and other characteristics are not really available.
- ! For advice on how to trigger e.g. global wheat calculations, contact
- ! d.simpson@met.no
-  
-!  if ( USES%PFT_MAPS .eqv. .false. ) then
-!    nj = 0
-!    do i=1, size(OutputVegO3)
-!      if(MasterProc) write(*,*) 'IAMVEG', i, trim(OutputVegO3(i)%name)//':'// trim(OutputVegO3(i)%txtLC)
-!      if ( index(OutputVegO3(i)%txtLC, 'IAM_') >0 .or. 
-!           index(OutputVegO3(i)%txtLC, 'Wheat') >0 ) then  ! CRUDE; but WinterWheat and SpringWheat are special
-!         j = find_index(OutputVegO3(i)%txtLC, FLUX_VEGS)
-!         if ( j < 1 ) then
-!            nj = nj + 1
-!            FLUX_VEGS(nj) = OutputVegO3(i)%txtLC
-!            if(MasterProc) write(*,*)'IAMind', i, nj, j, trim(FLUX_VEGS(nj))
-!          end if
-!      end if
-!    end do
-!  end if
-!  if(MasterProc) write(*,*) 'FLUX_VEGS', FLUX_VEGS
+  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we 
+  ! assume: (will reverse logic one day)
+  if ( USES%PFT_MAPS ) then
+     GLOBAL_settings = "YES"
+     European_settings = "NO"
+  end if
 
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
@@ -1179,12 +1155,6 @@ subroutine Config_Constants(iolog)
 
   call define_chemicals_indices() ! sets up species indices if they exist
   
-  ! For global runs we shout not allow IAM_ in FLUX_VEGS, because the
-  ! growing season and other characteristics are not really available.
-  ! For advice on how to trigger e.g. global wheat calculations, contact
-  ! d.simpson@met.no
-  
-
 end subroutine Config_Constants
 
 ! PRELIM. Just writes out USES so far.

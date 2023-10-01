@@ -49,6 +49,35 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Sep 2023, Dave
+
+Logic surrounding FLUX_VEGS moved into Landuse module.
+
+   Config_module:
+     FLUX_VEGS, nFluxVegs removed (moved to Landuse_mod)
+     Add: if ( USES%PFT_MAPS ) then
+        GLOBAL_settings = "YES"
+        European_settings = "NO"
+   
+   LandDefs_mod
+     FLUX_VEGS removed (moved to Landuse_mod)
+     is_iam logic also moved to Landuse_mod
+   
+   
+   Landuse_mod
+     Now handles EXTRA_FLUX_VEGS (was FLUX_VEGS)
+
+NOTE: the model now calculates only G-POD for GLOBAL05 runs, since POD is only
+really defined for European growing seasons and veg. Contact Dave if wanting to
+use.
+  
+
+AOTnPOD_mod - small debug tidy-up
+DO3SE_mod   - small debug tidy-up
+Mosaics_mod - debug system revamped to get print-outs in line with
+ Landuse debugs. Now print if MasterProc or DEBUG%MOSAICS .and. debug_proc
+My_Derived_mod -  small debug tidy-up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 Sep 2023, Dave
 
 FLUX_VEGS now removed from config_Open.nml, config_emep.nml; these are now

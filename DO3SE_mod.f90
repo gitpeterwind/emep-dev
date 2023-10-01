@@ -111,9 +111,7 @@ contains
     do
        read(unit=io_num,fmt="(a200)",iostat=ios) inputline
 
-       if ( ios /= 0 ) then !! End of File, hopefully
-           exit
-       end if
+       if ( ios /= 0 ) EXIT !! End of File, hopefully
 
        if( inputline(1:1) == "#" ) CYCLE ! Is a  comment
 
@@ -133,9 +131,9 @@ contains
          call CheckStop(nSumVPD>MAXnSumVPD, dtxt//"ERROR nSumVPD>MAXnSumVPD")
          SumVPD_LC(nSumVPD) = iLC
        end if
-       if ( DEBUG%DO3SE>0 .and. MasterProc ) then
-         write(*,'(a,i5,2(2x,a),f8.2,i6)') dtxt//" iLC", iLC,  &
-           do3se(iLC)%code, wanted_codes(iLC),do3se(iLC)%VPDcrit, nSumVPD
+       if ( MasterProc ) then
+         write(*,'(a,i5,2x,a20,3x,a20,f16.2,i6)') dtxt//" iLC", iLC,  &
+           adjustl(do3se(iLC)%code), adjustl(wanted_codes(iLC)),do3se(iLC)%VPDcrit, nSumVPD
        end if
 
        nLC = nLC + 1

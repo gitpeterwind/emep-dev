@@ -224,9 +224,12 @@ contains
     dbg = ( DEBUG%STOFLUX .and. debug_flag )
 
     if ( L%FstO3 < 1.0e-6 ) then ! Grid%izen >= AOT_HORIZON ) then
-        if ( dbg ) write(*,"(2a,5i5)") dtxt//"Zen ",&
-           trim(VEGO3_OUTPUTS(iO3cl)%name), iO3cl, jday, Grid%izen, L%SGS, L%EGS
-        return
+        if ( dbg ) write(*,"(a45,5i5,9es12.3)") adjustl(dtxt//"Dark "//&
+          trim(txtdate)//VEGO3_OUTPUTS(iO3cl)%name ), &
+           iO3cl, jday, Grid%izen, L%SGS, L%EGS, L%f_env, L%FstO3
+
+       RETURN
+
     end if
 
     ! Start and end of POD accumulation period:
@@ -240,10 +243,9 @@ contains
       spod = L%SGS
       epod = L%EGS
     end if
-    if ( dbg ) write(*,'(a45,5i4,es12.3)') adjustl(dtxt//"uZen "//&
+    if ( dbg ) write(*,'(a45,5i4,2es12.3)') adjustl(dtxt//"Day  "// trim(txtdate)// &
       VEGO3_OUTPUTS(iO3cl)%name ), &
-        iO3cl, jday, Grid%izen, spod, epod, L%f_env
-
+        iO3cl, jday, Grid%izen, spod, epod, L%f_env, L%FstO3
     if ( jday < spod .or. jday > epod ) then
        if ( dbg ) write(*,*) dtxt//"Jday RETURN "
        return
@@ -261,11 +263,10 @@ contains
      pod  = max(L%FstO3 - Y,0.0) * do3se(iLC)%PODscale
 
     if ( dbg ) then
-       write(txt,"(a,L1)") "Rel", VEGO3_OUTPUTS(iO3cl)%RelSGS
+       !write(txt,"(a,L1)") "Rel", VEGO3_OUTPUTS(iO3cl)%RelSGS
        !txt= "Rel"
- 
-       txtdate = print_date()
-       write(*,'(a60,5i4,5es12.3)') adjustl( dtxt//"FST:" // txtdate// &
+       txt= "FFF"
+       write(*,'(a60,5i4,5es12.3)') adjustl( dtxt//"OUT:" // trim(txtdate)// &
           trim(VEGO3_OUTPUTS(iO3cl)%name) // txt ),  iLC,   &
             VEGO3_OUTPUTS(iO3cl)%SAccPeriod, VEGO3_OUTPUTS(iO3cl)%EAccPeriod,&
               jday, Grid%izen,  Y,  o3, L%f_env, L%FstO3, pod

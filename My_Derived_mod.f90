@@ -178,7 +178,7 @@ subroutine Init_My_Deriv()
     tag_name    ! Needed to concatanate some text in AddArray calls
                 ! - older (gcc 4.1?) gfortran's had bug
   character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
-  logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
+  logical :: Is3D,dbg0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
   character(len=12), save :: dtxt='InitMyDeriv:'
   character(len=2)::  isec_char
   character(len=3)::  neigh_char
@@ -193,7 +193,7 @@ subroutine Init_My_Deriv()
      if(lev3d(k)==0)lev3d(k)=k
   enddo
 
-  debug0 = DEBUG%MY_DERIVED.and.MasterProc
+  dbg0 = DEBUG%MY_DERIVED.and.MasterProc
 
   if(out_startdate(1)<0)then
      ! notset values are not set in config
@@ -360,10 +360,10 @@ subroutine Init_My_Deriv()
 
   do n = 1, nOutputVegO3
     VEGO3_OUTPUTS(n) = OutputVegO3(n)
-    if(debug0)  write(*,*) "VEGO3 NUMS ", n, trim(OutputVegO3(n)%name) 
+    !if(dbg0)  write(*,*) "VEGO3 NUMS ", n, trim(OutputVegO3(n)%name) 
   end do
-  if(MasterProc) call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3,&
-                                   " VEGO3 OUTPUTS:")
+  if(dbg0) call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3,&
+                                   dtxt//" VEGO3 OUTPUTS:")
   ! nVEGO3 is output, excluding missing LC types:
   call Add_MosaicVEGO3(nOutVEGO3) 
 
@@ -371,7 +371,7 @@ subroutine Init_My_Deriv()
   if( .not.SOURCE_RECEPTOR)then
     !------------- Deposition velocities ---------------------
     call Add_NewMosaics(NewMosaic, nMc)
-    if(debug0)  write(*,*) 'NewMos Nums ', nOutputNewMos, nMC
+    if(dbg0)  write(*,*) 'NewMos Nums ', nOutputNewMos, nMC
 
     !------------- Met data for d_2d -------------------------
     ! We find the various combinations of met and ecosystem,
@@ -382,7 +382,7 @@ subroutine Init_My_Deriv()
            MET_LCS(1:nOutputMosLC),Mosaic_timefmt, nMET)
     nOutMET = nMET !not needed?
 
-    if(debug0) then
+    if(dbg0) then
       write(*,*) "NEWMOSAIC   NUM ", nMc
       write(*,*) "VEGO3 FINAL NUM ", nVEGO3
       write(*,*) "nOutputMosMet FINAL NUM ", nOutputMosMet
@@ -456,7 +456,7 @@ subroutine Init_My_Deriv()
       end select
 
       if(n1<1) then
-        if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
+        if( dbg0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
         call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
             //trim(outclass)//":"//trim(outname), MasterProc)
         cycle
@@ -488,7 +488,7 @@ subroutine Init_My_Deriv()
           OutputFields(nOutputFields) = OutputConcs(n)
           Is3D=.true.
       case default
-        if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
+        if( dbg0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
         call PrintLog("WARNING: Unsupported My_Derived OutputField%outdim: "&
             //trim(outclass)//":"//trim(outname)//":"//trim(outdim), MasterProc)
         cycle
@@ -502,7 +502,7 @@ subroutine Init_My_Deriv()
     if(tag_name(1)=="PS" .and. scan(OutputConcs(n)%ind,'H')>0)found_hourly_PS = .true.
     if(tag_name(1)=="PS" .and. scan(OutputConcs(n)%ind,'I')>0)found_hourly_inst_PS = .true.
 
-    if(debug0)write(*,*)"OutputFields-tags ",n,trim(outname),"->",tag_name(1)
+    if(dbg0)write(*,*)"OutputFields-tags ",n,trim(outname),"->",tag_name(1)
  end do
 
   ! ditto wanted_deriv3d....
