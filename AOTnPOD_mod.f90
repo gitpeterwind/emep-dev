@@ -43,8 +43,6 @@ module AOTx_mod
           ! crops)
    !================== 
 
-   integer, save, public :: nOutputVegO3 = 0
-
     type(O3cl_t), public, allocatable, dimension(:) :: &
      VEGO3_OUTPUTS
 

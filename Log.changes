@@ -71,6 +71,13 @@ NOTE: the model now calculates only G-POD for GLOBAL05 runs, since POD is only
 really defined for European growing seasons and veg. Contact Dave if wanting to
 use.
   
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Oct.2023, Dave/Yao
+
+AOTnPOD_mod - removed integer, save, public :: nOutputVegO3 = 0
+ (is defined in Config_mod).
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Oct 2023, Dave
 
 AOTnPOD_mod - small debug tidy-up
 DO3SE_mod   - small debug tidy-up
