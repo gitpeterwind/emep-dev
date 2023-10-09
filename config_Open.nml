@@ -203,8 +203,8 @@ OutputVegO3=
   'MMAOT40_TC'     ,'AOT',40.0,'MM','TC    ',F,0,999,'YM',
   'MMAOT40_IAM_DF' ,'AOT',40.0,'MM','IAM_DF',F,0,999,'YM',
   'MMAOT40_IAM_MF' ,'AOT',40.0,'MM','IAM_MF',F,0,999,'YM',
-  'MMAOT40_IAM_CR' ,'AOT',40.0,'MM','IAM_CR',F,0,999,'YM',
-  'EUAOT40_Crops'  ,'AOT',40.0,'EU','IAM_CR',F,0,999,'YM',
+  'MMAOT40_IAM_WH' ,'AOT',40.0,'MM','IAM_WH',F,0,999,'YM',
+  'EUAOT40_Crops'  ,'AOT',40.0,'EU','IAM_WH',F,0,999,'YM',
   'EUAOT40_Forests','AOT',40.0,'EU','IAM_DF',F,0,999,'YM',
   'MMAOT40_IAM_WH' ,'AOT',40.0,'MM','IAM_WH',F,0,999,'YM',
 
