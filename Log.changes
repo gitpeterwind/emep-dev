@@ -79,6 +79,11 @@ really defined for European growing seasons and veg. Contact Dave if wanting to
 use.
   
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Oct.2023, Dave
+
+Removed last IAM_CR from config_emep.nml and config_Open.nml. 
+  (EUAOT40_Crops and MET_LCS now use IAM_WH)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Oct.2023, Dave/Yao
 
 AOTnPOD_mod - removed integer, save, public :: nOutputVegO3 = 0

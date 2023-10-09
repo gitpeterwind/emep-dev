@@ -746,9 +746,8 @@ OutputVegO3=
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 'YM',   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 'YM',   
     'MMAOT40_IAM_DF_MED','AOT', 40.0, 'MM', 'IAM_DF_MED',F,0,999, 'YM',   
-    'MMAOT40_IAM_CR','AOT', 40.0, 'MM', 'IAM_CR',F,0,999, 'YM',   
 ! IAM_CR, we use 3m O3
-    'EUAOT40_Crops ','AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 'YM',
+    'EUAOT40_Crops ','AOT', 40.0, 'EU', 'IAM_WH',F,0,999, 'YM',
 ! IAM_DF, we use 3m O3
     'EUAOT40_Forests','AOT',40.0, 'EU', 'IAM_DF',F,0,999, 'YM',   
     'MMAOT40_IAM_WH ','AOT',40.0, 'MM', 'IAM_WH',F,0,999, 'YM',
@@ -798,7 +797,7 @@ OutputVegO3=
 !    'CanopyO3', 
 !    'FstO3'
   MET_LCS = 
-    'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
+    'DF','GR','BF','TC','IAM_DF','IAM_WH','C3_NARC_GRSS',
   Mosaic_timefmt = 'YMD',
 
 !sites sondes:
