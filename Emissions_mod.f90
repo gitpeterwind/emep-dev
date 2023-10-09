@@ -627,7 +627,7 @@ subroutine EmisUpdate
       read_new_emissions = .true.
    end do
    if (.not. read_new_emissions) then
-      if (MasterProc .and. writeoutsums) &
+      if (MasterProc .and. writeoutsums .and. DEBUG%EMISSIONS) &
          write(*,*) sub // " no new emissions to read"
       return
     end if

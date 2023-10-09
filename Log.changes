@@ -49,6 +49,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9 Oct 2023, Peter, Bruce
+
+Bug in Local Fractions: if several sectors are asked for, pm25 (not the
+fraction, but the pure value) was wrong (it added the "new" parts for each
+sector asked instead of only once).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 Sep 2023, Dave
 
 Logic surrounding FLUX_VEGS moved into Landuse module.
