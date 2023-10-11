@@ -190,6 +190,7 @@ real, allocatable, public, save,  dimension(:,:,:) :: Emis_CO_Profile  ! Forest 
 integer,  public, save :: NEmis_id
 integer,  public :: NEmisMask = 0 !number of masks defined (new format)
 real,  public, allocatable :: EmisMaskValues(:,:,:) ! size will be (LIMAX,LJMAX,NEmisMask)
+character(len=TXTLEN_NAME), public, allocatable :: EmisMaskIndex2Name(:) ! size will be (NEmisMask)
 type(Emis_id_type), public, save:: Emis_id(50)
 type(EmisFile_id_type), public, save:: EmisFiles(50) !list of emission files after validation
 integer, public, save, allocatable, dimension(:,:):: EmisMaskIntVal

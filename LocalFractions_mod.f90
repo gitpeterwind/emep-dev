@@ -25,7 +25,7 @@ use DefPhotolysis_mod, only: IDHONO,IDNO3,IDNO2
 use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
                              nlandcode,landcode,NCMAX,&
                              secemis, roaddust_emis_pot,KEMISTOP,&
-                             EmisMaskIntVal,gridrcemis,&
+                             EmisMaskIntVal,EmisMaskValues,EmisMaskIndex2Name,gridrcemis,&
                              mask2name
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              emis_masscorr,  &  ! 1/molwt for most species
@@ -169,6 +169,7 @@ integer, private, save :: Ncountrysectors_lf=0
 integer, private, save :: Ncountry_mask_lf=0 !total number of masks defined
 integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using lf_country%mask_val
 integer, private, save :: country_mask_val(Max_lf_Country_list) = -999999 ! values of all defined masks
+integer, private, save :: iic2ilf_countrymask(Max_lf_Country_list) = -1
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,Max_lf_spec) !name of that pollutant
 integer, private, save :: isrc_new(Max_lf_sources)
 integer, private, save :: Stratos_ix(1000) !1000 must be larger than Nsources
@@ -341,10 +342,11 @@ contains
 
   !countries
   ! The lowest indices are for mask indices, the highest indices are for groups
-  if(lf_country%mask_val_min <= lf_country%mask_val_max .or. &
+  if (lf_country%mask_val_min <= lf_country%mask_val_max .or. &
        lf_country%mask_val(1) > -999999 .or. &
        lf_country%list(1)/= 'NOTSET' .or. &
-       lf_country%group(1)%name/= 'NOTSET')then
+       lf_country%group(1)%name/= 'NOTSET'.or. &
+       lf_country%cellmask_name(1)/= 'NOTSET') then
 
      Ncountry_mask_lf = 0
      Ncountry_mask_lf_val = 0
@@ -407,15 +409,31 @@ contains
            if(mask2name(i)=='NOTSET')write(mask2name(i),fmt='(A)')i
         end if
      end do
-
-     if (mask_val_max >= mask_val_min) deallocate(MaskVal)
-
      if (Ncountry_mask_lf>0 .and. MasterProc) then
-        write(*,*)'including in total',Ncountry_mask_lf,'mask sources:'
+        write(*,*)'including ',Ncountry_mask_lf,'non fractional mask sources:'
         do n = 1, (Ncountry_mask_lf+29)/30
            write(*,fmt="(30(I0,1x))")(country_mask_val(ii),ii=(n-1)*30+1, min(Ncountry_mask_lf,n*30))
         end do
      end if
+     
+     if (mask_val_max >= mask_val_min) deallocate(MaskVal)
+     
+     !define masks with "fraction of cell" method
+     do i = 1, Max_lf_Country_list
+        if (lf_country%cellmask_name(i) /= 'NOTSET') then
+           !find a defined mask with that name
+           ii = find_index(trim(lf_country%cellmask_name(i)), EmisMaskIndex2Name(:), any_case=.true.)
+           if (ii>0) then
+              Ncountry_lf = Ncountry_lf + 1
+              Ncountry_mask_lf = Ncountry_mask_lf + 1
+              iic2ilf_countrymask(Ncountry_lf) = ii !this is the internal index use by lf routine for that "country"
+              if (me==0) write(*,*)Ncountry_lf,ii,'LF will include cell mask for '//trim(lf_country%cellmask_name(i))
+           else
+              if (me==0) write(*,*)'WARNING: LF did not find defined cell fraction mask for '//trim(lf_country%cellmask_name(i))
+           end if
+        end if
+     end do
+     if (Ncountry_mask_lf>0 .and. MasterProc) write(*,*)'including in total',Ncountry_mask_lf,' masks'
 
      if(lf_country%list(1)/= 'NOTSET' .or. lf_country%group(1)%name/= 'NOTSET')then
         !list of countries/sectors instead of single country
@@ -900,7 +918,7 @@ subroutine lf_out(iotyp)
      endif
   else if(iotyp==IOU_YEAR .and. lf_src(1)%YEAR)then
      fileName=trim(runlabel1)//'_LF_full.nc'
-     if(me==0)write(*,*)'saving ALL'
+     if(me==0 .and. lf_src(1)%save)write(*,*)'saving ALL'
      if (lf_src(1)%save) call lf_saveall
   else
      return
@@ -1068,10 +1086,15 @@ subroutine lf_out(iotyp)
                  isec=lf_country%sector_list(j)
                  if(lf_country%sector_list(j)>=0)isec=lf_country%sector_list(j)
                  if(i<=Ncountry_mask_lf)then
- !                   write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
- !                   if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
-                    write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
-                    if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(i)))
+                    !                   write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
+                    !                   if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
+                    if (iic2ilf_countrymask(i) > 0) then
+                       write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                       if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                    else
+                       write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
+                       if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(i)))
+                    end if
                  else if(i<=Ncountry_lf)then
                     write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
                     if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
@@ -2831,11 +2854,14 @@ subroutine lf_rcemis(i,j,k,eps)
                  iland = ic2iland(i,j,ic)
                  !only pick one country at a time
                  do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
-                   if(iic<=Ncountry_lf)then
-                     if (iic <= Ncountry_mask_lf) then
-                       if (country_mask_val(iic)>-99999) then
-                         if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
-                       end if
+                    if(iic<=Ncountry_lf)then
+                      if (iic <= Ncountry_mask_lf) then
+                        if (iic2ilf_countrymask(iic)>0) then
+                           !Cell fraction of grid mask defined EmisMaskIndex2Name
+                           fac = fac * (1.0-EmisMaskValues(i,j,iic2ilf_countrymask(iic))) !count only what is covered by the mask
+                        else if (country_mask_val(iic)>-99999) then
+                           if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
+                        end if
                      else if(country_ix_list(iic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
                      else if(country_ix_list(iic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
                      else if(country_ix_list(iic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then

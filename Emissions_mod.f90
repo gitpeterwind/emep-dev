@@ -66,7 +66,7 @@ use EmisDef_mod,       only: &
      ,NSECTORS_GNFR_CAMS, GNFR_CAMS_SECTORS, NSECTORS_SNAP, SNAP_SECTORS, NSECTORS_MAX, SECTORS&
      ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
      ,Emis_mask, Emis_mask_allocate, MASK_LIMIT & !old format
-     ,NEmisMask, EmisMaskValues, EmisMaskIntVal& !new format
+     ,NEmisMask, EmisMaskValues, EmisMaskIntVal,EmisMaskIndex2Name& !new format
      ,Emis_field, Emis_id, NEmis_id &
      ,NEmisFile_sources, EmisFiles,NEmis_sources, Emis_source&
      ,Emis_source_3D,ix3Dmap, NEmis_3Dsources&
@@ -521,11 +521,12 @@ contains
     enddo
     NEmisMask = iEmisMask
     allocate(EmisMaskValues(LIMAX,LJMAX,NEmisMask))
+    allocate(EmisMaskIndex2Name(NEmisMask))
 
     !now set the values for the actual masks
     iEmisMask = 0
     do i = 1, size(EmisMask)
-       if(EmisMask(i)%filename /= 'NOTSET' ) cycle
+       if(EmisMask(i)%filename == 'NOTSET' ) cycle
        select case(EmisMask(i)%ID)
        case('NUMBER')
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
@@ -539,15 +540,18 @@ contains
           
        case('CELL-FRACTION')
           iEmisMask = iEmisMask+1
+          mask_cdf = 0.0
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
-               interpol='zero_order', needed=.false., found=found, UnDef=-1.0E10, debug_flag=.false.)
+               interpol='conservative', needed=.false., found=found, UnDef=0.0, debug_flag=.false.)
           
           call CheckStop(.not. found, &
                "Mask variable not found: "//trim(EmisMask(i)%cdfname)//':'//trim(EmisMask(i)%filename))
           
           EmisMaskValues(:,:,iEmisMask) = 1.0 - mask_cdf(:,:) * (1.0-EmisMask(i)%fac)
           ic = count(mask_cdf(:,:) > 0)
-          if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
+          if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname),EmisMask(i)%fac
+          ! make table of names
+          EmisMaskIndex2Name(iEmisMask) = trim(EmisMask(i)%cdfname)
           if(ic>0)write(*,*)me,' masked ',ic,' cells'
           
           call CheckStop(any(EmisMaskValues(:,:,iEmisMask) < 0) .or. any(EmisMaskValues(:,:,iEmisMask) > 1), &
@@ -555,7 +559,7 @@ contains
        case default
           iEmisMask = iEmisMask+1
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
-               interpol='zero_order', needed=.false., found=found, UnDef=-1.0E10, debug_flag=.false.)
+               interpol='zero_order', needed=.false., found=found, UnDef=0.0, debug_flag=.false.)
           call CheckStop(.not. found, &
                "Mask variable not found: "//trim(EmisMask(i)%cdfname)//':'//trim(EmisMask(i)%filename))
           !set mask value

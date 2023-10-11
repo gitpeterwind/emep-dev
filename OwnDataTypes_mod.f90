@@ -367,6 +367,7 @@ type, public :: lf_country_type
    integer :: mask_val_max = 0
    integer,dimension(Max_lf_Country_list) :: mask_val = -9999999
    character(len=10) :: list(Max_lf_Country_list) = 'NOTSET'
+   character(len=TXTLEN_NAME) :: cellmask_name(Max_lf_Country_list) = 'NOTSET'
    type(lf_country_group_type) :: group(Max_lf_Country_groups)
    integer :: sector_list(Max_lf_sectors)=-1
 end type lf_country_type
