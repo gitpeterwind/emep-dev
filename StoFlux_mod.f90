@@ -47,6 +47,9 @@ contains
     logical, save :: my_first_call = .true.
     integer ::  istat, iL
     character(len=*), parameter :: dtxt='SetupFST:'
+    !logical :: dbg
+    !dbg = debug_proc .and. i==debug_li .and. j==debug_lj .and. DEBUG%STOFLUX!  .and. and. current_date%seconds == 0
+    !if(dbg) write(*,*) dtxt//'FIRST?', my_first_call, DebugCell, me
 
      if ( my_first_call ) then
        idepO3 = find_index('O3',DDspec(:)%name)
@@ -65,7 +68,8 @@ contains
      Sub(:)%FstO3 = 0.0
 
     ! resets whole grid at local night
-    if ( Grid%Zen < 90.0  .and. old_gsun(i,j,1)<1.0e6  ) then
+    
+    if ( Grid%Zen < 90.0 ) then
         SumVPD(i,j,:)        = 0.0    ! For Critical VPD stuff, wheat
         old_gsun(i,j,:)      = 1.0e99 ! "     "
     end if
@@ -97,7 +101,7 @@ contains
       L = Sub(iL)
 
       Sub(iL)%FstO3       = 0.0
-      if ( dbg ) write(*,"(a,i3,2f7.1,9es10.3)") dtxt//'LOOP', iL, L%hveg, L%z0, L%g_sun
+      !if ( dbg ) write(*,"(a,i3,2f7.1,9es10.3)") dtxt//'LOOP', iL, L%hveg, L%z0, L%g_sun
 
 
        ! take care of  temperate crops, outside growing season

@@ -15,9 +15,8 @@ module AeroConstants_mod
 
    type, public :: aero_t
      ! EMEP only
-     character(len=15) :: EQUILIB  ='ISORROPIA'  ! or 'EQSAM' or 'MARS' !aerosol thermodynamics 
-                                            ! or IN TESTING (Nov 2022) : 'ISORROPIA'
-     character(len=15) :: EQUILIB_WATER  ='ISORROPIA'  ! or 'MARS' or 'EQSAM' !aerosol thermodynamics for PM water
+     character(len=15) :: EQUILIB  ='MARS'      ! 'ISORROPIA', 'EQSAM' or 'MARS' !aerosol thermodynamics 
+     character(len=15) :: EQUILIB_WATER  = 'MARS' ! 'ISORROPIA', 'MARS' or 'EQSAM' !aerosol thermodynamics for PM water
      logical          :: DYNAMICS = .false.
      logical          :: INTERNALMIXED = .true. ! sea salt assumption, now only used by ISORROPIA-Lite
      logical          :: CATIONS = .true.       ! dust cat assumption, now only used by ISORROPIA-Lite

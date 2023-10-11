@@ -147,7 +147,7 @@ EmCso:
 	$(MAKE) -C ZD_$@ $(PROG)
 
 # Data assimilation: 3DVar
-3DVar20: EmChem19rp
+3DVar20: EmChem19rcp
 	$(MAKE) -C ZD_$@/ $(PROG) DFLAGS="-D_MPI -Dwith_lapack95_mkl -Dwith_assim"
 
 # Chemistry version

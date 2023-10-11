@@ -1,4 +1,4 @@
-vers=rv4.45;year=2022;chem=EmChem19rp   # Input version/year/chem flags
+vers=v5.0;year=2023;chem=EmChem19rcp     # Input version/year/chem flags
 idir=`dirname ${BASH_SOURCE[0]}`        # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                    # top directory
@@ -23,6 +23,8 @@ make -j6
 for i in *.f90 *.inc gpl.txt modrun.sh CITATION.txt; do
   case $i in
   FUTURE*);;         # FUTURE routines not wanted
+  isocom.f90|isorev.f90|ISOFWD.f90|ModsCloudJ_mod.f90|CloudJ_mod.f90)
+    cp -f $i $cdir;;
   *.f90)
     if grep -qw $i $idir/.depend;then
       if grep -qw 'Copyright' $i;then

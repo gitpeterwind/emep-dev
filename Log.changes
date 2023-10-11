@@ -54,6 +54,308 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Local Fraction: bug in yearly MDA8 for local fractions corrected.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 Oct 2023, Dave
+
+config_Open.nml - removed  IAM_MF
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9 Oct 2023, Peter, Bruce
+
+Bug in Local Fractions: if several sectors are asked for, pm25 (not the
+fraction, but the pure value) was wrong (it added the "new" parts for each
+sector asked instead of only once).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Sep 2023, Dave
+
+Logic surrounding FLUX_VEGS moved into Landuse module.
+
+   Config_module:
+     FLUX_VEGS, nFluxVegs removed (moved to Landuse_mod)
+     Add: if ( USES%PFT_MAPS ) then
+        GLOBAL_settings = "YES"
+        European_settings = "NO"
+   
+   LandDefs_mod
+     FLUX_VEGS removed (moved to Landuse_mod)
+     is_iam logic also moved to Landuse_mod
+   
+   
+   Landuse_mod
+     Now handles EXTRA_FLUX_VEGS (was FLUX_VEGS)
+
+NOTE: the model now calculates only G-POD for GLOBAL05 runs, since POD is only
+really defined for European growing seasons and veg. Contact Dave if wanting to
+use.
+  
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Oct.2023, Dave
+
+Removed last IAM_CR from config_emep.nml and config_Open.nml. 
+  (EUAOT40_Crops and MET_LCS now use IAM_WH)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd Oct.2023, Dave/Yao
+
+AOTnPOD_mod - removed integer, save, public :: nOutputVegO3 = 0
+ (is defined in Config_mod).
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Oct 2023, Dave
+
+AOTnPOD_mod - small debug tidy-up
+DO3SE_mod   - small debug tidy-up
+Mosaics_mod - debug system revamped to get print-outs in line with
+ Landuse debugs. Now print if MasterProc or DEBUG%MOSAICS .and. debug_proc
+My_Derived_mod -  small debug tidy-up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 Sep 2023, Dave
+
+FLUX_VEGS now removed from config_Open.nml, config_emep.nml; these are now
+  discovered from the land-covers asked for in OutputVegO3.
+
+
+Changes in:
+
+ AOTnPOD_mod  = nOutputVegO3 change, plus use L%FstO3 to define day, not Grid%izen
+ Config_module - just move nOutputVegO3, and remove old PFT_MAPS/FLUX_VEGS stuff
+ DO3SE_mod - removed "OLDBUG" code
+ Landuse_mod - figures out FLUX_VEGS
+ Mosaics_mod - just move nOutputVegO3
+ My_Derived_mod - just move nOutputVegO3, and rename sub to dtxt
+
+ config_Open.nml - only has European IAM veg
+ config_emep.nml - has some example global IAMs (G-IAM)
+                 - also uses LandInputs_Sep2023 for e.g. Inputs_DO3SE.csv
+
++BUG fix
+ StoFlux_mod - remove test for old_gsun(i,j,1)<1.0e6 - caused "diamond" PODs
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Sep 2023, Dave
+
+Tidy ups:
+
+ All DEBUG_ variables now removed and/or added into DEBUG% structure :-)
+
+ Debug_module, Rb_mod: removed DEBUG_RB
+ Debug_module: removed unused DEBUG_OUT_HOUR 
+ change _ to %:
+ Debug_module, OutputChem_mod: OUTPUTCHEM
+ Debug_module, Nest_mod, ExternalBICs_mod: NEST and NEST_ICBC
+ Debug_module, Setup_1d_mod (_MASS not used, removed),   MassBudget_mod
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 Sep 2023, Dave
+
+Wanted table of EMEP country codes and numbers. Now get from running
+
+  mk.testX Country_mod.f90
+
+  Produces: Results_Country_mod.txt 
+    $head Results_Country_mod.txt 
+   ncc  code           gains  incams   name
+     1  AL              ALBA       F   Albania                                                                         
+     2  AT              AUST       T   Austria   
+
+  (The incams logical is provisional, based on EUMACC2, and will be uodated soon.)
+
+Changes in:
+
+Country_mod.f90
+  writes out Results_Country_mod.txt
+  - also fprettify run on this.
+
+SmallUtils_mod.f90
+ - added blank_replace to swap " " for e.g. "_" (produces e.g. The_North_Sea in table names)
+ - removed print from find_duplicates, which are not allowed in gfortran
+   (thanks Heiko)
+  https://stackoverflow.com/questions/24923076/print-to-standard-output-from-a-function-defined-in-an-fortran-module
+  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=51286
+ - removed unused variable  to be --pedantic
+ - modified Self_test
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 Sep 2023, Dave
+
+Tidying up:
+
+TimeFacBasis = 'DAY_OF_YEAR' replaces v5.0 USES%DAYOFYEARTIMEFAC. This removes
+  some confusion about setting both TimefacBasis = 'CAMS_TEMP_CLIM' and USES%DAYOFYEARTIMEFAC = T.
+
+Removed USES%TIMEZONEMAP and made this default for all runs.
+
+Changes in:
+
+ Config_module.f90
+ EmisGet_mod.f90
+ Emissions_mod.f90
+ Timefactors_mod.f90
+
+Also, moved ZCM_ into ZCM_OLD for most EmChem16s
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 Sep 2023, Dave
+
+Soil NO - now uses "official" CAMS soil-NO (from ECCAD), file 
+  (same results as previous EMEP equivalent)
+
+Adapted:
+
+ Emissions_mod.f90 - Note that coding is still crude, needing the names to be correct, i.e.:
+
+    if (  index(soilnox_emission_File,'v2.4a_GLOBAL05_Clim2000') > 0 .or. & ! EMEP-style
+           index(soilnox_emission_File,'v2.4clim') > 0) then                ! ECCAD-style
+
+ Config_module.f90 - defaults to ECCAD version
+ config_emep.nml
+ config_Open.nml
+
+Also:
+ Timefactors_mod - just changes in comments
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 Sep 2023, Dave
+
+Emissions_mod.f90 - bugfix for issue #232
+
+Debug changes:
+
+ Debug_module.f90
+
+ Debug changes. Moved DEBUG_NETCDF, DEBUG_NETCDF_RF and many others
+ into DEBUG% system.
+
+
+Affected also:
+
+ Advection_mod.f90
+ BoundaryConditions_mod.f90
+ EmisGet_mod.f90
+ Emissions_mod.f90
+   Also needed changes since Emissions_mod used "debug" as an argument
+   to various subroutines, conflictig with DEBUG. Changed to either
+   debug_flag or dbg. Also smaller debug changes.
+ Met_mod.f90
+ NetCDF_mod.f90
+ PointSource_mod.f90
+ Runchem_mod.f90
+ Sites_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 Sep 2023, Alvaro
+
+Emissions_mod (EmisUpdate)
+  reset NEmis_source_ij before reading new emissions, close #231
+  https://github.com/metno/emep-mscw/issues/231
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 Sep 2023, Dave
+
+ Config_module   - excludes IAM_ veg from VEG_FLUXES if global (USES%PFT_MAPS=T)
+ config_Open.nml - added comments about this
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 Sep 2023, Dave
+
+ config_Open.nml    - removed IAM:CR, IAM_CROP
+ GaspParticleCoeffs - small fmt change
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7 Sep 2023, Dave
+
+Important change:
+
+ Landuse_mod.f90 - add use_eur array to avoid IAM_ calculations outside EUR.
+     (These IAM_ classes use European growing seasons, and results outside
+      this region are therefore senseless.)
+
+Other:
+ LandDefs.f90 - removed unneeded WANTED output
+ StoFlux_mod  - removed debug LOOP output
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 Sep 2023, Alvaro
+
+Add ZCM_EmChem19rcp, same as ZCM_EmChem19rc + Pollen tracers
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Sep 2023, Peter, Willem
+
+MDA8: The first day of the month was not included (counted as zero).
+For AvgMDA8AprSep, it is only the very first day (1st April) which was counted as zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Aug 2023, Dave
+
+Heiko spotted two modules:
+  Gravset_mod.f90
+  GravSettling_mod.f90
+
+The latter was an incomplete attempt by Dave to expand from ASH to all PMc.
+Peter pointed out numerical issues with basic method though, which still apply.
+
+Solution:
+git mv GravSettling_mod.f90 FUTURE_GravSettling_mod.f90k
+Makefile.SRCS  - remove GravSettling_mod.f90
+PhyChem_mod    - comment out if(USES%GRAVSET) call gravSettling 
+Config_module  - comment out GRAVSET
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 Aug 2023, Heiko
+
+Gravset_mod
+  fix sizes in 7bin ash-sizes to be log-center of bins
+  rather than upper sizes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Aug 2023, Alvaro
+
+Emissions_mod
+  reset NEmis_source_ij on EmisUpdate, close #231
+  https://github.com/metno/emep-mscw/issues/231
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 Aug 2023, Dave
+
+Landuse_mod
+  removed some debug which was hard-coded for Alps.
+
+Met_mod:
+ checkstop for USES%FFireDispMethod == 'PBL' .and. .not. foundHmix, since
+ ok to use PBL with non-NWP Hmix also
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+08 Aug 2023, Dave
+
+Met_mod: code will crash if HmixMethod = 'NWP', and no varable found. (var names
+          are one of  "pblh", "PBLH", "blh ")
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 July 2023, Dave
+
+ NEW TAG: rv5.0
+ code used for 2023 reporting and SR runs.
+ Defaults to MARS equilib, and FIXED_CLW = 1.0e-6, see 12th July commits.
+
+ config_emep.nml - just improved comments surrounding CAMS_TEMP_CLIM.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 July 2023, Dave/Willem
+
+Towards rv5.0 tag
+
+  Aqueous_n_WetDep_mod
+  Config_mod
+
+    USES%FIXED_CLW introduced, with defaul 0.6e-6 vol(H2O)/vol(air-in-cloud)
+
+  AeroConstants_mod:
+    back to MARS by default
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+11 July 2023, Dave
+ Emissions_mod: no change in coding, but lots of debug tweaks. Focus on
+  Hungaru and NH3 with dbgPoll.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 04 July 2023, Peter
 Replace EmisDir before DataDir
 
@@ -362,7 +664,6 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  good-enough for now.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
->>>>>>> bb6a5d60b581be32fea405f354cbf4a5d9711fa7
 NEW TAG: rv4.50
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Mar 2023, Dave
@@ -833,7 +1134,6 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in emis new format: the "%factor" attribute, when given in the config file
 for the the entire file, was not applied.
->>>>>> 02e166bd0f592b8b4323efa7ced5457f303fe106
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 June 2022, Agnes & Anna

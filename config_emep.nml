@@ -119,16 +119,18 @@
 !BUG 2023  USES%MonthlyNH3 = 'LOTOS', 
 !DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
 
-!June 2023 CAMS_TEMPO_CLIM option added - uses all time-factors from cams_temp_v2_3
-!!! Change time factor index to match CAMS_TEMPO
-! If used, uncomment to END-OF-CLIM
- TimeFacBasis    = 'CAMS_TEMPO_CLIM',   ! sets also MonthlyFacBasis
+!!! ****  START-OF-CAMS-TEMPO-CLIM ****
+!   CAMS_TEMPO_CLIM optionr: uses all time-factors from cams_temp_v2_3
+!   *** If used, uncomment to END-OF-CLIM
+!       and if TimeFacBasis=CAMSTEMPO_CLIM, sets also MonthlyFacBasis
+! NOTE: careful with USES%DEGREEDAYFACTORS and USES%DAYOFYEARTIMEFAC
+ TimeFacBasis    = 'CAMS_TEMPO_CLIM',   
 ! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
  MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
  DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
  HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
 
-! Change time factor index to match CAMS_TEMPO
+! Change time factor index to match CAMS_TEMPO sectors 1-19
 !                                                 tf  h  spl
 SECTORS_ADD(1) = 'GNFR_CAMS', 'GNFR_A',  'sec01',  1, 1,  1, 'Public Power', 'ALL',
 SECTORS_ADD(2) = 'GNFR_CAMS', 'GNFR_B',  'sec02',  2, 3,  2, 'Industry', 'ALL',
@@ -149,7 +151,7 @@ SECTORS_ADD(16) = 'GNFR_CAMS', 'GNFR_F1','sec16', 16, 2, 16, 'RoadTransportExhau
 SECTORS_ADD(17) = 'GNFR_CAMS', 'GNFR_F2','sec17', 17, 2, 17, 'RoadTransportExhaustDiesel', 'ALL',
 SECTORS_ADD(18) = 'GNFR_CAMS', 'GNFR_F3','sec18', 18, 2, 18, 'RoadTransportExhaustLPGgas', 'ALL',
 SECTORS_ADD(19) = 'GNFR_CAMS', 'GNFR_F4','sec19', 19, 2, 19, 'RoadTransportNonExhaustOther', 'ALL',
-!END-OF-CAMS-TEMPO-CLIM
+!!! ****  END-OF-CAMS-TEMPO-CLIM ****
 
 !For 2020
 !  USES%DAYOFYEARTIMEFAC   = T,
@@ -203,10 +205,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2021ms/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2021ms/Inputs_DO3SE.csv',
- LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2021ms/medMap_0.5deg.nc',
- LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2021ms/Olson_2001_DEforEmep.nc',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023/Inputs_DO3SE.csv',
+ LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023/Olson_2001_DEforEmep.nc',
 
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
@@ -288,15 +290,9 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults,or fileName_CH4_ibcs for RCP trends)
-
-!--- 'fake' vegetation for ozone POD calculations
-  FLUX_VEGS = 'IAM_CROP', 'IAM_CR','IAM_DF','IAM_DF_MED', ! do not need all array elements
-               'IAM_WH', 'IAM_WH_MED',
-               'IAM_WH_Irrig', 'IAM_WH_MED_Irrig',
-               'IAM_SNL', 'IAM_SNL_MED',
-            !  'Wheat_Irrigated', 'Wheat_NonIrrig',
-            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
-            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+!------------------------------
+! In v5.0, we do not give FLUX_VEGS as before. Set from OutputVegO3 landcovers.
+! Still need to ignore some classes:
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 
 !-------Local Fractions setup example for SR style outputs
@@ -512,7 +508,7 @@ OutputMisc=
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 !'met2d_LSPrec1',  'MET2D','large_scale_precipitations','-','mm'  ,-99,-99,F,1.0,F,'YMD',
 !
-!'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
+!'ws10m',          'MET2D','ws_10m','-','m/s' ,-99,-99,F,1.0,T,'YMD',
 !REM 'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
 !REM 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YM,
  'MaxD8M_O3_26th','MaxD8M_26th', '',  'O3', 'ug/m3',  -1 , -1,   F,    1.0,   F, 'Y',
@@ -739,22 +735,19 @@ OutputVegO3=
     'POD1_SNL_MED','POD', 1.0,  'MM', 'IAM_SNL_MED',F,0,999 , 'YM',
 ! WARNING - POD6 is not recommended for European-scale IAM modelling
 ! Way too uncertain!
-!   'POD6_TC       ','POD', 3.0,  'MM', 'TC    ',F,0,999, 'YM',   
-    'POD3_IAM_CR   ','POD', 3.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
-    'POD3_IAM_CROP ','POD', 3.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
     'POD3_IAM_WH ','POD', 3.0,  'MM', 'IAM_WH',F,0,999, 'YM',  
     'POD3_IAM_WH_Irrig ','POD', 3.0,  'MM', 'IAM_WH_Irrig',F,0,999, 'YM',  
     'POD3_IAM_WH_MED ','POD', 3.0,  'MM', 'IAM_WH_MED',F,0,999, 'YM',  
     'POD3_IAM_WH_MED_Irrig','POD', 3.0,  'MM', 'IAM_WH_MED_Irrig',F,0,999, 'YM',  
-    'POD6_IAM_CR   ','POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',  
-    'POD6_IAM_CROP ','POD', 6.0,  'MM', 'IAM_CROP',F,0,999, 'YM',  
+! Example global PODs - NOT the sam as PODs above. Contact Dave for usage
+   'G-POD3_WH_Irrig    ','POD', 3.0,  'MM', 'G-IAM_WH_Irrig    ',F,0,999 , 'YM',
+   'G-POD3_WH_NonIrrig ','POD', 3.0,  'MM', 'G-IAM_WH_NonIrrig ',F,0,999 , 'YM',
 !
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 'YM',   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 'YM',   
     'MMAOT40_IAM_DF_MED','AOT', 40.0, 'MM', 'IAM_DF_MED',F,0,999, 'YM',   
-    'MMAOT40_IAM_CR','AOT', 40.0, 'MM', 'IAM_CR',F,0,999, 'YM',   
 ! IAM_CR, we use 3m O3
-    'EUAOT40_Crops ','AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 'YM',
+    'EUAOT40_Crops ','AOT', 40.0, 'EU', 'IAM_WH',F,0,999, 'YM',
 ! IAM_DF, we use 3m O3
     'EUAOT40_Forests','AOT',40.0, 'EU', 'IAM_DF',F,0,999, 'YM',   
     'MMAOT40_IAM_WH ','AOT',40.0, 'MM', 'IAM_WH',F,0,999, 'YM',
@@ -804,7 +797,7 @@ OutputVegO3=
 !    'CanopyO3', 
 !    'FstO3'
   MET_LCS = 
-    'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
+    'DF','GR','BF','TC','IAM_DF','IAM_WH','C3_NARC_GRSS',
   Mosaic_timefmt = 'YMD',
 
 !sites sondes:

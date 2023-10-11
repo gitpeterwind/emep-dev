@@ -62,10 +62,13 @@ subroutine gravset()
     case(7)
       allocate(grav_sed(bins))
       grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
-      grav_sed(:)%diameter = [0.1,0.3,1.0,3.0,10.0,30.0,100.0]*1e-6
+      !grav_sed(:)%diameter = [0.1,0.3,1.0,3.0,10.0,30.0,100.0]*1e-6
+      ! use geometric mean of bins (log-normal dist.) not upper limits
+      grav_sed(:)%diameter =  [0.1,0.2,0.5,1.7, 5.4,17.3, 55.8]*1e-6
     case(9)
       allocate(grav_sed(bins))
       grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
+      ! these bins are mean with lower limit of 3 and upper of 28
       grav_sed(:)%diameter = [4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
 !   case(10)
 !     allocate(grav_sed(bins))
