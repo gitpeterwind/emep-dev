@@ -2287,7 +2287,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   if(.not. present(ncFileID_in))then
      call check(nf90_close(ncFileID))
   end if
-  if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
+  if(DEBUG%NETCDF)write(*,*)'finished GetCDF_modelgrid', me
 
 end subroutine GetCDF_modelgrid
 
