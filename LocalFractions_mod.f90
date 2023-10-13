@@ -98,12 +98,7 @@ real, public, allocatable, dimension(:,:,:,:), save :: &
    loc_frac_src &   ! Fraction of pollutants that are produced locally, list of defined sources
   ,lf &   ! Fraction of pollutants that are produced locally, for all defined sources
   ,loc_frac_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
-  ,lf_src_full &   ! Fraction of pollutants that are produced locally, list of defined sources
-  ,loc_tot_hour_inst&   !all contributions
-  ,loc_tot_hour&   !Hourly average of all contributions
-  ,loc_tot_day&   !Daily average of all contributions
-  ,loc_tot_month&  !Monthly average of all contributions
-  ,loc_tot_full  !Fullrun average of all contributions
+  ,lf_src_full   ! Fraction of pollutants that are produced locally, list of defined sources  
 real, public, allocatable, dimension(:,:,:), save :: &
   loc_frac_drydep  ! ddepositions per source (not fractions!)
 real, public, allocatable, dimension(:,:,:), save :: &
@@ -195,6 +190,7 @@ contains
     integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask, mask_val_min, mask_val_max
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix, iem_deriv
     integer, allocatable :: MaskVal(:)
+    logical is_relative,is_country
 ! pm25_new and pm25 are considered as two different emitted pollutants
     if(DEBUGall .and. me==0)write(*,*)'start init'
 
@@ -712,6 +708,8 @@ contains
   Ndrydep_lf=0
   Nwetdep_lf=0
   LF_SRC_TOTSIZE = 0
+  is_relative = .false.
+  is_country = .false.
   do isrc = 1, Nsources
      if(lf_src(isrc)%drydep) Ndrydep_lf = Ndrydep_lf + lf_src(isrc)%Npos
      if(lf_src(isrc)%wetdep) Nwetdep_lf = Nwetdep_lf + lf_src(isrc)%Npos
@@ -727,6 +725,15 @@ contains
      if(me==0)then
         write(*,*)isrc,' ',trim(lf_src(isrc)%species)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end
      end if
+     if((is_relative .and. lf_src(isrc)%type=='country') .or. (is_country .and. lf_src(isrc)%type=='relative'))then
+        if(me==0)write(*,*)'LF: Sorry it is not possible to mix relative and country types yet'
+        CALL MPI_BARRIER(MPI_COMM_CALC, I)
+        call StopAll("LF: incompatible type")
+        !Note: this is probably due to the lf_rcemis:
+        !nemis and rcemis_lf to review
+     end if
+     if (lf_src(isrc)%type=='country') is_country = .true.
+     if (lf_src(isrc)%type=='relative') is_relative = .true.
 
   end do
 
@@ -792,7 +799,7 @@ contains
 
   allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
   lf_src_acc = 0.0
-  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Npoll,Niou_ix))
+  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,2*Npoll,Niou_ix))
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
@@ -868,7 +875,7 @@ subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
   real :: xtot,scale,invtot,t1,t2
-  integer ::i,j,k,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
+  integer ::i,j,k,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,ipoll_cfac,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
   character (len=20) ::dimNames(10),dimNames_tot(10)
@@ -886,7 +893,7 @@ subroutine lf_out(iotyp)
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldmonthlyname
   real :: fracsum(LIMAX,LJMAX),invfac
-  logical :: pollwritten(Max_lf_spec)
+  logical :: pollwritten(2*Max_lf_spec),is_surf
   integer :: ncFileID
 
   call Code_timer(tim_before)
@@ -1025,19 +1032,28 @@ subroutine lf_out(iotyp)
         if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
         isec=lf_src(isrc)%sector
         ipoll=lf_src(isrc)%poll
-        if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
+        if(lf_src(isrc)%type=='country')then
+           is_surf = .true.
+           ipoll_cfac = ipoll + Npoll
+        else
+           is_surf = .false.
+           ipoll_cfac = ipoll
+        end if
+        if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
            def2%name=trim(lf_src(isrc)%species)
-           if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll
+           if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
            scale=1.0/av_fac(iotyp)
-           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+           if(is_surf)def2%name='SURF_'//trim(def2%name)
+           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-           pollwritten(ipoll) = .true.
+           pollwritten(ipoll_cfac) = .true.
            overwrite=.false.
            if(iter==2 .and. (lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f'))then
-              tmp_SIA(:,:) = tmp_SIA(:,:) + lf_src_tot(:,:,KMAX_MID,ipoll,iou_ix)
+              tmp_SIA(:,:) = tmp_SIA(:,:) + lf_src_tot(:,:,KMAX_MID,ipoll_cfac,iou_ix)
            end if
            if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
               def2%name='SIA'
+              if(is_surf)def2%name='SURF_'//def2%name
               call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_SIA,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
               
@@ -1051,7 +1067,7 @@ subroutine lf_out(iotyp)
            do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
-                    invtot=1.0/(lf_src_tot(i,j,k,ipoll,iou_ix)+1.E-20)
+                    invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
                     n1=0
                     if(lf_src(isrc)%type == 'country')then
                        invfac=1.0/av_fac(iotyp) !could also output fractions?
@@ -1141,14 +1157,16 @@ subroutine lf_out(iotyp)
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                  endif
-                 if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox' .and. (lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f'))then
-                    if(iter==2)tmp_SIA_cntry(:,:,n1) = tmp_SIA_cntry(:,:,n1) + tmp_out_cntry(:,:,n1)
-                    if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
-                       if(me==0 .and.  first_call(iotyp))write(*,*)'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
-                       def2%name='SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
-                       call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
+                 if (lf_src(isrc)%iem_deriv > 0)  then
+                    if((lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f') .and. EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox')then
+                       if(iter==2)tmp_SIA_cntry(:,:,n1) = tmp_SIA_cntry(:,:,n1) + tmp_out_cntry(:,:,n1)
+                       if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
+                          if(me==0 .and.  first_call(iotyp))write(*,*)'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
+                          def2%name='SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                          
+                       end if
                     end if
                  end if
                  if(lf_src(1)%MDA8 .and. lf_src(isrc)%species=='O3')then
@@ -1255,18 +1273,17 @@ subroutine lf_out(iotyp)
 !stop
 end subroutine lf_out
 
-subroutine lf_av(dt,End_of_Day)
+subroutine lf_av(dt)
   real, intent(in)    :: dt                   ! time-step used in integrations
-  logical, intent(in) :: End_of_Day           ! e.g. 6am for EMEP sites
   real :: xtot, x, O3_c
-  integer ::i,j,k,ii,l,n,n_new,dx,dy,ix,iix,ipoll,isec_poll1, iou_ix, isrc
+  integer ::i,j,k,ii,l,n,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
   integer ::isec_poll
-  logical :: pollwritten(Max_lf_spec)
+  logical :: pollwritten(2*Max_lf_spec),is_surf
   integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
   real :: w_m, w_y, timefrac
   logical, save :: first_call=.true.
-
-  if(DEBUGall .and. me==0)write(*,*)'start av'
+  
+  if(DEBUGall)write(*,*)me,'start av'
 
   call Code_timer(tim_before)
   if(.not. lf_src(1)%HOUR.and.&
@@ -1280,13 +1297,20 @@ subroutine lf_av(dt,End_of_Day)
      do isrc=1,Nsources_nonew
         if (lf_src(isrc)%species == 'FULLCHEM') cycle
         ipoll = lf_src(isrc)%poll
+        if(lf_src(isrc)%type=='country')then
+           is_surf = .true.
+           ipoll_cfac = ipoll + Npoll
+        else
+           is_surf = .false.
+           ipoll_cfac = ipoll
+        end if
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
            do j=1,ljmax
               do i=1,limax
                  xtot=0.0
                  do iix=1,lf_src(isrc)%Nsplit
                     ix = lf_src(isrc)%ix(iix)
-                     if(lf_src(isrc)%type=='country')then
+                     if(is_surf)then
                        !3m height cfac correction
                        xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
                          *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
@@ -1297,12 +1321,12 @@ subroutine lf_av(dt,End_of_Day)
                         !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                      endif
                  end do
-                 if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
+                 if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
                     if (iou_ix == iou_ix_inst) then
                        !not accumulated
-                       lf_src_tot(i,j,k,ipoll,iou_ix) = xtot
+                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = xtot
                     else
-                       lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
+                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = lf_src_tot(i,j,k,ipoll_cfac,iou_ix) + xtot
                     endif
                  endif
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -1329,7 +1353,7 @@ subroutine lf_av(dt,End_of_Day)
                     xtot=0.0
                     do iix=1,lf_src(isrc_pm25_new)%Nsplit
                        ix=lf_src(isrc_pm25_new)%ix(iix)
-                       if(lf_src(isrc_pm25_new)%type=='country')then
+                       if(is_surf)then
                           !3m height cfac correction
                           xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc_pm25_new)%mw(iix))/ATWAIR&
                                *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
@@ -1340,9 +1364,9 @@ subroutine lf_av(dt,End_of_Day)
                           !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                        endif
                     end do
-                    if(.not. pollwritten(ipoll))then !one pollutant may be used for several sources
+                    if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
                        !It is added to the _old (= not new) component, also in the inst case
-                       lf_src_tot(i,j,k,ipoll,iou_ix) = lf_src_tot(i,j,k,ipoll,iou_ix) + xtot
+                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = lf_src_tot(i,j,k,ipoll_cfac,iou_ix) + xtot
                     end if
                     n_new = lf_src(isrc_pm25_new)%start
                     do n=lf_src(isrc)%start, lf_src(isrc)%end !NB: loop over isrc for pm25, not new
@@ -1353,7 +1377,7 @@ subroutine lf_av(dt,End_of_Day)
               enddo
            enddo
         end if
-        pollwritten(ipoll) = .true.
+        pollwritten(ipoll_cfac) = .true.
 
      end do
         
@@ -1450,7 +1474,7 @@ subroutine lf_av(dt,End_of_Day)
   first_call=.false.
   
   call Add_2timing(NTIMING-9,tim_after,tim_before,"lf: averaging")
-  if(DEBUGall .and. me==0)write(*,*)'end av'
+  if(DEBUGall)write(*,*)me,' end av'
 
 end subroutine lf_av
 

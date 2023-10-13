@@ -2621,7 +2621,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
   if(USES%LocalFractions .and. .not. present(ONLY_IOU))then
-    call lf_av(dt,End_of_Day)
+    call lf_av(dt)
   endif
 
   first_call = .false.

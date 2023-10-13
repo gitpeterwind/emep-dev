@@ -325,12 +325,12 @@ type, public :: lf_sources
   integer :: res = 1  ! half size of the single source square (square size is 2*res+1 x 2*res+1 )
   integer :: Nvert = 7 ! vertical extend of the tracking/local rwindow
   integer :: sector = 0 ! sector for this source. Zero is sum of all sectors
-  integer :: poll = 1 !index of pollutant in loc_tot (set by model). One poll for all sources related to that poll
+  integer :: poll = 1 !index of pollutant. One poll for all sources related to that poll (set by model)
   integer :: start = 1 ! first position index in lf_src (set by model)
   integer :: end = 1 ! last position index in lf_src (set by model)
   integer :: iem = 0 ! index of emitted pollutant, emis (set by model)
   integer :: iem_deriv = 0 ! index of emitted pollutant to track, emis (set by model)
-  integer :: iem_lf ! index of emitted internal for LF (1 for nox, 2 for voc)
+  integer :: iem_lf ! index of emitted internal for LF (1 for nox, 2 for voc, ...)
   integer :: Npos = 0 ! number of position indices in lf_src (set by model)
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
   integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox)
