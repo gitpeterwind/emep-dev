@@ -164,8 +164,8 @@ type, public :: emep_useconfig
     ,DUST             = .true.  &! Only EECCA?
     ,NO2_COMPENSATION_PT = .false. & ! allows
     ,SOILNOX          = .true.  &! See SOILNOx_Method below.
-    ,OCEAN_DMS        = .false. &!set automatically true if found.
-    ,OCEAN_NH3        = .false. &!set automatically true if found
+    ,OCEAN_DMS        = .true. &!
+    ,OCEAN_NH3        = .false. &!
     ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong
@@ -764,6 +764,8 @@ character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/E
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
+character(len=TXTLEN_FILE), target, save, public :: DMSFile = 'DataDir/DMS_SOLAS.nc'
+character(len=TXTLEN_FILE), target, save, public :: OceanNH3File = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc'
 !Zahle2011:
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
@@ -896,6 +898,8 @@ subroutine Config_Constants(iolog)
    ,SoilTypesFile&
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
+   ,DMSFile&
+   ,OceanNH3File&
    ,soilnox_emission_File&
    ,TimeFacBasis&
    ,MonthlyFacFile&
@@ -1071,6 +1075,8 @@ subroutine Config_Constants(iolog)
   call associate_File(SoilTypesFile)
   call associate_File(SurfacePressureFile)
   call associate_File(AircraftEmis_FLFile)
+  call associate_File(DMSFile)
+  call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)

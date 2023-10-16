@@ -51,6 +51,14 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Oct 2023, Peter
 
+Remove the emis_inputlist functionality!
+To be replaced by Emis_sourceFiles format.
+path to OceanDMS and OceanNH3 have been defined in adhoc filenames.
+OceanDMS and OceanNH3 are steered by USES%OCEAN_DMS and USES%OCEAN_NH3
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 Oct 2023, Peter
+
 Local Fraction: SIA and large refactoring. (was waiting for Open source to commit)
 Should now be ok to mix LF outputs with relative and country types.
 

@@ -30,6 +30,7 @@ use Config_module,only: &
     NPROC, EmisSplit_OUT,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
+    DMSFile,OceanNH3File,&
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, &
     hourly_emisfac
@@ -213,6 +214,30 @@ contains
        first_call = .false.
     end if
 
+    if(USES%OCEAN_NH3)then
+       if(MasterProc)write(*,*)' using  OceanNH3'
+       O_NH3%index=find_index("NH3",species(:)%name)
+       call CheckStop(O_NH3%index<0,'NH3 not found. Needed for OceanNH3 emissions')
+       allocate(O_NH3%emis(LIMAX,LJMAX))
+       allocate(O_NH3%map(LIMAX,LJMAX))
+       O_NH3%emis=0.0
+       O_NH3%map=0.0
+       O_NH3%sum_month=0.0
+       O_NH3%sum_year=0.0
+    end if
+    
+    if (USES%OCEAN_DMS)then
+       if(MasterProc)write(*,*)'using DMS'
+       O_DMS%index=find_index("SO2",species(:)%name)
+       call CheckStop(O_DMS%index<0,'SO2 not found. Needed for DMS emissions')
+       allocate(O_DMS%emis(LIMAX,LJMAX))
+       allocate(O_DMS%map(LIMAX,LJMAX))
+       O_DMS%emis=0.0
+       O_DMS%map=0.0
+       O_DMS%sum_month=0.0
+       O_DMS%sum_year=0.0
+    endif
+    
     ! new format initializations
 
     !1) define lowest level default values
@@ -1057,6 +1082,8 @@ end subroutine EmisUpdate
     integer :: f, itot, iqrc
     character(len=*), parameter :: dtxt='Emis:'
 
+    if (MasterProc) write(6,*) "Initializing emissions for year",  year
+    
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
     ios = 0
@@ -1067,6 +1094,7 @@ end subroutine EmisUpdate
     do iemislist = 1, size( emis_inputlist(:)%name )
        fname = emis_inputlist(iemislist)%name
        if(fname=="NOTSET") cycle
+       call StopAll("emis_inputlist style input no more in use. Use Emis_sourceFiles instead ")
        if(MasterProc)&
             write(*,*)"Emission source number ", iemislist,"from ",sub//trim(fname)
 
@@ -2857,9 +2885,47 @@ end if
   tonnemonth_to_kgm2s = 1.0e3 &
        /(nmdays(current_date%month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
+  if (USES%OCEAN_DMS) then
+     if(MasterProc)write(*,*)'reading OceanDMS'
+     call ReadField_CDF(trim(DMSFile),'DMS_sea',O_DMS%emis,&
+            nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
+            needed=.true.,debug_flag=.false.,UnDef=0.0)
+     DMS%FileFound =.true.
+     !from nanomol/l -> mol/cm3
+     O_DMS%emis=O_DMS%emis*1.0e-12
+  end if
+
+  if (USES%OCEAN_NH3) then
+      if(MasterProc)write(*,*)'reading OceanNH3'
+       call ReadField_CDF(trim(OceanNH3File),'emiss_ocn',O_NH3%emis,&
+            nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
+            needed=.true.,debug_flag=.false.,UnDef=0.0)
+       
+       !diagnostics:
+       !call printcdf('OceanNH3',OceanNH3,'kg/m2/s')
+       !convert from kg/m2/s into kg/month/subdomain
+       O_NH3%sum_month=0.0
+       do j=1,ljmax
+          do i=1,limax
+             O_NH3%sum_month=O_NH3%sum_month+O_NH3%emis(i,j)&
+                  *gridwidth_m**2*xmd(i,j)*3600*24*nmdays(current_date%month)
+          end do
+       end do
+       !sum all subdomains
+       CALL MPI_ALLREDUCE(O_NH3%sum_month, mpi_out, 1,&
+            MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+       O_NH3%sum_month = mpi_out
+       O_NH3%sum_month=O_NH3%sum_month*1e-6 !kg->Gg
+
+       if(MasterProc)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',O_NH3%sum_month
+       O_NH3%sum_year=O_NH3%sum_year+O_NH3%sum_month!total for all month
+  end if
+
   do iemislist = 1, size( emis_inputlist(:)%name )
 
     if(emis_inputlist(iemislist)%name == "NOTSET")cycle
+
+    call StopAll("emis_inputlist style input no more in use. Use Emis_sourceFiles instead ")
 
     !periodicity set in routine Emissions(year) if 12 records are found
     if(emis_inputlist(iemislist)%periodicity /= "monthly")cycle
@@ -2935,7 +3001,8 @@ end if
        end if
 
     elseif(emis_inputlist(iemislist)%type == 'OceanNH3')then
-       if(MasterProc)write(*,*)'reading OceanNH3'
+        call StopAll("OceanNH3 no more an emis_inputlist. Use USES%OCEAN_NH3=T instead ")
+      if(MasterProc)write(*,*)'reading OceanNH3'
        call ReadField_CDF(emis_inputlist(iemislist)%name,'emiss_ocn',O_NH3%emis,&
             nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
             needed=.true.,debug_flag=.false.,UnDef=0.0)
@@ -2961,6 +3028,8 @@ end if
        O_NH3%sum_year=O_NH3%sum_year+O_NH3%sum_month!total for all month
 
     else if(emis_inputlist(iemislist)%type == 'DMS')then
+       call StopAll("DMS no more an emis_inputlist. Use USES%OCEAN_DMS=T instead ")
+
        if(MasterProc)write(*,*)'reading DMS'
        call ReadField_CDF(emis_inputlist(iemislist)%name,'DMS_sea',O_DMS%emis,&
             nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
