@@ -725,13 +725,7 @@ contains
      if(me==0)then
         write(*,*)isrc,' ',trim(lf_src(isrc)%species)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end
      end if
-     if((is_relative .and. lf_src(isrc)%type=='country') .or. (is_country .and. lf_src(isrc)%type=='relative'))then
-        if(me==0)write(*,*)'LF: Sorry it is not possible to mix relative and country types yet'
-        CALL MPI_BARRIER(MPI_COMM_CALC, I)
-        call StopAll("LF: incompatible type")
-        !Note: this is probably due to the lf_rcemis:
-        !nemis and rcemis_lf to review
-     end if
+
      if (lf_src(isrc)%type=='country') is_country = .true.
      if (lf_src(isrc)%type=='relative') is_relative = .true.
 
@@ -2167,7 +2161,8 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            end do
            !add emissions that are tracked
            do iemis = 1, N_lf_derivemis
-              if(emis2isrc(iemis) /= isrc ) cycle
+               if ( emis2icis(iemis) < 0 ) cycle ! relative type
+               if ( emis2isrc(iemis) /= isrc ) cycle
 
               n0 = lf_src(isrc)%start + emis2icis(iemis)
 
@@ -2183,6 +2178,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            !add emissions only at centre of window
            n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
            do iemis = 1, N_lf_derivemis
+              if(emis2icis(iemis) >= 0 ) cycle !country type
               if(emis2isrc(iemis) /= isrc ) cycle
               lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
            end do
@@ -2818,8 +2814,8 @@ subroutine lf_rcemis(i,j,k,eps)
   rcemis_lf = 0.0 !default: no difference TODO: avoid setting entire array to zero!
   !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
   if(k < KEMISTOP) return
-  nemis = 0 !counts the number of source with non zero emissions in this particular gridcell (i,j,k)
-  N_lf_derivemis = 0 !final max value of nemis
+  nemis = 0
+  N_lf_derivemis = 0 !number of distinct sources that have contributions in this gridcell
   fac = 1.0
   if (lf_fullchem) fac = eps
   do iem = 1, NEMIS_File
@@ -2839,7 +2835,7 @@ subroutine lf_rcemis(i,j,k,eps)
               else
                 nsectors_loop = NSECTORS
               end if
-              found = 0 !flag to show if nemis already increased
+              found = 0 !flag to show if nemis_rel already increased
               do iisec=1,nsectors_loop
                  if(lf_src(isrc)%sector>0) then
                     isec = lf_src(isrc)%sector
@@ -2850,7 +2846,7 @@ subroutine lf_rcemis(i,j,k,eps)
                  do ic = 1,nic(i,j)
                     iland = ic2iland(i,j,ic)
                     if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
-                       if(found == 0) nemis = nemis + 1 !should be increased at most once for each isrc
+                       if(found == 0) N_lf_derivemis = N_lf_derivemis +1  !should be increased at most once for each isrc
                        found = 1
                        emish_idx = SECTORS(isec)%height
                        split_idx = SECTORS(isec)%split
@@ -2858,7 +2854,7 @@ subroutine lf_rcemis(i,j,k,eps)
                           itot=lf_src(isrc)%ix(n)
                           iqrc = itot2iqrc(itot+NSPEC_SHL)
                           if (iqrc<0) cycle
-                          rcemis_lf(nemis,1) = rcemis_lf(nemis,1) +&
+                          rcemis_lf(N_lf_derivemis,1) = rcemis_lf(N_lf_derivemis,1) +&
                                fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                                *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)
@@ -2869,8 +2865,8 @@ subroutine lf_rcemis(i,j,k,eps)
 
               if (found == 1) then
                  !emissions found here
-                 !emis2icis(nemis) = n0 !not country/sector specific
-                 emis2isrc(nemis) = isrc
+                 emis2icis(N_lf_derivemis) = -1 ! only to show it is relative
+                 emis2isrc(N_lf_derivemis) = isrc
               endif
 
            else if(lf_src(isrc)%type=="country")then
@@ -2926,7 +2922,7 @@ subroutine lf_rcemis(i,j,k,eps)
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
                              if(found == 0) then
                                 !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
-                                do n=1,nemis
+                                do n=1,N_lf_derivemis
                                    if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == iem)then
                                       ! add to this instead
                                       nemis = n
@@ -2936,8 +2932,8 @@ subroutine lf_rcemis(i,j,k,eps)
                                 end do
                              end if
                              if(found == 0)  then
-                                nemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
-                                N_lf_derivemis = max(nemis,N_lf_derivemis)
+                                N_lf_derivemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
+                                nemis = N_lf_derivemis
                              end if
 
                              found = 1
@@ -3016,7 +3012,7 @@ subroutine lf_rcemis(i,j,k,eps)
                    if(found == 0) then
                       !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
                       !because only one derivative for each source is included ("lf(n0,i,j,k) = ederiv(iemis,ix)" without +=)
-                      do n=1,nemis
+                      do n=1,N_lf_derivemis
                          if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == iem)then
                             ! add to this instead
                             nemis = n
@@ -3029,13 +3025,13 @@ subroutine lf_rcemis(i,j,k,eps)
 !                      write(*,*)N_lf_derivemis,isec,'EMIS ',emis_lf_cntry(i,j,ic,isec,iem),iem,found
 !                   end if
                    if(found == 0) then
-                      nemis = N_lf_derivemis + 1 !should be increased at most once for each is
-                      N_lf_derivemis = max(nemis,N_lf_derivemis)
+                      N_lf_derivemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
+                      nemis = N_lf_derivemis
                    end if
                    found = 1
-                  emish_idx = SECTORS(isec)%height
-                  split_idx = SECTORS(isec)%split
-                  do n = 1, emis_nsplit(iem)
+                   emish_idx = SECTORS(isec)%height
+                   split_idx = SECTORS(isec)%split
+                   do n = 1, emis_nsplit(iem)
                     iqrc = sum(emis_nsplit(1:iem-1)) + n
                     itot = iqrc2itot(iqrc)
 
@@ -3060,10 +3056,8 @@ subroutine lf_rcemis(i,j,k,eps)
       end if
     end do
 
-    N_lf_derivemis = nemis !final number of emis derivatives computed for this i,j,k
-
-    if(nemis>N_lf_derivemisMAX)then
-      write(*,*)me,i,j,k,nemis,N_lf_derivemisMAX
+    if(N_lf_derivemis>N_lf_derivemisMAX)then
+      write(*,*)me,i,j,k,N_lf_derivemis,N_lf_derivemisMAX
       call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")
     end if
 
