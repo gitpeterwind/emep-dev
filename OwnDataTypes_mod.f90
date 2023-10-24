@@ -226,7 +226,7 @@ type, public :: Emis_sourceFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   character(len=TXTLEN_NAME) :: timevalidity = 'end' !if the time refers to the start, middle or end of the period   
+   character(len=TXTLEN_NAME) :: timevalidity = 'end' !if the time refers to the start, middle or end of the period
    real                       :: grid_resolution = 0.0 !resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
@@ -247,6 +247,7 @@ type, public :: Emis_mask_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'! netcdf filename with path
    character(len=TXTLEN_NAME) :: cdfname = 'NOTSET' ! name of the mask in the netcdf file
    character(len=TXTLEN_NAME) :: ID = 'NOTSET' ! name that the user set to identify this mask
+   character(len=TXTLEN_NAME) :: type = 'CELL-FRACTION' ! Type of mask: 'NUMBER', 'CELL-FRACTION', 'THRESHOLD'
    real                       :: threshold = 1.E-20 !mask is set for where value is above threshold
    real                       :: threshold_max = 1.E60 !mask is not set if value above threshold
    real                       :: fac = 0.0 !multiplicative factor
@@ -256,7 +257,7 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   character(len=TXTLEN_NAME) :: timevalidity = 'NOTSET' !if the time refers to the start, middle or end of the period   
+   character(len=TXTLEN_NAME) :: timevalidity = 'NOTSET' !if the time refers to the start, middle or end of the period
    real                       :: grid_resolution = 0.0!resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(date) :: end_of_validity_date = date(0,0,0,0,0)!internal date to know when to fetch new data

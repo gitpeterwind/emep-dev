@@ -32,7 +32,7 @@ use Config_module,only: &
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     DMSFile,OceanNH3File,&
     AVG_SMI_2005_2010File,NdepFile,&
-    startdate, Emis_sourceFiles, EmisMask, &
+    startdate, Emis_sourceFiles, EmisMask, NEmisMaskMAX,&
     hourly_emisfac
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
@@ -225,7 +225,7 @@ contains
        O_NH3%sum_month=0.0
        O_NH3%sum_year=0.0
     end if
-    
+
     if (USES%OCEAN_DMS)then
        if(MasterProc)write(*,*)'using DMS'
        O_DMS%index=find_index("SO2",species(:)%name)
@@ -237,7 +237,7 @@ contains
        O_DMS%sum_month=0.0
        O_DMS%sum_year=0.0
     endif
-    
+
     ! new format initializations
 
     !1) define lowest level default values
@@ -532,7 +532,7 @@ contains
     !sets and define the masks
     real :: mask_cdf(LIMAX,LJMAX), xsum
     logical :: found
-    integer :: i,ii,jj,ic,iEmisMask
+    integer :: i,ii,jj,ic,iEmisMask,EmisMask_ix(NEmisMaskMAX)
 
     iEmisMask = 0
     !1) find number of valid masks defined
@@ -543,16 +543,49 @@ contains
        call CheckStop(EmisMask(i)%ID == 'NOTSET',&
             "EmisMask(i)%ID undefined for "//trim(EmisMask(i)%filename))
        iEmisMask = iEmisMask+1 !assumes the fields are defined, without checking
+       select case(EmisMask(i)%type)
+       case('CELL-FRACTION')
+          !first check if the ID has already been defined
+          found=.false.
+          do ii = 1, i-1
+             if (EmisMask(ii)%ID==EmisMask(i)%ID) then
+                iEmisMask = EmisMask_ix(ii)
+                found = .true.
+                exit
+             end if
+          end do
+          if(.not. found) iEmisMask = NEmisMask+1
+          EmisMask_ix(i) = iEmisMask
+          NEmisMask = max(NEmisMask, iEmisMask)
+       case('THRESHOLD')
+          !first check if the ID has already been defined
+          found=.false.
+          do ii = 1, i-1
+             if (EmisMask(ii)%ID==EmisMask(i)%ID) then
+                iEmisMask = EmisMask_ix(ii)
+                found = .true.
+                exit
+             end if
+          end do
+          if(.not. found) then
+             iEmisMask = NEmisMask+1
+          else
+             call StopAll("Mask type THRESHOLD cannot combine same ID")
+          end if
+          NEmisMask = max(NEmisMask, iEmisMask)
+       end select
     enddo
-    NEmisMask = iEmisMask
+    if(me==0 .and. NEmisMask>NEmisMaskMAX)write(*,*)'found ',NEmisMask,' different IDs. Max is ',NEmisMaskMAX
+    call CheckStop(NEmisMask>NEmisMaskMAX, "Max masks exceeded. Increase NEmisMaskMAX")
     allocate(EmisMaskValues(LIMAX,LJMAX,NEmisMask))
+    EmisMaskValues = 1.0 !default is to include everything
     allocate(EmisMaskIndex2Name(NEmisMask))
 
     !now set the values for the actual masks
     iEmisMask = 0
     do i = 1, size(EmisMask)
        if(EmisMask(i)%filename == 'NOTSET' ) cycle
-       select case(EmisMask(i)%ID)
+       select case(EmisMask(i)%type)
        case('NUMBER')
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
                interpol='zero_order', needed=.false., found=found, UnDef=0.0, debug_flag=.false.)
@@ -562,27 +595,30 @@ contains
                allocate(EmisMaskIntVal(LIMAX,LJMAX))
           EmisMaskIntVal(:,:) = nint(mask_cdf(:,:))
           if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
-          
-       case('CELL-FRACTION')
-          iEmisMask = iEmisMask+1
+
+       case('CELL-FRACTION') !multiplies by mask
+          iEmisMask = EmisMask_ix(i)
           mask_cdf = 0.0
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
                interpol='conservative', needed=.false., found=found, UnDef=0.0, debug_flag=.false.)
-          
+
           call CheckStop(.not. found, &
                "Mask variable not found: "//trim(EmisMask(i)%cdfname)//':'//trim(EmisMask(i)%filename))
-          
-          EmisMaskValues(:,:,iEmisMask) = 1.0 - mask_cdf(:,:) * (1.0-EmisMask(i)%fac)
+          !NB: masks are additive. Include all parts that have a mask defined.
+          !    May be >1 if several masks are included at same gridcell
+          !    mask_cdf = 0 -> EmisMaskValues=1 -> do not change emissions
+          !    mask_cdf = 1 -> EmisMaskValues=fac=0 -> remove emissions
+          EmisMaskValues(:,:,iEmisMask) = EmisMaskValues(:,:,iEmisMask) - mask_cdf(:,:) * (1.0-EmisMask(i)%fac)
           ic = count(mask_cdf(:,:) > 0)
           if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname),EmisMask(i)%fac
           ! make table of names
-          EmisMaskIndex2Name(iEmisMask) = trim(EmisMask(i)%cdfname)
+          EmisMaskIndex2Name(iEmisMask) = trim(EmisMask(i)%ID)
           if(ic>0)write(*,*)me,' masked ',ic,' cells'
-          
+
           call CheckStop(any(EmisMaskValues(:,:,iEmisMask) < 0) .or. any(EmisMaskValues(:,:,iEmisMask) > 1), &
-               "Mask variable out of range: "//trim(EmisMask(i)%cdfname)//':'//trim(EmisMask(i)%filename)) 
-       case default
-          iEmisMask = iEmisMask+1
+               "Mask variable out of range: "//trim(EmisMask(i)%cdfname)//':'//trim(EmisMask(i)%filename))
+       case ('THRESHOLD') !remove (possibly only 1-fac)) where mask is defined
+          iEmisMask = EmisMask_ix(i)
           call ReadField_CDF(trim(EmisMask(i)%filename),trim(EmisMask(i)%cdfname),mask_cdf,1,&
                interpol='zero_order', needed=.false., found=found, UnDef=0.0, debug_flag=.false.)
           call CheckStop(.not. found, &
@@ -601,9 +637,11 @@ contains
           end do
           if(MasterProc)write(*,*)'defined mask  '//trim(EmisMask(i)%ID)//' based on '//trim(EmisMask(i)%cdfname)
           if(ic>0)write(*,*)me,' masked ',ic,' cells'
+       case default
+          call StopAll("Mask type not defined: "//trim(EmisMask(i)%type)//':'//trim(EmisMask(i)%filename))
        end select
     end do
-   
+
    ! to keep some compatibility with old format we also set old format masks
    if(.not. any(emis_inputlist(:)%use_mask)) &
       return
@@ -616,7 +654,7 @@ contains
    if(MasterProc)write(*,*)'defining mask for old formats'
    forall(jj = 1:LJMAX, ii = 1:LIMAX) &
       Emis_mask(ii,jj) = any(EmisMaskValues(ii,jj,:iEmisMask)<0.999)
-     
+
  end subroutine Init_masks
 !***********************************************************************
 subroutine EmisUpdate
@@ -1083,7 +1121,7 @@ end subroutine EmisUpdate
     character(len=*), parameter :: dtxt='Emis:'
 
     if (MasterProc) write(6,*) "Initializing emissions for year",  year
-    
+
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
     ios = 0
@@ -2239,7 +2277,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                   print '(a,9i5)', 'ROAD TFAC :', iland, iem, Country(iland)%timezone, hour_iland
                   call StopAll(dtxt//'ROADDUST')
               end if
-              
+
               do iem = 1, NROAD_FILES
                  tfac = fac_ehh24x7(iem, TFAC_IDX_TRAF,hour_iland,wday_loc,iland_timefac_hour)
                  s = tfac * roadfac * roaddust_emis_pot(i,j,icc,iem)
@@ -2454,7 +2492,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                      IS_DOM(isec_idx) .and. Gridded_SNAP2_Factors .and. &
                      (Emis_source(n)%periodicity == 'yearly' .or. &
                       Emis_source(n)%periodicity == 'monthly')) then
-                   if(dbgPoll) write(*,*) dtxt//'efacs HERE-PreHDD', tfac,& 
+                   if(dbgPoll) write(*,*) dtxt//'efacs HERE-PreHDD', tfac,&
                            isec,daynumber
                    oldtfac = tfac
                    ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
@@ -2900,7 +2938,7 @@ end if
        call ReadField_CDF(trim(OceanNH3File),'emiss_ocn',O_NH3%emis,&
             nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
             needed=.true.,debug_flag=.false.,UnDef=0.0)
-       
+
        !diagnostics:
        !call printcdf('OceanNH3',OceanNH3,'kg/m2/s')
        !convert from kg/m2/s into kg/month/subdomain

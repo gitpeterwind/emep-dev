@@ -63,7 +63,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     logical :: FileFound = .false. ! Set to T if found
   end type DMS_t
   type(DMS_t), public, save :: DMS = DMS_t()
-  
+
 
   type, private :: PBL_t
     ! Zi minimum value now generally calculated as z_mid(19), but we
@@ -77,13 +77,13 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
       ! JcRb_t2m is new JcRb using pop T at 2m
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
-    logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler? 
+    logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler?
     !
     ! Moved Feb 2021 from BLPhysics:
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
-      KzMethod = "TROENKz" !  TROEN - U+S New default 
+      KzMethod = "TROENKz" !  TROEN - U+S New default
                       ! "Mixed"  ! Set U, S separately, default, pre rv4-38
                       !   (defaulted to OBrien U + Jericevic S)
                       ! "SILAMKz"  ! SILAM - U+S
@@ -178,9 +178,9 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,CLOUDJ           = .true. & ! use CloudJ_mod for computing rcphot 
+    ,CLOUDJ           = .true. & ! use CloudJ_mod for computing rcphot
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
-    ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
+    ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.
     ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
     ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
     ,CLEARSKYTAB      = .false.  & ! use only clear-sky tabulated Jvalues.  Deprecated
@@ -197,14 +197,14 @@ type, public :: emep_useconfig
     ,ZREF             = .false. &! testing
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
-    ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf 
+    ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
-! cloud liquid water (vol-H2O/vol-Air) ? 
+! cloud liquid water (vol-H2O/vol-Air) ?
 ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
 ! from NWP values. (In future NWP will be used by default, but we are
-! invesigating some pH calculation issues. For safety, use FIXED_CLW 
+! invesigating some pH calculation issues. For safety, use FIXED_CLW
   real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
@@ -242,7 +242,8 @@ integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of add
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
-type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
+integer, parameter, public :: NEmisMaskMAX = 200
+type(Emis_mask_type), public, save :: EmisMask(NEmisMaskMAX) !emission mask new format
 type(hourly_emis_factor_type), public, save :: hourly_emisfac(10) !mapped hourly emissions timefactor
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100
@@ -343,7 +344,7 @@ character(len=TXTLEN_FILE),  public, save :: &
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc', &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
   ! change in config:
-  !v2.5: 
+  !v2.5:
   FINN_PATTERN = 'FINN_ForestFireEmis_mod_v25_YYYY.nc'
 
 ! Nest config
@@ -399,7 +400,7 @@ character(len=TXTLEN_FILE),public, target, save :: &
 integer, public, parameter ::       &
   MAX_NUM_DERIV2D = 600,            &
   MAX_NUM_DDEP_ECOS = 25,            & ! Grid, Conif, etc.  !increase from 9 to
-                                       ! 9+16 for first 16 LC 
+                                       ! 9+16 for first 16 LC
   MAX_NUM_NEWMOS  = 30,             & !New system.
   ! Older system
   MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:
@@ -741,7 +742,7 @@ character(len=*), public, parameter :: model="EMEP_MSC-W "
 character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "DataDir/ECera5_O3_TOP_YYYY.nc"
 ! Can use values of CH4 based on iyr_trend based on input files (default).
 ! Default files uses obs. based until 2019 and then CLE box-model calculations up to 2050.
-character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/ch4_hist_CLE.txt" 
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/ch4_hist_CLE.txt"
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
@@ -1051,7 +1052,7 @@ subroutine Config_Constants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we 
+  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we
   ! assume: (will reverse logic one day)
   if ( USES%PFT_MAPS ) then
      GLOBAL_settings = "YES"
@@ -1097,7 +1098,7 @@ subroutine Config_Constants(iolog)
   call associate_File(EMEP_EuroBVOCFile)
   call associate_File(jclearFile)
   call associate_File(jcl1kmFile)
-  call associate_File(jcl3kmFile) 
+  call associate_File(jcl3kmFile)
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
   call associate_File(NdepFile)
@@ -1160,7 +1161,7 @@ subroutine Config_Constants(iolog)
   endif
 
   call define_chemicals_indices() ! sets up species indices if they exist
-  
+
 end subroutine Config_Constants
 
 ! PRELIM. Just writes out USES so far.
@@ -1230,7 +1231,7 @@ subroutine define_chemicals_indices()
   H2O2_ix = find_index('H2O2' ,species(:)%name)
   N2O5_ix = find_index('N2O5' ,species(:)%name)
 
-  
+
 end subroutine define_chemicals_indices
 
 end module Config_module
