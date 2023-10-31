@@ -43,12 +43,21 @@ Soil NOx - NOW COMPLICATED since some inventories include already include soil N
 
 =============================================================================
 !----------------------------------------------------------
-CLEAN-UP: all code should be checked to remove old comments before
-the public release. Ideally compile code on PC with gfortran's
-pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
-info on unused variables, etc.
+CLEAN-UP: all code should be checked to remove old comments and
+prints that are not meaningful for an average user, before the public release.
+Ideally compile code on PC with gfortran's pedantic debug switches
+(eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Oct 2023, Peter
+
+Properly converge pH calculation in Aqueous_n_WetDep, using binary search.
+Should change slightly results.
+The main goal is to get more stable results when
+difference between scenarios are made.
+
+Rxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Oct 2023, Peter
 
 Remove the emis_inputlist functionality!

@@ -60,11 +60,9 @@ subroutine Init_MosaicMMC(MOSAIC_METCONCS)
 ! not found, but that's okay I hope...
   character(len=*), dimension(:), intent(in) :: MOSAIC_METCONCS
 
-  
+
   ! MasterProc and debug_proc output at different times, so we merge
-  if (DEBUG%MOSAICS .and. debug_proc) then
-    mydbg = .true.
-  else if (MasterProc ) then
+  if (debug_proc .or. (DEBUG%MOSAICS .and. MasterProc)) then
     mydbg = .true.
   end if
 
@@ -202,7 +200,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
     name = veg%name
 
     if(mydbg) write(*,"(a,i4,a,f7.1,2a)") dtxt//trim(name)//' class:'//trim(veg%class), &
-            n, ' Y=', veg%Threshold, ' defn:'//trim(veg%defn), ' txtLC:'// trim(veg%txtLC) 
+            n, ' Y=', veg%Threshold, ' defn:'//trim(veg%defn), ' txtLC:'// trim(veg%txtLC)
     !if(mydbg) write(*,*) dtxt//'veg:', veg
     select case(veg%class)
     case("POD")
