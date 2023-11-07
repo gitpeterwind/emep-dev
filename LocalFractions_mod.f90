@@ -1121,7 +1121,7 @@ subroutine lf_out(iotyp)
                             EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
                             EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
                     else
-                       write(def2%name,"(A)")trim(def2%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                       write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                     end if
                  end if
                 if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
@@ -1155,8 +1155,24 @@ subroutine lf_out(iotyp)
                     if((lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f') .and. EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox')then
                        if(iter==2)tmp_SIA_cntry(:,:,n1) = tmp_SIA_cntry(:,:,n1) + tmp_out_cntry(:,:,n1)
                        if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
-                          if(me==0 .and.  first_call(iotyp))write(*,*)'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
-                          def2%name='SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))//'_nox'
+                          if(i<=Ncountry_mask_lf)then
+                             if (iic2ilf_countrymask(i) > 0) then
+                                write(def2%name,"(A,I2.2,A5,I0)")'SIA_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                                if(isec==0) write(def2%name,"(A,I0)")'SIA_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                             else
+                                write(def2%name,"(A,I2.2,A5,I0)")'SIA_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
+                                if(isec==0) write(def2%name,"(A,I0)")'SIA_'//trim(mask2name(country_mask_val(i)))
+                             end if
+                          else if(i<=Ncountry_lf)then
+                             write(def2%name,"(A,I2.2,A)")'SIA_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                             if(isec==0) write(def2%name,"(A,I2.2,A)")'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                          else
+                             !country group
+                             write(def2%name,"(A,I2.2,A)")'SIA_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                             if(isec==0) write(def2%name,"(A,I2.2,A)")'SIA_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                          endif
+                          def2%name=trim(def2%name)//'_nox'
+                          if(me==0 .and.  first_call(iotyp))write(*,*)trim(def2%name)
                           call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                           
