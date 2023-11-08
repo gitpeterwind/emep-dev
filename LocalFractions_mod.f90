@@ -177,7 +177,7 @@ integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in t
 integer, public, parameter :: N_lf_derivemisMAX = 100 ! max number of emission source to include in CM_Reactions1 derivatives
 integer, public, save :: N_lf_derivemis ! actual number of emissions to include in CM_Reactions1 derivatives
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
-integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX)
+integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf
 integer, public, parameter :: Nfullchem_emis = 4 !nox, voc, nh3, sox
@@ -1175,7 +1175,6 @@ subroutine lf_out(iotyp)
                           if(me==0 .and.  first_call(iotyp))write(*,*)trim(def2%name)
                           call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                          
                        end if
                     end if
                  end if
@@ -2183,7 +2182,6 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
               n0 = lf_src(isrc)%start + emis2icis(iemis)
 
               lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
-
            end do
 
         else if(lf_src(isrc)%type=='relative')then
@@ -2292,7 +2290,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      end if
      !include emission derivatives. 
      do iemis = 1, N_lf_derivemis
-        if(emis2isrc(iemis) == lf_src(isrc)%iem_deriv ) then
+        if(emis2iem(iemis) == lf_src(isrc)%iem_deriv ) then
            n0 =lf_src(isrc)%start + emis2icis(iemis)
            lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec) !contribution from emissions during this timestep. NB: only one iemis per n0 can be included
         end if
@@ -2822,7 +2820,7 @@ subroutine lf_rcemis(i,j,k,eps)
   integer :: n, n0, iem, iqrc, itot, ic, iic, ig, is, iland, isec, split_idx
   integer :: emish_idx, nemis, found,iiix,isrc, nsectors_loop, iisec
   real :: ehlpcom0 = GRAV* 0.001*AVOG !0.001 = kg_to_g / m3_to_cm3
-  real :: emiss,fac ! multiply emissions by
+  real :: emiss,maskfac ! multiply emissions by
 
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start lf rcemis'
@@ -2832,8 +2830,6 @@ subroutine lf_rcemis(i,j,k,eps)
   if(k < KEMISTOP) return
   nemis = 0
   N_lf_derivemis = 0 !number of distinct sources that have contributions in this gridcell
-  fac = 1.0
-  if (lf_fullchem) fac = eps
   do iem = 1, NEMIS_File
     if (iem2Nipoll(iem) <= 0) cycle
     !for fullchem, we only treat nox , voc and nh3 emissions
@@ -2871,7 +2867,7 @@ subroutine lf_rcemis(i,j,k,eps)
                           iqrc = itot2iqrc(itot+NSPEC_SHL)
                           if (iqrc<0) cycle
                           rcemis_lf(N_lf_derivemis,1) = rcemis_lf(N_lf_derivemis,1) +&
-                               fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                                emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                                *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)
                        end do
@@ -2890,11 +2886,13 @@ subroutine lf_rcemis(i,j,k,eps)
                  iland = ic2iland(i,j,ic)
                  !only pick one country at a time
                  do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
+                    maskfac = 1.0
                     if(iic<=Ncountry_lf)then
                       if (iic <= Ncountry_mask_lf) then
                         if (iic2ilf_countrymask(iic)>0) then
                            !Cell fraction of grid mask defined EmisMaskIndex2Name
-                           fac = fac * (1.0-EmisMaskValues(i,j,iic2ilf_countrymask(iic))) !count only what is covered by the mask
+                           maskfac = (1.0-EmisMaskValues(i,j,iic2ilf_countrymask(iic))) !count only what is covered by the mask
+                           if (maskfac<1e-6) cycle
                         else if (country_mask_val(iic)>-99999) then
                            if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
                         end if
@@ -2936,10 +2934,11 @@ subroutine lf_rcemis(i,j,k,eps)
                           end if
 
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
+
                              if(found == 0) then
                                 !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
                                 do n=1,N_lf_derivemis
-                                   if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == iem)then
+                                   if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == isrc)then
                                       ! add to this instead
                                       nemis = n
                                       found = 1
@@ -2960,7 +2959,7 @@ subroutine lf_rcemis(i,j,k,eps)
                                 iqrc = itot2iqrc(itot+NSPEC_SHL)
                                 if (iqrc<0) cycle
                                 rcemis_lf(nemis,1) = rcemis_lf(nemis,1) +&
-                               fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                               maskfac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                                *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)
                              end do
@@ -2972,33 +2971,38 @@ subroutine lf_rcemis(i,j,k,eps)
                          emis2isrc(nemis) = isrc
                        endif
                     end do
-                  end do
+                 end do
               end do
 
            end if
         end do
       else
-        !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n) and split summation?
+        !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n) and split summation and emis2 iem/isrc?
          do ic=1,nic(i,j)
 
           !iland is the country index f the emission treated
           iland = ic2iland(i,j,ic)
           !iic is the lf country index of the source
           do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
-            if(iic<=Ncountry_lf)then
-              if (iic <= Ncountry_mask_lf) then
-                if (country_mask_val(iic)>-99999) then
-                  if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
-                end if
-              else if(country_ix_list(iic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
-              else if(country_ix_list(iic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
-              else if(country_ix_list(iic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
-              else if(country_ix_list(iic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
-              else if(country_ix_list(iic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
-              else if(country_ix_list(iic)/=iland)then
-                cycle !only pick out one country
-              endif
-            else
+             maskfac = 1.0
+             if(iic<=Ncountry_lf)then
+                if (iic <= Ncountry_mask_lf) then
+                   if (iic2ilf_countrymask(iic)>0) then
+                      !Cell fraction of grid mask defined EmisMaskIndex2Name
+                      maskfac = (1.0-EmisMaskValues(i,j,iic2ilf_countrymask(iic))) !count only what is covered by the mask
+                      if (maskfac<1e-6) cycle
+                   else if (country_mask_val(iic)>-99999) then
+                      if(EmisMaskIntVal(i,j) /= country_mask_val(iic)) cycle !remove all parts which are not covered by mask
+                   end if
+                else if(country_ix_list(iic)==IC_TMT.and.(iland==IC_TM.or.iland==IC_TME))then
+                else if(country_ix_list(iic)==IC_AST.and.(iland==IC_ASM.or.iland==IC_ASE.or.iland==IC_ARE.or.iland==IC_ARL.or.iland==IC_CAS))then
+                else if(country_ix_list(iic)==IC_UZT.and.(iland==IC_UZ.or.iland==IC_UZE))then
+                else if(country_ix_list(iic)==IC_KZT.and.(iland==IC_KZ.or.iland==IC_KZE))then
+                else if(country_ix_list(iic)==IC_RUE.and.(iland==IC_RU.or.iland==IC_RFE.or.iland==IC_RUX))then
+                else if(country_ix_list(iic)/=iland)then
+                   cycle !only pick out one country
+                endif
+             else
               !defined as a group of countries
               found = 0
               do ig = 1, MAX_lf_country_group_size
@@ -3026,10 +3030,10 @@ subroutine lf_rcemis(i,j,k,eps)
                 end if
                 if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
                    if(found == 0) then
-                      !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
+                      !first see if this emis2icis and emis2iem already exists (for groups and masks type "countries"):
                       !because only one derivative for each source is included ("lf(n0,i,j,k) = ederiv(iemis,ix)" without +=)
                       do n=1,N_lf_derivemis
-                         if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == iem)then
+                         if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2iem(n) == iem)then
                             ! add to this instead
                             nemis = n
                             found = 1
@@ -3053,21 +3057,20 @@ subroutine lf_rcemis(i,j,k,eps)
 
                     if(itot<=ix_lf_max .or. .not.lf_fullchem)then
                       rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
-                          fac* emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                          maskfac * eps * emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                           *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                           *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-
-                   end if
+                    end if
                   end do
                 end if
               end do
               if (found == 1) then
                 !emissions found here
                 emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
-                emis2isrc(nemis) = iem
+                emis2iem(nemis) = iem
               endif
-            end do
-          end do
+           end do
+        end do
         end do
       end if
     end do
