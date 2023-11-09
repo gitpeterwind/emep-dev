@@ -174,7 +174,7 @@ real   , parameter     :: eps1 = 0.999
 integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
-integer, public, parameter :: N_lf_derivemisMAX = 100 ! max number of emission source to include in CM_Reactions1 derivatives
+integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
 integer, public, save :: N_lf_derivemis ! actual number of emissions to include in CM_Reactions1 derivatives
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
@@ -2813,7 +2813,7 @@ subroutine lf_rcemis(i,j,k,eps)
   ! The number of emitting countries at i,j is nic(i,j) (small)
   ! The emission without splits and k is emis_lf_cntry(i,j,ic,isec,iem) (ic runs over nic(i,j), i.e. corresponds to different countries in different gridcells)
   ! for "fullchem": same lf_rcemis for all advected_species (but different for nox and voc sources), but lf countries dependent
-  ! for "fullchem" lf_rcemis is splitted, otherwise summed with mw weights
+  ! for "fullchem" lf_rcemis is splitted, otherwise summed with mw weights (and single species, _new_ old_ pm have not all splits)
   ! for "relative": country independent
   integer,intent(in) :: i,j,k
   real, intent(in) :: eps
