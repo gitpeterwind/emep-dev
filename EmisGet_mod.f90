@@ -630,6 +630,7 @@ contains
        species_found = .false.
        status = nf90_get_att(ncFileID,varid,"species",cdfspecies)       
        if( status==nf90_noerr) then
+          if(EmisFile_in%species/='NOTSET' .and. EmisFile_in%species/=cdfspecies) cycle
           ! we also demand that species is defined
           iem = find_index(cdfspecies,EMIS_FILE(:))
           if (iem >0 ) then
