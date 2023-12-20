@@ -808,12 +808,6 @@ character(len=TXTLEN_FILE), target, save, public :: SitesFile = 'DataDir/sitesLL
 character(len=TXTLEN_FILE), target, save, public :: SondesFile = 'DataDir/sondesLLKD.dat'
 character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataDir/GLOBAL_LAInBVOC.nc'
 character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jclearFile = 'DataDir/jclear.SEASON'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.SEASON'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
 character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
@@ -920,9 +914,6 @@ subroutine Config_Constants(iolog)
    ,SondesFile&
    ,GLOBAL_LAInBVOCFile&
    ,EMEP_EuroBVOCFile&
-   ,jclearFile&
-   ,jcl1kmFile&
-   ,jcl3kmFile&
    ,cloudjx_initf&
    ,cloudjx_strat&
    ,NdepFile&
@@ -1094,9 +1085,6 @@ subroutine Config_Constants(iolog)
   call associate_File(SondesFile)
   call associate_File(GLOBAL_LAInBVOCFile)
   call associate_File(EMEP_EuroBVOCFile)
-  call associate_File(jclearFile)
-  call associate_File(jcl1kmFile)
-  call associate_File(jcl3kmFile)
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
   call associate_File(NdepFile)
