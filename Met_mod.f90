@@ -581,7 +581,7 @@ subroutine MeteoRead()
      if (met(ix)%found) then
         if(write_now )write(*,*)dtxt//'found ',trim(met(ix)%name)
       else
-          call CheckStop(USES%CLOUDJ, dtxt//"ERROR Cloudj needs cloudwater, but it is not found")
+          call CheckStop(dtxt//"ERROR Cloudj/photolysis needs cloudwater, but it is not found")
      end if
   end if
 

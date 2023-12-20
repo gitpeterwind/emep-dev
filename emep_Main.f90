@@ -37,7 +37,6 @@ program emep_Main
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use Debug_module,      only: DEBUG   ! -> DEBUG%MAINCODE
-  use DefPhotolysis_mod, only: readdiss
   use Derived_mod,       only: Init_Derived, wanted_iou
   use EcoSystem_mod,     only: Init_EcoSystems
   use Emissions_mod,     only: Emissions, newmonth, Init_masks, Init_emissions,&
@@ -283,7 +282,6 @@ program emep_Main
     if(mm_old/=mm) then   ! START OF NEW MONTH !!!!!
 
       !subroutines/data that must be updated every month
-      call readdiss(newseason)
 
       if(MasterProc.and.DEBUG%MAINCODE) &
         print *,'maaned og sesong', mm,mm_old,newseason,oldseason

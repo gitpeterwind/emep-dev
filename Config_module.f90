@@ -178,12 +178,10 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,CLOUDJ           = .true. & ! use CloudJ_mod for computing rcphot
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.
-    ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
-    ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
-    ,CLEARSKYTAB      = .false.  & ! use only clear-sky tabulated Jvalues.  Deprecated
+    ,CLOUDICE         = .true.  & ! flag to force reading in cloud ice water content or not
+    ,CLIMSTRATO3      = .true.  & ! set to true use climatological overhead stratospheric O3 (default)
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
@@ -816,7 +814,7 @@ character(len=TXTLEN_FILE), target, save, public :: jclearFile = 'DataDir/jclear
 character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.SEASON'
 !SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
 character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
-character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/CloudJ_EmChem19/'
+character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
 character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()

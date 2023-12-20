@@ -1,11 +1,10 @@
 program tester
-  use AeroFunctions,          only: testAeroFunctions     =>self_test
-! use AeroFunctions,          only: testAeroFunctions     =>self_test_fracs
+  use AeroFunctions,           only: testAeroFunctions     =>self_test
+! use AeroFunctions,           only: testAeroFunctions     =>self_test_fracs
   use GridAllocate_mod,        only: testGridAllocate      =>self_test
-  use KeyValueTypes,          only: testKeyValueTypes     =>self_test
+  use KeyValueTypes,           only: testKeyValueTypes     =>self_test
   use TimeDate_ExtraUtil_mod,  only: testTimeDate_ExtraUtil=>self_test
   use Io_Progs_mod,            only: testIo_Progs          =>self_test
-! use DefPhotolysis,          only: testDefPhotolysis     =>self_test_fracs
   use SmallUtils_mod,          only: testSmallUtils        =>self_test
   implicit none
   integer :: i
