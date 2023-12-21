@@ -444,6 +444,7 @@ character(len=24), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 
 character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SITE_ADV_names(NSPEC_ADV) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
 
 !These variables must have been set in My_Derived for them to be used.
@@ -944,7 +945,7 @@ subroutine Config_Constants(iolog)
    ,hour_DOMAIN, out_startdate, spinup_enddate&
    ,num_lev3d,lev3d,lev3d_from_surface&
    ,LAST_CONFIG_LINE &
-   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names&
+   ,SITE_SHL_names,SONDE_SHL_names,SITE_ADV_names, SONDE_ADV_names&
    ,mask2name
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value

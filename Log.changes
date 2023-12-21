@@ -49,6 +49,17 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 Dec 2023, Dave
+
+make SITE_ADV configurable, e.g. use:
+  SITE_ADV_names(1:)  = 'O3','NO2','NO','NO3','C5H8','APINENE',
+
+Use 'ALL' if all advected species wanted, i.e.:
+  SITE_ADV_names(1:)  = 'ALL',
+
+Changes in Config_module, Sites_mod and config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 Dec 2023, Willem
 
 Removed the old tabulated photolysis system. The model can now only use 

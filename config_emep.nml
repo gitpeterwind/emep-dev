@@ -767,6 +767,9 @@ OutputVegO3=
   SITE_SHL_names(1:) = 'OH',
   SONDE_SHL_names(1:) = 'OH',
   SONDE_ADV_names(1:) = 'O3','NO2','NO','PAN','NO3_c','NO3_f','SO4','NH4_f','NH3',
+  SITE_ADV_names(1:)  = 'O3','NO2','NO','NO3',! 'C5H8','APINENE',
+  !SITE_ADV_names(1:)  = 'ALL', ! triggers all ADV species
+
 
 
 !restrict size of output files. (Sizes defined with respect to fulldomain)
