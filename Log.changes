@@ -54,7 +54,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Country include exclude option for CV format emissions. Format example:
   Emis_sourceFiles(1)%country_ISO_excl(1:) = 'DE','NO',
   Emis_sourceFiles(1)%country_ISO_incl(1:) = 'DE','NO',
-  (up to NSOURCESMAX=50 countries)
+  (up to 601 countries)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 Dec 2023, Dave
