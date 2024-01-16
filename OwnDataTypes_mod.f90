@@ -4,6 +4,7 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 module OwnDataTypes_mod
+use Country_mod,     only : MAXNLAND
 use NumberConstants, only : UNDEF_I, UNDEF_R
 use TimeDate_mod,    only : date
 
@@ -241,8 +242,8 @@ type, public :: Emis_sourceFile_id_type
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
    character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
    character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file
-   character(len=TXTLEN_NAME) :: country_ISO_excl(601) = 'NOTSET' ! Exclude those countries
-   character(len=TXTLEN_NAME) :: country_ISO_incl(601) = 'NOTSET' ! If set, include only those countries
+   character(len=TXTLEN_NAME) :: country_ISO_excl(MAXNLAND) = 'NOTSET' ! Exclude those countries
+   character(len=TXTLEN_NAME) :: country_ISO_incl(MAXNLAND) = 'NOTSET' ! If set, include only those countries
 end type Emis_sourceFile_id_type
 
 type, public :: Emis_mask_type
