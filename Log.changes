@@ -49,6 +49,14 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 jan 2024, Peter
+
+Country include exclude option for CV format emissions. Format example:
+  Emis_sourceFiles(1)%country_ISO_excl(1:) = 'DE','NO',
+  Emis_sourceFiles(1)%country_ISO_incl(1:) = 'DE','NO',
+  (up to NSOURCESMAX=50 countries)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 Dec 2023, Dave
 
 make SITE_ADV configurable, e.g. use:

@@ -276,7 +276,7 @@ contains
     !3) read from variable attributes in file
     !Emis_sourceFiles is read from config and then not modified
     !EmisFiles collect all valid data and sources
-    !Emis_source() contains the metadata of the emissions surces finally used
+    !Emis_source() contains the metadata of the emissions sources finally used
     !Emis_source_ij contains the non zero values for each source used
     NEmis_sources = 0 !total number of valid emis (also 3D) variables across all files
     NEmis_3Dsources = 0 !total number of valid 3D emis variables across all files
