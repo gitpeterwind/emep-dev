@@ -197,11 +197,12 @@ end subroutine WriteArray
 !>===========================================================================
 !! A series of find_index routines, for character (c) and integer (i) arrays:
 !!===========================================================================
-function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
+function find_index_c(wanted, list, first_only, any_case, nth, debug)  result(Index)
   character(len=*), intent(in) :: wanted
   character(len=*), dimension(:), intent(in) :: list
   logical, intent(in), optional :: first_only
   logical, intent(in), optional :: any_case  ! matches e.g. ABC == abC
+  integer, intent(in), optional :: nth ! match the first occurence for nth=1, the second for nth= 2...
   logical, intent(in), optional :: debug
 ! Interim
   character(len=len(list(1))), dimension(size(list)) :: list_copy
@@ -219,6 +220,7 @@ function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
   Index =  NOT_FOUND
   debug_print=.false.;if(present(debug))debug_print=debug
   OnlyFirst=.true.;if(present(first_only))OnlyFirst=first_only
+  if(present(nth))OnlyFirst=.false.
   wanted_copy = wanted
   list_copy   = list
   if ( present(any_case) ) then
@@ -233,6 +235,13 @@ function find_index_c(wanted, list, first_only, any_case, debug)  result(Index)
       Index = n
       n_match = n_match + 1
       if( OnlyFirst ) return
+      if(present(nth)) then
+         if (nth == n_match) then
+            return
+         else
+            Index = -1 !not found the right one
+         end if
+      end if
       if(debug_print) &
       print debug_fmt,n,n_match,trim(list(n)),"==",trim(wanted)
     elseif ( debug_print ) then

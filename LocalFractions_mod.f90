@@ -15,7 +15,8 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix, NO3_f_ix, &
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
-                             PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix
+                             PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix, &
+                             lf_spec_out
 use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
@@ -37,7 +38,8 @@ use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,GetCDF_modelgrid
 use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_country_group_size, &
                              Max_lf_spec, TXTLEN_NAME, TXTLEN_FILE, &
-                             Max_lf_res, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups
+                             Max_lf_res, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups, &
+                             Max_lf_out
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, AVOG, ATWAIR
 use SmallUtils_mod,    only: find_index
@@ -273,6 +275,7 @@ contains
      if (lf_src(isrc)%species == 'NOTSET') exit
      if (lf_src(isrc)%species == 'FULLCHEM') then
         if(me==0)write(*,*)isrc,' FULLCHEM '
+        lf_src(isrc)%type = 'country'
         call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM. Not implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
         lf_src(isrc)%Npos = 0
         lf_src(isrc)%Nsplit = 0
@@ -869,7 +872,8 @@ subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
   real :: xtot,scale,invtot,t1,t2
-  integer ::i,j,k,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll,ipoll,ipoll_cfac,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
+  integer ::i,j,k,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll, ideriv
+  integer ::ipoll,ipoll_cfac,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
   character (len=20) ::dimNames(10),dimNames_tot(10)
@@ -880,15 +884,15 @@ subroutine lf_out(iotyp)
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_out(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
   real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
-  real,allocatable ::tmp_SIA(:,:)!sum of SIA
-  real,allocatable ::tmp_SIA_cntry(:,:,:)!sum of SIA per country
+  real,allocatable ::tmp_out_base(:,:)! base concentrations
   type(date) :: onesecond = date(0,0,0,0,1)
   character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
   character(len=TXTLEN_FILE),save :: oldmonthlyname
+  character(len=TXTLEN_FILE) :: suffix
   real :: fracsum(LIMAX,LJMAX),invfac
   logical :: pollwritten(2*Max_lf_spec),is_surf
-  integer :: ncFileID
+  integer :: ncFileID, iout, ig, found, iem_lf
 
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start out'
@@ -1000,10 +1004,8 @@ subroutine lf_out(iotyp)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
   allocate(tmp_out_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf))
-  allocate(tmp_SIA(LIMAX,LJMAX))
-  tmp_SIA = 0.0
-  allocate(tmp_SIA_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf))
-  tmp_SIA_cntry = 0.0
+  allocate(tmp_out_base(LIMAX,LJMAX))
+  tmp_out_base = 0.0
  
   iou_ix = iotyp2ix(iotyp)
   if (iou_ix == iou_ix_inst) av_fac(iotyp) = 1
@@ -1020,185 +1022,121 @@ subroutine lf_out(iotyp)
      pollwritten = .false.
      iddep = 0
      iwdep = 0
-     do isrc = 1, Nsources
-        if (lf_src(isrc)%species == 'FULLCHEM') cycle
-        if(lf_src(isrc)%full_chem .and. lf_src(isrc)%species/='O3' .and. lf_src(isrc)%species/='SO4'  .and. lf_src(isrc)%species/='NO3_f'   .and. lf_src(isrc)%species/='HNO3'  .and. lf_src(isrc)%species/='NO3_c'.and. lf_src(isrc)%species/='NH4_f'.and. lf_src(isrc)%species/='NH3')cycle
-        if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
-        isec=lf_src(isrc)%sector
-        ipoll=lf_src(isrc)%poll
-        if(lf_src(isrc)%type=='country')then
-           is_surf = .true.
-           ipoll_cfac = ipoll + Npoll
-        else
-           is_surf = .false.
-           ipoll_cfac = ipoll
-        end if
-        if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
-           def2%name=trim(lf_src(isrc)%species)
-           if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
-           scale=1.0/av_fac(iotyp)
-           if(is_surf)def2%name='SURF_'//trim(def2%name)
-           call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-           pollwritten(ipoll_cfac) = .true.
-           overwrite=.false.
-           if(iter==2 .and. (lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f'))then
-              tmp_SIA(:,:) = tmp_SIA(:,:) + lf_src_tot(:,:,KMAX_MID,ipoll_cfac,iou_ix)
+     if (.not. lf_fullchem) then
+        do isrc = 1, Nsources
+           if (trim(lf_src(isrc)%species) == 'pm25_new') cycle !we do not output pm25_new (it is included in pm25)
+           isec=lf_src(isrc)%sector
+           ipoll=lf_src(isrc)%poll
+           if(lf_src(isrc)%type=='country')then
+              is_surf = .true.
+              ipoll_cfac = ipoll + Npoll
+           else
+              is_surf = .false.
+              ipoll_cfac = ipoll
            end if
-           if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
-              def2%name='SIA'
-              if(is_surf)def2%name='SURF_'//def2%name
-              call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_SIA,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-              
-           end if
-        endif
-
-        if(iter==2)then
-           fracsum=0.0
-           tmp_out=0.0
-           if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
-           do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
-              do j=1,ljmax
-                 do i=1,limax
-                    invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
-                    n1=0
-                    if(lf_src(isrc)%type == 'country')then
-                       invfac=1.0/av_fac(iotyp) !could also output fractions?
-                       do n=lf_src(isrc)%start, lf_src(isrc)%end
-                          n1=n1+1
-                          tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac ! sum over all k
-                          fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
-                          !if(tmp_out_cntry(i,j,n1)<1.e-18)tmp_out_cntry(i,j,n1)=0.0
-!                          if(isnan(tmp_out_cntry(i,j,n1)).or. tmp_out_cntry(i,j,n1)>1.e19)then
-!                             write(*,*)'tmp_out_cntry is nan ',tmp_out_cntry(i,j,n1),lf_src_acc(n,i,j,k,iou_ix),invtot,trim(lf_src(isrc)%species)
-!                             stop
-!                          endif
-                       enddo
+           if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
+              def2%name=trim(lf_src(isrc)%species)
+              if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
+              scale=1.0/av_fac(iotyp)
+              if(is_surf)def2%name='SURF_'//trim(def2%name)
+              call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+              pollwritten(ipoll_cfac) = .true.
+              overwrite=.false.
+           endif
+           
+           if(iter==2)then
+              fracsum=0.0
+              tmp_out=0.0
+              if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
+              do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+                 do j=1,ljmax
+                    do i=1,limax
+                       invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
+                       n1=0
+                       if(lf_src(isrc)%type == 'country')then
+                          invfac=1.0/av_fac(iotyp) !could also output fractions?
+                          do n=lf_src(isrc)%start, lf_src(isrc)%end
+                             n1=n1+1
+                             tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac ! sum over all k
+                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
+                          enddo
+                       else
+                          do n=lf_src(isrc)%start, lf_src(isrc)%end
+                             n1=n1+1
+                             tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
+                          enddo
+                       endif
+                    enddo
+                 enddo
+              enddo
+           endif
+           
+           if(lf_src(isrc)%type == 'country')then
+              n1=0
+              do i=1,Ncountry_lf+Ncountry_group_lf
+                 do j=1,Ncountrysectors_lf
+                    n1=n1+1
+                    !single cell source
+                    isec=lf_country%sector_list(j)
+                    if(lf_country%sector_list(j)>=0)isec=lf_country%sector_list(j)
+                    if(i<=Ncountry_mask_lf)then
+                       if (iic2ilf_countrymask(i) > 0) then
+                          write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                          if(isec==0) write(def2%name,"(A)")trim(lf_src(isrc)%species)//'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                       else
+                          write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
+                          if(isec==0) write(def2%name,"(A)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(i)))
+                       end if
+                    else if(i<=Ncountry_lf)then
+                       write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
                     else
-                       do n=lf_src(isrc)%start, lf_src(isrc)%end
-                          n1=n1+1
-                          tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
-                          fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
-                       enddo
+                       !country group
+                       write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                    endif
+                    if (lf_src(isrc)%full_chem) then
+                       !add emission species to name
+                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT)then
+                          !do not add "_nox" suffix and do not output voc
+                          if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
+                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
+                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
+                       else
+                          write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                       end if
+                    end if
+                    if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
+                    def2%unit='ug/m3'
+                    scale=1.0
+                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    if(lf_src(isrc)%drydep)then
+                       write(def3%name,"(A)")'DDEP_'//trim(def2%name)
+                       def3%unit='mg/m2'
+                       if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
+                       if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
+                       
+                       iddep=iddep+1
+                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                       
+                    endif
+                    if(lf_src(isrc)%wetdep)then
+                       write(def3%name,"(A)")'WDEP_'//trim(def2%name)
+                       def3%unit='mg/m2'
+                       if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
+                       if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
+                       
+                       iwdep=iwdep+1
+                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                       
                     endif
                  enddo
               enddo
-           enddo
-        endif
-
-        if(lf_src(isrc)%type == 'country')then
-           n1=0
-           do i=1,Ncountry_lf+Ncountry_group_lf
-              do j=1,Ncountrysectors_lf
-                 n1=n1+1
-                 !single cell source
-                 isec=lf_country%sector_list(j)
-                 if(lf_country%sector_list(j)>=0)isec=lf_country%sector_list(j)
-                 if(i<=Ncountry_mask_lf)then
-                    !                   write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_mask',country_mask_val(i)
-                    !                   if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_mask',country_mask_val(i)
-                    if (iic2ilf_countrymask(i) > 0) then
-                       write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                       if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                    else
-                       write(def2%name,"(A,I2.2,A5,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
-                       if(isec==0) write(def2%name,"(A,I0)")trim(lf_src(isrc)%species)//'_'//trim(mask2name(country_mask_val(i)))
-                    end if
-                 else if(i<=Ncountry_lf)then
-                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
-                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
-                 else
-                    !country group
-                    write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                    if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                 endif
-                 if (lf_src(isrc)%full_chem) then
-                    !add emission species to name
-                    if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT)then
-                       !do not add "_nox" suffix and do not output voc
-                       if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
-                            EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
-                            EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
-                    else
-                       write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
-                    end if
-                 end if
-                if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
-                 def2%unit='ug/m3'
-                 scale=1.0
-                 call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                 if(lf_src(isrc)%drydep)then
-                    write(def3%name,"(A)")'DDEP_'//trim(def2%name)
-                    def3%unit='mg/m2'
-                    if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
-                    if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
-
-                    iddep=iddep+1
-                    call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
-                 endif
-                 if(lf_src(isrc)%wetdep)then
-                    write(def3%name,"(A)")'WDEP_'//trim(def2%name)
-                    def3%unit='mg/m2'
-                    if(isrc==isrc_SO4 .or. isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox")def3%unit='mgS/m2'
-                    if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
-
-                    iwdep=iwdep+1
-                    call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
-                 endif
-                 if (lf_src(isrc)%iem_deriv > 0)  then
-                    if((lf_src(isrc)%species=='SO4'.or.lf_src(isrc)%species=='NO3_f'.or.lf_src(isrc)%species=='NO3_c'.or.lf_src(isrc)%species=='NH4_f') .and. EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nox')then
-                       if(iter==2)tmp_SIA_cntry(:,:,n1) = tmp_SIA_cntry(:,:,n1) + tmp_out_cntry(:,:,n1)
-                       if(lf_src(isrc)%species=='NH4_f')then !assumed to be with highest isrc
-                          if(i<=Ncountry_mask_lf)then
-                             if (iic2ilf_countrymask(i) > 0) then
-                                write(def2%name,"(A,I2.2,A5,I0)")'SIA_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                                if(isec==0) write(def2%name,"(A,I0)")'SIA_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                             else
-                                write(def2%name,"(A,I2.2,A5,I0)")'SIA_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
-                                if(isec==0) write(def2%name,"(A,I0)")'SIA_'//trim(mask2name(country_mask_val(i)))
-                             end if
-                          else if(i<=Ncountry_lf)then
-                             write(def2%name,"(A,I2.2,A)")'SIA_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
-                             if(isec==0) write(def2%name,"(A,I2.2,A)")'SIA_'//trim(lf_country%list(i-Ncountry_mask_lf))
-                          else
-                             !country group
-                             write(def2%name,"(A,I2.2,A)")'SIA_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                             if(isec==0) write(def2%name,"(A,I2.2,A)")'SIA_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                          endif
-                          def2%name=trim(def2%name)//'_nox'
-                          if(me==0 .and.  first_call(iotyp))write(*,*)trim(def2%name)
-                          call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_SIA_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                       end if
-                    end if
-                 end if
-                 if(lf_src(1)%MDA8 .and. lf_src(isrc)%species=='O3')then
-                    write(def2%name,"(A)")"MDA8_"//trim(def2%name)
-                    n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
-                    call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
-                      if(n1==1 .and. isrc==isrc_O3)then
-                         !also save Base MDA8
-                         def2%name="MDA8"
-                         call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
-                      end if
-                 end if
-              enddo
-           enddo
-        else
-           if(old_format)then
-              !for backward compatibility
-              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_local_fraction'
-              if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_local_fraction'
            else
               def1%unit = ''!default
               def1%class = ''!default
@@ -1208,41 +1146,154 @@ subroutine lf_out(iotyp)
               else
                  def1%name=trim(lf_src(isrc)%name)
               end if
-
+              
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              scale=1.0
+              call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
+              overwrite=.false.
            endif
-           scale=1.0
-           call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
-           overwrite=.false.
-        endif
+           
+           
+           if(lf_src(isrc)%make_fracsum)then
+              if (lf_src(isrc)%name/='NOTSET')then
+                 def1%name=trim(lf_src(isrc)%name)//'_fracsum'
+              else if (lf_src(isrc)%type == 'country') then
+                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum'
+                 if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fracsum'
+              else
+                 write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+                 if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              end if
+              
+              call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+              
+           endif           
+        enddo
+        
+        
+     else !FULLCHEM
 
 
-        if(lf_src(isrc)%make_fracsum)then
-           if (lf_src(isrc)%name/='NOTSET')then
-              def1%name=trim(lf_src(isrc)%name)//'_fracsum'
-           else if (lf_src(isrc)%type == 'country') then
-              write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum'
-              if(isec==0) write(def1%name,"(A)")trim(lf_src(isrc)%species)//'_fracsum'
-           else
-              write(def1%name,"(A,I2.2,A,I0,A,I0)")trim(lf_src(isrc)%species)//'_sec',isec,'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-              if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
-           end if
-
-           call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
-                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-
-        endif
-
-     enddo
+        is_surf = .true.
+        do iout = 1, Max_lf_out
+           if (lf_spec_out(iout)%name == "NOTSET") exit
+           fracsum=0.0
+           do ideriv = 1, 4              
+              tmp_out_cntry = 0.0
+              tmp_out_base = 0.0
+              do ig = 1, 30
+                 found = 1
+                 if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig>1) exit
+                 if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig==1) then                 
+                    isrc=find_index(trim(lf_spec_out(iout)%name) ,lf_src(:)%species, nth = ideriv)
+                 else
+                    isrc=find_index(trim(lf_spec_out(iout)%species(ig)) ,lf_src(:)%species, nth = ideriv)
+                 end if
+                 if(isrc<1)then
+                    found = 0
+                    if (me==0 .and. ig>1) write(*,*)'did not find species '//trim(lf_spec_out(iout)%species(ig))
+                    if (me==0) write(*,*)'WARNING: will not write out '//trim(lf_spec_out(iout)%name)
+                    exit
+                 end if
+                 if (iter==2) then
+                    ipoll_cfac = lf_src(isrc)%poll + Npoll
+                    invfac=lf_spec_out(iout)%species_fac(ig) / av_fac(iotyp)
+                    do j=1,ljmax
+                       do i=1,limax
+                          k = KMAX_MID
+                          invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
+                          if(ideriv == 1)tmp_out_base(i,j) = tmp_out_base(i,j) + lf_src_tot(i,j,k,ipoll_cfac,iou_ix) * invfac
+                          n1=0
+                          do n=lf_src(isrc)%start, lf_src(isrc)%end
+                             n1 = n1 + 1
+                             tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac 
+                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
+                          end do
+                       end do
+                    end do
+                 end if
+              end do
+              if (found==0) cycle
+              if (ideriv == 1) then
+                 !first write "base" concentrations, not country contributions
+                 if(is_surf)def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name) 
+                 if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
+                 scale = 1.0
+                 call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                 pollwritten(ipoll_cfac) = .true.
+                 overwrite=.false.
+              end if
+              
+              !now write out sensibilities for each country and sectors
+              !(uses last defined isrc, assumes that value is same for all species in group)
+              n1=0
+              do i=1,Ncountry_lf+Ncountry_group_lf
+                 do j=1,Ncountrysectors_lf
+                    n1=n1+1
+                    isec=lf_country%sector_list(j)                 
+                    if(i<=Ncountry_mask_lf)then
+                       !mask defined region
+                       if (iic2ilf_countrymask(i) > 0) then
+                          write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                          if(isec==0) write(def2%name,"(A)")trim(lf_spec_out(iout)%name)//'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                       else
+                          write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
+                          if(isec==0) write(def2%name,"(A)")trim(lf_spec_out(iout)%name)//'_'//trim(mask2name(country_mask_val(i)))
+                       end if
+                    else if(i<=Ncountry_lf)then
+                       !regular country
+                       write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                    else
+                       !country group
+                       write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                    endif
+                    if (lf_src(isrc)%full_chem) then
+                       !add emission species to name
+                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT)then
+                          !do not add "_nox" suffix and do not output voc
+                          if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
+                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
+                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
+                       else
+                          write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                       end if
+                    end if
+                    if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
+                    def2%unit='ug/m3'
+                    scale=1.0
+                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    if(lf_src(1)%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
+                       write(def2%name,"(A)")"AvgMDA8_6month_"//trim(def2%name)
+                       n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                       call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                       
+                       if(n1der==1 .and. ideriv == 1)then
+                          !also save Base MDA8
+                          def2%name="AvgMDA8_6month"
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                          
+                       end if
+                    end if
+                 enddo
+              enddo
+           end do
+        end do
+     end if
   enddo
   deallocate(tmp_out)
   deallocate(tmp_out_cntry)
-  deallocate(tmp_SIA)
-  deallocate(tmp_SIA_cntry)
+  deallocate(tmp_out_base)
 
-  do ipoll=1,Npoll
+  do ipoll=1,2*Npoll
      do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
@@ -2832,7 +2883,7 @@ subroutine lf_rcemis(i,j,k,eps)
   N_lf_derivemis = 0 !number of distinct sources that have contributions in this gridcell
   do iem = 1, NEMIS_File
     if (iem2Nipoll(iem) <= 0) cycle
-    !for fullchem, we only treat nox , voc and nh3 emissions
+    !for fullchem, we only treat nox , voc, nh3 and sox emissions
     if(nfullchem >0 .and. EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox') cycle
     !we calculate the delta in emission for each country that has emissions
     if (.not.lf_fullchem) then
@@ -3074,7 +3125,7 @@ subroutine lf_rcemis(i,j,k,eps)
         end do
       end if
     end do
-
+  
     if(N_lf_derivemis>N_lf_derivemisMAX)then
       write(*,*)me,i,j,k,N_lf_derivemis,N_lf_derivemisMAX
       call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")

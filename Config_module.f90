@@ -22,7 +22,7 @@ use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
                                  Max_lf_Country_list, Max_lf_Country_groups,Max_lf_sectors, &
-                                 poll_type, Max_lf_spec, Max_lf_sources
+                                 poll_type, lf_out_type, Max_lf_spec, Max_lf_sources, Max_lf_out
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -288,6 +288,7 @@ logical, public, save ::             &
 type(lf_sources), public, save :: lf_src(Max_lf_sources)
 type(poll_type), public, save :: lf_species(Max_lf_spec)
 type(lf_country_type), public, save :: lf_country
+type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -855,6 +856,7 @@ subroutine Config_Constants(iolog)
    ,lf_src & !Local Fractions
    ,lf_species &
    ,lf_country & !Local Fractions countries, and groups
+   ,lf_spec_out & !what to put in output (fullchem only)
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &

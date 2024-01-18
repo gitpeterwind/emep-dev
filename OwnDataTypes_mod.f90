@@ -315,6 +315,7 @@ integer, public, parameter :: Max_lf_Country_groups = 30
 integer, public, parameter :: Max_lf_sectors = 50
 integer, public, parameter :: Max_lf_res = 50
 integer, public, parameter :: Max_lf_spec = 250
+integer, public, parameter :: Max_lf_out = 100
 type, public :: poll_type
   character(len=TXTLEN_NAME):: name = 'NOTSET'    ! pollutants to include
   integer, dimension(Max_lf_sectors) ::sectors = -1    ! sectors to be included for this pollutant. Zero is sum of all sectors
@@ -358,6 +359,12 @@ type, public :: lf_sources
   logical     :: restart =.false.
   logical     :: save =.false.
 end type lf_sources
+
+type, public :: lf_out_type
+  character(len=TXTLEN_NAME):: name = "NOTSET"
+  character(len=TXTLEN_NAME):: species(30) = "NOTSET"
+  real                      :: species_fac(30) = 1.0
+end type lf_out_type
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group
 type, public :: lf_country_group_type
