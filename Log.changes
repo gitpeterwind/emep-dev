@@ -49,6 +49,19 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 jan 2024, Willem
+
+Added upper and lower RH limit config options to AeroConstants_mod.f90, which
+apply equally to all thermodynamics modules. Lower and upper limits set to 0.05 and 0.999
+by default. Lower limit > 0 to avoid divisions by zero, and upper limit slightly
+less than 1 to avoid extreme blowing up of results/numerical noise.
+
+Also introduced a flag that controls whether or not organic water uptake is 
+included for PM25, using the same kappa-kohler eq. from Kakavas 2022 
+(https://doi.org/10.16993/tellusb.33) for all thermodynamics modules. OM water
+uptake turned off by default (for now).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 jan 2024, Peter
 
 Country include exclude option for CV format emissions. Format example:
