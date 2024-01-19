@@ -5,34 +5,6 @@ module PBAP_mod
 
   !/-- Module to deal with primary biological aerosol pollutants (PBAPs).
   !
-  !     1) From defaults globally
-  !
-  !     2) from local file if available (e.g. Europe, used by default)
-  !
-  !   Terminology:
-  !
-  !    LCC = land cover class, e.g. DF = decid forest
-  !
-  !    EF = Emission factor at 30 deg C, full sunlight (1000 uE)
-  !         ug/g/hr
-  !
-  !    Em = Emissions, = EF * LAI * fraction of grid
-  !         ug/m2(ground)/hr
-  !
-  !    NATBIO%C5H8 and NATBIO%TERP are defined in Config_module.f90, and are
-  !    used when rcbio is defined.
-  !    We only use rcbio for isoprene and terpenes so far,  since
-  !    soil NO, NH3 emissions etc are dealt with through rcemis.
-
-  !    The code will assign EFs from the local data if available, otherwise
-  !    use defaults which have been readfrom Inputs_Landuse, Eiso, Emtp, Emtl. 
-  !    Note that we use emissions per m2 of vegetation, not per 
-  !    m2 of grid. This lets the model use the landcover from any veg-map
-  !    without having to make this consistent with the EF maps - the latter
-  !    are regarded as smoothly varying fields which can be interpolated 
-  !    by the ReadField_CDF interpolation routines. No need to worry about
-  !    conserving these very imperfect numbers accurately ;-)
-  !
   !    Gunnar Felix Lange 2023
   !---------------------------------------------------------------------------
 
@@ -68,20 +40,20 @@ module PBAP_mod
   implicit none
   private
 
-  !/-- subroutines for BVOC
-  public ::  Init_BVOC
-  private :: Get_LCinfo
-  public ::  GetEuroBVOC
-  private :: MergedBVOC
-  public ::  setup_bio
-  public ::  SetDailyBVOC
-  private :: TabulateECF
+  !/-- subroutines for PBAPs
+  public ::  Init_PBAPs
+  !/-- subroutines for Fungal Spores
+  private :: Set_FungalSpores
 
-  !/-- subroutines for soil NO
-  public :: Set_SoilNOx
 
   integer, public, parameter ::   NPBAP = 1 !Number of PBAPs currently implemented
                                             !(only fungal spores at the moment)
+
+  real*8, DIMENSION(3), parameter  ::  &
+  FUNG_PARAMS = [20.426d0, 275.82d0, &
+         39300.0d0] !From Fungal paramterization, Eq. (2) of
+                    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+                    !DOI 10.1007/978-3-319-35095-0_121
 
   ! - allows rcbio in CM_Reactions, but we access elements with
   ! the natbio indices here. These much match the indices used in rcbio
@@ -141,382 +113,140 @@ module PBAP_mod
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine Init_PBAPs()
+    allocate(FSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
+  
+  end subroutine Init_PBAPs
 
-    subroutine Init_PBAP()
+  
 
-!    Setup primary biological aerosol particle (PBAP) emissions
-!-----------------------------------------------------------------------------
-!   Currently only implemented fungal spores, using parameterization 
-!   from S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-!   doi.org/10.1007/978-3-319-35095-0_121
-!   Should at some point also include marine organic matter, bacteria
-!   and may be merged with the pollen modules.
+  subroutine Set_FungalSpores()
+    !!!!!!!
+    !Fills FungalSpores(i,j)
+    !Based on parameterization from
+    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+    !DOI 10.1007/978-3-319-35095-0_121
+    integer :: i, j, nLC, iLC, LC
+    logical :: my_first_call = .true.
+    real    :: f, ft, fn, ftn
+    real    :: eFGS !, emissions Fungal spores TODO: Fix units
+    real :: beta, bmin, bmax, bx, by ! for beta function
+    real :: hfac
 
-    integer :: alloc_err
-    
-    allocate(EmisNat(NEMIS_BioNat,LIMAX,LJMAX))
-    EmisNat=0.0
-    allocate(day_embvoc(LIMAX,LJMAX,size(BVOC_USED)))
-    day_embvoc = 0.0
-    allocate(EuroMask(LIMAX,LJMAX))
-    EuroMask=.false.
 
-      if ( size(BVOC_USED) == 0 ) then
-        call PrintLog("No Biogenic Emissions ", MasterProc)
-        return
-      end if
+    if ( .not. USES%FUNGAL_SPORES) return ! TODO: Add the spores to this module
 
-   !====================================
-   ! get indices.  NH3 not yet used.
-      !ibn_C5H8 = find_index( "C5H8", EMIS_BioNat(:) ) 
-      !ibn_TERP = find_index( "TERP", EMIS_BioNat(:) ) 
-      !ibn_NO   = find_index( "NO", EMIS_BioNat(:) ) 
-      !ibn_NH3  = find_index( "NH3", EMIS_BioNat(:) ) 
-      !call CheckStop( ibn_C5H8 < 1 , "BiogencERROR C5H8")
-      !call CheckStop( ibn_TERP < 1 , "BiogencERROR TERP")
-      !if( ibn_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
-     
-      !call CheckStop( USES%EURO_SOILNOX .and. ibn_NO < 1 , "BiogencERROR NO")
-      !call CheckStop( USES%GLOBAL_SOILNOX .and. ibn_NO < 1 , "BiogencERROR NO")
-      !if( MasterProc ) write(*,*) "SOILNOX ibn ", ibn_NO
+    if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
+       write(*,*)"PBAP_mod DEBUG FUNGAL_SPORES: ",&
+        current_date%day, current_date%hour, current_date%seconds,&
+        USES%FUNGAL_SPORES
+    end if
 
-      itot_FS   = find_index( "Fungal_Spores", species(:)%name      )
 
-   !====================================
- 
-    call TabulateECF()   ! Tabulates temp functions
-   !====================================
+      do j = 1, ljmax
+         do i =  1, limax
 
-    call Get_LCinfo() ! Gets landcover info, last_bvoc_LC
+           nlc = LandCover(i,j)%ncodes
 
-    allocate(  bvocEF(LIMAX,LJMAX,last_bvoc_LC,size(BVOC_USED)),&
-        stat=alloc_err )
-    call CheckStop( alloc_err , "bvocEF alloc failed"  )
+           F_FNG =  FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,1)*LAIfac
+           !Fungal spores flux, Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
 
-    bvocEF(:,:,:,:) = 0.0
 
-   !========= Read in Standard (30 deg C, full sunlight emissions factors = !
-   ! Remember factor used in Emissions_mod to get from ug/m2/s
-   ! to molecules/cm2/s  (needs more documentation!)
+   LCLOOP: do ilc= 1, nLC
 
-   !====================================
+               LC = LandCover(i,j)%codes(ilc)
+               if ( LandType(LC)%is_water ) cycle
+               if ( LandType(LC)%is_ice   ) cycle
+               if ( LandType(LC)%is_iam   ) cycle
 
-    call GetEuroBVOC()
-   !====================================
+             ! Soil NO
+             ! for 1 ugN/m2/hr, the temp funct alone would give
+             ! ca. 6 mgN/m2/a in Germany, where dep is about 5000 mgN/m2 max ca. 9
+             ! Conif Forests in Germany  
 
-   !====================================
-   ! Merges Local and global/defaults, and scales with land-cover area
-   ! Emissions factors shoudl now by ug/m2(grid)/h
+               f  = LandCover(i,j)%fraction(ilc) 
+               beta = 0.0
 
-    call MergedBVOC() 
-   !====================================
+               if ( LandType(LC)%is_conif ) then
+                  enox = enox + f*ftn*150.0
+                  !enh3 = enh3 + f*ftn*1500.0 ! Huge?! W+E ca. 600 ngNH3/m2/s -> 1800 ugN/m2/h
+               else if ( LandType(LC)%is_decid ) then
+                  enox = enox + f*ftn* 50.0
+                  !enh3 = enh3 + f*ftn*500.0 !  Just guessing
+               else if ( LandType(LC)%is_seminat ) then
+                  enox = enox + f*ftn* 50.0
+                  !enh3 = enh3 + f * ftn  *20.0 !mg/m2/h approx from US report 1 ng/m2/s
 
-   !========================================================================!
+               else if ( LandType(LC)%is_crop    ) then ! emissions in 1st 70 days
 
-     ! old summation. Kept to demonstrate mpi_allreduce
-     !output sums. Remember that "shadow" area not included here.
-     ! do i = 1,  2 !! size(BVOC_USED) 
-     !    bvocsum   = sum ( emforest(li0:li1,lj0:lj1,i) )
-     !    CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
-     !      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-     !    if ( MasterProc  ) write(6,"(a20,i4,2es12.4)") &
-     !         'Biogenics_mod, ibio, sum1',i, bvocsum, bvocsum1
-     ! end do
+                  bmin = Landcover(i,j)%SGS(iLC) -30 ! !st March LandCover(i,j)%SGS(iLC) - 30 
+                  bmax = Landcover(i,j)%SGS(iLC) +30 ! End April  LandCover(i,j)%SGS(iLC) + 40 
 
-   end subroutine Init_PBAB
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  !> SUBROUTINE Get_LCinfo
-  !! Checks for default bvoc emissions from each landcover category
-  !! (read from Inputs_LandDefs.csv file)
-  !! and establishes number of LC with BVOC emissions
+                  ! US p.29, Suttn had ca. 20 ng/m2/s  = 60ugN/m2/hfor crops
+                  ! throughout growing season
+                  if ( daynumber >= Landcover(i,j)%SGS(iLC) .and. &
+                       daynumber <= Landcover(i,j)%EGS(iLC) ) then
+                       enox = enox + f* 1.0
+                       !enh3 = enh3 + f * 60.0
+                  end if
 
-   subroutine Get_LCinfo()
-      integer :: iL
+                  ! CRUDE - just playing for NH3.
+                  ! NH3 from fertilizer? Assume e.g. 120 kg/ha over 1 month
+                  ! with 10% giving emission, i.e. 10 kg/ha
+                  ! 10 kg/ha/month =  ca. 1000 ugN/m2/h
 
-        do iL= 1, size(LandType(:)%pft )
-            
-            if( LandDefs(iL)%Eiso > 0 ) last_bvoc_LC = iL
-            if( LandDefs(iL)%Emtp > 0 ) last_bvoc_LC = iL
-            if( LandDefs(iL)%Emtl > 0 ) last_bvoc_LC = iL
-            if(MasterProc.and.DEBUG%BIO ) &
-              write(*,"(a,2i4,3es12.3)") "LandDefs: BVOC LC:", &
-               iL, last_bvoc_LC, LandDefs(iL)%Eiso,LandDefs(iL)%Emtp,LandDefs(iL)%Emtl
+                  ! For NO, numbers based upon papers by e.g. Rolland,
+                  ! Butterbach, etc.
+                  if ( daynumber >= bmin .and. daynumber <= bmax ) then
 
-         end do
-         if( MasterProc.and. DEBUG%BIO ) write(*,*) "LandDefs: LAST BVOC LC:",&
-           last_bvoc_LC,size(LandType(:)%pft)
+                       bx = (daynumber-bmin)/( bmax-bmin)
+                       bx = max(bx,0.0)
+                       by = 1.0 - bx
+                       beta =  ( bx*by *4.0) 
+                       enox = enox + f*80.0*ft* beta 
+                       !enh3 = enh3 + f * 1000.0*ft * beta
+                  end if
 
-       ! We need at least 4 for CF, DF, NF, BF in Euro file
-         last_bvoc_LC =  max(last_bvoc_LC, 4 ) 
+                  
+               end if
+               if (  DEBUG%SOILNOX .and. debug_proc .and. &
+                   i == debug_li .and. j == debug_lj ) then
+                 write(*, "(a,4i4,f7.2,9g12.3)") "LOOPING SOIL", daynumber, &
+                 iLC, LC, LandCover(i,j)%SGS(iLC), t2_nwp(i,j,1)-273.15, &
+                    f, ft, fn, ftn,  beta, enox!, enh3
+                 if(iLC==1) &
+                   call datewrite("HFAC SOIL", (/ 1.0*daynumber,hfac /) )
+               end if
+               enox = max( 0.001, enox ) ! Just to stop negatives while testing
+  
+             ! Soil NH3
+         end do LCLOOP
 
-    end subroutine Get_LCinfo
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-   subroutine  GetEuroBVOC()
+   ! And we scale EmisNat to get units kg/m2 consistent with
+   ! Emissions_mod (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
 
-!.....................................................................
-!**    DESCRIPTION:
+         SoilNOx(i,j) = enox
 
-!    Reads the processed BVOC emission potentials.
-
-    integer :: iVeg, iEmis, ibvoc, i,j
-    character(len=1000) :: varname
-    character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
-    character(len=*),parameter :: dtxt='BioModEuro:'
-
-     do iVeg = 1, size(VegName)
-       ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
-       if( ibvoc<0 ) cycle
-       HaveLocalEF(ibvoc) = .true.
-       do iEmis = 1, size(BVOC_USED)
-         varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
-          
-         call ReadField_CDF(EMEP_EuroBVOCFile,varname,&
-             bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,&
-              debug_flag=.false.,UnDef=-999.0)
-
- 
-         if( DEBUG%BIO .and. debug_proc ) then
-           write(*, "(2a,f12.3,3i2)") dtxt//":E ", &
-             trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), &
-               iVeg, ibvoc, iEmis
-           write(*, "(2a,2es12.3)") dtxt//":minmax ", trim(varname), &
-             minval(bvocEF(:,:,ibvoc,iEmis)), maxval(bvocEF(:,:,ibvoc,iEmis))
-         end if     
+           !enh3 = 0.0 ! BIDIR SOON .... we don't want enh3
+           !SoilNH3(i,j) = enh3
 
        end do
-
-       
-      ! Make a mask where we can use the local bvoc. Should be the same from
-      ! all EFs, since only non-def areas set to -999, otherwise zero or +
-      ! If any values exist, should exist for all entries, hence check.
-       iEmis=size(BVOC_USED)
-       if( iVeg == 1 )  then
-          where(bvocEF(:,:,ibvoc,iEmis)>-1.0)
-            EuroMask = .true.
-          end where
-       else  ! Just check that following maps are consistent
-           do i=1,limax
-           do j=1,ljmax
-             if ( EuroMask(i,j) .and. bvocEF(i,j,ibvoc,iEmis)<0.0 ) then
-               write(*,*) "MASK ERROR", me, i_fdom(i), j_fdom(j)
-               call CheckStop("EuroMask BVOC ERROR")
-             end if
-           end do
-           end do
-       end if
-                
-     end do
-
-  end subroutine GetEuroBVOC
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   subroutine MergedBVOC()
-
-      integer :: i, j, nlu, iL, iiL, gLC1
-      integer :: pft
-      character(len=15) :: merge_case
-      real :: biso, bmt    !  Just for printout
-      logical :: use_local, debug_flag
-      character(len=*),parameter :: dtxt='BioModMerge:'
-
-
-      if ( DEBUG%BIO .and. debug_proc ) then
-         write(*,*) dtxt//" Start"
-         i= debug_li; j= debug_lj
-         nlu= LandCover(i,j)%ncodes
-         write(*,*) dtxt//'MEGAN  stuff:', me, debug_proc, debug_li, debug_lj
-         write(*,*) dtxt//'MEGAN  codes:', nlu, LandCover(i,j)%codes(1:nlu)
-      end if
-
-      do i = 1, limax
-      do j = 1, ljmax
-
-        nlu = LandCover(i,j)%ncodes
-
-        use_local = EuroMask(i,j) 
-        debug_flag = ( debug_proc .and. debug_li == i .and. debug_lj == j )
-
-        LULOOP: do iiL= 1, nlu
-
-            iL      = LandCover(i,j)%codes(iiL)
-            pft     = LandType(iL)%pft
-
-           gLC1 = -1
-           !.. some MEGAN pre-code removed here
-
-           if( use_local .and. HaveLocalEF(iL) ) then 
-
-                ! Keep EFs from EuroBVOC
-                if( debug_flag ) merge_case = 'Local'
-
-           !.. some MEGAN pre-code removed here
-
-           else if ( iL <= last_bvoc_LC ) then ! otherwise use defaults
-             
-     ! CLF canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
-               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * &
-                   LandDefs(iL)%BiomassD *EmBio%CLF
-               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * &
-                   LandDefs(iL)%BiomassD *EmBio%CLF
-               bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * &
-                   LandDefs(iL)%BiomassD
-                if( DEBUG%BIO .and. debug_flag ) then
-                   merge_case = 'defaultBVOC'
-                  write(*,"(a,i3,8f8.2)") &
-                  dtxt//": Outside local", iL, LandDefs(iL)%BiomassD,&
-                   LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
-                end if
-           else
-                if( debug_flag )  merge_case = 'OutsideLCC'
-           end if
-
-
-           if( DEBUG%BIO .and. debug_flag ) then
-
-              biso = 0.0
-              bmt  = 0.0
-              if ( iL <= last_bvoc_LC ) then
-                biso   = bvocEF(i, j,iL, BIO_ISOP) 
-                bmt    = bvocEF(i,j,iL,BIO_MTL)+bvocEF(i,j,iL,BIO_MTL)
-              end if
-              write(*,"(a24,2i4,2L2,f9.4,9f10.3)") &
-                dtxt // trim(merge_case), &
-                  iL, pft,  use_local, HaveLocalEF(iL),  &
-                   LandCover(i,j)%fraction(iiL), biso, bmt,&
-                    LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
-           end if 
-        end do LULOOP
-      end do !j
-      end do !i
-
-   end subroutine MergedBVOC
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine SetDailyBVOC()
-
-      ! Scales emission potentials for daily LAI changes
-
-      integer, save :: last_daynumber = -999, alloc_err
-      integer :: i, j, nlu, iL, iiL, ibvoc
-      real :: LAIfac  ! Multiplies by land-fraction
-      real :: b       !  Just for printout
-      logical :: mydebug
-      logical, save :: my_first_call = .true.
-      real, allocatable, dimension(:,:,:) ::  workarray
-      character(len=*), parameter :: dtxt='BioModSetDaily:' 
-
-      if( MasterProc .and. DEBUG%BIO ) write(*,"(a,3i5)") dtxt//"start ", &
-            daynumber, last_daynumber, last_bvoc_LC
-
-      if ( daynumber == last_daynumber ) return
-      last_daynumber = daynumber
-
-      if ( DEBUG%BIO .and.  my_first_call  ) then
-           allocate(  workarray(last_bvoc_LC,LIMAX,LJMAX), stat=alloc_err )
-           call CheckStop( alloc_err , dtxt//"workarray alloc failed"  )
-           workarray = 0.0
-      end if
-
-      do i = 1, limax
-      do j = 1, ljmax
-
-        nlu = LandCover(i,j)%ncodes
-
-        day_embvoc(i,j,:) = 0.0
-        mydebug = ( DEBUG%BIO .and. debug_proc .and.  &
-                   debug_li == i .and. debug_lj == j )
-
-        LULOOP: do iiL= 1, nlu
-
-            iL      = LandCover(i,j)%codes(iiL)
-
-            if ( iL >  last_bvoc_LC ) cycle
-
-            !for tundra and wetlands we have zero LAI, so omit
-            !LAI scaling. Not an ideal system.... rewrite one day.
-             
-              if( LandCover(i,j)%LAI(iiL)< 1.0e-5 ) then
-                 LAIfac = 1.0       ! likely wetlands, tundra
-              else
-                LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
-                LAIfac= min(LAIfac, 1.0)
-              end if
-              LAIfac = LAIfac * LandCover(i,j)%fraction(iiL)
-              
-
-              do ibvoc = 1, size(BVOC_USED) 
-                day_embvoc(i,j,ibvoc) = day_embvoc(i,j,ibvoc) + &
-                   LAIfac * max(1.0e-10,bvocEF(i,j,iL,ibvoc))
-              end do
-
-              if ( mydebug ) then
-                 b = 0.0
-                 if ( iL <= last_bvoc_LC ) b = bvocEF(i, j,iL, BIO_ISOP)
-                 write(*,"(a,a10,2i5,f9.5,2f7.3,9f10.3)") dtxt//"Set ", &
-                  trim(LandDefs(iL)%name), daynumber, iL, &
-                   LandCover(i,j)%fraction(iiL), &
-                   LandCover(i,j)%LAI(iiL), LandDefs(iL)%LAImax, b, LAIfac, &
-                     ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
-
-              end if
-              ! When debugging it helps with an LAI map
-              if( DEBUG%BIO .and. my_first_call ) &
-                 workarray(iL,i,j) = workarray(iL,i,j) + &
-                    bvocEF(i, j,iL, BIO_ISOP) * & 
-                    LandDEfs(iL)%LAImax*LandCover(i,j)%fraction(iiL)
-        end do LULOOP
-      end do ! ij
-      end do
-
-       if ( my_first_call  ) then ! print out 1st day
-         if ( DEBUG%BIO ) then
-           do iL = 1, 12
-              call printCDF(dtxt//"BIO-OUT"//trim(LandDefs(iL)%code), &
-                      workarray(iL,:,:), "ug/m2/h" )
-           end do
-         end if
-      end if 
-      my_first_call = .false.
-
-   end subroutine SetDailyBVOC
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    subroutine TabulateECF()
-    !/-- Tabulate canopy environmental correction factors
-    !-----------------------------------------------------
-    ! ag suffix  = Alex Guenther's parameter values
-
-    real    :: agts, agr, agtm, agct1, agct2, agct ,itk
-    integer :: it, i
-    character(len=*), parameter :: dtxt='BioModTab:' 
-
-    agts = 303.
-    agr = 8.314
-    agtm = 314.         ! G93/G95
-    agct1 = 95000.      ! G93/G95
-    agct2 = 230000.     ! G93/G95
-
-    do it = 1,40
-      itk = it + 273.15
-      agct = exp(agct1*(itk - agts)/(agr*agts*itk)) / &
-                (1. + exp(agct2*(itk - agtm)/(agr*agts*itk)))
-
-      canopy_ecf(ECF_ISOP,it) = agct
-
-      ! Terpenes
-      agct = exp( 0.09*(itk-agts) )
-      !agct = exp( 0.1*(itk-agts) )
-      canopy_ecf(ECF_TERP,it) = agct
-
-      !?? for terpene fac = 0.5*fac(iso): as mass terpene = 2xmass isoprene
-
-      if(DEBUG%BIO  .and.  MasterProc ) &
-             write(6,"(A,i4,5g12.3)") dtxt//'Biogenic ecfs: ', &
-                  it, ( canopy_ecf(i,it), i=1, N_ECF )
     end do
-    end subroutine TabulateECF
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine setup_fungal_spores(i,j)
+    if ( DEBUG%SOILNOX .and. debug_proc ) then
+       i = debug_li
+       j = debug_lj
+       write(*,"(a,4i4)") "RESET_SOILNOX: ",  1, limax, 1, ljmax
+       write(*,"(a,2i4,2f12.4,es12.4)") "RESET_SOILNOX: ", &
+               daynumber, current_date%hour, t2_nwp(i,j,1), SoilNOx(i,j), AnnualNdep(i,j)
+    end if
+
+    my_first_call = .false.
+
+  end subroutine Set_FungalSpores
+
+  subroutine setup_PBAPs(i,j)
   !
   !---- assign fungal rates  ------------------------------------------------
   !
@@ -659,148 +389,7 @@ module PBAP_mod
      end if
 
 
-  end subroutine setup_bio
+  end subroutine setup_PBAPs
 
   !----------------------------------------------------------------------------
-
-
-   subroutine Set_SoilNOx()
-      integer :: i, j, nLC, iLC, LC
-      logical :: my_first_call = .true.
-      real    :: f, ft, fn, ftn
-      real    :: enox !, enh3  ! emissions, ugN/m2/h
-      real :: beta, bmin, bmax, bx, by ! for beta function
-      real :: hfac
-
-
-      if ( .not. USES%FUNGAL_SPORES) return ! and fSW has been set to 1. at start
-
-      if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
-         write(*,*)"PBAP_mod DEBUG FUNAL_SPORES: ",&
-          current_date%day, current_date%hour, current_date%seconds,&
-          USES%FUNGAL_SPORES
-      end if
-
-      ! We reset once per hour
-
-      if ( current_date%seconds /= 0 .and. .not. my_first_call ) return
-      hfac = 0.5 ! Lower at night
-      if ( current_date%hour > 7 .and. current_date%hour < 20 ) hfac = 1.5
-
-
-        do j = 1, ljmax
-           do i =  1, limax
-
-             nlc = LandCover(i,j)%ncodes
-
-           ! Temperature function from Rolland et al., 2005, eqn. 6
-
-             ft =  C1*(t2_nwp(i,j,1)-275.82)+3.93*10000*q(i,j,1)*LAIfac
-
-
-           ! Inspired by e.g. Pilegaard et al, Schaufler et al. (2010)
-           ! we scale emissions from seminat with N-depositions
-           ! We use a factor normalised to 1.0 at 5000 mgN/m2/a
-
-             fn = AnnualNdep(i,j)/5000.0 ! scale for now
-             fn = fn * EURO_SOILNOX_DEPSCALE  ! See Config_module
-
-             ftn = ft * fn * hfac 
-
-             enox = 0.0
-             !enh3 = 0.0 
-
-     LCLOOP: do ilc= 1, nLC
-
-                 LC = LandCover(i,j)%codes(ilc)
-                 if ( LandType(LC)%is_water ) cycle
-                 if ( LandType(LC)%is_ice   ) cycle
-                 if ( LandType(LC)%is_iam   ) cycle
-
-               ! Soil NO
-               ! for 1 ugN/m2/hr, the temp funct alone would give
-               ! ca. 6 mgN/m2/a in Germany, where dep is about 5000 mgN/m2 max ca. 9
-               ! Conif Forests in Germany  
-
-                 f  = LandCover(i,j)%fraction(ilc) 
-                 beta = 0.0
-
-                 if ( LandType(LC)%is_conif ) then
-                    enox = enox + f*ftn*150.0
-                    !enh3 = enh3 + f*ftn*1500.0 ! Huge?! W+E ca. 600 ngNH3/m2/s -> 1800 ugN/m2/h
-                 else if ( LandType(LC)%is_decid ) then
-                    enox = enox + f*ftn* 50.0
-                    !enh3 = enh3 + f*ftn*500.0 !  Just guessing
-                 else if ( LandType(LC)%is_seminat ) then
-                    enox = enox + f*ftn* 50.0
-                    !enh3 = enh3 + f * ftn  *20.0 !mg/m2/h approx from US report 1 ng/m2/s
-
-                 else if ( LandType(LC)%is_crop    ) then ! emissions in 1st 70 days
-
-                    bmin = Landcover(i,j)%SGS(iLC) -30 ! !st March LandCover(i,j)%SGS(iLC) - 30 
-                    bmax = Landcover(i,j)%SGS(iLC) +30 ! End April  LandCover(i,j)%SGS(iLC) + 40 
-
-                    ! US p.29, Suttn had ca. 20 ng/m2/s  = 60ugN/m2/hfor crops
-                    ! throughout growing season
-                    if ( daynumber >= Landcover(i,j)%SGS(iLC) .and. &
-                         daynumber <= Landcover(i,j)%EGS(iLC) ) then
-                         enox = enox + f* 1.0
-                         !enh3 = enh3 + f * 60.0
-                    end if
-
-                    ! CRUDE - just playing for NH3.
-                    ! NH3 from fertilizer? Assume e.g. 120 kg/ha over 1 month
-                    ! with 10% giving emission, i.e. 10 kg/ha
-                    ! 10 kg/ha/month =  ca. 1000 ugN/m2/h
-
-                    ! For NO, numbers based upon papers by e.g. Rolland,
-                    ! Butterbach, etc.
-                    if ( daynumber >= bmin .and. daynumber <= bmax ) then
-
-                         bx = (daynumber-bmin)/( bmax-bmin)
-                         bx = max(bx,0.0)
-                         by = 1.0 - bx
-                         beta =  ( bx*by *4.0) 
-                         enox = enox + f*80.0*ft* beta 
-                         !enh3 = enh3 + f * 1000.0*ft * beta
-                    end if
-
-                    
-                 end if
-                 if (  DEBUG%SOILNOX .and. debug_proc .and. &
-                     i == debug_li .and. j == debug_lj ) then
-                   write(*, "(a,4i4,f7.2,9g12.3)") "LOOPING SOIL", daynumber, &
-                   iLC, LC, LandCover(i,j)%SGS(iLC), t2_nwp(i,j,1)-273.15, &
-                      f, ft, fn, ftn,  beta, enox!, enh3
-                   if(iLC==1) &
-                     call datewrite("HFAC SOIL", (/ 1.0*daynumber,hfac /) )
-                 end if
-                 enox = max( 0.001, enox ) ! Just to stop negatives while testing
-    
-               ! Soil NH3
-           end do LCLOOP
-
-
-     ! And we scale EmisNat to get units kg/m2 consistent with
-     ! Emissions_mod (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
- 
-           SoilNOx(i,j) = enox
-
-             !enh3 = 0.0 ! BIDIR SOON .... we don't want enh3
-             !SoilNH3(i,j) = enh3
- 
-         end do
-      end do
-
-      if ( DEBUG%SOILNOX .and. debug_proc ) then
-         i = debug_li
-         j = debug_lj
-         write(*,"(a,4i4)") "RESET_SOILNOX: ",  1, limax, 1, ljmax
-         write(*,"(a,2i4,2f12.4,es12.4)") "RESET_SOILNOX: ", &
-                 daynumber, current_date%hour, t2_nwp(i,j,1), SoilNOx(i,j), AnnualNdep(i,j)
-      end if
-
-      my_first_call = .false.
-
-   end subroutine Set_SoilNOx
-end module PBAB_mod
+end module PBAP_mod
