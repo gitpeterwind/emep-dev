@@ -13,10 +13,10 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              ,MasterProc,dt_advec,dt_advec_inv, RUNDOMAIN, runlabel1 &
                              ,HOURLYFILE_ending, lf_species, lf_country,&
                              SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix, NO3_f_ix, &
-                             NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
+                             NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
                              PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix, &
-                             lf_spec_out
+                             NATBIO, lf_spec_out
 use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
@@ -47,7 +47,7 @@ use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
 use VerticalDiffusion_mod, only: vertdiffn
-use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis, M
+use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis, M, rcbio
 
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
 
@@ -60,6 +60,9 @@ integer ::IC_AST_EXTRA = 324567,IC_RUT_EXTRA = 324568 !sum of countries which ar
 integer ::IC_BIC_EXTRA = 324569
 integer ::IC_STRATOS = 324566 !contribution from stratosphere
 integer ::IC_INIT = 324565 !contribution from pollutants present at the start of the run
+integer ::IC_BVOC = 324564 !contribution from BVOC (C5H8 and TERP)
+logical, save :: make_LF_BVOC = .false.
+integer, save  :: iic_BVOC
 logical, parameter :: DEBUG = .false.
 logical, parameter :: DEBUGall = .false.
 
@@ -450,6 +453,12 @@ contains
               ix = IC_STRATOS
            else if(ix<0 .and. lf_country%list(i) =='INIT')then
               ix = IC_INIT
+           else if(ix<0 .and. lf_country%list(i) =='BVOC')then
+              ix = IC_BVOC
+              call CheckStop(C5H8_ix<0 .or. APINENE_ix<0,&
+                   'country BVOC cannot be computed, because C5H8 or APINENE not found ')
+              make_LF_BVOC = .true.
+              iic_BVOC = i + Ncountry_mask_lf
            endif
            call CheckStop(ix<0,'country '//trim(lf_country%list(i))//' not defined. ')
            country_ix_list(i + Ncountry_mask_lf) = ix
@@ -491,6 +500,7 @@ contains
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
      end do
      Npos_lf = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
+     !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
      do isrc = 1, Nsources
         lf_src(isrc)%Npos = Npos_lf
      end do
@@ -1099,14 +1109,15 @@ subroutine lf_out(iotyp)
                     endif
                     if (lf_src(isrc)%full_chem) then
                        !add emission species to name
-                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT)then
-                          !do not add "_nox" suffix and do not output voc
+                       if (country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. country_ix_list(i)==IC_BVOC)then
+                          !do not add "_nox" suffix and do not output any other
                           if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
                        else
                           write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
+                        if(me==0)write(*,*)'COUNTRY ',i,country_ix_list(i),def2%name
                     end if
                     if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
                     def2%unit='ug/m3'
@@ -1255,7 +1266,7 @@ subroutine lf_out(iotyp)
                     endif
                     if (lf_src(isrc)%full_chem) then
                        !add emission species to name
-                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT)then
+                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. country_ix_list(i)==IC_BVOC)then
                           !do not add "_nox" suffix and do not output voc
                           if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
@@ -3122,16 +3133,31 @@ subroutine lf_rcemis(i,j,k,eps)
               endif
            end do
         end do
-        end do
+      end do
+      if (make_LF_BVOC) then
+        !add BVOC emissions derivatives. Only surface level. We choose "nox" only to get only one
+        if(k==KMAX_MID .and. EMIS_FILE(iem)=="nox")then
+           if(RCBIO(NATBIO%C5H8,k)>1e-20 .or. RCBIO(NATBIO%TERP,k)>1e-20) then
+              is = 1
+              iic = iic_BVOC
+              N_lf_derivemis = N_lf_derivemis + 1
+              nemis = N_lf_derivemis
+              rcemis_lf(nemis,C5H8_ix) = RCBIO(NATBIO%C5H8,k) * eps
+              rcemis_lf(nemis,APINENE_ix) = RCBIO(NATBIO%TERP,k) * eps
+              emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+              emis2iem(nemis) = iem
+           end if
+        end if
       end if
-    end do
-  
-    if(N_lf_derivemis>N_lf_derivemisMAX)then
-      write(*,*)me,i,j,k,N_lf_derivemis,N_lf_derivemisMAX
-      call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")
     end if
+  end do
 
-    call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
+  if(N_lf_derivemis>N_lf_derivemisMAX)then
+     write(*,*)me,i,j,k,N_lf_derivemis,N_lf_derivemisMAX
+     call StopAll("too many sectors*country in one gridcell. Increase N_lf_derivemisMAX")
+  end if
+  
+  call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
   if(DEBUGall .and. me==0)write(*,*)'end lf rcemis'
   end subroutine lf_rcemis
 

@@ -36,7 +36,7 @@ sed -i '/sum(xnew_lf/i do n = 1,Nd' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/s/xnew_lf(1:Nd/xnew_lf(n/g' CM_Reactions1_tmp.inc
 sed -i '/sum(xnew_lf/a end do' CM_Reactions1_tmp.inc
 
-for species in SO2 SO4 NH3 NO NO2 shipNOx CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK CH3CHO GLYOX MGLYOX
+for species in SO2 SO4 NH3 NO NO2 shipNOx CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BENZENE TOLUENE OXYL HCHO MEK CH3CHO GLYOX MGLYOX C5H8 APINENE
 do
   sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
