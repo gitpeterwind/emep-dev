@@ -196,7 +196,9 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
-    ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
+    ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
+    ,PBAPs            = .false. &
+    ,FUNGAL_SPORES    = .false.
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?

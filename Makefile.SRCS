@@ -30,7 +30,7 @@ SRCS ?=	\
 	MassBudget_mod.f90 Met_mod.f90 MetFields_mod.f90 EQSAM_mod.f90 MicroMet_mod.f90 \
 	MosaicOutputs_mod.f90 MPI_Groups_mod.f90 AerosolCalls.f90 \
         My_Derived_mod.f90 NetCDF_mod.f90 Nest_mod.f90 NumberConstants.f90 \
-        OutputChem_mod.f90 OwnDataTypes_mod.f90 Par_mod.f90 \
+        OutputChem_mod.f90 OwnDataTypes_mod.f90 PBAP_mod.f90 Par_mod.f90 \
 	PhysicalConstants_mod.f90 PlumeRise_mod.f90 PointSource_mod.f90 \
 	Precision_mod.f90 Radiation_mod.f90 Rb_mod.f90 \
 	ReadField_mod.f90 Rsurface_mod.f90 Runchem_mod.f90 Setup_1d_mod.f90 \

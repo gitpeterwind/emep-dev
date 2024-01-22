@@ -63,7 +63,9 @@ module Debug_module
     ,SOLVER          = .false. &
     ,STOFLUX         = .false. &
     ,VERT_DIFF       = .false. &
-    ,VDS             = .false.
+    ,VDS             = .false. &
+    ,PBAP            = .false. &
+    ,FUNGAL_SPORES   = .false. 
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option
