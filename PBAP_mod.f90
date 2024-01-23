@@ -37,6 +37,7 @@ module PBAP_mod
   use SmallUtils_mod,     only: find_index
   use TimeDate_mod,       only: current_date, daynumber
   use ZchemData_mod,      only: rcemis, rcbio
+  use Biogenics_mod,      only: NEMIS_BioNat,EMIS_BioNat,EmisNat
   implicit none
   private
 
@@ -47,8 +48,10 @@ module PBAP_mod
 
   real,public, save, allocatable, dimension(:,:) :: FungalSpores 
 
-  integer, public, parameter ::   NPBAP = 1 !Number of PBAPs currently implemented
-                                            !(only fungal spores at the moment)
+  integer, public, parameter ::   NPBAP = 1 !Number of PBAPs
+                                            !(only fungal spores implemented at the moment)
+
+  integer, private, save :: itot_FUNGALSPORES, inat_FUNGALSPORES !Index of fungal spores in Species and EMIS_BioNat
 
   real*8, DIMENSION(3), parameter  ::  &
   FUNG_PARAMS = [20.426d0, 275.82d0, &
@@ -56,21 +59,6 @@ module PBAP_mod
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
 
-  ! - allows rcbio in CM_Reactions, but we access elements with
-  ! the natbio indices here. These much match the indices used in rcbio
-  ! We only use rcbio for isoprene and terpenes so far,  since
-  ! soil NO, NH3 emissions etc are dealt with through rcemis.
-
-  ! We hard-code these indices, but only calculate emissions if needed
-  ! Must match order of NATBIO to start with 
-  character(len=16), save, dimension(NPBAP), public:: &
-      EMIS_PBAP = [character(len=16):: &
-             "FUNGAL_SPORES"]
-
-
-  ! EmisNat is used for BVOC; soil-NO, also in futur for sea-salt etc.
-  ! Main criteria is not provided in gridded data-bases, often land-use
-  ! dependent.
 
   real, public, save, allocatable, dimension(:,:,:) :: &
      EmisBPAP       !  will be transferred to d_2d emis sums
@@ -80,6 +68,9 @@ module PBAP_mod
   subroutine init_PBAPs()
     allocate(FungalSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
     FungalSpores = 0d0
+
+    itot_FUNGALSPORES   = find_index( "FUNGAL_SPORES", species(:)%name)
+    inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:),any_case=.true. )
   end subroutine init_PBAPs
 
   
@@ -91,12 +82,8 @@ module PBAP_mod
     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
     !DOI 10.1007/978-3-319-35095-0_121
     integer, intent(in) ::  i,j
-    integer :: nLC, iLC, LC
-    logical :: my_first_call = .true.
-    real    :: f, ft, fn, ftn, F_FNG, LAIFac
-    real    :: eFGS !, emissions Fungal spores TODO: Fix units
-    real :: beta, bmin, bmax, bx, by ! for beta function
-    real :: hfac
+    integer :: nlu,iiL,LC,i_d,j_d
+    real    :: F_FNG
 
     if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
        write(*,*)"PBAP_mod DEBUG FUNGAL_SPORES: ",&
@@ -117,7 +104,7 @@ module PBAP_mod
                 cycle
               else
                 F_FNG = F_FNG + &
-                LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,1)*LandCover(i,j)%LAI(iiL))
+                LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
                 !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                 !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
               end if
@@ -126,11 +113,11 @@ module PBAP_mod
            FungalSpores(i,j) = F_FNG
 
     if ( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
-       i = debug_li
-       j = debug_lj
-       write(*,"(a,4i4)") "FUNGAL_SPORES_EMISSION: ",  1, limax, 1, ljmax
-       write(*,"(a,2i4,2f12.4,es12.4)") "FUNGAL_SPORES_EMISSION: ", &
-               daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,1)(i,j), Fungal_emiss(i,j)
+       if (i .eq. debug_li .and. j .eq. debug_lj) then
+        write(*,"(a,4i4)") "FUNGAL_SPORES_EMISSION: ",  1, limax, 1, ljmax
+        write(*,"(a,2i4,2f12.4,es12.4)") "FUNGAL_SPORES_EMISSION: ", &
+               daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,KG,1), FungalSpores(i,j)
+       end if
     end if
 
   end subroutine Set_FungalSpores
@@ -151,20 +138,21 @@ module PBAP_mod
   real, parameter :: unit_conv = 1.0d0 !TODO: Add conversion
   logical :: dbg
 
-  if ( size(NPBAP) == 0  ) return   ! Number of PBAPs
+  if ( NPBAP == 0  ) return   ! Number of PBAPs
 
-  dbg = ( DEBUG%PBAB .and. debug_proc .and. &
+  dbg = ( DEBUG%PBAP .and. debug_proc .and. &
           i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
 
 
-  
-  rcbio(NATBIO%TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
-  EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
-
   if ( USES%FUNGAL_SPORES ) then
       call Set_FungalSpores(i,j)
-      rcemis(itot_FUNGALSPORES,KG) = FungalSpores(i,j)
-
+      if (itot_FUNGALSPORES > 0) then
+        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+FungalSpores(i,j) !Should this overwrite or add
+      end if
+      
+      if (inat_FUNGALSPORES > 0) then
+        EmisNat(inat_FUNGALSPORES,i,j) = FungalSpores(i,j)
+      end if
   end if
 
   end subroutine setup_PBAPs

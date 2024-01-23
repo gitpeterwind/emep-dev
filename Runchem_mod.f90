@@ -148,7 +148,7 @@ subroutine runchem()
 
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
-      if (USES%PBAPs) &
+      if (USES%PBAP) &
           call setup_PBAPs(i,j)
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis

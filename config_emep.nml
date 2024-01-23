@@ -4,7 +4,7 @@
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
-  enddate   = 2018,01,01,24,
+  enddate   = 2018,01,03,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -69,7 +69,9 @@
   USES%DEGREEDAY_FACTORS = T, 
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
-  USES%ROADDUST          = T,            ! Only EECCA?
+  USES%ROADDUST          = F,            ! Only EECCA?
+  USES%PBAP              = T,
+  USES%FUNGAL_SPORES     = T,
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
@@ -316,12 +318,14 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
+  DEBUG%FUNGAL_SPORES   = T,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0, !WARNING SEP2021 CAUSES STALL
-   DEBUG%MOSAICS         = F,
+  DEBUG%MOSAICS         = F,
+  DEBUG%PBAP            = T,
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,   ! LOTS of output
@@ -534,6 +538,8 @@ OutputConcs=
       'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
 ! DO NOT USE ppb!!!
       'OH'                 ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
