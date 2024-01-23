@@ -59,7 +59,7 @@ module PBAP_mod
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
 
-
+  real, parameter :: unit_conv = 1.0
   real, public, save, allocatable, dimension(:,:,:) :: &
      EmisBPAP       !  will be transferred to d_2d emis sums
 
@@ -69,8 +69,8 @@ module PBAP_mod
     allocate(FungalSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
     FungalSpores = 0d0
 
-    itot_FUNGALSPORES   = find_index( "FUNGAL_SPORES", species(:)%name)
-    inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:),any_case=.true. )
+    itot_FUNGALSPORES = find_index( "FUNGAL_SPORES", species(:)%name)
+    inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
   end subroutine init_PBAPs
 
   
@@ -83,12 +83,14 @@ module PBAP_mod
     !DOI 10.1007/978-3-319-35095-0_121
     integer, intent(in) ::  i,j
     integer :: nlu,iiL,LC,i_d,j_d
-    real    :: F_FNG
+    real    :: F_FNG, temp_val
 
     if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
+      if (i .eq. debug_li .and. j .eq. debug_lj) then
        write(*,*)"PBAP_mod DEBUG FUNGAL_SPORES: ",&
         current_date%day, current_date%hour, current_date%seconds,&
-        USES%FUNGAL_SPORES
+        USES%FUNGAL_SPORES, itot_FUNGALSPORES,inat_FUNGALSPORES
+      end if
     end if
 
 
@@ -103,8 +105,8 @@ module PBAP_mod
               else if ( LandType(LC)%is_ice) then
                 cycle
               else
-                F_FNG = F_FNG + &
-                LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+                temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+                F_FNG = F_FNG + max(0.0, unit_conv*temp_val)
                 !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                 !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
               end if
@@ -135,7 +137,6 @@ module PBAP_mod
 
   character(len=*), parameter :: dtxt='PBAPModSetup:' 
 
-  real, parameter :: unit_conv = 1.0d0 !TODO: Add conversion
   logical :: dbg
 
   if ( NPBAP == 0  ) return   ! Number of PBAPs
