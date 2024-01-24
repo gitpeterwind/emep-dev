@@ -149,7 +149,7 @@ subroutine runchem()
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
       if (USES%PBAP) &
-          call setup_PBAPs(i,j)
+          call setup_PBAPs(i,j) !Adds PBAPs to rcemis
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
@@ -244,7 +244,7 @@ subroutine runchem()
       !_________________________________________________
 
       call Add_2timing(29,tim_after,tim_before,"Runchem:chemistry")
-                
+
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(step_main,2)/=0) then

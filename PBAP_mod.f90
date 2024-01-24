@@ -54,23 +54,29 @@ module PBAP_mod
   integer, private, save :: itot_FUNGALSPORES, inat_FUNGALSPORES !Index of fungal spores in Species and EMIS_BioNat
 
   real*8, DIMENSION(3), parameter  ::  &
-  FUNG_PARAMS = [20.426d0, 275.82d0, &
-         39300.0d0] !From Fungal paramterization, Eq. (2) of
+  FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
 
-  real, parameter :: unit_conv = 1.0
+  real, parameter :: unit_conv = 100000.0 !Needs to be fixed (currently only for debugging)
   real, public, save, allocatable, dimension(:,:,:) :: &
      EmisBPAP       !  will be transferred to d_2d emis sums
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine init_PBAPs()
-    allocate(FungalSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
-    FungalSpores = 0d0
+    logical, save ::  my_first_call = .true.
 
-    itot_FUNGALSPORES = find_index( "FUNGAL_SPORES", species(:)%name)
-    inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
+    if (my_first_call) then
+      allocate(FungalSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
+      FungalSpores = 0.0
+      itot_FUNGALSPORES = find_index( "FUNGAL_SPORES", species(:)%name)
+      inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
+      my_first_call = .false.
+      if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
+        write(*,*)"INIT PBAPs (should only happen once!)"
+      end if
+    end if
   end subroutine init_PBAPs
 
   
@@ -94,7 +100,7 @@ module PBAP_mod
     end if
 
 
-          F_FNG = 0d0 !Fungal spores flux
+          F_FNG = 0.0 !Fungal spores flux
 
            nlu = LandCover(i,j)%ncodes
 
@@ -105,8 +111,8 @@ module PBAP_mod
               else if ( LandType(LC)%is_ice) then
                 cycle
               else
-                temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
-                F_FNG = F_FNG + max(0.0, unit_conv*temp_val)
+                temp_val =  unit_conv*(LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL)))
+                F_FNG = F_FNG + max(0.0, temp_val)
                 !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                 !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
               end if
@@ -116,7 +122,8 @@ module PBAP_mod
 
     if ( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
        if (i .eq. debug_li .and. j .eq. debug_lj) then
-        write(*,"(a,4i4)") "FUNGAL_SPORES_EMISSION: ",  1, limax, 1, ljmax
+        write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
+        write(*,"(a,2i4)") "FUNGAL_SPORES indices: ",  itot_FUNGALSPORES,inat_FUNGALSPORES
         write(*,"(a,2i4,2f12.4,es12.4)") "FUNGAL_SPORES_EMISSION: ", &
                daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,KG,1), FungalSpores(i,j)
        end if
@@ -149,10 +156,17 @@ module PBAP_mod
       call Set_FungalSpores(i,j)
       if (itot_FUNGALSPORES > 0) then
         rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+FungalSpores(i,j) !Should this overwrite or add
+        if (dbg) then
+          write(*,*) "FUNGAL SPORES: rcemis ",rcemis(itot_FUNGALSPORES,KG)
+        end if
+
       end if
       
       if (inat_FUNGALSPORES > 0) then
         EmisNat(inat_FUNGALSPORES,i,j) = FungalSpores(i,j)
+        if (dbg) then
+          write(*,*) "FUNGAL SPORES: EmisNat ",EmisNat(inat_FUNGALSPORES,i,j)
+        end if
       end if
   end if
 
