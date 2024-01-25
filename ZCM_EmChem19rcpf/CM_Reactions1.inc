@@ -1373,3 +1373,12 @@
   xnew(POLLEN_MUGWORT5) = xold(POLLEN_MUGWORT5) + dt2 * P
 
 
+!-> FUNGAL_SPORES
+
+  P = rcemis(FUNGAL_SPORES,k)
+  
+  ! L = 0.0
+  
+  xnew(FUNGAL_SPORES) = xold(FUNGAL_SPORES) + dt2 * P
+
+

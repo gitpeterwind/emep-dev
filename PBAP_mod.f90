@@ -58,7 +58,10 @@ module PBAP_mod
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
 
-  real, parameter :: unit_conv = 100000.0 !Needs to be fixed (currently only for debugging)
+  real, parameter :: unit_conv = 1e-6
+                !Original equation outputs number concentration in m^{-2}s^{-1}, but rcemis
+                !wants number molc/cm3/s
+                !Conversion: Divide by delta_z (in m), multiply by 1e-6 m^{-3}->cm^{-3}
   real, public, save, allocatable, dimension(:,:,:) :: &
      EmisBPAP       !  will be transferred to d_2d emis sums
 
@@ -111,10 +114,15 @@ module PBAP_mod
               else if ( LandType(LC)%is_ice) then
                 cycle
               else
-                temp_val =  unit_conv*(LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL)))
+                temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+                temp_val = (unit_conv*temp_val)/Grid%DeltaZ
                 F_FNG = F_FNG + max(0.0, temp_val)
                 !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                 !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
+                !Leaf-area index (LAI) should be in m2/m2
+                !Specific humidity q should be in kg/kg
+                !Temperature at 2m (t2_nwp) should be in K
+
               end if
            end do !LC
 
@@ -124,8 +132,8 @@ module PBAP_mod
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
         write(*,"(a,2i4)") "FUNGAL_SPORES indices: ",  itot_FUNGALSPORES,inat_FUNGALSPORES
-        write(*,"(a,2i4,2f12.4,es12.4)") "FUNGAL_SPORES_EMISSION: ", &
-               daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,KG,1), FungalSpores(i,j)
+        write(*,"(a,2i4,4f12.4)") "FUNGAL_SPORES_EMISSION: ", &
+               daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,KG,1), FungalSpores(i,j),LandCover(i,j)%LAI(1)
        end if
     end if
 
@@ -155,7 +163,8 @@ module PBAP_mod
   if ( USES%FUNGAL_SPORES ) then
       call Set_FungalSpores(i,j)
       if (itot_FUNGALSPORES > 0) then
-        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+FungalSpores(i,j) !Should this overwrite or add
+        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+(unit_conv*FungalSpores(i,j))/Grid%DeltaZ
+        !Recmis in molec/cm3/s
         if (dbg) then
           write(*,*) "FUNGAL SPORES: rcemis ",rcemis(itot_FUNGALSPORES,KG)
         end if
@@ -164,6 +173,7 @@ module PBAP_mod
       
       if (inat_FUNGALSPORES > 0) then
         EmisNat(inat_FUNGALSPORES,i,j) = FungalSpores(i,j)
+        !Emissions in molec/m2/s
         if (dbg) then
           write(*,*) "FUNGAL SPORES: EmisNat ",EmisNat(inat_FUNGALSPORES,i,j)
         end if
