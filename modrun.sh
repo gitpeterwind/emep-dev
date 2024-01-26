@@ -12,7 +12,7 @@
 # user_id=GL
 # run=rv4_51
 
-DIRLOCA="EMEP_output/PBAP_year/"
+DIRLOCA="EMEP_output/PBAP_short/"
 DIRPATH="/home/sm_gunla/"
 
 # git directory where to run emep model from

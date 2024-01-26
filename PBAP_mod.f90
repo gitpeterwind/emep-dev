@@ -5,7 +5,7 @@ module PBAP_mod
 
   !/-- Module to deal with primary biological aerosol pollutants (PBAPs).
   !
-  !    Gunnar Felix Lange 2023
+  !    Gunnar Felix Lange 2024
   !---------------------------------------------------------------------------
 
   use CheckStop_mod,      only: CheckStop, StopAll
@@ -59,6 +59,8 @@ module PBAP_mod
                     !DOI 10.1007/978-3-319-35095-0_121
 
   real, parameter :: unit_conv = 1e-6
+  real, parameter :: molar_weight = 8.51360e12 !Assuming density of 1 g/cm^3, spherical particles with diameter 3 micrometer
+
                 !Original equation outputs number concentration in m^{-2}s^{-1}, but rcemis
                 !wants number molc/cm3/s
                 !Conversion: Divide by delta_z (in m), multiply by 1e-6 m^{-3}->cm^{-3}
@@ -109,10 +111,12 @@ module PBAP_mod
 
            do iiL = 1,nlu
               LC = LandCover(i,j)%codes(iiL)
-              if ( LandType(LC)%is_water) then
+              if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid numerical round-off errors (?) for IAM landtypes
                 cycle
+              else if ( LandType(LC)%is_water) then
+                  cycle
               else if ( LandType(LC)%is_ice) then
-                cycle
+                  cycle
               else
                 temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
                 temp_val = (unit_conv*temp_val)/Grid%DeltaZ
@@ -124,7 +128,7 @@ module PBAP_mod
                 !Temperature at 2m (t2_nwp) should be in K
 
               end if
-           end do !LC
+           end do !iiL
 
            FungalSpores(i,j) = F_FNG
 
@@ -132,8 +136,13 @@ module PBAP_mod
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
         write(*,"(a,2i4)") "FUNGAL_SPORES indices: ",  itot_FUNGALSPORES,inat_FUNGALSPORES
-        write(*,"(a,2i4,4f12.4)") "FUNGAL_SPORES_EMISSION: ", &
-               daynumber, current_date%hour, t2_nwp(i,j,1), q(i,j,KG,1), FungalSpores(i,j),LandCover(i,j)%LAI(1)
+        write(*, "(2i4)") i,j
+        do iiL = 1,nlu 
+          LC = LandCover(i,j)%codes(iiL)
+          write(*,"(a,i4,4f12.4,2L2)") "FUNGAL_SPORES_EMISSION: ", &
+                 iiL, LandCover(i,j)%LAI(iiL),LandCover(i,j)%fraction(iiL),LandDefs(LC)%LAImin,LandDefs(LC)%LAImax,LandType(LC)%is_water,LandType(LC)%is_ice
+          write(*,*) LandDefs(LC)%name
+        end do
        end if
     end if
 
@@ -163,7 +172,7 @@ module PBAP_mod
   if ( USES%FUNGAL_SPORES ) then
       call Set_FungalSpores(i,j)
       if (itot_FUNGALSPORES > 0) then
-        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+(unit_conv*FungalSpores(i,j))/Grid%DeltaZ
+        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+(unit_conv*molar_weight*FungalSpores(i,j))/Grid%DeltaZ
         !Recmis in molec/cm3/s
         if (dbg) then
           write(*,*) "FUNGAL SPORES: rcemis ",rcemis(itot_FUNGALSPORES,KG)

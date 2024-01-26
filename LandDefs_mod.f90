@@ -13,8 +13,8 @@ module LandDefs_mod
   private
 
 !=============================================================================
-! This module reads  inthe basics landuse data features, e.g. defaults
-! for heights, LAI, growinf-season, etc.
+! This module reads  in the basics landuse data features, e.g. defaults
+! for heights, LAI, growing-season, etc.
 ! The list given below can be changed, extended or reduced, but then other
 ! input data files and codimg are needed.
 
