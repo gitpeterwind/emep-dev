@@ -112,6 +112,10 @@ real, public, allocatable, dimension(:,:,:,:), save :: D8M !
 real, public, allocatable, dimension(:,:,:), save :: D8Max !
 real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av !
 real, public, allocatable, dimension(:,:,:), save :: hourM !
+real, public, allocatable, dimension(:,:,:,:), save :: SOMO35 !
+real, public, allocatable, dimension(:,:,:,:), save :: D8M_ppb !
+real, public, allocatable, dimension(:,:,:), save :: D8Max_ppb !
+real, public, allocatable, dimension(:,:,:), save :: hourM_ppb !
 real, public, allocatable, dimension(:,:,:,:), save :: &
   loc_frac_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
 real, public, allocatable, dimension(:,:), save :: &
@@ -861,12 +865,39 @@ contains
     allocate(D8Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
     allocate(D8Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
     allocate(hourM(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
+
+    allocate(SOMO35(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(D8M_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX,8)) ! running last 8 hour values
+    allocate(D8Max_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
+    allocate(hourM_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
     
     hourM = 0.0
     D8Max = 0.0 !init with low value
     D8M = 0.0 !init with low value
     D8Max_av = 0.0 !init necessary
+    SOMO35 = 0.0 !init necessary
+    hourM_ppb = 0.0
+    D8Max_ppb = 0.0 !init with low value
+    D8M_ppb = 0.0 !init with low value
+
+    !output must include O3
+    found = 0
+    do n = 1, Max_lf_out
+       if (lf_spec_out(n)%name == "NOTSET") exit
+       if (lf_spec_out(n)%name=="O3") found = 1
+       do i = 1, 30
+          if (lf_spec_out(n)%species(i) == "O3") found = 1
+          if (lf_spec_out(n)%species(i) == "NOTSET") exit
+       end do
+    end do
+    if (found == 0) lf_spec_out(n)%name="O3"
+ end if
+ 
+  if (lf_fullchem) then
+     !ensure that at least something is outputted
+     call CheckStop(lf_spec_out(1)%name == "NOTSET", "At least one output must be asked for")     
   end if
+  
 
   if (lf_src(1)%restart) then
      !initialize lf with values save on disk
@@ -1275,23 +1306,36 @@ subroutine lf_out(iotyp)
                           write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
                     end if
-                    if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
+                    if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
                     def2%unit='ug/m3'
+                    def1%name = trim(def2%name)
                     scale=1.0
                     call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                     if(lf_src(1)%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
-                       write(def2%name,"(A)")"AvgMDA8_6month_"//trim(def2%name)
+                       write(def2%name,"(A)")"AvgMDA8_6month_"//trim(def1%name)
                        n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                        call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
+                       def2%unit='ppbdays'
+                       write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
+                       n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                       call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                       
                        
                        if(n1der==1 .and. ideriv == 1)then
                           !also save Base MDA8
                           def2%name="AvgMDA8_6month"
+                          def2%unit='ug/m3'
                           call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                           
+                          def2%name="SOMO35"
+                          def2%unit='ppbdays'
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        end if
                     end if
                  enddo
@@ -1466,6 +1510,17 @@ subroutine lf_av(dt)
                  end do
               end do
            end do
+           do j = 1,ljmax
+              do i = 1,limax
+                 ix=O3_ix-NSPEC_SHL
+                 O3_c = xn_adv(ix,i,j,KMAX_MID) * cfac(ix,i,j) * 1.0e9
+                 hourM_ppb(0,i,j) = hourM_ppb(0,i,j) + O3_c
+                 !how much the hourly values will change for a small change of emissions * 100% (summed over hour, normalize later)
+                 do n=1, Npos_lf*Nfullchem_emis
+                    hourM_ppb(n,i,j) = hourM_ppb(n,i,j) + O3_c * lf(lf_src(isrc_O3)%start+n-1,i,j,KMAX_MID)
+                 end do
+              end do
+           end do
            if (current_date%seconds == 0 .and. .not. first_call) then
               !one hour has past since last time here        
               !save last hour average
@@ -1473,6 +1528,8 @@ subroutine lf_av(dt)
               timefrac = dt_advec/3600.0 ! inverse of number of timesteps in an hour
               D8M(:,:,:,ii) =  hourM(:,:,:) * timefrac !save all hourly averages
               hourM(:,:,:) = 0.0
+              D8M_ppb(:,:,:,ii) =  hourM_ppb(:,:,:) * timefrac !save all hourly averages
+              hourM_ppb(:,:,:) = 0.0
               !one hour has past since last time here        
               ! update max value since 01:00
               do j = 1,ljmax
@@ -1494,21 +1551,46 @@ subroutine lf_av(dt)
                     end if
                  end do
               end do
+              do j = 1,ljmax
+                 do i = 1,limax
+                    x = 0.0
+                    do l = 1, 8
+                       x = x + D8M_ppb(0,i,j,l) * 0.125 ! 8 hour average
+                    end do
+                    if(x > D8Max_ppb(0,i,j)) then
+                       !a new max is found. Update for all fractions too
+                       do n=0, lf_src(isrc_O3)%Npos*Nfullchem_emis
+                          D8Max_ppb(n,i,j) = D8M_ppb(n,i,j,1) * 0.125 ! 8 hour average, contribution from first hour
+                       end do
+                       do l = 2, 8
+                          do n=0, lf_src(isrc_O3)%Npos*Nfullchem_emis
+                             D8Max_ppb(n,i,j) = D8Max_ppb(n,i,j) + D8M_ppb(n,i,j,l) * 0.125 ! 8 hour average, contribution from second to eighth hour
+                          end do
+                       end do
+                    end if
+                 end do
+              end do
            end if
         end if
         if (current_date%seconds == 0 .and. current_date%hour == 0 .and. .not. first_call) then
            !end of day, save the values
+           if (iotyp2ix(iou_ix)==IOU_DAY) then
+              D8Max_av(:,:,:,iou_ix)=0.0
+              SOMO35(:,:,:,iou_ix)=0.0
+           end if
            !NB: at the end of the first day (day 2 hour 00:00), we actually start to write in the next month
            if (current_date%day == 2 .and. iotyp2ix(iou_ix)==IOU_MON) then
               !new month
               count_AvgMDA8_m = 0
               D8Max_av(:,:,:,iou_ix)=0.0
+              SOMO35(:,:,:,iou_ix)=0.0
            end if
 
            if (current_date%day == 2 .and. current_date%month == 4 .and. iotyp2ix(iou_ix)==IOU_YEAR) then
               !new yearly max
               count_AvgMDA8_y = 0
               D8Max_av(:,:,:,iou_ix)=0.0
+              !SOMO35(:,:,:,iou_ix)=0.0 !for SOMO35 the integral goes over the entire year
            end if
 
            if(iotyp2ix(iou_ix)==IOU_MON)count_AvgMDA8_m = count_AvgMDA8_m + 1
@@ -1522,10 +1604,25 @@ subroutine lf_av(dt)
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  D8Max(n,i,j)
                     end do
+                    !NB: if and only if D8Max_ppb>35 , all the SOMO35 fractions must be updated
+                    if (D8Max_ppb(0,i,j)>35.0) then
+                       SOMO35(i,j,0,iou_ix) =  SOMO35(i,j,0,iou_ix) + D8Max_ppb(0,i,j) !integral over days
+                       do n=1, Npos_lf*Nfullchem_emis
+                          !NB: derivatives have no threshold
+                          SOMO35(i,j,n,iou_ix) =  SOMO35(i,j,n,iou_ix) + D8Max_ppb(n,i,j) !integral over days
+                       end do
+                    end if
                  else if(iotyp2ix(iou_ix)==IOU_MON)then
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av(i,j,n,iou_ix) + w_m * D8Max(n,i,j)
                     end do
+                    if (D8Max_ppb(0,i,j)>35.0) then
+                       SOMO35(i,j,0,iou_ix) =  SOMO35(i,j,0,iou_ix) + D8Max_ppb(0,i,j)-35.0 !integral over days
+                       do n=1, Npos_lf*Nfullchem_emis
+                          !NB: derivatives have no threshold
+                          SOMO35(i,j,n,iou_ix) =  SOMO35(i,j,n,iou_ix) + D8Max_ppb(n,i,j) !integral over days
+                       end do
+                    end if
                  else if (iotyp2ix(iou_ix)==IOU_YEAR)then
                     !we keep only days from April to September
                     if(current_date%month>=4 .and. current_date%month<=9)then
@@ -1533,10 +1630,19 @@ subroutine lf_av(dt)
                           D8Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av(i,j,n,iou_ix) + w_y * D8Max(n,i,j)
                        end do
                     end if
+                    !NB: if and only if D8Max_ppb>35 , all the SOMO35 fractions must be updated
+                    if (D8Max_ppb(0,i,j)>35.0) then
+                       SOMO35(i,j,0,iou_ix) =  SOMO35(i,j,0,iou_ix) + D8Max_ppb(0,i,j)-35.0 !integral over days
+                       do n=1, Npos_lf*Nfullchem_emis
+                          !NB: derivatives have no threshold
+                          SOMO35(i,j,n,iou_ix) =  SOMO35(i,j,n,iou_ix) + D8Max_ppb(n,i,j)!integral over days
+                       end do
+                    end if
                  end if
               end do
            end do
            if(iou_ix == Niou_ix) D8Max = 0.0 !we are ready to start a new day
+           if(iou_ix == Niou_ix) D8Max_ppb = 0.0 !we are ready to start a new day
         end if
      end if
   end do

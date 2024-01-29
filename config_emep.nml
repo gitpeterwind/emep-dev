@@ -261,15 +261,15 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !-------Local Fractions setup example for SR style outputs
   USES%LocalFractions = F, ! T for computing Local Fractions
   !Local Fractions pollutants and sectors to include:
-  lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  lf_src(1)%sector=0 !0 means sum of all sectors
+  lf_src(1)%species="pm25", ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  lf_src(1)%sector=0, !0 means sum of all sectors
   lf_src(1)%type='country',
 
-  lf_src(2)%species="nh3" ! if nh3 is chosen, one MUST choose NH4_f and NH3 for exact calculations
-  lf_src(2)%sector=0
+  lf_src(2)%species="nh3",
+  lf_src(2)%sector=0,
   lf_src(2)%type='country',
   lf_src(3)%species="NH3"
-  lf_src(3)%sector=0
+  lf_src(3)%sector=0,
   lf_src(3)%type='country',
   lf_src(4)%species="NH4_f"
   lf_src(4)%sector=8
