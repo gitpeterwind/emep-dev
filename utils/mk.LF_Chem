@@ -10,8 +10,8 @@
 
 echo "Before starting, you should move the inert parts in CM_Reactions1 to CM_Reactions2"
 echo "and move SO4 and NH3 from CM_Reactions2 to CM_Reactions1"
-#NO3c can be left in CM_Reactions2.inc, even if it is a species for derivative, because it is used only to chenge rct
-echo "and check that 100 and 97 are the indices to use for SurfArea dependents rct"
+#NO3c can be left in CM_Reactions2.inc, even if it is a species for derivative, because it is used only to change rct
+echo "and check that 100 and 97 and 96 are the indices to use for SurfArea dependents rct"
 
 #test if the CM_Reactions1.inc has already been transformed
 if grep P_lf CM_Reactions1.inc >/dev/null
@@ -45,6 +45,7 @@ done
 
 sed -i 's/rct(100,k)/(rct(100,k) * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 sed -i 's/rct(97,k)/(rct(97,k)  * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
+sed -i 's/rct(96,k)/(rct(96,k)  * (1.0 + rctB_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 
 
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
