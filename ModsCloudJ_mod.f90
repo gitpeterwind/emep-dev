@@ -2487,6 +2487,7 @@
       USE FJX_CMN_MOD
 
       use Config_module, only: cloudjx_initf, USES, MasterProc
+      use ChemRates_mod, only: CM_schemes_ChemRates
 
       USE FJX_SUB_MOD, ONLY : EXITC
 
@@ -2753,31 +2754,36 @@
 
 !---read in complete, process Xsects for reduced wavelengths (Trop-Only)
 !---    possibly also for WACCM >200nm-only version.
-!---TROP-ONLY (W_ = 12 or 8) then drop the strat Xsects (labeled 'x')
+!---EmChem family of chemistry scheme; drop all other xsects to save CPU time
+       if (CM_schemes_ChemRates(:7) .eq. " EmChem" .and. MasterProc) then 
+        write(*,*)  &
+        ' >>> Photolysis calculations only for EmChem cross-sections/J-values.'
+      elseif (MasterProc) then
+        write(*,*)  &
+        ' >>> IMPORTANT: Photolysis calculations for all available cross-sections/J-values.'
+      endif
 
-      if (W_ .eq. 12 .or. W_ .eq. 8) then
-        if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(a)')  &
-         ' >>>TROP-ONLY reduced wavelengths, drop strat X-sects'
-        JJ = 3
-        do J = 4,NJX
-         if (SQQ(J) .ne. 'x') then
-!---collapse Xsects
+      JJ = 0
+      do J = 1,NJX
+        ! include only 'e' and 'p' when EmChem family of chemistry schemes is used
+        if (CM_schemes_ChemRates(:7) .ne. " EmChem" .or. SQQ(J) .eq. 'e' .or. SQQ(J) .eq. 'p') then
+         ! if (SQQ(J) .eq. 'e' .or. SQQ(J) .eq. 'p') then
+!---------collapse Xsects
           JJ = JJ+1
           if (JJ .lt. J) then
-             TITLEJX(JJ) = TITLEJX(J)
-             LQQ(JJ) = LQQ(J)
-             SQQ(JJ) = SQQ(J)
-           do LQ = 1,LQQ(J)
-             TQQ(LQ,JJ) = TQQ(LQ,J)
-            do IW = 1,NWWW
-             QQQ(IW,LQ,JJ) = QQQ(IW,LQ,J)
+            TITLEJX(JJ) = TITLEJX(J)
+            LQQ(JJ) = LQQ(J)
+            SQQ(JJ) = SQQ(J)
+            do LQ = 1,LQQ(J)
+              TQQ(LQ,JJ) = TQQ(LQ,J)
+              do IW = 1,NWWW
+                QQQ(IW,LQ,JJ) = QQQ(IW,LQ,J)
+              enddo
             enddo
-           enddo
           endif
-         endif
-        enddo
-         NJX = JJ
-      endif
+        endif
+      enddo
+      NJX = JJ
 
 !print-----
       do J = 1,NJX

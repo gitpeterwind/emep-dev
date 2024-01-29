@@ -45,7 +45,7 @@ use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, &
                              GetCDF_modelgrid, make_gridresolution
 
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type, &
-                             EmisFile_id_type, Emis_sourceFile_id_type
+                             EmisFile_id_type, Emis_sourceFile_id_type, NSOURCESMAX
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
 use SmallUtils_mod,    only: wordsplit, find_index, key2str
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
@@ -537,13 +537,13 @@ contains
     real :: factor, default_factor
     character(len= TXTLEN_FILE) :: fname
     character(len=30)  :: lon_name, lat_name
-    integer :: n, nn, i, ix, varid, status, sector, iem, isec, iqrc, itot, f
+    integer :: n, nn, i, ic, ix, varid, status, sector, iem, isec, iqrc, itot, f
     integer :: nDimensions, nVariables, nAttributes, xtype, ndims
     real :: x, resolution, default_resolution, Rlat(2)
     integer :: ncFileID, nemis_old, lonVarID, latVarID, dimids(10),dims(10),secdimID
     real, allocatable ::Rlat2D(:,:)
     character(len=*), parameter :: dtxt='Em_inicdf:'
-    integer :: countrycode, file_nsectors
+    integer :: countrycode, file_nsectors, found
     logical :: apply_femis, species_found
     logical :: my_first_call = .true.
     integer, allocatable :: source_found(:)
@@ -630,6 +630,7 @@ contains
        species_found = .false.
        status = nf90_get_att(ncFileID,varid,"species",cdfspecies)       
        if( status==nf90_noerr) then
+          if(EmisFile_in%species/='NOTSET' .and. EmisFile_in%species/=cdfspecies) cycle
           ! we also demand that species is defined
           iem = find_index(cdfspecies,EMIS_FILE(:))
           if (iem >0 ) then
@@ -718,6 +719,42 @@ contains
                    if ( debugm0 ) write(*,*) dtxt//'country_ISO add: ',ix,trim(name)
                 endif
              endif
+             if(EmisFile_in%country_ISO_excl(1)/='NOTSET' .or. EmisFile_in%country_ISO_incl(1)/='NOTSET')then
+                !check that this country is allowed
+                if(EmisFile_in%country_ISO_excl(1)/='NOTSET')then
+                   do ic = 1,NSOURCESMAX
+                      if(EmisFile_in%country_ISO_excl(ic)/='NOTSET')then
+                         if(EmisFile_in%country_ISO_excl(ic)==trim(Emis_source(NEmis_sources)%country_ISO))then
+                            !reset this source
+                            Emis_source(NEmis_sources)%varname = 'NOTSET'
+                            if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '//trim(cdfvarname)//' country '//trim(Emis_source(NEmis_sources)%country_ISO)
+                            NEmis_sources = NEmis_sources - 1
+                            exit
+                         end if
+                      else
+                         exit
+                      end if
+                   end do
+                else if(EmisFile_in%country_ISO_incl(1)/='NOTSET')then
+                   found = 0
+                   do ic = 1,NSOURCESMAX
+                      if(EmisFile_in%country_ISO_incl(ic)/='NOTSET')then
+                         if(EmisFile_in%country_ISO_incl(ic)==trim(Emis_source(NEmis_sources)%country_ISO))then
+                            found = 1
+                            exit
+                         end if
+                      else
+                         exit
+                      end if
+                   end do
+                   if (found == 0) then
+                      !reset this source
+                      Emis_source(NEmis_sources)%varname = 'NOTSET'
+                      if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '//trim(cdfvarname)//' country '//trim(Emis_source(NEmis_sources)%country_ISO)
+                      NEmis_sources = NEmis_sources - 1
+                   end if
+                end if                
+             end if
           enddo
        endif
 

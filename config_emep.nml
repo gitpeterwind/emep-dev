@@ -30,10 +30,8 @@
 
 ! Common to all:
 
-  USES%SOILNOX = T,
-
-  emis_inputlist(1)%name  = 'DataDir/DMS_SOLAS.nc',    !Global DMS in Oceans
-  emis_inputlist(1)%type  = 'DMS',    ! Tells the code to treat as DMS
+  USES%SOILNOX = T, !default
+  USES%OCEAN_DMS = T, !default
 
 !TESTING:
   SitesFile = 'DataDir/sitesLLZ.txt',
@@ -51,11 +49,6 @@
   Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt', ! Lowest layers 94m
   USES%ROADDUST          = F,
   !EmisDir='DataDir/Emis_ECLIPSEv6b/'
-  !NEED TO UNCOMMENT. Note, DMS is emis_inputlist(1)
-  !emis_inputlist(2)%name  = 'DataDir/Emis_ECLIPSEv6b/emis_ECLIPSEv6b_YYYY_05deg_noINTSHIP.nc',
-  !emis_inputlist(2)%sector = 'SNAP',
-  !emis_inputlist(3)%name  = 'DataDir/Emis_ECLIPSEv6a_ships/emis_ECLIPSEv6a_YYYY_05deg_INTSHIP.nc',
-  !emis_inputlist(3)%sector = 'SNAP',
 
 
 ! 1a) GLOBAL; using ECLIPSEv6 emissions:
@@ -81,37 +74,26 @@
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
   EmisDir                 = '/home/sm_alvva/CAMS50/Data/Emis/CAMS_TNO/', ! !AMV 439
-  !NEED TO UNCOMMENT. Note, DMS is emis_inputlist(1)
-  !emis_inputlist(2)%name='EmisDir/Emis_CAMS71_REF2_v1_GNFR_01005deg_2015_A_F_subsec.nc',
 
 ! 2b) Europe, using EMEP/CEIP GNFR emissions (SNOx in GNFR L):
   USES%SOILNOX_METHOD = 'NoFert',
   !EmisDir                 = 'DataDir/emis01deg_EMEP/GNFREmis_LATEST/', ! NEW Feb 2021!
   !CAREFUL. Use of "latest" eases trend runs. Otherwise explicit is better
-  !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_05062019.nc',
-  !emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_latest.nc',
 
 !Trends 2022 emis ------------------- 
 
 ! PRELIM 2021:
 !  EmisDir='/nobackup/forsk/sm_agnny',
 ! NEW FORMAT:
-!  Emis_sourceFiles(1)%filename = 'EmisDir/emis01degEMEP/emis_newFormat/GNFREmis_EMEP01_2021_26052023.nc',
+  Emis_sourceFiles(1)%filename = 'DataDir/emis_EMEPreport_2023/GNFREmis_EMEP01_2020_27062023.nc',
 
 !For 2005-2020, change year
   EmisDir                 = 'DataDir/emis_EMEPreport_2022',
-  emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_withREF2_sectorC_12092022.nc', 
-  !TESTTMP
-  !SOON EmisDir                 = '/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/new',
-  !SOON. Needs Emis_sourceFiles(1)%filename   emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_2018_05062020.nc', 
+  !
+  !EmisDir                 = '/nobackup/forsk/sm_petwi/Data/emis01deg_EMEP/new',
 
-!For 2000-2004
-! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_21062022.nc', 
-
-!For 1990-1999
-! emis_inputlist(2)%name  = 'EmisDir/GNFREmis_EMEP01_YYYY_04072022.nc', 
-
-!Trends 2022 emis ends ----------------
+! NEW FORMAT:
+  Emis_sourceFiles(1)%filename = 'DataDir/emis_EMEPreport_2023/GNFREmis_EMEP01_2020_27062023.nc',
 
 !Trends 2022 time factors -------------
 !For 1990-2019
@@ -238,25 +220,6 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !**#######################################################
 !
 
-!  emis_inputlist(3)%name  = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc',    ! Ocean NH3
-!  emis_inputlist(3)%type  = 'OceanNH3',    ! Tells the code to treat as Ocean NH3
-
-!
-!******one can either include or exclude, not both
-! e.g.:
-!*** Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
-!
-!  emis_inputlist(2)%incl(1:) = 'EUMACC2',      !example take only countries from the 'EUMACC2' list
-!  emis_inputlist(3)%excl(1:) = 'EUMACC2'       !example exclude all countries from the 'EUMACC2' list
-!
-! (1) From MACC2 7km:
-!  emis_inputlist(2)%name     = 'GriddedSnapEmis_POLL.nc', !
-!  emis_inputlist(2)%excl(1:) = 'US','INTSHIP',            ! US lat/long limits wrong
-! (2) Shipping:
-!  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
-!  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
-!
-
 !!new format system ship emissions
 !! ** WARNING! uncommenting the first line will add ALL emissions from
 !! this file, e.g. SO2, NOx, etc.
@@ -298,15 +261,15 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !-------Local Fractions setup example for SR style outputs
   USES%LocalFractions = F, ! T for computing Local Fractions
   !Local Fractions pollutants and sectors to include:
-  lf_src(1)%species="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  lf_src(1)%sector=0 !0 means sum of all sectors
+  lf_src(1)%species="pm25", ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  lf_src(1)%sector=0, !0 means sum of all sectors
   lf_src(1)%type='country',
 
-  lf_src(2)%species="nh3" ! if nh3 is chosen, one MUST choose NH4_f and NH3 for exact calculations
-  lf_src(2)%sector=0
+  lf_src(2)%species="nh3",
+  lf_src(2)%sector=0,
   lf_src(2)%type='country',
   lf_src(3)%species="NH3"
-  lf_src(3)%sector=0
+  lf_src(3)%sector=0,
   lf_src(3)%type='country',
   lf_src(4)%species="NH4_f"
   lf_src(4)%sector=8
@@ -804,6 +767,9 @@ OutputVegO3=
   SITE_SHL_names(1:) = 'OH',
   SONDE_SHL_names(1:) = 'OH',
   SONDE_ADV_names(1:) = 'O3','NO2','NO','PAN','NO3_c','NO3_f','SO4','NH4_f','NH3',
+  SITE_ADV_names(1:)  = 'O3','NO2','NO','NO3',! 'C5H8','APINENE',
+  !SITE_ADV_names(1:)  = 'ALL', ! triggers all ADV species
+
 
 
 !restrict size of output files. (Sizes defined with respect to fulldomain)

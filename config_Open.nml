@@ -70,7 +70,6 @@
   USES%POLLEN           = F,
   USES%ROADDUST         = T,
   USES%DUST             = T,
-  USES%CLOUDJ           = F,
   NETCDF_DEFLATE_LEVEL  = 4,         ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
   INERIS_SNAP1          = F,
   INERIS_SNAP2          = F,

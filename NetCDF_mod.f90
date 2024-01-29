@@ -548,9 +548,15 @@ case default
 end select
 
 if(MasterProc.and.DEBUG%NETCDF)&
-  write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
-call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                      num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+!to be tested:
+!if(iotyp==IOU_HOUR_INST .or. iotyp==IOU_HOUR)then
+!   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
+!        num_lev3d,ntime=24,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+!else
+   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
+        num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+!end if
 
 if(MasterProc.and.DEBUG%NETCDF)&
   write(*,*) "Finished Init_new_netCDF", trim(fileName),' ',trim(period_type)
@@ -558,11 +564,12 @@ if(MasterProc.and.DEBUG%NETCDF)&
 end subroutine Init_new_netCDF
 
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-     KMAXcdf,KLEVcdf,KLEVcdf_from_top,RequiredProjection)
+     KMAXcdf,ntime,KLEVcdf,KLEVcdf_from_top,RequiredProjection)
 
 !IBEGcdf,JBEGcdf relative to fulldomain
   integer, intent(in) :: GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf
   character(len=*),  intent(in)  :: fileName
+  integer, intent(in), optional :: ntime !if present define time dimension as fixed
   integer, intent(in), optional :: KLEVcdf(KMAXcdf)
   logical, intent(in), optional :: KLEVcdf_from_top
   character(len=*),optional, intent(in):: RequiredProjection
@@ -682,8 +689,11 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
     call check(nf90_def_dim(ncFileID,"ilev",KMAXcdf+1,ilevDimID))
     call check(nf90_put_att(ncFileID, nf90_global,"vert_coord",vert_coord))
 
-    call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
-
+    if(present(ntime))then
+       call check(nf90_def_dim(ncFileID,"time",ntime,timeDimID))
+    else
+       call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
+    end if
     call Date_And_Time(date=created_date,time=created_hour)
     if(DEBUG%NETCDF)write(*,"(2A)")&
       'created_date: ',created_date,'created_hour: ',created_hour
@@ -1237,7 +1247,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
 
       if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//" with sizes ",GIMAXcdf,GJMAXcdf,KMAX
       period_type = 'unknown'
-      call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
+      if(iotyp==IOU_HOUR .or. iotyp==IOU_HOUR_INST) then
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX,ntime=24)
+      else
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
+      end if
       if(present(ncFileID_given))then
         !the file should be opened, but by MasterProc only
         CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!wait until the file creation is finished

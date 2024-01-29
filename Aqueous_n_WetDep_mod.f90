@@ -491,15 +491,16 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
   real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
-  integer, parameter :: pH_ITER = 2 ! num iter to calc pH. 
-                                    !Do not change without knowing what you are doing
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
   real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
-  real ::pHin(0:pH_ITER),pHout(0:pH_ITER)!start at zero to avoid debugger warnings for iter-1
   integer k, iter
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
-
+  real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
+  
+  integer, parameter:: N_ITER=40 !each iteration divides the error in two
+  real, parameter :: phThres = 1.0E-6 !just to verify result.
+  
   SO2 = SO2_ix
   call CheckStop( SO2_ix<1, "Aqueous: SO2 not defined" )
   SO4 = SO4_ix
@@ -567,45 +568,85 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( H(IH_SO2,itemp(k))*VfRT(k) ) )
     so2_aq(k)= frac_aq(IH_SO2,k)*(xn_2d(SO2,k)*1000./AVOG)/cloudwater(k)
 
+
+    !Iterate between min and max value. Start with extremes:
+    pH1=1.0
+    pH2=7.0
+
+    do iter = 1, N_ITER! binary search
+       if (iter==1) then
+          pHnew=pH1
+       else if (iter==2) then
+          pHnew=pH2
+       else                  
+          pHnew=(pH1+pH2)/2
+          !Alternative, faster convergence, but the function may not be stable near 7 (why?).
+          !make a straight line between values, 
+          !and find where the line cross the diagonal, i.e. pH = pHout
+          !pHnew=(pH1*pHout2-pH2*pHout1)&
+          !     /(pH1-pH2-pHout1+pHout2)
+       end if
+       h_plusnew=exp(-pHnew*log(10.))
+       
+       Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plusnew/Kw(itemp(k))
+       frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
+       if (NH3>0) then     
+          nh3_aq(k) = frac_aq(IH_NH3,k)*(xn_2d(NH3,k)*1000./AVOG)/cloudwater(k)
+       else
+          nh3_aq(k) = 0.0
+       end if
+       
+       hco3_aq(k)= co2_aq(k) * Kco2(itemp(k))/h_plusnew
+       hso3_aq(k)= so2_aq(k) * K1(itemp(k))/h_plusnew
+       so32_aq(k)= hso3_aq(k) * K2(itemp(k))/h_plusnew
+       
+       phfactor(k)=hco3_aq(k)+2.*so4_aq(k)+hso3_aq(k)+2.*so32_aq(k)+no3_aq(k)-nh4_aq(k)-nh3_aq(k)
+       h_plusnew=0.5*(phfactor(k) + sqrt(phfactor(k)*phfactor(k)+4.*1.e-14) )
+       h_plusnew=min(1.e-1,max(h_plusnew,1.e-7))! between 1 and 7
+       pHoutnew=-log(h_plusnew)/log(10.)
+
+       !commented out: fixed number of iterations
+       !       if(abs(pHnew-pHoutnew)< phThres)then       
+       !we have converged enough
+       !exit
+       !       end if       
  
-    do iter = 1,pH_ITER !iteratively calc pH
-      pHin(iter)=pH(k)!save input pH
-
-!     moved pH calculation after X_aq determination 
-      !nh4+, hco3, hso3 and so32 dissolve and ionize
-      Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
-      frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
-      if (NH3>0) then     
-         nh3_aq(k) = frac_aq(IH_NH3,k)*(xn_2d(NH3,k)*1000./AVOG)/cloudwater(k)
-      else
-         nh3_aq(k) = 0.0
-      end if
-      
-      hco3_aq(k)= co2_aq(k) * Kco2(itemp(k))/h_plus(k)
-      hso3_aq(k)= so2_aq(k) * K1(itemp(k))/h_plus(k)
-      so32_aq(k)= hso3_aq(k) * K2(itemp(k))/h_plus(k)
- 
-      pH_old=pH(k)
-      phfactor(k)=hco3_aq(k)+2.*so4_aq(k)+hso3_aq(k)+2.*so32_aq(k)+no3_aq(k)-nh4_aq(k)-nh3_aq(k)
-      h_plus(k)=0.5*(phfactor(k) + sqrt(phfactor(k)*phfactor(k)+4.*1.e-14) )
-      h_plus(k)=min(1.e-1,max(h_plus(k),1.e-7))! between 1 and 7
-      pH(k)=-log(h_plus(k))/log(10.)
-
-      pHout(iter)=pH(k)!save output pH
-
-      if(iter>1.and.(abs(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))>1.E-10))then
-         !linear interpolation for pH . (Solution of f(pH)=pH)
-         !assume a linear relation between pHin and pHout.
-         !make a straight line between vaues at iter and iter-a, 
-         !and find where the line cross the diagonal, i.e. pHin = pHout
-         pH(k)=(pHin(iter-1)*pHout(iter)-pHin(iter)*pHout(iter-1))&
-              /(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))
-         pH(k)=max(1.0,min(pH(k),7.0))! between 1 and 7
-         h_plus(k)=exp(-pH(k)*log(10.))
-      end if
-
-   end do
-
+       if (iter==1) then
+          pHout1=pHoutnew
+       else if (iter==2) then
+          pHout2=pHoutnew
+       else
+          !we replace either pH1 or pH2. They must be on each side of the diagonal
+          if((pH1-pHout1)*(pH2-pHout2)<=0)then
+             if((pH1-pHout1)*(pHnew-pHoutnew)<=0)then
+                !we keep pH1 and the new pH
+                pH2=pHnew
+                pHout2=pHoutnew
+             else if((pH2-pHout2)*(pHnew-pHoutnew)<=0)then
+                !we keep pH2 and the new pH
+                pH1=pHnew
+                pHout1=pHoutnew
+             end if
+          else
+             !something went wrong
+              if(abs(pHnew-pHoutnew)<pHThres)then
+                 !we are close enough to convergence
+              else
+                 pH(k)=5.5
+                 write(*,*)iter,'Warning: incompatible pH ',pH1,pH2,pHout1,pHout2,pHnew,pHoutnew
+              end if
+              exit
+           end if
+           if(iter==N_ITER)then
+             !check that we are close to the solution
+             if(abs(pHnew-pHoutnew)>pHThres)then
+                write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
+             end if
+          end if
+        endif       
+    end do
+    pH(k)=pHnew
+    h_plus(k)=exp(-pH(k)*log(10.))
 
 !after pH determined, final numbers of frac_aq(IH_SO2)
 != effective fraction of S(IV):

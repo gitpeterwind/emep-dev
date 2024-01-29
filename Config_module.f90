@@ -22,7 +22,7 @@ use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
                                  Max_lf_Country_list, Max_lf_Country_groups,Max_lf_sectors, &
-                                 poll_type, Max_lf_spec, Max_lf_sources
+                                 poll_type, lf_out_type, Max_lf_spec, Max_lf_sources, Max_lf_out
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -63,7 +63,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     logical :: FileFound = .false. ! Set to T if found
   end type DMS_t
   type(DMS_t), public, save :: DMS = DMS_t()
-  
+
 
   type, private :: PBL_t
     ! Zi minimum value now generally calculated as z_mid(19), but we
@@ -77,13 +77,13 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
       ! JcRb_t2m is new JcRb using pop T at 2m
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
-    logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler? 
+    logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler?
     !
     ! Moved Feb 2021 from BLPhysics:
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
-      KzMethod = "TROENKz" !  TROEN - U+S New default 
+      KzMethod = "TROENKz" !  TROEN - U+S New default
                       ! "Mixed"  ! Set U, S separately, default, pre rv4-38
                       !   (defaulted to OBrien U + Jericevic S)
                       ! "SILAMKz"  ! SILAM - U+S
@@ -164,8 +164,8 @@ type, public :: emep_useconfig
     ,DUST             = .true.  &! Only EECCA?
     ,NO2_COMPENSATION_PT = .false. & ! allows
     ,SOILNOX          = .true.  &! See SOILNOx_Method below.
-    ,OCEAN_DMS        = .false. &!set automatically true if found.
-    ,OCEAN_NH3        = .false. &!set automatically true if found
+    ,OCEAN_DMS        = .true. &!
+    ,OCEAN_NH3        = .false. &!
     ,SOILNH3          = .false. &! DUMMY VALUES, DO NOT USE!
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong
@@ -178,12 +178,10 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
-    ,CLOUDJ           = .true. & ! use CloudJ_mod for computing rcphot 
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
-    ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.  
-    ,CLOUDICE         = .true.  & ! flag to force not reading cloud ice water content
-    ,CLIMSTRATO3      = .true.  & ! set to true always use climatological overhead stratospheric O3
-    ,CLEARSKYTAB      = .false.  & ! use only clear-sky tabulated Jvalues.  Deprecated
+    ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.
+    ,CLOUDICE         = .true.  & ! flag to force reading in cloud ice water content or not
+    ,CLIMSTRATO3      = .true.  & ! set to true use climatological overhead stratospheric O3 (default)
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
@@ -197,14 +195,14 @@ type, public :: emep_useconfig
     ,ZREF             = .false. &! testing
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
-    ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf 
+    ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
-! cloud liquid water (vol-H2O/vol-Air) ? 
+! cloud liquid water (vol-H2O/vol-Air) ?
 ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
 ! from NWP values. (In future NWP will be used by default, but we are
-! invesigating some pH calculation issues. For safety, use FIXED_CLW 
+! invesigating some pH calculation issues. For safety, use FIXED_CLW
   real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
@@ -242,7 +240,8 @@ integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of add
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 type(Emis_sourceFile_id_type), public, save:: Emis_sourceFiles(20) !as read from config
-type(Emis_mask_type), public, save :: EmisMask(10) !emission mask new format
+integer, parameter, public :: NEmisMaskMAX = 200
+type(Emis_mask_type), public, save :: EmisMask(NEmisMaskMAX) !emission mask new format
 type(hourly_emis_factor_type), public, save :: hourly_emisfac(10) !mapped hourly emissions timefactor
 !MaxNSECTORS to allow reading of SecEmisOutWanted before NSECTORS is defined
 integer, public, parameter :: MaxNSECTORS = 100
@@ -289,6 +288,7 @@ logical, public, save ::             &
 type(lf_sources), public, save :: lf_src(Max_lf_sources)
 type(poll_type), public, save :: lf_species(Max_lf_spec)
 type(lf_country_type), public, save :: lf_country
+type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
@@ -343,7 +343,7 @@ character(len=TXTLEN_FILE),  public, save :: &
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc', &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
   ! change in config:
-  !v2.5: 
+  !v2.5:
   FINN_PATTERN = 'FINN_ForestFireEmis_mod_v25_YYYY.nc'
 
 ! Nest config
@@ -399,7 +399,7 @@ character(len=TXTLEN_FILE),public, target, save :: &
 integer, public, parameter ::       &
   MAX_NUM_DERIV2D = 600,            &
   MAX_NUM_DDEP_ECOS = 25,            & ! Grid, Conif, etc.  !increase from 9 to
-                                       ! 9+16 for first 16 LC 
+                                       ! 9+16 for first 16 LC
   MAX_NUM_NEWMOS  = 30,             & !New system.
   ! Older system
   MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:
@@ -445,6 +445,7 @@ character(len=24), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 
 character(len=TXTLEN_SHORT), public :: SITE_SHL_names(NSPEC_SHL) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_SHL_names(NSPEC_SHL) = 'NOTSET'
+character(len=TXTLEN_SHORT), public :: SITE_ADV_names(NSPEC_ADV) = 'NOTSET'
 character(len=TXTLEN_SHORT), public :: SONDE_ADV_names(NSPEC_ADV) = 'NOTSET'
 
 !These variables must have been set in My_Derived for them to be used.
@@ -741,7 +742,7 @@ character(len=*), public, parameter :: model="EMEP_MSC-W "
 character(len=TXTLEN_FILE),target, public :: fileName_O3_Top = "DataDir/ECera5_O3_TOP_YYYY.nc"
 ! Can use values of CH4 based on iyr_trend based on input files (default).
 ! Default files uses obs. based until 2019 and then CLE box-model calculations up to 2050.
-character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/ch4_hist_CLE.txt" 
+character(len=TXTLEN_FILE),target, public :: fileName_CH4_ibcs = "DataDir/ch4_hist_CLE.txt"
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
@@ -764,6 +765,8 @@ character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/E
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
 character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
+character(len=TXTLEN_FILE), target, save, public :: DMSFile = 'DataDir/DMS_SOLAS.nc'
+character(len=TXTLEN_FILE), target, save, public :: OceanNH3File = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc'
 !Zahle2011:
 !character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = 'DataDir/nox_emission_1996-2005.nc'
 !CAMS81:
@@ -807,13 +810,7 @@ character(len=TXTLEN_FILE), target, save, public :: SitesFile = 'DataDir/sitesLL
 character(len=TXTLEN_FILE), target, save, public :: SondesFile = 'DataDir/sondesLLKD.dat'
 character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataDir/GLOBAL_LAInBVOC.nc'
 character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jclearFile = 'DataDir/jclear.SEASON'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.SEASON'
-!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
-character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
-character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/CloudJ_EmChem19/'
+character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
 character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
@@ -826,7 +823,7 @@ character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'Data
 
 ! Species indices that may or may not be defined in Species
 integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
-     NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix,&
+     NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
      HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
      PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,&
      N2O5_ix, OM_ix, SSf_ix, SSc_ix, Dustwbf_ix, DustSahf_ix
@@ -859,6 +856,7 @@ subroutine Config_Constants(iolog)
    ,lf_src & !Local Fractions
    ,lf_species &
    ,lf_country & !Local Fractions countries, and groups
+   ,lf_spec_out & !what to put in output (fullchem only)
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
@@ -896,6 +894,8 @@ subroutine Config_Constants(iolog)
    ,SoilTypesFile&
    ,SurfacePressureFile&
    ,AircraftEmis_FLFile&
+   ,DMSFile&
+   ,OceanNH3File&
    ,soilnox_emission_File&
    ,TimeFacBasis&
    ,MonthlyFacFile&
@@ -917,9 +917,6 @@ subroutine Config_Constants(iolog)
    ,SondesFile&
    ,GLOBAL_LAInBVOCFile&
    ,EMEP_EuroBVOCFile&
-   ,jclearFile&
-   ,jcl1kmFile&
-   ,jcl3kmFile&
    ,cloudjx_initf&
    ,cloudjx_strat&
    ,NdepFile&
@@ -950,7 +947,7 @@ subroutine Config_Constants(iolog)
    ,hour_DOMAIN, out_startdate, spinup_enddate&
    ,num_lev3d,lev3d,lev3d_from_surface&
    ,LAST_CONFIG_LINE &
-   ,SITE_SHL_names,SONDE_SHL_names,SONDE_ADV_names&
+   ,SITE_SHL_names,SONDE_SHL_names,SITE_ADV_names, SONDE_ADV_names&
    ,mask2name
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
@@ -1047,7 +1044,7 @@ subroutine Config_Constants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we 
+  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we
   ! assume: (will reverse logic one day)
   if ( USES%PFT_MAPS ) then
      GLOBAL_settings = "YES"
@@ -1071,6 +1068,8 @@ subroutine Config_Constants(iolog)
   call associate_File(SoilTypesFile)
   call associate_File(SurfacePressureFile)
   call associate_File(AircraftEmis_FLFile)
+  call associate_File(DMSFile)
+  call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
@@ -1089,9 +1088,6 @@ subroutine Config_Constants(iolog)
   call associate_File(SondesFile)
   call associate_File(GLOBAL_LAInBVOCFile)
   call associate_File(EMEP_EuroBVOCFile)
-  call associate_File(jclearFile)
-  call associate_File(jcl1kmFile)
-  call associate_File(jcl3kmFile) 
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
   call associate_File(NdepFile)
@@ -1154,7 +1150,7 @@ subroutine Config_Constants(iolog)
   endif
 
   call define_chemicals_indices() ! sets up species indices if they exist
-  
+
 end subroutine Config_Constants
 
 ! PRELIM. Just writes out USES so far.
@@ -1198,6 +1194,7 @@ subroutine define_chemicals_indices()
   NH3_ix = find_index('NH3' ,species(:)%name)
   HNO3_ix = find_index('HNO3' ,species(:)%name)
   C5H8_ix = find_index('C5H8' ,species(:)%name)
+  APINENE_ix = find_index('APINENE' ,species(:)%name)
   HO2_ix = find_index('HO2' ,species(:)%name)
   NO_ix = find_index('NO' ,species(:)%name)
   OH_ix = find_index('OH' ,species(:)%name)
@@ -1224,7 +1221,7 @@ subroutine define_chemicals_indices()
   H2O2_ix = find_index('H2O2' ,species(:)%name)
   N2O5_ix = find_index('N2O5' ,species(:)%name)
 
-  
+
 end subroutine define_chemicals_indices
 
 end module Config_module

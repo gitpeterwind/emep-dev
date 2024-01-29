@@ -28,7 +28,6 @@ module RunChem_mod
                               , OH_ix,NH3_ix,SO2_ix,SO4_ix, NO_ix, C5H8_ix
   use Debug_module,      only: DebugCell, DEBUG  ! -> DEBUG%RUNCHEM
                                                  !  ,DEBUG%EMISSTACKS ! MKPS
-  ! use DefPhotolysis_mod, only: setup_phot
   use DerivedFields_mod, only: f_2d
   use DryDep_mod,        only: drydep
   use DustProd_mod,      only: WindDust  !DUST -> USES%DUST
@@ -51,7 +50,6 @@ module RunChem_mod
                               M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
   use TimeDate_mod,      only: current_date,daynumber,print_date
-  use DefPhotolysis_mod
 !--------------------------------
   implicit none
   private
@@ -151,18 +149,14 @@ subroutine runchem()
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USES%CLOUDJ)then
-        if(USES%HRLYCLOUDJ) then
-          if(nhour>photstep) then
-            call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
-          endif
-        else
+      if(USES%HRLYCLOUDJ) then
+        if(nhour>photstep) then
           call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
         endif
-        rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
       else
-         call setup_phot(i,j,errcode)
-      end if
+        call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+      endif
+      rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
 
       call write_jvals(i,j)
 

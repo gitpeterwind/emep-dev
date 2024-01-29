@@ -52,6 +52,14 @@ module AerosolCalls
                      MWCA = 40.078, MWMG = 24.305, MWK = 39.098, & ! MW Calcium, Magnegium, Potassium
                      MWH2O = 18.0153                   ! MW Water
 
+  real, parameter :: Ncm3_to_molesm3 = 1.0e6 / AVOG    ! #/cm3 to moles/m3
+  real, parameter :: molesm3_to_Ncm3 = 1.0 / Ncm3_to_molesm3
+  real, parameter :: kg_to_ug = 1e9
+
+  real :: RH_thermodynamics ! used as RH input to therm. equilibrium modules, based on limitsset by AERO%RH_UPLIM_AERO, LOLIM
+  real :: OM_mass ! variable to hold organic matter mass for wateruptake calculations
+  integer :: k ! for looping over the vertical
+
 contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -107,9 +115,7 @@ contains
     character(len=15), save  :: scase
   
     ! EMEP declarations
-    real, parameter :: Ncm3_to_molesm3 = 1.0e6/AVOG    ! #/cm3 to moles/m3
-    real, parameter :: molesm3_to_Ncm3 = 1.0/Ncm3_to_molesm3
-    integer :: k, n
+    integer :: n
     real, parameter :: CONMIN = 1.0e-30   ! Concentration lower limit [mole/m3]
     real, parameter :: MWCL   = 35.453,   MWNA   = 22.9897 ! MW Chloride, Sodium
     real, parameter :: MWCA   = 40.078,   MWK    = 39.0973 ! MW Calcium, Potassium
@@ -240,11 +246,19 @@ contains
           tmpno3  = tmphno3 + xn_2d(NO3_f_ix,k)
   
           ! OM25_p is the sum of the particle-phase OM25, and currently has MW 1 for simplicity
-          wo(1) = xn_2d(OM_ix,k) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter
-          wo(2) = 0.15 ! kappa organic aerosol; standard value from stand-alone input file
-          wo(3) = 1400 ! aerosol density kg/m3; Based on observations (Kakavas, 2023) & florou et al., 2014
+
+          if ( AERO%ORGANIC_WATER ) then
+            wo(1) = xn_2d(OM_ix,k) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter 
+          else 
+            wo(1) = 0.
+          endif
+          wo(2) = AERO%OM_KAPPA ! always set tot non-zero just in case it causes trouble
+          wo(3) = AERO%OM_RHO
+
+          RH_thermodynamics = min( AERO%RH_UPLIM_AERO, rh(k) )
+          RH_thermodynamics = max( AERO%RH_LOLIM_AERO, RH_thermodynamics )
   
-          call isoropia ( wi, wo, rh(k),  temp(k), CNTRL, &       
+          call isoropia ( wi, wo, RH_thermodynamics, temp(k), CNTRL, &       
                           wt, gas, aerliq, aersld, scase, other )  
   
           ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. mol/m3 h2o to kg/m3 as 1e-3 * MWH20.
@@ -345,17 +359,20 @@ contains
       no3in  = max(FLOOR2, xn_2d(NO3_f_ix,k)) * species(NO3_f_ix)%molwt  *coef
       nh4in  = max(FLOOR2, xn_2d(NH4_f_ix,k)) * species(NH4_f_ix)%molwt  *coef
 
+      RH_thermodynamics = min( AERO%RH_UPLIM_AERO, rh(k) )
+      RH_thermodynamics = max( AERO%RH_LOLIM_AERO, RH_thermodynamics )
+
       !--------------------------------------------------------------------------                
       if(AERO%EQUILIB=='MARS')then
-         call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+         call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , RH_thermodynamics, temp(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag) 
       elseif(AERO%EQUILIB=='MARS_2900')then!svn version 2908, for testing if there are significant differences. will be deleted
-         call rpmares_2900 (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+         call rpmares_2900 (so4in, hno3in,no3in ,nh3in, nh4in , RH_thermodynamics, temp(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag) 
       elseif(AERO%EQUILIB=='GEOSCHEM')then
-         call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+         call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , RH_thermodynamics, temp(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag)
       end if
@@ -371,8 +388,8 @@ contains
       
       xn_2d(HNO3_ix,k)  = max (FLOOR, gNO3out / (species(HNO3_ix)%molwt *coef) )
       xn_2d(NH3_ix,k)   = max (FLOOR, gNH3out / (species(NH3_ix)%molwt  *coef) )
-      xn_2d(NO3_f_ix,k)  = max (FLOOR, aNO3out / (species(NO3_f_ix)%molwt  *coef) )
-      xn_2d(NH4_f_ix,k)  = max (FLOOR, aNH4out / (species(NH4_f_ix)%molwt  *coef) )
+      xn_2d(NO3_f_ix,k) = max (FLOOR, aNO3out / (species(NO3_f_ix)%molwt  *coef) )
+      xn_2d(NH4_f_ix,k) = max (FLOOR, aNH4out / (species(NH4_f_ix)%molwt  *coef) )
       call lf_aero_pos(i,j,k,iter)
       end do
    end do  ! K-levels
@@ -462,8 +479,8 @@ contains
 
 
  !===  For ambient conditions =====================
-
-    rlhum(KCHEMTOP:KMAX_MID) = min (0.999, rh(:))
+    rlhum(KCHEMTOP:KMAX_MID) = min (AERO%RH_UPLIM_AERO, rh(:))
+    rlhum(KCHEMTOP:KMAX_MID) = max (AERO%RH_LOLIM_AERO, rlhum(KCHEMTOP:KMAX_MID) )
     tmpr(KCHEMTOP:KMAX_MID)  = temp(:)
 
  !--------------------------------------------------------------------------                
@@ -496,6 +513,15 @@ contains
 
       PM25_water(i,j,KCHEMTOP:KMAX_MID) = max(FLOOR, aH2Oout(KCHEMTOP:KMAX_MID) )
 
+      if (AERO%ORGANIC_WATER) then
+        do k=KCHEMTOP, KMAX_MID
+          ! Organic water, kg/m3 air from kappa kohler theory. Kakavas 2022 (https://doi.org/10.16993/tellusb.33)
+          OM_mass = xn_2d(OM_ix,k) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter 
+          PM25_water(i,j,k) = PM25_water(i,j,k) + &
+                             ( 1000. / AERO%OM_RHO ) * AERO%OM_KAPPA * OM_mass / ( 1. / rlhum(k) - 1. ) * kg_to_ug
+        end do
+      endif
+      
 !//... apHouts [mole/m3] and aerosol water (ug/m**3) 
 !      pH (i,j) = -log10 ( max(FLOOR,apHout(KMAX_MID))/PM25_water(i,j,KMAX_MID) ) - 9.0
       pH (i,j) = apHout(KMAX_MID)
@@ -550,6 +576,13 @@ contains
 
       PM25_water_rh50 (i,j)  = max(0., aH2Oouts(KMAX_MID) )
 
+      if (AERO%ORGANIC_WATER) then
+        ! Organic water, kg/m3 air from kappa kohler theory. Kakavas 2022 (https://doi.org/10.16993/tellusb.33)
+        OM_mass = xn_2d(OM_ix,KMAX_MID) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter 
+        PM25_water_rh50(i,j) = PM25_water_rh50(i,j) + &
+                             ( 1000. / AERO%OM_RHO ) * AERO%OM_KAPPA * OM_mass / ( 1. / 0.5 - 1. ) * kg_to_ug
+      endif
+
   if ( debug_flag ) then ! Selected debug cell
     write(*,*)'EQSAM PMwater_rh50', PM25_water_rh50 (i,j)
   end if
@@ -586,7 +619,8 @@ contains
    coef = 1.e12 / AVOG
 
  !.. PM2.5 water at ambient conditions (3D)
-   rlhum(:) = rh(:) 
+   rlhum(:) = min( AERO%RH_UPLIM_AERO, rh(:) )
+   rlhum(:) = max( AERO%RH_LOLIM_AERO, rlhum(:) )
    tmpr(:)  = temp(:)
 
     do k = KCHEMTOP, KMAX_MID
@@ -617,6 +651,13 @@ contains
 
 !//....aerosol water (ug/m**3) 
       PM25_water(i,j,k) = max (0., aH2Oout )
+
+      if (AERO%ORGANIC_WATER) then
+        ! Organic water, kg/m3 air from kappa kohler theory. Kakavas 2022 (https://doi.org/10.16993/tellusb.33)
+        OM_mass = xn_2d(OM_ix,k) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter 
+        PM25_water(i,j,k) = PM25_water(i,j,k) + &
+                          ( 1000. / AERO%OM_RHO ) * AERO%OM_KAPPA * OM_mass / ( 1. / rlhum(k) - 1. ) * kg_to_ug
+      endif
 
     end do  ! k-loop
 
@@ -649,6 +690,12 @@ contains
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
 
+      if (AERO%ORGANIC_WATER) then
+        ! Organic water, kg/m3 air from kappa kohler theory. Kakavas 2022 (https://doi.org/10.16993/tellusb.33)
+        OM_mass = xn_2d(OM_ix,KMAX_MID) * Ncm3_to_molesm3 * species(OM_ix)%molwt * 1e-3 ! kg/m3 organic matter 
+        PM25_water_rh50(i,j) = PM25_water_rh50(i,j) + &
+                          ( 1000. / AERO%OM_RHO ) * AERO%OM_KAPPA * OM_mass / ( 1. / 0.5 - 1. ) * kg_to_ug
+      endif
 
  end subroutine  Aero_water_MARS
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

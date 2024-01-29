@@ -4,6 +4,7 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 module OwnDataTypes_mod
+use Country_mod,     only : MAXNLAND
 use NumberConstants, only : UNDEF_I, UNDEF_R
 use TimeDate_mod,    only : date
 
@@ -226,7 +227,7 @@ type, public :: Emis_sourceFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   character(len=TXTLEN_NAME) :: timevalidity = 'end' !if the time refers to the start, middle or end of the period   
+   character(len=TXTLEN_NAME) :: timevalidity = 'end' !if the time refers to the start, middle or end of the period
    real                       :: grid_resolution = 0.0 !resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(Emis_id_type) :: source(NSOURCESMAX) ! one source defined for each netcdf field to include
@@ -241,12 +242,15 @@ type, public :: Emis_sourceFile_id_type
    logical :: include_in_local_fractions = .true. !if this is to be accounted in the local fractions (uEMEP)
    character(len=TXTLEN_NAME) :: mask_ID = 'NOTSET' ! set to ID of mask, if to be applied. Will then be default for all sources in file
    character(len=TXTLEN_NAME) :: mask_ID_reverse = 'NOTSET' ! set to ID of mask, if to be applied as reversed. Will then be default for all sources in file
+   character(len=TXTLEN_NAME) :: country_ISO_excl(MAXNLAND) = 'NOTSET' ! Exclude those countries
+   character(len=TXTLEN_NAME) :: country_ISO_incl(MAXNLAND) = 'NOTSET' ! If set, include only those countries
 end type Emis_sourceFile_id_type
 
 type, public :: Emis_mask_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'! netcdf filename with path
    character(len=TXTLEN_NAME) :: cdfname = 'NOTSET' ! name of the mask in the netcdf file
    character(len=TXTLEN_NAME) :: ID = 'NOTSET' ! name that the user set to identify this mask
+   character(len=TXTLEN_NAME) :: type = 'CELL-FRACTION' ! Type of mask: 'NUMBER', 'CELL-FRACTION', 'THRESHOLD'
    real                       :: threshold = 1.E-20 !mask is set for where value is above threshold
    real                       :: threshold_max = 1.E60 !mask is not set if value above threshold
    real                       :: fac = 0.0 !multiplicative factor
@@ -256,7 +260,7 @@ type, public :: EmisFile_id_type
    character(len=TXTLEN_FILE) :: filename = 'NOTSET'!netcdf filename with path
    character(len=TXTLEN_NAME) :: projection = 'NOTSET' !projection or 'native' if same projection and size as meteo grid
    character(len=TXTLEN_NAME) :: periodicity = 'NOTSET' !how often fresh values must be read from the netcdf file
-   character(len=TXTLEN_NAME) :: timevalidity = 'NOTSET' !if the time refers to the start, middle or end of the period   
+   character(len=TXTLEN_NAME) :: timevalidity = 'NOTSET' !if the time refers to the start, middle or end of the period
    real                       :: grid_resolution = 0.0!resolution of the emission file
    real :: factor = -1.0 !scaling factor. multiply values for all sources by this number. Comes on top of source factors.
    type(date) :: end_of_validity_date = date(0,0,0,0,0)!internal date to know when to fetch new data
@@ -311,6 +315,7 @@ integer, public, parameter :: Max_lf_Country_groups = 30
 integer, public, parameter :: Max_lf_sectors = 50
 integer, public, parameter :: Max_lf_res = 50
 integer, public, parameter :: Max_lf_spec = 250
+integer, public, parameter :: Max_lf_out = 100
 type, public :: poll_type
   character(len=TXTLEN_NAME):: name = 'NOTSET'    ! pollutants to include
   integer, dimension(Max_lf_sectors) ::sectors = -1    ! sectors to be included for this pollutant. Zero is sum of all sectors
@@ -354,6 +359,12 @@ type, public :: lf_sources
   logical     :: restart =.false.
   logical     :: save =.false.
 end type lf_sources
+
+type, public :: lf_out_type
+  character(len=TXTLEN_NAME):: name = "NOTSET"
+  character(len=TXTLEN_NAME):: species(30) = "NOTSET"
+  real                      :: species_fac(30) = 1.0
+end type lf_out_type
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group
 type, public :: lf_country_group_type
