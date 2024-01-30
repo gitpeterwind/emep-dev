@@ -511,7 +511,7 @@ contains
     species(POLLEN_MUGWORT3) = Chemical("POLLEN_MUGWORT3",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_MUGWORT4) = Chemical("POLLEN_MUGWORT4",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_MUGWORT5) = Chemical("POLLEN_MUGWORT5",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
-    species(FUNGAL_SPORES) = Chemical("FUNGAL_SPORES",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(FUNGAL_SPORES) = Chemical("FUNGAL_SPORES",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(ASOC_ng1e2  ) = Chemical("ASOC_ng1e2  ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ASOC_ug1    ) = Chemical("ASOC_ug1    ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )
     species(ASOC_ug10   ) = Chemical("ASOC_ug10   ",  12.0000,  0,   1.0000,   0.0000,   0.0000 )

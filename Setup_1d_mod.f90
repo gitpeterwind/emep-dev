@@ -224,9 +224,9 @@ contains
       ! nb. max function for h2o used as some NWP numerics can give 
       ! negative negative H2O....   :-(
 
-       pp(k) = A_mid(k) + B_mid(k)*ps(i,j,1)
+       pp(k) = A_mid(k) + B_mid(k)*ps(i,j,1) !Pressure
 
-       temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
+       temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) ) !Tempertaure
 
        itemp(k) = nint( temp(k) -1.E-9) ! the "-1.E-9" is put in order to
                ! avoid possible different roundings on different machines.
