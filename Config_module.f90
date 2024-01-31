@@ -198,7 +198,8 @@ type, public :: emep_useconfig
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
     ,PBAP            = .false. &
-    ,FUNGAL_SPORES    = .false.
+    ,FUNGAL_SPORES    = .true. & !Only gets activated if PBAP = .true.
+    ,BACTERIA         = .true. !Only gets activated if PBAP = .true.
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?

@@ -1382,3 +1382,12 @@
   xnew(FUNGAL_SPORES) = xold(FUNGAL_SPORES) + dt2 * P
 
 
+!-> BACTERIA
+
+  P = rcemis(BACTERIA,k)
+  
+  ! L = 0.0
+  
+  xnew(BACTERIA) = xold(BACTERIA) + dt2 * P
+
+

@@ -13,7 +13,7 @@ module ChemGroups_mod
   ! Assignment of groups from GenIn_Species.csv
   public :: Init_ChemGroups
   
-  type(typ_sp), dimension(312), public, save :: chemgroups
+  type(typ_sp), dimension(318), public, save :: chemgroups
   type(typ_factors), dimension(2), public, save :: chemgroups_factors
   type(typ_maps), dimension(1), public, save :: chemgroups_maps
   
@@ -629,7 +629,7 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_SOX_GROUP = (/ SO2, SO4 /)
   
-  integer, public, target, save, dimension (31) :: &
+  integer, public, target, save, dimension (32) :: &
     PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, OM25_p, ffire_BC, ffire_remPPM25,  &
       ffire_c, SeaSalt_f, SeaSalt_c, Dust_road_f, Dust_road_c,  &
@@ -637,10 +637,10 @@ module ChemGroups_mod
       POM_c_Res, POM_c_nonRes, EC_f_Res_new, EC_f_Res_age,  &
       EC_c_Res, EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes,  &
       remPPM25_nonRes, remPPM25_Res, remPPM_c_nonRes,  &
-      remPPM_c_Res, FUNGAL_SPORES  &
+      remPPM_c_Res, FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (30) :: &
+  integer, public, target, save, dimension (31) :: &
     WDEP_PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, ffire_BC, ffire_remPPM25, ffire_c,  &
       SeaSalt_f, SeaSalt_c, Dust_road_f, Dust_road_c, Dust_wb_f,  &
@@ -648,10 +648,10 @@ module ChemGroups_mod
       POM_c_nonRes, EC_f_Res_new, EC_f_Res_age, EC_c_Res,  &
       EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes,  &
       remPPM25_nonRes, remPPM25_Res, remPPM_c_nonRes,  &
-      remPPM_c_Res, FUNGAL_SPORES  &
+      remPPM_c_Res, FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (30) :: &
+  integer, public, target, save, dimension (31) :: &
     DDEP_PM10_GROUP = (/  &
       SO4, NO3_f, NO3_c, NH4_f, ffire_BC, ffire_remPPM25, ffire_c,  &
       SeaSalt_f, SeaSalt_c, Dust_road_f, Dust_road_c, Dust_wb_f,  &
@@ -659,31 +659,31 @@ module ChemGroups_mod
       POM_c_nonRes, EC_f_Res_new, EC_f_Res_age, EC_c_Res,  &
       EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes,  &
       remPPM25_nonRes, remPPM25_Res, remPPM_c_nonRes,  &
-      remPPM_c_Res, FUNGAL_SPORES  &
+      remPPM_c_Res, FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (17) :: &
+  integer, public, target, save, dimension (18) :: &
     PMFINE_GROUP = (/  &
       SO4, NO3_f, NH4_f, OM25_p, ffire_BC, ffire_remPPM25,  &
       SeaSalt_f, Dust_road_f, Dust_wb_f, Dust_sah_f, Ash_f,  &
       EC_f_Res_new, EC_f_Res_age, EC_f_nonRes_new,  &
-      EC_f_nonRes_age, remPPM25_nonRes, remPPM25_Res  &
+      EC_f_nonRes_age, remPPM25_nonRes, remPPM25_Res, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (16) :: &
+  integer, public, target, save, dimension (17) :: &
     WDEP_PMFINE_GROUP = (/  &
       SO4, NO3_f, NH4_f, ffire_BC, ffire_remPPM25, SeaSalt_f,  &
       Dust_road_f, Dust_wb_f, Dust_sah_f, Ash_f, EC_f_Res_new,  &
       EC_f_Res_age, EC_f_nonRes_new, EC_f_nonRes_age,  &
-      remPPM25_nonRes, remPPM25_Res  &
+      remPPM25_nonRes, remPPM25_Res, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (16) :: &
+  integer, public, target, save, dimension (17) :: &
     DDEP_PMFINE_GROUP = (/  &
       SO4, NO3_f, NH4_f, ffire_BC, ffire_remPPM25, SeaSalt_f,  &
       Dust_road_f, Dust_wb_f, Dust_sah_f, Ash_f, EC_f_Res_new,  &
       EC_f_Res_age, EC_f_nonRes_new, EC_f_nonRes_age,  &
-      remPPM25_nonRes, remPPM25_Res  &
+      remPPM25_nonRes, remPPM25_Res, BACTERIA  &
     /)
   
   integer, public, target, save, dimension (4) :: &
@@ -713,28 +713,28 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_PNO3_GROUP = (/ NO3_f, NO3_c /)
   
-  integer, public, target, save, dimension (11) :: &
+  integer, public, target, save, dimension (12) :: &
     PMCOARSE_GROUP = (/  &
       NO3_c, ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c,  &
       Dust_sah_c, Ash_c, POM_c_Res, POM_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
-  integer, public, target, save, dimension (11) :: &
+  integer, public, target, save, dimension (12) :: &
     WDEP_PMCOARSE_GROUP = (/  &
       NO3_c, ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c,  &
       Dust_sah_c, Ash_c, POM_c_Res, POM_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
-  integer, public, target, save, dimension (11) :: &
+  integer, public, target, save, dimension (12) :: &
     DDEP_PMCOARSE_GROUP = (/  &
       NO3_c, ffire_c, SeaSalt_c, Dust_road_c, Dust_wb_c,  &
       Dust_sah_c, Ash_c, POM_c_Res, POM_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
-  integer, public, target, save, dimension (25) :: &
+  integer, public, target, save, dimension (26) :: &
     OM25_GROUP = (/  &
       OM25_bgnd, ASOC_ng1e2, ASOC_ug1, ASOC_ug10, ASOC_ug1e2,  &
       ASOC_ug1e3, non_C_ASOA_ng1e2, non_C_ASOA_ug1,  &
@@ -742,24 +742,27 @@ module ChemGroups_mod
       BSOC_ng1e2, BSOC_ug1, BSOC_ug10, BSOC_ug1e2, BSOC_ug1e3,  &
       non_C_BSOA_ng1e2, non_C_BSOA_ug1, non_C_BSOA_ug10,  &
       non_C_BSOA_ug1e2, non_C_BSOA_ug1e3, ffire_OM, POM_f_Res,  &
-      POM_f_nonRes, SQT_SOA_NV  &
+      POM_f_nonRes, SQT_SOA_NV, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (14) :: &
+  integer, public, target, save, dimension (16) :: &
     NONVOLPCM_GROUP = (/  &
       OM25_bgnd, ffire_OM, ffire_BC, POM_f_Res, POM_c_Res,  &
       POM_f_nonRes, POM_c_nonRes, EC_f_Res_new, EC_f_Res_age,  &
       EC_c_Res, EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes,  &
-      SQT_SOA_NV  &
+      SQT_SOA_NV, FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (5) :: &
-    NVABSOM_GROUP = (/ OM25_bgnd, ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV /)
+  integer, public, target, save, dimension (6) :: &
+    NVABSOM_GROUP = (/  &
+      OM25_bgnd, ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV,  &
+      BACTERIA  &
+    /)
   
   integer, public, target, save, dimension (2) :: &
     OC_GROUP = (/ OM25_p, ffire_OM /)
   
-  integer, public, target, save, dimension (24) :: &
+  integer, public, target, save, dimension (25) :: &
     WDEP_OM25_GROUP = (/  &
       ASOC_ng1e2, ASOC_ug1, ASOC_ug10, ASOC_ug1e2, ASOC_ug1e3,  &
       non_C_ASOA_ng1e2, non_C_ASOA_ug1, non_C_ASOA_ug10,  &
@@ -767,10 +770,10 @@ module ChemGroups_mod
       BSOC_ug10, BSOC_ug1e2, BSOC_ug1e3, non_C_BSOA_ng1e2,  &
       non_C_BSOA_ug1, non_C_BSOA_ug10, non_C_BSOA_ug1e2,  &
       non_C_BSOA_ug1e3, ffire_OM, POM_f_Res, POM_f_nonRes,  &
-      SQT_SOA_NV  &
+      SQT_SOA_NV, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (24) :: &
+  integer, public, target, save, dimension (25) :: &
     DDEP_OM25_GROUP = (/  &
       ASOC_ng1e2, ASOC_ug1, ASOC_ug10, ASOC_ug1e2, ASOC_ug1e3,  &
       non_C_ASOA_ng1e2, non_C_ASOA_ug1, non_C_ASOA_ug10,  &
@@ -778,7 +781,7 @@ module ChemGroups_mod
       BSOC_ug10, BSOC_ug1e2, BSOC_ug1e3, non_C_BSOA_ng1e2,  &
       non_C_BSOA_ug1, non_C_BSOA_ug10, non_C_BSOA_ug1e2,  &
       non_C_BSOA_ug1e3, ffire_OM, POM_f_Res, POM_f_nonRes,  &
-      SQT_SOA_NV  &
+      SQT_SOA_NV, BACTERIA  &
     /)
   
   integer, public, target, save, dimension (29) :: &
@@ -889,25 +892,27 @@ module ChemGroups_mod
   integer, public, target, save, dimension (4) :: &
     DDEP_PPM10_FIRE_GROUP = (/ ffire_OM, ffire_BC, ffire_remPPM25, ffire_c /)
   
-  integer, public, target, save, dimension (13) :: &
+  integer, public, target, save, dimension (15) :: &
     WDEP_NONVOLPCM_GROUP = (/  &
       ffire_OM, ffire_BC, POM_f_Res, POM_c_Res, POM_f_nonRes,  &
       POM_c_nonRes, EC_f_Res_new, EC_f_Res_age, EC_c_Res,  &
-      EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes, SQT_SOA_NV  &
+      EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes, SQT_SOA_NV,  &
+      FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (13) :: &
+  integer, public, target, save, dimension (15) :: &
     DDEP_NONVOLPCM_GROUP = (/  &
       ffire_OM, ffire_BC, POM_f_Res, POM_c_Res, POM_f_nonRes,  &
       POM_c_nonRes, EC_f_Res_new, EC_f_Res_age, EC_c_Res,  &
-      EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes, SQT_SOA_NV  &
+      EC_f_nonRes_new, EC_f_nonRes_age, EC_c_nonRes, SQT_SOA_NV,  &
+      FUNGAL_SPORES, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (4) :: &
-    WDEP_NVABSOM_GROUP = (/ ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV /)
+  integer, public, target, save, dimension (5) :: &
+    WDEP_NVABSOM_GROUP = (/ ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV, BACTERIA /)
   
-  integer, public, target, save, dimension (4) :: &
-    DDEP_NVABSOM_GROUP = (/ ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV /)
+  integer, public, target, save, dimension (5) :: &
+    DDEP_NVABSOM_GROUP = (/ ffire_OM, POM_f_Res, POM_f_nonRes, SQT_SOA_NV, BACTERIA /)
   
   integer, public, target, save, dimension (1) :: &
     FBBPOA25_GROUP = (/ ffire_OM /)
@@ -1035,49 +1040,52 @@ module ChemGroups_mod
   integer, public, target, save, dimension (2) :: &
     DDEP_ASH_GROUP = (/ Ash_f, Ash_c /)
   
-  integer, public, target, save, dimension (8) :: &
+  integer, public, target, save, dimension (9) :: &
     PPM25_GROUP = (/  &
       POM_f_Res, POM_f_nonRes, EC_f_Res_new, EC_f_Res_age,  &
       EC_f_nonRes_new, EC_f_nonRes_age, remPPM25_nonRes,  &
-      remPPM25_Res  &
+      remPPM25_Res, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (8) :: &
+  integer, public, target, save, dimension (9) :: &
     WDEP_PPM25_GROUP = (/  &
       POM_f_Res, POM_f_nonRes, EC_f_Res_new, EC_f_Res_age,  &
       EC_f_nonRes_new, EC_f_nonRes_age, remPPM25_nonRes,  &
-      remPPM25_Res  &
+      remPPM25_Res, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (8) :: &
+  integer, public, target, save, dimension (9) :: &
     DDEP_PPM25_GROUP = (/  &
       POM_f_Res, POM_f_nonRes, EC_f_Res_new, EC_f_Res_age,  &
       EC_f_nonRes_new, EC_f_nonRes_age, remPPM25_nonRes,  &
-      remPPM25_Res  &
+      remPPM25_Res, BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (14) :: &
+  integer, public, target, save, dimension (16) :: &
     PPM10_GROUP = (/  &
       POM_f_Res, POM_c_Res, POM_f_nonRes, POM_c_nonRes,  &
       EC_f_Res_new, EC_f_Res_age, EC_c_Res, EC_f_nonRes_new,  &
       EC_f_nonRes_age, EC_c_nonRes, remPPM25_nonRes,  &
-      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES,  &
+      BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (14) :: &
+  integer, public, target, save, dimension (16) :: &
     WDEP_PPM10_GROUP = (/  &
       POM_f_Res, POM_c_Res, POM_f_nonRes, POM_c_nonRes,  &
       EC_f_Res_new, EC_f_Res_age, EC_c_Res, EC_f_nonRes_new,  &
       EC_f_nonRes_age, EC_c_nonRes, remPPM25_nonRes,  &
-      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES,  &
+      BACTERIA  &
     /)
   
-  integer, public, target, save, dimension (14) :: &
+  integer, public, target, save, dimension (16) :: &
     DDEP_PPM10_GROUP = (/  &
       POM_f_Res, POM_c_Res, POM_f_nonRes, POM_c_nonRes,  &
       EC_f_Res_new, EC_f_Res_age, EC_c_Res, EC_f_nonRes_new,  &
       EC_f_nonRes_age, EC_c_nonRes, remPPM25_nonRes,  &
-      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM25_Res, remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES,  &
+      BACTERIA  &
     /)
   
   integer, public, target, save, dimension (1) :: &
@@ -1089,22 +1097,22 @@ module ChemGroups_mod
   integer, public, target, save, dimension (1) :: &
     DDEP_NVRESOC25_GROUP = (/ POM_f_Res /)
   
-  integer, public, target, save, dimension (6) :: &
+  integer, public, target, save, dimension (7) :: &
     PPM_C_GROUP = (/  &
       POM_c_Res, POM_c_nonRes, EC_c_Res, EC_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
-  integer, public, target, save, dimension (6) :: &
+  integer, public, target, save, dimension (7) :: &
     WDEP_PPM_C_GROUP = (/  &
       POM_c_Res, POM_c_nonRes, EC_c_Res, EC_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
-  integer, public, target, save, dimension (6) :: &
+  integer, public, target, save, dimension (7) :: &
     DDEP_PPM_C_GROUP = (/  &
       POM_c_Res, POM_c_nonRes, EC_c_Res, EC_c_nonRes,  &
-      remPPM_c_nonRes, remPPM_c_Res  &
+      remPPM_c_nonRes, remPPM_c_Res, FUNGAL_SPORES  &
     /)
   
   integer, public, target, save, dimension (1) :: &
@@ -1116,14 +1124,14 @@ module ChemGroups_mod
   integer, public, target, save, dimension (1) :: &
     DDEP_NVRESOC_COARSE_GROUP = (/ POM_c_Res /)
   
-  integer, public, target, save, dimension (2) :: &
-    OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes /)
+  integer, public, target, save, dimension (3) :: &
+    OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes, FUNGAL_SPORES /)
   
-  integer, public, target, save, dimension (2) :: &
-    WDEP_OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes /)
+  integer, public, target, save, dimension (3) :: &
+    WDEP_OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes, FUNGAL_SPORES /)
   
-  integer, public, target, save, dimension (2) :: &
-    DDEP_OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes /)
+  integer, public, target, save, dimension (3) :: &
+    DDEP_OMCOARSE_GROUP = (/ POM_c_Res, POM_c_nonRes, FUNGAL_SPORES /)
   
   integer, public, target, save, dimension (1) :: &
     NVNONRESOC25_GROUP = (/ POM_f_nonRes /)
@@ -1235,6 +1243,24 @@ module ChemGroups_mod
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
       POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
+  
+  integer, public, target, save, dimension (2) :: &
+    PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
+  
+  integer, public, target, save, dimension (2) :: &
+    WDEP_PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
+  
+  integer, public, target, save, dimension (2) :: &
+    DDEP_PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
+  
+  integer, public, target, save, dimension (1) :: &
+    PM25_GROUP = (/ BACTERIA /)
+  
+  integer, public, target, save, dimension (1) :: &
+    WDEP_PM25_GROUP = (/ BACTERIA /)
+  
+  integer, public, target, save, dimension (1) :: &
+    DDEP_PM25_GROUP = (/ BACTERIA /)
   
   integer, public, target, save, dimension (20) :: &
     CSTAR_GROUP = (/  &
@@ -2225,6 +2251,24 @@ contains
     
     chemgroups(312)%name="DDEP_POLLEN_MWORT"
     chemgroups(312)%specs=>DDEP_POLLEN_MWORT_GROUP
+    
+    chemgroups(313)%name="PBAP"
+    chemgroups(313)%specs=>PBAP_GROUP
+    
+    chemgroups(314)%name="WDEP_PBAP"
+    chemgroups(314)%specs=>WDEP_PBAP_GROUP
+    
+    chemgroups(315)%name="DDEP_PBAP"
+    chemgroups(315)%specs=>DDEP_PBAP_GROUP
+    
+    chemgroups(316)%name="PM25"
+    chemgroups(316)%specs=>PM25_GROUP
+    
+    chemgroups(317)%name="WDEP_PM25"
+    chemgroups(317)%specs=>WDEP_PM25_GROUP
+    
+    chemgroups(318)%name="DDEP_PM25"
+    chemgroups(318)%specs=>DDEP_PM25_GROUP
     
     chemgroups_factors(1)%name="CSTAR"
     chemgroups_factors(1)%species=>CSTAR_GROUP

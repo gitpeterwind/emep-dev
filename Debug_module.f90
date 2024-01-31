@@ -65,7 +65,8 @@ module Debug_module
     ,VERT_DIFF       = .false. &
     ,VDS             = .false. &
     ,PBAP            = .false. &
-    ,FUNGAL_SPORES   = .false. 
+    ,FUNGAL_SPORES   = .false. &
+    ,BACTERIA        = .false.
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option

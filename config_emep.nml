@@ -3,8 +3,8 @@
   iyr_trend = 2018,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2018,08,01,00,
-  enddate   = 2018,08,3,24,
+  startdate = 2018,01,01,00,
+  enddate   = 2018,12,31,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -70,8 +70,9 @@
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
   USES%ROADDUST          = F,            ! Only EECCA?
-  USES%PBAP              = T,
-  USES%FUNGAL_SPORES     = T,
+  USES%PBAP              = F,
+  USES%FUNGAL_SPORES     = F,
+  USES%BACTERIA          = F,
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
@@ -314,6 +315,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%AOT             = F,
   DEBUG%BCS             = F,   ! Boundary conditions
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
+  DEBUG%BACTERIA        = F,
   DEBUG%DERIVED         = F,   ! Derived field processing
   DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%DUST            = F,

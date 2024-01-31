@@ -15,7 +15,7 @@ module RunChem_mod
   use AOD_PM_mod,        only: AOD_Ext
   use Aqueous_mod,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_mod,     only: setup_bio
-  use PBAP_mod,          only: setup_PBAPs
+  use PBAP_mod,          only: set_PBAPs
   use CellMet_mod,       only: Get_CellMet, z0_out_ix, invL_out_ix
   use CheckStop_mod,     only: CheckStop, StopAll
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
@@ -149,7 +149,7 @@ subroutine runchem()
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
       if (USES%PBAP) &
-          call setup_PBAPs(i,j) !Adds PBAPs to rcemis
+          call set_PBAPs(i,j) !Adds PBAPs to rcemis
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 

@@ -4,6 +4,8 @@
 module PBAP_mod
 
   !/-- Module to deal with primary biological aerosol pollutants (PBAPs).
+  !    Currently implemented: Fungal spores and bacteria
+  !    TODO: Solubility of Fungal Spores
   !
   !    Gunnar Felix Lange 2024
   !---------------------------------------------------------------------------
@@ -42,45 +44,131 @@ module PBAP_mod
   private
 
   !/-- subroutines for PBAPs
-  public ::  init_PBAPs,setup_PBAPs
+  public ::  init_PBAPs,set_PBAPs
   !/-- subroutines for Fungal Spores
-  private :: Set_FungalSpores
+  private :: Set_FungalSpores, Set_Bacteria
 
-  real,public, save, allocatable, dimension(:,:) :: FungalSpores 
+  integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores and bacteria implemented at the moment)
 
-  integer, public, parameter ::   NPBAP = 1 !Number of PBAPs
-                                            !(only fungal spores implemented at the moment)
+  real,public, save, allocatable, dimension(:,:,:) :: PBAP_flux !Dim: i,j,NPBAP
 
-  integer, private, save :: itot_FUNGALSPORES, inat_FUNGALSPORES !Index of fungal spores in Species and EMIS_BioNat
+  real,public, save, allocatable, dimension(:) :: WEIGHTS ,DIAMETERS, DENSITIES !Physical parameters. Dim: NPBAP
+  real,private, save, allocatable, dimension(:) :: n2m, kgm2h !Conversion factors. Dim: NPBAP
+  real,private, save, allocatable, dimension(:) :: itot, inat !indices in species and EMIS_Bionat. Dim: NPBAP
 
-  real*8, DIMENSION(3), parameter  ::  &
-  FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
+  character(len=20),private,save,allocatable,dimension(:) ::PBAP_names !For debugging only
+
+
+  integer, private, save :: iint_FungalSpores, itot_FungalSpores, inat_FungalSpores !Index of fungal spores internall, in Species and in EMIS_BioNat
+  integer, private, save :: iint_Bacteria,itot_Bacteria, inat_Bacteria !Index of bacteria spores internally, in Species and in EMIS_BioNat
+
+  real*8, DIMENSION(6), parameter  ::  &
+  BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
+  real*8, DIMENSION(3), parameter  ::  &
+  FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
+  !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+  !DOI 10.1007/978-3-319-35095-0_121
 
-  real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3] from Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
-                                       !https://doi.org/10.5194/acp-15-6127-2015, 2015
+  real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
+                                         !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+                                        !https://doi.org/10.5194/acp-15-6127-2015, 2015
   real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid)
   real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
-  real, save      :: n2m, kgm2h 
+
+
+
+  real, parameter :: BACTERIA_DIAMETER = 1.0 !Bacteria diameter [um]
+                                             !From S. M. Burrows et al. Atmos. Chem. Phys., 9, 9281–9297
+                                             !https://doi.org/10.5194/acp-9-9281-2009
+  real, parameter :: BACTERIA_WEIGHT = 0.52*1.0e-12 !Bacterial weight [g]  (ibid)
+  real, parameter :: BACTERIA_DENS   = BACTERIA_WEIGHT/((4/3.0)*PI*(0.5*BACTERIA_DIAMETER*1e-6)**3) !Bacteria density [g/m3]
+
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine init_PBAPs()
     logical, save ::  my_first_call = .true.
 
+    !Initializes the PBAP calculation
+    !sets up number of PBAPs (NPBAP)
+    !And fills array accordingly.
+    !Jan 2024: Is this parallelization safe?
+
     if (my_first_call) then
-      allocate(FungalSpores(LIMAX,LJMAX)) !Spatial distribution of fungal spores
-      FungalSpores = 0.0
-      itot_FUNGALSPORES = find_index( "FUNGAL_SPORES", species(:)%name)
-      inat_FUNGALSPORES = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
-      my_first_call = .false.
+      NPBAP = 0
+      iint_FungalSpores = -1
+      iint_Bacteria = -1
 
-      if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
-        write(*,*)"INIT PBAPs (should only happen once!)"
-      end if
+      if (USES%FUNGAL_SPORES) then
+          itot_FungalSpores = find_index( "FUNGAL_SPORES", species(:)%name)
+          if (itot_FungalSpores < 0) then
+            write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
+          else
+            NPBAP = NPBAP + 1
+            iint_FungalSpores = NPBAP
+            inat_FungalSpores = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
+          end if
+       end if
+
+
+       if (USES%BACTERIA) then
+          itot_Bacteria = find_index( "BACTERIA", species(:)%name)
+          if (itot_Bacteria< 0) then
+            write(*,*) "WARNING: No bacteria found in species, not including bacteria!"
+          else
+            NPBAP = NPBAP + 1
+            iint_Bacteria = NPBAP
+            inat_Bacteria = find_index( "BACTERIA", EMIS_BioNat(:))
+          end if
+       end if
+
+       if (NPBAP > 0) then 
+          allocate(PBAP_Flux(LIMAX,LJMAX,NPBAP))
+          PBAP_Flux = 0.0
+
+          allocate(WEIGHTS(NPBAP))
+          allocate(DIAMETERS(NPBAP))
+          allocate(DENSITIES(NPBAP))
+
+          allocate(n2m(NPBAP))
+          n2m = 0.0
+
+          allocate(kgm2h(NPBAP))
+          kgm2h = 0.0
+
+          allocate(inat(NPBAP))
+          allocate(itot(NPBAP))
+          allocate(PBAP_names(NPBAP))
+
+          if (iint_FungalSpores > 0) then
+              WEIGHTS(iint_FungalSpores) = FUNGAL_WEIGHT
+              DIAMETERS(iint_FungalSpores) = FUNGAL_DIAMETER
+              DENSITIES(iint_FungalSpores) = FUNGAL_DENS
+              inat(iint_FungalSpores) = inat_FungalSpores
+              itot(iint_FungalSpores) = itot_FungalSpores
+              PBAP_names(iint_FungalSpores) = "FUNGAL_SPORES"
+
+          end if
+
+          if (iint_Bacteria > 0) then
+              WEIGHTS(iint_Bacteria) = BACTERIA_WEIGHT
+              DIAMETERS(iint_Bacteria) = BACTERIA_DIAMETER
+              DENSITIES(iint_Bacteria) = BACTERIA_DENS
+              inat(iint_Bacteria) = inat_Bacteria
+              itot(iint_Bacteria) = itot_Bacteria
+              PBAP_names(iint_Bacteria) = "BACTERIA"
+          end if
+      end if !NPBAP > 0
+
+     my_first_call = .false.
+
+     if( DEBUG%PBAP .and. debug_proc ) then
+         write(*,*)"INIT PBAPs (should only happen once!). NPBAP = ",NPBAP
+     end if
+
     end if
-
 
   end subroutine init_PBAPs
 
@@ -88,7 +176,7 @@ module PBAP_mod
 
   subroutine Set_FungalSpores(i,j)
     !!!!!!!
-    !Fills FungalSpores(i,j)
+    !Fills PPBAP_Flux(i,j,iint_FugalSpores)
     !Based on parameterization from
     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
     !DOI 10.1007/978-3-319-35095-0_121
@@ -102,67 +190,102 @@ module PBAP_mod
       if (i .eq. debug_li .and. j .eq. debug_lj) then
        write(*,*)"PBAP_mod DEBUG FUNGAL_SPORES: ",&
         current_date%day, current_date%hour, current_date%seconds,&
-        USES%FUNGAL_SPORES, itot_FUNGALSPORES,inat_FUNGALSPORES
+        USES%FUNGAL_SPORES, itot(iint_FungalSpores),inat(iint_FungalSpores)
       end if
     end if
 
     if (my_first_call) then
-      if (itot_FUNGALSPORES>0) then
-        n2m = (1e-6/Grid%DeltaZ)*FUNGAL_WEIGHT*AVOG/species(itot_FUNGALSPORES)%molwt
-        !Converts from number of spores/m^2/s -> mol/cm^3/s
-        kgm2h = FUNGAL_WEIGHT*1e-6*3600 !num/m2/s -> kg/m2/h
-      end if
+      n2m(iint_FungalSpores) = (1e-6/Grid%DeltaZ)*WEIGHTS(iint_FungalSpores)*AVOG/species(itot(iint_FungalSpores))%molwt
+      !Converts from number of spores/m^2/s -> mol/cm^3/s
+      kgm2h(iint_FungalSpores) = WEIGHTS(iint_FungalSpores)*1e-6*3600 !num/m2/s -> kg/m2/h
       my_first_call = .false.
     end if
 
-          F_FNG = 0.0 !Fungal spores flux
+    F_FNG = 0.0 !Fungal spores flux
 
-           nlu = LandCover(i,j)%ncodes
+      nlu = LandCover(i,j)%ncodes
 
-           do iiL = 1,nlu
-              LC = LandCover(i,j)%codes(iiL)
-              if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid numerical round-off errors (?) for IAM landtypes
-                cycle
-              else if ( LandType(LC)%is_water) then
-                  cycle
-              else if ( LandType(LC)%is_ice) then
-                  cycle
-              else
-                temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
-                F_FNG = F_FNG + max(0.0, temp_val)
-                !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-                !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
-                !Leaf-area index (LAI) should be in m2/m2
-                !Specific humidity q should be in kg/kg
-                !Temperature at 2m (t2_nwp) should be in K
+      do iiL = 1,nlu
+        LC = LandCover(i,j)%codes(iiL)
+        if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid numerical round-off errors (?) for IAM landtypes
+          cycle
+        else if ( LandType(LC)%is_water) then
+            cycle
+        else if ( LandType(LC)%is_ice) then
+            cycle
+        else
+          temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+          F_FNG = F_FNG + max(0.0, temp_val)
+          !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+          !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
+          !Leaf-area index (LAI) should be in m2/m2
+          !Specific humidity q should be in kg/kg
+          !Temperature at 2m (t2_nwp) should be in K
 
-              end if
-           end do !iiL
+        end if
+      end do !iiL
 
-           FungalSpores(i,j) = F_FNG
+      PBAP_flux(i,j,iint_FungalSpores) = F_FNG
 
     if ( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
-        write(*,"(a,2i4)") "FUNGAL_SPORES indices: ",  itot_FUNGALSPORES,inat_FUNGALSPORES
-        write(*,*) "Unit conversions: ", Grid%DeltaZ,FUNGAL_WEIGHT,n2m, kgm2h
-        write(*, "(2i4)") i,j
-        do iiL = 1,nlu 
-          LC = LandCover(i,j)%codes(iiL)
-          write(*,"(a,i4,4f12.4,2L2)") "FUNGAL_SPORES_EMISSION: ", &
-                 iiL, LandCover(i,j)%LAI(iiL),LandCover(i,j)%fraction(iiL),LandDefs(LC)%LAImin,LandDefs(LC)%LAImax,LandType(LC)%is_water,LandType(LC)%is_ice
-          write(*,*) LandDefs(LC)%name
-        end do
+        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_FungalSpores), kgm2h(iint_FungalSpores) 
        end if
     end if
 
   end subroutine Set_FungalSpores
 
-  subroutine setup_PBAPs(i,j)
+  subroutine Set_Bacteria(i,j)
+    !NOT YET IMPLEMENTED
+    !!!!!!!
+    !Fills PPBAP_Flux(i,j,iint_FugalSpores)
+    !Based on parameterization from
+    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+    !DOI 10.1007/978-3-319-35095-0_121
+    integer, intent(in) ::  i,j
+    integer :: nlu,iiL,LC,i_d,j_d
+    real    :: F_Bacteria, temp_val
+    logical, save ::  my_first_call = .true.
+
+
+    if( DEBUG%BACTERIA .and. debug_proc ) then
+      if (i .eq. debug_li .and. j .eq. debug_lj) then
+       write(*,*)"PBAP_mod DEBUG BACTERIA: ",&
+        current_date%day, current_date%hour, current_date%seconds,&
+        USES%BACTERIA, itot(iint_Bacteria),inat(iint_Bacteria)
+      end if
+    end if
+
+    if (my_first_call) then
+      n2m(iint_Bacteria) = (1e-6/Grid%DeltaZ)*WEIGHTS(iint_Bacteria)*AVOG/species(itot(iint_Bacteria))%molwt
+      !Converts from number of spores/m^2/s -> mol/cm^3/s
+      kgm2h(iint_Bacteria) = WEIGHTS(iint_Bacteria)*1e-6*3600 !num/m2/s -> kg/m2/h
+      my_first_call = .false.
+    end if
+
+    F_Bacteria = 0.0 !Bacteria flux
+
+
+    PBAP_flux(i,j,iint_Bacteria) = F_Bacteria
+
+    if ( DEBUG%BACTERIA .and. debug_proc ) then
+       if (i .eq. debug_li .and. j .eq. debug_lj) then
+        write(*,"(a,4i4)") "Bacteria i,j: ",  1, limax, 1, ljmax
+        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_Bacteria), kgm2h(iint_Bacteria) 
+       end if
+    end if
+
+  end subroutine Set_Bacteria
+
+
+
+
+  subroutine set_PBAPs(i,j)
   !
-  !---- Adds PBAPs to rcemis  ------------------------------------------------
+  !---- Adds PBAPs to rcemis  and EmisNat--------------------------------------
   !
-  !  So far, only adds Fungal Spores to rcemis
+  !  So far, only adds Fungal Spores and Bacteria to rcemis and EmisNat
   !
   !  Called from setup_1d_mod, every  advection step.
   !----------------------------------------------------------------------------
@@ -173,32 +296,36 @@ module PBAP_mod
 
   logical :: dbg
 
+  integer :: i_PBAP
   if ( NPBAP == 0  ) return   ! Number of PBAPs
 
   dbg = ( DEBUG%PBAP .and. debug_proc .and. &
           i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
 
 
-  if ( USES%FUNGAL_SPORES ) then
+  if ( iint_FungalSpores > 0 ) then
       call Set_FungalSpores(i,j)
-      if (itot_FUNGALSPORES > 0) then
-        rcemis(itot_FUNGALSPORES,KG) = rcemis(itot_FUNGALSPORES,KG)+n2m*FungalSpores(i,j)![mol/cm3/s]
-        if (dbg) then
-          write(*,*) "FUNGAL SPORES: rcemis ",rcemis(itot_FUNGALSPORES,KG)
-        end if
-
-      end if
-      
-      if (inat_FUNGALSPORES > 0) then
-        EmisNat(inat_FUNGALSPORES,i,j) = kgm2h*FungalSpores(i,j)
-        !Emissions in molec/m2/s
-        if (dbg) then
-          write(*,*) "FUNGAL SPORES: EmisNat ",EmisNat(inat_FUNGALSPORES,i,j)
-        end if
-      end if
   end if
 
-  end subroutine setup_PBAPs
+  if ( iint_Bacteria > 0 ) then
+    call Set_Bacteria(i,j)
+  end if 
+
+  do i_PBAP = 1,NPBAP
+    rcemis(itot(i_PBAP),KG) = rcemis(itot(i_PBAP),KG)+n2m(i_PBAP)*PBAP_flux(i,j,i_PBAP)![mol/cm3/s]
+    if (dbg) then
+          write(*,"(2a,f12.5)") PBAP_names(i_PBAP),": rcemis ",rcemis(itot(i_PBAP),KG)
+    end if
+
+    if (inat(i_PBAP) > 0) then
+        EmisNat(inat(i_PBAP),i,j) = kgm2h(i_PBAP)*PBAP_flux(i,j,i_PBAP) !Emissions in molec/m2/s
+    end if
+    if (dbg) then
+      write(*,"(2a,f12.5)") PBAP_names(i_PBAP),": EmisNat ",EmisNat(inat(i_PBAP),i,j)
+    end if
+  end do 
+
+  end subroutine set_PBAPs
 
   !----------------------------------------------------------------------------
 end module PBAP_mod

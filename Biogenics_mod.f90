@@ -95,7 +95,7 @@ module Biogenics_mod
 
   ! We hard-code these indices, but only calculate emissions if needed
   ! Must match order of NATBIO to start with 
-  integer, parameter, public ::  NEMIS_BioNat  = 24
+  integer, parameter, public ::  NEMIS_BioNat  = 25
   character(len=16), save, dimension(NEMIS_BioNat), public:: &
       EMIS_BioNat = [character(len=16):: &
              "C5H8       " &
@@ -121,7 +121,8 @@ module Biogenics_mod
            , "POLLEN_MUGWORT4"&
            , "POLLEN_MUGWORT5"&
            , "RN222      " &
-           , "FUNGAL_SPORES"]
+           , "FUNGAL_SPORES"&
+           , "BACTERIA"    ]
 
   integer, public, parameter :: &
       N_ECF=2, ECF_ISOP=1, ECF_TERP=2   &! canopy factors, BVOC

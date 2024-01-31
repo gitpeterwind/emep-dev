@@ -4,7 +4,7 @@
 #SBATCH -A emep
 #SBATCH --job-name=emepctm
 #SBATCH --output=%x.%j.out --error=%x.%j.out
-#SBATCH --nodes=4 --ntasks-per-node=32 --time=24:00:00
+#SBATCH --nodes=8 --ntasks-per-node=32 --time=24:00:00
 
 ### Minimalistic script for run the Unified EMEP model
 
@@ -12,7 +12,7 @@
 # user_id=GL
 # run=rv4_51
 
-DIRLOCA="EMEP_output/PBAP_short/"
+DIRLOCA="EMEP_output/No_PBAP_year/"
 DIRPATH="/home/sm_gunla/"
 
 # git directory where to run emep model from
