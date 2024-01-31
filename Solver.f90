@@ -38,7 +38,7 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  rctA_lf, rctB_lf, spec2lfspec,&
+                                  spec2lfspec,rctA_lf, rctB_lf,&
                                   rcemis_lf, lf_rcemis,&
                                   NSPEC_deriv_lf, N_lf_derivemis,&
                                   lf_chem_pre, lf_chem_mid, lf_chem_pos

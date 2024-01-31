@@ -9,8 +9,7 @@
 # Note: using (:) instead of (1:Nd) is faster! (10-15%), but only if the array has dimension not much larger than Nd
 
 echo "Before starting, you should move the inert parts in CM_Reactions1 to CM_Reactions2"
-echo "and move SO4 and NH3 from CM_Reactions2 to CM_Reactions1"
-#NO3c can be left in CM_Reactions2.inc, even if it is a species for derivative, because it is used only to change rct
+echo "and move SO4, NO3_c and NH3 from CM_Reactions2 to CM_Reactions1"
 echo "and check that 100 and 97 and 96 are the indices to use for SurfArea dependents rct"
 
 #test if the CM_Reactions1.inc has already been transformed

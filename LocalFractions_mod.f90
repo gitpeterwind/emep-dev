@@ -300,7 +300,7 @@ contains
            call addsource(species_adv(i)%name)
         end do
 
-        !not directly used in Reactions1, but influence rct(100) and rct(97)
+        !not directly used in Reactions1, but have an effect on rct(100) and rct(97)
         call addsource('SO4')
         call addsource('NO3_c')
         call addsource('NO3_f')
@@ -1254,8 +1254,8 @@ subroutine lf_out(iotyp)
                     if (me==0) write(*,*)'WARNING: will not write out '//trim(lf_spec_out(iout)%name)
                     exit
                  end if
+                 ipoll_cfac = lf_src(isrc)%poll + Npoll
                  if (iter==2) then
-                    ipoll_cfac = lf_src(isrc)%poll + Npoll
                     invfac=lf_spec_out(iout)%species_fac(ig) / av_fac(iotyp)
                     do j=1,ljmax
                        do i=1,limax
@@ -3439,17 +3439,11 @@ subroutine lf_rcemis(i,j,k,eps)
        !Therefore if the concentrations are low compared to the deltas, we fix them to same values as base case.
        do n = 1, NSPEC_SHL
           do i_lf = 1, NSPEC_deriv_lf
-!old             if(abs(xn_shl_lf(i_lf,n,k,i,j)- xnew(n))*100<xnew(n))then
-!old                xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
-
-             n_sp = lfspec2spec(i_lf)
-             if(abs(xn_shl_lf(i_lf,n,k,i,j))<10)then
-                xn_shl_lf(i_lf,n,k,i,j) = xnew(n) + xn_shl_lf(i_lf,n,k,i,j) * xnew(n_sp) !short lives sensibilities to short lives concentration
+             if(abs(xn_shl_lf(i_lf,n,k,i,j)- xnew(n))*100<xnew(n))then
                 xnew_lf(i_lf,n) = xn_shl_lf(i_lf,n,k,i,j)
-                x_lf(i_lf,n)    = xnew_lf(i_lf,n) - Dchem_lf(i_lf,n,k,i,j)*dt*1.5
+                x_lf(i_lf,n)    = xn_shl_lf(i_lf,n,k,i,j) - Dchem_lf(i_lf,n,k,i,j)*dt*1.5
                 x_lf(i_lf,n)    = max (x_lf(i_lf,n), 0.0)
              else
-!                xn_shl_lf(i_lf,n,k,i,j) = xnew(n)
                 xnew_lf(i_lf,n) = xnew(n)
                 x_lf(i_lf,n)    = x(n)
              end if
@@ -3544,14 +3538,7 @@ subroutine lf_rcemis(i,j,k,eps)
        !save shl
        do n = 1, NSPEC_SHL
           do i_lf = 1, NSPEC_deriv_lf
-!old             xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n) !save short lives for each derivatives
-
-          n_sp = lfspec2spec(i_lf)
-          if(xn_2d(n_sp,k)>1000.0)then
-                xn_shl_lf(i_lf,n,k,i,j) = (xnew_lf(i_lf,n)-xnew(n))/xn_2d(n_sp,k) !save short lives sensibilities
-             else
-                xn_shl_lf(i_lf,n,k,i,j) = 0.0
-             end if
+             xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n) !save short lives for each derivatives
           end do
        end do
        do i_lf = 1, NSPEC_deriv_lf
