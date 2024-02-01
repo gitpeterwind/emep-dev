@@ -1207,7 +1207,9 @@ subroutine lf_out(iotyp)
         do iout = 1, Max_lf_out
            if (lf_spec_out(iout)%name == "NOTSET") exit
            fracsum=0.0
-           do ideriv = 1, 4              
+           n = 4
+           if (lf_set%EmisDer_all) n = 1
+           do ideriv = 1, n
               tmp_out_cntry = 0.0
               tmp_out_base = 0.0
               do ig = 1, 30
