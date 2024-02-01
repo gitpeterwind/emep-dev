@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+->1 feb 2024, Peter
+
+Lots of changes in the LF for full chemistry.
+BVOC, SOMO35, Surface reactions, reductions of all emissions at once, new
+nomenclature (lf_set% ), hourly with fixed 24 records, and some refactoring.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 jan 2024, Willem
 
 Added upper and lower RH limit config options to AeroConstants_mod.f90, which

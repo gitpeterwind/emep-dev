@@ -12,7 +12,7 @@ use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
 use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use ChemGroups_mod,        only: chemgroups
 use Debug_module,          only: DEBUG, DebugCell
-use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, Emis_Zlevels, &
+use EmisDef_mod,           only: Emis_heights_sec_MAX, Emis_Nlevel_MAX, Emis_h, &
                                  Emis_Zlevels, Emis_h_pre,mask2name
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
@@ -21,8 +21,9 @@ use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
-                                 Max_lf_Country_list, Max_lf_Country_groups,Max_lf_sectors, &
-                                 poll_type, lf_out_type, Max_lf_spec, Max_lf_sources, Max_lf_out
+                                 Max_lf_Country_list, Max_lf_Country_groups, Max_lf_sectors, &
+                                 poll_type, lf_out_type, Max_lf_spec, Max_lf_sources, &
+                                 Max_lf_out, lf_set_type
 use TimeDate_mod,          only: date
 use Precision_mod,         only: dp
 use SmallUtils_mod,        only: find_index, key2str
@@ -285,6 +286,7 @@ logical, public, save ::             &
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
+type(lf_set_type), public, save :: lf_set
 type(lf_sources), public, save :: lf_src(Max_lf_sources)
 type(poll_type), public, save :: lf_species(Max_lf_spec)
 type(lf_country_type), public, save :: lf_country
@@ -854,6 +856,7 @@ subroutine Config_Constants(iolog)
    ,CONVECTION_FACTOR &
    ,EURO_SOILNOX_DEPSCALE &
    ,lf_src & !Local Fractions
+   ,lf_set & !Local Fractions
    ,lf_species &
    ,lf_country & !Local Fractions countries, and groups
    ,lf_spec_out & !what to put in output (fullchem only)

@@ -260,7 +260,12 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 
 !-------Local Fractions setup example for SR style outputs
   USES%LocalFractions = F, ! T for computing Local Fractions
-  !Local Fractions pollutants and sectors to include:
+  lf_set%Nvert = 14, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+  !Local Fractions frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  lf_set%YEAR = T, !average value for full run in output
+  lf_set%MONTH = T, !average value for each month
+
+!Local Fractions pollutants and sectors to include:
   lf_src(1)%species="pm25", ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   lf_src(1)%sector=0, !0 means sum of all sectors
   lf_src(1)%type='country',
@@ -283,18 +288,12 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   lf_country%group(1)%name='NORDIC', !any name given to the group (used as output name)
   lf_country%group(1)%list(1:)='NO','DK','SE','FI', ! countries included in the group
 
-  lf_src(1)%Nvert = 14, !How many vertical level to include in treatment. Should be higher than highest emissions (?)
-
-  !Local Fractions frequency of output (separate file for each). Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
-  !Values from lf_src(1) are used for all sources
-  lf_src(1)%YEAR = T, !average value for full run in output
-  lf_src(1)%MONTH = T, !average value for each month
 
 !example uEMEP style output: (NB: you cannot mix country and relative types in the same run!)
 !  lf_src(1)%type='relative',
 !  lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
 
-!  lf_src(1)%DOMAIN = 370, 420, 270, 320, !which domain to include in lf output. Will save disk, but not CPU to reduce.
+!  lf_set%DOMAIN = 370, 420, 270, 320, !which domain to include in lf output. Will save disk, but not CPU to reduce.
 
 
 !-------- Sub domain (x0,x1,y0,y1)
@@ -336,11 +335,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-!  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
+  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
 ! DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
- DEBUG%IJ              = 117, 110,       ! Cabauw in EMEP0302
+! DEBUG%IJ              = 117, 110,       ! Cabauw in EMEP0302
 ! DEBUG%IJ              =  85, 127,       ! USA i GLOBAL
   DEBUG%SPEC            = 'OH',
 

@@ -16,7 +16,7 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
                              PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix, &
-                             NATBIO, lf_spec_out
+                             NATBIO, lf_spec_out, lf_set
 use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
@@ -182,7 +182,6 @@ integer, private, save :: Stratos_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nstratos !number of sources to track for Stratos
 real   , private, save :: P_NO(100),P_NO2(100)
 real   , parameter     :: eps1 = 0.999
-integer, private, save :: nfullchem=0 ! >0 if the full O3 chemistry is needed
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
@@ -212,18 +211,18 @@ contains
   else
      !separate values do not work properly yet
      lf_src(:)%dist = lf_src(1)%dist !Temporary
-     do i=1,4
-        lf_src(:)%DOMAIN(i) = lf_src(1)%DOMAIN(i) !Temporary
-     enddo
-     lf_src(:)%YEAR=lf_src(1)%YEAR
-     lf_src(:)%MONTH=lf_src(1)%MONTH
-     lf_src(:)%MONTH_ENDING=lf_src(1)%MONTH_ENDING
-     lf_src(:)%DAY=lf_src(1)%DAY
-     lf_src(:)%HOUR=lf_src(1)%HOUR
-     lf_src(:)%HOUR_INST=lf_src(1)%HOUR_INST
   endif
+  !temporary backward compatibility
+  lf_set%YEAR=lf_src(1)%YEAR .or. lf_set%YEAR
+  lf_set%MONTH=lf_src(1)%MONTH .or. lf_set%MONTH
+  if (trim(lf_src(1)%MONTH_ENDING) /= "NOTSET") lf_set%MONTH_ENDING=lf_src(1)%MONTH_ENDING
+  lf_set%DAY=lf_src(1)%DAY .or. lf_set%DAY
+  lf_set%HOUR=lf_src(1)%HOUR .or. lf_set%HOUR
+  lf_set%HOUR_INST=lf_src(1)%HOUR_INST .or. lf_set%HOUR_INST
+  if (lf_src(1)%Nvert /= 7) lf_set%Nvert = lf_src(1)%Nvert
 
-  lf_Nvert = lf_src(1)%Nvert !Temporary
+  lf_Nvert = lf_set%Nvert !Temporary
+  if (lf_set%Nvert /= 7) lf_Nvert = lf_set%Nvert
   if (lf_Nvert>KMAX_MID-1) then
      lf_Nvert = KMAX_MID-1
      if(me==0)then
@@ -231,29 +230,23 @@ contains
      end if
   end if
   Nsources = 0
-  nfullchem = 0
-  do i = 1, Max_lf_sources
-     if (lf_src(i)%species == 'NOTSET') exit
-     if (lf_src(i)%species == 'FULLCHEM') then
-        nfullchem = nfullchem + 1
-        cycle
-     end if
-     Nsources = Nsources + 1
-  enddo
-  if (nfullchem>0) then
-     lf_fullchem = .true.
-
+  if (lf_set%full_chem) lf_fullchem = .true.
+  if (lf_fullchem) then
      !We ASSUME that shipNOx is the last species (highest index) involved in O3 chemistry
      ix=find_index("shipNOx" ,species_adv(:)%name)
      if(ix>0)NSPEC_fullchem_lf = ix
      ix_lf_max = NH3_ix !assumed to be last used index for rcemis
-
+     
      !RO2POOL is not a proper chemical species and we must take care to avoid it when using derivatives!
      RO2POOL_ix = find_index('RO2POOL' ,species(:)%name)
-
+  else
+     do i = 1, Max_lf_sources
+        if (lf_src(i)%species == 'NOTSET') exit
+        Nsources = Nsources + 1
+     enddo
   end if
 
-  do i = Nsources + nfullchem + 1, Max_lf_sources
+  do i = Nsources + 1, Max_lf_sources
      if(lf_src(i)%species /= 'NOTSET') then
         if(me==0)write(*,*)'WARNING: lf_src ',i,' ',trim(lf_src(i)%species),' not included because source ',Nsources+1,' is missing'
      end if
@@ -280,51 +273,37 @@ contains
   do n=1, NSPEC_SHL
      spec2lfspec(n)=0!meaning: defined, but not a tracked species
   end do
-  do isrc = 1, Max_lf_sources
-     if (lf_src(isrc)%species == 'NOTSET') exit
-     if (lf_src(isrc)%species == 'FULLCHEM') then
-        if(me==0)write(*,*)isrc,' FULLCHEM '
-        lf_src(isrc)%type = 'country'
-        call CheckStop(lf_src(isrc)%type /= 'country',"LocalFractions: only country type for FULLCHEM. Not implemented "//trim(lf_src(isrc)%type)) ! Only country sources for now
-        lf_src(isrc)%Npos = 0
-        lf_src(isrc)%Nsplit = 0
-        iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find nox emissions")
-        iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find voc emissions")
-        iem = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find nh3 emissions")
-        iem = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
-        call CheckStop(iem<=0, "LF: did not find sox emissions")
-        do i = 1, NSPEC_fullchem_lf !make sources for each species to be fully included in chemistry
-           call addsource(species_adv(i)%name)
-        end do
-
-        !not directly used in Reactions1, but have an effect on rct(100) and rct(97)
-        call addsource('SO4')
-        call addsource('NO3_c')
-        call addsource('NO3_f')
-
-        NSPEC_deriv_lf = Nlf_species !the number of species "Y" in dX/dY
-
-        !additional species Z for which dO3/dZ = 0: NH3, (SO4, NO3_c)
-        call addsource('NH3')
-
-        NSPEC_chem_lf = Nlf_species !the number of species "X" in dX/dY
-
-        !end of sources to be included in chemistry
-        Nsources_chem = Nsources !
-
-        ! Additional species used for equilibrium chemistry, but not used in chemistry:  NH4_f (, NO3_f)
-        call addsource('NH4_f')
-
-        exit
-      end if
-  end do
-
-  !for each pm25 we should separate into new and age parts
-  Nsources_nonew = Nsources
-  if(lf_fullchem)then
+  if (lf_fullchem) then
+     iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop(iem<=0, "LF: did not find nox emissions")
+     iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop(iem<=0, "LF: did not find voc emissions")
+     iem = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop(iem<=0, "LF: did not find nh3 emissions")
+     iem = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop(iem<=0, "LF: did not find sox emissions")
+     do i = 1, NSPEC_fullchem_lf !make sources for each species to be fully included in chemistry
+        call addsource(species_adv(i)%name)
+     end do
+     
+     !not directly used in Reactions1, but have an effect on rct(100) and rct(97)
+     call addsource('SO4')
+     call addsource('NO3_c')
+     call addsource('NO3_f')
+     
+     NSPEC_deriv_lf = Nlf_species !the number of species "Y" in dX/dY
+     
+     !additional species Z for which dO3/dZ = 0: NH3, (SO4, NO3_c)
+     call addsource('NH3')
+     
+     NSPEC_chem_lf = Nlf_species !the number of species "X" in dX/dY
+     
+     !end of sources to be included in chemistry
+     Nsources_chem = Nsources !
+     
+     ! Additional species used for equilibrium chemistry, but not used in chemistry:  NH4_f (, NO3_f)
+     call addsource('NH4_f')
+     
      ! sizes:
      ! number of species that are taken systematically by indices: NSPEC_deriv_lf = NSPEC_fullchem_lf
      ! including additional species included, but not derived wrt: NSPEC_chem_lf
@@ -337,6 +316,9 @@ contains
      if(me==0)write(*,*)'LF total species included: ',Nlf_species + NSPEC_SHL
      if(me==0)write(*,*)'LF chemistry, last index included: ',ix_lf_max
   end if
+
+  !for each pm25 we should separate into new and age parts
+  Nsources_nonew = Nsources
 
   isrc_new = -1
   do i = 1, Nsources_nonew
@@ -519,8 +501,8 @@ contains
   iem2ipoll = -1
   iem2Nipoll = 0
   do isrc = 1, Nsources
-     !for now only one Ndiv possible for all sources
      if(lf_src(isrc)%type == 'relative')then
+        !for now only one Ndiv possible for all sources
         lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
      endif
@@ -535,7 +517,7 @@ contains
         if(MasterProc)write(*,*)isrc,' country '//trim(lf_src(isrc)%country_ISO)//' '//trim(lf_src(isrc)%species)
      endif
 
-     call RestrictDomain(lf_src(isrc)%DOMAIN)
+     call RestrictDomain(lf_set%DOMAIN)
 
      iem=find_index(lf_src(isrc)%species ,EMIS_FILE(1:NEMIS_FILE))
 
@@ -589,12 +571,14 @@ contains
            lf_src(isrc)%iqrc = itot2iqrc(ix) !negative if not among emitted species
            if(lf_src(isrc)%iqrc>0) iem = iqrc2iem(lf_src(isrc)%iqrc)
            lf_src(isrc)%iem = iem
-           if (lf_src(Nsources)%full_chem .and. iem>0) then
+           if (lf_set%full_chem .and. iem>0) then
               !Do not include emissions which are not NOx, VOC, NH3 or SOx emissions
-              if (EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox') lf_src(isrc)%iem = -1
+              if (lf_set%EmisDer_all .or. &
+              (EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox'))&
+              lf_src(isrc)%iem = -1
            end if
 
-           if (.not. lf_src(Nsources)%full_chem) then
+           if (.not. lf_set%full_chem) then
               !use simplified methods
               if(trim(species(ix)%name)=='O3')isrc_O3=isrc
               if(trim(species(ix)%name)=='NO')isrc_NO=isrc
@@ -779,29 +763,28 @@ contains
      end if
   end do
 
-  isrc=1!for now all must be the same
-  if(lf_src(isrc)%HOUR)then
+  if(lf_set%HOUR)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_HOUR)=Niou_ix
      iotyp2ix(Niou_ix)=IOU_HOUR
   endif
-  if(lf_src(isrc)%HOUR_INST)then
+  if(lf_set%HOUR_INST)then
      Niou_ix = Niou_ix + 1
      iou_ix_inst = Niou_ix !should not be accumulated
      iotyp2ix(IOU_HOUR_inst) = Niou_ix
      iotyp2ix(Niou_ix)=IOU_HOUR_inst
   endif
-  if(lf_src(isrc)%DAY)then
+  if(lf_set%DAY)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_DAY)=Niou_ix
      iotyp2ix(Niou_ix)=IOU_DAY
   endif
-  if(lf_src(isrc)%MONTH)then
+  if(lf_set%MONTH)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_MON)=Niou_ix
      iotyp2ix(Niou_ix)=IOU_MON
   endif
-  if(lf_src(isrc)%YEAR)then
+  if(lf_set%YEAR)then
      Niou_ix = Niou_ix + 1
      iotyp2ix(IOU_YEAR)=Niou_ix
      iotyp2ix(Niou_ix)=IOU_YEAR
@@ -869,7 +852,7 @@ contains
   nic = 0
   allocate(ic2iland(LIMAX,LJMAX,NCMAX))
 
-  if (lf_src(1)%MDA8) then! maximum daily eight-hour mean concentration
+  if (lf_set%MDA8) then! maximum daily eight-hour mean concentration
     !we need one array to save the last 8 hourly concentrations, and one to make
     !the average over the last hour
     !index 0 is for the pure O3, and the other indices are for the sensibilities
@@ -911,7 +894,7 @@ contains
   end if
   
 
-  if (lf_src(1)%restart) then
+  if (lf_set%restart) then
      !initialize lf with values save on disk
      call lf_read
   end if
@@ -950,23 +933,23 @@ subroutine lf_out(iotyp)
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start out'
 
-  if(iotyp==IOU_HOUR_INST .and. lf_src(1)%HOUR_INST)then
+  if(iotyp==IOU_HOUR_INST .and. lf_set%HOUR_INST)then
      fileName = trim(runlabel1)//'_LF_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
      if(oldhourlyInstname/=fileName)then
         first_call(iotyp) = .true.
         oldhourlyInstname = fileName
      endif
-  else if(iotyp==IOU_HOUR .and. lf_src(1)%HOUR)then
+  else if(iotyp==IOU_HOUR .and. lf_set%HOUR)then
      fileName = trim(runlabel1)//'_LF_hour'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
      if(oldhourlyname/=fileName)then
         first_call(iotyp) = .true.
         oldhourlyname = fileName
      endif
-  else if(iotyp==IOU_DAY .and. lf_src(1)%DAY)then
+  else if(iotyp==IOU_DAY .and. lf_set%DAY)then
      fileName=trim(runlabel1)//'_LF_day.nc'
-  else if(iotyp==IOU_MON .and. lf_src(1)%MONTH)then
-     if(lf_src(1)%MONTH_ENDING /= "NOTSET")then
-        fileName=trim(runlabel1)//'_LF_month'//date2string(trim(lf_src(1)%MONTH_ENDING),current_date,-1.0)
+  else if(iotyp==IOU_MON .and. lf_set%MONTH)then
+     if(lf_set%MONTH_ENDING /= "NOTSET")then
+        fileName=trim(runlabel1)//'_LF_month'//date2string(trim(lf_set%MONTH_ENDING),current_date,-1.0)
         if(oldmonthlyname/=fileName)then
            first_call(iotyp) = .true.
            oldmonthlyname = fileName
@@ -974,10 +957,10 @@ subroutine lf_out(iotyp)
      else
         fileName=trim(runlabel1)//'_LF_month.nc'
      endif
-  else if(iotyp==IOU_YEAR .and. lf_src(1)%YEAR)then
+  else if(iotyp==IOU_YEAR .and. lf_set%YEAR)then
      fileName=trim(runlabel1)//'_LF_full.nc'
-     if(me==0 .and. lf_src(1)%save)write(*,*)'saving ALL'
-     if (lf_src(1)%save) call lf_saveall
+     if(me==0 .and. lf_set%save)write(*,*)'saving ALL'
+     if (lf_set%save) call lf_saveall
   else
      return
   endif
@@ -995,12 +978,11 @@ subroutine lf_out(iotyp)
   dimSizes(2)=2*lf_src(1)%dist+1
   dimNames(2)='y_dist'
 
-  isrc=1!temporary
-  dimSizes(3)=min(GIMAX,lf_src(isrc)%DOMAIN(2)-lf_src(isrc)%DOMAIN(1)+1)
-  dimSizes(4)=min(GJMAX,lf_src(isrc)%DOMAIN(4)-lf_src(isrc)%DOMAIN(3)+1)
+  dimSizes(3)=min(GIMAX,lf_set%DOMAIN(2)-lf_set%DOMAIN(1)+1)
+  dimSizes(4)=min(GJMAX,lf_set%DOMAIN(4)-lf_set%DOMAIN(3)+1)
 
-  dimSizes_tot(1)=min(GIMAX,lf_src(isrc)%DOMAIN(2)-lf_src(isrc)%DOMAIN(1)+1)
-  dimSizes_tot(2)=min(GJMAX,lf_src(isrc)%DOMAIN(4)-lf_src(isrc)%DOMAIN(3)+1)
+  dimSizes_tot(1)=min(GIMAX,lf_set%DOMAIN(2)-lf_set%DOMAIN(1)+1)
+  dimSizes_tot(2)=min(GJMAX,lf_set%DOMAIN(4)-lf_set%DOMAIN(3)+1)
 
   select case(projection)
   case('Stereographic')
@@ -1094,7 +1076,7 @@ subroutine lf_out(iotyp)
               if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
               scale=1.0/av_fac(iotyp)
               if(is_surf)def2%name='SURF_'//trim(def2%name)
-              call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+              call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
               pollwritten(ipoll_cfac) = .true.
               overwrite=.false.
@@ -1152,22 +1134,10 @@ subroutine lf_out(iotyp)
                        write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
                        if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
                     endif
-                    if (lf_src(isrc)%full_chem) then
-                       !add emission species to name
-                       if (country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. country_ix_list(i)==IC_BVOC)then
-                          !do not add "_nox" suffix and do not output any other
-                          if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
-                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
-                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
-                       else
-                          write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
-                       end if
-                        if(me==0)write(*,*)'COUNTRY ',i,country_ix_list(i),def2%name
-                    end if
                     if(me==0 .and. iter==2 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
                     def2%unit='ug/m3'
                     scale=1.0
-                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                     if(lf_src(isrc)%drydep)then
                        write(def3%name,"(A)")'DDEP_'//trim(def2%name)
@@ -1176,7 +1146,7 @@ subroutine lf_out(iotyp)
                        if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
                        
                        iddep=iddep+1
-                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        
                     endif
@@ -1187,7 +1157,7 @@ subroutine lf_out(iotyp)
                        if(isrc==isrc_NH3 .or. isrc==isrc_NH4_f .or. lf_src(isrc)%species=="nh3")def3%unit='mgN/m2'
                        
                        iwdep=iwdep+1
-                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                       call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        
                     endif
@@ -1206,7 +1176,7 @@ subroutine lf_out(iotyp)
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
               scale=1.0
-              call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+              call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
               overwrite=.false.
            endif
@@ -1223,7 +1193,7 @@ subroutine lf_out(iotyp)
                  if(isec==0) write(def1%name,"(A,I0,A,I0)")trim(lf_src(isrc)%species)//'_fracsum_',lf_src(isrc)%res,'x',lf_src(isrc)%res
               end if
               
-              call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+              call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
               
            endif           
@@ -1278,7 +1248,7 @@ subroutine lf_out(iotyp)
                  if(is_surf)def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name) 
                  if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                  scale = 1.0
-                 call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                 call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                       fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                  pollwritten(ipoll_cfac) = .true.
                  overwrite=.false.
@@ -1309,13 +1279,15 @@ subroutine lf_out(iotyp)
                        write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
                        if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
                     endif
-                    if (lf_src(isrc)%full_chem) then
+                    if (lf_set%full_chem) then
                        !add emission species to name
                        if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. country_ix_list(i)==IC_BVOC)then
                           !do not add "_nox" suffix and do not output voc
                           if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
+                       else if(lf_set%EmisDer_all) then
+                          write(def2%name,"(A)")trim(def2%name)//'_SAVN'
                        else
                           write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
@@ -1324,18 +1296,18 @@ subroutine lf_out(iotyp)
                     def2%unit='ug/m3'
                     def1%name = trim(def2%name)
                     scale=1.0
-                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(isrc)%DOMAIN,&
+                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                    if(lf_src(1)%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
+                    if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
                        write(def2%name,"(A)")"AvgMDA8_6month_"//trim(def1%name)
                        n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
-                       call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                       call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                        def2%unit='ppbdays'
                        write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
                        n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
-                       call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                       call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        
                        
@@ -1343,12 +1315,12 @@ subroutine lf_out(iotyp)
                           !also save Base MDA8
                           def2%name="AvgMDA8_6month"
                           def2%unit='ug/m3'
-                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                           
                           def2%name="SOMO35"
                           def2%unit='ppbdays'
-                          call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_src(1)%DOMAIN,&
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        end if
                     end if
@@ -1375,7 +1347,6 @@ subroutine lf_out(iotyp)
 
 ! reset the cumulative arrays
   do isrc = 1, Nsources
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
@@ -1415,16 +1386,15 @@ subroutine lf_av(dt)
   if(DEBUGall)write(*,*)me,'start av'
 
   call Code_timer(tim_before)
-  if(.not. lf_src(1)%HOUR.and.&
-     .not. lf_src(1)%DAY .and.&
-     .not. lf_src(1)%MONTH .and.&
-     .not. lf_src(1)%YEAR       )return
+  if(.not. lf_set%HOUR.and.&
+     .not. lf_set%DAY .and.&
+     .not. lf_set%MONTH .and.&
+     .not. lf_set%YEAR       )return
 
   !do the averaging
   do iou_ix = 1, Niou_ix
      pollwritten = .false.
      do isrc=1,Nsources_nonew
-        if (lf_src(isrc)%species == 'FULLCHEM') cycle
         ipoll = lf_src(isrc)%poll
         if(lf_src(isrc)%type=='country')then
            is_surf = .true.
@@ -1510,7 +1480,7 @@ subroutine lf_av(dt)
 
      end do
 
-     if (lf_src(1)%MDA8) then! maximum daily eight-hour mean concentration
+     if (lf_set%MDA8) then! maximum daily eight-hour mean concentration
 
         if (iou_ix == 1) then !only once for (daily, monthly and yearly)
            do j = 1,ljmax
@@ -1688,7 +1658,6 @@ subroutine lf_adv_x(fluxx,i,j,k)
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      xn=0.0
      x=0.0
      xx=0.0
@@ -1805,7 +1774,6 @@ subroutine lf_adv_y(fluxy,i,j,k)
 
   call Code_timer(tim_before)
   do isrc=1,Nsources
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      xn=0.0
      x=0.0
      xx=0.0
@@ -1946,7 +1914,6 @@ subroutine lf_adv_k(fluxk,i,j)
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           xn=0.0
           x=0.0
           xx=0.0
@@ -2089,7 +2056,6 @@ subroutine lf_adv_k(fluxk,i,j)
     end do
 
     do isrc=1,Nsources
-       if (lf_src(isrc)%species == 'FULLCHEM') cycle
        fk1=0.0
        do k = KMAX_MID-lf_Nvert,KMAX_MID-1
 
@@ -2231,7 +2197,6 @@ subroutine lf_adv_k(fluxk,i,j)
     xn_k = 0.0
     do k = 1,KMAX_MID
        do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x=0.0
           do iix=1,lf_src(isrc)%Nsplit
              ix=lf_src(isrc)%ix(iix)
@@ -2251,7 +2216,6 @@ subroutine lf_adv_k(fluxk,i,j)
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
        do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
              lf(n,i,j,k) = xn_k(n,k)*x
@@ -2278,7 +2242,6 @@ end subroutine lf_diff
     xn_k = 0.0
     do k = 1,KMAX_MID
        do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x=0.0
           do iix=1,lf_src(isrc)%Nsplit
              ix=lf_src(isrc)%ix(iix)
@@ -2298,7 +2261,6 @@ end subroutine lf_diff
 
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
        do isrc=1,Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           x =  1.0/(xn_k(LF_SRC_TOTSIZE+lf_src(isrc)%poll,k)+1.E-30)
           do n=lf_src(isrc)%start, lf_src(isrc)%end
              lf(n,i,j,k) = xn_k(n,k)*x
@@ -2323,7 +2285,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   if(DEBUGall .and. me==0)write(*,*)'start chememis'
 
-  if (nfullchem <= 0) then
+  if (.not. lf_fullchem) then
      !case with no chemistry for local fractions
      !Now species may be group of species (pm25...)
 
@@ -2331,8 +2293,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      !include emissions that are not created in chemical reactions, but only by emissions
      call Code_timer(tim_before)
      do isrc=1,Nsources
-        if (lf_src(isrc)%full_chem) cycle !included below
-        if (lf_src(isrc)%species == 'FULLCHEM') cycle
+        if (lf_set%full_chem) cycle !included below
         iem = lf_src(isrc)%iem     !pick out only this emissions
         isec = lf_src(isrc)%sector !pick out only this sector
 
@@ -2445,10 +2406,11 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 !copy the species that wrt which we derive
      if(ispec<=NSPEC_deriv_lf)then
         !NB: no derivatives calculated for SIA, since d(O3)/d(SIA)=0
-        n=1
+        n = 1
         if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
         if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
         if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
+        if (lf_set%EmisDer_all) n = 1
         do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
            lf0_loc(n, ispec) = lf(ics,i,j,k)
            n=n+1
@@ -2472,7 +2434,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      end if
      !include emission derivatives.
      do iemis = 1, N_lf_derivemis
-        if(emis2iem(iemis) == lf_src(isrc)%iem_deriv ) then
+        if(emis2iem(iemis) == lf_src(isrc)%iem_deriv .or. lf_set%EmisDer_all) then
            n0 =lf_src(isrc)%start + emis2icis(iemis)
            lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec) !contribution from emissions during this timestep. NB: only one iemis per n0 can be included
         end if
@@ -2492,10 +2454,11 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      n_sp = spec2lfspec(ix+NSPEC_SHL)
      if(n_sp<0)cycle !not a lf_chem_deriv species
      n0 = lf_src(isrc)%start
-     n=1
+     n = 1
      if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
      if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
      if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
+     if (lf_set%EmisDer_all) n = 1
      !NB: here we get SIA; since d(SIA)/d(O3) /= 0
      do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
         lf(ics,i,j,k) = lf(ics,i,j,k) + lf_loc(n, n_sp)
@@ -2912,7 +2875,6 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
   if(DEBUGall .and. me==0)write(*,*)'start drydep'
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%DryDep)cycle
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         ffac = fac*1.e6*lf_src(isrc)%mw(iix) !(units ok?)
@@ -2982,7 +2944,6 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
 
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%WetDep) cycle
-     if (lf_src(isrc)%species == 'FULLCHEM') cycle
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         if(ix /= iadv) cycle
@@ -3098,7 +3059,7 @@ subroutine lf_rcemis(i,j,k,eps)
   do iem = 1, NEMIS_File
     if (iem2Nipoll(iem) <= 0) cycle
     !for fullchem, we only treat nox , voc, nh3 and sox emissions
-    if(nfullchem >0 .and. EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox') cycle
+    if(lf_fullchem .and. EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox') cycle
     !we calculate the delta in emission for each country that has emissions
     if (.not.lf_fullchem) then
        do isrc=1,Nsources
@@ -3366,10 +3327,12 @@ subroutine lf_rcemis(i,j,k,eps)
 
   subroutine addsource(species_name)
     character(len=*) :: species_name
-    integer :: i, ix
+    integer :: i, ix, n
 
     Nlf_species = Nlf_species + 1 !internal index for LF
-    do i= 1,4
+    n = 4
+    if (lf_set%EmisDer_all) n = 1
+    do i = 1, n
        Nsources = Nsources + 1
        lf_src(Nsources)%type = 'country' !only type implemented so far for fullchem
        ix = find_index(trim(species_name), species_adv(:)%name, any_case=.true.)
@@ -3381,13 +3344,14 @@ subroutine lf_rcemis(i,j,k,eps)
        if(me==0 .and. DEBUG)write(*,*)lf_src(Nsources)%species
        lfspec2spec(Nlf_species) = ix + NSPEC_SHL
        spec2lfspec(ix + NSPEC_SHL) = Nlf_species
-       lf_src(Nsources)%full_chem = .true.
+       lf_set%full_chem = .true.
        lf_src(Nsources)%make_fracsum = lf_src(1)%make_fracsum
        !iem_deriv differs from iem, because it relates not to the source species, but the derivative.
        !iem_deriv can be for voc, while the species is no2
        if (i==1) then
-          lf_src(Nsources)%iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
-          lf_src(Nsources)%iem_lf = iem_lf_nox
+          if (.not.lf_set%EmisDer_all) lf_src(Nsources)%iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
+          if (.not.lf_set%EmisDer_all) lf_src(Nsources)%iem_lf = iem_lf_nox
+          if (lf_set%EmisDer_all) lf_src(Nsources)%iem_lf = 1 ! so that (lf_src(isrc)%iem_lf-1)*Npos_lf = 0
           if (lf_src(Nsources)%species == 'O3') isrc_O3 = Nsources
           if (lf_src(Nsources)%species == 'NO2') isrc_NO2 = Nsources
           if (lf_src(Nsources)%species == 'NH4_f') isrc_NH4_f = Nsources
@@ -3603,7 +3567,6 @@ subroutine lf_rcemis(i,j,k,eps)
        create_var_only=.false.
        if(iter==1)create_var_only=.true.!only create all variables before writing into them
        do isrc = 1, Nsources
-          if (lf_src(isrc)%species == 'FULLCHEM') cycle
           if (lf_src(isrc)%type/='country') then
              write(*,*)'lf_saveall: only country type implemented'
              stop
@@ -3625,7 +3588,8 @@ subroutine lf_rcemis(i,j,k,eps)
                    write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                    if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                 endif
-                if (lf_src(isrc)%full_chem)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                if (lf_set%full_chem .and. .not.lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                if (lf_set%full_chem .and. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)
                 if(iter==2)then
                    !must transpose array
                    kk=0
@@ -3671,7 +3635,6 @@ subroutine lf_rcemis(i,j,k,eps)
 
     allocate(tmp_out_cntry(LIMAX,LJMAX,lf_Nvert))
     do isrc = 1, Nsources
-       if (lf_src(isrc)%species == 'FULLCHEM') cycle
        if (lf_src(isrc)%type/='country') then
           write(*,*)'lf_read: only country type implemented'
           stop
@@ -3693,7 +3656,9 @@ subroutine lf_rcemis(i,j,k,eps)
                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                 if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
              endif
-             if (lf_src(isrc)%full_chem)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+             if (lf_set%full_chem .and. .not. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+             if (lf_set%full_chem .and. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)
+
              if(me==0 .and. DEBUG)write(*,*)'Reading ',trim(def1%name),ncFileID
              call GetCDF_modelgrid(def1%name,fileName,tmp_out_cntry,1,lf_Nvert,1,1,needed=needed,ncFileID_in=ncFileID)
              !must transpose array
