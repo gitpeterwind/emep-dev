@@ -190,7 +190,7 @@ integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, ie
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf
-integer, public, parameter :: Nfullchem_emis = 4 !nox, voc, nh3, sox
+integer, public, save :: Nfullchem_emis = 4 !nox, voc, nh3, sox
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 
@@ -274,6 +274,7 @@ contains
      spec2lfspec(n)=0!meaning: defined, but not a tracked species
   end do
   if (lf_fullchem) then
+     if (lf_set%EmisDer_all) Nfullchem_emis = 1
      iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nox emissions")
      iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
