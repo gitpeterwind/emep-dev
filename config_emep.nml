@@ -70,8 +70,8 @@
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
   USES%ROADDUST          = F,            ! Only EECCA?
-  USES%PBAP              = F,
-  USES%FUNGAL_SPORES     = F,
+  USES%PBAP              = T,
+  USES%FUNGAL_SPORES     = T,
   USES%BACTERIA          = F,
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):

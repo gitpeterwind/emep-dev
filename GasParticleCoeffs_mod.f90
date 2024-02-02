@@ -58,7 +58,7 @@ module GasParticleCoeffs_mod
 
   integer, public, parameter ::&
         NDRYDEP_GASES = 14+67  &! no. of gases in Wesely tables, DDdefs below
-       ,NDRYDEP_AERO  = 14     &! no. of particles in DDdefs below
+       ,NDRYDEP_AERO  = 15     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
 
@@ -227,6 +227,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t('POLL22',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,22.00,  2.0,  800, -1)& ! birch/alder/mugwort*
  ,DD_t('POLL28',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,28.00,  2.0,  800, -1)& ! olive
  ,DD_t('POLL32',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,32.00,  2.0,  800, -1)& ! grass
+ ,DD_t('FUNGAL',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  2.0, 1000, -1)& ! Fungal spores
  ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008, 2.0, 1400, -1)&
  ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06,  2.0, 1200, -1)&
 ]

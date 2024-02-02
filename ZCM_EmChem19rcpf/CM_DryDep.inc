@@ -101,6 +101,6 @@ type(dep_t), public, dimension(NDRYDEP_ADV), save :: CM_DDepMap = (/ &
 , dep_t("POLLEN_MUGWORT3", "POLL18    ", -999.0 ) &
 , dep_t("POLLEN_MUGWORT4", "POLL18    ", -999.0 ) &
 , dep_t("POLLEN_MUGWORT5", "POLL18    ", -999.0 ) &
-, dep_t("FUNGAL_SPORES", "PMc       ", -999.0 ) &
+, dep_t("FUNGAL_SPORES", "FUNGAL    ", -999.0 ) &
 , dep_t("BACTERIA  ", "PMf       ", -999.0 ) &
 /)

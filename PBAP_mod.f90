@@ -76,7 +76,9 @@ module PBAP_mod
                                         !https://doi.org/10.5194/acp-15-6127-2015, 2015
   real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid)
   real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
-
+                                                                  !This weight is about 14pg, somewhat lower than
+                                                                  !reported in literature (33pg-65pg) according to
+                                                                  !Heald and Spracklen (2009) doi:10.1029/2009GL037493,
 
 
   real, parameter :: BACTERIA_DIAMETER = 1.0 !Bacteria diameter [um]
@@ -176,7 +178,7 @@ module PBAP_mod
 
   subroutine Set_FungalSpores(i,j)
     !!!!!!!
-    !Fills PPBAP_Flux(i,j,iint_FugalSpores)
+    !Fills PBAP_Flux(i,j,iint_FugalSpores)
     !Based on parameterization from
     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
     !DOI 10.1007/978-3-319-35095-0_121
@@ -207,7 +209,7 @@ module PBAP_mod
 
       do iiL = 1,nlu
         LC = LandCover(i,j)%codes(iiL)
-        if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid numerical round-off errors (?) for IAM landtypes
+        if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid integrated assesment (IAM) landtypes as no LAI
           cycle
         else if ( LandType(LC)%is_water) then
             cycle
@@ -239,10 +241,12 @@ module PBAP_mod
   subroutine Set_Bacteria(i,j)
     !NOT YET IMPLEMENTED
     !!!!!!!
-    !Fills PPBAP_Flux(i,j,iint_FugalSpores)
+    !Fills PBAP_Flux(i,j,iint_Bacteria)
     !Based on parameterization from
     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
     !DOI 10.1007/978-3-319-35095-0_121
+    !Problem: Not currently clear how to map
+    !LandDefs from the paper to LandDefs in EMEP
     integer, intent(in) ::  i,j
     integer :: nlu,iiL,LC,i_d,j_d
     real    :: F_Bacteria, temp_val
