@@ -55,9 +55,11 @@ Adding ability to smooth MonthlyTimeFacs. Set MonthlySmoothFac to e.g. 60 (%)
 if factors believed to be too "spiky".
 
  Functions_mod - added monthly_convolve function, and TSTEMX system
- Config_mod    - add MonthlySmoothFac - integer in % of value retained from
+ Config_mod    - add USES%MonthlySmoothFac - integer in % of value retained from
     original monthly value. .e.g MonthlySmoothFac 60 will convolve monthly
     values  with [ 0.2, 0.6, 0.2 ]
+ Timefactors_mod - uses USES%MonthlySmoothFac
+ Also NetCDF_mod: small debug extras
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ->1 feb 2024, Peter

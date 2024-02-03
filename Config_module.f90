@@ -229,6 +229,7 @@ type, public :: emep_useconfig
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
   character(len=20) :: MonthlyNH3  = 'NOTSET'    ! can be 'LOTOS'
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
+  integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
@@ -786,7 +787,6 @@ character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = &
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
 !character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
 character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
-integer, save, public :: MonthlySmoothFac = 100   ! <100 smooths across months
 character(len=TXTLEN_SHORT), save, public :: TimeFacBasis = &
    'MIXED'  ! => mixed sources for Monthly, Daily, etc
     ! or CAMS_CLIM_TEMPO    ! Uses climatological month/day/hour CAMS-TEMPO data

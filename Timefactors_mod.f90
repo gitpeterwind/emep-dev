@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2021 met.no
+!*  Copyright (C) 2007-2024 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -86,6 +86,7 @@
                             HourlyFacFile,HourlyFacSpecialsFile,&
                             USES
   use Debug_module,  only:   DEBUG ! => DEBUG%EMISTIMEFACS
+  use Functions_mod, only : monthly_convolve ! DS added Feb 2024
   use NetCDF_mod,    only: GetCDF , ReadField_CDF
   use OwnDataTypes_mod, only: TXTLEN_FILE,TXTLEN_NAME
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
@@ -180,7 +181,7 @@ contains
    !  The input files are Monthly.sox, Daily.sox, Monthly.nox, etc.
    !  Sets the day/night variation in day_factor
    !
-   !  D. Simpson,    3/2/99
+   !  D. Simpson, Peter Wind, Alvaro Valdebenito, 1999-2024
    !.......................................................................
 
   !-- Input
@@ -207,7 +208,8 @@ contains
   character(len=10) :: code
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
-    write(unit=6,fmt=*) dtxt//"into timefactors, N_TFAC=", N_TFAC
+    write(unit=6,fmt=*) dtxt//"into timefactors, N_TFAC, TimeFacBasis =", &
+            N_TFAC, trim(TimeFacBasis)
     dbgTF = .true.
   end if
 
@@ -243,9 +245,10 @@ contains
    fac_cemm(:) = 1.0
 
    if(TimeFacBasis == 'CAMS_TEMPO_CLIM' ) then
-      MonthlyFacBasis = 'CAMS_TEMPO_CLIM'
+     MonthlyFacBasis = 'CAMS_TEMPO_CLIM'
    else ! TMP - until users get uses to new TimefacBasis
-      call CheckStop(MonthlyFacBasis=='CAMS_TEMPO_CLIM','CLIMCHECK')
+     if(MasterProc) write(*,*) dtxt//"TimeFacBasis Wrong?:"//trim(TimeFacBasis)
+     call CheckStop(MonthlyFacBasis=='CAMS_TEMPO_CLIM','CLIMCHECK')
    end if
       
 
@@ -323,6 +326,11 @@ contains
             cycle
          end if
          call CheckStop(insec>NSECTORS .or. insec<=0, trim(secname)//' not defined')
+
+         ! Feb 2024: added possibulity to smooth MonthlyFacs:
+         if (USES%MonthlySmoothFac < 100) buff(1:12) = &
+             monthly_convolve(buff(1:12),USES%MonthlySmoothFac)
+
          fac_emm(ic,1:12,insec,iemis)=buff(1:12)
 
          ! Temporary and crude implementation for BIDIR tests:
@@ -333,12 +341,14 @@ contains
          !defined after renormalization and send to al processors:
          ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
-         if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
+         !if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
+         if( dbgTF.and.inland==2.and.iemis==1  ) then
             write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac:"// &
              trim(EMIS_FILE(iemis))//":"//trim(Country(ic)%code)//": ", &
             inland,insec,iemis, fac_min(ic,insec,iemis),&
                " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
 
+         end if
 
          n = n + 1
        end do
