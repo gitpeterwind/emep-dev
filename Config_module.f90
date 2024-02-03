@@ -786,10 +786,12 @@ character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = &
 character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
 !character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
 character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
+integer, save, public :: MonthlySmoothFac = 100   ! <100 smooths across months
 character(len=TXTLEN_SHORT), save, public :: TimeFacBasis = &
    'MIXED'  ! => mixed sources for Monthly, Daily, etc
     ! or CAMS_CLIM_TEMPO    ! Uses climatological month/day/hour CAMS-TEMPO data
     ! or DAY_OF_YEAR        ! Replace monthly and Daily by day of year timefactor
+real, save, public :: MonthlyFacSmoothing = 1.0  ! <1 smoothes data
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
