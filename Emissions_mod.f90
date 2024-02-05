@@ -16,7 +16,8 @@ use Config_module,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, step_main, &
     KCHEMTOP, &
     NSECTORS_ADD_MAX, SECTORS_ADD, &
-    TimeFacBasis, &
+    !F24 TimeFacBasis, &
+    timeFacs, &  ! e.g. timeFacs%Monthly == 'GRIDDED') &
     emis_inputlist, &
     EmisDir,      &    ! template for emission path
     DataDir,      &    ! template for path
@@ -1439,7 +1440,8 @@ end subroutine EmisUpdate
     if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
-    if(TimeFacBasis =='DAY_OF_YEAR' .and. .not.allocated(fac_dayofyear)) &
+    !F24 if(TimeFacBasis =='DAY_OF_YEAR' .and. .not.allocated(fac_dayofyear)) &
+    if(timeFacs%Day_of_Year .and. .not.allocated(fac_dayofyear)) &
          allocate(fac_dayofyear(NSECTORS,NLAND,NEMIS_FILE,366))
 
     allocate(isec2SecOutWanted(0:NSECTORS))
@@ -1473,7 +1475,8 @@ end subroutine EmisUpdate
 
     if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
        write(*,*) dtxt//"Reading monthly and daily timefactors"
-       if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+       !F24 if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+       if(timeFacs%Monthly == 'GRIDDED') then !_EMIS_MONTHLY_FACTOR)then
           write(*,*)"Emissions using gridded monhtly timefactors "
           write(IO_LOG,*)"Emissions using gridded monhtly timefactors "
        end if
@@ -1502,7 +1505,8 @@ end subroutine EmisUpdate
     CALL MPI_BCAST(fac_emm,8*NLAND*12*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(fac_edd,8*NLAND*7*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(fac_ehh24x7,8*NEMIS_FILE*N_TFAC*24*7*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    if(TimeFacBasis =='DAY_OF_YEAR' ) CALL MPI_BCAST(fac_dayofyear,&
+    !F24 if(TimeFacBasis =='DAY_OF_YEAR' ) CALL MPI_BCAST(fac_dayofyear,&
+    if(timeFacs%Day_of_Year ) CALL MPI_BCAST(fac_dayofyear,&
             8*NEMIS_FILE*NSECTORS*366*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     !define fac_min for all processors
     forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
@@ -2158,7 +2162,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                emish_idx = SECTORS(isec)%height
                split_idx = SECTORS(isec)%split
 
-               if(TimeFacBasis =='DAY_OF_YEAR' ) then
+               !F24 if(TimeFacBasis =='DAY_OF_YEAR' ) then
+               if(timeFacs%Day_of_Year ) then
                   tfac = fac_dayofyear(isec, iland_timefac, iem, daynumber)& ! NB: use isec, not tfac_idx
                        * fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
                else
@@ -2176,7 +2181,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
               !in order not to access the array and waste cache if not necessary
-              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac = tfac * GridTfac(i,j,tfac_idx,iem)
+              if(timeFacs%Monthly == 'GRIDDED') tfac = tfac * GridTfac(i,j,tfac_idx,iem)
+              !F24 if(USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac = tfac * GridTfac(i,j,tfac_idx,iem)
 
               !Degree days - only SNAP-2
               if(USES%DEGREEDAY_FACTORS .and. IS_DOM(isec) .and. Gridded_SNAP2_Factors) then
@@ -2379,7 +2385,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    if(debug_tfac) write(*,'(a,4i5,es12.3)') dtxt//'NH3tfacLand', &
                            is, iland,  iland_timefac, tfac
 
-                   if(TimeFacBasis =='DAY_OF_YEAR' ) then
+                   !F24 if(TimeFacBasis =='DAY_OF_YEAR' ) then
+                   if(timeFacs%Day_of_Year ) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
                       if(dbgPoll) write(*,*) dtxt//'efacs HERE-DOY', tfac, iland_timefac, daynumber
                    else if(Emis_source(n)%periodicity == 'yearly')then
@@ -2464,7 +2471,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                            wday, iland_timefac,hour_iland,wday_loc,iland_timefac_hour)
                    tfac = fac_ehh24x7(iem,tfac_idx,hour_iland,wday_loc,iland_timefac_hour)
 
-                   if(TimeFacBasis =='DAY_OF_YEAR' ) then
+                   !F24 if(TimeFacBasis =='DAY_OF_YEAR' ) then
+                   if(timeFacs%Day_of_Year ) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
                       if(dbgPoll) write(*,'(a,3i4,f12.4)') &
                          dtxt//'efacs HERE-DOYhu', tfac_idx, isec_idx, &
@@ -2485,7 +2493,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                           tfac_idx, isec_idx, daynumber, tfac
                 endif
 
-                if (USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac=tfac* GridTfac(i,j,tfac_idx,iem)
+                if(timeFacs%Monthly == 'GRIDDED') tfac=tfac* GridTfac(i,j,tfac_idx,iem)
+                !F24 if (USES%GRIDDED_EMIS_MONTHLY_FACTOR) tfac=tfac* GridTfac(i,j,tfac_idx,iem)
 
                 !Degree days - only SNAP-2
                 if(USES%DEGREEDAY_FACTORS .and. &
@@ -2598,7 +2607,8 @@ subroutine newmonth
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
 
 
-  if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)&
+  !F24 if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)&
+  if(timeFacs%Monthly == 'GRIDDED') &
     call Read_monthly_emis_grid_fac(current_date%month)
 
   !Sep2023 always:  if(USES%TIMEZONEMAP)then

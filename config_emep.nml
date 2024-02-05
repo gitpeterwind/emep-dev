@@ -95,22 +95,29 @@
 ! NEW FORMAT:
   Emis_sourceFiles(1)%filename = 'DataDir/emis_EMEPreport_2023/GNFREmis_EMEP01_2020_27062023.nc',
 
-!Trends 2022 time factors -------------
-!For 1990-2019
-!BUG 2023   MonthlyFacBasis = 'GENEMIS', 
-!BUG 2023  USES%MonthlyNH3 = 'LOTOS', 
-!DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
+!! ****  START-OF- FEB 2024 timeFacs system ****
+!
+! CAMS_TEMPO_CLIM optionr: uses all time-factors from cams_temp_v2_3
+! NOTE: careful with USES%DEGREEDAYFACTORS and tfacs%Day_of_Year
+!
+!defaults are;
+! timeFacs%MonthlySmoothFac = 100
+! timeFacs%Monthly = 'CAMS_TEMPO_CLIM' ! or 'GRIDDED' or 'GENEMIS v xJune2012'
+! timeFacs%Daily   = 'CAMS_TEMPO_CLIM'  &!
+! timeFacs%Hourly  = 'CAMS_TEMPO_CLIM',  ! or 'INERIS'
 
-!!! ****  START-OF-CAMS-TEMPO-CLIM ****
-!   CAMS_TEMPO_CLIM optionr: uses all time-factors from cams_temp_v2_3
-!   *** If used, uncomment to END-OF-CLIM
-!       and if TimeFacBasis=CAMSTEMPO_CLIM, sets also MonthlyFacBasis
-! NOTE: careful with USES%DEGREEDAYFACTORS and USES%DAYOFYEARTIMEFAC
- TimeFacBasis    = 'CAMS_TEMPO_CLIM',   
-! MonthlyFacBasis = 'CAMS_TEMPO_CLIM', 
  MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
  DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
  HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
+! HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
+
+!OLD: Allowed = GENEMIS+xJune2012, or ECLIPSE+
+!OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
+!OLD DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
+!OLD HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
+! ========================================
+!Trends 2022 time factors -------------
+!DONE  USES%PR_LIMIT = 1.0e-5,  ! def was 10e-7 
 
 ! Change time factor index to match CAMS_TEMPO sectors 1-19
 !                                                 tf  h  spl
