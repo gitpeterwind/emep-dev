@@ -57,7 +57,9 @@ ZCM_EmChem19rc/CM* - re-ordered species to give more efficient LF (Peter request
 Makefile - commented out  GITVERSION line. Caused compilation error for
  large changes from git orig
 
-Timegfactors - minimal comment change
+Timefactors - minimal comment change
+
+EmisDef_mod - added IS_AGRK, IS_AGRL - prepping for new timefactors
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 feb 2024, Dave
