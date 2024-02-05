@@ -209,7 +209,7 @@ contains
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
     write(unit=6,fmt=*) dtxt//"into timefactors, N_TFAC, TimeFacBasis =", &
-            N_TFAC, trim(TimeFacBasis)
+       N_TFAC, trim(TimeFacBasis)// ' Grid?', USES%GRIDDED_EMIS_MONTHLY_FACTOR
     dbgTF = .true.
   end if
 
