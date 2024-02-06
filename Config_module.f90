@@ -161,6 +161,7 @@ type(timeFacs_t), public, save :: timeFacs
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=*), parameter,private :: EMDIR='DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/'
 character(len=TXTLEN_FILE), target, save, public :: &
+  !GRIDDED: MonthlyFacFile = EMDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc',
   MonthlyFacFile = EMDIR//'cams_tempo_v3_2_month.POLL' &
  ,DailyFacFile   = EMDIR//'cams_tempo_v3_2_week.POLL' &
  ,HourlyFacFile  = EMDIR//'cams_tempo_v3_2_hour.POLL' &
