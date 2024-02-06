@@ -26,7 +26,7 @@ module PBAP_mod
   use KeyValueTypes,      only: KeyVal,KeyValue
   use LandDefs_mod,       only: LandType, LandDefs
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai
-  use Landuse_mod,        only: LandCover
+  use Landuse_mod,        only: LandCover, likely_coastal
   use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
   use MetFields_mod,      only: t2_nwp, q
   use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
@@ -66,6 +66,7 @@ module PBAP_mod
   BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
+                    !Note that most of these are set in the LandInput file, except for the coastal parameter (as coastal is not a LandType)
   real*8, DIMENSION(3), parameter  ::  &
   FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
   !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
@@ -269,6 +270,29 @@ module PBAP_mod
     end if
 
     F_Bacteria = 0.0 !Bacteria flux
+    temp_val = 0.0
+
+    if (likely_coastal(i,j)) then
+      F_Bacteria = BACTERIA_PARAMS(1) !Coastal not LandType, therefore treated
+                                      !differentely, following parameterization from
+                                      !Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+                                      !DOI 10.1007/978-3-319-35095-0_121
+  
+    else
+      nlu = LandCover(i,j)%ncodes
+
+      do iiL = 1,nlu
+          if (LandDefs(iil)%BacteriaFlux > 0.0) then
+            temp_val = LandDefs(iiL)%BacteriaFlux
+          end if
+            
+          F_Bacteria = F_Bacteria + LandCover(i,j)%fraction(iiL)*temp_val
+           
+          !Eq.(1) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+          !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
+          !Note that most of these valuse are set in the LandUse input file
+      end do !iiL
+    end if
 
 
     PBAP_flux(i,j,iint_Bacteria) = F_Bacteria

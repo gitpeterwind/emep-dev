@@ -72,7 +72,7 @@
   USES%ROADDUST          = F,            ! Only EECCA?
   USES%PBAP              = T,
   USES%FUNGAL_SPORES     = T,
-  USES%BACTERIA          = F,
+  USES%BACTERIA          = T,
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
@@ -190,10 +190,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023/Inputs_DO3SE.csv',
- LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023/medMap_0.5deg.nc',
- LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023/Olson_2001_DEforEmep.nc',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_DO3SE.csv',
+ LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023_with_PBAP/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023_with_PBAP/Olson_2001_DEforEmep.nc',
 
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
@@ -525,6 +525,7 @@ OutputConcs=
 !aARgh Put bacl to fool aeroval
       'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
       'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+      'BACTERIA'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! PM10group sub-components
@@ -541,6 +542,7 @@ OutputConcs=
       'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+
 
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
 ! DO NOT USE ppb!!!
@@ -583,7 +585,9 @@ OutputConcs=
       'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-!      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!     'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!     'PBAP'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)

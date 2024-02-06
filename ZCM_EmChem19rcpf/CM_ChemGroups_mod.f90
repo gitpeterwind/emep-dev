@@ -1226,6 +1226,30 @@ module ChemGroups_mod
       POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
   
+  integer, public, target, save, dimension (12) :: &
+    PBAP_GROUP = (/  &
+      POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5,  &
+      FUNGAL_SPORES, BACTERIA  &
+    /)
+  
+  integer, public, target, save, dimension (12) :: &
+    WDEP_PBAP_GROUP = (/  &
+      POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5,  &
+      FUNGAL_SPORES, BACTERIA  &
+    /)
+  
+  integer, public, target, save, dimension (12) :: &
+    DDEP_PBAP_GROUP = (/  &
+      POLLEN_BIRCH, POLLEN_OLIVE, POLLEN_ALDER, POLLEN_RWEED,  &
+      POLLEN_GRASS, POLLEN_MUGWORT1, POLLEN_MUGWORT2,  &
+      POLLEN_MUGWORT3, POLLEN_MUGWORT4, POLLEN_MUGWORT5,  &
+      FUNGAL_SPORES, BACTERIA  &
+    /)
+  
   integer, public, target, save, dimension (5) :: &
     POLLEN_MWORT_GROUP = (/  &
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
@@ -1243,15 +1267,6 @@ module ChemGroups_mod
       POLLEN_MUGWORT1, POLLEN_MUGWORT2, POLLEN_MUGWORT3,  &
       POLLEN_MUGWORT4, POLLEN_MUGWORT5  &
     /)
-  
-  integer, public, target, save, dimension (2) :: &
-    PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
-  
-  integer, public, target, save, dimension (2) :: &
-    WDEP_PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
-  
-  integer, public, target, save, dimension (2) :: &
-    DDEP_PBAP_GROUP = (/ FUNGAL_SPORES, BACTERIA /)
   
   integer, public, target, save, dimension (1) :: &
     PM25_GROUP = (/ BACTERIA /)
@@ -2243,23 +2258,23 @@ contains
     chemgroups(309)%name="DDEP_POLLEN"
     chemgroups(309)%specs=>DDEP_POLLEN_GROUP
     
-    chemgroups(310)%name="POLLEN_MWORT"
-    chemgroups(310)%specs=>POLLEN_MWORT_GROUP
+    chemgroups(310)%name="PBAP"
+    chemgroups(310)%specs=>PBAP_GROUP
     
-    chemgroups(311)%name="WDEP_POLLEN_MWORT"
-    chemgroups(311)%specs=>WDEP_POLLEN_MWORT_GROUP
+    chemgroups(311)%name="WDEP_PBAP"
+    chemgroups(311)%specs=>WDEP_PBAP_GROUP
     
-    chemgroups(312)%name="DDEP_POLLEN_MWORT"
-    chemgroups(312)%specs=>DDEP_POLLEN_MWORT_GROUP
+    chemgroups(312)%name="DDEP_PBAP"
+    chemgroups(312)%specs=>DDEP_PBAP_GROUP
     
-    chemgroups(313)%name="PBAP"
-    chemgroups(313)%specs=>PBAP_GROUP
+    chemgroups(313)%name="POLLEN_MWORT"
+    chemgroups(313)%specs=>POLLEN_MWORT_GROUP
     
-    chemgroups(314)%name="WDEP_PBAP"
-    chemgroups(314)%specs=>WDEP_PBAP_GROUP
+    chemgroups(314)%name="WDEP_POLLEN_MWORT"
+    chemgroups(314)%specs=>WDEP_POLLEN_MWORT_GROUP
     
-    chemgroups(315)%name="DDEP_PBAP"
-    chemgroups(315)%specs=>DDEP_PBAP_GROUP
+    chemgroups(315)%name="DDEP_POLLEN_MWORT"
+    chemgroups(315)%specs=>DDEP_POLLEN_MWORT_GROUP
     
     chemgroups(316)%name="PM25"
     chemgroups(316)%specs=>PM25_GROUP
