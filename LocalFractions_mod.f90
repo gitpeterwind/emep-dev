@@ -16,7 +16,7 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
                              PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix, &
-                             NATBIO, lf_spec_out, lf_set
+                             NATBIO, lf_spec_out, lf_set, ASOC_ug1e3_ix, non_C_ASOA_ng1e2_ix
 use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
@@ -123,8 +123,9 @@ real, public, allocatable, dimension(:,:), save :: &
   loc_frac_src_1d  ! Fraction of pollutants without i or j and extended (0:limax+1 or 0:ljmax+1)
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 real, allocatable, public, dimension(:,:), save ::xderiv !dX_ispec/dX_n
+real, allocatable, public, dimension(:,:), save ::xderivSOA !dX_ispec/dX_n
 real, allocatable, public, dimension(:,:), save ::ederiv !dX_ispec/demis_n
-real, allocatable, public, dimension(:,:), save :: lf0_loc, lf_loc
+real, allocatable, public, dimension(:,:), save :: lf0_loc, lf0SOA_loc, lf_loc, lfSOA_loc
 real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
 real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf !may not be worth the cost?
 real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf!may not be worth the cost?
@@ -189,8 +190,8 @@ integer, public, save :: N_lf_derivemis ! actual number of emissions to include 
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
-integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf
-integer, public, parameter :: Nfullchem_emis = 4 !nox, voc, nh3, sox
+integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
+integer, public, save :: Nfullchem_emis = 4 !nox, voc, nh3, sox
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 
@@ -239,6 +240,10 @@ contains
      
      !RO2POOL is not a proper chemical species and we must take care to avoid it when using derivatives!
      RO2POOL_ix = find_index('RO2POOL' ,species(:)%name)
+
+     !crude check that SOA are as expected
+     call CheckStop(non_C_ASOA_ng1e2_ix-ASOC_ug1e3_ix/=9, "LF: unexpected SOA indices. Revise LF reactions")
+
   else
      do i = 1, Max_lf_sources
         if (lf_src(i)%species == 'NOTSET') exit
@@ -274,6 +279,7 @@ contains
      spec2lfspec(n)=0!meaning: defined, but not a tracked species
   end do
   if (lf_fullchem) then
+     if (lf_set%EmisDer_all) Nfullchem_emis = 1
      iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nox emissions")
      iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
@@ -290,27 +296,36 @@ contains
      call addsource('SO4')
      call addsource('NO3_c')
      call addsource('NO3_f')
+
      
-     NSPEC_deriv_lf = Nlf_species !the number of species "Y" in dX/dY
-     
-     !additional species Z for which dO3/dZ = 0: NH3, (SO4, NO3_c)
+     NSPEC_deriv_lf = Nlf_species !the number of species "Y" in dX/dY for the O3 block
+     !additional species Z for which dO3/dZ = 0: NH3, SOA (SO4, NO3_c see above)
+     !SOA all ASOC and ASOA
+     do i = ASOC_ug1e3_ix-NSPEC_SHL, non_C_ASOA_ng1e2_ix-NSPEC_SHL !make sources for each SOA species
+        call addsource(species_adv(i)%name)
+     end do
+
+     N_deriv_SOA_lf  = Nlf_species !the number of species "Y" in dX/dY used for SOA
+     NSOA = N_deriv_SOA_lf - NSPEC_deriv_lf
+
      call addsource('NH3')
      
      NSPEC_chem_lf = Nlf_species !the number of species "X" in dX/dY
      
      !end of sources to be included in chemistry
-     Nsources_chem = Nsources !
+     Nsources_chem = Nsources ! each species can have several sources (voc, nox, nh3, sox)
      
      ! Additional species used for equilibrium chemistry, but not used in chemistry:  NH4_f (, NO3_f)
      call addsource('NH4_f')
      
      ! sizes:
-     ! number of species that are taken systematically by indices: NSPEC_deriv_lf = NSPEC_fullchem_lf
+     ! number of species that are taken systematically by indices: NSPEC_fullchem_lf
      ! including additional species included, but not derived wrt: NSPEC_chem_lf
      ! short-lived are not advected, but included as species to derive. They can also produce shift of indices:NSPEC_SHL
      ! other species included in equilibrium chemistry (aerosols), but not present in "normal" chemistry: Nlf_species
      ! highest species index used in chemistry (rcemis_lf): ix_lf_max
-     if(me==0)write(*,*)'LF chemistry, number of chem derivatives calculated: ',NSPEC_deriv_lf
+     if(me==0)write(*,*)'LF chemistry, number of chem derivatives calculated excl SOA: ',NSPEC_deriv_lf
+     if(me==0)write(*,*)'LF chemistry, additional derivatives for SOA: ',NSOA
      if(me==0)write(*,*)'LF chemistry, number of emis derivatives calculated: ',Nfullchem_emis
      if(me==0)write(*,*)'LF chemistry, species included: ',NSPEC_chem_lf
      if(me==0)write(*,*)'LF total species included: ',Nlf_species + NSPEC_SHL
@@ -818,22 +833,25 @@ contains
      allocate(loc_frac_wetdep(1,1,1))
   endif
   if(lf_fullchem)then
-     allocate(xnew_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,NSPEC_TOT))
-     allocate(x_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,NSPEC_TOT))
-     allocate(xold_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,NSPEC_TOT))
-     allocate(Dchem_lf(NSPEC_deriv_lf,NSPEC_TOT,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
+     allocate(xnew_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX,NSPEC_TOT))
+     allocate(x_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX,NSPEC_TOT))
+     allocate(xold_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX,NSPEC_TOT))
+     allocate(Dchem_lf(NSPEC_deriv_lf+NSOA,NSPEC_TOT,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      allocate(xderiv(NSPEC_deriv_lf,NSPEC_chem_lf))
+     allocate(xderivSOA(NSOA,NSOA))
      allocate(ederiv(N_lf_derivemisMAX,NSPEC_chem_lf))
      allocate(lf0_loc(Npos_lf*Nfullchem_emis,NSPEC_deriv_lf))
+     allocate(lf0SOA_loc(Npos_lf*Nfullchem_emis,NSOA))
      allocate(lf_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
+     allocate(lfSOA_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
      allocate(rcemis_lf(N_lf_derivemisMAX,ix_lf_max))
-     allocate(P_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
-     allocate(L_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
+     allocate(P_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
+     allocate(L_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
      allocate(rctA_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
      allocate(rctAk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(rctB_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
      allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
-     allocate(xn_shl_lf(NSPEC_deriv_lf,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
+     allocate(xn_shl_lf(NSPEC_deriv_lf+NSOA,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
@@ -2274,12 +2292,12 @@ end subroutine lf_diff
 
 end subroutine lf_conv
 
+!make and use chemical and emission derivatives
 subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   real, intent(in) :: eps1,xn(NSPEC_TOT),xnew(NSPEC_TOT)
   integer, intent(in) :: i,j,k
   integer :: n, n0, ispec, nispec, isrc,isrc_emis, ic, is, ics, ideriv0, found
   real :: efac, xtot,totemis,emiss
-  real :: xd(NSPEC_deriv_lf,NSPEC_deriv_lf)
   integer :: isec, iem, iix, ix, iiix,iemis, ideriv , iem_deriv, isrc_deriv, n_sp
 
   if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
@@ -2357,7 +2375,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   !make derivatives
   do ispec = 1, NSPEC_chem_lf!no loop over short lived
      n_sp = lfspec2spec(ispec) !CM_Spec index
-     do ideriv = 1, NSPEC_deriv_lf !loop over chemical derivatives
+     do ideriv = 1, NSPEC_deriv_lf !loop over chemical derivatives without SOA derivatives
         if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
@@ -2371,14 +2389,15 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            !remove numerical noise
            xderiv(ideriv,ispec) = 0.0
         end if
+        !if(ispec>NSPEC_deriv_lf )xderiv(ideriv,ispec) = 0.0
      end do
 
      do ideriv = 1, N_lf_derivemis !loop over emission derivatives
-        if (xnew(n_sp)>1000.0 .and. xnew_lf(ideriv+ NSPEC_deriv_lf,n_sp)>1000.0 .and. k>=KEMISTOP.and. n_sp/=RO2POOL_ix ) then !units are molecules/cm3 means almost no molecules
+        if (xnew(n_sp)>1000.0 .and. xnew_lf(ideriv + NSPEC_deriv_lf,n_sp)>1000.0 .and. k>=KEMISTOP.and. n_sp/=RO2POOL_ix ) then !units are molecules/cm3 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
-           ederiv(ideriv,ispec) = (xnew_lf(ideriv + NSPEC_deriv_lf ,n_sp) - xnew(n_sp))/((eps1-1.0)*(xnew(n_sp)))
+           ederiv(ideriv,ispec) = (xnew_lf(ideriv  + NSPEC_deriv_lf ,n_sp) - xnew(n_sp))/((eps1-1.0)*(xnew(n_sp)))
 
            !remove numerical noise
            ederiv(ideriv,ispec) = min(ederiv(ideriv,ispec),10.0)
@@ -2387,7 +2406,8 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
         else
            !Note that concentrations reaching 0.0 are not treated correctly
            ederiv(ideriv,ispec) = 0.0
-        end if
+         end if
+!       if(ispec>NSPEC_deriv_lf )ederiv(ideriv,ispec) = 0.0
      end do
   end do
 
@@ -2400,28 +2420,35 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 
   ! emissions derivatives taken into account for sensibility to changes of emis *during* chemical process
 
-  do isrc = 1, Nsources_chem !do not include NO3_f, NH3, NH4_f
+  do isrc = 1, Nsources_chem !do not include NH4_f
      ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
      n0 = lf_src(isrc)%start
      ispec = spec2lfspec(ix+NSPEC_SHL) !spec index in lf arrays
      if(ispec<0)cycle !not a lf_chem_deriv species
-!copy the species that wrt which we derive
-     if(ispec<=NSPEC_deriv_lf)then
-        !NB: no derivatives calculated for SIA, since d(O3)/d(SIA)=0
-        n = 1
-        if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
-        if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
-        if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
-        if (lf_set%EmisDer_all) n = 1
-        do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
-           lf0_loc(n, ispec) = lf(ics,i,j,k)
-           n=n+1
-        end do
-        do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
-           lf(ics,i,j,k) = 0.0 ! initialization
-        end do
+     !save the original lf values
+     n = 1
+     if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
+     if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
+     if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
+     if (lf_set%EmisDer_all) n = 1
+
+     !we must save the original lf, because we do not want to use and modify them at the same time
+     if(ispec<=N_deriv_SOA_lf)then !does not include NH3, but includes SOA
+        if(ispec<=NSPEC_deriv_lf)then 
+           do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
+              lf0_loc(n, ispec) = lf(ics,i,j,k)
+              lf(ics,i,j,k) = 0.0 ! initialization
+              n=n+1
+           end do
+        else
+           do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
+              lf0SOA_loc(n, ispec-NSPEC_deriv_lf) = lf(ics,i,j,k)
+              lf(ics,i,j,k) = 0.0 ! initialization
+              n=n+1
+           end do
+        end if
      else
-        !SO4 and NO3_c
+        !NH3
         !species that are not included in the derivatives (xderiv). Make diagonal element (1 if they do not change).
         if (xnew(ix+NSPEC_SHL)>1000.0)then
            xtot=xn_2d(ix+NSPEC_SHL,k)
@@ -2438,7 +2465,9 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      do iemis = 1, N_lf_derivemis
         if(emis2iem(iemis) == lf_src(isrc)%iem_deriv .or. lf_set%EmisDer_all) then
            n0 =lf_src(isrc)%start + emis2icis(iemis)
-           lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec) !contribution from emissions during this timestep. NB: only one iemis per n0 can be included
+           !contribution from emissions during this timestep.
+           !NB: only one iemis per n0 can be included
+           lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec)
         end if
      end do
   end do
@@ -2451,6 +2480,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   !Note that if a species has emissions and no chemistry, xderiv(x,x) = x(t)/(x(t)+E(dt)) /= 1
   ! xderiv(x,x) = ((x*eps1+E) - (x+E))/((eps1-1)*(x+E)) = ((x*eps1 -x) +E -E)/(eps1-1) /(x+E) = x/(x+E)
 
+  !add contribution from chemistry
   do isrc = 1, Nsources_chem! Also SO4, NO3_c
      ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
      n_sp = spec2lfspec(ix+NSPEC_SHL)
@@ -2468,10 +2498,57 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      end do
   end do
 
+  !add dSOA_i/dSOA_j contributions
+  do ispec = 1, NSOA !loop over SOA species only
+     n_sp = lfspec2spec(NSPEC_deriv_lf + ispec) !CM_Spec index
+     do ideriv = 1, NSOA !loop over SOA derivatives only
+        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix) then !units are molecules/cm3 means almost no molecules
+           ! derivatives are normalized to concentration of each species, dx/dy *y/x
+           !  y and dy must have same units
+           !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
+           xderivSOA(ideriv,ispec) = (xnew_lf(ideriv+NSPEC_deriv_lf+N_lf_derivemis ,n_sp) - xnew(n_sp))/((eps1-1.0)*(xnew(n_sp)))
+           !remove numerical noise
+           xderivSOA(ideriv,ispec) = min(xderivSOA(ideriv,ispec),10.0)
+           xderivSOA(ideriv,ispec) = max(xderivSOA(ideriv,ispec),-10.0)
+        else
+           !Not that concentrations reaching or leaving 0.0 are not treated correctly
+           !remove numerical noise
+           xderivSOA(ideriv,ispec) = 0.0
+        end if
+     end do
+     !emissions taken only once
+  end do
+
+  !lf0SOA_loc(n, ispec) contains original lf values
+  lfSOA_loc = matmul(lf0SOA_loc, xderivSOA) !SOA block
+
+  !add contribution from SOA to lf
+  do ispec = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + NSOA
+     isrc = (ispec-1) * Nfullchem_emis + 1
+     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
+     n0 = lf_src(isrc)%start
+     n = 1
+     if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
+     if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
+     if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
+     if (lf_set%EmisDer_all) n = 1
+     do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
+        lf(ics,i,j,k) = lf(ics,i,j,k) + lfSOA_loc(n, ispec-NSPEC_deriv_lf)
+        n=n+1
+     end do
+  end do
+  
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   if(DEBUGall .and. me==0)write(*,*)'end chememis'
+  if(i_fdom(i)==106.and.j_fdom(j)==94 .and.k==kmax_mid )then
+     do ispec = 1,NSOA
+        n_sp = lfspec2spec(NSPEC_deriv_lf + ispec) !CM_Spec index
+        write(*,66)species(n_sp)%name//' ',(xderivSOA(n,ispec),' ',n = 1, NSOA)
+     end do
+
+  endif
 return
-  if(i_fdom(i)==108.and.j_fdom(j)==95 .and.k==kmax_mid )then
+  if(i_fdom(i)==-108.and.j_fdom(j)==95 .and.k==kmax_mid )then
      write(*,*)'concentration after chem ',xnew(18)
      write(*,*)'prediction after 0.001 nox emis change',xnew(18)*(1.0+0.001*xderiv(NSPEC_deriv_lf+1,18))
      write(*,*)'lf O3 ',lf(3,i,j,k)
@@ -2481,15 +2558,15 @@ return
   67 format(10x,50(A11))
   if(i_fdom(i)==58.and.j_fdom(j)==36 .and.k==kmax_mid )then
      68 format(10x,50E11.4)
-     write(*,68)(xn(n+NSPEC_SHL),n = 1, min(7,NSPEC_deriv_lf))
-     write(*,68)(xnew(n+NSPEC_SHL),n = 1, min(7,NSPEC_deriv_lf))
-     write(*,67)(trim(species_adv(n)%name)//' ',n = 1, min(7,NSPEC_deriv_lf)),'  NOXEMIS'
+     write(*,68)(xn(n+NSPEC_SHL),n = 1,10)
+     write(*,68)(xnew(n+NSPEC_SHL),n = 1,10)
+     write(*,67)(trim(species_adv(n)%name)//' ',n = 1,10),'  NOXEMIS'
 
-     do ispec = 1, NSPEC_SHL+NSPEC_deriv_lf
+     do ispec = NSPEC_deriv_lf+1,NSPEC_deriv_lf+NSOA
 66      format(A10,50(F10.5,A1))
-        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, min(7,NSPEC_deriv_lf)),xderiv(NSPEC_deriv_lf+1,ispec)
+        write(*,66)species(ispec)%name//' ',(xderiv(n,ispec),' ',n = 1, 10)
      end do
-        write(*,66)'sum             ',(sum(xderiv(n,1:NSPEC_SHL+NSPEC_deriv_lf)),' ',n = 1, min(7,NSPEC_deriv_lf))
+        write(*,66)'sum             ',(sum(xderiv(n,1:NSPEC_SHL+NSPEC_deriv_lf)),' ',n = 1,10)
 
   endif
 
@@ -3385,6 +3462,9 @@ subroutine lf_rcemis(i,j,k,eps)
   end subroutine addsource
 
   subroutine lf_chem_pre(i,j,k,dt,Nd)
+    !The order of the "scenarios" aka derivatives is:
+    !species until NO3_f | emissions derivatives | SOA
+    !NB:  Dchem_lf, spec2lfspec and lfspec2specdoes not include emissions derivative indices!
     integer,intent(in) :: i,j,k
     integer,intent(inout) :: Nd
     real, intent(in) :: dt
@@ -3398,7 +3478,7 @@ subroutine lf_rcemis(i,j,k,eps)
     if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
        !compute chemistry with small changes in input concentrations
 
-       Nd = NSPEC_deriv_lf + N_lf_derivemis !shorter
+       Nd = NSPEC_deriv_lf + N_lf_derivemis !shorter. NB: does not include SOA
 
        !Careful sometimes the only difference between xnew and xnew_lf are from initial values (Dchem_lf and/or xn_shl_lf)
        !Saving the specific lf values for them can lead to instabilities.
@@ -3414,6 +3494,10 @@ subroutine lf_rcemis(i,j,k,eps)
                 x_lf(i_lf,n)    = x(n)
              end if
           end do
+          do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + N_lf_derivemis + NSOA
+             xnew_lf(i_lf,n) = xnew(n)
+             x_lf(i_lf,n)    = x(n)
+          end do
        end do
 
        do n = 1, NSPEC_chem_lf
@@ -3424,18 +3508,27 @@ subroutine lf_rcemis(i,j,k,eps)
              x_lf(i_lf,n_sp)    = max (x_lf(i_lf,n_sp), 0.0)
           end do
        end do
+       do n = 1, NSPEC_chem_lf
+          n_sp = lfspec2spec(n)
+          do i_lf = NSPEC_deriv_lf + N_lf_derivemis + 1, NSPEC_deriv_lf + N_lf_derivemis + NSOA
+             xnew_lf(i_lf,n_sp) = xn_2d(n_sp,k)
+             x_lf(i_lf,n_sp)    = xn_2d(n_sp,k) - Dchem_lf(i_lf - N_lf_derivemis,n_sp,k,i,j)*dt*1.5 !NB: Dchem_lf has not emisderiv indices
+             x_lf(i_lf,n_sp)    = max (x_lf(i_lf,n_sp), 0.0)
+          end do
+       end do
+       
        !for emissions we use Dchem and not Dchem_lf. Because in some situations
        !the xnew_lf does not change because of emissions, but because of
        !differences in Dchem_lf only -> creates large derivatives.
        do n = 1, NSPEC_SHL
-          do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + N_lf_derivemis
+          do i_lf = NSPEC_deriv_lf  + 1, NSPEC_deriv_lf  + N_lf_derivemis
              xnew_lf(i_lf,n) = xnew(n)
              x_lf(i_lf,n)    = x(n)
           end do
        end do
        do n = 1, NSPEC_chem_lf
           n_sp = lfspec2spec(n)
-          do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + N_lf_derivemis
+          do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf  + N_lf_derivemis
              xnew_lf(i_lf,n_sp) = xnew(n_sp)
              x_lf(i_lf,n_sp)    = x(n_sp)
           end do
@@ -3447,6 +3540,17 @@ subroutine lf_rcemis(i,j,k,eps)
           n_sp = lfspec2spec(i_lf)
           xnew_lf(i_lf,n_sp) = xn_2d(n_sp,k) * eps1
           x_lf(i_lf,n_sp)    = xn_2d(n_sp,k) * eps1 - Dchem_lf(i_lf,n_sp,k,i,j)*dt*1.5
+          x_lf(i_lf,n_sp)    = max (x_lf(i_lf,n_sp), 0.0)
+       end do
+
+
+       !change slightly one of the concentrations for chemical derivatives for SOA
+       !xnew_lf and x_lf have derivemis indices included,  lfspec2spec and Dchem_lf have not.
+       do i_lf = NSPEC_deriv_lf  + N_lf_derivemis + 1, NSPEC_deriv_lf  + N_lf_derivemis + NSOA
+          !for n<=NSPEC_deriv_lf we have  lfspec2spec(n) = n+NSPEC_SHL
+          n_sp = lfspec2spec(i_lf - N_lf_derivemis)
+          xnew_lf(i_lf,n_sp) = xn_2d(n_sp,k) * eps1
+          x_lf(i_lf,n_sp)    = xn_2d(n_sp,k) * eps1 - Dchem_lf(i_lf-N_lf_derivemis,n_sp,k,i,j)*dt*1.5
           x_lf(i_lf,n_sp)    = max (x_lf(i_lf,n_sp), 0.0)
        end do
 
@@ -3469,7 +3573,7 @@ subroutine lf_rcemis(i,j,k,eps)
        do n=1,NSPEC_TOT
           n_sp = spec2lfspec(n)
           if (n_sp>=0) then
-             do i_lf = 1, Nd
+             do i_lf = 1, Nd + NSOA
                 xextrapol = xnew_lf(i_lf,n) + (xnew_lf(i_lf,n)-x_lf(i_lf,n)) *cc
                 xold_lf(i_lf,n) = coeff1*xnew_lf(i_lf,n) - coeff2*x_lf(i_lf,n)
                 xold_lf(i_lf,n) = max( xold_lf(i_lf,n), 0.0 )
@@ -3497,8 +3601,15 @@ subroutine lf_rcemis(i,j,k,eps)
        end do
        do n = 1, NSPEC_chem_lf
           n_sp = lfspec2spec(n)
-          do i_lf = 1, NSPEC_deriv_lf
+          do i_lf = 1, NSPEC_deriv_lf 
              Dchem_lf(i_lf,n_sp,k,i,j) = (xnew_lf(i_lf,n_sp) - xn_2d(n_sp,k) )*dt_advec_inv
+          end do
+       end do
+       !SOA . NB: xnew_lf scenarios have also derivemis included in indices
+       do n = 1, NSPEC_chem_lf
+          n_sp = lfspec2spec(n)
+          do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + NSOA
+             Dchem_lf(i_lf,n_sp,k,i,j) = (xnew_lf(i_lf + N_lf_derivemis ,n_sp) - xn_2d(n_sp,k) )*dt_advec_inv!NB: Dchem_lf has no emisderiv indices
           end do
        end do
        !save shl
@@ -3506,10 +3617,17 @@ subroutine lf_rcemis(i,j,k,eps)
           do i_lf = 1, NSPEC_deriv_lf
              xn_shl_lf(i_lf,n,k,i,j) = xnew_lf(i_lf,n) !save short lives for each derivatives
           end do
+          !only "base" short lived are used for SOA scenarios
        end do
+       !"diagonal" are different, since they used xn_2d(n_sp,k) * eps1
        do i_lf = 1, NSPEC_deriv_lf
           n_sp = lfspec2spec(i_lf)
           Dchem_lf(i_lf,n_sp,k,i,j) = (xnew_lf(i_lf,n_sp) - xn_2d(n_sp,k) * eps1)*dt_advec_inv
+       end do
+       !SOA . NB: xnew_lf scenarios have also derivemis included in indices
+       do i_lf = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + NSOA
+          n_sp = lfspec2spec(i_lf)
+          Dchem_lf(i_lf,n_sp,k,i,j) = (xnew_lf(i_lf + N_lf_derivemis,n_sp) - xn_2d(n_sp,k) * eps1)*dt_advec_inv
        end do
     end if
 

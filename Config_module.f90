@@ -828,7 +828,8 @@ integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
      NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
      HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
      PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,&
-     N2O5_ix, OM_ix, SSf_ix, SSc_ix, Dustwbf_ix, DustSahf_ix
+     N2O5_ix, OM_ix, SSf_ix, SSc_ix, Dustwbf_ix, DustSahf_ix,&
+     ASOC_ug1e3_ix, non_C_ASOA_ng1e2_ix
 
 
 !----------------------------------------------------------------------------
@@ -1223,8 +1224,10 @@ subroutine define_chemicals_indices()
   TERPO2_ix = find_index('TERPO2' ,species(:)%name)
   H2O2_ix = find_index('H2O2' ,species(:)%name)
   N2O5_ix = find_index('N2O5' ,species(:)%name)
-
-
+  ASOC_ug1e3_ix = find_index('ASOC_ug1e3' ,species(:)%name)
+  non_C_ASOA_ng1e2_ix = find_index('non_C_ASOA_ng1e2' ,species(:)%name)
+  
+  
 end subroutine define_chemicals_indices
 
 end module Config_module

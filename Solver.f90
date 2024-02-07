@@ -40,7 +40,7 @@
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
                                   spec2lfspec,rctA_lf, rctB_lf,&
                                   rcemis_lf, lf_rcemis,&
-                                  NSPEC_deriv_lf, N_lf_derivemis,&
+                                  NSPEC_deriv_lf, N_lf_derivemis, NSOA,&
                                   lf_chem_pre, lf_chem_mid, lf_chem_pos
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
