@@ -84,10 +84,8 @@
   use Config_module, only: IIFULLDOM, JJFULLDOM
   use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,&
-                            Monthly_patternsFile,DailyFacFile,MonthlyFacFile,&
+                            GriddedMonthlyFacFile, DailyFacFile,MonthlyFacFile,&
                             DayofYearFacFile,&
-                            !F24 TimeFacBasis, & ! MIXED, CAMS_TEMPO_CLIM, or DAY_OF_YEAR
-                          !F24   MonthlyFacBasis, & ! ECLIPSE or other
                             monthly_timezoneFile, &
                             HourlyFacFile,HourlyFacSpecialsFile,&
                             USES
@@ -950,8 +948,9 @@ contains
      character(len=3)  :: src ! e.g. ene, ind, 
      character(len=*), parameter:: dtxt='gridtfacs:'
      logical :: GRIDDED_CAMS_TEMPO = .false.
-     if ( dbgTF ) write(*,*) dtxt//': '// trim(Monthly_patternsFile)
-     if ( index(Monthly_patternsFile,'CAMS_TEMPO')>0 ) then
+     real :: meanTfac
+     if ( dbgTF ) write(*,*) dtxt//': '// trim(GriddedMonthlyFacFile)
+     if ( index(GriddedMonthlyFacFile,'CAMS_TEMPO')>0 ) then
        if ( dbgTF ) write(*,*) dtxt//' GRIDDED_CAMS_TEMPO'
        GRIDDED_CAMS_TEMPO = .true.
      else
@@ -1054,7 +1053,7 @@ contains
               name=sector_map(isec,iemis)
               
               !print *, dtxt//'TESTS'//trim(name), isec, iemis, trim(EMIS_FILE(iemis))
-              call ReadField_CDF(trim(Monthly_patternsFile),&
+              call ReadField_CDF(trim(GriddedMonthlyFacFile),&
                    name,GridTfac(:,:,isec,iemis),month,interpol='conservative',&
                    known_projection='lon lat',needed=.true.,debug_flag=.false.,&
                    Undef=real(nmdays(month))/nydays )!default, multiplied by inverse later!!
@@ -1072,7 +1071,10 @@ contains
 !factor over the number of days. Therefore as a multiplicative factor it has to be divided by the number 
 !of days in the month. 
 
-      if  ( .not.GRIDDED_CAMS_TEMPO ) then
+      meanTfac= sum(GridTfac(:,:,1,1)/(LIMAX*LJMAX) )  ! test if 1.0 or 1/12 or ..
+                        ! LIMAX,LJMAX,NSECTORS,NEMIS_FILE
+      !if  ( .not.GRIDDED_CAMS_TEMPO ) then
+      if  (  abs(meanTfac-1.0) > 1.0e-2 ) then ! .not.GRIDDED_CAMS_TEMPO ) then
         GridTfac = GridTfac*nydays/nmdays(month)
       end if
 

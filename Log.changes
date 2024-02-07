@@ -52,7 +52,10 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7 feb 2024, Dave
 
   Moved location of CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc to 
-  Data/Timefactors/CAMS_TEMPO/
+    Data/Timefactors/CAMS_TEMPO/
+
+  Config, Timefactors_mod - removed Monthly_patternsFile and
+    added GriddedMonthlyFacFile. The latter is only used when timeFacs%Monthly==GRIDDED.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6 feb 2024, Dave
 

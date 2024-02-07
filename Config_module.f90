@@ -156,18 +156,19 @@ type, public :: timeFacs_t
 end type timeFacs_t
 type(timeFacs_t), public, save :: timeFacs = timeFacs_t()
 
-!2021: added ECLIPSE6b-based factors for non-European areas
-!NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
-!2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
-character(len=*), parameter,private :: TEMPODIR='DataDir/Timefactors/CAMS_TEMPO/'
+character(len=*), parameter,private :: TFACSDIR='DataDir/Timefactors/CAMS_TEMPO/'
 character(len=TXTLEN_FILE), target, save, public :: &
-  !GRIDDED: MonthlyFacFile = CTDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc',
-  MonthlyFacFile = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
- ,DailyFacFile   = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
- ,HourlyFacFile  = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
+  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc' &
+ ,MonthlyFacFile = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
+ ,DailyFacFile   = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
+ ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
  ,HourlyFacSpecialsFile = 'NOTSET'
+
+!OLD 2021: added ECLIPSE6b-based factors for non-European areas
+!OLD NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
+!OLD 2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 !OLD  HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
 !OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
 !OLD DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
@@ -830,7 +831,7 @@ character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt2
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014_month.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
-character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
+!OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
 ! Species indices that may or may not be defined in Species
@@ -911,6 +912,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
+   ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
    ,DayofYearFacFile&
@@ -936,7 +938,7 @@ subroutine Config_Constants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   ,Monthly_patternsFile&
+   !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
    ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
@@ -1084,6 +1086,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
+  call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
   call associate_File(DayofYearFacFile)
@@ -1108,7 +1111,7 @@ subroutine Config_Constants(iolog)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
-  call associate_File(Monthly_patternsFile)
+  !OLD call associate_File(Monthly_patternsFile)
   call associate_File(Monthly_timezoneFile)
   call associate_File(fileName_O3_Top)
   call associate_File(fileName_CH4_ibcs)
@@ -1179,7 +1182,11 @@ subroutine WriteConfig_to_RunLog(iolog)
     write(iolog,*)     'cfg:MonthlyFacBasis:       '//trim(timefacs%Monthly) ! F24FacBasis)
     write(iolog,*)     'cfg:DailyFacBasis:          '//trim(timefacs%Daily) ! F24
     write(iolog,*)     'cfg:HourlyFacBasis:         '//trim(timefacs%Hourly) ! F24
-    write(iolog,'(a)') 'cfg:MonthlyFacFile:        '//trim(MonthlyFacFile)
+    if ( timeFacs%Monthly == 'GRIDDED' ) then
+      write(iolog,'(a)') 'cfg:GriddedMonthlyFacFile:  '//trim(GriddedMonthlyFacFile)
+    else
+      write(iolog,'(a)') 'cfg:MonthlyFacFile:        '//trim(MonthlyFacFile)
+    end if
     write(iolog,'(a)') 'cfg:DailyFacFile:          '//trim(DailyFacFile)
     write(iolog,'(a)') 'cfg:HourlyFacFile:         '//trim(HourlyFacFile)
     write(iolog,'(a)') 'cfg:HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
