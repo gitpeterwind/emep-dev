@@ -106,7 +106,11 @@
 ! timeFacs%Daily   = 'CAMS_TEMPO_CLIM'  &!
 ! timeFacs%Hourly  = 'CAMS_TEMPO_CLIM',  ! or 'INERIS'
 
+!For Eureopan runs:
  MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL',
+! For Monthly == 'GRIDDED':
+! MonthlyFacFile = 'DataDir/Timefactors/CAMS_TEMPO/CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc'
+
  DailyFacFile   = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL',
  HourlyFacFile  = 'DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL',
 ! HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',

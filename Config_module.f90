@@ -159,12 +159,12 @@ type(timeFacs_t), public, save :: timeFacs
 !2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
 !POLL replaced by name of pollutant in Timefactors_mod
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
-character(len=*), parameter,private :: EMDIR='DataDir/Timefactors/CAMS_TEMPO/cams_tempo_v3_2/GapFilled/'
+character(len=*), parameter,private :: TEMPODIR='DataDir/Timefactors/CAMS_TEMPO/'
 character(len=TXTLEN_FILE), target, save, public :: &
-  !GRIDDED: MonthlyFacFile = EMDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc',
-  MonthlyFacFile = EMDIR//'cams_tempo_v3_2_month.POLL' &
- ,DailyFacFile   = EMDIR//'cams_tempo_v3_2_week.POLL' &
- ,HourlyFacFile  = EMDIR//'cams_tempo_v3_2_hour.POLL' &
+  !GRIDDED: MonthlyFacFile = CTDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc',
+  MonthlyFacFile = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
+ ,DailyFacFile   = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
+ ,HourlyFacFile  = TEMPODIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
  ,HourlyFacSpecialsFile = 'NOTSET'
 !OLD  HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
 !OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
