@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------#
-#     Mapping of emissions from GFASv1 to EMEP EmChem19a species
+#     Mapping of emissions from GFASv1 to EMEP EmChem19c species
 #     Included by  ForestFire_mod
 #----------------------------------------------------------------------------#
 # Column-1 gives GFASv1 species,
@@ -31,7 +31,6 @@
     'c4h10fire    ', 1.000, 1.000, 'NC4H10',         # 238.210 | Butanes
 #----------------------------------------------------------------------------#
 # BiomassBurning mapping GFASv1 to EMEP's ffire_OM, ffire_BC, ffire_remPPM25
-# PM_FFireInert
 #----------------------------------------------------------------------------#
 # Column-1 gives GFASv1 species,
 # Column-2 gives unitsfac

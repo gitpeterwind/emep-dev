@@ -2495,7 +2495,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   implicit none
   character(len=*), parameter :: dtxt = 'ReadF:' ! debug text
-  character(len=99) :: dtxt_msg
+  character(len=149) :: dtxt_msg
   character(len = *),intent(in) ::fileName,varname
   real,intent(out) :: Rvar(*)
   integer,intent(in) :: nstart
@@ -3137,9 +3137,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      allocate(Rvalues(totsize), stat=alloc_err)
      if ( mydebug ) then
-        do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
-           write(*,"(a,6i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i)
-        end do
+       do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
+         write(*,"(a,3i8,a,i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i),&
+            'varID:'//trim(varname), varID
+       end do
+       !print *, dtxt//'PRE-CHECK'//trim(varname), varID, size(Rvalues), startvec, dims
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg=dtxt_msg//"lonlatRRvalues")

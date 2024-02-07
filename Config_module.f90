@@ -144,13 +144,43 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
 
 logical, private, parameter :: F = .false.
+
+type, public :: timeFacs_t
+  integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
+  logical :: Day_of_Year = .false.    ! overrides Monthly and Daily if used 
+  character(len=20) :: MonthlyNH3  = 'NOTSET'    ! can be 'LOTOS'
+  character(len=TXTLEN_SHORT) :: &
+    Monthly = 'CAMS_TEMPO_CLIM'  & ! or GRIDDED
+   ,Daily   = 'CAMS_TEMPO_CLIM'  &!
+   ,Hourly  = 'CAMS_TEMPO_CLIM'
+end type timeFacs_t
+type(timeFacs_t), public, save :: timeFacs = timeFacs_t()
+
+!POLL replaced by name of pollutant in Timefactors_mod
+character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
+character(len=*), parameter,private :: TFACSDIR='DataDir/Timefactors/CAMS_TEMPO/'
+character(len=TXTLEN_FILE), target, save, public :: &
+  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc' &
+ ,MonthlyFacFile = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
+ ,DailyFacFile   = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
+ ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
+ ,HourlyFacSpecialsFile = 'NOTSET'
+
+!OLD 2021: added ECLIPSE6b-based factors for non-European areas
+!OLD NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
+!OLD 2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
+!OLD  HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
+!OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
+!OLD DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
+!OLD HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
+
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   !
    ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
     ,EMIS             = .false. &! Uses ESX
-    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
+!FEB2024    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
@@ -227,7 +257,6 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
-  character(len=20) :: MonthlyNH3  = 'NOTSET'    ! can be 'LOTOS'
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
@@ -726,7 +755,6 @@ real, public, parameter :: &
                               ! different roundings on different machines.
 real, public :: Pref   = 101325.0  ! Reference pressure in Pa used to define vertical levels
 
-
 ! Define output types.
 !   Derived output types: types 1..6 (instantaneous,year,month,day,hour,hour_inst),
 !                         refer to output variables defined in Derived_mod.
@@ -778,23 +806,6 @@ character(len=TXTLEN_FILE), target, save, public :: OceanNH3File = 'DataDir/geia
 character(len=TXTLEN_FILE), target, save, public :: soilnox_emission_File = &
    'DataDir/CAMS-GLOB-SOIL_Glb_0.5x0.5_soil_nox_v2.4clim_monthly.nc'
 !
-!2021: added ECLIPSE6b-based factors for non-European areas
-!MAY 2021: CAREFUL - set MonthlyFacFile consistent with MonthlyFacBasis
-!NEEDS THOUGHT BY USER!!! ECLIPSE or GENEMIS coded so far
-! (though code will crudely check)
-!2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
-character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-!character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'NOTSET'  ! ECLIPSE  => No summer/witer  corr
-character(len=TXTLEN_SHORT), save, public :: MonthlyFacBasis = 'GENEMIS'  ! => Uses summer/witer  corr
-character(len=TXTLEN_SHORT), save, public :: TimeFacBasis = &
-   'MIXED'  ! => mixed sources for Monthly, Daily, etc
-    ! or CAMS_CLIM_TEMPO    ! Uses climatological month/day/hour CAMS-TEMPO data
-    ! or DAY_OF_YEAR        ! Replace monthly and Daily by day of year timefactor
-!POLL replaced by name of pollutant in Timefactors_mod
-character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
-character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
-character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
-character(len=TXTLEN_FILE), target, save, public :: HourlyFacSpecialsFile = 'NOTSET'
 ! Chemical schemes have specific files:
 !character(len=*), parameter :: ZCMDIR= 'DataDir/ZCM_CRI-R5-emep/'
 character(len=TXTLEN_FILE), target, save, public :: &
@@ -820,7 +831,7 @@ character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt2
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014_month.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
-character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
+!OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
 ! Species indices that may or may not be defined in Species
@@ -847,6 +858,7 @@ subroutine Config_Constants(iolog)
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,END_OF_EMEPDAY &
    ,USES   & !
+   ,timeFacs   & !
    ,AERO   & ! for aerosol equilibrium scheme
    ,BiDir    & !
    ,PBL    & !
@@ -901,9 +913,8 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
-   ,TimeFacBasis&
+   ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
-   ,MonthlyFacBasis&
    ,DailyFacFile&
    ,DayofYearFacFile&
    ,HourlyFacFile&
@@ -928,7 +939,7 @@ subroutine Config_Constants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   ,Monthly_patternsFile&
+   !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
    ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
@@ -953,6 +964,7 @@ subroutine Config_Constants(iolog)
    ,LAST_CONFIG_LINE &
    ,SITE_SHL_names,SONDE_SHL_names,SITE_ADV_names, SONDE_ADV_names&
    ,mask2name
+
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default
@@ -1075,6 +1087,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
+  call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
   call associate_File(DayofYearFacFile)
@@ -1099,7 +1112,7 @@ subroutine Config_Constants(iolog)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
-  call associate_File(Monthly_patternsFile)
+  !OLD call associate_File(Monthly_patternsFile)
   call associate_File(Monthly_timezoneFile)
   call associate_File(fileName_O3_Top)
   call associate_File(fileName_CH4_ibcs)
@@ -1164,15 +1177,20 @@ subroutine WriteConfig_to_RunLog(iolog)
   if(MasterProc)then
     write(iolog,*) ' USES after 1st time-step'
     write(iolog,nml=OutUSES)
-    write(iolog,'(a)') 'soilnox_emission_File: '//trim(soilnox_emission_File)
-    write(iolog,'(a)') 'SplitDefaultFile:      '//trim(SplitDefaultFile)
-    write(iolog,'(a)') 'SplitSpecialsFile:     '//trim(SplitSpecialsFile)
-    write(iolog,*)     'TimeFacBasis:          '//trim(TimeFacBasis)
-    write(iolog,*)     'MonthlyFacBasis:       '//trim(MonthlyFacBasis)
-    write(iolog,'(a)') 'MonthlyFacFile:        '//trim(MonthlyFacFile)
-    write(iolog,'(a)') 'DailyFacFile:          '//trim(DailyFacFile)
-    write(iolog,'(a)') 'HourlyFacFile:         '//trim(HourlyFacFile)
-    write(iolog,'(a)') 'HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
+    write(iolog,'(a)') 'cfg:soilnox_emission_File: '//trim(soilnox_emission_File)
+    write(iolog,'(a)') 'cfg:SplitDefaultFile:      '//trim(SplitDefaultFile)
+    write(iolog,'(a)') 'cfg:SplitSpecialsFile:     '//trim(SplitSpecialsFile)
+    write(iolog,*)     'cfg:MonthlyFacBasis:       '//trim(timefacs%Monthly) ! F24FacBasis)
+    write(iolog,*)     'cfg:DailyFacBasis:          '//trim(timefacs%Daily) ! F24
+    write(iolog,*)     'cfg:HourlyFacBasis:         '//trim(timefacs%Hourly) ! F24
+    if ( timeFacs%Monthly == 'GRIDDED' ) then
+      write(iolog,'(a)') 'cfg:GriddedMonthlyFacFile:  '//trim(GriddedMonthlyFacFile)
+    else
+      write(iolog,'(a)') 'cfg:MonthlyFacFile:        '//trim(MonthlyFacFile)
+    end if
+    write(iolog,'(a)') 'cfg:DailyFacFile:          '//trim(DailyFacFile)
+    write(iolog,'(a)') 'cfg:HourlyFacFile:         '//trim(HourlyFacFile)
+    write(iolog,'(a)') 'cfg:HourlyFacSpecialsFile: '//trim(HourlyFacSpecialsFile)
   endif
 end subroutine WriteConfig_to_RunLog
 
