@@ -144,6 +144,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
 
 logical, private, parameter :: F = .false.
+
 type, public :: timeFacs_t
   integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
   logical :: Day_of_Year = .false.    ! overrides Monthly and Daily if used 
@@ -153,7 +154,8 @@ type, public :: timeFacs_t
    ,Daily   = 'CAMS_TEMPO_CLIM'  &!
    ,Hourly  = 'CAMS_TEMPO_CLIM'
 end type timeFacs_t
-type(timeFacs_t), public, save :: timeFacs
+type(timeFacs_t), public, save :: timeFacs = timeFacs_t()
+
 !2021: added ECLIPSE6b-based factors for non-European areas
 !NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
 !2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
@@ -959,6 +961,7 @@ subroutine Config_Constants(iolog)
    ,LAST_CONFIG_LINE &
    ,SITE_SHL_names,SONDE_SHL_names,SITE_ADV_names, SONDE_ADV_names&
    ,mask2name
+
 
   LAST_CONFIG_LINE_DEFAULT = LAST_CONFIG_LINE !save default value
   DataPath(1) = '.'!default
