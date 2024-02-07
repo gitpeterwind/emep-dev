@@ -347,9 +347,9 @@ module PBAP_mod
 
     if (inat(i_PBAP) > 0) then
         EmisNat(inat(i_PBAP),i,j) = kgm2h(i_PBAP)*PBAP_flux(i,j,i_PBAP) !Emissions in molec/m2/s
-    end if
-    if (dbg) then
-      write(*,"(2a,f12.5)") PBAP_names(i_PBAP),": EmisNat ",EmisNat(inat(i_PBAP),i,j)
+      if (dbg) then
+        write(*,"(2a,f12.5)") PBAP_names(i_PBAP),": EmisNat ",EmisNat(inat(i_PBAP),i,j)
+      end if
     end if
   end do 
 

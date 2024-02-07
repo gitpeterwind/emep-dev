@@ -4,7 +4,7 @@
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
-  enddate   = 2018,12,31,24,
+  enddate   = 2018,01,02,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -525,7 +525,7 @@ OutputConcs=
 !aARgh Put bacl to fool aeroval
       'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
       'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-      'BACTERIA'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'BACTERIA'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! PM10group sub-components
@@ -586,7 +586,7 @@ OutputConcs=
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !     'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-!     'PBAP'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PBAP'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
