@@ -3,8 +3,8 @@
   iyr_trend = 2018,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2018,01,01,00,
-  enddate   = 2018,01,02,24,
+  startdate = 2010,08,01,00,
+  enddate   = 2010,08,31,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
