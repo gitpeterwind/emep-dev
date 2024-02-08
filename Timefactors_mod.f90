@@ -212,8 +212,7 @@ contains
   character(len=10) :: code
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
-    write(unit=6,fmt=*) dtxt//"into timefactors, N_TFAC, timeFacs%Monthly =", &
-       N_TFAC, ' Grid?', timeFacs%Monthly
+    write(unit=6,fmt=*) dtxt//" N_TFAC:", N_TFAC, "timeFacs%Monthly:", timeFacs%Monthly
     dbgTF = .true.
   end if
 
@@ -433,7 +432,6 @@ contains
    end if ! .not. GRIDDED MONTHLY/'DAY_OF_YEAR'
 
 
-   !F24 if ( TimeFacBasis == 'DAY_OF_YEAR' ) then !read directly day of the year timefactors
    if ( .not. timeFacs%Day_of_Year ) then ! Uses Monthly, Daily facs
 
      do iemis = 1, NEMIS_FILE
@@ -581,7 +579,7 @@ contains
     SPECEMLOOP: do iemis = 1, NEMIS_FILE
        fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
-       if(dbgTF) write(*,*) dtxt//'Hourly SPECIAL', iemis,.not.found_HourlyFacFile,ios, trim(fname2)
+       if(dbgTF) write(*,*) dtxt//'Hourly SPECIAL', iemis,found_HourlyFacFile,ios, trim(fname2)
        if ( ios /= 0 ) then
           if(me==0 .and. fname2/= 'NOTSET') write(*,*)dtxt//&
             'Special hourly factors not found (but not needed): ',trim(fname2)
@@ -619,7 +617,6 @@ contains
                 icc, inland,idd, insec, tmp24(1), tmp24(13), " "//trim(timeFacs%Hourly)
              
              if( icc<0 .and. inland/=0)then
-                !write(*,*)dtxt//"Warning: HourlyFacsSpecials, country code not recognized", inland
                 if(MasterProc) write(*,*)dtxt// &
                  "Warning: HourlyFacsSpecials, country code not recognized:",&
                    trim(inputline)
@@ -675,6 +672,7 @@ contains
        end do SPECLOOP
        close(IO_TIMEFACS)
     end do SPECEMLOOP ! NEMIS_FILE
+
 
     if(.not.found_HourlyFacFile) call CheckStop( any(fac_ehh24x7 < 0.0 ) ,&
          dtxt//"Unfilled efac_ehh24x7")
@@ -949,6 +947,7 @@ contains
      character(len=*), parameter:: dtxt='gridtfacs:'
      logical :: GRIDDED_CAMS_TEMPO = .false.
      real :: meanTfac
+     integer :: idbg=3, jdbg=3 ! FAKE, since debug_li not set yet
      if ( dbgTF ) write(*,*) dtxt//': '// trim(GriddedMonthlyFacFile)
      if ( index(GriddedMonthlyFacFile,'CAMS_TEMPO')>0 ) then
        if ( dbgTF ) write(*,*) dtxt//' GRIDDED_CAMS_TEMPO'
@@ -960,14 +959,8 @@ contains
      if ( dbgTF ) then
        do iemis=1,NEMIS_FILE
          write(*,*) dtxt//'EMIS:'//trim(EMIS_File(iemis))
-         !print *, dtxt//'EMIS:'//trim(EMIS_File(iemis))
        end do
      end if
-
-     !subroutine getCAMSmatch(camssec,camspoll,secpoll)
-     !  character(len=*), intent(in) :: camssec, camspoll ! e.g. agr nh3
-     !  integer :: i, iemis
-     !end subroutine getCAMSmatch
 
      ! sector_map(sector,emis) = name_in_netcdf_file
      ! CRUDELY HARD-CODED for Jan 2024 CAMS-TEMP_GLOB FILE
@@ -1031,12 +1024,13 @@ contains
      end do
 
      if(.not.allocated(GridTfac))then
-        allocate(GridTfac(LIMAX,LJMAX,NSECTORS,NEMIS_FILE))! only snap sectors defined for GridTfac!
+        allocate(GridTfac(LIMAX,LJMAX,NSECTORS,NEMIS_FILE))
         GridTfac=dble(nmdays(month))/nydays !default, multiplied by inverse later!!
+        if(dbgTF) write(*,*)'IJa', month, nmdays(month), maxval(GridTfac), minval(GridTfac)
      end if
 
      name='none'
-     do isec=1,NSECTORS! only snap timefactors defined for GridTfac!
+     do isec=1,NSECTORS
         do iemis=1,NEMIS_FILE
            if ( dbgTF )write(*,*) dtxt//'maps', isec, iemis, sector_map(isec,iemis)
 
@@ -1048,6 +1042,7 @@ contains
            if(sector_map(isec,iemis)==name.and.iemis>1)then
               !has same values as before, no need to read again
               GridTfac(:,:,isec,iemis)=GridTfac(:,:,isec,iemis-1)
+              !if(dbgTF) write(*,*)'IJc', isec,iemis, GridTfac(idbg,jdbg,1,1)
            else
               
               name=sector_map(isec,iemis)
@@ -1058,6 +1053,13 @@ contains
                    known_projection='lon lat',needed=.true.,debug_flag=.false.,&
                    Undef=real(nmdays(month))/nydays )!default, multiplied by inverse later!!
 
+              !Feb 7
+              if ( GRIDDED_CAMS_TEMPO ) then  ! has values  ca. 1.0
+                GridTfac(:,:,isec,iemis)=GridTfac(:,:,isec,iemis)*dble(nmdays(month))/nydays
+                ! now has ca. 0.08, ~ 1/12
+                ! if(dbgTF) write(*,*)'IJd', isec,iemis, GridTfac(idbg,jdbg,1,1)
+              end if
+
            end if
         end do
      end do
@@ -1065,17 +1067,21 @@ contains
 !normalizations:
 ! in ECLIPSEv5_monthly_patterns.nc the "default" timefactors are defines as
 ! nmdays(month)/nydays
+! In CAMS_TEMPO_GLOB 4emep the default timefactprs are 1.0
    
 !the normalization until here is such that GridTfac gives the relative contribution from each month
 !However we want to use it as a multiplicative factor, which gives the total as the sum (integral) of the
 !factor over the number of days. Therefore as a multiplicative factor it has to be divided by the number 
 !of days in the month. 
 
-      meanTfac= sum(GridTfac(:,:,1,1)/(LIMAX*LJMAX) )  ! test if 1.0 or 1/12 or ..
-                        ! LIMAX,LJMAX,NSECTORS,NEMIS_FILE
       !if  ( .not.GRIDDED_CAMS_TEMPO ) then
-      if  (  abs(meanTfac-1.0) > 1.0e-2 ) then ! .not.GRIDDED_CAMS_TEMPO ) then
+                        ! LIMAX,LJMAX,NSECTORS,NEMIS_FILE
+      meanTfac= sum(GridTfac(:,:,1,1)/(LIMAX*LJMAX) )  ! test if 1.0 or 1/12 or ..
+      if  (  abs(meanTfac-1.0) > 1.0e-2 ) then ! .not.GRIDDED_CAMS_TEMPO. Maybe ECLIPSEv5?
+        if ( MasterProc) write(*,*) dtxt//'RE-NORMALISE', month, meanTfac, maxval(GridTfac(:,:,1,1))
+        !if(dbgTF) write(*,*)dtxt//'IJe:',isec, iemis, GridTfac(idbg,jdbg,1,1)   ! 1/12
         GridTfac = GridTfac*nydays/nmdays(month)
+        if(dbgTF) write(*,*)dtxt//'IJf:',isec, iemis, month,  GridTfac(idbg,jdbg,1,1) ! 1.0
       end if
 
 !The normalization now, gives for instance GridTfac = 1 for constant emissions.
