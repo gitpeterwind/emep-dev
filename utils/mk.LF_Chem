@@ -8,8 +8,8 @@
 
 # Note: using (:) instead of (1:Nd) is faster! (10-15%), but only if the array has dimension not much larger than Nd
 
-echo "Before starting, you should move the inert parts in CM_Reactions1 to CM_Reactions2"
-echo "and move SO4, NO3_c and NH3 from CM_Reactions2 to CM_Reactions1"
+echo "Before starting, you must copy (not cut) the ASO from CM_Reactions2 to CM_Reactions1"
+echo "and move (cut and past) SO4, NO3_c and NH3 from CM_Reactions2 to CM_Reactions1"
 echo "and check that 100 and 97 and 96 are the indices to use for SurfArea dependents rct"
 
 #test if the CM_Reactions1.inc has already been transformed
@@ -41,14 +41,30 @@ for species in SO2 SO4 NH3 NO NO2 shipNOx CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BEN
 do
   sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
+cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
+echo "CM_Reactions1.inc successfully adapted to LF calculations"
 
 sed -i 's/rct(100,k)/(rct(100,k) * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 sed -i 's/rct(97,k)/(rct(97,k)  * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 sed -i 's/rct(96,k)/(rct(96,k)  * (1.0 + rctB_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 
+sed  -i '1i if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' CM_Reactions2.inc
+sed -i '/ASOC_ug1e3/,/BSOC_ug1e3/ s/P \= /P_lf(Nd+1:Nd+NSOA) \= /' CM_Reactions2.inc
+sed -i '/ASOC_ug1e3/,/BSOC_ug1e3/ s/L \= /L_lf(Nd+1:Nd+NSOA) \= /' CM_Reactions2.inc
+sed -i '/ASOC_ug1e3/,/BSOC_ug1e3/ s/dt2 \* P/dt2 \* P_lf(Nd+1:Nd+NSOA)/' CM_Reactions2.inc
+sed -i '/ASOC_ug1e3/,/BSOC_ug1e3/ s/dt2 \* L/dt2 \* L_lf(Nd+1:Nd+NSOA)/' CM_Reactions2.inc
 
-cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
+for species in ASOC_ug1e3 ASOC_ug1e2 ASOC_ug10 ASOC_ug1 ASOC_ng1e2 non_C_ASOA_ug1e3 non_C_ASOA_ug1e2 non_C_ASOA_ug10 non_C_ASOA_ug1 non_C_ASOA_ng1e2
+do
+sed -i "/ASOC_ug1e3/,/BSOC_ug1e3/ s/xold($species)/xold_lf(Nd+1:Nd+NSOA,$species)/g" CM_Reactions2.inc
+sed -i "/ASOC_ug1e3/,/BSOC_ug1e3/ s/xnew($species)/xnew_lf(Nd+1:Nd+NSOA,$species)/g" CM_Reactions2.inc
+done
 
-echo "CM_Reactions1.inc successfully adapted to LF calculations"
+#add endif before BSOC_ug1e3
+sed -i '/!-> BSOC_ug1e3/i endif' CM_Reactions2.inc
 
+echo "CM_Reactions2.inc successfully adapted to LF calculations"
+
+echo "Now move back the all ASO, SO4, NO3_c and NH3 from CM_Reactions1 to CM_Reactions2"
+echo "put the xnew_lf within the if, and the other non-lf ASO outside"
 fi
