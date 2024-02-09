@@ -366,13 +366,14 @@ type, public :: lf_sources
   integer :: country_ix = -1 !Internal country index. Does not have any meaning outside of code
   logical :: DryDep = .false. ! if drydep is to be outputed
   logical :: WetDep = .false. ! if wetdep is to be outputed
-  logical     :: YEAR =.true.! Output frequency
-  logical     :: MONTH =.false.
-  logical     :: make_fracsum =.false.
+  logical     :: YEAR = .true.! Output frequency
+  logical     :: MONTH = .false.
+  logical     :: make_fracsum = .false.
   character(len=40)::  MONTH_ENDING = "NOTSET"
-  logical     :: DAY =.false.
-  logical     :: HOUR =.false.
-  logical     :: HOUR_INST =.false.
+  logical     :: DAY = .false.
+  logical     :: HOUR = .false.
+  logical     :: HOUR_INST = .false.
+  logical     :: is_ASOA = .false.
 end type lf_sources
 
 type, public :: lf_out_type

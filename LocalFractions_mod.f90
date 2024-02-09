@@ -3,7 +3,7 @@ module LocalFractions_mod
 ! all subroutines for Local Fractions
 !
 use CheckStop_mod,     only: CheckStop,StopAll
-use Chemfields_mod,    only: xn_adv, cfac, x, xnew
+use Chemfields_mod,    only: xn_adv, cfac, Fgas3d, x, xnew
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE, HydrolysisN2O5k
 use ChemSpecs_mod,     only: species_adv,species
@@ -159,7 +159,7 @@ logical, public, save :: wetdep_lf(NSPEC_ADV) = .false.
 
 integer, private, save :: iem2Nipoll(NEMIS_File) !number of pollutants for that emis file
 logical :: old_format=.false. !temporary, use old format for input and output
-integer, private, save :: isrc_O3=-1, isrc_O3_voc=-1, isrc_O3_nh3=-1, isrc_O3_sox=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
+integer, private, save :: isrc_O3=-1, isrc_NO=-1, isrc_NO2=-1, isrc_VOC=-1
 integer, private, save :: isrc_SO2=-1, isrc_SO4=-1, isrc_NH3=-1, isrc_NH3_nh3=-1
 integer, private, save :: isrc_NO3=-1, isrc_NO3_nh3=-1, isrc_HNO3=-1, isrc_HNO3_nh3=-1
 integer, private, save :: isrc_NH4_f=-1,isrc_NH4_f_nh3=-1,isrc_NO3_c=-1
@@ -191,7 +191,7 @@ integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, ie
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
-integer, public, save :: Nfullchem_emis = 4 !nox, voc, nh3, sox
+integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly or 1 if all together
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 
@@ -279,7 +279,11 @@ contains
      spec2lfspec(n)=0!meaning: defined, but not a tracked species
   end do
   if (lf_fullchem) then
-     if (lf_set%EmisDer_all) Nfullchem_emis = 1
+     if (lf_set%EmisDer_all) then
+        Nfullchem_emis = 1
+     else
+        Nfullchem_emis = 4
+     end if
      iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nox emissions")
      iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
@@ -1265,7 +1269,8 @@ subroutine lf_out(iotyp)
               if (found==0) cycle
               if (ideriv == 1) then
                  !first write "base" concentrations, not country contributions
-                 if(is_surf)def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name) 
+                 if (is_surf) def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name)
+                 if (lf_src(isrc)%is_ASOA) def2%name='SURF_ug_PM_'//trim(lf_spec_out(iout)%name)
                  if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                  scale = 1.0
                  call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -1400,9 +1405,10 @@ subroutine lf_av(dt)
   integer ::isec_poll
   logical :: pollwritten(2*Max_lf_spec),is_surf
   integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
-  real :: w_m, w_y, timefrac
+  real :: w_m, w_y, timefrac, Fgas
   logical, save :: first_call=.true.
-
+  integer :: iadv_PMf
+  
   if(DEBUGall)write(*,*)me,'start av'
 
   call Code_timer(tim_before)
@@ -1411,6 +1417,8 @@ subroutine lf_av(dt)
      .not. lf_set%MONTH .and.&
      .not. lf_set%YEAR       )return
 
+  iadv_PMf = find_index('SO4', species_adv(:)%name, any_case=.true. )
+  
   !do the averaging
   do iou_ix = 1, Niou_ix
      pollwritten = .false.
@@ -1423,18 +1431,28 @@ subroutine lf_av(dt)
            is_surf = .false.
            ipoll_cfac = ipoll
         end if
+
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
            do j=1,ljmax
               do i=1,limax
                  xtot=0.0
                  do iix=1,lf_src(isrc)%Nsplit
                     ix = lf_src(isrc)%ix(iix)
-                     if(is_surf)then
-                       !3m height cfac correction
-                       xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
-                         *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
-                       !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
-                     else
+                    if(is_surf)then
+                       if(lf_src(isrc)%is_ASOA)then
+                          !output the particle phase 
+                          Fgas = Fgas3d(ix+NSPEC_SHL,i,j, KMAX_MID)
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9*(1-Fgas)*cfac(iadv_PMf,i,j) !for ug/m3
+                          !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2                      
+                       else
+                          !3m height cfac correction
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
+                          !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                       end if
+                    else
+                       if(lf_src(isrc)%is_ASOA)stop !not implemented
                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
                               *roa(i,j,k,1)*1.E9 !for ug/m3
                         !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
@@ -2540,6 +2558,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   if(DEBUGall .and. me==0)write(*,*)'end chememis'
+return
   if(i_fdom(i)==106.and.j_fdom(j)==94 .and.k==kmax_mid )then
      do ispec = 1,NSOA
         n_sp = lfspec2spec(NSPEC_deriv_lf + ispec) !CM_Spec index
@@ -2618,25 +2637,6 @@ subroutine lf_chem(i,j)
         enddo
      end do
   end if
-
-  if(isrc_SO2>0)then
-     do k = KMAX_MID-lf_Nvert+1,KMAX_MID
-        SO4 = xn_2d(SO4_ix,k)
-        n_SO4 = lf_src(isrc_SO4)%start
-        write(*,*)'LF:SO2 not implemented stop'
-        stop
-        !SO4 produced by SO2 , without emitted SO4:
-        !d_SO4 = max(0.0,Dchem(NSPEC_SHL+ix_SO4,k,i,j)-rcemis(NSPEC_SHL+ix_SO4,k))*dt_advec
-        inv = 1.0/(SO4 + 1.0E-20)
-
-        do n_SO2=lf_src(isrc_SO2)%start, lf_src(isrc_SO2)%end
-           lf(n_SO4,i,j,k) = (lf(n_SO4,i,j,k)*(SO4-d_SO4)+d_SO4*lf(n_SO2,i,j,k)) * inv
-           n_SO4 = n_SO4 + 1
-        enddo
-
-    end do
-
- end if
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   if(DEBUGall .and. me==0)write(*,*)'end chem'
@@ -3421,6 +3421,7 @@ subroutine lf_rcemis(i,j,k,eps)
        end if
        lf_src(Nsources)%species = species_adv(ix)%name
        if(me==0 .and. DEBUG)write(*,*)lf_src(Nsources)%species
+       if (index(lf_src(Nsources)%species,"ASO")>0) lf_src(Nsources)%is_ASOA = .true.
        lfspec2spec(Nlf_species) = ix + NSPEC_SHL
        spec2lfspec(ix + NSPEC_SHL) = Nlf_species
        lf_set%full_chem = .true.
@@ -3439,24 +3440,18 @@ subroutine lf_rcemis(i,j,k,eps)
           if (lf_src(Nsources)%species == 'NO3_f') isrc_NO3_f = Nsources
           if (lf_src(Nsources)%species == 'HNO3') isrc_HNO3 = Nsources
           if (lf_src(Nsources)%species == 'SO4') isrc_SO4 = Nsources
+          if (lf_src(Nsources)%species == 'SO2') isrc_SO2 = Nsources
           if (lf_src(Nsources)%species == 'NO3_c') isrc_NO3_c = Nsources
           if (lf_src(Nsources)%species == 'NH3') isrc_NH3 = Nsources
        else if (i==2) then
           lf_src(Nsources)%iem_lf = iem_lf_voc
           lf_src(Nsources)%iem_deriv = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-          if (lf_src(Nsources)%species == 'O3') isrc_O3_voc = Nsources
        else if (i==3) then
           lf_src(Nsources)%iem_lf = iem_lf_nh3
           lf_src(Nsources)%iem_deriv = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
-          if (lf_src(Nsources)%species == 'O3') isrc_O3_nh3 = Nsources
-          if (lf_src(Nsources)%species == 'HNO3') isrc_HNO3_nh3 = Nsources
-          if (lf_src(Nsources)%species == 'NO3_f') isrc_NO3_f_nh3 = Nsources
-          if (lf_src(Nsources)%species == 'NH4_f') isrc_NH4_f_nh3 = Nsources
-          if (lf_src(Nsources)%species == 'NH3') isrc_NH3_nh3 = Nsources
        else if (i==4) then
           lf_src(Nsources)%iem_lf = iem_lf_sox
           lf_src(Nsources)%iem_deriv = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
-          if (lf_src(Nsources)%species == 'O3') isrc_O3_sox = Nsources
        end if
     end do
   end subroutine addsource
