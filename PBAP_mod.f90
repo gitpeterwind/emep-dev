@@ -75,9 +75,11 @@ module PBAP_mod
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
                                         !https://doi.org/10.5194/acp-15-6127-2015, 2015
-  real, parameter :: FUNGAL_DIAMETER = 4.0 !Fungal diameter [um] (ibid)
+  real, parameter :: FUNGAL_DIAMETER = 4.0 !Fungal diameter [um] (ibid gives 3um, but this gives
+                                           !very light spores, and other literature claims they are)
+                                           !3um-5um.
   real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
-                                                                  !This weight is about 14pg, somewhat lower than
+                                                                  !This is about 34pg, on the lower end of that
                                                                   !reported in literature (33pg-65pg) according to
                                                                   !Heald and Spracklen (2009) doi:10.1029/2009GL037493,
 
@@ -97,7 +99,7 @@ module PBAP_mod
     !Initializes the PBAP calculation
     !sets up number of PBAPs (NPBAP)
     !And fills array accordingly.
-    !Jan 2024: Is this parallelization safe?
+    !GFL Jan 2024: Is this parallelization safe?
 
     if (my_first_call) then
       NPBAP = 0

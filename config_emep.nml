@@ -1,10 +1,10 @@
 &Model_config
   GRID      = 'EMEP0302',
-  iyr_trend = 2018,
+  iyr_trend = 2010,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2010,08,01,00,
-  enddate   = 2010,08,31,24,
+  startdate = 2010,08,26,00,
+  enddate   = 2010,09,01,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -375,7 +375,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
 
 !-------- Read/Write MODEs
-  NEST_MODE_READ = 'MONTH',        ! NONE=do nothing
+  NEST_MODE_READ = 'NONE',        ! NONE=do nothing
 ! NEST_MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! NEST_MODE_READ = 'START',        ! at the start of run
 ! NEST_MODE_READ = 'RESTART',      ! at the start of run, without overwriting BC
@@ -528,6 +528,8 @@ OutputConcs=
       'BACTERIA'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+       'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+
 ! PM10group sub-components
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -541,7 +543,6 @@ OutputConcs=
       'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 
 
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec

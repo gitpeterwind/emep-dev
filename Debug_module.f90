@@ -53,7 +53,7 @@ module Debug_module
     ,ROADDUST        = .false. &
     ,RSUR            = .false. & ! Surface resistance
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL, need for some other debugs
-    ,MY_WETDEP    = .false. &
+    ,MY_WETDEP       = .false. &
     ,SEASALT         = .false. &
     ,SETUP_1DCHEM    = .false. &
     ,SETUP_1DBIO     = .false. &
