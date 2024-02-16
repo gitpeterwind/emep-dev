@@ -72,14 +72,17 @@ module PBAP_mod
   !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
   !DOI 10.1007/978-3-319-35095-0_121
 
+  real*8, DIMENSION(3), parameter  ::  &
+  FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal paramterization, Herald and Spracken
+
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
                                         !https://doi.org/10.5194/acp-15-6127-2015, 2015
-  real, parameter :: FUNGAL_DIAMETER = 4.0 !Fungal diameter [um] (ibid gives 3um, but this gives
+  real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid gives 3um, but this gives
                                            !very light spores, and other literature claims they are)
                                            !3um-5um.
-  real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
-                                                                  !This is about 34pg, on the lower end of that
+  real, parameter :: FUNGAL_WEIGHT = 33.0*1.0e-12!(4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
+                                                                  !This is on the lower end of that
                                                                   !reported in literature (33pg-65pg) according to
                                                                   !Heald and Spracklen (2009) doi:10.1029/2009GL037493,
 
@@ -90,6 +93,10 @@ module PBAP_mod
   real, parameter :: BACTERIA_WEIGHT = 0.52*1.0e-12 !Bacterial weight [g]  (ibid)
   real, parameter :: BACTERIA_DENS   = BACTERIA_WEIGHT/((4/3.0)*PI*(0.5*BACTERIA_DIAMETER*1e-6)**3) !Bacteria density [g/m3]
 
+  character(len=20), save :: parameterization_choice = "HM" !Choice of fungal flux parameterization
+                                                !HM: Hummel(2015) 
+                                                !SD: Sesartic and Dallafior
+                                                !HS: Herald and Spracklen
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -190,7 +197,6 @@ module PBAP_mod
     real    :: F_FNG, temp_val,sum_LC
     logical, save ::  my_first_call = .true.
 
-
     if( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
       if (i .eq. debug_li .and. j .eq. debug_lj) then
        write(*,*)"PBAP_mod DEBUG FUNGAL_SPORES: ",&
@@ -211,6 +217,42 @@ module PBAP_mod
     nlu = LandCover(i,j)%ncodes
     sum_LC = 0.0
 
+    if (parameterization_choice=="HM") then
+      do iiL = 1,nlu
+        LC = LandCover(i,j)%codes(iiL)
+        sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
+        if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid integrated assesment (IAM) landtypes as no LAI
+          cycle
+        else if ( LandType(LC)%is_water) then
+            cycle
+        else if ( LandType(LC)%is_ice) then
+            cycle
+        else
+          temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+          F_FNG = F_FNG + max(0.0, temp_val)
+          !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+          !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
+          !Leaf-area index (LAI) should be in m2/m2
+          !Specific humidity q should be in kg/kg
+          !Temperature at 2m (t2_nwp) should be in K
+
+        end if
+      end do !iiL
+
+    else if (parameterization_choice=="SD") then
+      do iiL = 1,nlu
+          sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
+          if (LandDefs(iil)%FungalFlux > 0.0) then
+            temp_val = LandDefs(iiL)%FungalFlux
+          end if
+            
+          F_FNG = F_FNG + LandCover(i,j)%fraction(iiL)*temp_val
+           
+          !Flux from S. Sesartic and T.N Dallafiro (2011)
+          ! DOI 10.5194/bg-8-1181-2011
+      end do !iiL
+
+  else if (parameterization_choice == "HS") then
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -221,7 +263,7 @@ module PBAP_mod
       else if ( LandType(LC)%is_ice) then
           cycle
       else
-        temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+        temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS_HS(1)*(q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))/(FUNG_PARAMS_HS(2)*FUNG_PARAMS_HS(3)))
         F_FNG = F_FNG + max(0.0, temp_val)
         !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
         !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
@@ -231,6 +273,7 @@ module PBAP_mod
 
       end if
     end do !iiL
+  end if
 
     PBAP_flux(i,j,iint_FungalSpores) = F_FNG
 
@@ -238,10 +281,11 @@ module PBAP_mod
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
         write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_FungalSpores), kgm2h(iint_FungalSpores) 
-       end if
-       if (abs(sum_LC-1)>1e-8) then
-        write(*,*) "WARNING: Land Cover classes fraction do not sum to 1", sum_LC
-       end if
+        write(*,*) "Fungal flux:", F_FNG
+        if (abs(sum_LC-1)>1e-4) then
+          write(*,*) "WARNING: Land Cover classes fraction do not sum to 1", sum_LC
+        end if
+      end if
     end if
 
   end subroutine Set_FungalSpores

@@ -69,8 +69,10 @@ end interface Check_LandCoverPresent
      real    ::  Eiso         ! Emission potential isoprene, ug/g/h
      real    ::  Emtl         ! Emission potential m-terpenes, light
      real    ::  Emtp         ! Emission potential m-terpenes, pool
+     real    ::  FungalFlux   ! Fungal flux from S. Sesartic and T.N Dallafiro (2011)
+                              ! DOI 10.5194/bg-8-1181-2011
      real    ::  BacteriaFlux ! Bacteria flux from S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-                              !DOI 10.1007/978-3-319-35095-0_121
+                              ! DOI 10.1007/978-3-319-35095-0_121
   end type land_input
                                                !##############
   type(land_input), public, dimension(NLANDUSEMAX) :: LandDefs

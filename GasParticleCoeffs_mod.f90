@@ -227,7 +227,8 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t('POLL22',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,22.00,  2.0,  800, -1)& ! birch/alder/mugwort*
  ,DD_t('POLL28',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,28.00,  2.0,  800, -1)& ! olive
  ,DD_t('POLL32',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0.,32.00,  2.0,  800, -1)& ! grass
- ,DD_t('FUNGAL',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 4.00,  2.0, 1000, -1)& ! Fungal spores
+ ,DD_t('FUNGAL',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 3.00,  1.0, 1000, -1)& ! Fungal spores, diameter from 
+                                                                                ! Hummel et al. 2015, DOI:10.5194/acpd-14-9903-2014
  ,DD_t( 'nuc  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.008, 2.0, 1400, -1)&
  ,DD_t( 'ait  ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.06,  2.0, 1200, -1)&
 ]

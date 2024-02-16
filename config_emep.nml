@@ -3,7 +3,7 @@
   iyr_trend = 2010,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2010,08,26,00,
+  startdate = 2010,08,24,00,
   enddate   = 2010,09,01,24,
 
 !DataDir will attempted replaced by (in this order):
@@ -317,7 +317,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%BACTERIA        = F,
   DEBUG%DERIVED         = F,   ! Derived field processing
-  DEBUG%DRYDEP          = F,   ! Dry deposition
+  DEBUG%DRYDEP          = T,   ! Dry deposition
   DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
   DEBUG%FUNGAL_SPORES   = F,
