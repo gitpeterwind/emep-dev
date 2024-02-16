@@ -343,9 +343,9 @@ contains
           if(Emis_sourceFiles(n)%sectorsName /= Emisfile_undefined%sectorsName) EmisFiles(i)%sectorsName = Emis_sourceFiles(n)%sectorsName
           if(Emis_sourceFiles(n)%factor /= Emisfile_undefined%factor) EmisFiles(i)%factor = Emis_sourceFiles(n)%factor
           ! correct for old notations
-          if(EmisFiles(n)%sectorsName == 'SNAPsectors') EmisFiles(i)%sectorsName = 'SNAP'
-          if(EmisFiles(n)%sectorsName == 'GNFRsectors') EmisFiles(i)%sectorsName = 'GNFR_CAMS'
-          if(EmisFiles(n)%sectorsName == 'GNFR') EmisFiles(i)%sectorsName = 'GNFR_CAMS'
+          if(EmisFiles(i)%sectorsName == 'SNAPsectors') EmisFiles(i)%sectorsName = 'SNAP'
+          if(EmisFiles(i)%sectorsName == 'GNFRsectors') EmisFiles(i)%sectorsName = 'GNFR_CAMS'
+          if(EmisFiles(i)%sectorsName == 'GNFR') EmisFiles(i)%sectorsName = 'GNFR_CAMS'
        endif
     enddo
 
@@ -471,7 +471,7 @@ contains
                 if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = isec_idx
                 if (found > 0) exit; ! we want the first entry
              end do
-             if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//': sectorsName not recognized!')
+             if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//': sectorsName not recognized! '//trim(trim(EmisFiles(i)%sectorsName)))
              Emis_source(ii)%sector_idx = found -1 + Emis_source(ii)%sector !TODO: make more robust (use names, not indices)
           end if
 
