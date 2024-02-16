@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 feb 2024, Peter, Willem
+
+Bug fix: When there were undefined  Emis_sourceFiles in between defined ones, the
+SectorNames could get wrong, causing the code to stop with error message.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 feb 2024, Dave
 
   Timefactors_mod - fixed bug in normalisation. 
