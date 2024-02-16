@@ -3,7 +3,7 @@ module LocalFractions_mod
 ! all subroutines for Local Fractions
 !
 use CheckStop_mod,     only: CheckStop,StopAll
-use Chemfields_mod,    only: xn_adv, cfac, Fgas3d, x, xnew
+use Chemfields_mod,    only: xn_adv, cfac, Fgas3d, PM25_water_rh50, x, xnew
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
 use ChemFunctions_mod, only: EC_AGEING_RATE, HydrolysisN2O5k
 use ChemSpecs_mod,     only: species_adv,species
@@ -109,6 +109,7 @@ real, public, allocatable, dimension(:,:,:), save :: &
   loc_frac_drydep  ! ddepositions per source (not fractions!)
 real, public, allocatable, dimension(:,:,:), save :: &
   loc_frac_wetdep  ! wdepositions per source (not fractions!)
+real, public, allocatable, dimension(:,:,:), save :: lf_PM25_water
 real, public, allocatable, dimension(:,:,:,:), save :: D8M !
 real, public, allocatable, dimension(:,:,:), save :: D8Max !
 real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av !
@@ -194,7 +195,7 @@ integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_d
 integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly or 1 if all together
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
-
+logical, private, save :: make_PMwater =.false. !NB: water is not a species and will be treated separately. Index isrc=NSOURCES+1, or %start=LF_SRC_TOTSIZE+1
 contains
 
   subroutine lf_init
@@ -809,14 +810,49 @@ contains
      iotyp2ix(Niou_ix)=IOU_YEAR
   endif
 
+  if (lf_fullchem) then
+     !ensure that at least something is outputted
+     call CheckStop(lf_spec_out(1)%name == "NOTSET", "At least one output must be asked for")
+     !check if PMwater is asked for
+     found=0
+     do n = 1, Max_lf_out
+       if (lf_spec_out(n)%name == "NOTSET") exit
+       if (lf_spec_out(n)%name=="PM_WATER") found = 1
+       do i = 1, 30
+          if (lf_spec_out(n)%species(i) == "PM_WATER") found = 1
+          if (lf_spec_out(n)%species(i) == "NOTSET") exit
+       end do
+    end do
+    if (found)then
+       make_PMwater = .true.
+       isrc = NSOURCES+1
+       lf_src(isrc)%species="PM_WATER"
+       lf_src(isrc)%Npos = Npos_lf
+       
+       lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
+       lf_src(isrc)%end = LF_SRC_TOTSIZE + Npos_lf
+       lf_src(isrc)%iem_deriv=iem_lf_nox
+       lf_src(isrc)%poll = Npoll + 1
+       if (Nfullchem_emis==4) then
+          lf_src(isrc+1)%iem_deriv=iem_lf_voc
+          lf_src(isrc+2)%iem_deriv=iem_lf_nh3
+          lf_src(isrc+3)%iem_deriv=iem_lf_sox
+       end if
+    end if
+ end if
+ 
   if(isrc_NH4_f>0)then
      allocate(lf_NH4(KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(lf_NH3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   endif
-
-  allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
+  if(make_PMwater)then
+     !one extra for water
+     allocate(lf_src_acc(LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
+  else
+     allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
+  endif
   lf_src_acc = 0.0
-  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,2*Npoll,Niou_ix))
+  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,2*Npoll+1,Niou_ix))
   lf_src_tot = 0.0
    allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
@@ -856,6 +892,7 @@ contains
      allocate(rctB_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
      allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(xn_shl_lf(NSPEC_deriv_lf+NSOA,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
+     allocate(lf_PM25_water(Npos_lf*Nfullchem_emis,LIMAX,LJMAX))
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
@@ -910,10 +947,6 @@ contains
     if (found == 0) lf_spec_out(n)%name="O3"
  end if
  
-  if (lf_fullchem) then
-     !ensure that at least something is outputted
-     call CheckStop(lf_spec_out(1)%name == "NOTSET", "At least one output must be asked for")     
-  end if
   
 
   if (lf_set%restart) then
@@ -949,7 +982,7 @@ subroutine lf_out(iotyp)
   character(len=TXTLEN_FILE),save :: oldmonthlyname
   character(len=TXTLEN_FILE) :: suffix
   real :: fracsum(LIMAX,LJMAX),invfac
-  logical :: pollwritten(2*Max_lf_spec),is_surf
+  logical :: pollwritten(2*Max_lf_spec+1),is_surf
   integer :: ncFileID, iout, ig, found, iem_lf
 
   call Code_timer(tim_before)
@@ -1253,7 +1286,7 @@ subroutine lf_out(iotyp)
                     invfac=lf_spec_out(iout)%species_fac(ig) / av_fac(iotyp)
                     do j=1,ljmax
                        do i=1,limax
-                          k = KMAX_MID
+                          k = KMAX_MID                          
                           invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
                           if(ideriv == 1)tmp_out_base(i,j) = tmp_out_base(i,j) + lf_src_tot(i,j,k,ipoll_cfac,iou_ix) * invfac
                           n1=0
@@ -1371,7 +1404,9 @@ subroutine lf_out(iotyp)
 
 
 ! reset the cumulative arrays
-  do isrc = 1, Nsources
+  n1=Nsources
+  if(make_PMwater)n1=n1+Npos_lf
+  do isrc = 1, n1
      do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
@@ -1401,7 +1436,7 @@ end subroutine lf_out
 subroutine lf_av(dt)
   real, intent(in)    :: dt                   ! time-step used in integrations
   real :: xtot, x, O3_c
-  integer ::i,j,k,ii,l,n,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
+  integer ::i,j,k,ii,l,n,nn,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
   integer ::isec_poll
   logical :: pollwritten(2*Max_lf_spec),is_surf
   integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
@@ -1517,7 +1552,20 @@ subroutine lf_av(dt)
         pollwritten(ipoll_cfac) = .true.
 
      end do
-
+     if(make_PMwater)then
+        ipoll_cfac = 2*Npoll+1
+        do j=1,ljmax
+           do i=1,limax
+              lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = PM25_water_rh50(i,j)
+              nn=0
+              do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
+                 nn=nn+1
+                 lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_src_acc(n,i,j,kmax_mid,iou_ix)+lf_PM25_water(nn,i,j)
+              end do
+              
+           end do
+        end do
+     end if
      if (lf_set%MDA8) then! maximum daily eight-hour mean concentration
 
         if (iou_ix == 1) then !only once for (daily, monthly and yearly)
@@ -2322,7 +2370,6 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   if(DEBUGall .and. me==0)write(*,*)'start chememis'
-
   if (.not. lf_fullchem) then
      !case with no chemistry for local fractions
      !Now species may be group of species (pm25...)
@@ -2688,15 +2735,18 @@ call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 
 end subroutine lf_aero_pre
 
-subroutine lf_aero_pos(i,j,k,deriv_iter) !called just after AerosolEquilib
+subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after AerosolEquilib
   integer, intent(in) ::i,j,k,deriv_iter
+  logical, optional, intent(in) :: make_pmwater
   real :: d_NH4, d_NH3, NH4, NH3, inv
   integer :: n_NH3, n_NH4
   real :: d_NO3, d_HNO3, NO3, HNO3
   integer :: n_NO3, n_HNO3,n,ix,iix,isrc,d
-  real :: xderiv(5,4)
+  real :: xderiv(5,4), fac
+  logical :: pmwater = .false.
+  pmwater = .false.
   if(.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1)return
-
+  if (present(make_pmwater)) pmwater = make_pmwater
   if (isrc_NH4_f<0 .and. .not.lf_fullchem) return
   if( .not.lf_fullchem .and. deriv_iter>1) return
   call Code_timer(tim_before)
@@ -2730,12 +2780,15 @@ subroutine lf_aero_pos(i,j,k,deriv_iter) !called just after AerosolEquilib
      endif
   else if (lf_fullchem) then
      !save results (could avoid for deriv_iter=4?)
-     xn_lf(1,deriv_iter) = xn_2d(NH3_ix,k)
-     xn_lf(2,deriv_iter) = xn_2d(NH4_f_ix,k)
-     xn_lf(3,deriv_iter) = xn_2d(NO3_f_ix,k)
-     xn_lf(4,deriv_iter) = xn_2d(HNO3_ix,k)
-     xn_lf(5,deriv_iter) = xn_2d(SO4_ix,k)
-
+     if (pmwater) then
+        xn_lf(1,deriv_iter) = PM25_water_rh50(i,j)
+    else
+        xn_lf(1,deriv_iter) = xn_2d(NH3_ix,k)
+        xn_lf(2,deriv_iter) = xn_2d(NH4_f_ix,k)
+        xn_lf(3,deriv_iter) = xn_2d(NO3_f_ix,k)
+        xn_lf(4,deriv_iter) = xn_2d(HNO3_ix,k)
+        xn_lf(5,deriv_iter) = xn_2d(SO4_ix,k)
+     end if
      if(deriv_iter<4)then
         !put back original values
         xn_2d(NH3_ix,k) = xn_lf(1,0)
@@ -2750,7 +2803,42 @@ subroutine lf_aero_pos(i,j,k,deriv_iter) !called just after AerosolEquilib
         !NH3  ->deriv 3
         !base ->deriv 4
         !original values ->deriv 0
+        if (pmwater) then
+           if (k/=kmax_mid) then
+              write(*,*)"wrong k",k,kmax_mid
+              stop
+           endif
+           !only make water lf
+              do n = 1, Npos_lf*Nfullchem_emis
+                 lf_PM25_water(n,i,j) = 0.0
+              end do
+            do isrc=1,Nsources
+              fac = 1.0
+              if(lf_src(isrc)%species == 'NH3')then
+                 ix=3
+              else if(lf_src(isrc)%species == 'NH4_f')then
+                 ix=3 !make from NH3
+                 fac =  xn_lf(2,0)/(1000+xn_lf(1,0)) 
+             else if(lf_src(isrc)%species == 'NO3_f')then
+                 ix=1 !make from HNO3
+                 fac =  xn_lf(3,0)/(1000+xn_lf(4,0))
+              else if(lf_src(isrc)%species == 'HNO3')then
+                 ix=1
+              else if(lf_src(isrc)%species == 'SO4')then
+                 ix=2
+              else
+                 cycle
+              end if
+             if(xn_lf(1,ix)>0.0000001 .and. xn_lf(1,ix)>0.0000001)then
+                 do n = 1, Npos_lf*Nfullchem_emis
+                    lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac *(xn_lf(1,ix)- xn_lf(1,4))/((eps1-1.0)*(xn_lf(1,ix)))*lf(lf_src(isrc)%start+n-1,i,j,k)
+                 end do
+              end if
+              
+           end do
 
+        else
+           !make the concentration derivatives and update lf
         !save original lf values
         do n = 0, Npos_lf*Nfullchem_emis-1
            lf0_loc(n+1,1) = lf(lf_src(isrc_NH3)%start+n,i,j,k)
@@ -2848,7 +2936,7 @@ subroutine lf_aero_pos(i,j,k,deriv_iter) !called just after AerosolEquilib
               !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
            end if
         end do
-
+        end if
      end if
   end if
 

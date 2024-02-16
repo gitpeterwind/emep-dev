@@ -609,7 +609,7 @@ contains
   real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
-  integer :: k, errmark
+  integer :: k, errmark, iter, niter
  !-----------------------------------
   if(AERO%EQUILIB/='MARS' .and. AERO%EQUILIB/='MARS_2900' .and. AERO%EQUILIB/='GEOSCHEM')then
      PM25_water(i,j,:) = 0.0
@@ -666,6 +666,10 @@ contains
     rlhum(:) = 0.5
     tmpr(:)  = 293.15
     k = KMAX_MID
+      niter = 1
+      if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
+      do iter=1,niter !only used for LocalFractions
+      call lf_aero_pre(i,j,k,iter) !only used for LocalFractions
 !//.... molec/cm3 -> ug/m3
       so4in  = xn_2d(SO4_ix,k) * species(SO4_ix)%molwt  *coef *cfac(SO4_ix-NSPEC_SHL,i,j) 
       hno3in = xn_2d(HNO3_ix,k)* species(HNO3_ix)%molwt *coef *cfac(HNO3_ix-NSPEC_SHL,i,j)
@@ -689,6 +693,8 @@ contains
   !--------------------------------------------------------------------------
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
+      call lf_aero_pos(i,j,k,iter,make_pmwater=.true.)
+      end do
 
       if (AERO%ORGANIC_WATER) then
         ! Organic water, kg/m3 air from kappa kohler theory. Kakavas 2022 (https://doi.org/10.16993/tellusb.33)
