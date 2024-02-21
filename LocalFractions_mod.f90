@@ -1316,8 +1316,8 @@ subroutine lf_out(iotyp)
               if (found==0) cycle
               if (ideriv == 1) then
                  !first write "base" concentrations, not country contributions
-                 if (is_surf) def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name)
-                 if (lf_src(isrc)%is_ASOA) def2%name='SURF_ug_PM_'//trim(lf_spec_out(iout)%name)
+                 if (is_surf) def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name)                 
+                 if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(lf_spec_out(iout)%name)
                  if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                  scale = 1.0
                  call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -1570,13 +1570,25 @@ subroutine lf_av(dt)
         ipoll_cfac = 2*Npoll+1
         do j=1,ljmax
            do i=1,limax
-              lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = PM25_water_rh50(i,j)
+              if (iou_ix == iou_ix_inst) then
+                 !not accumulated
+                 lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = PM25_water_rh50(i,j)
+              else
+                 lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) + PM25_water_rh50(i,j)
+              endif
               nn=0
-              do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
-                 nn=nn+1
-                 lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_src_acc(n,i,j,kmax_mid,iou_ix)+lf_PM25_water(nn,i,j)
-              end do
-              
+              if (iou_ix == iou_ix_inst) then
+                 !not accumulated
+                 do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
+                    nn=nn+1
+                    lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_PM25_water(nn,i,j)
+                 end do
+              else 
+                 do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
+                    nn=nn+1
+                    lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_src_acc(n,i,j,kmax_mid,iou_ix)+lf_PM25_water(nn,i,j)
+                 end do
+              end if
            end do
         end do
      end if
@@ -2892,9 +2904,10 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after Aerosol
               else
                  cycle
               end if
-             if(xn_lf(1,ix)>0.0000001 .and. xn_lf(1,ix)>0.0000001)then
+             if(xn_lf(1,4)>0.0000001)then
+                 fac=fac*min(10.0,max(-10.0,(xn_lf(1,ix)- xn_lf(1,4))/((eps1-1.0)*xn_lf(1,4))))
                  do n = 1, Npos_lf*Nfullchem_emis
-                    lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac *(xn_lf(1,ix)- xn_lf(1,4))/((eps1-1.0)*(xn_lf(1,ix)))*lf(lf_src(isrc)%start+n-1,i,j,k)
+                    lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac * lf(lf_src(isrc)%start+n-1,i,j,k)
                  end do
               end if
               
