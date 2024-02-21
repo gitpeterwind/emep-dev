@@ -70,18 +70,31 @@ module PBAP_mod
   real*8, DIMENSION(3), parameter  ::  &
   FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
   !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-  !DOI 10.1007/978-3-319-35095-0_121
+  !DOI 10.1007/978-3-319-35095-0_121, based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+                                        !       https://doi.org/10.5194/acp-15-6127-2015, 2015
 
-  real*8, DIMENSION(3), parameter  ::  &
-  FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal paramterization, Herald and Spracken
+  !real*8, DIMENSION(3), parameter  ::  &
+  !FUNG_PARAMS_HS_LARGE = [500.0, 5.0,0.015] !From Fungal paramterization, Heald and Spracken for 5um
+                                       !As specified in Hoose et al. (2010),DOI:
+                                       !10.1088/1748-9326/5/2/024009
+
+  real*8, DIMENSION(3)  ::  &
+  FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal paramterization, Heald and Spracken for 3um
+                                       !according to Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+                                       !https://doi.org/10.5194/acp-15-6127-2015, 2015
+                                       !If the fungal diameter is larger than 3um, this will be updated to the
+                                       !FUNG_PARAMS_HS_LARGE parameters above.
+
 
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
-                                        !https://doi.org/10.5194/acp-15-6127-2015, 2015
-  real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid gives 3um, but this gives
-                                           !very light spores, and other literature claims they are)
+                                         !https://doi.org/10.5194/acp-15-6127-2015, 2015
+
+  real, parameter :: FUNGAL_DIAMETER = 5.0 !Fungal diameter [um] (ibid gives 3um, but this gives
+                                           !very light spores, and other literature claims they are
                                            !3um-5um.
-  real, parameter :: FUNGAL_WEIGHT = 33.0*1.0e-12!(4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
+
+  real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
                                                                   !This is on the lower end of that
                                                                   !reported in literature (33pg-65pg) according to
                                                                   !Heald and Spracklen (2009) doi:10.1029/2009GL037493,
@@ -93,10 +106,18 @@ module PBAP_mod
   real, parameter :: BACTERIA_WEIGHT = 0.52*1.0e-12 !Bacterial weight [g]  (ibid)
   real, parameter :: BACTERIA_DENS   = BACTERIA_WEIGHT/((4/3.0)*PI*(0.5*BACTERIA_DIAMETER*1e-6)**3) !Bacteria density [g/m3]
 
-  character(len=20), save :: parameterization_choice = "HM" !Choice of fungal flux parameterization
+  character(len=20), save :: parameterization_choice = "HS" !Choice of fungal flux parameterization
                                                 !HM: Hummel(2015) 
-                                                !SD: Sesartic and Dallafior
-                                                !HS: Herald and Spracklen
+                                                !SD: Sesartic and Dallafior (2011)
+                                                !DOI: 10.5194/bg-8-1181-2011
+                                                !HS: Heald and Spracklen (2009) 
+                                                !DOI:10.1029/2009GL037493, see also
+                                                !Hoose et al (2010)
+                                                !DOI: 10.1088/1748-9326/5/2/024009
+  
+  !(GFL Feb 2024): Hummel parameterization uses different settling scheme than EMEP, Sesartic and Dallfior uses
+  !no settling scheme at all, so currently seems that Heald and Spracken parameterization 
+  !(parameterization choice = "HS") gives best results for fungal spores
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -161,7 +182,11 @@ module PBAP_mod
               inat(iint_FungalSpores) = inat_FungalSpores
               itot(iint_FungalSpores) = itot_FungalSpores
               PBAP_names(iint_FungalSpores) = "FUNGAL_SPORES"
-
+              if (FUNGAL_DIAMETER > 3.5) then
+                FUNG_PARAMS_HS(1) = 500 !New parameterization (see Ref. above)
+                                        !for larger particles according to
+                                        !Hoose et al. (2010),DOI:10.1088/1748-9326/5/2/024009
+              end if
           end if
 
           if (iint_Bacteria > 0) then
@@ -189,9 +214,8 @@ module PBAP_mod
   subroutine Set_FungalSpores(i,j)
     !!!!!!!
     !Fills PBAP_Flux(i,j,iint_FugalSpores)
-    !Based on parameterization from
-    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-    !DOI 10.1007/978-3-319-35095-0_121
+    !Currently three possible choices of parameterization
+
     integer, intent(in) ::  i,j
     integer :: nlu,iiL,LC,i_d,j_d
     real    :: F_FNG, temp_val,sum_LC
@@ -235,6 +259,8 @@ module PBAP_mod
           !Leaf-area index (LAI) should be in m2/m2
           !Specific humidity q should be in kg/kg
           !Temperature at 2m (t2_nwp) should be in K
+          !Based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+          !https://doi.org/10.5194/acp-15-6127-2015, 2015
 
         end if
       end do !iiL
@@ -249,7 +275,7 @@ module PBAP_mod
           F_FNG = F_FNG + LandCover(i,j)%fraction(iiL)*temp_val
            
           !Flux from S. Sesartic and T.N Dallafiro (2011)
-          ! DOI 10.5194/bg-8-1181-2011
+          !DOI 10.5194/bg-8-1181-2011
       end do !iiL
 
   else if (parameterization_choice == "HS") then
@@ -265,12 +291,10 @@ module PBAP_mod
       else
         temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS_HS(1)*(q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))/(FUNG_PARAMS_HS(2)*FUNG_PARAMS_HS(3)))
         F_FNG = F_FNG + max(0.0, temp_val)
-        !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-        !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
-        !Leaf-area index (LAI) should be in m2/m2
-        !Specific humidity q should be in kg/kg
-        !Temperature at 2m (t2_nwp) should be in K
-
+        !Flux from  Heald and Spracklen (2009) DOI:10.1029/2009GL037493, 
+        !as specified in Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009
+        !for spores of size 5um and in Hummel (2015) DOI: 10.5194/acp-15-6127-2015
+        !for spores of size 3um.
       end if
     end do !iiL
   end if
@@ -291,14 +315,12 @@ module PBAP_mod
   end subroutine Set_FungalSpores
 
   subroutine Set_Bacteria(i,j)
-    !NOT YET IMPLEMENTED
+    !NOT YET TESTED
     !!!!!!!
     !Fills PBAP_Flux(i,j,iint_Bacteria)
     !Based on parameterization from
     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
     !DOI 10.1007/978-3-319-35095-0_121
-    !Problem: Not currently clear how to map
-    !LandDefs from the paper to LandDefs in EMEP
     integer, intent(in) ::  i,j
     integer :: nlu,iiL,LC,i_d,j_d
     real    :: F_Bacteria, temp_val
@@ -338,7 +360,7 @@ module PBAP_mod
           end if
             
           F_Bacteria = F_Bacteria + LandCover(i,j)%fraction(iiL)*temp_val
-           
+
           !Eq.(1) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
           !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
           !Note that most of these valuse are set in the LandUse input file

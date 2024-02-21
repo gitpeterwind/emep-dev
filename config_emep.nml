@@ -1,10 +1,10 @@
 &Model_config
   GRID      = 'EMEP0302',
-  iyr_trend = 2010,
+  iyr_trend = 2022,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2010,08,24,00,
-  enddate   = 2010,09,01,24,
+  startdate = 2003,01,01,00,
+  enddate   = 2003,12,31,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -317,7 +317,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%BACTERIA        = F,
   DEBUG%DERIVED         = F,   ! Derived field processing
-  DEBUG%DRYDEP          = T,   ! Dry deposition
+  DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
   DEBUG%FUNGAL_SPORES   = F,
