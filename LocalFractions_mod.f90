@@ -1757,7 +1757,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
   real ::x,xn,xx,f_in,inv_tot
   integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm
   if(DEBUGall .and. me==0)write(*,*)'start advx'
-
+  
   if(i==li0)then
      !copy small part (could be avoided, but simpler to copy)
      !note that the right hand side of the lf equations must contain unupdated values, therefore values for j-1 must be buffered
@@ -2416,7 +2416,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            xtot=xtot + xn_2d(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)/dt_advec
            totemis = totemis +  rcemis(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)
         end do
-
+        
         if(totemis < 1e-20) cycle !no emissions here
 
         if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then
@@ -2432,10 +2432,8 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            do iemis = 1, N_lf_derivemis
                if ( emis2icis(iemis) < 0 ) cycle ! relative type
                if ( emis2isrc(iemis) /= isrc ) cycle
-
-              n0 = lf_src(isrc)%start + emis2icis(iemis)
-
-              lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
+               n0 = lf_src(isrc)%start + emis2icis(iemis)
+               lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
            end do
 
         else if(lf_src(isrc)%type=='relative')then
@@ -2633,18 +2631,10 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   end do
 
   !add "primary" emissions that are tracked directly
-  do iemis = 1, nemis_primary
-     if ( emis2isrc_primary(iemis) == isrc_pm25 )then
-        isrc = isrc_pm25
-     else if  (emis2isrc_primary(iemis) == isrc_pm25_new) then
-        isrc = isrc_pm25_new
-     else if  (emis2isrc_primary(iemis) == isrc_pmco) then
-        isrc = isrc_pmco
-     else
-        write(*,*)'dono understand ',iemis,emis2isrc_primary(iemis),isrc_pm25,isrc_pmco
-        stop
-     endif
-
+  do ispec=1,3
+     if (ispec==1)isrc = isrc_pm25
+     if (ispec==2)isrc = isrc_pm25_new
+     if (ispec==3)isrc = isrc_pmco
      xtot=0.0
      totemis = 0.0 ! all emis to isrc species
      do iix=1,lf_src(isrc)%Nsplit
@@ -2652,23 +2642,21 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
         xtot=xtot + xn_2d(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)/dt_advec
         totemis = totemis +  rcemis(iiix+NSPEC_SHL,k)*lf_src(isrc)%mw(iix)
      end do
-
      if(totemis < 1e-20) cycle !no emissions here
-     !first dilute lf because of emissions
-     n0=lf_src(isrc)%start
-     do ic=1,Ncountry_lf+Ncountry_group_lf
-        do is=1,Ncountrysectors_lf
-           lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
-           n0=n0+1
-        end do
-     end do
-     !add emissions that are tracked
-     
-     n0 = lf_src(isrc)%start + emis2icis_primary(iemis)
-        
-     lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf_primary(iemis)/(xtot+totemis+1.e-20)
 
+     !first dilute lf because of emissions
+     do n0 = lf_src(isrc)%start, lf_src(isrc)%end
+        lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
+     end do
+     
+     !add emissions that are tracked
+     do iemis = 1, nemis_primary
+        if ( emis2isrc_primary(iemis) /= isrc)cycle
+        n0 = lf_src(isrc)%start + emis2icis_primary(iemis)  
+        lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf_primary(iemis)/(xtot+totemis+1.e-20)
+     end do
   end do
+        
   do n = 1,ix_lf_max
      do iemis = 1, N_lf_derivemis
         rcemis_lf(iemis,n) = 0.0 !initialization for next gridcell
@@ -3526,7 +3514,7 @@ subroutine lf_rcemis(i,j,k,eps)
                          end do
                          
                          isrc=isrc_pm25_new !treated with index "nemis_primary"
-
+                         
                       else
                          isrc=isrc_pmco
                          if(found == 0) then
@@ -3547,44 +3535,41 @@ subroutine lf_rcemis(i,j,k,eps)
                               *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                               *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))  * lf_src(isrc)%mw(n)
                       end do
-                  else
-
-                   if(found == 0) then
-                      !first see if this emis2icis and emis2iem already exists (for groups and masks type "countries"):
-                      !because only one derivative for each source is included ("lf(n0,i,j,k) = ederiv(iemis,ix)" without +=)
-                      do n=1,N_lf_derivemis
-                         !check that emis2isrc(n) is not required for pm25 here
-                         if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2iem(n) == iem)then                            
-                            ! add to this instead
-                            nemis = n
-                            found = 1
-                            exit
+                   else
+                      
+                      if(found == 0) then
+                         !first see if this emis2icis and emis2iem already exists (for groups and masks type "countries"):
+                         !because only one derivative for each source is included ("lf(n0,i,j,k) = ederiv(iemis,ix)" without +=)
+                         do n=1,N_lf_derivemis
+                            !check that emis2isrc(n) is not required for pm25 here
+                            if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2iem(n) == iem)then                            
+                               ! add to this instead
+                               nemis = n
+                               found = 1
+                               exit
+                            end if
+                         end do
+                      end if
+                      
+                      if(found == 0) then
+                         N_lf_derivemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
+                         nemis = N_lf_derivemis
+                      end if
+                      found = 1
+                      emish_idx = SECTORS(isec)%height
+                      split_idx = SECTORS(isec)%split
+                      do n = 1, emis_nsplit(iem)
+                         iqrc = sum(emis_nsplit(1:iem-1)) + n
+                         itot = iqrc2itot(iqrc)
+                         
+                         if(itot<=ix_lf_max .or. .not.lf_fullchem)then
+                            rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
+                                 maskfac * eps * emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
+                                 *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
+                                 *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
                          end if
                       end do
                    end if
-                      
-!                   if(i_fdom(i)==98.and.j_fdom(j)==92 .and.k==kmax_mid )then
-!                      write(*,*)N_lf_derivemis,isec,'EMIS ',emis_lf_cntry(i,j,ic,isec,iem),iem,found
-!                   end if
-                   if(found == 0) then
-                      N_lf_derivemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
-                      nemis = N_lf_derivemis
-                   end if
-                   found = 1
-                   emish_idx = SECTORS(isec)%height
-                   split_idx = SECTORS(isec)%split
-                   do n = 1, emis_nsplit(iem)
-                    iqrc = sum(emis_nsplit(1:iem-1)) + n
-                    itot = iqrc2itot(iqrc)
-
-                    if(itot<=ix_lf_max .or. .not.lf_fullchem)then
-                      rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
-                          maskfac * eps * emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
-                          *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
-                          *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-                    end if
-                  end do
-                end if
                 end if
               end do
               if (found == 1) then
