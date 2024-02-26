@@ -110,7 +110,7 @@ NetCDF_mod.o:NetCDF_mod.f90
 endif
 
 # inject git info into logs
-emep_Main.o: DFLAGS += -D GITVERSION="'git describe: $(shell git describe)\ngit status: $(shell git status --branch --short -uno)'"
+#emep_Main.o: DFLAGS += -D GITVERSION="'git describe: $(shell git describe)\ngit status: $(shell git status --branch --short -uno)'"
 emep_Main.o: Makefile Makefile.SRCS $(SRCS)
 
 # Include the dependency-list created by makedepf90 below

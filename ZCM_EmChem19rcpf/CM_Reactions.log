@@ -247,7 +247,6 @@ k, RCEMIS(REMPPM_C_RES,k):  = REMPPM_C_RES
 k, RCEMIS(REMPPM_C_NONRES,k):  = REMPPM_C_NONRES
 rct,           101:  EC_F_RES_NEW  = EC_F_RES_AGE
 rct,           101:  EC_F_NONRES_NEW = EC_F_NONRES_AGE
-k, RCEMIS(SQT_SOA_NV,k):  = SQT_SOA_NV
 k,      RCBIO(2,K):  =  0.00383 SQT_SOA_NV
 k,      RCBIO(1,K):  =  C5H8
 k,      RCBIO(2,K):  =  APINENE
