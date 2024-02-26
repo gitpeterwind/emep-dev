@@ -415,9 +415,6 @@
     + rcphot(IDCH3O2H,k) * xnew(MEKO2H)  &
     + rcphot(IDMEK,k) * xnew(MEKO2H)
   
-  !-> CH3CO3 cont.
-    P = P +   rcphot(IDPAN,k) * xnew(PAN)
-  
   L = rct(42,k) * xnew(NO)  &
     + 4.0e-12 * xnew(NO3)  &
     + rct(43,k) * xnew(NO2)  &
@@ -532,7 +529,6 @@
     + rcphot(IDCH3CHO,k) * xnew(NALD)  &
     + rcphot(IDMEK,k) *0.78 * xnew(SC4H9NO3)  &
     + rcphot(IDMEK,k) *0.78 * xnew(ISON)  &
-    + 0.7* rcphot(IDPAN,k) * xnew(PAN)  &
     + rcemis(NO2,k)
   
   L = rct(12,k) * xnew(O3)  &
@@ -552,8 +548,7 @@
   P = rct(12,k) * xnew(O3) * xnew(NO2)  &
     + rct(19,k) * xnew(N2O5)  &
     + rct(21,k) * xnew(OH) * xnew(HNO3)  &
-    + 0.333* rcphot(IDHO2NO2,k) * xnew(HO2NO2)  &
-    + 0.3* rcphot(IDPAN,k) * xnew(PAN)
+    + 0.333* rcphot(IDHO2NO2,k) * xnew(HO2NO2)
   
   L = rct(15,k) * xnew(NO)  &
     + rct(17,k) * xnew(NO2)  &
@@ -1167,8 +1162,7 @@
 
   P = rct(43,k) * xnew(CH3CO3) * xnew(NO2)
   
-  L = rct(44,k)  &
-    + rcphot(IDPAN,k)
+  L = rct(44,k)
   
   xnew(PAN) = (xold(PAN) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1223,69 +1217,5 @@
     + 3.2e-5
   
   xnew(shipNOx) = (xold(shipNOx) + dt2 * P) / (1.0 + dt2 * L)
-
-
-!-> Dust_road_f
-
-  P = rcemis(DUST_ROAD_F,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_road_f) = xold(Dust_road_f) + dt2 * P
-
-
-!-> Dust_road_c
-
-  P = rcemis(DUST_ROAD_C,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_road_c) = xold(Dust_road_c) + dt2 * P
-
-
-!-> Dust_wb_f
-
-  P = rcemis(DUST_WB_F,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_wb_f) = xold(Dust_wb_f) + dt2 * P
-
-
-!-> Dust_wb_c
-
-  P = rcemis(DUST_WB_C,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_wb_c) = xold(Dust_wb_c) + dt2 * P
-
-
-!-> Dust_sah_f
-
-  P = rcemis(DUST_SAH_F,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_sah_f) = xold(Dust_sah_f) + dt2 * P
-
-
-!-> Dust_sah_c
-
-  P = rcemis(DUST_SAH_C,K)
-  
-  ! L = 0.0
-  
-  xnew(Dust_sah_c) = xold(Dust_sah_c) + dt2 * P
-
-
-!-> SQT_SOA_NV
-
-  P = rcemis(SQT_SOA_NV,k)  &
-    + 0.00383* RCBIO(2,K)
-  
-  ! L = 0.0
-  
-  xnew(SQT_SOA_NV) = xold(SQT_SOA_NV) + dt2 * P
 
 

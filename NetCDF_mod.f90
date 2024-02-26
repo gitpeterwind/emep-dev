@@ -548,9 +548,15 @@ case default
 end select
 
 if(MasterProc.and.DEBUG%NETCDF)&
-  write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
-call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                      num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+!to be tested:
+!if(iotyp==IOU_HOUR_INST .or. iotyp==IOU_HOUR)then
+!   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
+!        num_lev3d,ntime=24,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+!else
+   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
+        num_lev3d,KLEVcdf=lev3d,KLEVcdf_from_top=.true.)
+!end if
 
 if(MasterProc.and.DEBUG%NETCDF)&
   write(*,*) "Finished Init_new_netCDF", trim(fileName),' ',trim(period_type)
@@ -558,11 +564,12 @@ if(MasterProc.and.DEBUG%NETCDF)&
 end subroutine Init_new_netCDF
 
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-     KMAXcdf,KLEVcdf,KLEVcdf_from_top,RequiredProjection)
+     KMAXcdf,ntime,KLEVcdf,KLEVcdf_from_top,RequiredProjection)
 
 !IBEGcdf,JBEGcdf relative to fulldomain
   integer, intent(in) :: GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf
   character(len=*),  intent(in)  :: fileName
+  integer, intent(in), optional :: ntime !if present define time dimension as fixed
   integer, intent(in), optional :: KLEVcdf(KMAXcdf)
   logical, intent(in), optional :: KLEVcdf_from_top
   character(len=*),optional, intent(in):: RequiredProjection
@@ -682,8 +689,11 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
     call check(nf90_def_dim(ncFileID,"ilev",KMAXcdf+1,ilevDimID))
     call check(nf90_put_att(ncFileID, nf90_global,"vert_coord",vert_coord))
 
-    call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
-
+    if(present(ntime))then
+       call check(nf90_def_dim(ncFileID,"time",ntime,timeDimID))
+    else
+       call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID))
+    end if
     call Date_And_Time(date=created_date,time=created_hour)
     if(DEBUG%NETCDF)write(*,"(2A)")&
       'created_date: ',created_date,'created_hour: ',created_hour
@@ -1237,7 +1247,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
 
       if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//" with sizes ",GIMAXcdf,GJMAXcdf,KMAX
       period_type = 'unknown'
-      call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
+      if(iotyp==IOU_HOUR .or. iotyp==IOU_HOUR_INST) then
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX,ntime=24)
+      else
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
+      end if
       if(present(ncFileID_given))then
         !the file should be opened, but by MasterProc only
         CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!wait until the file creation is finished
@@ -2481,7 +2495,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   implicit none
   character(len=*), parameter :: dtxt = 'ReadF:' ! debug text
-  character(len=99) :: dtxt_msg
+  character(len=149) :: dtxt_msg
   character(len = *),intent(in) ::fileName,varname
   real,intent(out) :: Rvar(*)
   integer,intent(in) :: nstart
@@ -3123,9 +3137,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      allocate(Rvalues(totsize), stat=alloc_err)
      if ( mydebug ) then
-        do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
-           write(*,"(a,6i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i)
-        end do
+       do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
+         write(*,"(a,3i8,a,i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i),&
+            'varID:'//trim(varname), varID
+       end do
+       !print *, dtxt//'PRE-CHECK'//trim(varname), varID, size(Rvalues), startvec, dims
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg=dtxt_msg//"lonlatRRvalues")

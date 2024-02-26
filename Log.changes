@@ -11,10 +11,10 @@ chemistry, run:
     are usually prepared by Dave, Willem, Robert or Alvaro, from the ecosx branch -
     ecosx/box/src directory - see the README_emep_setup.md there.) ]
 
-2023 UPDATE: 
+2023 UPDATE:
 EmChem19rc - for CLOUDJ - new default
 
-2021 UPDATE: 
+2021 UPDATE:
 EmChem19r,  EmChem19rp (=EmChem19r+pollen).
 
   now splits PM into Res and nonRes species (e.g. POM_f_Res,
@@ -47,6 +47,87 @@ CLEAN-UP: all code should be checked to remove old comments and
 prints that are not meaningful for an average user, before the public release.
 Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19 feb 2024, Svetlana
+
+AerosolCalls.f90 - harmonized EQSAM inputs with those for ISORROPIA
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 feb 2024, Peter, Willem
+
+Bug fix: When there were undefined  Emis_sourceFiles in between defined ones, the
+SectorNames could get wrong, causing the code to stop with error message.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 feb 2024, Dave
+
+  Timefactors_mod - fixed bug in normalisation. 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7 feb 2024, Dave
+
+  Moved location of CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc to 
+    Data/Timefactors/CAMS_TEMPO/
+
+  Config, Timefactors_mod - removed Monthly_patternsFile and
+    added GriddedMonthlyFacFile. The latter is only used when timeFacs%Monthly==GRIDDED.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 feb 2024, Dave
+
+ NEW TAG: rv5.1
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4-5 feb 2024, Dave
+
+1) Timefactor re-write - choices simplified with use of timeFacs type:
+
+  type, public :: timeFacs_t
+   integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
+   logical :: Day_of_Year = .false.    ! overrides Monthly and Daily if used 
+   character(len=20) :: MonthlyNH3  = 'NOTSET'    ! can be 'LOTOS'
+   character(len=TXTLEN_SHORT) :: &
+     Monthly = 'CAMS_TEMPO_CLIM'  & ! or GRIDDED
+    ,Daily   = 'CAMS_TEMPO_CLIM'  &!
+    ,Hourly  = 'CAMS_TEMPO_CLIM'
+  end type timeFacs_t
+  type(timeFacs_t), public, save :: timeFacs
+
+
+ Impacts Config_module.f90, Emissions_mod.f90, Timefactors_mod.f90, config_emep.nml
+
+ Also EmisDef_mod - added IS_AGRK, IS_AGRL - prepping for new timefactors
+
+ STATUS: also timeFacs%Monthly can be "GRIDDED", but final file to be decided.
+         timeFacs%MonthlySmoothFac = 60 seems to give better results tha default 100.
+         More checks needed, but hopefully we can soon finalise.
+
+2) Changed order of CM speds for EmChem19rc.
+
+ Affects:
+  ZCM_EmChem19rc/CM* - re-ordered species to give more efficient LF (Peter request)
+  ** should update other ZCM_ also. Not today though.
+
+3) Also;
+
+ Makefile - commented out  GITVERSION line. Caused compilation error for large changes from git orig
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 feb 2024, Dave
+
+Adding ability to smooth MonthlyTimeFacs. Set MonthlySmoothFac to e.g. 60 (%)
+if factors believed to be too "spiky".
+
+ Functions_mod - added monthly_convolve function, and TSTEMX system
+ Config_mod    - add USES%MonthlySmoothFac - integer in % of value retained from
+    original monthly value. .e.g MonthlySmoothFac 60 will convolve monthly
+    values  with [ 0.2, 0.6, 0.2 ]
+ Timefactors_mod - uses USES%MonthlySmoothFac
+ Also NetCDF_mod: small debug extras
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+->1 feb 2024, Peter
+
+Lots of changes in the LF for full chemistry.
+BVOC, SOMO35, Surface reactions, reductions of all emissions at once, new
+nomenclature (lf_set% ), hourly with fixed 24 records, and some refactoring.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 jan 2024, Willem
@@ -108,6 +189,13 @@ path to OceanDMS and OceanNH3 have been defined in adhoc filenames.
 OceanDMS and OceanNH3 are steered by USES%OCEAN_DMS and USES%OCEAN_NH3
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Oct 2023, Peter
+
+LF: include dependence of rct on SO4, NO3_f, NO3_c.
+hardcoded indices 96(Hydrolysisn2o5), 97 100.
+LF: Also propotional shl_lf.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 Oct 2023, Peter
 
 Local Fraction: SIA and large refactoring. (was waiting for Open source to commit)
@@ -138,23 +226,23 @@ Logic surrounding FLUX_VEGS moved into Landuse module.
      Add: if ( USES%PFT_MAPS ) then
         GLOBAL_settings = "YES"
         European_settings = "NO"
-   
+
    LandDefs_mod
      FLUX_VEGS removed (moved to Landuse_mod)
      is_iam logic also moved to Landuse_mod
-   
-   
+
+
    Landuse_mod
      Now handles EXTRA_FLUX_VEGS (was FLUX_VEGS)
 
 NOTE: the model now calculates only G-POD for GLOBAL05 runs, since POD is only
 really defined for European growing seasons and veg. Contact Dave if wanting to
 use.
-  
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Oct.2023, Dave
 
-Removed last IAM_CR from config_emep.nml and config_Open.nml. 
+Removed last IAM_CR from config_emep.nml and config_Open.nml.
   (EUAOT40_Crops and MET_LCS now use IAM_WH)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Oct.2023, Dave/Yao
@@ -202,12 +290,12 @@ Tidy ups:
  All DEBUG_ variables now removed and/or added into DEBUG% structure :-)
 
  Debug_module, Rb_mod: removed DEBUG_RB
- Debug_module: removed unused DEBUG_OUT_HOUR 
+ Debug_module: removed unused DEBUG_OUT_HOUR
  change _ to %:
  Debug_module, OutputChem_mod: OUTPUTCHEM
  Debug_module, Nest_mod, ExternalBICs_mod: NEST and NEST_ICBC
  Debug_module, Setup_1d_mod (_MASS not used, removed),   MassBudget_mod
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 Sep 2023, Dave
 
@@ -215,11 +303,11 @@ Wanted table of EMEP country codes and numbers. Now get from running
 
   mk.testX Country_mod.f90
 
-  Produces: Results_Country_mod.txt 
-    $head Results_Country_mod.txt 
+  Produces: Results_Country_mod.txt
+    $head Results_Country_mod.txt
    ncc  code           gains  incams   name
-     1  AL              ALBA       F   Albania                                                                         
-     2  AT              AUST       T   Austria   
+     1  AL              ALBA       F   Albania
+     2  AT              AUST       T   Austria
 
   (The incams logical is provisional, based on EUMACC2, and will be uodated soon.)
 
@@ -260,7 +348,7 @@ Also, moved ZCM_ into ZCM_OLD for most EmChem16s
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 Sep 2023, Dave
 
-Soil NO - now uses "official" CAMS soil-NO (from ECCAD), file 
+Soil NO - now uses "official" CAMS soil-NO (from ECCAD), file
   (same results as previous EMEP equivalent)
 
 Adapted:
@@ -361,7 +449,7 @@ Peter pointed out numerical issues with basic method though, which still apply.
 Solution:
 git mv GravSettling_mod.f90 FUTURE_GravSettling_mod.f90k
 Makefile.SRCS  - remove GravSettling_mod.f90
-PhyChem_mod    - comment out if(USES%GRAVSET) call gravSettling 
+PhyChem_mod    - comment out if(USES%GRAVSET) call gravSettling
 Config_module  - comment out GRAVSET
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -446,20 +534,20 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 June 2023, Dave
 
-Config_mod 
+Config_mod
   - added TimeFacBasis:
-          If CAMS_TEMPO_CLIM then month, week and hour factors from that data. 
+          If CAMS_TEMPO_CLIM then month, week and hour factors from that data.
           If MIXED - old behaviour
 
 config_emep.nml
   - Fixed type on SECTORS_ADD GNFR_G 2nd index (from 7 2 7 to 7 8 7)
- 
 
-Timefactors_mod 
+
+Timefactors_mod
   - added TimeFacBasis:
 
   code re-arrangement started:
-     to avoid if (.not.XXXX), and 
+     to avoid if (.not.XXXX), and
      added labels to clarify loop start and end (e.g. HRLYLOOP)
      replaced if (ios==0) then with if (ios/=0) cycle - saves a load of
       indentation.
@@ -479,7 +567,7 @@ Fixed bug for MET2D outputting of 3D fields
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 June 2023, Dave, Alvaro
 
-  CAMS_TEMPO_CLIM methods enabled. Needs check, and possible bugs in 
+  CAMS_TEMPO_CLIM methods enabled. Needs check, and possible bugs in
    CAMS_TEMPO and DAYOFYEARTIMEFAC need checking
 
   So, we have two CAMS options:
@@ -521,7 +609,7 @@ CAMS REG.v5 emissplits set in config_emep-nml
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 June 2023, Svetlana
 
-BoundaryConditions_mod.f90: Mace Head correction is added for 2021 
+BoundaryConditions_mod.f90: Mace Head correction is added for 2021
 as calculated by Anna
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -529,18 +617,18 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Background CH4 is now read from a default ch4 input file. This file
 contains historical concentrations up to 2019 and projections made using the
-IIASA GP Review CLE scenario with Dirk's box-model. The folder containing the 
-default CLE CH4 file also contains files describing the SSP scenarios 
+IIASA GP Review CLE scenario with Dirk's box-model. The folder containing the
+default CLE CH4 file also contains files describing the SSP scenarios
 discussed in CMIP6 AR6 Annex III.
 
-The default behavior is that the iyr_trend CH4 concentration (when BGND_CH4=-1) is 
-replaced by the value read in from the file, if the file is found and if iyr_trend 
+The default behavior is that the iyr_trend CH4 concentration (when BGND_CH4=-1) is
+replaced by the value read in from the file, if the file is found and if iyr_trend
 is between 1960-2050 (range of years in the input file).
 
-If the file is found but the year is out of range, the model stops. 
+If the file is found but the year is out of range, the model stops.
 
-When BGND_CH4 is set to something greater than zero in config_emep.nml, this 
-value overwrites the value from the input file. 
+When BGND_CH4 is set to something greater than zero in config_emep.nml, this
+value overwrites the value from the input file.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May - 1st June 2023, Dave
@@ -552,11 +640,11 @@ AeroConstants - defaults to Isorropia
 Config_module -defaults to:
  CLOUDJ           = .true. + same for CLOUDJAEROSOL, HRLYCLOUDJ, CLOUDICE,CLIMSTRATO3
  (+CLEARSKYTAB = F)
- HmixMethod = "NWP" 
+ HmixMethod = "NWP"
  FFireDispMethod = "PBL"
  soilnox_emission_File = 'DataDir/cams81_monthly_SoilEmissions_v2.4a_GLOBAL05_Clim2000_2020.nc'
  LandInputs%desert changed to DataDir/Olson_2001_DEforEmep.nc
-   
+
 BiDir_emep - change intent out to intent inout to avoid Make warning
 
 Config_module - added YYYY change for fileName_O3_Top (Is this needed?)
@@ -577,14 +665,14 @@ config_emep.nml:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 May 2023, Willem
 
-When ISORROPIA-Lite is used for fine-mode thermodynamics, this now runs with 
-internally mixed sea-salt assumption as well as base cations from dust as default. 
-These assumptions can be turned off by specifying AERO%CATIONS and 
+When ISORROPIA-Lite is used for fine-mode thermodynamics, this now runs with
+internally mixed sea-salt assumption as well as base cations from dust as default.
+These assumptions can be turned off by specifying AERO%CATIONS and
 AERO%INTERALMIXED in config_emep.nml.
 
 SAFELOG10 function is now used in the aerosol pH calculations from ISORROPIA,
-avoiding any possible NaN and infinities, as well as dealing with any possible 
-negative H+ concentrations. 
+avoiding any possible NaN and infinities, as well as dealing with any possible
+negative H+ concentrations.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 May 2023, Peter
@@ -605,7 +693,7 @@ Prepping BiDir followi9ng NMR meeting.
   Config_module     - matching BiDir type to FUTURE version
   Derived_mod       - calls BiDir_Derived if USES%BIDIR
   DryDep_mod.f90    - matching subroutine calls to FUTURE version
-  SubMet_mod.f90    - use of BiDir%skipForestDisp 
+  SubMet_mod.f90    - use of BiDir%skipForestDisp
   emep_Main.f90     - removed call to BiDir_Init
 
  with in-progress files (NOT to be re-distributed) put here:
@@ -621,10 +709,10 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 May 2023, Svetlana
 
 EQSAM_mod.f90 updated from v10 to v11
-AerosolCalls.f90 - modified accordingly (EQSAM is called for fine aerosols, including 
+AerosolCalls.f90 - modified accordingly (EQSAM is called for fine aerosols, including
                    Na, Cl, Mg and K from Sea salt
                    PM25_water and PM25_water_rh50 derived in same call (Aero_water and Aero_water_rh50 removed)
-Runchem_mod.f90 - modified accordingly 
+Runchem_mod.f90 - modified accordingly
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 Apr 2023, Peter
@@ -642,7 +730,7 @@ Makefile         - add ppi-r8 with opath
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 April 2023, Dave
 
-EmisGet_mod - small debug formatting changes 
+EmisGet_mod - small debug formatting changes
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 April 2023, Alvaro
 
@@ -668,12 +756,12 @@ Changes in:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 Apr 2023, Willem
 
-Removed old Fastj code, and the model now reads in WRF ice cloud meteorology 
-when present in WRF input file. 
+Removed old Fastj code, and the model now reads in WRF ice cloud meteorology
+when present in WRF input file.
 
 Also fixed a minor bug where the CloudJ photolysis rate calculations were called
 every model timestep between 23:00-24:00 hr UTC, even when hourly updates
-were requested. 
+were requested.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 Apr 2023, Peter
@@ -692,11 +780,11 @@ Fullchem accepts sectors and masks.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th March 2023, Willem
 
-Polished Cloud-J code, now running with version 3 of the input stratospheric 
-ozone and temperature observations. The structure of this new input file makes  
-the cod compatible/function no matter the altitude (hPa) of the EMEP model top. 
+Polished Cloud-J code, now running with version 3 of the input stratospheric
+ozone and temperature observations. The structure of this new input file makes
+the cod compatible/function no matter the altitude (hPa) of the EMEP model top.
 
-Also introduced new indexing in DefPhotolysis_mod to make the EMEP code 
+Also introduced new indexing in DefPhotolysis_mod to make the EMEP code
 compatible with both the EmChem19 and CRIv2R5 chemical mechanisms. The
 CLJ1-CLJ172 indices are used in CRIv2R5, and the EmChem19 photolysis reactions
 are mapped to these for when the EmChem19 is used.
@@ -710,7 +798,7 @@ NEW TAG: rv4.51 (as desert mask changes results)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23-24 Mar 2023, Dave
 
- Adding desert masks to prevent European areas producing sand - prelim default 
+ Adding desert masks to prevent European areas producing sand - prelim default
   set to Olson mask.
 
  Config_module.f90 changes to allow LandInputs%deserts, LandInputs%ssmThreshold
@@ -748,14 +836,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Mar 2023, Willem
 
 Added config option to exclude reading in cloud ice meteorology fields,
-which in config_emep.nml can be set by 
+which in config_emep.nml can be set by
 
 USES%CLOUDICE       = F,
 
 Also added a flag for climatological overhead stratospheric ozone for use
 in the Cloud-J photolysis rate calculations. Default is to use climatology,
 until the effects of monthly means (between 2005 and 2019) on surface ozone
-trends is investigated in more detail. 
+trends is investigated in more detail.
 
 Using monthly-means for the available years can be set through
 
@@ -781,12 +869,12 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Added option to output surface aerosol pH, calculated using ISORROPIA-lite.
 
 Edit: removed unintentionally added (undefined) variable, and added
-a min concentration limit to aerosol water content to avoid division by zero. 
+a min concentration limit to aerosol water content to avoid division by zero.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Feb 2023, Willem
 
-Old ISORROPIA II code is replaced with Isorropia-lite (2022 code). 
+Old ISORROPIA II code is replaced with Isorropia-lite (2022 code).
 
 Aerosol water uptake is handled in the thermodynamics call to isorropia, for
 which the (i,j) grid indices are now included in the AerosolEquilib call.
@@ -798,15 +886,15 @@ call to isorropia.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd Mar 2023, Peter
 
-SMall bug fix: if MET2D was used when a 3D metfield was outputted, and debug 
-options were applied, it would stop. 
+SMall bug fix: if MET2D was used when a 3D metfield was outputted, and debug
+options were applied, it would stop.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2023, Peter
 
 The reading of global emission files in new format was *very* slow. The read
 time increases with the number of variables in the emission files EVEN if they
-are not read !! 
+are not read !!
 It is solved by defining the time dimension in the file as fixed instead of
 unlimited. This simple trick divides the read time by a factor of 30 or so!
 
@@ -817,14 +905,14 @@ Convection implemented for Local Fractions
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd Feb 2023, Peter, Heiko
-For Lambert projection (EMEP4NO/AROME), we redefine the emep Earth radius as 
+For Lambert projection (EMEP4NO/AROME), we redefine the emep Earth radius as
 the value found in the meteo file (not WRF though).
 Emep default Earth radius: 6370000 m
 Arome/Lambert Earth radius set to: 6371000 m
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Feb 2023, Peter, Heiko
-We store u10 and v10 (10m wind speed) in the model. 
+We store u10 and v10 (10m wind speed) in the model.
 (previously only sqrt(u10**2+v10**2) was stored)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -858,18 +946,18 @@ will still improve.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Jan 2023, Svetlana
 
-1. AerosolCalls.f90: Aero_Water - calculates both PM25_water and PM25_water_rh50 
+1. AerosolCalls.f90: Aero_Water - calculates both PM25_water and PM25_water_rh50
                      from EQSAM  (Aero_Water_rh50 is not used)
    Runchem_mod.f90: call PM25_water_rh50  is commented out
 
-2. AOD_PM_mod.f90 - updated for SO4, NO3f and NH4f extinction efficiencies: 
+2. AOD_PM_mod.f90 - updated for SO4, NO3f and NH4f extinction efficiencies:
                     Cext for soluble aerosols (as for OC) from OPEC
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Dec 2022 -2 Jan2023 Peter, Svetlana, Dave
 
 Removed lwc variable which was used as a = cc3d *0.6*1-6
-In Aqueous use cw_met instead which is the variable using cloudwater from the 
+In Aqueous use cw_met instead which is the variable using cloudwater from the
 metdata.
 Make cw_met from cc3d if cloudwater not defined in metdata.
 Make cc3d from cw_met if cc3d not defined in metdata.
@@ -877,16 +965,16 @@ Stop if cw_met and cc3d not defined in metdata.
 
 surface pressure was used for all levels! (corrected in this version)
 
-Changed CW_LIMIT from 1e-10 to 1e-7, since now it is used againt cw_met which 
+Changed CW_LIMIT from 1e-10 to 1e-7, since now it is used againt cw_met which
 is multiplied by roa and 1e-3
 
-Changed CW2CC from 1.e6 to 1.e4, but it is not used for cc3d in fraction units. 
+Changed CW2CC from 1.e6 to 1.e4, but it is not used for cc3d in fraction units.
 So no net change of value.
 
-In Aqueous, lwc was used, i.e. lwc=cc3d *0.6*1e-6. Now if cloudwater was not found 
-in metdata, (1/CW2CC)*1e-3 is used instead. So the net effect is that 0.1*1e-6 
+In Aqueous, lwc was used, i.e. lwc=cc3d *0.6*1e-6. Now if cloudwater was not found
+in metdata, (1/CW2CC)*1e-3 is used instead. So the net effect is that 0.1*1e-6
 is no applied instead of 0.6*1e-6.
- 
+
 Time interpolation is done now (before cc3d was constant during METSTEP)
 
 2nd Jan 2023: changed some comments, but no code change.
@@ -905,7 +993,7 @@ Enabled PM10 and ffire_c and FINNv2.5 usage. (1.5 still works, just change FINN_
 
 ForestFire_mod:
 
-  Added PM10 to 
+  Added PM10 to
   also notation change, removing 1p5 from FINN variables
 
 Config_mod
@@ -930,7 +1018,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 CLOUDJ switch for cloudwater was broken.
 
-Makefile and DataDir in config_emep.nml adapted for new machine Atos 
+Makefile and DataDir in config_emep.nml adapted for new machine Atos
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Dec 2022 Peter, Heiko
@@ -958,9 +1046,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   levels. Negligible change on simulation results. Next version (v3) will
   be more flexible in how it handles EMEP model top.
 
-- Added aerosol functions in AeroFunctions_mod. Not all currently in use, and 
+- Added aerosol functions in AeroFunctions_mod. Not all currently in use, and
   if used, only in CloudJ for now. Sig functions include effects of geometric
-  standard deviation growth using Gerber's (1985) function. Lewis & Schwartz 
+  standard deviation growth using Gerber's (1985) function. Lewis & Schwartz
   can be used to describe sea salt growth.
 
        - GerberWetSig
@@ -968,11 +1056,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
        - pmH2O_gerberSig
        - LewisSchwartz
 
-- EmChem19rc added ffire_c emissions line 
+- EmChem19rc added ffire_c emissions line
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-6th July 2022, (But pushed 28 Nov) Peter 
+6th July 2022, (But pushed 28 Nov) Peter
 
 LF with full chemistry: include voc derivatives through new emis system.
 borders (several countries in same gridcell, with different splits) are also
@@ -982,7 +1070,7 @@ accounted for now.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 Nov 2022, Qing
 
-Complete the code example from 23 Nov 2022 by Dave.  
+Complete the code example from 23 Nov 2022 by Dave.
 
 EcoSystem_mod.f90 - complete first 16 LC for Norway work.
 
@@ -993,7 +1081,7 @@ Config_module.f90 - increase MAX_NUM_DDEP_ECOS from 9 to 25 to allow extra 16 LC
 
 DerivedFields_mod.f90 - increase MAXDEF_DERIV2D to 1000.
 
-MosaicOutputs_mod.f90 - increase MAX_MOSAIC_OUTPUTS from 150 to 500 
+MosaicOutputs_mod.f90 - increase MAX_MOSAIC_OUTPUTS from 150 to 500
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Nov 2022, Dave
 
@@ -1011,7 +1099,7 @@ config_emep.nml - added CF, DF to DDEP_ECOS, and NO2 example in DDEP_WANTED
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Nov 2022, Dave
 
-Adding ISORROPIA back as aerosol solver. PRELIMINARY!!! 
+Adding ISORROPIA back as aerosol solver. PRELIMINARY!!!
   Needs more testing, and we need to add HCl etc, but it seems to work
   numerically at least. (I had to add checks for negative concentrations
   in AerosolCalls though, but the ones I saw were very small, and mass
@@ -1021,7 +1109,7 @@ AeroConstants_mod  - just refer to ISORROPIA now, but can change in config anywa
 
 AerosolCalls - now has ISORROPIA as possibility
 
-Makefile - now with isocom.f90, isorev.f90, ISOFWD.f90 
+Makefile - now with isocom.f90, isorev.f90, ISOFWD.f90
 
 renamed FUTURE_xxx to xxx.f90 for xxx = isocom, isorev, ISOFWD
 
@@ -1032,7 +1120,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Adding nonForest as ecosystem category - everything which isn't forest (includes
 seminat, water, ..)
 
-EcoSystem_mod - adding nonForest 
+EcoSystem_mod - adding nonForest
 My_Derived_mod - adding Area outputs of Forest and nonForest
 
 Debug_module - switched DEBUG_ECOSYSTEMS to DEBUG%ECOSYSTEMS
@@ -1054,12 +1142,12 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ryDe
 Added and expanded aerosol functionality in the photolysis rate calculations
 using Cloud-J. The latter now takes into account the effects of sea salt,
-forest fire (biomass burning), dust, and sulphate. 
+forest fire (biomass burning), dust, and sulphate.
 
 CloudJ photolysis rates are now also mapped onto all photochemical reactions
-present in EmChem19. 
+present in EmChem19.
 
-Photolysis rate definitions for chemistry that includes explicit glyoxal 
+Photolysis rate definitions for chemistry that includes explicit glyoxal
 channels and PAN photolysis are now included.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1073,21 +1161,21 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Fixed the equation that calculates the gravitational settling velocity (v_s) for ash
 and other aerosol particles. Previously, a wrong notation for the drag coefficient
-was used in determining a single expression for v_s. 
+was used in determining a single expression for v_s.
 
-Together with the temperature bug fix from below, newly calculated v_s values are 
-about a factor of two greater than before. 
+Together with the temperature bug fix from below, newly calculated v_s values are
+about a factor of two greater than before.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 Sep 2022, Willem
 
-Fixed a bug in the gravitational settling module(s) where potential temperature 
-was treated like absolute temperature in the calculations for the dynamical 
-viscosity and mean path of air. 
+Fixed a bug in the gravitational settling module(s) where potential temperature
+was treated like absolute temperature in the calculations for the dynamical
+viscosity and mean path of air.
 
-Updated Setup_1d to include specified methane and hydrogen background 
-concentrations, which only come into effect when these species are defined 
-with <> brackets in the CM files (like H2O, O2 and N2 are in EmChem19).  
+Updated Setup_1d to include specified methane and hydrogen background
+concentrations, which only come into effect when these species are defined
+with <> brackets in the CM files (like H2O, O2 and N2 are in EmChem19).
 
 Other minor tweaks involve cloud liquid water content being a mandatory field
 when CloudJ is used to calculate photolysis rates (as a bare minimum), and that
@@ -1102,11 +1190,11 @@ Added output of "New format" emissions to RunLog, wth EMTBL label (cf EMTAB
 from emis_inputlist methods). Also produces summary table at end of
 RunLog.
 
-NOTE: only tested for simple annual emission input. BE CAREFUL and suspicious 
+NOTE: only tested for simple annual emission input. BE CAREFUL and suspicious
 for other situations.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-27 Sep 2022, Peter 
+27 Sep 2022, Peter
 
 when emis_inputlist()%sector == 'GNFR', redefine as'GNFR_CAMS', for
 compatibility with treatment of sectors_name from the emission file (which was
@@ -1150,28 +1238,28 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Introduced CloudJ functionality, which can be toggled on/off in Config_emep.f90.
 
-In the current setup, CloudJ can be used to calculate photolysis rates 
-for reactions having a 1-to-1 correspondence with those from the standard 
-CloudJ input files (which are most of the EMEP reactions, see Runchem_mod.f90). The 
+In the current setup, CloudJ can be used to calculate photolysis rates
+for reactions having a 1-to-1 correspondence with those from the standard
+CloudJ input files (which are most of the EMEP reactions, see Runchem_mod.f90). The
 new code runs as 'stand alone' for all years. Between the years 2005 and 2021
-monthly mean lat-lon-altitude satellite ozone and temperature data are read in. 
-For other years, monthly climatologies based on these years are used instead. 
+monthly mean lat-lon-altitude satellite ozone and temperature data are read in.
+For other years, monthly climatologies based on these years are used instead.
 
 IF USES%CLOUDJ = .true. CloudJ is used to update rcphot(:,:)
 IF USES%HRLYCLOUD = .true. CloudJ updates only once every model hour
   rather than every model timestep, to save CPU time
 
 For global runs, hourly CloudJ calls lead to a ~10% increase in CPU time,
-whereas instantaneous CloudJ calls lead to a ~25% increase in CPU time.  
+whereas instantaneous CloudJ calls lead to a ~25% increase in CPU time.
 
 An additional change includes a bug-fix to DefPhotolysis_mod.f90, which caused
-only clear-sky tabulated Jvalues to be used at all times. 
+only clear-sky tabulated Jvalues to be used at all times.
 
 IF USES%CLEARSKYTAB = .true. only clear-sky tabulated Jvalues are used, to comply
   with the state of the model pre-bug-fix.
 
-Another minor change is that the 3d cloud cover array cc3d, used in 
-Aqueous_n_WetDep_mod.f90 and Met_mod.f90, is now interpolated 
+Another minor change is that the 3d cloud cover array cc3d, used in
+Aqueous_n_WetDep_mod.f90 and Met_mod.f90, is now interpolated
 in time, for consistency with the other metfields used by CloudJ.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1190,7 +1278,7 @@ OutputMisc=
    'AvgMDA8_6month','AvgMDA8AprSep', '',  'O3', 'ug/m3', -1 , -1, F, 1.0, F, 'Y',
 
 The first field is the name in the output,can be chosen freely.
-For AvgMDA8AprSep only the monthes from Apr to Sep are included for yearly, but 
+For AvgMDA8AprSep only the monthes from Apr to Sep are included for yearly, but
 all month have a monthly value (i.e for monthly, AvgMDA8AprSep and AvgMDA8 are the same)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1274,7 +1362,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Config_mod - switches default soilnox_emission_File to be v2.3, not v2.2, of the CAMS81 data.
 
- Changes results, but only V. SMALL changes in monthly concentrations. 
+ Changes results, but only V. SMALL changes in monthly concentrations.
 
 EmisGet_mod    - small debug changes
 Emissions_mod  - small debug changes
@@ -1353,7 +1441,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Dec 2021 Peter
 
 Local Fractions: the emissions for the "fullchem" mode, are included through
-derivatives in the chemical scheme. Lots of reorganizations required in the LF 
+derivatives in the chemical scheme. Lots of reorganizations required in the LF
 routines.
 
 mk.LFChem adapted too. Need some manual changes too(?)
@@ -1542,7 +1630,7 @@ SeaSalt_mod.f90:   just added helper text.
 
 Chasing strange behaviour:
   CellMet_mod.f90:  Added some debug lines
-  Setup_1d_mod.f90: Added some debug lines. 
+  Setup_1d_mod.f90: Added some debug lines.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Oct 2021, Arjo
@@ -1587,7 +1675,7 @@ Main Makefile has a new target "EmCso" to compile the model including
 this extension.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12th Oct 2021, Dave 
+12th Oct 2021, Dave
 
 Just prepping for futire Tleaf calculations:
 
@@ -1606,9 +1694,9 @@ Io_Progs  - misleading initial text removed (claiming F-compliance).
 MetFields_mod - added dTleafHd, dTleafRn possibilities. Use of USES%TLEAF etc
     temporarily disabled to allow model to run.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th Oct 2021, Dave 
+9th Oct 2021, Dave
 
-Landuse_mod - add %has_veg and %GsH2O to LandCover 
+Landuse_mod - add %has_veg and %GsH2O to LandCover
 
 LocalVariables_mod - adding Tleaf testing variables dTLeaf, Tleaf, GsH2O
 
@@ -1647,7 +1735,7 @@ BUG-FIX: SoilWater_mod was setting all fSW to 1.0!! Also changed DEBUG_SOILWATER
 USES%WETRAD added as option to trigger use of wet-radius and density in
   aerosol settling velocity (Vs) calculations. Only really affects coarse
   sea-salt.
- 
+
   Default is .false. for now to preserve rv4.43 results, but will be set .true.
   very soon, after further tests and maybe another tweak or two.
 
@@ -1714,7 +1802,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Added the "RESTART" option for NEST. This is to be used when one restart a run
 without changing the domain size ("checkpoint-restart").
-The difference with "START" is only that BC are not overwritten. This is important 
+The difference with "START" is only that BC are not overwritten. This is important
 In the case of restarting exactly at the start of a month (at time 00:00, the 1st),
 because the nest file had the BC from preceding month, and it will otherwise
 use old month BC.
@@ -1732,7 +1820,7 @@ huge numbers of false warnings.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Aug 2021, Alvaro
 
-Allow daily ouput of emissions with the flag DailyEmisOut = T 
+Allow daily ouput of emissions with the flag DailyEmisOut = T
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th Aug 2021, Alvaro
@@ -1820,7 +1908,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Adding ZCM_EmChem19a-CAMS5
 
- - for use with CAMSv5 (CANT) emissions, which have OC and EC. Activate with 
+ - for use with CAMSv5 (CANT) emissions, which have OC and EC. Activate with
    mk.ChemFiles EmChem19a-CAMS5 as usual. Be careful with emissplits though -
    they are not yet added in DataDir, but exist in ZCM_EmChem19a-CAMS5.
 
@@ -1834,7 +1922,7 @@ that it is possible to compile the model with chemistry where thoase are
 not defined.
 
 define_chemicals_indices makes:
-SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_f_ix, 
+SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_f_ix,
 NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, NO_ix, HO2_ix, OH_ix
 
 To check:
@@ -1894,7 +1982,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Makefile adapted for Betzy
 
 EmisGet_mod: changed tmp_emisfrac from automatic to allocatable array, because
-otherwise the code crashes on Betzy, with segmentation error (!?). 
+otherwise the code crashes on Betzy, with segmentation error (!?).
 (netCDF/4.7.4-iimpi-2020b)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1944,7 +2032,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NEW TAG: rv4.42
 
 
-ZCM_EmChem19a -   Update: CM_ChemGroups now has NMVOC, NMHC groups. 
+ZCM_EmChem19a -   Update: CM_ChemGroups now has NMVOC, NMHC groups.
                           NMVOC species removed.
 
 ZCM_EmChem19rnr added - has Res and nonRes species (e.g. POM_f_Res, POM_f_nonRes),
@@ -2005,13 +2093,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5. NEW FILE: GravSettling_mod.f90: Code added as EXPERIMENTAL ONLY. Do not use yet.
 
   Affects:
-    Makefile.SRCS 
+    Makefile.SRCS
     Config_module.f90 - USES%GRAVSET = .false.
     PhyChem_mod.f90 - calls grav settling if USES%GRAVSET
 
 6. Small tidy-ups:
      AeroFunctions_mod, Setup_1d_mod
-  
+
 7. IAM_CROP added to LandInputs_May2021 files and config_emep.nml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2074,7 +2162,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 SeaSalt, SoilNOx, Emissions changes
 
-1. Sea-Salt: 
+1. Sea-Salt:
 
  Config_mod, SeaSalt_mod
 
@@ -2149,7 +2237,7 @@ Most code changes in GridValues:
   adding output of USES%CAMS81_SOILNOx and PFT_MAPS to final settings.
   use of logtxt for internal-writes before call to PrintLog
 
-Plus PrintLog commented out in Io_Progs_mod. 
+Plus PrintLog commented out in Io_Progs_mod.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2021, Dave
@@ -2219,7 +2307,7 @@ DataDir/Emis_CAMS_GLOB_AIR/CAMS-GLOB-AIR_v1.1_nox_YYYY.nc'
 
 The emissions in the lowest flight level are set to zero, and the next lowest
 flight level are multiplied by 0.5.
-This can be steered by 
+This can be steered by
 USES%zero_below3000ft  = F,
 or
 USES%zero_below3000ft  = T, !default
@@ -2260,13 +2348,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th April 2021, Dave
 
 Added pmH2O outputs from from Gerber system, and added USES%SURF_AREA_RHLIMITS
-to restrict RH range of Gerber cals to goven RH (in %). Use of -1 (default) or 100 
+to restrict RH range of Gerber cals to goven RH (in %). Use of -1 (default) or 100
 equivalent to current system, but will need changing soon!
 
 ** PROBLEM identified: coarse sea-salt can generate enormous (>1000 ug/m3)
   pmH2O at 100% RH.  Need to decide if 98 or 99% will be best thresholds.
 
-AeroFunctions: modified self_test and some QUERY comments 
+AeroFunctions: modified self_test and some QUERY comments
 ChemFields_mod: use now pmH2Ogb for Gerber water for f and c (LIMAX*LJMAX*2)
 Config_module: Added SURF_AREA_RHLIMITS  = -1; will be set to 98 or 99 soon!
 Setup_1d_mod:  use and output of pmH2O and USES%SURF_AREA_RHLIMITS. Also tidy up

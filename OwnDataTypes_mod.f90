@@ -322,6 +322,26 @@ type, public :: poll_type
   integer, dimension(Max_lf_res) ::res = -1    ! resolution of sources to be included for this pollutant.
 end type poll_type
 
+type, public :: lf_set_type
+  !general
+  integer :: Nvert = 7 ! vertical extend of the tracking/local window
+  logical :: YEAR =.true.! Output frequency
+  logical :: MONTH =.false.
+  character(len=40)::  MONTH_ENDING = "NOTSET"
+  logical :: DAY =.false.
+  logical :: HOUR =.false.
+  logical :: HOUR_INST =.false.
+  integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
+  !for fullchem settings
+  logical :: full_chem =.false.
+  logical :: EmisDer_all =.false. ! reduce voc, sox, nox, nh3 together
+  logical :: MDA8 = .false. ! if MDA8 and SOMO35 are to be outputed (if full_chem)
+  logical :: restart =.false.
+  logical :: save =.false.
+end type lf_set_type
+
+
+
 type, public :: lf_sources
   character(len=TXTLEN_NAME) :: species = 'NOTSET' !pollutants to include
   character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
@@ -340,24 +360,20 @@ type, public :: lf_sources
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
   integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox)
   integer :: iqrc = -1 !index for emissplits, if single pollutant (for example NO or NO2, instead of nox)
-  integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   integer, dimension(15) :: ix = -1 ! internal index of the  (splitted) species (set by model)
   real, dimension(15) :: mw=0.0  ! molecular weight of the (splitted) species (set by model)
   character(len=TXTLEN_NAME) :: country_ISO = 'NOTSET' !country name, for example FR for France, as defined in Country_mod
   integer :: country_ix = -1 !Internal country index. Does not have any meaning outside of code
   logical :: DryDep = .false. ! if drydep is to be outputed
   logical :: WetDep = .false. ! if wetdep is to be outputed
-  logical :: MDA8 = .false. ! if MDA8 is to be outputed
-  logical     :: YEAR =.true.! Output frequency
-  logical     :: MONTH =.false.
-  logical     :: make_fracsum =.false.
+  logical     :: YEAR = .true.! Output frequency
+  logical     :: MONTH = .false.
+  logical     :: make_fracsum = .false.
   character(len=40)::  MONTH_ENDING = "NOTSET"
-  logical     :: DAY =.false.
-  logical     :: HOUR =.false.
-  logical     :: HOUR_INST =.false.
-  logical     :: full_chem =.false.
-  logical     :: restart =.false.
-  logical     :: save =.false.
+  logical     :: DAY = .false.
+  logical     :: HOUR = .false.
+  logical     :: HOUR_INST = .false.
+  logical     :: is_ASOA = .false.
 end type lf_sources
 
 type, public :: lf_out_type

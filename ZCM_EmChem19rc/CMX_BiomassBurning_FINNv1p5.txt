@@ -1,4 +1,4 @@
-# BiomassBurning mapping FINNv1.5 to EmChem19a
+# BiomassBurning mapping FINNv1.5 to EmChem19c
 #  Column-1 gives FINNv1 species ,
 #  Column-2 gives the product of two numbers:
 #    1) MW if needed to get to kg/day. Not needed for FINNv1
@@ -38,8 +38,6 @@
     'TOLU',   0.092,  1.0,  'TOLUENE',       # v1.5
     'XYLE',   0.106,  1.0,  'OXYL',          # v1.5
     'MGLY'    0.072,  1.0,  'MGLYOX',        # v1.5  new EMEP
-#----------------------------------------------------------------------------#
-# PM_FFireInert
 # BiomassBurning mapping FINNv1.5 to ffire_OM, ffire_BC, ffire_remPPM25
 #
 # FFire PM species only here, see FFireTracers for ffire_CO tracer if wanted.

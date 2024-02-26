@@ -30,7 +30,7 @@
                              ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use Config_module,      only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv &
-                                ,MasterProc, USES, NATBIO, YieldModifications
+                                ,MasterProc, USES, NATBIO, YieldModifications,SO4_ix
     use Debug_module,       only: DebugCell, DEBUG  ! DEBUG%DRYRUN
     use DefPhotolysis_mod         ! => IDHNO3, etc.
     use EmisDef_mod,        only: KEMISTOP
@@ -38,8 +38,9 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
+                                  spec2lfspec,rctA_lf, rctB_lf,&
                                   rcemis_lf, lf_rcemis,&
-                                  NSPEC_deriv_lf, N_lf_derivemis,&
+                                  NSPEC_deriv_lf, N_lf_derivemis, NSOA,&
                                   lf_chem_pre, lf_chem_mid, lf_chem_pos
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
@@ -159,7 +160,7 @@ contains
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
-       if (USES%LocalFractions) then          
+       if (USES%LocalFractions) then
           call lf_chem_pre(i,j,k,dti(1),Nd)
        endif
 
@@ -195,11 +196,11 @@ contains
              x(n) = xnew(n)
              xnew(n) = xextrapol
           end do
-          
-          if (USES%LocalFractions) then          
+
+          if (USES%LocalFractions) then
              call lf_chem_mid(k,cc(ichem),coeff1(ichem),coeff2(ichem),CPINIT)
           endif
- 
+
           dt2  =  dti(ichem) !*(1.0+cc(ichem))/(1.0+2.0*cc(ichem))
           if ( DEBUG%RUNCHEM .and. DebugCell )  then
             accdt2 = accdt2 + dt2

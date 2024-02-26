@@ -152,11 +152,15 @@ real, save, public :: Emis_h(Emis_heights_sec_MAX,Emis_Nlevel_MAX) ! used if set
           TFAC_IDX_POW,   &   ! Power for winter/summer change
           TFAC_IDX_DOM,   &   ! Domestic/residential, for degree-day Timefactors
           TFAC_IDX_AGR,   &   !
+          TFAC_IDX_AGRK,   &   !  livestock
+          TFAC_IDX_AGRL,   &   !  soils + AWB
           TFAC_IDX_TRAF       !
 
 ! Special sectors that need special timefactors corrections. Could be set by config?
  logical, public, save:: IS_POW(NSECTORS_MAX) = .false.
  logical, public, save:: IS_AGR(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_AGRK(NSECTORS_MAX) = .false.
+ logical, public, save:: IS_AGRL(NSECTORS_MAX) = .false.
  logical, public, save:: IS_TRAF(NSECTORS_MAX) = .false.
  logical, public, save:: IS_DOM(NSECTORS_MAX) = .false.
  logical, public, save:: IS_IND(NSECTORS_MAX) = .false.
