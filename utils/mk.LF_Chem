@@ -41,12 +41,13 @@ for species in SO2 SO4 NH3 NO NO2 shipNOx CH3OH C2H5OH C2H6 NC4H10 C2H4 C3H6 BEN
 do
   sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
-cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
-echo "CM_Reactions1.inc successfully adapted to LF calculations"
 
 sed -i 's/rct(100,k)/(rct(100,k) * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 sed -i 's/rct(97,k)/(rct(97,k)  * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 sed -i 's/rct(96,k)/(rct(96,k)  * (1.0 + rctB_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
+
+cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
+echo "CM_Reactions1.inc successfully adapted to LF calculations"
 
 sed  -i '1i if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then' CM_Reactions2.inc
 sed -i '/ASOC_ug1e3/,/BSOC_ug1e3/ s/P \= /P_lf(Nd+1:Nd+NSOA) \= /' CM_Reactions2.inc

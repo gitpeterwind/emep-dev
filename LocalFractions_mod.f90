@@ -1360,6 +1360,8 @@ subroutine lf_out(iotyp)
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
                        else if(lf_set%EmisDer_all) then
                           write(def2%name,"(A)")trim(def2%name)//'_PSAVN'
+                       else if (lf_spec_out(iout)%name == "pm25" .or. lf_spec_out(iout)%name == "pmco")then
+                          write(def2%name,"(A)")trim(def2%name)//'_P'
                        else
                           write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
