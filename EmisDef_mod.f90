@@ -261,7 +261,7 @@ type, public :: Ocean
   integer :: index
 end type Ocean
 
-type(Ocean), public, save:: O_NH3, O_DMS
+type(Ocean), public, save:: O_NH3, O_DMS, O_Chlorophyll
 
 !used for EEMEP
 real, allocatable, save, dimension(:,:,:,:), public       ::  Emis_4D !(i,j,k,pollutant)

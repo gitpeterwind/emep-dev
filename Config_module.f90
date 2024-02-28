@@ -837,6 +837,10 @@ character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/top
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
 
+!For SeaSurface Chlorophyll
+character(len=TXTLEN_FILE), target, save, public :: SeaChlorophyllFile = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+
+
 ! Species indices that may or may not be defined in Species
 integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
      NO3_f_ix, NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
@@ -942,6 +946,7 @@ subroutine Config_Constants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
+   ,SeaChlorophyllFile&
    !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
@@ -1124,6 +1129,7 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_write)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
+  call associate_File(SeaChlorophyllFile)
 
 !DS
   OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)

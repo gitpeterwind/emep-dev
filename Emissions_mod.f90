@@ -60,7 +60,7 @@ use EmisDef_mod,       only: &
      ,nlandcode,landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcroadd,gridrcroadd0&
-     ,O_NH3, O_DMS&
+     ,O_NH3, O_DMS,O_Chlorophyll&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat &
