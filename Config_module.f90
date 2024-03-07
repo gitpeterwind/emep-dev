@@ -833,6 +833,7 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
+character(len=TXTLEN_FILE), target, save, public :: Chlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
 
 ! Species indices that may or may not be defined in Species
 integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
@@ -913,6 +914,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
+   ,Chlorophyll_File&
    ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
@@ -1087,6 +1089,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
+  call associate_File(Chlorophyll_File)
   call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
