@@ -693,7 +693,10 @@ contains
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
              Emis_source(NEmis_sources)%countrycode = EmisFile%countrycode !default
-             status = nf90_get_att(ncFileID,varid,"country", countrycode)
+             status = nf90_get_att(ncFileID,varid,"countrycode", countrycode)
+             if(status/=nf90_noerr)then
+                status = nf90_get_att(ncFileID,varid,"country", countrycode)
+             end if
              if(status==nf90_noerr)then
                 ix = find_index(countrycode, Country(:)%icode)
                 if(ix<0)then

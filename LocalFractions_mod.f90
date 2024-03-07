@@ -1282,11 +1282,10 @@ subroutine lf_out(iotyp)
               do ig = 1, 30                 
                  found = 1
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig>1) exit
+                 if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) continue
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig==1) then
-                    if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) continue
                     isrc=find_index(trim(lf_spec_out(iout)%name) ,lf_src(:)%species, nth = ideriv)
                  else
-                    if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) continue
                     isrc=find_index(trim(lf_spec_out(iout)%species(ig)) ,lf_src(:)%species, nth = ideriv)
                  end if
                  if(isrc<1)then
@@ -1692,7 +1691,7 @@ subroutine lf_av(dt)
            end if
 
            if(iotyp2ix(iou_ix)==IOU_MON)count_AvgMDA8_m = count_AvgMDA8_m + 1
-           if(iotyp2ix(iou_ix)==IOU_YEAR)count_AvgMDA8_y = count_AvgMDA8_y + 1
+           if(iotyp2ix(iou_ix)==IOU_YEAR)count_AvgMDA8_y = count_AvgMDA8_y + 1 !not used after September
 
            w_m = 1.0/count_AvgMDA8_m
            w_y = 1.0/count_AvgMDA8_y

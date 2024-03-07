@@ -1918,7 +1918,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           else if ( class=="AvgMDA8AprSep" ) then
             !NB: at the end of the first day (day 2 hour 00:00), we actually start to write in the next month
             if (current_date%day == 2) count_AvgMDA8AprSep_m = 0 
-            if (current_date%day == 2) count_AvgMDA8AprSep_y = 0 
             count_AvgMDA8AprSep_m = count_AvgMDA8AprSep_m + 1!for monthes we output all anyway!
             if(current_date%month>=4 .and. current_date%month<=9)count_AvgMDA8AprSep_y = count_AvgMDA8AprSep_y + 1
             w_m = 1.0/count_AvgMDA8AprSep_m
