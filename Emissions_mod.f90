@@ -239,6 +239,8 @@ contains
        O_DMS%sum_year=0.0
     endif
 
+
+
     ! new format initializations
 
     !1) define lowest level default values
