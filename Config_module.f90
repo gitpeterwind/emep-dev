@@ -837,6 +837,7 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
+character(len=TXTLEN_FILE), target, save, public :: Chlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
 
 !For SeaSurface Chlorophyll
 character(len=TXTLEN_FILE), target, save, public :: SeaChlorophyllFile = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
@@ -921,6 +922,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
+   ,Chlorophyll_File&
    ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
@@ -1096,6 +1098,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
+  call associate_File(Chlorophyll_File)
   call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
@@ -1167,9 +1170,8 @@ subroutine Config_Constants(iolog)
   enddo
 
   if(trim(fileName_O3_Top)/="NOTSET")then
-     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
      if(MasterProc) write(*,*)dtxt//'Reading 3 hourly O3 at top from :', &
-                      trim(fileName_O3_Top)
+                      trim(key2str(fileName_O3_Top,'YYYY',startdate(1)))
   endif
 
   if(trim(fileName_CH4_ibcs)/="NOTSET" .and. MasterProc)then
