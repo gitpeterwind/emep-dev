@@ -2393,7 +2393,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   real :: efac, xtot,totemis,emiss
   integer :: isec, iem, iix, ix, iiix,iemis, ideriv , iem_deriv, isrc_deriv, n_sp
 
-  if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
+  if(k<KMAX_MID-lf_Nvert+1)return
 
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   if(DEBUGall .and. me==0)write(*,*)'start chememis'
@@ -2401,7 +2401,12 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      !case with no chemistry for local fractions
      !Now species may be group of species (pm25...)
 
-     if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
+     if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))then
+        do iemis = 1, N_lf_derivemis !N_lf_derivemis should be zero here
+           rcemis_lf(iemis,1) = 0.0 !inititalization for next gridcell
+        end do
+        return
+     end if
      !include emissions that are not created in chemical reactions, but only by emissions
      call Code_timer(tim_before)
      do isrc=1,Nsources
