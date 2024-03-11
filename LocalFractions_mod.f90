@@ -3293,10 +3293,10 @@ subroutine lf_rcemis(i,j,k,eps)
   !rcemis_lf = 0.0 !init done at end of lf_chem_emis_deriv
   !rcemis_lf_primary = 0.0 !init done at end of lf_chem_emis_deriv
   !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
-  if(k < KEMISTOP) return
   nemis = 0
   nemis_primary = 0
   N_lf_derivemis = 0 !number of distinct sources that have contributions in this gridcell
+  if(k < KEMISTOP) return
   do iem = 1, NEMIS_File
     if (iem2Nipoll(iem) <= 0) cycle
     !for fullchem, we only treat nox , voc, nh3 and sox emissions
