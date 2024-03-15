@@ -3375,13 +3375,13 @@ subroutine lf_rcemis(i,j,k,eps)
                      !defined as a group of countries
                      found = 0
                      do ig = 1, MAX_lf_country_group_size
-                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
-                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                       if (lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code &
+                            .or. lf_country%group(iic-Ncountry_lf)%name == 'ALL') then
                          found = 1
                          exit
                        end if
+                       if (lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
                      end do
-
                      if (found == 0) cycle
                    end if
                    do is=1,Ncountrysectors_lf
@@ -3473,11 +3473,12 @@ subroutine lf_rcemis(i,j,k,eps)
               !defined as a group of countries
               found = 0
               do ig = 1, MAX_lf_country_group_size
-                if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
-                if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                if (lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code &
+                     .or. lf_country%group(iic-Ncountry_lf)%name == 'ALL') then
                   found = 1
                   exit
-                end if
+               end if
+               if (lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
               end do
               if (found == 0) cycle
             end if
