@@ -230,7 +230,7 @@ type, public :: emep_useconfig
     ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
     ,PBAP            = .false. &
     ,FUNGAL_SPORES    = .true. & !Only gets activated if PBAP = .true.
-    ,BACTERIA         = .true. !Only gets activated if PBAP = .true.
+    ,BACTERIA         = .true. &!Only gets activated if PBAP = .true.
     ,MARINE_OA        = .true. !Only gets activated if PBAP = .true.
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
@@ -837,10 +837,7 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
-character(len=TXTLEN_FILE), target, save, public :: Chlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
-
-!For SeaSurface Chlorophyll
-character(len=TXTLEN_FILE), target, save, public :: SeaChlorophyllFile = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+character(len=TXTLEN_FILE), target, save, public :: OceanChlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
 
 
 ! Species indices that may or may not be defined in Species
@@ -922,7 +919,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
-   ,Chlorophyll_File&
+   ,OceanChlorophyll_File&
    ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
@@ -949,7 +946,6 @@ subroutine Config_Constants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   ,SeaChlorophyllFile&
    !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
@@ -1098,7 +1094,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
-  call associate_File(Chlorophyll_File)
+  call associate_File(OceanChlorophyll_File)
   call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
@@ -1133,7 +1129,6 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_template_write)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
-  call associate_File(SeaChlorophyllFile)
 
 !DS
   OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)

@@ -18,7 +18,7 @@ module PBAP_mod
                            EURO_SOILNOX_DEPSCALE, & 
                            MasterProc, &
                            USES, &
-                           NATBIO, EmBio, EMEP_EuroBVOCFile
+                           NATBIO, EmBio,OceanChlorophyll_File
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, datewrite
@@ -48,9 +48,12 @@ module PBAP_mod
   !/-- subroutines for Fungal Spores
   private :: Set_FungalSpores, Set_Bacteria
 
-  integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores and bacteria implemented at the moment)
+  integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores bacteria and Marine OA implemented at the moment)
 
   real,public, save, allocatable, dimension(:,:,:) :: PBAP_flux !Dim: i,j,NPBAP
+
+  real,public, save, allocatable, dimension(:,:) :: O_Chlorophyll !Amount of Chlorophyll in the ocean. Dim: i,j
+
 
   real,public, save, allocatable, dimension(:) :: WEIGHTS ,DIAMETERS, DENSITIES !Physical parameters. Dim: NPBAP
   real,private, save, allocatable, dimension(:) :: n2m, kgm2h !Conversion factors. Dim: NPBAP
@@ -61,6 +64,7 @@ module PBAP_mod
 
   integer, private, save :: iint_FungalSpores, itot_FungalSpores, inat_FungalSpores !Index of fungal spores internall, in Species and in EMIS_BioNat
   integer, private, save :: iint_Bacteria,itot_Bacteria, inat_Bacteria !Index of bacteria spores internally, in Species and in EMIS_BioNat
+  integer, private, save :: iint_MarineOA,itot_MarineOA, inat_MarineOA !Index of Marine OA internally, in Species and in EMIS_BioNat
 
   real*8, DIMENSION(6), parameter  ::  &
   BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
@@ -132,12 +136,17 @@ module PBAP_mod
     if (my_first_call) then
       NPBAP = 0
       iint_FungalSpores = -1
+      itot_FungalSpores = -1
       iint_Bacteria = -1
+      itot_Bacteria = -1
+      iint_MarineOA = -1
+      itot_MarineOA = -1
+
 
       if (USES%FUNGAL_SPORES) then
           itot_FungalSpores = find_index( "FUNGAL_SPORES", species(:)%name)
           if (itot_FungalSpores < 0) then
-            write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
+          if(MasterProc)  write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
           else
             NPBAP = NPBAP + 1
             iint_FungalSpores = NPBAP
@@ -149,13 +158,30 @@ module PBAP_mod
        if (USES%BACTERIA) then
           itot_Bacteria = find_index( "BACTERIA", species(:)%name)
           if (itot_Bacteria< 0) then
-            write(*,*) "WARNING: No bacteria found in species, not including bacteria!"
+          if(MasterProc)  write(*,*) "WARNING: No bacteria found in species, not including bacteria!"
           else
             NPBAP = NPBAP + 1
             iint_Bacteria = NPBAP
             inat_Bacteria = find_index( "BACTERIA", EMIS_BioNat(:))
           end if
        end if
+
+       if (USES%MARINE_OA) then
+        itot_MarineOA = find_index( "MARINE_OA", species(:)%name)
+        if (itot_MarineOA< 0) then
+          if(MasterProc)  write(*,*) "WARNING: No Marine OA found in species, not including Marine OA!"
+        else
+          allocate(O_Chlorophyll(LIMAX,LJMAX))
+          if(MasterProc)write(*,*)'Reading Ocean Chlorophyll'
+          call ReadField_CDF(trim(OceanChlorophyll_File),'chlor_a',O_Chlorophyll,&
+                nstart=current_date%month+12*3,interpol='conservative',known_projection="lon lat",&
+                needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3   
+            NPBAP = NPBAP + 1
+            iint_MarineOA = NPBAP
+            inat_MarineOA = find_index( "MarineOA", EMIS_BioNat(:))
+        end if
+     end if
+
 
        if (NPBAP > 0) then 
           allocate(PBAP_Flux(LIMAX,LJMAX,NPBAP))
@@ -197,6 +223,12 @@ module PBAP_mod
               itot(iint_Bacteria) = itot_Bacteria
               PBAP_names(iint_Bacteria) = "BACTERIA"
           end if
+
+          if (iint_MarineOA > 0) then
+              inat(iint_MarineOA) = inat_MarineOA
+              itot(iint_MarineOA) = itot_MarineOA
+              PBAP_names(iint_MarineOA) = "MARINE_OA"
+          end if 
       end if !NPBAP > 0
 
      my_first_call = .false.

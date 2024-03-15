@@ -88,6 +88,7 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("POLLEN_MUGWORT3", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_MUGWORT4", "POLLw     ", -999.0 ) &
 , dep_t("POLLEN_MUGWORT5", "POLLw     ", -999.0 ) &
-, dep_t("FUNGAL_SPORES", "POLLw     ", -999.0 ) &
+, dep_t("FUNGAL_SPORES", "PMc       ", -999.0 ) &
 , dep_t("BACTERIA  ", "PMf       ", -999.0 ) &
+, dep_t("MARINE_OA ", "SSf       ", -999.0 ) &
 /)

@@ -60,7 +60,7 @@ use EmisDef_mod,       only: &
      ,nlandcode,landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcroadd,gridrcroadd0&
-     ,O_NH3, O_DMS,O_Chlorophyll&
+     ,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat &
@@ -238,8 +238,6 @@ contains
        O_DMS%sum_month=0.0
        O_DMS%sum_year=0.0
     endif
-
-
 
     ! new format initializations
 

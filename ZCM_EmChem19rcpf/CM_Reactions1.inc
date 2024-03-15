@@ -1327,3 +1327,12 @@
   xnew(BACTERIA) = xold(BACTERIA) + dt2 * P
 
 
+!-> MARINE_OA
+
+  P = rcemis(MARINE_OA,k)
+  
+  ! L = 0.0
+  
+  xnew(MARINE_OA) = xold(MARINE_OA) + dt2 * P
+
+

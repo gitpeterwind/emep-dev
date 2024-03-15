@@ -60,4 +60,5 @@ character(len=15), save, dimension(NEMIS_Specs), public :: EMIS_Specs = (/ &
 , "POLLEN_MUGWORT5" &
 , "FUNGAL_SPORES  " &
 , "BACTERIA       " &
+, "MARINE_OA      " &
 /)
