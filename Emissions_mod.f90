@@ -1012,12 +1012,18 @@ subroutine EmisUpdate
                write(*     ,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
                write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
                fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
+               fmtg="(a5,i4,1x,a9,3x,30(g12.2,:))"
                do ic = 1, NLAND
                   ccsum = sum( sumemis(ic,:) )
                   icc = Country(ic)%icode
                   if (ccsum > 0.0) then
-                     write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
-                     write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                     if (ccsum > 1e8 )then
+                        write(*,     fmtg) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                        write(IO_LOG,fmtg) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                     else
+                        write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                        write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                     end if
                   end if
                end do
             end if
@@ -1029,7 +1035,11 @@ subroutine EmisUpdate
                      ccsum = sum( sumemis_sec(ic,is,:) )
                      icc=Country(ic)%icode
                      if ( ccsum > 0.0 )then
-                        write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       if (ccsum > 1e8 )then
+                         write(*, fmtg) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       else
+                         write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       end if
                      end if
                   end do
                end do
@@ -1067,8 +1077,14 @@ subroutine EmisUpdate
                end if
             end if
          end do
-         write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
-         write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         ccsum = sum( emsum(:))
+         if (ccsum > 1e8 )then
+            write(*     ,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         else
+            write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         end if
       end if
       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
