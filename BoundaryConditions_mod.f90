@@ -43,7 +43,8 @@ use Config_module,         only: KMAX_MID  &  ! Number of levels in vertical
                      ,BGND_CH4  &  ! If positive, replaces defaults 
                      ,fileName_CH4_ibcs & ! If present, replaces uses iyr_trend
                      ,cmxbicDefaultFile & ! Table of simple defaults
-                     ,USES, MasterProc, PPB, Pref, LoganO3File, DustFile
+                     ,USES, MasterProc, PPB, Pref, LoganO3File, DustFile&
+                     ,BIC_O3_FAC, BIC_N_FAC, BIC_S_FAC, BIC_V_FAC, BIC_A_FAC !scaling variables for BIC SR reduction runs
 use Debug_module,          only: DEBUG, DebugCell   ! -> DEBUG%BCS
 use Functions_mod,         only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_mod,        only: glon, glat   & ! full domain lat, long
@@ -1451,17 +1452,17 @@ real :: trend_o3=1.0, trend_co, trend_voc
     !/ trend adjustments
    select case (bcSpec)
    case ( 'O3' )
-      bc_data = bc_data*trend_o3
+      bc_data = bc_data*trend_o3*BIC_O3_FAC
    case ('C4H10' , 'C2H6' )
-      bc_data =  bc_data*trend_voc
+      bc_data =  bc_data*trend_voc*BIC_V_FAC
    case ( 'CO' )
       bc_data =  bc_data*trend_co
    case ( 'SO2','SO4')
-      bc_data = bc_data*SIAtrend%so2
+      bc_data = bc_data*SIAtrend%so2*BIC_S_FAC
    case( 'NH4_f')
-      bc_data = bc_data*SIAtrend%nh4
+      bc_data = bc_data*SIAtrend%nh4*BIC_A_FAC
    case ( 'NO3_f','NO3_c','HNO3','NO2','NO','PAN')
-      bc_data = bc_data*SIAtrend%nox
+      bc_data = bc_data*SIAtrend%nox*BIC_N_FAC
    end select
    bc_data = bc_data * specBIC%conv_fac !Convert to mixing ratio
 
