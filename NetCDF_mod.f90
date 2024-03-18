@@ -21,7 +21,7 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              ,MasterProc, NETCDF_DEFLATE_LEVEL &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
                              ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
-                             ,IOU_HOUR,IOU_HOUR_INST &
+                             ,IOU_HOUR,IOU_HOUR_INST,HOURLYFILE_ending &
                              ,PT,Pref,NLANDUSEMAX, model&
                              ,USES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
@@ -1247,7 +1247,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
 
       if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//" with sizes ",GIMAXcdf,GJMAXcdf,KMAX
       period_type = 'unknown'
-      if(iotyp==IOU_HOUR .or. iotyp==IOU_HOUR_INST) then
+      if((iotyp==IOU_HOUR .or. iotyp==IOU_HOUR_INST).and.&
+           (index(HOURLYFILE_ending,'DD')>0 .or. index(HOURLYFILE_ending,'JJJ')>0)) then
          call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX,ntime=24)
       else
          call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
