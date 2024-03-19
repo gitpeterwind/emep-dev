@@ -77,6 +77,7 @@
 
    integer, intent(in) :: i,j         ! coordinates
    logical, intent(in) :: debug_flag  ! set true for debug i,j
+   !real, optional, intent(out) :: EmisOut(NSS) !When using SeaSalt to drive MarineOA
 
    real, parameter :: Z10 = 10.0  ! 10m height
    integer :: ii, jj, nlu, ilu, lu
@@ -102,7 +103,7 @@
     if(DEBUG%SEASALT .and. MasterProc ) &
         write(*,*) "SSALT INIT", inat_SSFI, itot_SSFI
 
-    if ( inat_SSFI < 1 ) then
+    if ( inat_SSFI < 1) then
        seasalt_found = .false.
        call PrintLog("WARNING: SeaSalt not found in Emis",MasterProc)
        if ( USES%SEASALT ) call StopAll('SeaSalt not found in Emis')
@@ -112,8 +113,9 @@
        if ( USES%SEASALT ) call StopAll('SeaSalt not found in Emis')
     else
         seasalt_found = .true.
-        call init_seasalt()
     end if
+
+    call init_seasalt() !Even if SeaSalt not found, can still be called for MarineOA
     
     ! rv4.40 Fracs of 7th mode in fine vs coarse
     frac_f = USES%SEASALT_fFrac
@@ -127,17 +129,19 @@
   end if !  my_first_call
  !....................................
 
-  if ( .not. seasalt_found  ) return 
+ ! if ( .not. seasalt_found  ) return 
 
  !....................................
 
 
 
     if ( .not. Grid%is_mainlysea .or. Grid%snowice ) then ! quick check
-       EmisNat( inat_SSFI,i,j) = 0.0
-       EmisNat( inat_SSCO,i,j) = 0.0
-       rcemis( itot_SSFI,KMAX_MID) = 0.0
-       rcemis( itot_SSCO,KMAX_MID) = 0.0
+      if (seasalt_found) then
+        EmisNat( inat_SSFI,i,j) = 0.0
+        EmisNat( inat_SSCO,i,j) = 0.0
+        rcemis( itot_SSFI,KMAX_MID) = 0.0
+        rcemis( itot_SSCO,KMAX_MID) = 0.0
+        EmisOut(:) = 0.0
        return
     end if
 
@@ -312,11 +316,15 @@
        end if  ! water
      end do  ! LU classes
 
+    EmisOut( iSSFI ) = rcss( iSSFI )
+    EmisOut( iSSCO ) = rcss( iSSCO )
+
+    if (seasalt_found) then
      EmisNat( inat_SSFI, i,j )      = rcss( iSSFI ) * moleccm3s_2_kgm2h * species( itot_SSFI )%molwt
      EmisNat( inat_SSCO, i,j )      = rcss( iSSCO ) * moleccm3s_2_kgm2h * species( itot_SSCO )%molwt
      rcemis ( itot_SSFI, KMAX_MID ) = rcss( iSSFI )
      rcemis ( itot_SSCO, KMAX_MID ) = rcss( iSSCO )
-
+    end if
   end subroutine SeaSalt_flux
 
 

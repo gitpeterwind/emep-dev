@@ -32,6 +32,7 @@ module PBAP_mod
   use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
   use NetCDF_mod,         only: ReadField_CDF, printCDF
   use OwnDataTypes_mod,   only: Deriv, TXTLEN_SHORT
+  !use SeaSalt_mod,        only: SeaSalt_flux
 !  use Paleo_mod, only : PALEO_modai, PALEO_miso, PALEO_mmon
   use Par_mod,            only: MSG_READ1,me, limax, ljmax
   use PhysicalConstants_mod,  only:  AVOG, GRAV, PI
@@ -181,6 +182,10 @@ module PBAP_mod
             NPBAP = NPBAP + 1
             iint_MarineOA = NPBAP
             inat_MarineOA = find_index( "MarineOA_NEW", EMIS_BioNat(:))
+        end if
+
+        if (.not. USES%SEASALT) then
+
         end if
      end if
 
@@ -439,15 +444,20 @@ module PBAP_mod
     F_MarineOA = 0.0 !Bacteria flux
     temp_val = 0.0
 
-      nlu = LandCover(i,j)%ncodes
+      if (.not. USES%SEASALT) then
+        call SeaSalt_flux(i,j,DEBUG%MARINE_OA,) ! sets rcemis(SEASALT_...)
+      end if
+      
 
-      do iiL = 1,nlu
-        lu =  LandCover(i,j)%codes(iiL)
-        if ( Sub(lu)%is_water ) then
-          F_MarineOA = F_MarineOA + LandCover(i,j)%fraction(iiL)*0.4*O_Chlorophyll(i,j)
-        end if
+      !nlu = LandCover(i,j)%ncodes
 
-      end do !iiL
+      !do iiL = 1,nlu
+      !  lu =  LandCover(i,j)%codes(iiL)
+      !  if ( Sub(lu)%is_water ) then
+      !    F_MarineOA = F_MarineOA + LandCover(i,j)%fraction(iiL)*0.4*O_Chlorophyll(i,j)
+      !  end if
+
+      !end do !iiL
 
 
     PBAP_flux(i,j,iint_MarineOA) = F_MarineOA
