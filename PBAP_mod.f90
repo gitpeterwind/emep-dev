@@ -40,6 +40,8 @@ module PBAP_mod
   use TimeDate_mod,       only: current_date, daynumber
   use ZchemData_mod,      only: rcemis, rcbio
   use Biogenics_mod,      only: NEMIS_BioNat,EMIS_BioNat,EmisNat
+  use SubMet_mod,            only: Sub
+
   implicit none
   private
 
@@ -167,7 +169,7 @@ module PBAP_mod
        end if
 
        if (USES%MARINE_OA) then
-        itot_MarineOA = find_index( "MARINE_OA", species(:)%name)
+        itot_MarineOA = find_index( "MARINE_OA_NEW", species(:)%name)
         if (itot_MarineOA< 0) then
           if(MasterProc)  write(*,*) "WARNING: No Marine OA found in species, not including Marine OA!"
         else
@@ -178,7 +180,7 @@ module PBAP_mod
                 needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3   
             NPBAP = NPBAP + 1
             iint_MarineOA = NPBAP
-            inat_MarineOA = find_index( "MarineOA", EMIS_BioNat(:))
+            inat_MarineOA = find_index( "MarineOA_NEW", EMIS_BioNat(:))
         end if
      end if
 
@@ -228,6 +230,8 @@ module PBAP_mod
               inat(iint_MarineOA) = inat_MarineOA
               itot(iint_MarineOA) = itot_MarineOA
               PBAP_names(iint_MarineOA) = "MARINE_OA"
+              n2m(iint_MarineOA) = 1
+              kgm2h(iint_MarineOA) = 1
           end if 
       end if !NPBAP > 0
 
@@ -411,8 +415,51 @@ module PBAP_mod
 
   end subroutine Set_Bacteria
 
+  subroutine Set_MarineOA(i,j)
+    !NOT YET TESTED
+    !!!!!!!
+    !Fills PBAP_Flux(i,j,iint_MarineOA)
+    !Based on parameterization from
+
+    integer, intent(in) ::  i,j
+    integer :: nlu, iiL,lu
+    real    :: F_MarineOA, temp_val
+    logical, save ::  my_first_call = .true.
 
 
+    if( DEBUG%MARINE_OA .and. debug_proc ) then
+      if (i .eq. debug_li .and. j .eq. debug_lj) then
+       write(*,*)"PBAP_mod DEBUG Marine OA: ",&
+        current_date%day, current_date%hour, current_date%seconds,&
+        USES%MARINE_OA, itot(iint_MarineOA),inat(iint_MarineOA)
+      end if
+    end if
+
+
+    F_MarineOA = 0.0 !Bacteria flux
+    temp_val = 0.0
+
+      nlu = LandCover(i,j)%ncodes
+
+      do iiL = 1,nlu
+        lu =  LandCover(i,j)%codes(iiL)
+        if ( Sub(lu)%is_water ) then
+          F_MarineOA = F_MarineOA + LandCover(i,j)%fraction(iiL)*0.4*O_Chlorophyll(i,j)
+        end if
+
+      end do !iiL
+
+
+    PBAP_flux(i,j,iint_MarineOA) = F_MarineOA
+
+    if ( DEBUG%MARINE_OA .and. debug_proc ) then
+       if (i .eq. debug_li .and. j .eq. debug_lj) then
+        write(*,"(a,4i4)") "MarineOA i,j: ",  1, limax, 1, ljmax
+        write(*,"(a,2f12.4)") "Flux, Cholorphyll: ", F_MarineOA, O_Chlorophyll(i,j)
+       end if
+    end if
+
+  end subroutine Set_MarineOA
 
   subroutine set_PBAPs(i,j)
   !
@@ -443,6 +490,10 @@ module PBAP_mod
   if ( iint_Bacteria > 0 ) then
     call Set_Bacteria(i,j)
   end if 
+
+  if (iint_MarineOA > 0) then
+    call Set_MarineOA(i,j)
+  end if
 
   do i_PBAP = 1,NPBAP
     rcemis(itot(i_PBAP),KG) = rcemis(itot(i_PBAP),KG)+n2m(i_PBAP)*PBAP_flux(i,j,i_PBAP)![mol/cm3/s]

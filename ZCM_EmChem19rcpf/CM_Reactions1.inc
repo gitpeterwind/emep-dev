@@ -1327,12 +1327,22 @@
   xnew(BACTERIA) = xold(BACTERIA) + dt2 * P
 
 
-!-> MARINE_OA
+!-> MARINE_OA_NEW
 
-  P = rcemis(MARINE_OA,k)
+  P = rcemis(MARINE_OA_NEW,k)
+  
+  L = rct(101,k)
+  
+  xnew(MARINE_OA_NEW) = (xold(MARINE_OA_NEW) + dt2 * P) / (1.0 + dt2 * L)
+
+
+!-> MARINE_OA_AGE
+
+  P = rcemis(MARINE_OA_AGE,k)  &
+    + rct(101,k) * xnew(MARINE_OA_NEW)
   
   ! L = 0.0
   
-  xnew(MARINE_OA) = xold(MARINE_OA) + dt2 * P
+  xnew(MARINE_OA_AGE) = xold(MARINE_OA_AGE) + dt2 * P
 
 

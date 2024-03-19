@@ -338,6 +338,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0, !WARNING SEP2021 CAUSES STALL
   DEBUG%MOSAICS         = F,
+  DEBUG%MARINE_OA         = F,
   DEBUG%PBAP            = T,
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
@@ -545,6 +546,10 @@ OutputConcs=
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
        'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+
 
 ! PM10group sub-components
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',

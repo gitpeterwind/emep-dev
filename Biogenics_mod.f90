@@ -123,7 +123,7 @@ module Biogenics_mod
            , "RN222      " &
            , "FUNGAL_SPORES"&
            , "BACTERIA"    &
-           , "MARINE_OA"]
+           , "MARINE_OA_NEW"]
 
   integer, public, parameter :: &
       N_ECF=2, ECF_ISOP=1, ECF_TERP=2   &! canopy factors, BVOC
