@@ -27,7 +27,7 @@ use Config_module,only: &
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
     EURO_SOILNOX_DEPSCALE,&! one or the other
-    DMS,&
+    DMS,DMS_S_FAC,&
     NPROC, EmisSplit_OUT,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
@@ -2966,7 +2966,7 @@ end if
             needed=.true.,debug_flag=.false.,UnDef=0.0)
      DMS%FileFound =.true.
      !from nanomol/l -> mol/cm3
-     O_DMS%emis=O_DMS%emis*1.0e-12
+     O_DMS%emis=O_DMS%emis*1.0e-12*DMS_S_FAC
   end if
 
   if (USES%OCEAN_NH3) then
@@ -3113,7 +3113,7 @@ end if
        DMS%FileFound =.true.
 
        !from nanomol/l -> mol/cm3
-       O_DMS%emis=O_DMS%emis*1.0e-12
+       O_DMS%emis=O_DMS%emis*1.0e-12*DMS_S_FAC
 
    else !
       call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))
