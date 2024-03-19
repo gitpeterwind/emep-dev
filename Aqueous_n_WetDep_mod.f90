@@ -498,7 +498,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
   real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
   
-  integer, parameter:: N_ITER=40 !each iteration divides the error in two
+  integer, parameter:: N_ITER=45 !each iteration divides the error in two
   real, parameter :: phThres = 1.0E-6 !just to verify result.
   
   SO2 = SO2_ix

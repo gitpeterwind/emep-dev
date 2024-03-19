@@ -655,6 +655,15 @@ logical, public, save ::  MasterProc = .true.
 
 logical, public, save :: SOURCE_RECEPTOR = .false., VOLCANO_SR=.false.
 
+!BIC/DMS scaling variables for BIC/DMS reductions in SR runs
+!By default set to 1.0, can be changed in config namelist
+real, public, save :: BIC_O3_FAC=1.0
+real, public, save :: BIC_N_FAC=1.0
+real, public, save :: BIC_S_FAC=1.0
+real, public, save :: BIC_A_FAC=1.0
+real, public, save :: BIC_V_FAC=1.0
+real, public, save :: DMS_S_FAC=1.0
+
 ! Compress NetCDF output? (nc4 feature, 1-9 GZIP compress, 0 no compress, -1 for netcdf3 output)
 integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 
@@ -882,6 +891,8 @@ subroutine Config_Constants(iolog)
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &
    ,ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
+   ,BIC_S_FAC,BIC_N_FAC,BIC_V_FAC,BIC_A_FAC,BIC_O3_FAC & !scaling variables for SR reduction runs for BIC
+   ,DMS_S_FAC             & ! scaling variable for SR reduction runs for DMS
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct

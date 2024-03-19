@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 mar 2024, Peter
+
+Bug in emission per file printouts, when more than one emission file is used.
+(emission totals over all files, and emissions used by model were correct).
+Also no print out per file, if only one emission file is used.
+
+Increased max number of iterations for pH.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7 mar 2024, Peter, Willem
 
 Bug in AvgMDA8AprSep: the counter was reset to zero every month.

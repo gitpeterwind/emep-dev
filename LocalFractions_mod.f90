@@ -82,6 +82,7 @@ public  :: lf_aero_pre, lf_aero_pos
 public  :: lf_SurfArea_pre, lf_SurfArea_pos
 public  :: lf_drydep, lf_wetdep
 public  :: lf_rcemis
+public  :: lf_rcemis_nat
 public  :: save_lf_emis
 public  :: lf_saveall
 public  :: lf_read
@@ -190,15 +191,16 @@ logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is neede
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
 integer, public, save :: N_lf_derivemis ! actual number of emissions to include in CM_Reactions1 derivatives
-integer, public, save :: nemis_primary ! number of primary emissions to include
+integer, public, save :: nemis_primary = 0! number of primary emissions to include
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
-integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2icis_primary(N_lf_derivemisMAX),&
+integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2pos_primary(N_lf_derivemisMAX),&
      emis2isrc(N_lf_derivemisMAX),emis2isrc_primary(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
 integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly or 1 if all together
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
+logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
 logical, private, save :: make_PMwater =.false. !NB: water is not a species and will be treated separately. Index isrc=NSOURCES+1, or %start=LF_SRC_TOTSIZE+1
 contains
 
@@ -250,6 +252,11 @@ contains
 
   else
      do i = 1, Max_lf_sources
+        if(lf_src(i)%name == 'DMS') then
+           lf_src(i)%species = 'SO2'
+           lf_src(i)%is_NATURAL = .true.
+           makeDMS= .true.
+        end if
         if (lf_src(i)%species == 'NOTSET') exit
         Nsources = Nsources + 1
      enddo
@@ -344,6 +351,41 @@ contains
      if(me==0)write(*,*)'LF chemistry, last index included: ',ix_lf_max
   end if
 
+
+  !we define additional sources that are defined at different times
+  Nsources_nonew = Nsources !for not changing loop bound in the loop
+  do i = 1, Nsources_nonew
+     if (lf_src(i)%is_NATURAL) then
+        ix=find_index(lf_src(i)%species ,species(:)%name, any_case=.true.)
+        if (ix<0) then
+           call StopAll('LF: NATURAL only defined for single species defined in CM_ChemSpecs_mod.f90')
+        else
+           lf_src(i)%species = trim(species(ix)%name) !will correct possible case lower/upper differences
+           lf_src(i)%species_ix = ix
+        end if
+     end if
+     if (lf_src(i)%nhour>0) then
+        isrc = i        
+        do n = 0, 23, lf_src(i)%nhour
+           if (n > 0) then
+              !new source, same definition, but different emis time
+              if(me==0)write(*,*)'defining new source for time ', n
+              Nsources = Nsources + 1
+              isrc = Nsources
+              lf_src(isrc)%name = lf_src(i)%name
+              lf_src(isrc)%species = lf_src(i)%species
+              lf_src(isrc)%species_ix = lf_src(i)%species_ix
+              lf_src(isrc)%dist = lf_src(i)%dist
+              lf_src(isrc)%res = lf_src(i)%res
+              lf_src(isrc)%type = lf_src(i)%type
+              lf_src(isrc)%is_NATURAL = lf_src(i)%is_NATURAL
+              lf_src(isrc)%nhour = lf_src(i)%nhour
+           end if
+           lf_src(isrc)%time_ix = n
+        end do
+     end if
+  end do
+  
   !for each pm25 we separate into new and age parts
   Nsources_nonew = Nsources
 
@@ -589,6 +631,7 @@ contains
                  write(*,*)'WARNING: '//trim(lf_src(isrc)%species)//' associated to '//trim(species(ix)%name)
 !                 lf_src(isrc)%species=trim(species(ix)%name)
               endif
+              if(ix<0)write(*,*)isrc,NSOURCES
            endif
            call CheckStop( ix<1, "Local Fractions did not find corresponding pollutant: "//trim(lf_src(isrc)%species) )
            iem=-1
@@ -732,8 +775,8 @@ contains
 
 
   if (isrc_SO2>0 .and. (isrc_SO4<0)) then
-     if(me==0)write(*,*)'WARNING: SO2 tracking requires SO4'
-     stop!may be relaxed in future
+     if(me==0)write(*,*)'WARNING: SO2 tracking, but no SO4 tracking'
+!     stop!may be relaxed in future
   end if
 
   av_fac=0.0
@@ -917,7 +960,9 @@ contains
      allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
   else
       allocate(rcemis_lf(Nsources*NCMAX*NSECTORS,1))
-     rcemis_lf = 0.0 !NB: important
+      allocate(rcemis_lf_primary(Nsources))
+      rcemis_lf = 0.0 !NB: important
+      rcemis_lf_primary = 0.0 
   endif
   allocate(nic(LIMAX,LJMAX))
   nic = 0
@@ -1028,7 +1073,7 @@ subroutine lf_out(iotyp)
      fileName=trim(runlabel1)//'_LF_full.nc'
      if(me==0 .and. lf_set%save)write(*,*)'saving ALL'
      if (lf_set%save) call lf_saveall
-  else
+  else     
      return
   endif
   ncFileID=LF_ncFileID_iou(iotyp)
@@ -1242,6 +1287,7 @@ subroutine lf_out(iotyp)
               
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
+              if(lf_src(isrc)%nhour>0)write(def1%name,fmt='(A,I0)')trim(def1%name)//'_t',lf_src(isrc)%time_ix
               scale=1.0
               call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
@@ -1439,7 +1485,27 @@ subroutine lf_out(iotyp)
   LF_ncFileID_iou(iotyp) = ncFileID !to use next time
 
   first_call(iotyp)=.false.
-
+  
+  if (iotyp==IOU_HOUR) then
+     !reset the lf which are time tagged
+     do isrc=1,Nsources
+        if (lf_src(isrc)%nhour>0) then
+           if (mod(current_date%hour,24) == lf_src(isrc)%time_ix) then
+              !reset corresponding lf to zero if time is reached.
+              do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+                 do j=1,ljmax
+                    do i=1,limax
+                       do n = lf_src(isrc)%start, lf_src(isrc)%end
+                          lf(n,i,j,k) = 0.0
+                       enddo
+                    enddo
+                 enddo
+              enddo
+           end if
+        end if
+     end do
+  end if
+  
   call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
   if(DEBUGall .and. me==0)write(*,*)'end out'
 
@@ -2393,7 +2459,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   real :: efac, xtot,totemis,emiss
   integer :: isec, iem, iix, ix, iiix,iemis, ideriv , iem_deriv, isrc_deriv, n_sp
 
-  if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
+  if(k<KMAX_MID-lf_Nvert+1)return
 
   if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
   if(DEBUGall .and. me==0)write(*,*)'start chememis'
@@ -2401,7 +2467,13 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      !case with no chemistry for local fractions
      !Now species may be group of species (pm25...)
 
-     if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
+     if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))then
+!        if(nemis_primary>0)write(*,*)'WARNING nemis_primary not zero',nemis_primary, me,i,j,k
+        if(N_lf_derivemis>0)write(*,*)'WARNING N_lf_derivemis not zero',N_lf_derivemis,me,i,j,k
+!        nemis_primary = 0
+        N_lf_derivemis = 0
+        return
+     end if
      !include emissions that are not created in chemical reactions, but only by emissions
      call Code_timer(tim_before)
      do isrc=1,Nsources
@@ -2435,8 +2507,8 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
                if ( emis2isrc(iemis) /= isrc ) cycle
                n0 = lf_src(isrc)%start + emis2icis(iemis)
                lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
+               rcemis_lf(iemis,1) = 0.0
            end do
-
         else if(lf_src(isrc)%type=='relative')then
            !first dilute lf because of emissions
            do n0=lf_src(isrc)%start,lf_src(isrc)%end
@@ -2449,7 +2521,13 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
               if(emis2isrc(iemis) /= isrc ) cycle
               lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf(iemis,1)/(xtot+totemis+1.e-20)
            end do
-
+           !new notations, more compatible with "fullchem"
+           if (k==KMAX_MID) then
+              do iemis = 1, nemis_primary
+                 if(emis2isrc_primary(iemis) /= isrc ) cycle
+                 lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf_primary(iemis)/(xtot+totemis+1.e-20)
+              end do
+           end if
         else
            if(me==0)write(*,*)'LF type not recognized)'
            stop
@@ -2457,10 +2535,17 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 
      enddo
      do iemis = 1, N_lf_derivemis
-        rcemis_lf(iemis,1) = 0.0 !inititalization for next gridcell
+        rcemis_lf(iemis,1) = 0.0 !inititalization for next gridcell. TODO: Needed here?
      end do
+     N_lf_derivemis = 0
+     if (k==KMAX_MID) then
+        do iemis = 1, nemis_primary           
+           rcemis_lf_primary(iemis) = 0.0
+        end do
+        nemis_primary = 0
+     end if
      call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
-
+     return
   else
      !case using Jacobian of chemical reactions and emissions are considered part of chemical reactions
   call Code_timer(tim_before)
@@ -2653,7 +2738,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      !add emissions that are tracked
      do iemis = 1, nemis_primary
         if ( emis2isrc_primary(iemis) /= isrc)cycle
-        n0 = lf_src(isrc)%start + emis2icis_primary(iemis)  
+        n0 = lf_src(isrc)%start + emis2pos_primary(iemis)  
         lf(n0,i,j,k)=lf(n0,i,j,k) + rcemis_lf_primary(iemis)/(xtot+totemis+1.e-20)
      end do
   end do
@@ -2666,6 +2751,9 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   do iemis = 1, nemis_primary
      rcemis_lf_primary(iemis) = 0.0 !initialization for next gridcell
   end do
+
+  nemis_primary = 0
+  N_lf_derivemis = 0 
 
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   if(DEBUGall .and. me==0)write(*,*)'end chememis'
@@ -3288,10 +3376,10 @@ subroutine lf_rcemis(i,j,k,eps)
   !rcemis_lf = 0.0 !init done at end of lf_chem_emis_deriv
   !rcemis_lf_primary = 0.0 !init done at end of lf_chem_emis_deriv
   !1) For now, we want to take derivative only from sector emissions, i.e. gridrcemis, and not fire, lightning, natural etc.
-  if(k < KEMISTOP) return
   nemis = 0
-  nemis_primary = 0
+!  nemis_primary = 0
   N_lf_derivemis = 0 !number of distinct sources that have contributions in this gridcell
+  if(k < KEMISTOP) return
   do iem = 1, NEMIS_File
     if (iem2Nipoll(iem) <= 0) cycle
     !for fullchem, we only treat nox , voc, nh3 and sox emissions
@@ -3300,6 +3388,7 @@ subroutine lf_rcemis(i,j,k,eps)
     if (.not.lf_fullchem) then
        do isrc=1,Nsources
           if (lf_src(isrc)%iem /= iem) cycle
+          if (lf_src(isrc)%is_NATURAL) cycle !included in lf_rcemis_nat
           if(lf_src(isrc)%type=="relative")then
               !no lf_country involved, all countries are treated together
               n0 = 0
@@ -3370,13 +3459,13 @@ subroutine lf_rcemis(i,j,k,eps)
                      !defined as a group of countries
                      found = 0
                      do ig = 1, MAX_lf_country_group_size
-                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
-                       if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                       if (lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code &
+                            .or. lf_country%group(iic-Ncountry_lf)%name == 'ALL') then
                          found = 1
                          exit
                        end if
+                       if (lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
                      end do
-
                      if (found == 0) cycle
                    end if
                    do is=1,Ncountrysectors_lf
@@ -3468,11 +3557,12 @@ subroutine lf_rcemis(i,j,k,eps)
               !defined as a group of countries
               found = 0
               do ig = 1, MAX_lf_country_group_size
-                if(lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
-                if(lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code) then
+                if (lf_country%group(iic-Ncountry_lf)%list(ig) == Country(iland)%code &
+                     .or. lf_country%group(iic-Ncountry_lf)%name == 'ALL') then
                   found = 1
                   exit
-                end if
+               end if
+               if (lf_country%group(iic-Ncountry_lf)%list(ig) == 'NOTSET') exit
               end do
               if (found == 0) cycle
             end if
@@ -3500,8 +3590,8 @@ subroutine lf_rcemis(i,j,k,eps)
                             found = 1
                          end if
                          isrc=isrc_pm25 !treated with index "nemis_primary-1"
-                         emis2isrc_primary(nemis_primary-1) = isrc
-                         emis2icis_primary(nemis_primary-1) = is-1 + (iic-1)*Ncountrysectors_lf
+                         emis2pos_primary(nemis_primary-1) = isrc
+                         emis2pos_primary(nemis_primary-1) = is-1 + (iic-1)*Ncountrysectors_lf
                          emish_idx = SECTORS(isec)%height
                          split_idx = SECTORS(isec)%split
                          do n = 1, lf_src(isrc)%Nsplit
@@ -3523,8 +3613,8 @@ subroutine lf_rcemis(i,j,k,eps)
                             found = 1
                          end if
                       end if
-                      emis2isrc_primary(nemis_primary) = isrc
-                      emis2icis_primary(nemis_primary) =  is-1 + (iic-1)*Ncountrysectors_lf
+                      emis2pos_primary(nemis_primary) = isrc
+                      emis2pos_primary(nemis_primary) =  is-1 + (iic-1)*Ncountrysectors_lf
                       emish_idx = SECTORS(isec)%height
                       split_idx = SECTORS(isec)%split
                       do n = 1, lf_src(isrc)%Nsplit
@@ -3607,6 +3697,42 @@ subroutine lf_rcemis(i,j,k,eps)
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
   if(DEBUGall .and. me==0)write(*,*)'end lf rcemis'
   end subroutine lf_rcemis
+
+  subroutine lf_rcemis_nat(species_ix,rcemis,i,j)
+    !only surface emissions implemented for now
+    !so far only called for DMS, in Setup_1d_mod.f90
+
+    integer, intent(in) :: species_ix, i, j !species_ix, index of species as defined in array "species" in CM_ChemSpecs_mod.f90 (not only advected species)
+!    integer, optional, intent(in) :: k_in
+    real, intent(in) :: rcemis !value of emissions to track
+    
+    integer :: isrc, n, ipos, stride, k
+    if (rcemis < 1e-20) return
+!    if(present(k_in)) then
+!       k = k_in
+!    else
+       k = KMAX_MID
+!    end if
+    if (k < KMAX_MID-lf_Nvert+1) return
+    if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
+    if(nemis_primary>0)then
+       write(*,*)species_ix,me,i,j,k,'nemis_primary is already set',nemis_primary
+    end if
+    do isrc=1,Nsources
+       if (lf_src(isrc)%species_ix /= species_ix) cycle
+       if (.not. lf_src(isrc)%is_NATURAL) then
+          call StopAll('Only natural emissions implemented in subroutine lf_rcemis_nat')
+       end if
+       if (lf_src(isrc)%nhour>0)then
+          !we add those emissions only to the sources with correct time index
+          if(lf_src(isrc)%time_ix /= lf_src(isrc)%nhour * (mod(current_date%hour,24)/lf_src(isrc)%nhour)) cycle
+       end if
+       nemis_primary = nemis_primary + 1
+       emis2isrc_primary(nemis_primary) = isrc
+       rcemis_lf_primary(nemis_primary) = rcemis_lf_primary(nemis_primary) + rcemis
+
+    end do
+  end subroutine lf_rcemis_nat
 
   subroutine addsource(species_name)
     character(len=*) :: species_name

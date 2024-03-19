@@ -357,6 +357,8 @@ type, public :: lf_sources
   integer :: iem_deriv = 0 ! index of emitted pollutant to track, emis (set by model)
   integer :: iem_lf ! index of emitted internal for LF (1 for nox, 2 for voc, ...)
   integer :: Npos = 0 ! number of position indices in lf_src (set by model)
+  integer :: nhour = -1 ! number of hours between timestamps, and resets. Not used if <0. Must be <=24
+  integer :: time_ix = 0 ! start of hour at which the emissions are set (set by model)
   integer :: Nsplit = 0 ! into how many species the emitted pollutant is split into (set by model)
   integer :: species_ix = -1 !species index, if single pollutant (for example NO or NO2, instead of nox)
   integer :: iqrc = -1 !index for emissplits, if single pollutant (for example NO or NO2, instead of nox)
@@ -374,6 +376,7 @@ type, public :: lf_sources
   logical     :: HOUR = .false.
   logical     :: HOUR_INST = .false.
   logical     :: is_ASOA = .false.
+  logical     :: is_NATURAL = .false.
 end type lf_sources
 
 type, public :: lf_out_type

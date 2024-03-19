@@ -51,7 +51,8 @@ use GridValues_mod,   only:  xmd, GridArea_m2, &
 use Io_Progs_mod,     only: datewrite !MASS
 use Landuse_mod,      only: water_fraction, ice_landcover
 use LocalVariables_mod, only: Grid
-use LocalFractions_mod, only: lf_fullchem,lf_Nvert,lf_SurfArea_pre,lf_SurfArea_pos,spec2lfspec,rctAk_lf,rctBk_lf
+use LocalFractions_mod, only: lf_fullchem,lf_Nvert,lf_SurfArea_pre,lf_SurfArea_pos,&
+                              spec2lfspec,rctAk_lf,rctBk_lf, lf_rcemis_nat, makeDMS
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
@@ -604,7 +605,7 @@ subroutine setup_rcemis(i,j)
   character(len=13) :: dtxt="setup_rcemis:"
   real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C,invDeltaZfac
   integer,save ::IC_NH3
-  real :: ehlpcom0
+  real :: ehlpcom0, addemis
 
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
 
@@ -713,7 +714,6 @@ subroutine setup_rcemis(i,j)
 
      k=KMAX_MID
 
-
      if (DMS%ScNew ) then ! uses  Wanninkhof2014'
        SST_C=max(-2.0,min(40.0,(SST(i,j,1)-T0))) !the formula uses degrees C
        SC_DMS=2855.7-177.63*SST_C+6.0438*SST_C*SST_C- &
@@ -755,9 +755,13 @@ subroutine setup_rcemis(i,j)
 
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
      if(USES%OCEAN_DMS)then
-        rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ &
-          0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
+        addemis = 0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
                            (dA(k)+dB(k)*ps(i,j,1)) *AVOG
+        rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ addemis
+        if (USES%LocalFractions .and. makeDMS) then
+           call lf_rcemis_nat(O_DMS%index, addemis, i, j) ! k assumed KMAX_MID
+        end if
+          
      end if
      !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * ...
      !... molwgt(SO2) /AVOG . (dz/AVOG just removed from above)

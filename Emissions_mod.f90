@@ -664,7 +664,7 @@ subroutine EmisUpdate
    integer :: itot,isec,iland, i_femis_lonlat, ncFileID, maxfound
    type(date) :: coming_date
    real :: fac, gridyear, ccsum
-   character(len=TXTLEN_NAME) :: fmt
+   character(len=TXTLEN_NAME) :: fmt,fmtg
    TYPE(timestamp)   :: ts1,ts2
    logical, save ::first_call = .true.
    real, allocatable, dimension(:) :: emsum ! Sum of emissions per file
@@ -734,6 +734,8 @@ subroutine EmisUpdate
    !loop over all sources and see which one need to be reread from files
    do n = 1, NEmisFile_sources
       allocate(cdfemis(EmisFiles(n)%nsectors,LIMAX,LJMAX))  !NB: sector is first coordinate
+      sumemis = 0.0 !sum for each file
+      if(SecEmisTotalsWanted)sumemis_sec = 0.0
       do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
          if(Emis_source(is)%is3D)then
             ix = ix3Dmap(is)
@@ -998,25 +1000,33 @@ subroutine EmisUpdate
          EmisFiles(n)%ncFileID = -1 !mark as closed
       end if
 
-      if(writeout)then
+      if (writeout) then
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis,&
             NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
          if(SecEmisTotalsWanted)CALL MPI_ALLREDUCE(MPI_IN_PLACE,sumemis_sec,&
             NLAND*NSECTORS*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
          if(me==0)then
             !EMTABDS write(*,*)"Emissions per country for "//trim(EmisFiles(n)%filename)//' (Gg/year) '
-            call PrintLog("#EMTBL Total emissions by countries for "//trim(EmisFiles(n)%filename)//' (Gg/year) ')
-            write(*     ,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
-            write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
-            fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
-            do ic = 1, NLAND
-               ccsum = sum( sumemis(ic,:) )
-               icc=Country(ic)%icode
-               if ( ccsum > 0.0 )then
-                  write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
-                  write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
-               end if
-            end do
+            if (NEmisFile_sources>1) then !we do not write out separately per file if only one file
+               call PrintLog("#EMTBL Total emissions by countries for "//trim(EmisFiles(n)%filename)//' (Gg/year) ')
+               write(*     ,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
+               write(IO_LOG,"(a14,a5,3x,30(a12,:))")"EMTBL CC Land ","    ",EMIS_FILE(:)
+               fmt="(a5,i4,1x,a9,3x,30(f12.2,:))"
+               fmtg="(a5,i4,1x,a9,3x,30(g12.2,:))"
+               do ic = 1, NLAND
+                  ccsum = sum( sumemis(ic,:) )
+                  icc = Country(ic)%icode
+                  if (ccsum > 0.0) then
+                     if (ccsum > 1e8 )then
+                        write(*,     fmtg) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                        write(IO_LOG,fmtg) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                     else
+                        write(*,     fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                        write(IO_LOG,fmt) 'EMTBL', icc, Country(ic)%code, sumemis(ic,:)
+                     end if
+                  end if
+               end do
+            end if
             if(SecEmisTotalsWanted)then
                write(*     ,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
                fmt="(i4,1x,a9,i4,3x,30(f12.2,:))"
@@ -1025,17 +1035,21 @@ subroutine EmisUpdate
                      ccsum = sum( sumemis_sec(ic,is,:) )
                      icc=Country(ic)%icode
                      if ( ccsum > 0.0 )then
-                        write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       if (ccsum > 1e8 )then
+                         write(*, fmtg) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       else
+                         write(*, fmt) icc, Country(ic)%code, is, sumemis_sec(ic,is,:)
+                       end if
                      end if
                   end do
                end do
             end if
          end if
-
          !total of emissions from all countries and files into emsum
          do iem = 1, NEMIS_FILE
             emsum(iem)= emsum(iem)+sum(sumemis(:,iem))
          end do
+
       endif
    enddo
    if(writeout)then
@@ -1048,17 +1062,29 @@ subroutine EmisUpdate
          call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
          write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
          write(IO_LOG,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
-         fmt="(a5,i9,i4,1x,a9,3x,30(g12.2,:))"
+         fmtg="(a5,i9,i4,1x,a9,3x,30(g12.2,:))"
+         fmt="(a5,i9,i4,1x,a9,3x,30(f12.2,:))" !nicer but limited max emissions
          do ic = 1, NLAND
             ccsum = sum( xsumemis(ic,:) )
             icc=Country(ic)%icode
             if ( ccsum > 0.0 )then
-               write(*,     fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
-               write(IO_LOG,fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+               if (ccsum > 1e8 )then
+                  write(*,     fmtg) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(IO_LOG,fmtg) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+               else
+                  write(*,     fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(IO_LOG,fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+               end if
             end if
          end do
-         write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
-         write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         ccsum = sum( emsum(:))
+         if (ccsum > 1e8 )then
+            write(*     ,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         else
+            write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+         end if
       end if
       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that print out comes out nicely
