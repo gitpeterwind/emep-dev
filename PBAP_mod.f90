@@ -1,5 +1,5 @@
 !> <PBAP_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!  **************************************************************************! 
+!  **************************************************************************!
 
 module PBAP_mod
 
@@ -13,12 +13,13 @@ module PBAP_mod
   use CheckStop_mod,      only: CheckStop, StopAll
   use ChemSpecs_mod,         only : species
   use Config_module, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, IOU_INST, & 
-                           KT => KCHEMTOP, KG => KMAX_MID, & 
-                           EURO_SOILNOX_DEPSCALE, & 
+                           NLANDUSEMAX, IOU_INST, &
+                           KT => KCHEMTOP, KG => KMAX_MID, &
+                           EURO_SOILNOX_DEPSCALE, &
                            MasterProc, &
                            USES, &
-                           NATBIO, EmBio,OceanChlorophyll_File
+                           NATBIO, EmBio,OceanChlorophyll_File,&
+                           FUNGAL_METHOD
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, datewrite
@@ -28,11 +29,11 @@ module PBAP_mod
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai
   use Landuse_mod,        only: LandCover, likely_coastal
   use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
-  use MetFields_mod,      only: t2_nwp, q
+  use MetFields_mod,      only: t2_nwp, q,ustar_nwp
   use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
   use NetCDF_mod,         only: ReadField_CDF, printCDF
   use OwnDataTypes_mod,   only: Deriv, TXTLEN_SHORT
-  !use SeaSalt_mod,        only: SeaSalt_flux
+  use SeaSalt_mod,        only: SeaSalt_flux
 !  use Paleo_mod, only : PALEO_modai, PALEO_miso, PALEO_mmon
   use Par_mod,            only: MSG_READ1,me, limax, ljmax
   use PhysicalConstants_mod,  only:  AVOG, GRAV, PI
@@ -41,7 +42,7 @@ module PBAP_mod
   use TimeDate_mod,       only: current_date, daynumber
   use ZchemData_mod,      only: rcemis, rcbio
   use Biogenics_mod,      only: NEMIS_BioNat,EMIS_BioNat,EmisNat
-  use SubMet_mod,            only: Sub
+  use SubMet_mod,         only: Sub
 
   implicit none
   private
@@ -49,13 +50,14 @@ module PBAP_mod
   !/-- subroutines for PBAPs
   public ::  init_PBAPs,set_PBAPs
   !/-- subroutines for Fungal Spores
-  private :: Set_FungalSpores, Set_Bacteria
+  private :: Set_FungalSpores, Set_Bacteria, Set_MarineOA
 
   integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores bacteria and Marine OA implemented at the moment)
 
   real,public, save, allocatable, dimension(:,:,:) :: PBAP_flux !Dim: i,j,NPBAP
 
   real,public, save, allocatable, dimension(:,:) :: O_Chlorophyll !Amount of Chlorophyll in the ocean. Dim: i,j
+                                                                  !Used for MarineOA
 
 
   real,public, save, allocatable, dimension(:) :: WEIGHTS ,DIAMETERS, DENSITIES !Physical parameters. Dim: NPBAP
@@ -69,32 +71,50 @@ module PBAP_mod
   integer, private, save :: iint_Bacteria,itot_Bacteria, inat_Bacteria !Index of bacteria spores internally, in Species and in EMIS_BioNat
   integer, private, save :: iint_MarineOA,itot_MarineOA, inat_MarineOA !Index of Marine OA internally, in Species and in EMIS_BioNat
 
+
+
+  !Choice of fungal flux parameterization:
+  !HM: Hummel(2015) DOI: 10.5194/acp-15-6127-2015
+  !SD: Sesartic and Dallafior (2011) DOI: 10.5194/bg-8-1181-2011
+  !HS: Heald and Spracklen (2009) DOI:10.1029/2009GL037493, see also Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009
+  !JS: Janssen et al. (2021) DOI: 10.5194/acp-21-4381-2021
+
+  !(GFL Feb 2024): Hummel parameterization uses different settling scheme than EMEP, Sesartic and Dallfior uses
+  !no settling scheme at all, so currently seems that Heald and Spracken parameterization
+  !(parameterization choice = "HS") gives best results for fungal spores
+
   real*8, DIMENSION(6), parameter  ::  &
   BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
                     !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                     !DOI 10.1007/978-3-319-35095-0_121
                     !Note that most of these are set in the LandInput file, except for the coastal parameter (as coastal is not a LandType)
   real*8, DIMENSION(3), parameter  ::  &
-  FUNG_PARAMS = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
+  FUNG_PARAMS_HM = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
   !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-  !DOI 10.1007/978-3-319-35095-0_121, based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+  !DOI 10.1007/978-3-319-35095-0_121, based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                         !       https://doi.org/10.5194/acp-15-6127-2015, 2015
 
   !real*8, DIMENSION(3), parameter  ::  &
-  !FUNG_PARAMS_HS_LARGE = [500.0, 5.0,0.015] !From Fungal paramterization, Heald and Spracken for 5um
+  !FUNG_PARAMS_HS_LARGE = [500.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 5um
                                        !As specified in Hoose et al. (2010),DOI:
                                        !10.1088/1748-9326/5/2/024009
 
   real*8, DIMENSION(3)  ::  &
-  FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal paramterization, Heald and Spracken for 3um
-                                       !according to Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+  FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 3um
+                                       !according to Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                        !https://doi.org/10.5194/acp-15-6127-2015, 2015
                                        !If the fungal diameter is larger than 3um, this will be updated to the
                                        !FUNG_PARAMS_HS_LARGE parameters above.
 
 
+  real*8, DIMENSION(4)  ::  &
+  FUNG_PARAMS_JS = [2.63*1.0e-5, 6.10*1.0e3,46.7,59.0] !From Fungal parameterization, Janssen for North America.
+                                       !https://doi.org/10.5194/acp-21-4381-2021 (2021)
+
+
+
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
-                                         !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+                                         !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                          !https://doi.org/10.5194/acp-15-6127-2015, 2015
 
   real, parameter :: FUNGAL_DIAMETER = 5.0 !Fungal diameter [um] (ibid gives 3um, but this gives
@@ -113,18 +133,6 @@ module PBAP_mod
   real, parameter :: BACTERIA_WEIGHT = 0.52*1.0e-12 !Bacterial weight [g]  (ibid)
   real, parameter :: BACTERIA_DENS   = BACTERIA_WEIGHT/((4/3.0)*PI*(0.5*BACTERIA_DIAMETER*1e-6)**3) !Bacteria density [g/m3]
 
-  character(len=20), save :: parameterization_choice = "HS" !Choice of fungal flux parameterization
-                                                !HM: Hummel(2015) 
-                                                !SD: Sesartic and Dallafior (2011)
-                                                !DOI: 10.5194/bg-8-1181-2011
-                                                !HS: Heald and Spracklen (2009) 
-                                                !DOI:10.1029/2009GL037493, see also
-                                                !Hoose et al (2010)
-                                                !DOI: 10.1088/1748-9326/5/2/024009
-  
-  !(GFL Feb 2024): Hummel parameterization uses different settling scheme than EMEP, Sesartic and Dallfior uses
-  !no settling scheme at all, so currently seems that Heald and Spracken parameterization 
-  !(parameterization choice = "HS") gives best results for fungal spores
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -148,12 +156,13 @@ module PBAP_mod
 
       if (USES%FUNGAL_SPORES) then
           itot_FungalSpores = find_index( "FUNGAL_SPORES", species(:)%name)
-          if (itot_FungalSpores < 0) then
-          if(MasterProc)  write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
+          if (itot_FungalSpores < 0 ) then
+            if(MasterProc)  write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
           else
             NPBAP = NPBAP + 1
             iint_FungalSpores = NPBAP
             inat_FungalSpores = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
+            if(MasterProc) write(*,*) "USING FUNGAL_METHOD:",FUNGAL_METHOD
           end if
        end if
 
@@ -161,7 +170,7 @@ module PBAP_mod
        if (USES%BACTERIA) then
           itot_Bacteria = find_index( "BACTERIA", species(:)%name)
           if (itot_Bacteria< 0) then
-          if(MasterProc)  write(*,*) "WARNING: No bacteria found in species, not including bacteria!"
+            if(MasterProc)  write(*,*) "WARNING: No bacteria found in species, not including bacteria!"
           else
             NPBAP = NPBAP + 1
             iint_Bacteria = NPBAP
@@ -175,22 +184,18 @@ module PBAP_mod
           if(MasterProc)  write(*,*) "WARNING: No Marine OA found in species, not including Marine OA!"
         else
           allocate(O_Chlorophyll(LIMAX,LJMAX))
-          if(MasterProc)write(*,*)'Reading Ocean Chlorophyll'
-          call ReadField_CDF(trim(OceanChlorophyll_File),'chlor_a',O_Chlorophyll,&
-                nstart=current_date%month+12*3,interpol='conservative',known_projection="lon lat",&
-                needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3   
+          if(MasterProc) write(*,*)'Reading Ocean Chlorophyll'
+          !call ReadField_CDF(trim(OceanChlorophyll_File),'chlor_a',O_Chlorophyll,&
+          !      nstart=current_date%month+12*3,interpol='conservative',known_projection="lon lat",&
+          !      needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3
             NPBAP = NPBAP + 1
             iint_MarineOA = NPBAP
             inat_MarineOA = find_index( "MarineOA_NEW", EMIS_BioNat(:))
         end if
-
-        if (.not. USES%SEASALT) then
-
-        end if
      end if
 
 
-       if (NPBAP > 0) then 
+       if (NPBAP > 0) then
           allocate(PBAP_Flux(LIMAX,LJMAX,NPBAP))
           PBAP_Flux = 0.0
 
@@ -237,7 +242,7 @@ module PBAP_mod
               PBAP_names(iint_MarineOA) = "MARINE_OA"
               n2m(iint_MarineOA) = 1
               kgm2h(iint_MarineOA) = 1
-          end if 
+          end if
       end if !NPBAP > 0
 
      my_first_call = .false.
@@ -250,7 +255,7 @@ module PBAP_mod
 
   end subroutine init_PBAPs
 
-  
+
 
   subroutine Set_FungalSpores(i,j)
     !!!!!!!
@@ -282,7 +287,7 @@ module PBAP_mod
     nlu = LandCover(i,j)%ncodes
     sum_LC = 0.0
 
-    if (parameterization_choice=="HM") then
+    if (FUNGAL_METHOD=="HM") then
       do iiL = 1,nlu
         LC = LandCover(i,j)%codes(iiL)
         sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -293,33 +298,34 @@ module PBAP_mod
         else if ( LandType(LC)%is_ice) then
             cycle
         else
-          temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS(1)*(t2_nwp(i,j,1)-FUNG_PARAMS(2))+FUNG_PARAMS(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))
+          temp_val =  FUNG_PARAMS_HM(1)*(t2_nwp(i,j,1)-FUNG_PARAMS_HM(2))+FUNG_PARAMS_HM(3)*q(i,j,KG,1)*LandCover(i,j)%LAI(iiL)
+          temp_val = LandCover(i,j)%fraction(iiL)*temp_val
           F_FNG = F_FNG + max(0.0, temp_val)
           !Eq.(2) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
           !DOI 10.1007/978-3-319-35095-0_121, scaled by fraction
           !Leaf-area index (LAI) should be in m2/m2
           !Specific humidity q should be in kg/kg
           !Temperature at 2m (t2_nwp) should be in K
-          !Based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146, 
+          !Based on Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
           !https://doi.org/10.5194/acp-15-6127-2015, 2015
 
         end if
       end do !iiL
 
-    else if (parameterization_choice=="SD") then
+    else if (FUNGAL_METHOD=="SD") then
       do iiL = 1,nlu
           sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
           if (LandDefs(iil)%FungalFlux > 0.0) then
             temp_val = LandDefs(iiL)%FungalFlux
           end if
-            
+
           F_FNG = F_FNG + LandCover(i,j)%fraction(iiL)*temp_val
-           
+
           !Flux from S. Sesartic and T.N Dallafiro (2011)
           !DOI 10.5194/bg-8-1181-2011
       end do !iiL
 
-  else if (parameterization_choice == "HS") then
+  else if (FUNGAL_METHOD == "HS") then
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -332,12 +338,37 @@ module PBAP_mod
       else
         temp_val =  LandCover(i,j)%fraction(iiL)*(FUNG_PARAMS_HS(1)*(q(i,j,KG,1)*LandCover(i,j)%LAI(iiL))/(FUNG_PARAMS_HS(2)*FUNG_PARAMS_HS(3)))
         F_FNG = F_FNG + max(0.0, temp_val)
-        !Flux from  Heald and Spracklen (2009) DOI:10.1029/2009GL037493, 
+        !Flux from  Heald and Spracklen (2009) DOI:10.1029/2009GL037493,
         !as specified in Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009
         !for spores of size 5um and in Hummel (2015) DOI: 10.5194/acp-15-6127-2015
         !for spores of size 3um.
       end if
     end do !iiL
+  
+  else if (FUNGAL_METHOD == "JS") then
+    do iiL = 1,nlu
+      LC = LandCover(i,j)%codes(iiL)
+      sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
+      if (LandCover(i,j)%fraction(iiL)<3e-4) then !Avoid integrated assesment (IAM) landtypes as no LAI
+        cycle
+      else if ( LandType(LC)%is_water) then
+          cycle
+      else if ( LandType(LC)%is_ice) then
+          cycle
+      else
+        temp_val = FUNG_PARAMS_JS(1)+FUNG_PARAMS_JS(2)*q(i,j,KG,1)
+        temp_val = temp_val+FUNG_PARAMS_JS(3)*LandCover(i,j)%LAI(iiL)
+        temp_val = temp_val+FUNG_PARAMS_JS(4)*ustar_nwp(i,j)
+        temp_val =  LandCover(i,j)%fraction(iiL)*(temp_val)
+        F_FNG = F_FNG + max(0.0, temp_val)
+        !Eq.(2) of Janssen et. al. (2021) 
+        !Atmos. Chem. Phys., 21, 4381–4401,
+        !https://doi.org/10.5194/acp-21-4381-2021
+
+
+      end if
+    end do !iiL  else
+      call StopAll('Unknown FUNGAL_METHOD chosen!')
   end if
 
     PBAP_flux(i,j,iint_FungalSpores) = F_FNG
@@ -345,7 +376,7 @@ module PBAP_mod
     if ( DEBUG%FUNGAL_SPORES .and. debug_proc ) then
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "FUNGAL_SPORES i,j: ",  1, limax, 1, ljmax
-        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_FungalSpores), kgm2h(iint_FungalSpores) 
+        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_FungalSpores), kgm2h(iint_FungalSpores)
         write(*,*) "Fungal flux:", F_FNG
         if (abs(sum_LC-1)>1e-4) then
           write(*,*) "WARNING: Land Cover classes fraction do not sum to 1", sum_LC
@@ -391,7 +422,7 @@ module PBAP_mod
                                       !differentely, following parameterization from
                                       !Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
                                       !DOI 10.1007/978-3-319-35095-0_121
-  
+
     else
       nlu = LandCover(i,j)%ncodes
 
@@ -399,7 +430,7 @@ module PBAP_mod
           if (LandDefs(iil)%BacteriaFlux > 0.0) then
             temp_val = LandDefs(iiL)%BacteriaFlux
           end if
-            
+
           F_Bacteria = F_Bacteria + LandCover(i,j)%fraction(iiL)*temp_val
 
           !Eq.(1) of S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
@@ -414,7 +445,7 @@ module PBAP_mod
     if ( DEBUG%BACTERIA .and. debug_proc ) then
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "Bacteria i,j: ",  1, limax, 1, ljmax
-        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_Bacteria), kgm2h(iint_Bacteria) 
+        write(*,"(a,2f12.4)") "Unit conversions: ", n2m(iint_Bacteria), kgm2h(iint_Bacteria)
        end if
     end if
 
@@ -429,7 +460,6 @@ module PBAP_mod
     integer, intent(in) ::  i,j
     integer :: nlu, iiL,lu
     real    :: F_MarineOA, temp_val
-    logical, save ::  my_first_call = .true.
 
 
     if( DEBUG%MARINE_OA .and. debug_proc ) then
@@ -441,13 +471,13 @@ module PBAP_mod
     end if
 
 
-    F_MarineOA = 0.0 !Bacteria flux
+    F_MarineOA = 0.0 !MarineOA flux
     temp_val = 0.0
 
-      if (.not. USES%SEASALT) then
-        call SeaSalt_flux(i,j,DEBUG%MARINE_OA,) ! sets rcemis(SEASALT_...)
-      end if
-      
+     !if (.not. USES%SEASALT) then
+     !  call SeaSalt_flux(i,j,DEBUG%MARINE_OA) ! sets rcemis(SEASALT_...)
+     !end if
+
 
       !nlu = LandCover(i,j)%ncodes
 
@@ -466,10 +496,11 @@ module PBAP_mod
        if (i .eq. debug_li .and. j .eq. debug_lj) then
         write(*,"(a,4i4)") "MarineOA i,j: ",  1, limax, 1, ljmax
         write(*,"(a,2f12.4)") "Flux, Cholorphyll: ", F_MarineOA, O_Chlorophyll(i,j)
-       end if
+      end if
     end if
 
   end subroutine Set_MarineOA
+
 
   subroutine set_PBAPs(i,j)
   !
@@ -482,7 +513,7 @@ module PBAP_mod
 
   integer, intent(in) ::  i,j
 
-  character(len=*), parameter :: dtxt='PBAPModSetup:' 
+  character(len=*), parameter :: dtxt='PBAPModSetup:'
 
   logical :: dbg
 
@@ -499,7 +530,7 @@ module PBAP_mod
 
   if ( iint_Bacteria > 0 ) then
     call Set_Bacteria(i,j)
-  end if 
+  end if
 
   if (iint_MarineOA > 0) then
     call Set_MarineOA(i,j)
@@ -517,9 +548,8 @@ module PBAP_mod
         write(*,"(2a,f12.5)") PBAP_names(i_PBAP),": EmisNat ",EmisNat(inat(i_PBAP),i,j)
       end if
     end if
-  end do 
+  end do
 
   end subroutine set_PBAPs
 
-  !----------------------------------------------------------------------------
 end module PBAP_mod

@@ -123,7 +123,7 @@ module Biogenics_mod
            , "RN222      " &
            , "FUNGAL_SPORES"&
            , "BACTERIA"    &
-           , "MARINE_OA_NEW"
+           , "MARINE_OA_NEW" &
            , "MARINE_OA_AGE"]
 
   integer, public, parameter :: &

@@ -262,6 +262,10 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
+
+! Selection of Emissions parameterization for fungal
+  character(len=2) :: FUNGAL_METHOD  = 'HS'  !HM, SD, HS, JS (see PBAP module)
+
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
