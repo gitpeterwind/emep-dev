@@ -18,8 +18,7 @@ module PBAP_mod
                            EURO_SOILNOX_DEPSCALE, &
                            MasterProc, &
                            USES, &
-                           NATBIO, EmBio,OceanChlorophyll_File,&
-                           FUNGAL_METHOD
+                           NATBIO, EmBio,OceanChlorophyll_File
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_mod,             only: IO_FORES, open_file, ios, datewrite
@@ -162,7 +161,7 @@ module PBAP_mod
             NPBAP = NPBAP + 1
             iint_FungalSpores = NPBAP
             inat_FungalSpores = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
-            if(MasterProc) write(*,*) "USING FUNGAL_METHOD:",FUNGAL_METHOD
+            if(MasterProc) write(*,*) "USING FUNGAL_METHOD:",USES%FUNGAL_METHOD
           end if
        end if
 
@@ -287,7 +286,7 @@ module PBAP_mod
     nlu = LandCover(i,j)%ncodes
     sum_LC = 0.0
 
-    if (FUNGAL_METHOD=="HM") then
+    if (USES%FUNGAL_METHOD=="HM") then
       do iiL = 1,nlu
         LC = LandCover(i,j)%codes(iiL)
         sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -312,7 +311,7 @@ module PBAP_mod
         end if
       end do !iiL
 
-    else if (FUNGAL_METHOD=="SD") then
+    else if (USES%FUNGAL_METHOD=="SD") then
       do iiL = 1,nlu
           sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
           if (LandDefs(iil)%FungalFlux > 0.0) then
@@ -325,7 +324,7 @@ module PBAP_mod
           !DOI 10.5194/bg-8-1181-2011
       end do !iiL
 
-  else if (FUNGAL_METHOD == "HS") then
+  else if (USES%FUNGAL_METHOD == "HS") then
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -345,7 +344,7 @@ module PBAP_mod
       end if
     end do !iiL
   
-  else if (FUNGAL_METHOD == "JS") then
+  else if (USES%FUNGAL_METHOD == "JS") then
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -367,8 +366,9 @@ module PBAP_mod
 
 
       end if
-    end do !iiL  else
-      call StopAll('Unknown FUNGAL_METHOD chosen!')
+    end do !iiL  
+  else
+      call StopAll('Unknown FUNGAL_METHOD chosen! Valid options are HM, HS, SD and JS. ')
   end if
 
     PBAP_flux(i,j,iint_FungalSpores) = F_FNG

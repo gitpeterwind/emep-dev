@@ -74,6 +74,8 @@
   USES%FUNGAL_SPORES     = T,
   USES%BACTERIA          = T,
   USES%MARINE_OA         = T,
+  USES%FUNGAL_METTHOD    = 'HS', 
+
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
