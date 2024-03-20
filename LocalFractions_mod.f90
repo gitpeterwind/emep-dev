@@ -57,12 +57,14 @@ implicit none
 private
 
 integer ::IC_AST_EXTRA = 324567,IC_RUT_EXTRA = 324568 !sum of countries which are not defined as countries
-integer ::IC_BIC_EXTRA = 324569
-integer ::IC_STRATOS = 324566 !contribution from stratosphere
+integer ::IC_STRATOS = 324566 !contribution from O3 stratosphere
 integer ::IC_INIT = 324565 !contribution from pollutants present at the start of the run
-integer ::IC_BVOC = 324564 !contribution from BVOC (C5H8 and TERP)
+integer ::IC_BC = 324564 !contribution from Boundary Conditions
+integer ::IC_NAT = 324563 !contribution from BVOC and DMS (separately)
+integer ::IC_BVOC = 324562 !contribution from BVOC(C5H8 and TERP)
+integer ::IC_DMS = 324561 !contribution from DMS
 logical, save :: make_LF_BVOC = .false.
-integer, save  :: iic_BVOC
+integer, save  :: iic_BVOC, iic_DMS
 logical, parameter :: DEBUG = .false.
 logical, parameter :: DEBUGall = .false.
 
@@ -185,6 +187,8 @@ character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,Max_lf_spec) !
 integer, private, save :: isrc_new(Max_lf_sources)
 integer, private, save :: Stratos_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nstratos !number of sources to track for Stratos
+integer, private, save :: BC_ix(1000) !1000 must be larger than Nsources
+integer, private, save :: nbc !number of sources to track for Boundary Conditions
 real   , private, save :: P_NO(100),P_NO2(100)
 real   , parameter     :: eps1 = 0.999
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
@@ -507,15 +511,19 @@ contains
               ix = IC_AST_EXTRA
            else if (ix<0 .and. lf_country%list(i) =='RUT') then
               ix = IC_RUT_EXTRA
-           else if (ix<0 .and. lf_country%list(i) =='BIC') then
-              ix = IC_BIC_EXTRA
            else if(ix<0 .and. lf_country%list(i) =='STRATOS')then
               ix = IC_STRATOS
+           else if(ix<0 .and. lf_country%list(i) =='BC')then
+              ix = IC_BC
            else if(ix<0 .and. lf_country%list(i) =='INIT')then
               ix = IC_INIT
+           else if(ix<0 .and. lf_country%list(i) =='DMS')then
+              ix = IC_DMS
+              makeDMS = .true.
+              iic_DMS = i + Ncountry_mask_lf
            else if(ix<0 .and. lf_country%list(i) =='BVOC')then
               ix = IC_BVOC
-              call CheckStop(C5H8_ix<0 .or. APINENE_ix<0,&
+             call CheckStop(C5H8_ix<0 .or. APINENE_ix<0,&
                    'country BVOC cannot be computed, because C5H8 or APINENE not found ')
               make_LF_BVOC = .true.
               iic_BVOC = i + Ncountry_mask_lf
@@ -537,8 +545,6 @@ contains
               ix = IC_AST_EXTRA
            else if(ix<0 .and. lf_country%list(i) =='RUT')then
               ix = IC_RUT_EXTRA
-           else if(ix<0 .and. lf_country%list(i) =='BIC')then
-              ix = IC_BIC_EXTRA
            endif
            call CheckStop(ix<0,'country '//trim(lf_country%group(i)%list(ic))//' not defined. ')
            lf_country%group(i)%ix(ic) = ix
@@ -812,20 +818,74 @@ contains
 
 
   nstratos = 0
+  nbc = 0
   do isrc = 1, Nsources
-     !IC_STRATOS is special. Make a list of corresponding sources indices
+     !IC_STRATOS and IC_BC are special. Make a list of corresponding sources indices
      !IC_INIT is special. init lf to 1.
      if(lf_src(isrc)%type=='country' .and. Ncountry_lf+Ncountry_group_lf>0)then
         n0=lf_src(isrc)%start
         do ic=1,Ncountry_lf+Ncountry_group_lf
            do is=1,Ncountrysectors_lf
-              if (country_ix_list(ic)==IC_STRATOS) then
+              if (country_ix_list(ic)==IC_STRATOS .and. lf_src(isrc)%species == 'O3') then
                  nstratos = nstratos + 1
                  if (nstratos > size(Stratos_ix) )then
                     write(*,*)'Increase size of Stratos_ix to ',Nsources, size(Stratos_ix)
                     stop
                  end if
                  Stratos_ix(nstratos)=n0
+              end if
+              if (country_ix_list(ic)==IC_BC) then
+                 if (lf_set%EmisDer_all) then
+                    !we use "CAMS" conventions to pickout the BC to change
+                    if (lf_src(isrc)%species == 'O3' .or.&
+                         lf_src(isrc)%species == 'CO' .or.&
+                         lf_src(isrc)%species == 'NO' .or.&
+                         lf_src(isrc)%species == 'NO2' .or.&
+                         lf_src(isrc)%species == 'PAN' .or.&
+                         lf_src(isrc)%species == 'HNO3' .or.&
+                         lf_src(isrc)%species == 'HCHO' .or.&
+                         lf_src(isrc)%species == 'SO2' .or.&
+                         lf_src(isrc)%species == 'CH4' .or.&
+                         lf_src(isrc)%species == 'C5H8' .or.&
+                         lf_src(isrc)%species == 'C2H6' .or.&
+                         lf_src(isrc)%species == 'SO4' .or.&
+                         lf_src(isrc)%species == 'SO2' &
+                         !lf_src(isrc)%species == 'NO3_f' .or.&
+                         !lf_src(isrc)%species == 'NO3_c' .or.&
+                         !lf_src(isrc)%species == 'NH4_f'&
+                       ) then
+                       nbc = nbc + 1
+                       if (nbc > size(BC_ix) )then
+                          write(*,*)'Increase size of BC_ix to ',Nsources, size(BC_ix)
+                          stop
+                       end if
+                       BC_ix(nbc)=n0
+                    end if
+                 else
+                    !we track different species in different "emission reductions"
+                    if((lf_src(isrc)%iem_lf == iem_lf_voc .and. &
+                      (lf_src(isrc)%species == 'NC4H10' .or. lf_src(isrc)%species == 'C2H6'))& !NB: NC4H10 mapped from C4H10 (CMX_BoundaryConditions.txt)
+                      .or.&
+                      (lf_src(isrc)%iem_lf == iem_lf_sox .and. &
+                      (lf_src(isrc)%species == 'SO2' .or. lf_src(isrc)%species == 'SO4'))&
+                      .or.&
+                      (lf_src(isrc)%iem_lf == iem_lf_nh3 .and. &
+                      (lf_src(isrc)%species == 'NH4_f'))&
+                      .or.&
+                      (lf_src(isrc)%iem_lf == iem_lf_nox .and. &
+                      (lf_src(isrc)%species == 'NO3_f' .or. lf_src(isrc)%species == 'NO3_c' .or. &
+                        lf_src(isrc)%species == 'HNO3' .or. lf_src(isrc)%species == 'NO2' .or. &
+                        lf_src(isrc)%species == 'NO' .or. lf_src(isrc)%species == 'PAN') ) &
+                        ) then
+                       nbc = nbc + 1
+                       if (nbc > size(BC_ix) )then
+                          write(*,*)'Increase size of BC_ix to ',Nsources, size(BC_ix)
+                          stop
+                       end if
+                       lf(n0,:,:,:) = 1.0 ! Also initial conditions                       
+                       BC_ix(nbc)=n0
+                    endif
+                 endif
               end if
               if (country_ix_list(ic)==IC_INIT) lf(n0,:,:,:) = 1.0
               n0=n0+1
@@ -1398,7 +1458,8 @@ subroutine lf_out(iotyp)
                     endif
                     if (lf_set%full_chem) then
                        !add emission species to name
-                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. country_ix_list(i)==IC_BVOC)then
+                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. &
+                            country_ix_list(i)==IC_BVOC )then
                           !do not add "_nox" suffix and do not output voc,nh3,sox "derivatives" 
                           if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
@@ -1833,6 +1894,18 @@ subroutine lf_adv_x(fluxx,i,j,k)
            loc_frac_src_1d(n,ii) = lf(n,ii,j,k)
         enddo
      enddo
+     if (li0 == 2) then
+        !track left boundary values 
+        do n = 1, nbc
+           loc_frac_src_1d(BC_ix(n), 1) = 1.0
+        enddo
+     end if
+     if (li1 < LIMAX) then
+        !track right boundary values 
+        do n = 1, nbc
+           loc_frac_src_1d(BC_ix(n), LIMAX) = 1.0
+        enddo
+     end if
   endif
 
   call Code_timer(tim_before)
@@ -1949,6 +2022,18 @@ subroutine lf_adv_y(fluxy,i,j,k)
            loc_frac_src_1d(n,jj) = lf(n,i,jj,k)
         enddo
      enddo
+     if (lj0 == 2) then
+        !track lower boundary values 
+        do n = 1, nbc
+           loc_frac_src_1d(BC_ix(n), 1) = 1.0
+        enddo
+     end if
+     if (lj1 < LJMAX) then
+        !track right boundary values 
+        do n = 1, nbc
+           loc_frac_src_1d(BC_ix(n), LJMAX) = 1.0
+        enddo
+     end if
   endif
 
   call Code_timer(tim_before)
@@ -2087,10 +2172,17 @@ subroutine lf_adv_k(fluxk,i,j)
     enddo
     loc_frac_src_km1(:,KMAX_MID-lf_Nvert+1) = 0.0 ! everything above is not tracked, zero local fractions coming from above
 
+    !we assume that all O3 above the LF window is from top
     do n = 1, nstratos
        loc_frac_src_km1(Stratos_ix(n),KMAX_MID-lf_Nvert+1) = 1.0 ! NB: k is shifted by 1 in loc_frac_src_km1, i.e. this is level k=1 if lf_Nvert = KMAX_MID - 1
     end do
-
+    if (lf_set%EmisDer_all) then
+       !also other species than O3 will be included
+       do n = 1, nbc
+          loc_frac_src_km1(BC_ix(n),KMAX_MID-lf_Nvert+1) = 1.0 ! NB: k is shifted by 1 in loc_frac_src_km1, i.e. this is level k=1 if lf_Nvert = KMAX_MID - 1
+       end do      
+    end if
+    
     do k = KMAX_MID-lf_Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        do isrc=1,Nsources
           xn=0.0
@@ -3715,23 +3807,32 @@ subroutine lf_rcemis(i,j,k,eps)
 !    end if
     if (k < KMAX_MID-lf_Nvert+1) return
     if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
-    if(nemis_primary>0)then
-       write(*,*)species_ix,me,i,j,k,'nemis_primary is already set',nemis_primary
+    if (lf_fullchem) then
+       !NB: DMS for fullchem not ready
+       N_lf_derivemis = N_lf_derivemis + 1
+       rcemis_lf(N_lf_derivemis,species_ix) = rcemis
+       !iic = iic_DMS !hardcoded for now
+       emis2icis(N_lf_derivemis) = (iic_DMS-1)*Ncountrysectors_lf
+       emis2iem(N_lf_derivemis) = iem_lf_sox !arbitrary
+    else
+       if(nemis_primary>0)then
+          write(*,*)species_ix,me,i,j,k,'nemis_primary is already set',nemis_primary
+       end if
+       do isrc=1,Nsources
+          if (lf_src(isrc)%species_ix /= species_ix) cycle
+          if (.not. lf_src(isrc)%is_NATURAL) then
+             call StopAll('Only natural emissions implemented in subroutine lf_rcemis_nat')
+          end if
+          if (lf_src(isrc)%nhour>0)then
+             !we add those emissions only to the sources with correct time index
+             if(lf_src(isrc)%time_ix /= lf_src(isrc)%nhour * (mod(current_date%hour,24)/lf_src(isrc)%nhour)) cycle
+          end if
+          nemis_primary = nemis_primary + 1
+          emis2isrc_primary(nemis_primary) = isrc
+          rcemis_lf_primary(nemis_primary) = rcemis_lf_primary(nemis_primary) + rcemis
+          
+       end do
     end if
-    do isrc=1,Nsources
-       if (lf_src(isrc)%species_ix /= species_ix) cycle
-       if (.not. lf_src(isrc)%is_NATURAL) then
-          call StopAll('Only natural emissions implemented in subroutine lf_rcemis_nat')
-       end if
-       if (lf_src(isrc)%nhour>0)then
-          !we add those emissions only to the sources with correct time index
-          if(lf_src(isrc)%time_ix /= lf_src(isrc)%nhour * (mod(current_date%hour,24)/lf_src(isrc)%nhour)) cycle
-       end if
-       nemis_primary = nemis_primary + 1
-       emis2isrc_primary(nemis_primary) = isrc
-       rcemis_lf_primary(nemis_primary) = rcemis_lf_primary(nemis_primary) + rcemis
-
-    end do
   end subroutine lf_rcemis_nat
 
   subroutine addsource(species_name)
