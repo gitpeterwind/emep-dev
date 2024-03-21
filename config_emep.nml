@@ -1,10 +1,10 @@
 &Model_config
   GRID      = 'EMEP0302',
-  iyr_trend = 2018,
+  iyr_trend = 2013,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2018,01,01,00,
-  enddate   = 2018,01,02,00,
+  startdate = 2013,01,01,00,
+  enddate   = 2014,12,31,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -31,7 +31,7 @@
 ! Common to all:
 
   USES%SOILNOX = T, !default
-  USES%OCEAN_DMS = T, !default
+  USES%OCEAN_DMS = F, !default
 
 !TESTING:
   SitesFile = 'DataDir/sitesLLZ.txt',
@@ -72,9 +72,10 @@
   USES%ROADDUST          = F,            ! Only EECCA?
   USES%PBAP              = T,
   USES%FUNGAL_SPORES     = T,
-  USES%BACTERIA          = T,
-  USES%MARINE_OA         = T,
-  USES%FUNGAL_METTHOD    = 'HS', 
+  USES%BACTERIA          = F,
+  USES%MARINE_OA         = F,
+  USES%FUNGAL_METHOD    = 'HS', 
+  USES%NOCHEM            = T,
 
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
@@ -341,7 +342,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%LANDUSE         = 0, !WARNING SEP2021 CAUSES STALL
   DEBUG%MOSAICS         = F,
   DEBUG%MARINE_OA         = F,
-  DEBUG%PBAP            = T,
+  DEBUG%PBAP            = F,
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,   ! LOTS of output
@@ -352,7 +353,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%SITES           = F,
 !  DEBUG%SITE           = 'Keldsnor',
   DEBUG%SOA             = 0,
-!  DEBUG%SOILNOX         = T,
+!  DEBUG%SOILNOX         = F,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
@@ -544,13 +545,13 @@ OutputConcs=
 !aARgh Put bacl to fool aeroval
       'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
       'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-      'BACTERIA'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+ !     'BACTERIA'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-       'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-       'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-       'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-       'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+ !     'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !      'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !      'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
 
 
 ! PM10group sub-components
