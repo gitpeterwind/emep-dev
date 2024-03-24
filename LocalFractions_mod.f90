@@ -63,8 +63,6 @@ integer ::IC_BC = 324564 !contribution from Boundary Conditions
 integer ::IC_NAT = 324563 !contribution from BVOC and DMS (separately)
 integer ::IC_BVOC = 324562 !contribution from BVOC(C5H8 and TERP)
 integer ::IC_DMS = 324561 !contribution from DMS
-logical, save :: make_LF_BVOC = .false.
-integer, save  :: iic_BVOC, iic_DMS
 logical, parameter :: DEBUG = .false.
 logical, parameter :: DEBUGall = .false.
 
@@ -134,7 +132,8 @@ real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
 real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf !may not be worth the cost?
 real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf!may not be worth the cost?
 real, allocatable, public, dimension(:,:), save ::rcemis_lf
-real, allocatable, public, dimension(:), save ::rcemis_lf_primary
+real, allocatable, public, dimension(:,:), save ::rcemis_lf_surf, emis2spec_surf
+real, allocatable, public, dimension(:), save ::rcemis_lf_primary !for emissions considered as linear 
 integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
 real, allocatable, public, dimension(:), save ::L_lf, P_lf,rctA_lf,rctB_lf
@@ -194,11 +193,14 @@ real   , parameter     :: eps1 = 0.999
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
-integer, public, save :: N_lf_derivemis ! actual number of emissions to include in CM_Reactions1 derivatives
-integer, public, save :: nemis_primary = 0! number of primary emissions to include
+integer, public, save :: N_lf_derivemis = 0! actual number of emissions to include in CM_Reactions1 derivatives
+integer, public, save :: nemis_primary = 0! number of primary emissions to include in this gridcell
+integer, public, save :: Nemis_surf = 0! number of non sector surface emissions in this gridcell
+integer, private, save :: iem_nox, iem_voc , iem_nh3, iem_sox !index in EMIS_FILE
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2pos_primary(N_lf_derivemisMAX),&
      emis2isrc(N_lf_derivemisMAX),emis2isrc_primary(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
+integer, public, save :: emis2iic_surf(N_lf_derivemisMAX), emis2nspec_surf(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
 integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly or 1 if all together
@@ -206,6 +208,8 @@ integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
 logical, private, save :: make_PMwater =.false. !NB: water is not a species and will be treated separately. Index isrc=NSOURCES+1, or %start=LF_SRC_TOTSIZE+1
+logical, public, save :: makeBVOC = .false.
+integer, public, save  :: ix_BVOC, ix_DMS
 contains
 
   subroutine lf_init
@@ -301,12 +305,16 @@ contains
      end if
      iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nox emissions")
+     iem_nox = iem
      iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find voc emissions")
+     iem_voc = iem
      iem = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nh3 emissions")
+     iem_nh3 = iem
      iem = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find sox emissions")
+     iem_sox = iem
      do i = 1, NSPEC_fullchem_lf !make sources for each species to be fully included in chemistry
         call addsource(species_adv(i)%name)
      end do
@@ -520,13 +528,13 @@ contains
            else if(ix<0 .and. lf_country%list(i) =='DMS')then
               ix = IC_DMS
               makeDMS = .true.
-              iic_DMS = i + Ncountry_mask_lf
+              ix_DMS = i + Ncountry_mask_lf
            else if(ix<0 .and. lf_country%list(i) =='BVOC')then
               ix = IC_BVOC
-             call CheckStop(C5H8_ix<0 .or. APINENE_ix<0,&
+              call CheckStop(C5H8_ix<0 .or. APINENE_ix<0,&
                    'country BVOC cannot be computed, because C5H8 or APINENE not found ')
-              make_LF_BVOC = .true.
-              iic_BVOC = i + Ncountry_mask_lf
+              makeBVOC = .true.
+              ix_BVOC = i + Ncountry_mask_lf
            endif
            call CheckStop(ix<0,'country '//trim(lf_country%list(i))//' not defined. ')
            country_ix_list(i + Ncountry_mask_lf) = ix
@@ -997,6 +1005,7 @@ contains
      allocate(lfSOA_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
      allocate(rcemis_lf(N_lf_derivemisMAX,ix_lf_max))
      allocate(rcemis_lf_primary(NCMAX*NSECTORS*2))
+     allocate(rcemis_lf_surf(10,20),emis2spec_surf(10,20)) !up to 10 different sources, 20 species each 
      allocate(P_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
      allocate(L_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
      allocate(rctA_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
@@ -1016,8 +1025,11 @@ contains
      xn_shl_lf = 0.0
      rcemis_lf = 0.0 !NB: important
      rcemis_lf_primary = 0.0 !NB: important
+     rcemis_lf_surf = 0.0 !NB: important
+     emis2nspec_surf = 0
+     emis2iic_surf = 0
      allocate(lf_NO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
-     allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(lf_HNO3(KMAX_MID-lf_Nvert+1:KMAX_MID))     
   else
       allocate(rcemis_lf(Nsources*NCMAX*NSECTORS,1))
       allocate(rcemis_lf_primary(Nsources))
@@ -1459,7 +1471,9 @@ subroutine lf_out(iotyp)
                     if (lf_set%full_chem) then
                        !add emission species to name
                        if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. &
-                            country_ix_list(i)==IC_BVOC )then
+                            country_ix_list(i)==IC_BVOC .or. &
+                            country_ix_list(i)==IC_DMS.or. &
+                            country_ix_list(i)==IC_NAT )then
                           !do not add "_nox" suffix and do not output voc,nh3,sox "derivatives" 
                           if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
@@ -3455,8 +3469,8 @@ subroutine lf_rcemis(i,j,k,eps)
   ! for "relative": country independent
   integer,intent(in) :: i,j,k
   real, intent(in) :: eps
-  integer :: n, n0, iem, iqrc, itot, ic, iic, ig, is, iland, isec, split_idx
-  integer :: emish_idx, nemis, found,iiix,isrc, nsectors_loop, iisec
+  integer :: n, nn, n0, iem, iqrc, itot, ic, iic, ig, is, iland, isec, split_idx
+  integer :: emish_idx, nemis, found,found_primary,iiix,isrc, nsectors_loop, iisec
   real :: ehlpcom0 = GRAV* 0.001*AVOG !0.001 = kg_to_g / m3_to_cm3
   real :: emiss,maskfac ! multiply emissions by
   
@@ -3666,6 +3680,7 @@ subroutine lf_rcemis(i,j,k,eps)
                 nsectors_loop = NSECTORS
               end if
               found = 0 !flag to show if nemis already increased
+              found_primary = 0 !flag to show if nemis_primary already increased
               do iisec=1,nsectors_loop
                 if(lf_country%sector_list(is)>0) then
                   isec = lf_country%sector_list(is)
@@ -3677,9 +3692,9 @@ subroutine lf_rcemis(i,j,k,eps)
                    if(EMIS_FILE(iem)=='pm25' .or. EMIS_FILE(iem)=='pmco')then
                       !special treated as primary, do not compute derivatives
                       if(EMIS_FILE(iem)=='pm25')then
-                         if(found == 0) then
+                         if(found_primary == 0) then
                             nemis_primary = nemis_primary + 2 !pm25 and pm25_new
-                            found = 1
+                            found_primary = 1
                          end if
                          isrc=isrc_pm25 !treated with index "nemis_primary-1"
                          emis2pos_primary(nemis_primary-1) = isrc
@@ -3700,9 +3715,9 @@ subroutine lf_rcemis(i,j,k,eps)
                          
                       else
                          isrc=isrc_pmco
-                         if(found == 0) then
+                         if(found_primary == 0) then
                             nemis_primary = nemis_primary + 1
-                            found = 1
+                            found_primary = 1
                          end if
                       end if
                       emis2pos_primary(nemis_primary) = isrc
@@ -3756,29 +3771,37 @@ subroutine lf_rcemis(i,j,k,eps)
                 end if
               end do
               if (found == 1) then
-                !emissions found here
+                 !emissions found here
+                 if(nemis<=0)then
+                    write(*,*)nemis,me,i,j,k,found,nemis_primary,iic,is
+                    call StopAll('error')
+                 end if
                 emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
                 emis2iem(nemis) = iem
               endif
            end do
         end do
-      end do
-      if (make_LF_BVOC) then
-        !add BVOC emissions derivatives. Only surface level. We choose "nox" only to get only one
-        if(k==KMAX_MID .and. EMIS_FILE(iem)=="nox")then
-           if(RCBIO(NATBIO%C5H8,k)>1e-20 .or. RCBIO(NATBIO%TERP,k)>1e-20) then
-              is = 1
-              iic = iic_BVOC
-              N_lf_derivemis = N_lf_derivemis + 1
-              nemis = N_lf_derivemis
-              rcemis_lf(nemis,C5H8_ix) = RCBIO(NATBIO%C5H8,k) * eps
-              rcemis_lf(nemis,APINENE_ix) = RCBIO(NATBIO%TERP,k) * eps
-              emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
-              emis2iem(nemis) = iem
-           end if
-        end if
-      end if
-    end if
+     end do
+     !add NAT emissions
+
+     if(k==KMAX_MID .and. EMIS_FILE(iem)=="nox")then
+        ! add surface emissions
+        do n=1, Nemis_surf
+           N_lf_derivemis = N_lf_derivemis + 1
+           nemis = N_lf_derivemis
+           do nn = 1, emis2nspec_surf(n)
+              rcemis_lf(nemis,emis2spec_surf(n,nn)) = rcemis_lf_surf(n, nn) * eps
+              rcemis_lf_surf(n, nn) = 0.0 !reset after use
+           end do
+           emis2nspec_surf(n) = 0 !reset after use    
+           iic = emis2iic_surf(n)
+           is = 1
+           emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+           emis2iem(nemis) = iem
+        end do
+        Nemis_surf = 0 !reset after use 
+     end if
+  end if
   end do
 
   if(N_lf_derivemis>N_lf_derivemisMAX)then
@@ -3790,31 +3813,49 @@ subroutine lf_rcemis(i,j,k,eps)
   if(DEBUGall .and. me==0)write(*,*)'end lf rcemis'
   end subroutine lf_rcemis
 
-  subroutine lf_rcemis_nat(species_ix,rcemis,i,j)
+  subroutine lf_rcemis_nat(species_ix, rcemis, i, j, icountry_in)
     !only surface emissions implemented for now
     !so far only called for DMS, in Setup_1d_mod.f90
 
     integer, intent(in) :: species_ix, i, j !species_ix, index of species as defined in array "species" in CM_ChemSpecs_mod.f90 (not only advected species)
 !    integer, optional, intent(in) :: k_in
+    integer, optional, intent(in) :: icountry_in
     real, intent(in) :: rcemis !value of emissions to track
-    
     integer :: isrc, n, ipos, stride, k
+    integer ::  icountry !internal index for "country" (ix_BVOC or ix_DMS). Not used if not lf_fullchem
+
     if (rcemis < 1e-20) return
 !    if(present(k_in)) then
 !       k = k_in
 !    else
        k = KMAX_MID
 !    end if
-    if (k < KMAX_MID-lf_Nvert+1) return
+     if (k < KMAX_MID-lf_Nvert+1) return
+    
+    if(present(icountry_in)) then
+       icountry = icountry_in
+    else
+       icountry = 0
+    end if
     if (i<li0 .or.i>li1 .or.j<lj0.or.j>lj1)return !we avoid outer frame
     if (lf_fullchem) then
-       !NB: DMS for fullchem not ready
-       N_lf_derivemis = N_lf_derivemis + 1
-       rcemis_lf(N_lf_derivemis,species_ix) = rcemis
-       !iic = iic_DMS !hardcoded for now
-       emis2icis(N_lf_derivemis) = (iic_DMS-1)*Ncountrysectors_lf
-       emis2iem(N_lf_derivemis) = iem_lf_sox !arbitrary
+       call CheckStop(icountry<=0, "country index for natural emissions not defined")
+       if(Nemis_surf>0)then
+          if(emis2iic_surf(Nemis_surf) == icountry) then             
+             !if same source, just add here             
+          else
+             !new source
+             Nemis_surf = Nemis_surf + 1
+          end if
+       else
+          Nemis_surf = 1
+       end if
+       emis2nspec_surf(Nemis_surf) = emis2nspec_surf(Nemis_surf) + 1 !allow for split into several species 
+       emis2iic_surf(Nemis_surf) =  icountry
+       emis2spec_surf(Nemis_surf, emis2nspec_surf(Nemis_surf)) = species_ix
+       rcemis_lf_surf(Nemis_surf, emis2nspec_surf(Nemis_surf)) = rcemis
     else
+       if (rcemis < 1e-20) return
        if(nemis_primary>0)then
           write(*,*)species_ix,me,i,j,k,'nemis_primary is already set',nemis_primary
        end if
