@@ -27,7 +27,7 @@ use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
                              nlandcode,landcode,NCMAX,&
                              secemis, roaddust_emis_pot,KEMISTOP,&
                              EmisMaskIntVal,EmisMaskValues,EmisMaskIndex2Name,gridrcemis,&
-                             mask2name
+                             NEmisMask, mask2name
 use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile,&
                              emis_masscorr,  &  ! 1/molwt for most species
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
@@ -35,14 +35,15 @@ use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendare
                              RestrictDomain
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
-use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,GetCDF_modelgrid
+use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,&
+                             GetCDF_modelgrid,CityFileWrite
 use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_country_group_size, &
                              Max_lf_spec, TXTLEN_NAME, TXTLEN_FILE, &
                              Max_lf_res, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups, &
                              Max_lf_out
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
 use PhysicalConstants_mod, only : GRAV, AVOG, ATWAIR
-use SmallUtils_mod,    only: find_index
+use SmallUtils_mod,    only: find_index, key2str
 use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
@@ -87,6 +88,7 @@ public  :: save_lf_emis
 public  :: lf_saveall
 public  :: lf_read
 private  :: addsource
+private  :: CityMasksOut  ! makes also integral over each city mask
 
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
   loc_frac&    ! Fraction of pollutants that are produced locally, surrounding sources
@@ -1106,14 +1108,14 @@ subroutine lf_out(iotyp)
   real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
   real,allocatable ::tmp_out_base(:,:)! base concentrations
   type(date) :: onesecond = date(0,0,0,0,1)
-  character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
-  character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
-  character(len=TXTLEN_FILE),save :: oldmonthlyname
-  character(len=TXTLEN_FILE) :: suffix
+  character(len=TXTLEN_NAME),save :: oldhourlyname = 'NOTSET'
+  character(len=TXTLEN_NAME),save :: oldhourlyInstname = 'NOTSET'
+  character(len=TXTLEN_NAME),save :: oldmonthlyname
+  character(len=TXTLEN_NAME) :: suffix, specname, sourcename, secname, redname, fullname
   real :: fracsum(LIMAX,LJMAX),invfac
   logical :: pollwritten(2*Max_lf_spec+1),is_surf
   integer :: ncFileID, iout, ig, found, iem_lf
-
+  character (len=TXTLEN_NAME) ::countryname(Max_lf_Country_list)
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start out'
 
@@ -1386,8 +1388,7 @@ subroutine lf_out(iotyp)
         
         
      else !FULLCHEM
-
-
+        
         is_surf = .true.
         do iout = 1, Max_lf_out
            if (lf_spec_out(iout)%name == "NOTSET") exit
@@ -1428,15 +1429,18 @@ subroutine lf_out(iotyp)
                           end do
                        end do
                     end do
+
                  end if
               end do
               if (found==0) cycle
+              specname = trim(lf_spec_out(iout)%name)
               if (ideriv == 1) then
                  !first write "base" concentrations, not country contributions
-                 if (is_surf) def2%name='SURF_ug_'//trim(lf_spec_out(iout)%name)                 
-                 if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(lf_spec_out(iout)%name)
-                 if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                  scale = 1.0
+                 def2%name=trim(specname)
+                 if (is_surf) def2%name='SURF_ug_'//trim(specname)            
+                 if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
+                 if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                  call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                       fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                  pollwritten(ipoll_cfac) = .true.
@@ -1449,25 +1453,33 @@ subroutine lf_out(iotyp)
               do i=1,Ncountry_lf+Ncountry_group_lf
                  do j=1,Ncountrysectors_lf
                     n1=n1+1
-                    isec=lf_country%sector_list(j)                 
+                    isec=lf_country%sector_list(j)
+                    secname = ''
+                    if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
                     if(i<=Ncountry_mask_lf)then
                        !mask defined region
                        if (iic2ilf_countrymask(i) > 0) then
-                          write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                          if(isec==0) write(def2%name,"(A)")trim(lf_spec_out(iout)%name)//'_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                       else
-                          write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(mask2name(country_mask_val(i)))
-                          if(isec==0) write(def2%name,"(A)")trim(lf_spec_out(iout)%name)//'_'//trim(mask2name(country_mask_val(i)))
-                       end if
-                    else if(i<=Ncountry_lf)then
+                          sourcename = '_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                          countryname(n1)=trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))//trim(secname)
+                      else
+                          sourcename = '_'//trim(mask2name(country_mask_val(i)))
+                          countryname(n1)=trim(mask2name(country_mask_val(i)))//trim(secname)
+                      end if
+                   else if(i<=Ncountry_lf)then
                        !regular country
-                       write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(lf_country%list(i-Ncountry_mask_lf))
-                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_'//trim(lf_country%list(i-Ncountry_mask_lf))
+                       sourcename = '_'//trim(lf_country%list(i-Ncountry_mask_lf))                       
+                       ix = find_index(trim(lf_country%list(i-Ncountry_mask_lf)) ,Country(:)%code, first_only=.true.)
+                       if (ix < 0) then
+                          if(iter==1)countryname(n1)=trim(lf_country%list(i-Ncountry_mask_lf))
+                       else
+                          if(iter==1)countryname(n1)=trim(Country(ix)%name)//trim(secname)
+                       end if
                     else
                        !country group
-                       write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_sec',isec,'_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                       if(isec==0) write(def2%name,"(A,I2.2,A)")trim(lf_spec_out(iout)%name)//'_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                       sourcename = '_'//trim(lf_country%group(i-Ncountry_lf)%name)
+                       if(iter==1)countryname(n1)=trim(lf_country%group(i-Ncountry_lf)%name)//trim(secname)
                     endif
+                    redname=''
                     if (lf_set%full_chem) then
                        !add emission species to name
                        if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. &
@@ -1479,43 +1491,50 @@ subroutine lf_out(iotyp)
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
                                EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
                        else if(lf_set%EmisDer_all) then
-                          write(def2%name,"(A)")trim(def2%name)//'_PSAVN'
+                          redname='_PSAVN'
                        else if (lf_spec_out(iout)%name == "pm25" .or. lf_spec_out(iout)%name == "pmco")then
-                          write(def2%name,"(A)")trim(def2%name)//'_P'
+                          redname ='_P'
                        else
-                          write(def2%name,"(A)")trim(def2%name)//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                          redname='_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
                     end if
-                    if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def2%name)
+                    if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(specname)//trim(secname)//trim(sourcename)//trim(redname) 
                     def2%unit='ug/m3'
-                    def1%name = trim(def2%name)
                     scale=1.0
-                    call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                    if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
-                       write(def2%name,"(A)")"AvgMDA8_6month_"//trim(def1%name)
-                       n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
-                       call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                    if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
+                       !"Compressed" CityMasks output
+                       if(iter==1)cycle
+                       fullname = 'SURF_ug_'//trim(specname)!//trim(secname)//trim(sourcename)//trim(redname)
+                       if(n1==1)call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf)
+                    else
+                       def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname) 
+                       call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                       if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3')then ! NB: assumes O3 is asked for!
+                          write(def2%name,"(A)")"AvgMDA8_6month_"//trim(secname)//trim(sourcename)//trim(redname)
+                          n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
-                       def2%unit='ppbdays'
-                       write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
-                       n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
-                       call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                       
-                       
-                       if(n1der==1 .and. ideriv == 1)then
-                          !also save Base MDA8
-                          def2%name="AvgMDA8_6month"
-                          def2%unit='ug/m3'
-                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                          def2%unit='ppbdays'
+                          write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
+                          def2%name = "SOMO35_"//trim(secname)//trim(sourcename)//trim(redname)
+                          n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                           
-                          def2%name="SOMO35"
-                          def2%unit='ppbdays'
-                          call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                          if(n1der==1 .and. ideriv == 1)then
+                             !also save Base MDA8
+                             def2%name="AvgMDA8_6month"
+                             def2%unit='ug/m3'
+                             call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                                  fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                          
+                             def2%name="SOMO35"
+                             def2%unit='ppbdays'
+                             call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                                  fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                          end if
                        end if
                     end if
                  enddo
@@ -4276,5 +4295,40 @@ subroutine lf_rcemis(i,j,k,eps)
     call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
   end subroutine lf_read
 
+
+subroutine CityMasksOut(var, varname, runname, Nrun)
+  real, intent(in) :: var(LIMAX,LJMAX,Nrun)
+  character(len=*) , intent(in):: varname
+  character(len=TXTLEN_NAME) , intent(in):: runname(*)
+  integer, intent(in) :: Nrun
+  real(kind=4), allocatable, dimension(:,:) ::  localsum,globalsum
+  !real(kind=4) localsum(NEmisMask),globalsum(NEmisMask)
+  character(len=TXTLEN_FILE) :: filename
+  integer :: i,j,irun,imask,IERROR
+  allocate(localsum(Nrun,NEmisMask),globalsum(Nrun,NEmisMask))
+  do irun = 1, Nrun
+     do imask = 1, NEmisMask
+        localsum(irun,imask) = 0.0
+        globalsum(irun,imask) = 0.0
+        do j=1,ljmax
+           do i=1,limax
+              !EmisMaskValues = 1 outside city, 0 inside
+              localsum(irun,imask) = localsum(irun,imask) + var(i,j,irun)*(1.0 - EmisMaskValues(i,j,imask)) 
+           end do
+        end do
+     end do
+  end do
+  !add together totals from each processor (only me=0 get results)
+  CALL MPI_REDUCE(localsum,globalsum,NEmisMask*Nrun,MPI_REAL,MPI_SUM,0,MPI_COMM_CALC,IERROR)
+
+  if(me==0)then
+     filename =trim(key2str('YYYYMMDD_citySR.nc','YYYY',current_date%year))
+     filename =trim(key2str(filename,'MM',current_date%month))
+     filename =trim(key2str(filename,'DD',current_date%day))
+     call CityFileWrite(globalsum, varname, current_date%hour, filename, runname, Nrun, 1, 24)
+  end if
+     
+  deallocate(localsum,globalsum)
+end subroutine CityMasksOut
 
 end module LocalFractions_mod

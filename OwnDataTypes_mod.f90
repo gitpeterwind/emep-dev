@@ -331,6 +331,7 @@ type, public :: lf_set_type
   logical :: DAY =.false.
   logical :: HOUR =.false.
   logical :: HOUR_INST =.false.
+  logical :: CityMasks =.false.
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   !for fullchem settings
   logical :: full_chem =.false.
