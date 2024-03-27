@@ -1401,7 +1401,7 @@ subroutine lf_out(iotyp)
               do ig = 1, 30                 
                  found = 1
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig>1) exit
-                 if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) continue
+                 if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) cycle
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig==1) then
                     isrc=find_index(trim(lf_spec_out(iout)%name) ,lf_src(:)%species, nth = ideriv)
                  else
@@ -3729,7 +3729,7 @@ subroutine lf_rcemis(i,j,k,eps)
                             found_primary = 1
                          end if
                          isrc=isrc_pm25 !treated with index "nemis_primary-1"
-                         emis2pos_primary(nemis_primary-1) = isrc
+                         emis2isrc_primary(nemis_primary-1) = isrc
                          emis2pos_primary(nemis_primary-1) = is-1 + (iic-1)*Ncountrysectors_lf
                          emish_idx = SECTORS(isec)%height
                          split_idx = SECTORS(isec)%split
@@ -3752,7 +3752,7 @@ subroutine lf_rcemis(i,j,k,eps)
                             found_primary = 1
                          end if
                       end if
-                      emis2pos_primary(nemis_primary) = isrc
+                      emis2isrc_primary(nemis_primary) = isrc
                       emis2pos_primary(nemis_primary) =  is-1 + (iic-1)*Ncountrysectors_lf
                       emish_idx = SECTORS(isec)%height
                       split_idx = SECTORS(isec)%split
