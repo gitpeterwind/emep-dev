@@ -49,6 +49,16 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 mar 2024, Peter
+
+Put runlabel on "Timings.out", so that different timings are not overwritten
+when testing.
+
+LF: include integral over cities in ad hoc file, to accelareate Hourly outputs.
+(Will be integrated for "normal" runs later too (CAMS needs it), although it
+is not exactly the same)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 mar 2024, Peter
 
 Bug in emission per file printouts, when more than one emission file is used.

@@ -5623,8 +5623,12 @@ subroutine CityFileWrite(values, varname, hour, filename, runname, Nrun, Ndate, 
         call check(nf90_put_att(ncFileID,varID,"_FillValue",nf90_fill_float ))
         call check(nf90_enddef(ncFileID))
      end if
-     !note that midnight is the first record     
-     call check(nf90_put_var(ncFileID,VarID,values,start=(/mod(hour,24)+1,1,1,1/),count=(/1,1,Nrun,NEmisMask/)))
+     !NB: hour=0 is midnight and is set as the last record
+     if (mod(hour,24)==0) then
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/24,1,1,1/),count=(/1,1,Nrun,NEmisMask/)))
+     else
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/mod(hour,24),1,1,1/),count=(/1,1,Nrun,NEmisMask/)))
+     end if
      call check(nf90_close(ncFileID))
   end if
  end subroutine CityFileWrite

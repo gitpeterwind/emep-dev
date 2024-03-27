@@ -13,7 +13,8 @@ module My_Timing_mod
 ! Code commented out or marked with !SYS is intended for system_clock
 ! Code commented out or marked with !CPU is intended for cpu_time
 !----------------------------------------------------------------------------
-use MPI_Groups_mod
+  use MPI_Groups_mod
+  use Config_module, only : runlabel1
 implicit none
 
 public :: Init_timing
@@ -87,7 +88,7 @@ subroutine Output_timing(io, me,np,nx,ny)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE,mytimm,NTIMING,MPI_DOUBLE_PRECISION, &
        MPI_MIN,MPI_COMM_WORLD,IERROR)
   if(me==0)then
-     open(io,file='Timing.out')
+     open(io,file='Timing_'//trim(runlabel1)//'.out')
      write(io,"(a18,I8)") "Number of grids = ",nx*ny
      write( 6,"(a18,I8)") "Number of grids = ",nx*ny
      write(io,"(a18,2i5)")"Number of CPUs =  ", np

@@ -16,7 +16,7 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
                              PRRO2_ix,OXYO2_ix,C5DICARBO2_ix,ISRO2_ix,MACRO2_ix,TERPO2_ix,H2O2_ix,N2O5_ix, &
-                             NATBIO, lf_spec_out, lf_set, ASOC_ug1e3_ix, non_C_ASOA_ng1e2_ix
+                             NATBIO, lf_spec_out, lf_set, ASOC_ug1e3_ix, non_C_ASOA_ng1e2_ix,runlabel1
 use Convection_mod,    only: convection_1d
 use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_TMT,IC_TM,IC_TME,IC_ASM,IC_ASE,IC_ARE,IC_ARL,IC_CAS,IC_UZT,IC_UZ&
@@ -1224,7 +1224,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(3)=dimSizes_tot(3)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
-  allocate(tmp_out_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf))
+  allocate(tmp_out_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1))
 
   allocate(tmp_out_base(LIMAX,LJMAX))
   tmp_out_base = 0.0
@@ -1435,16 +1435,29 @@ subroutine lf_out(iotyp)
               if (found==0) cycle
               specname = trim(lf_spec_out(iout)%name)
               if (ideriv == 1) then
-                 !first write "base" concentrations, not country contributions
-                 scale = 1.0
-                 def2%name=trim(specname)
-                 if (is_surf) def2%name='SURF_ug_'//trim(specname)            
-                 if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
-                 if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
-                 call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                 pollwritten(ipoll_cfac) = .true.
-                 overwrite=.false.
+                 if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
+                    if (iter==2) then
+                       !only write integral over cities
+                       n1=Npos_lf + 1                          
+                       do j=1,ljmax
+                          do i=1,limax
+                             tmp_out_cntry(i,j,n1) = tmp_out_base(i,j) !store together with sources
+                          end do
+                       end do
+                       countryname(n1) = 'Base'
+                    end if
+                 else
+                    !first write "base" concentrations, not country contributions
+                    scale = 1.0
+                    def2%name=trim(specname)
+                    if (is_surf) def2%name='SURF_ug_'//trim(specname)            
+                    if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
+                    if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
+                    call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    pollwritten(ipoll_cfac) = .true.
+                    overwrite=.false.
+                 end if
               end if
               
               !now write out sensibilities for each country and sectors
@@ -1505,7 +1518,7 @@ subroutine lf_out(iotyp)
                        !"Compressed" CityMasks output
                        if(iter==1)cycle
                        fullname = 'SURF_ug_'//trim(specname)!//trim(secname)//trim(sourcename)//trim(redname)
-                       if(n1==1)call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf)
+                       if(n1==1)call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf + 1)
                     else
                        def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname) 
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -4301,11 +4314,13 @@ subroutine CityMasksOut(var, varname, runname, Nrun)
   character(len=*) , intent(in):: varname
   character(len=TXTLEN_NAME) , intent(in):: runname(*)
   integer, intent(in) :: Nrun
-  real(kind=4), allocatable, dimension(:,:) ::  localsum,globalsum
+  real(kind=4), allocatable, dimension(:,:) ::  localsum,globalsum,values
   !real(kind=4) localsum(NEmisMask),globalsum(NEmisMask)
   character(len=TXTLEN_FILE) :: filename
   integer :: i,j,irun,imask,IERROR
-  allocate(localsum(Nrun,NEmisMask),globalsum(Nrun,NEmisMask))
+  character(len=TXTLEN_FILE),save :: oldname='NOTSET'
+  allocate(localsum(Nrun+1,NEmisMask),globalsum(Nrun+1,NEmisMask))
+  if(me==0)allocate(values(Nrun,NEmisMask))
   do irun = 1, Nrun
      do imask = 1, NEmisMask
         localsum(irun,imask) = 0.0
@@ -4318,17 +4333,40 @@ subroutine CityMasksOut(var, varname, runname, Nrun)
         end do
      end do
   end do
+  !sum the weights
+  do imask = 1, NEmisMask
+     localsum(Nrun+1,imask) = 0.0
+     globalsum(Nrun+1,imask) = 0.0
+     do j=1,ljmax
+        do i=1,limax
+           !EmisMaskValues = 1 outside city, 0 inside
+           localsum(Nrun+1,imask) = localsum(Nrun+1,imask) + (1.0 - EmisMaskValues(i,j,imask)) 
+        end do
+     end do
+  end do
+  
   !add together totals from each processor (only me=0 get results)
-  CALL MPI_REDUCE(localsum,globalsum,NEmisMask*Nrun,MPI_REAL,MPI_SUM,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_REDUCE(localsum,globalsum,NEmisMask*(Nrun+1),MPI_REAL,MPI_SUM,0,MPI_COMM_CALC,IERROR)
 
   if(me==0)then
+     do imask = 1, NEmisMask
+        do irun = 1, Nrun
+           values(irun,imask) = globalsum(irun,imask)/globalsum(Nrun+1,imask)
+        end do
+     end do
      filename =trim(key2str('YYYYMMDD_citySR.nc','YYYY',current_date%year))
      filename =trim(key2str(filename,'MM',current_date%month))
      filename =trim(key2str(filename,'DD',current_date%day))
-     call CityFileWrite(globalsum, varname, current_date%hour, filename, runname, Nrun, 1, 24)
+     filename=trim(runlabel1)//'_'//trim(filename)
+     !we do not want to get to next day at midnight
+     if (trim(oldname) /= trim(fileName) .and. current_date%hour>0) then
+        oldname = fileName
+     end if
+     call CityFileWrite(values, varname, current_date%hour, oldname, runname, Nrun, 1, 24)
   end if
      
   deallocate(localsum,globalsum)
+  if(me==0)deallocate(values)
 end subroutine CityMasksOut
 
 end module LocalFractions_mod
