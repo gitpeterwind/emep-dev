@@ -49,6 +49,14 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 mar 2024, Dave
+
+SmallUtils_mod: added basename and basedir - similar to python/perl functions
+
+Timefactors_mod: some debug extra, and 1st use of basename, basedir to reduce
+ lengths of output strings
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 mar 2024, Peter
 
 Put runlabel on "Timings.out", so that different timings are not overwritten

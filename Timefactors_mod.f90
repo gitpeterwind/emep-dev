@@ -96,7 +96,7 @@
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_mod, only: PI
-  use SmallUtils_mod, only: find_index, key2str
+  use SmallUtils_mod, only: find_index, key2str, basename, basedir
   use Io_mod,        only:            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
@@ -210,6 +210,7 @@ contains
   integer :: maxidx = 0
   character(len=TXTLEN_NAME):: secname
   character(len=10) :: code
+  integer, parameter :: dbgCC  = 2 ! Use AT for now
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
     write(unit=6,fmt=*) dtxt//" N_TFAC:", N_TFAC, "timeFacs%Monthly:", timeFacs%Monthly
@@ -393,7 +394,7 @@ contains
          ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
          !if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
-         if( dbgTF.and.inland==2.and.iemis==1  ) then
+         if( dbgTF.and.inland == dbgCC .and. iemis == 1  ) then
             write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac:"// &
              trim(EMIS_FILE(iemis))//":"//trim(Country(ic)%code)//": ", &
             inland,insec,iemis, fac_min(ic,insec,iemis),&
@@ -425,8 +426,13 @@ contains
           end do
        end do
 
-       if (dbgTF) write(unit=6,fmt='(a,i5,2a)') dtxt//"Read ", n, &
-               " MONTH records from ", trim(fname2) 
+       if (dbgTF) then
+         if (iemis==1) write(*,fmt='(a,i5,2a)') dtxt//"Reading ", n, &
+               " MONTH records from ", trim(basedir(fname2) ) 
+         write(*,fmt='(a,i5,2a)') dtxt//"Read ", n, &
+               " MONTH records from ", trim(basename(fname2) ) 
+       end if
+               !" MONTH records from ", trim(fname2) 
    end do  ! iemis
 
    end if ! .not. GRIDDED MONTHLY/'DAY_OF_YEAR'
@@ -441,11 +447,12 @@ contains
        call CheckStop( ios, dtxt//" Opening error in Dailyfac")
 
        n = 0
-       do
+       DoWLOOP: do
          if ( timeFacs%Daily == "CAMS_TEMPO_CLIM") then ! txt-based indices
            read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, (buff(i), i=1,7)
            ic=find_index(code,Country(:)%code)
            insec=find_index(secname,SECTORS(:)%longname)             
+           inland = Country(ic)%icode ! just for print out
          else
            read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
               (buff(i),i=1,7)         
@@ -471,11 +478,15 @@ contains
          call CheckStop( xday > 1.001 .or. xday < 0.999, &
                 dtxt//" ERROR: Dailyfac - not normalised")
 
-       end do
+         !if( dbgTF .and. inland == dbgCC .and. iemis == 1  ) then
+         !   write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"edd tfac:"// &
+         !    trim(EMIS_FILE(iemis))//":"//trim(Country(ic)%code)//": "!, &
+         !    !inland,insec,iemis, " : ",  ( fac_edd(ic,idd,insec,iemis), idd=1,7)
+       end do DoWLOOP
 
        close(IO_TIMEFACS)
-       if (dbgTF) write(*,fmt=*) dtxt//"Read ", n, &
-                " WEEK records from ", trim(fname2)
+       if (dbgTF) write(*,fmt='(a,i6,2a)') dtxt//"Read ", n, &
+               " WEEK records from ", trim(fname2)
 
      end do  ! NEMIS_FILE
 
@@ -579,7 +590,8 @@ contains
     SPECEMLOOP: do iemis = 1, NEMIS_FILE
        fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
-       if(dbgTF) write(*,*) dtxt//'Hourly SPECIAL', iemis,found_HourlyFacFile,ios, trim(fname2)
+       if(dbgTF) write(*,'(a,i4,L2,i,a)') dtxt//'Hourly SPECIAL', iemis,&
+           found_HourlyFacFile,ios, trim(fname2)
        if ( ios /= 0 ) then
           if(me==0 .and. fname2/= 'NOTSET') write(*,*)dtxt//&
             'Special hourly factors not found (but not needed): ',trim(fname2)
@@ -589,7 +601,7 @@ contains
        SPECLOOP: do 
           read(IO_TIMEFACS,"(a)",iostat=ios) inputline
           n = n + 1
-          if(dbgTF)write(*,"(a,i4,a)") dtxt//"HourlyFacsSpecials ", n, trim(inputline(1:50))
+          !if(dbgTF)write(*,"(a,i4,a)") dtxt//"HourlyFacsSpecials ", n, trim(inputline(1:50))
           if ( ios <  0 ) exit     ! End of file
           if( index(inputline,"#")>0 ) then ! Headers
              if(n==1) call PrintLog(trim(inputline))
@@ -611,10 +623,14 @@ contains
              end if ! JUNE 2023
              maxidx = max(insec,maxidx)
 
-             if(insec>N_TFAC) cycle
+             if(insec>N_TFAC) then
+               if ( dbgTF) write(*,*) dtxt//'insec-high', insec, secname
+               cycle
+             end if
              icc=find_index(inland,Country(:)%icode)
-             if( dbgTF ) write(*,'(a,4i4,2f12.4,a)') dtxt//"HOURLY SPECIAL=> ",&
-                icc, inland,idd, insec, tmp24(1), tmp24(13), " "//trim(timeFacs%Hourly)
+             if( dbgTF .and. inland==dbgCC  ) write(*,'(a,4i4,2f10.4,a)') &
+               dtxt//"HOURLY SPECIAL=> ", icc, inland,idd, insec,&
+                tmp24(1), tmp24(13), " "//trim(timeFacs%Hourly)
              
              if( icc<0 .and. inland/=0)then
                 if(MasterProc) write(*,*)dtxt// &
@@ -664,8 +680,11 @@ contains
           
           ! Use sumfac for mean, and normalise within each day/sector
           if(inland==0)icc=1
-          if(dbgTF .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
-               dtxt//'HOURLY-FACS mean min max', idd, insec, sumfac, &
+          !XCAMEO if(dbgTF .and. MasterProc) write(*,"(a,3i3,3f12.5)") &
+          if( dbgTF.and. icc == dbgCC ) write(*,"(a,3i3,4f10.3)") &
+               dtxt//'HOURLY-FACS mean min max,'// trim(EMIS_FILE(iemis)), &
+               insec, idd, inland, sumfac, &
+               fac_ehh24x7(iemis,insec,1,idd,icc), &
                minval(fac_ehh24x7(iemis,insec,:,idd,icc)), &
                maxval(fac_ehh24x7(iemis,insec,:,idd,icc))
           
@@ -715,6 +734,11 @@ contains
               sum(fac_ehh24x7(iemis,insec,:,1,ic))/24.0, &
               sum(fac_ehh24x7(iemis,insec,:,7,ic))/24.0
           end do ! mm
+          mm=1
+          do insec = 1, N_TFAC ! NSECTORS
+            write(*,'(a,i3,f10.4,a)') 'UKsec:', insec, &
+               fac_emm(ic,mm,insec,1), trim(SECTORS(insec)%longname)
+          end do
        end if
        write(*,"(a,4f8.3)") dtxt//" day factors traffic 24x7", &
            fac_ehh24x7(1,7,1,4,1),fac_ehh24x7(1,7,13,4,1), &

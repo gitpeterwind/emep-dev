@@ -24,6 +24,8 @@ module SmallUtils_mod
   public :: trims        !> removes all blanks from string
   public :: str_replace  !> replaces string
   public :: blank_replace !> replaces ' ' in string 
+  public :: basename     !> gets e.g. abc from /home/someone/Work/abc
+  public :: basedir      !> gets e.g. /home/someone/Work from /home/someone/Work/abc
   public :: key2str      ! replace keyword occurence(s) on a string by given value
   private :: skey2str    !
   private :: ikey2str
@@ -409,6 +411,30 @@ function str_replace (s,text,rep,dbg)  result(outs)
   end do
 end function str_replace
 !============================================================================
+  function basename(str) result(bname)
+    character(len=*), intent(in) :: str
+    integer, parameter :: NWMAX=20
+    character(len=50), dimension(NWMAX):: words
+    character(len=50) bname
+    integer :: nwords, errcode
+
+    call wordsplit(str,NWMAX,words,nwords,errcode,separator='/')
+    bname =  words(nwords)
+
+  end function basename
+!============================================================================
+  function basedir(str) result(bdir)
+    character(len=*), intent(in) :: str
+    integer, parameter :: NWMAX=20
+    character(len=50), dimension(NWMAX):: words
+    character(len=300) ::  bdir
+    integer :: nwords, errcode
+
+    call wordsplit(str,NWMAX,words,nwords,errcode,separator='/')
+    bdir = str_replace(str,words(nwords),'')
+
+  end function basedir
+!============================================================================
 
 !> Function posted by SethMMorton at: 
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
@@ -637,6 +663,12 @@ print *, 'INTO CHAR_R1'
   print *, 'TESTING str_replace w trim:'//trim(  str_replace(trim(adjustl(' ABC D EF   ')),'B','_'))// ':END'
   print *, 'TESTING find_duplicates', &
       find_duplicates(['AAA', 'BB ', 'AA ', 'CC ', 'DD ', 'AA ' ],debug=.true. )
+
+  ! Testing basename, basedir
+  tmpstr='/aaaa/bbbb/cef'
+  print *, 'BASENAME:', basename(tmpstr)
+  print *, 'BASEDIR:',  basedir(tmpstr)
+
 end subroutine Self_test
 
 end module SmallUtils_mod
