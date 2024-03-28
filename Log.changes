@@ -51,6 +51,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 mar 2024, Dave
 
+BUG under investigation??? The mean of efac_ehh24x7 should be 1.0, but
+ debugs show e.g. 0.0002 for IT. See HRTsrch output produced when
+ DEBUG%EMISTIMEFACS = T used.
+
+
 SmallUtils_mod: added basename and basedir - similar to python/perl functions
 
 Timefactors_mod: some debug extra, and 1st use of basename, basedir to reduce
