@@ -56,6 +56,8 @@ SmallUtils_mod: added basename and basedir - similar to python/perl functions
 Timefactors_mod: extra debug lines, and 1st use of basename, basedir to reduce
  lengths of output strings
 
+Emissions_mod, EmisGet, Net_mod: debug additions
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 mar 2024, Peter
 

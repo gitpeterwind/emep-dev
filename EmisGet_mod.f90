@@ -1535,7 +1535,7 @@ end if
 
            call CountEmisSpecs( intext(idef,i) )
 
-           if (debugm) write(*,"(a,2i3,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
+           if (debugm) write(*,"(a,2i3,1x,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
 
            itot = find_index(intext(idef,i), species(:)%name, any_case=.true. )
 
@@ -1617,7 +1617,8 @@ end if
 
            n = n + 1
            if (debugm ) then
-               write(6,"(a,i4,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
+               !write(6,"(a,i4,a,3i3,50f7.2)") dtxt//"Splits: ",  n, trim(fname),&
+               write(6,"(a,i4,3i3,99f7.2)") dtxt//"Splits: ",  n, & ! trim(fname),&
                   iland, isec, nsplit, tmp(1:nsplit)
            end if
 
@@ -1630,6 +1631,7 @@ end if
                 ( defaults .and. isec  /= n                     )        &
                                                                 )   then
                print * , "ERROR: emisfrac:" // trim(fname) // " "
+               print * , "ERROR: emisline:" // trim(txtinput) // " "
                print *, "ERROR: emisfrac:", idef,  iland, n, isec, sumtmp
                write(unit=errmsg,fmt=*) &
             "ERROR: emisfrac:"//trim(fname)//" ", idef, iland, n, isec, sumtmp
@@ -1668,12 +1670,13 @@ end if
                 tmp_emisfrac(iqrc,isec,iland) = 0.01 * tmp(i)
 
                 !CHANGED to AT:if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
-                if ( debugm .and. iland == 2 ) then
+                if ( debugm .and. iland == 2 .and. tmp(i)> 1.0e-6 ) then
                   itot = tmp_iqrc2itot(iqrc)
                   write(*,"(a35,4i3,i4,a,f10.4)") &
                     dtxt//" splitdef " //trim(Country(iland)%name), &
                      isec, ie, i,  iqrc, itot, trim(species(itot)%name), &
                        tmp_emisfrac(iqrc,isec,iland)
+                     
                 end if
              end do ! i
            end do ! iland
@@ -1936,7 +1939,7 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
 
   hour_iland = hour_iland + 1 !add 1 to get 1..24
 
-  if(debug_tfac) write(*,"(a,3i4,f7.1,9i6)") dtxt//"TIMECALC:"//&
+  if(debug_tfac) write(*,"(a,3i4,f7.1,9i6)") dtxt//"IJTIMECALC:"//&
    trim(Country(iland)%code), iland,  iland_timefac, iland_timefac_hour, &
      glon(i,j), timezones%map(i,j), Country(iland)%timezone,&
      indate%hour, hour_iland, itJan, itz !why: +1
@@ -1959,7 +1962,7 @@ subroutine make_iland_for_time(debug_tfac, indate, i, j, iland, wday,&
     !write(*,"(a,2i3,i5,3x,5i5,i4)") dtxt//"DAYS times ", &
     !     wday, wday_loc, iland,&
     !     hour_iland, Country(iland)%timezone, i,j, itz
-    call datewrite(dtxt//"DAY 24x7:", &
+    call datewrite(dtxt//"DAY 24x7 RT:", &
       [ iland, wday, wday_loc, hour_iland ], &
       [ fac_ehh24x7(1,TFAC_IDX_TRAF, hour_iland,wday_loc,iland_timefac_hour) ])
   end if

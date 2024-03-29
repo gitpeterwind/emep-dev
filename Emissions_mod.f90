@@ -35,7 +35,7 @@ use Config_module,only: &
     AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, NEmisMaskMAX,&
     hourly_emisfac
-use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU
+use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU, IC_AT
 use Country_mod,       only: EU28,EUMACC2,IC_DUMMY
 use Debug_module,      only: DEBUG ! , & !DEBUG => DEBUG_EMISSIONS, &
                                 !DEBUG%EMISTIMEFACS
@@ -1384,9 +1384,9 @@ end subroutine EmisUpdate
           if (MasterProc) write(*,'(a)',advance='no') dtxt//&
              trim(SECTORS(isec)%longname)//" , "//trim(SECTORS(isec)%description)
           if(USES%DEGREEDAY_FACTORS) then
-             if (MasterProc) write(*,*)', will be used with the Degree-Days method'
+             if (MasterProc) write(*,*)': used with the Degree-Days method'
           else
-             if (MasterProc) write(*,*)', will be recognized as a domestic sector'
+             if (MasterProc) write(*,*)': recognized as a domestic sector'
           end if
        end if
        if (SECTORS(isec)%timefac ==  TFAC_IDX_AGR .or. IS_AGR(isec)) then
@@ -1394,20 +1394,20 @@ end subroutine EmisUpdate
           if (MasterProc) then
              write(*,'(a)')dtxt//trim(SECTORS(isec)%longname)//" , "//&
                 trim(SECTORS(isec)%description) // &
-                ', will be recognized as an agricultur sector'
+                ': recognized as an agricultur sector'
           end if
        end if
        if (SECTORS(isec)%timefac ==  TFAC_IDX_TRAF .or. IS_TRAF(isec)) then
           IS_TRAF(isec) = .true.
           if (MasterProc) write(*,*)dtxt//trim(SECTORS(isec)%longname)//" , "//&
              trim(SECTORS(isec)%description)// &
-             ', will be recognized as a traffic sector'
+             ': recognized as a traffic sector'
        end if
        if (SECTORS(isec)%timefac ==  TFAC_IDX_POW .or. IS_POW(isec)) then
           IS_POW(isec) = .true.
           if (MasterProc) write(*,*)dtxt//trim(SECTORS(isec)%longname)//" , "//&
             trim(SECTORS(isec)%description)// &
-            ', will be recognized as a Public Power sector'
+            ': recognized as a Public Power sector'
        end if
 
        N_TFAC  = max(N_TFAC, SECTORS(isec)%timefac)
@@ -2198,6 +2198,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                endif
 
                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3')
+               dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='sox') ! CAMEO check
                if (dbgPoll) then
                 !if (isec==1) write(*,"(a,2i4,2f8.2,i6)")dtxt//"DAY TFAC loc:",&
                 write(*,"(a,2i4,2f8.2,i6)")dtxt//"efacs DAY TFAC loc:",&
@@ -2358,6 +2359,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
        debug_tfac=(DEBUG%EMISTIMEFACS.and.debug_proc&
                     .and.i==DEBUG_li.and.j==DEBUG_lj)
+       if (debug_tfac) write(*,'(a,i5,2f8.3,i4)') dtxt//'XCAMEO: hereNEW', &
+         NEmis_source_ij(ij), glat(i,j), glon(i,j), size(SECTORS)
 
        do is = 1,NEmis_source_ij(ij)
           n = Emis_source_ij_ix(ij,is)
@@ -2370,10 +2373,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           emish_idx = SECTORS(isec_idx)%height
           split_idx = SECTORS(isec_idx)%split
 
-          iland = Emis_source(n)%country_ix
-          if(debug_tfac) write(*,'(a,9i5)') dtxt//'NewFormStart'// &
+          iland = Emis_source(n)%country_ix ! remember: iland isn't emep cc num!
+          if(debug_tfac) write(*,'(2a,99i5)') dtxt//'NewFormStart'// &
             ':'//trim(Emis_source(n)%periodicity), &
-              is, iland, itot,isec,isec_idx,me
+               ' '//trim(SECTORS(isec_idx)%longname)//'=>(tfac):'// & 
+                    trim(SECTORS(tfac_idx)%longname), &
+              is, NEmis_source_ij(ij), iland, itot,isec,isec_idx,tfac_idx
 
           if(itot>0)then
              !the species is directly defined (no splits)
@@ -2411,7 +2416,6 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    if(debug_tfac) write(*,'(a,4i5,es12.3)') dtxt//'NH3tfacLand', &
                            is, iland,  iland_timefac, tfac
 
-                   !F24 if(TimeFacBasis =='DAY_OF_YEAR' ) then
                    if(timeFacs%Day_of_Year ) then
                       tfac = tfac * fac_dayofyear(isec_idx, iland_timefac, iem, daynumber)
                       if(dbgPoll) write(*,*) dtxt//'efacs HERE-DOY', tfac, iland_timefac, daynumber
@@ -2456,7 +2460,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 !directly included in setup_rcemis
              endif
           else
-             !the species is defined as a sector emission
+             !the species is defined as a sector emission, e.g. sox, nox
              iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
 
              if(debug_tfac) write(*,'(a,9i5)'), dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
@@ -2490,6 +2494,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     n, iem, iland
 
                 dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='nh3' .and. iland_timefac==IC_HU )
+                dbgPoll = (debug_tfac.and. EMIS_FILE(iem)=='sox' .and. iland_timefac==IC_AT )! XCAMEO
 
                 if(Emis_source(n)%periodicity == 'yearly' .or. Emis_source(n)%periodicity == 'monthly')then
                    !we need to apply hourly factors
@@ -2506,8 +2511,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                    else if(Emis_source(n)%periodicity == 'yearly')then
                       !apply monthly and daily factor on top of hourly factors
                       tfac = tfac * timefac(iland_timefac,tfac_idx,iem)
-                      if(dbgPoll) write(*,'(a,3i4,f12.4)') dtxt//&
-                         'efacs HERE-CLIMhu', tfac_idx, isec_idx, daynumber, tfac
+                      !if(dbgPoll) write(*,'(a,3i4,f12.4)') dtxt//&
+                      if(debug_tfac) write(*,'(a,4i4,f12.4)') dtxt//trim(EMIS_FILE(iem))//&
+                         'efacs HERE-CLIMhu', tfac_idx, isec_idx, daynumber, iland_timefac, tfac
                    else if(Emis_source(n)%periodicity == 'monthly')then
                       !apply daily factors, with renormalization to conserve monthly sums
                       tfac = tfac * fac_edd(iland_timefac,wday,tfac_idx,iem) * daynorm
