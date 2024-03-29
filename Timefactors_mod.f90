@@ -96,7 +96,7 @@
   use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_mod, only: PI
-  use SmallUtils_mod, only: find_index, key2str, basename, basedir
+  use SmallUtils_mod, only: find_index, key2str, basename, basedir, trims
   use Io_mod,        only:            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
@@ -175,12 +175,12 @@
   ! EMEP country nums doesn't always match grid-based country index. Be
   ! explicit
   integer, parameter, private :: &
-      dbgICemep  = 2   & ! Use AT for now. 
+      dbgICCemep  = 15   & ! Use AT for now. 
      ,dbgIsec    = 1   & ! Use GNFR_A for now. 
      ,dbgIemis   = 1     ! 'sox' usually
   integer, save, private  :: &
-      dbgICindex   &! not always same as dbgICemep
-     ,dbgIsecRT    ! Use GNFR_A for now. 
+      dbgICindex   &! not always same as dbgICCemep
+     ,dbgIsecRT    ! Use GNFR_F for now. 
 
 contains
 
@@ -220,6 +220,8 @@ contains
   character(len=TXTLEN_NAME):: secname
   character(len=10) :: code
   integer :: maxidx = 0
+  logical :: dbgccsec = .false.
+  character(len=80) :: dbgmsg
   
   if (DEBUG%EMISTIMEFACS .and. MasterProc )  then
     write(unit=6,fmt=*) dtxt//" N_TFAC:", N_TFAC, "timeFacs%Monthly:", timeFacs%Monthly
@@ -376,10 +378,11 @@ contains
 
             indexCC=find_index(code,Country(:)%code)
             emepICC = Country(indexCC)%icode ! just for print out
-            if(emepICC==dbgICemep) dbgICindex=indexCC
+            if(emepICC==dbgICCemep) dbgICindex=indexCC
             insec=find_index(secname,SECTORS(:)%longname)             
-            if(dbgTF .and. iemis==1 .and. insec==dbgIsec) &
-              write(*,*)dtxt//'CHECKIC', indexCC, emepICC, code, trim(Country(indexCC)%code)
+            dbgccsec = dbgTF .and. iemis==1 .and. insec==dbgIsec .and. emepICC==dbgICCemep
+            if(dbgccsec) write(*,*)dtxt//'CHECKIC', indexCC, emepICC, code, &
+                trim(Country(indexCC)%code) ! e.g. for IT indexCC=16, emepICC=15
          end select
             
          maxidx = max(insec,maxidx)
@@ -406,10 +409,11 @@ contains
          ! fac_min(emepICC,insec,iemis) = minval( fac_emm(emepICC,:,insec,iemis) ) ???? OR indexCC??
 
          !if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
-         if( dbgTF.and.emepICC == dbgICemep .and. iemis == dbgIemis  ) then
-            write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"emm tfac:"// &
-             trim(EMIS_FILE(iemis))//":"//trim(Country(indexCC)%code)//": ", &
-            emepICC,insec,iemis, fac_min(indexCC,insec,iemis),&
+         if( dbgccsec ) then
+            dbgmsg=trims(dtxt//"emm:"// EMIS_FILE(iemis)//":"//&
+                    Country(indexCC)%code//":"//SECTORS(insec)%longname
+            write(*,"(a,3i3,f7.3,a,12f6.2)")  dbgmsg, &
+              emepICC,insec,iemis, fac_min(indexCC,insec,iemis),&
                " : ",  ( fac_emm(indexCC,mm,insec,iemis), mm=1,12)
          end if
 
@@ -490,7 +494,7 @@ contains
          call CheckStop( xday > 1.001 .or. xday < 0.999, &
                 dtxt//" ERROR: Dailyfac - not normalised")
 
-         !if( dbgTF .and. emepICC == dbgICemep .and. iemis == 1  ) then
+         !if( dbgTF .and. emepICC == dbgICCemep .and. iemis == 1  ) then
          !   write(*,"(a,3i3,f7.3,a,12f6.2)") dtxt//"edd tfac:"// &
          !    trim(EMIS_FILE(iemis))//":"//trim(Country(indexCC)%code)//": "!, &
          !    !emepICC,insec,iemis, " : ",  ( fac_edd(indexCC,idd,insec,iemis), idd=1,7)
@@ -639,13 +643,14 @@ contains
                   (tmp24(ihh),ihh=1,24)
              end if ! JUNE 2023
              maxidx = max(insec,maxidx)
+             dbgccsec = dbgTF .and. iemis==1 .and. insec==dbgIsec .and. emepICC==dbgICCemep
 
              if(insec>N_TFAC) then
                if ( dbgTF) write(*,*) dtxt//'Warning insec-high', insec, secname
                cycle
              end if
              indexCC =find_index(emepICC,Country(:)%icode)
-             !if( dbgTF .and. emepICC==dbgICemep  ) write(*,'(a,4i4,2f10.4,a)') &
+             !if( dbgTF .and. emepICC==dbgICCemep  ) write(*,'(a,4i4,2f10.4,a)') &
              !  dtxt//"HOURLY SPECIAL=> ", indexCC , emepICC,idd, insec,&
              !   tmp24(1), tmp24(13), " "//trim(timeFacs%Hourly)
              
@@ -666,19 +671,22 @@ contains
                       fac_ehh24x7(iemis,insec,ihh,idd2,:) = tmp24(ihh)
                    end if
                 end do
+                if( dbgccsec ) write(*,'(a,2i4,2f10.4)') dtxt//'HH0:', idd2, insec, tmp24(1), tmp24(13)
              end do
              if(emepICC/=0)then
                 sumfac = sum(fac_ehh24x7(iemis,insec,:,1,indexCC))/24.0
                 do idd2 = 1, 7
                    fac_ehh24x7(iemis,insec,:,idd2,indexCC) = fac_ehh24x7(iemis,insec,:,idd2,indexCC) / sumfac
                 end do
+                if( dbgccsec ) write(*,'(a,2i4,2f10.4)') dtxt//'HH1:', insec, emepICC, sumfac, fac_ehh24x7(iemis,insec,dbgIsec,idd2,indexCC)
              else
                 sumfac = sum(fac_ehh24x7(iemis,insec,:,1,1))/24.0
                 do idd2 = 1, 7
                    fac_ehh24x7(iemis,insec,:,idd2,:) = fac_ehh24x7(iemis,insec,:,idd2,:) / sumfac
                 end do
+                if( dbgccsec ) write(*,'(a,2i4,2f10.4)') dtxt//'HH2:', insec, emepICC, sumfac, fac_ehh24x7(iemis,insec,dbgIsec,idd2,indexCC)
              end if
-          else
+          else  
              do ihh=1,24
                 if(emepICC/=0)then
                    fac_ehh24x7(iemis,insec,ihh,idd,indexCC) = tmp24(ihh)
@@ -693,16 +701,18 @@ contains
                 sumfac = sum(fac_ehh24x7(iemis,insec,:,idd,1))/24.0
                 fac_ehh24x7(iemis,insec,:,idd,:) = fac_ehh24x7(iemis,insec,:,idd,:) / sumfac
              end if
+             if( dbgccsec ) write(*,'(a,3i4,2f10.4)') dtxt//'HH3:', insec, & !CAMS_TEMPO uses this
+                     emepICC, idd, sumfac, fac_ehh24x7(iemis,insec,dbgIsec,idd,indexCC)
           end if
           
           ! Use sumfac for mean, and normalise within each day/sector
           if(emepICC==0)indexCC =1
           !XCAMEO if(dbgTF .and. MasterProc) write(*,"(a,3i3,3f12.5)") &
           ! Just Fri-Sun facs now for dbg settings
-          if( dbgTF.and. indexCC == dbgICemep.and.iemis==dbgIemis.and.idd>4 ) &
-            write(*,"(a,3i3,4f8.3)") &
+          if( dbgTF.and. emepICC == dbgICCemep.and.iemis==dbgIemis.and.idd>4 ) &
+            write(*,"(a50,3i3,4f8.4)") &
             dtxt//'HOURLY-FACS mean hr1 min max,'// trim(EMIS_FILE(iemis))// &
-             ':'// trim(SECTORS(insec)%longname), &
+             ':'// SECTORS(insec)%longname, &
              insec, idd, emepICC, sumfac, fac_ehh24x7(iemis,insec,1,idd,indexCC),&
              minval(fac_ehh24x7(iemis,insec,:,idd,indexCC)), &
              maxval(fac_ehh24x7(iemis,insec,:,idd,indexCC))
@@ -733,13 +743,14 @@ contains
 !
 
     if (dbgTF ) then 
-       write(unit=6,fmt=*) dtxt//"End of subroutine timefactors"
+       write(unit=6,fmt=*) dtxt//"Ending subroutine timefactors"
            !fac_emm(indexCC,1:12,insec,iemis)=buff(1:12)
            !fac_edd(indexCC,1:7,insec,iemis)=buff(1:7)
            !fac_ehh24x7(iemis,insec,ihh,idd2,:)
        indexCC=dbgICindex; insec=dbgIsec;  iemis=dbgIemis
-       write(*,*) dtxt//" test of time factors, dbgICemep: "//&
-             trim(EMIS_FILE(iemis))//' EmepIC:'//trim(Country(dbgICemep)%code)
+       write(*,*) dtxt//" test of time factors, dbg: "//&
+             trim(EMIS_FILE(iemis))//' EmepIC:'//trim(Country(dbgICindex)%code),&
+             ':'//trim(SECTORS(insec)%longname)
        if ( timeFacs%Day_of_Year ) then
           do mm = 1, 12
           write(*, "(a,i2,i6,f8.3,3f8.4)") dtxt//'-doy', mm, nydays, sumfac,  &
@@ -748,7 +759,7 @@ contains
           end do ! mm
        else
           do mm = 1, 12
-             write(*, "(a,i2,i6,f8.3,9f8.4)") dtxt//'-md', mm, nydays, sumfac,  &
+             write(*, "(a,i3,i6,f8.3,9f8.4)") dtxt//'-md', mm, nydays, sumfac,  &
               fac_emm(indexCC,mm,insec,iemis), &
               fac_edd(indexCC,1,insec,iemis), fac_edd(indexCC,7,insec,iemis), &
               sum(fac_ehh24x7(iemis,insec,:,1,indexCC))/24.0, &
@@ -756,7 +767,7 @@ contains
           end do ! mm
           mm=1
           do insec = 1, N_TFAC ! NSECTORS
-            write(*,'(a,i3,f10.4,a)') 'dbgIsec:', insec, &
+            write(*,'(a,i3,f10.4,a)') dtxt//'-Jan:', insec, &
                fac_emm(indexCC,mm,insec,iemis), ' '//trim(SECTORS(insec)%longname)
             if(trim(SECTORS(insec)%longname)=='GNFR_F') dbgIsecRT=insec
           end do
@@ -770,19 +781,18 @@ contains
                     !fac_ehh24x7(iemis,insec,ihh,idd2,indexCC)
          vmin = minval(fac_ehh24x7(iemis,dbgIsecRT,:,:,indexCC))
 
-         if (vmin>0.999) continue ! Skip 1.0000 defaults
+         if (vmin>0.999) cycle ! Skip 1.0000 defaults
 
          vmax  = maxval(fac_ehh24x7(iemis,dbgIsecRT,:,:,indexCC))
          vmean = sum(fac_ehh24x7(iemis,dbgIsecRT,:,:,indexCC))/(7*24)
-         write(*,'(a20,2i4,3f12.4)') trim(dtxt//'RTsrch:'//Country(indexCC)%code),&
+         write(*,'(a26,2i4,3f12.4)') trims(dtxt//'RTsrch:'//&
+            Country(indexCC)%code//':'//EMIS_FILE(iemis)), &
           indexCC, emepICC, vmin, vmax, vmean
-         if ( vmin < 0.0003 ) then
-           do ihh=1,24
-             vmin= minval(fac_ehh24x7(iemis,dbgIsecRT,ihh,:,indexCC))
-             if (vmin<0.0003) write(*,'(a20,2i4,7f12.4)') &
-              trim(dtxt//'HRTsrch:'//Country(indexCC)%code),&
-               indexCC, emepICC, fac_ehh24x7(iemis,dbgIsecRT,ihh,:,indexCC)
-           end do
+         if( vmean < 0.9999 ) then
+            dbgmsg=trims(dtxt//"VMEAN-LOW:"// EMIS_FILE(iemis)//":"//&
+                    Country(indexCC)%code//":"//SECTORS(insec)%longname
+           print *, 'ERROR VMEAN:', vmean, trim(dbgmsg)
+           call StopAll(dbgmsg)
          end if
        end do
     end if ! dbgTF
