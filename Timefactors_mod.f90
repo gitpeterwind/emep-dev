@@ -175,7 +175,7 @@
   ! EMEP country nums doesn't always match grid-based country index. Be
   ! explicit
   integer, parameter, private :: &
-      dbgICCemep  = 15   & ! Use AT for now. 
+      dbgICCemep  = 2   & ! Use AT for now. 
      ,dbgIsec    = 1   & ! Use GNFR_A for now. 
      ,dbgIemis   = 1     ! 'sox' usually
   integer, save, private  :: &
@@ -411,7 +411,7 @@ contains
          !if( dbgTF.and.insec==TFAC_IDX_DOM.and.iemis==1  ) &
          if( dbgccsec ) then
             dbgmsg=trims(dtxt//"emm:"// EMIS_FILE(iemis)//":"//&
-                    Country(indexCC)%code//":"//SECTORS(insec)%longname
+                    Country(indexCC)%code//":"//SECTORS(insec)%longname)
             write(*,"(a,3i3,f7.3,a,12f6.2)")  dbgmsg, &
               emepICC,insec,iemis, fac_min(indexCC,insec,iemis),&
                " : ",  ( fac_emm(indexCC,mm,insec,iemis), mm=1,12)
@@ -790,7 +790,7 @@ contains
           indexCC, emepICC, vmin, vmax, vmean
          if( vmean < 0.9999 ) then
             dbgmsg=trims(dtxt//"VMEAN-LOW:"// EMIS_FILE(iemis)//":"//&
-                    Country(indexCC)%code//":"//SECTORS(insec)%longname
+                    Country(indexCC)%code//":"//SECTORS(insec)%longname)
            print *, 'ERROR VMEAN:', vmean, trim(dbgmsg)
            call StopAll(dbgmsg)
          end if
