@@ -16,13 +16,11 @@ use Config_module,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, step_main, &
     KCHEMTOP, &
     NSECTORS_ADD_MAX, SECTORS_ADD, &
-    !F24 TimeFacBasis, &
     timeFacs, &  ! e.g. timeFacs%Monthly == 'GRIDDED') &
     emis_inputlist, &
     EmisDir,      &    ! template for emission path
     DataDir,      &    ! template for path
     EMIS_OUT,      &    ! output emissions in ASCII or not
-!    MONTHLY_GRIDEMIS, &  !NML
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
@@ -368,7 +366,7 @@ contains
           Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse !cannot be set in the netcdf file
 
           isource = Emis_source(ii)%ix_in
-          if(dbg) write(*,'(a,4i4,1x,a20)') 'writing config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
+          if(dbg) write(*,'(a,4i4,1x,a20)') dtxt//'writing config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
           if(isource>0)then
              !source defined in config file
              if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii

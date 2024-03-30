@@ -47,7 +47,7 @@ use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, &
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type, &
                              EmisFile_id_type, Emis_sourceFile_id_type, NSOURCESMAX
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
-use SmallUtils_mod,    only: wordsplit, find_index, key2str
+use SmallUtils_mod,    only: wordsplit, find_index, key2str, basedir, basename
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
                              nf90_global,nf90_get_var,nf90_get_att,&
@@ -256,7 +256,7 @@ contains
             .or. Emis_source%units == 'g h-1' .or. Emis_source%units == 'mg h-1') then
           !per gridcell unit (can be per time unit or not)
           if(me==0 .and. DEBUG%EMISSIONS)&
-               write(*,*)'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
+               write(*,*)dtxt//'reading emis '//trim(Emis_source%varname)//' from '//trim(fname)//', proj ',trim(EmisFile%projection),', res ',EmisFile%grid_resolution
           if (EmisFile%nsectors == 1) then
              !default read one sector at a time
              call ReadField_CDF(fname,Emis_source%varname,Emis_XD,record,&
@@ -564,7 +564,7 @@ contains
    !-------------
     associate ( debugm0 => ( DEBUG%GETEMIS .and. MasterProc ) )
    !-------------
-    if ( debugm0 ) write(*,*) dtxt//'Start File:',trim(fname)
+    if ( debugm0 ) write(*,*) dtxt//'Start File:'//trim(fname)
 
     if(EmisFile_in%projection /= 'native')then
        default_projection = 'Unknown'
@@ -592,6 +592,7 @@ contains
     if(status/=nf90_noerr)status = nf90_get_att(ncFileID,nf90_global,"SECTORS_NAME", name) !SNAPsectors or GNFRsectors
     if(status==nf90_noerr)EmisFile%sectorsName = trim(name)
 
+
 !default values for sources
 !species cannot be set global attribute, because it is used to recognize valid variables (sources)
 !    status = nf90_get_att(ncFileID,nf90_global,"species",cdfspecies)
@@ -605,12 +606,21 @@ contains
     status = nf90_get_att(ncFileID,nf90_global,"countrycode", i)
     if(status==nf90_noerr)EmisFile%countrycode = i
 
+    if ( debugm0 )  then
+       write(*,*) dtxt//'CAMEO tests:'//trim(basename(fname))
+       write(*,*) dtxt//'proj:'//trim(EmisFile%projection)
+       write(*,*) dtxt//'sectorsName:'//trim(EmisFile%sectorsName)
+       !write(*,*) dtxt//'country_ISO:'//trim(EmisFile%country_ISO)
+    end if
+
     !init accounting of requested sources
     do i = 1,NEmis_sourcesMAX
        source_found(i)=0
     end do
     do i = 1,min(size(EmisFile_in%source), NEmis_sourcesMAX)
+       !if (i==1) write(*,*) dtxt//'SRC1:',EmisFile_in%source(i)
        if(EmisFile_in%source(i)%varname /= 'NOTSET')source_found(i)=1
+       if ( debugm0 .and. source_found(i)>0 ) write(*,*)dtxt//'source:'//trim(EmisFile_in%source(i)%varname),i, source_found(i)
     end do
 
     status = nf90_inq_dimid(ncFileID,"sector"  ,secdimID)
@@ -619,6 +629,7 @@ contains
        if (status==nf90_noerr) then
           !the file stores all sectors in the same variables
           EmisFile%nsectors = file_nsectors
+          if ( debugm0 ) write(*,*)dtxt//'nsectors:', EmisFile%nsectors  !CAMEO TRAP?
        end if
     end if
   
@@ -660,12 +671,13 @@ contains
              species_found = .true.
              call CheckStop(NEmis_sources+nn > NEmis_sourcesMAX,"lf: too many sources. Increase NEmis_sourcesMAX")
              Emis_source(NEmis_sources+nn)%ix_in=i
-             if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname)
+             if ( debugm0 ) write(*,*) dtxt//'var add:',trim(cdfvarname), species_found
           endif
        enddo
        if (EmisFile%nsectors >1) then
           call CheckStop(nn>0,"nn>0 and more than 1 sector per variable not implemented") 
           nn = EmisFile%nsectors !all sectors in same variable. One source will be defined per sector
+          if ( debugm0 ) write(*,*) dtxt//'nsectorsTrap?:',nn
        end if
 
        if(species_found .and. ndims>=2 )then
@@ -684,11 +696,14 @@ contains
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
              Emis_source(NEmis_sources)%sector = EmisFile%sector !default
+         if ( debugm0 ) write(*,*) dtxt//'CAMEO sec A:', NEmis_sources, EmisFile%sector
              if (EmisFile%nsectors > 1) then
                 Emis_source(NEmis_sources)%sector = i
+                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec B:', NEmis_sources, i
              else
                 status = nf90_get_att(ncFileID,varid,"sector", sector)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
+                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec C:', NEmis_sources, sector ! Here, K-> 11, Cf -> 26
              end if
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
@@ -1437,7 +1452,7 @@ end if
   integer  :: iland1, iland2    ! loop variables over countries
   logical  :: defaults          ! Set to true for defaults, false for specials
   logical  :: debugm            ! debug flag on master proc
-  character(len=*), parameter :: dtxt = 'EmisGet:'
+  character(len=*), parameter :: dtxt = 'EmisGetSplt:'
   integer  :: itot_RDF, nfexist
   logical :: fexist
 !-----------------------------------------------
@@ -1451,11 +1466,13 @@ end if
 
   !check that the required files exist
   SplitDefaultFile  = key2str(SplitDefaultFile,'YYYY',startdate(1))
+  if ( debugm ) write(*,*) trim(dtxt//'SLIT defdir:'//basedir(SplitDefaultFile))
   do ie = 1, NEMIS_FILE
      fname = key2str(SplitDefaultFile,'POLL', EMIS_FILE(ie) )
      !Defaults must exist for all pollutants
      inquire(file=fname,exist=fexist)
      call CheckStop(.not. fexist ,trim(fname)//" does not exist")
+     if ( debugm ) write(*,*) trim(dtxt//'SLIT deffile:'//basename(SplitDefaultFile))
   end do
   
   ! for specials check that at if YYYY is used in the names,
@@ -1467,6 +1484,7 @@ end if
         fname = key2str(SplitSpecialsFile,'POLL', EMIS_FILE(ie) )
         inquire(file=fname,exist=fexist)     
         if (fexist) nfexist = nfexist + 1
+        if (fexist .and. debugm) write(*,*) dtxt//'SPLIT specfile:'//basename(fname), ie
      end do
      call CheckStop(MasterProc .and. nfexist == 0, &
           "none of the "//trim(SplitSpecialsFile)//" does exist")
@@ -1503,7 +1521,7 @@ end if
        end if
 
 
-       if (debugm) write(*,*) dtxt//" split defaults=", defaults,fname
+       if (debugm) write(*,*) dtxt//" split defaults=", defaults,basename(fname)
 
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
@@ -1521,11 +1539,12 @@ end if
         nsplit = nsplit - 2
 
         if ( debugm ) then
-          write(unit=6,fmt=*) "Will try to split ", nsplit,&
-                " times, Emis_MolWt  = ", Emis_MolWt(ie)
-          write(unit=6,fmt="(25a)") "Splitting ", trim(EMIS_FILE(ie)), &
+          write(unit=6,fmt='(a,i4,a,i4,a)') dtxt//"Will try to split ", nsplit,&
+                " times, Emis_MolWt  = ", Emis_MolWt(ie), ' using '//basename(fname)
+          !write(unit=6,fmt="(25a)") dtxt//"Splitting ", trim(EMIS_FILE(ie)), &
+          write(unit=6,fmt="(a,/,(5a10))") dtxt//"Splitting "// trim(EMIS_FILE(ie))// &
             " emissions into ",&
-               (trim(Headers(i+2)),' ',i=1,nsplit),'using ',trim(fname)
+               (trim(Headers(i+2)),' ',i=1,nsplit)
         end if
 
         do i = 1, nsplit
@@ -1535,7 +1554,7 @@ end if
 
            call CountEmisSpecs( intext(idef,i) )
 
-           if (debugm) write(*,"(a,2i3,1x,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
+           !if (debugm) write(*,"(a,2i3,1x,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
 
            itot = find_index(intext(idef,i), species(:)%name, any_case=.true. )
 
@@ -1551,7 +1570,7 @@ end if
                    trim( intext(idef,i) )
                  print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
                    " emissions into ",&
-                    (trim(Headers(n+2)),' ',n=1,nsplit),'using ',trim(fname)
+                    (trim(Headers(n+2)),' ',n=1,nsplit),' using ',trim(fname)
                  print "(a, i3,30a10)", "EmisSplit FAILED headers ", &
                      me, (intext(idef,n),n=1,nsplit)
                  call StopAll( &
@@ -1571,15 +1590,15 @@ end if
                end if
              end if ! defaults
              if (debugm .and. itot>0 )  then
-                write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
+                write(6,"(a,i2,i4,a,i4,1x,a15,a,f6.1)") &
                 "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
-                  trim(species(itot)%name ), " MW:", &
+                  adjustl(species(itot)%name ), " MW:", &
                     1.0/tmp_emis_masscorr(iqrc)
              end if
            end if
        end do
-       if (debugm ) write(6,"(a,i4,a,i4)") "Compare ns: used=", &
-            emis_nsplit(ie), "including any UNREAC:", nsplit
+       if (debugm ) write(6,"(a,i4,a,i4)") dtxt//"Compare ns: used=", &
+            emis_nsplit(ie), " including any UNREAC:", nsplit
 
         n = 0
 
@@ -1616,11 +1635,11 @@ end if
           end if
 
            n = n + 1
-           if (debugm ) then
+           !if (debugm ) then
                !write(6,"(a,i4,a,3i3,50f7.2)") dtxt//"Splits: ",  n, trim(fname),&
-               write(6,"(a,i4,3i3,99f7.2)") dtxt//"Splits: ",  n, & ! trim(fname),&
-                  iland, isec, nsplit, tmp(1:nsplit)
-           end if
+               !write(6,"(a,i4,3i3,99f7.2)") dtxt//"Splits: ",  n, & ! trim(fname),&
+               !   iland, isec, nsplit, tmp(1:nsplit)
+           !end if
 
            !/... some checks:
            sumtmp = sum( tmp(1:nsplit) )
@@ -1672,9 +1691,9 @@ end if
                 !CHANGED to AT:if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
                 if ( debugm .and. iland == 2 .and. tmp(i)> 1.0e-6 ) then
                   itot = tmp_iqrc2itot(iqrc)
-                  write(*,"(a35,4i3,i4,a,f10.4)") &
+                  write(*,"(a35,4i3,i4,a15,f10.4)") &
                     dtxt//" splitdef " //trim(Country(iland)%name), &
-                     isec, ie, i,  iqrc, itot, trim(species(itot)%name), &
+                     isec, ie, i,  iqrc, itot, ' '//adjustl(species(itot)%name), &
                        tmp_emisfrac(iqrc,isec,iland)
                      
                 end if
