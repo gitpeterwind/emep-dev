@@ -1589,12 +1589,12 @@ end if
                    tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
                end if
              end if ! defaults
-             if (debugm .and. itot>0 )  then
-                write(6,"(a,i2,i4,a,i4,1x,a15,a,f6.1)") &
-                "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
-                  adjustl(species(itot)%name ), " MW:", &
-                    1.0/tmp_emis_masscorr(iqrc)
-             end if
+             !if (debugm .and. itot>0 )  then ! info given later
+             !   write(6,"(a,i2,i4,a,i4,1x,a15,a,f6.1)") &
+             !   "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
+             !     adjustl(species(itot)%name ), " MW:", &
+             !       1.0/tmp_emis_masscorr(iqrc)
+             !end if
            end if
        end do
        if (debugm ) write(6,"(a,i4,a,i4)") dtxt//"Compare ns: used=", &
@@ -1691,10 +1691,10 @@ end if
                 !CHANGED to AT:if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
                 if ( debugm .and. iland == 2 .and. tmp(i)> 1.0e-6 ) then
                   itot = tmp_iqrc2itot(iqrc)
-                  write(*,"(a35,4i3,i4,a15,f10.4)") &
+                  write(*,"(a35,4i3,i4,a15,f7.1,f10.4)") &
                     dtxt//" splitdef " //trim(Country(iland)%name), &
                      isec, ie, i,  iqrc, itot, ' '//adjustl(species(itot)%name), &
-                       tmp_emisfrac(iqrc,isec,iland)
+                     1.0/tmp_emis_masscorr(iqrc), tmp_emisfrac(iqrc,isec,iland)
                      
                 end if
              end do ! i
