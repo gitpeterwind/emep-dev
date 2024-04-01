@@ -103,14 +103,15 @@ use NetCDF_mod,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfra
                              GetCDF_modelgrid,PrintCDF,ReadSectorName,check,&
                              create_country_emission_file, output_country_emissions
 use netcdf
-use OwnDataTypes_mod,  only: TXTLEN_FILE, TXTLEN_NAME,Emis_id_type, EmisFile_id_type, Emis_sourceFile_id_type
+use OwnDataTypes_mod,  only: TXTLEN_FILE, TXTLEN_NAME,Emis_id_type, &
+                             EmisFile_id_type, Emis_sourceFile_id_type, print_Sector_type
 use Par_mod,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
 use PhysicalConstants_mod,only: GRAV, AVOG, ATWAIR
 use PointSource_mod,      only: readstacks !MKPS
 use ZchemData_mod,only: rcemis   ! ESX
-use SmallUtils_mod,    only: find_index, key2str, trims
+use SmallUtils_mod,    only: find_index, key2str, trims, basename
 use TimeDate_mod,      only: nydays, nmdays, date, current_date,&! No. days per
                             tdif_secs,timestamp,make_timestamp,daynumber,day_of_week ! year, date-type, weekday
 use TimeDate_ExtraUtil_mod,only :nctime2date, date2string, to_idate,date_is_reached
@@ -469,7 +470,8 @@ contains
                 if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = isec_idx
                 if (found > 0) exit; ! we want the first entry
              end do
-             if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//': sectorsName not recognized! '//trim(trim(EmisFiles(i)%sectorsName)))
+             if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//&
+              ': sectorsName not recognized! '//trim(EmisFiles(i)%sectorsName))
              Emis_source(ii)%sector_idx = found -1 + Emis_source(ii)%sector !TODO: make more robust (use names, not indices)
           end if
 
@@ -525,6 +527,10 @@ contains
        allocate(Emis_source_3D(LIMAX,LJMAX,max_levels3D,Nemis_3Dsources))
     endif
 
+    if(MasterProc) then
+      write(*,*)'CAMEOINITFIN', NSECTORS
+      call print_Sector_type(SECTORS,'End'//dtxt) ! CAMEO ok to here
+    end if
    end subroutine Init_Emissions
 
  subroutine Init_masks()
@@ -1580,6 +1586,7 @@ end subroutine EmisUpdate
     do iemislist = 1, size( emis_inputlist(:)%name )
        fractionformat = ( emis_inputlist(iemislist)%format=='fractions' )
        fname=emis_inputlist(iemislist)%name
+       if(MasterProc) write(*,*)'CAMEO-TMP-emislist?', iemislist, basename(fname)
        if ( fname == "NOTSET" ) cycle
        if (emis_inputlist(iemislist)%periodicity /= 'once' ) cycle
 38     FORMAT(A,I4,A)
@@ -2147,6 +2154,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     end if
 
     ! Process each grid:
+    if(DEBUG%EMISTIMEFACS.and.debug_proc)write(*,*)'CAMEOiccloop0', maxval(nlandcode)
     do j = 1,ljmax
       do i = 1,limax
         ncc = nlandcode(i,j)            ! No. of countries in grid
@@ -2160,6 +2168,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         ! First loop over sector emissions
         !*************************************************
         tmpemis(:)=0.
+        if(debug_tfac)write(*,'(a,3i5,2f8.3)')'CAMEOiccloop', ncc,i_fdom(i),j_fdom(j), glon(i,j), glat(i,j)
         do icc = 1, ncc
           !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
@@ -2240,6 +2249,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
                    SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
 
+              if (debug_tfac ) write(*,*)'CAMEOTMP START', iem, split_idx, iland
+
               do f = 1,emis_nsplit(iem)
                 itot = iemsplit2itot(f, iem)
                 iqrc = itot2iqrc(itot)
@@ -2247,7 +2258,11 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 ! Add up emissions in ktonne
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
+                if (debug_tfac ) then
+                  write(*,*)'CAMEOTMP', iem, f, itot, iqrc, emisfrac(iqrc,split_idx,iland), tmpemis(iqrc)
+                endif
               end do ! f
+              if (debug_tfac ) write(*,*)'CAMEOTMP END xxxxxxxxxxxxxxxxx'
 
               if(USES%LocalFractions) call save_lf_emis(s,i,j,iem,isec,iland)
 
@@ -2531,7 +2546,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                      IS_DOM(isec_idx) .and. Gridded_SNAP2_Factors .and. &
                      (Emis_source(n)%periodicity == 'yearly' .or. &
                       Emis_source(n)%periodicity == 'monthly')) then
-                   if(dbgPoll) write(*,*) dtxt//'efacs HERE-PreHDD', tfac,&
+                   if(dbgPoll) write(*,*) dtxt//'efacs HERE-PreHDD', tfac,& !CAMEO Gridded_SNAP2????
                            isec,daynumber
                    oldtfac = tfac
                    ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise

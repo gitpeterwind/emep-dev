@@ -47,7 +47,7 @@ use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, &
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type, &
                              EmisFile_id_type, Emis_sourceFile_id_type, NSOURCESMAX
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
-use SmallUtils_mod,    only: wordsplit, find_index, key2str, basedir, basename
+use SmallUtils_mod,    only: wordsplit, find_index, key2str, basedir, basename, to_upper
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE,&
                              nf90_global,nf90_get_var,nf90_get_att,&
@@ -696,14 +696,13 @@ contains
              status = nf90_get_att(ncFileID,varid,"units", name)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%units = trim(name)
              Emis_source(NEmis_sources)%sector = EmisFile%sector !default
-         if ( debugm0 ) write(*,*) dtxt//'CAMEO sec A:', NEmis_sources, EmisFile%sector
              if (EmisFile%nsectors > 1) then
                 Emis_source(NEmis_sources)%sector = i
-                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec B:', NEmis_sources, i
+                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec b:', NEmis_sources, i
              else
                 status = nf90_get_att(ncFileID,varid,"sector", sector)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
-                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec C:', NEmis_sources, sector ! Here, K-> 11, Cf -> 26
+                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec c:', NEmis_sources, sector ! Here, K-> 11, Cf -> 26
              end if
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
@@ -745,7 +744,9 @@ contains
                          if(EmisFile_in%country_ISO_excl(ic)==trim(Emis_source(NEmis_sources)%country_ISO))then
                             !reset this source
                             Emis_source(NEmis_sources)%varname = 'NOTSET'
-                            if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '//trim(cdfvarname)//' country '//trim(Emis_source(NEmis_sources)%country_ISO)
+                            if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '&
+                               //trim(cdfvarname)//' country '//&
+                                 trim(Emis_source(NEmis_sources)%country_ISO)
                             NEmis_sources = NEmis_sources - 1
                             exit
                          end if
@@ -768,7 +769,9 @@ contains
                    if (found == 0) then
                       !reset this source
                       Emis_source(NEmis_sources)%varname = 'NOTSET'
-                      if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '//trim(cdfvarname)//' country '//trim(Emis_source(NEmis_sources)%country_ISO)
+                      if(me==0 .and. DEBUG%GETEMIS)write(*,*)'excluding '&
+                         //trim(cdfvarname)//' country '//&
+                           trim(Emis_source(NEmis_sources)%country_ISO)
                       NEmis_sources = NEmis_sources - 1
                    end if
                 end if                
@@ -779,7 +782,8 @@ contains
     enddo
     do i = 1,min(size(EmisFile_in%source), NEmis_sourcesMAX)
        if(MasterProc .and. source_found(i)==1)then
-          write(*,*)'WARNING: did not find any variable with name '//trim(EmisFile_in%source(i)%varname)//' in '//trim(fname)
+          write(*,*)dtxt//'WARNING: did not find any variable with name '//&
+                  trim(EmisFile_in%source(i)%varname)//' in '//trim(fname)
        endif
     end do
     if(nemis_old /= NEmis_sources)then
@@ -799,7 +803,7 @@ contains
     endif
 
     call check(nf90_close(ncFileID))
-    if ( debugm0 ) write(*,*) dtxt//'Finished File',trim(fname)
+    if ( debugm0 ) write(*,*) dtxt//'Finished File',basename(fname)
    !-------------
     end associate
    !-------------
@@ -1541,14 +1545,13 @@ end if
         if ( debugm ) then
           write(unit=6,fmt='(a,i4,a,i4,a)') dtxt//"Will try to split ", nsplit,&
                 " times, Emis_MolWt  = ", Emis_MolWt(ie), ' using '//basename(fname)
-          !write(unit=6,fmt="(25a)") dtxt//"Splitting ", trim(EMIS_FILE(ie)), &
-          write(unit=6,fmt="(a,/,(5a10))") dtxt//"Splitting "// trim(EMIS_FILE(ie))// &
-            " emissions into ",&
-               (trim(Headers(i+2)),' ',i=1,nsplit)
+          write(*,*) dtxt//"Splitting "// trim(EMIS_FILE(ie))//" emissions into:"
+          write(*,"((5(1x,a15)))") (trim(Headers(i+2)),i=1,nsplit)
         end if
 
         do i = 1, nsplit
-           intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
+           !CAMEOBUG intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
+           intext(idef,i) = to_upper(Headers(i+2))   ! 1st 2 columns are cc, isec:
 
              ! Match spec against EMIS_SPECS:
 
@@ -1557,6 +1560,15 @@ end if
            !if (debugm) write(*,"(a,2i3,1x,a)") "SPLITINFO iem ", i,idef, trim(intext(idef,i))
 
            itot = find_index(intext(idef,i), species(:)%name, any_case=.true. )
+
+
+         !  122=POA_f_Bb
+           if (debugm .and. itot==122 ) then
+             !FAKE CountEmisSpecs
+              nn = find_index(intext(idef,i), EMIS_SPECS)
+              write(*,"(a,2i3,1x,a,2i4,L2)") "PMSPLITINFO iem ", i,idef, trim(intext(idef,i)), itot, nn, EmisSpecFound(nn)
+              !write(*,*) 'PMSPLITEms:', EMIS_SPECS
+           end if
 
            if ( defaults ) then
              if ( Headers(i+2) /= "UNREAC" ) then
@@ -1718,19 +1730,27 @@ end if
   ! By now we should have found all the species required for the
   ! chemical scheme:
 
-  do ie = 1, NEMIS_SPECS
-    if ( DEBUG%GETEMIS .and. MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
-       call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if bio, nat, or fire!! " // trim(EMIS_SPECS(ie)) )
-       write(*,*) "WARNING: EmisSpec - emissions of this compound were specified",&
-&               " in the CM_reactions files, but not found in the ",&
-&               " emissplit.defaults files. Make sure that the sets of files",&
-&               " are consistent."
-       ! Emissions can now be found in ForestFire module. No need to
-       ! stop
-       ! call CheckStop ( any( EmisSpecFound .eqv. .false.), &
+  if ( DEBUG%GETEMIS .and. MasterProc ) then
+    i=1
+    do ie = 1, NEMIS_SPECS
+      if ( EmisSpecFound(ie) .eqv. .false. ) then
+         if(i==1) then
+         call PrintLog(dtxt//"WARNING: EmisSpec not found in snapemis. Ok if bio, nat, or fire!! ") 
+         call PrintLog(dtxt//"WARNING: EmisSpec - emissions of these compounds were specified"//&
+               " in the CM_reactions files, but not found in the "//&
+               " emissplit.defaults files. Make sure that the sets of files"//&
+               " are consistent.")
+         i=i+1
+       end if
+       call PrintLog( " query:  " // trim(EMIS_SPECS(ie)) )
+
+       ! Emissions can now be found in ForestFire module. No need to stop
+       !call CheckStop ( any( EmisSpecFound .eqv. .false.), &
        !    "EmisSpecFound Error" )
-    end if
-  end do
+      end if 
+    end do ! ie
+    call PrintLog(dtxt//'End EmisSpec Check')
+  end if
 
   ! Now, we know how many split species we have, nrcsplit, so we allocate
   !  and fill emisfrac:

@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 Apr  2024, Dave
+
+Emissions_mod, EmisGet_mod: adding more debug output (some tmp)
+OwnDataTypes_mod: added print_Sector_type
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 mar 2024, Dave
 
 Emissions_mod, EmisGet_mod: adding more debug output
