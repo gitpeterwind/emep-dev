@@ -39,7 +39,7 @@ program emep_Main
   use Debug_module,      only: DEBUG   ! -> DEBUG%MAINCODE
   use Derived_mod,       only: Init_Derived, wanted_iou
   use EcoSystem_mod,     only: Init_EcoSystems
-  use Emissions_mod,     only: Emissions, newmonth, Init_masks, Init_emissions,&
+  use Emissions_mod,     only: Emissions, newmonth, Init_masks, Init_Emissions,&
                                EmisUpdate
   use ForestFire_mod,    only: Fire_Emis
   use DryDep_mod,        only: init_DryDep ! sets up dry and wet dep
@@ -195,7 +195,7 @@ program emep_Main
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
   call Init_masks()
-  call Init_emissions !new format
+  call Init_Emissions !new format
   call Emissions(yyyy)! should be set for the enddate year, not start?
 
   call Add_2timing(3,tim_after,tim_before,"Emissions read in")
