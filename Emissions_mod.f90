@@ -349,86 +349,99 @@ contains
     enddo
 
     !then overwrite the variable attributes
-    do i = 1, NEmisFile_sources !loop over files
+    EMFILE_ILOOP: do i = 1, NEmisFile_sources !loop over files
        n = EmisFilesMap(i)
        found = 0
-       do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
+       EMFILE_IILOOP: do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
           !set source default = file parameter if they are set. Defines default for sources in this file, can be also be redefined for individual sources
-          if(Emis_sourceFiles(n)%species /= Emisfile_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%species
-          if(Emis_sourceFiles(n)%units /= Emisfile_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%units
-          if(Emis_sourceFiles(n)%countrycode /= Emisfile_undefined%countrycode) Emis_source(ii)%countrycode = Emis_sourceFiles(n)%countrycode
-          if(Emis_sourceFiles(n)%country_ISO /= Emisfile_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%country_ISO
-          if(Emis_sourceFiles(n)%sector /= Emisfile_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%sector
-          Emis_source(ii)%periodicity = EmisFiles(i)%periodicity !NB: periodicity cannot be set individually for variables
-          Emis_source(ii)%timevalidity = EmisFiles(i)%timevalidity !NB: timevalidity  cannot be set individually for variables
-          Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%apply_femis !cannot be set in the netcdf file
-          Emis_source(ii)%include_in_local_fractions = Emis_sourceFiles(n)%include_in_local_fractions !cannot be set in the netcdf file
-          Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%mask_ID !cannot be set in the netcdf file
-          Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%mask_ID_reverse !cannot be set in the netcdf file
 
-          isource = Emis_source(ii)%ix_in
-          if(dbg) write(*,'(a,4i4,1x,a20)') dtxt//'writing config attribute on '//trim(Emis_source(ii)%varname),n, ii, isource, NEmis_sources
+          !DS CAMEO - use associate to make this bit more readable ;-)
+          associate ( emsrcfiln => Emis_sourceFiles(n), emsrcii => Emis_source(ii) )
+
+          if(emsrcfiln%species     /= Emisfile_undefined%species)     emsrcii%species = emsrcfiln%species
+          if(emsrcfiln%units       /= Emisfile_undefined%units)       emsrcii%units = emsrcfiln%units
+          if(emsrcfiln%countrycode /= Emisfile_undefined%countrycode) emsrcii%countrycode = emsrcfiln%countrycode
+          if(emsrcfiln%country_ISO /= Emisfile_undefined%country_ISO) emsrcii%country_ISO = emsrcfiln%country_ISO
+          if(emsrcfiln%sector      /= Emisfile_undefined%sector)      emsrcii%sector = emsrcfiln%sector
+         !NB: periodicity and timevalidity cannot be set individually for variables
+          emsrcii%periodicity       = EmisFiles(i)%periodicity
+          emsrcii%timevalidity      = EmisFiles(i)%timevalidity
+         ! Following cannot be set in netcdf file:
+          emsrcii%apply_femis       = emsrcfiln%apply_femis
+          emsrcii%include_in_local_fractions = emsrcfiln%include_in_local_fractions
+          emsrcii%mask_ID           = emsrcfiln%mask_ID
+          emsrcii%mask_ID_reverse   = emsrcfiln%mask_ID_reverse
+
+          isource = emsrcii%ix_in
+          if(dbg) write(*,'(a,4i4,1x,a20)') dtxt//'writing config attribute on '//trim(emsrcii%varname),n, ii, isource, NEmis_sources
           if(isource>0)then
              !source defined in config file
-             if(trim(Emis_sourceFiles(n)%source(isource)%varname)/=trim(Emis_source(ii)%varname))write(*,*)isource,'ERROR',trim(Emis_sourceFiles(n)%source(isource)%varname),' ',trim(Emis_source(ii)%varname),ii
+             if(trim(emsrcfiln%source(isource)%varname)/=trim(emsrcii%varname))write(*,*)isource,'ERROR',trim(emsrcfiln%source(isource)%varname),' ',trim(emsrcii%varname),ii
 
              found = 1
-             if(Emis_sourceFiles(n)%source(isource)%species /= Emis_id_undefined%species) Emis_source(ii)%species = Emis_sourceFiles(n)%source(isource)%species
-             if(Emis_sourceFiles(n)%source(isource)%units /= Emis_id_undefined%units) Emis_source(ii)%units = Emis_sourceFiles(n)%source(isource)%units
-             if(Emis_sourceFiles(n)%source(isource)%sector /= Emis_id_undefined%sector) Emis_source(ii)%sector = Emis_sourceFiles(n)%source(isource)%sector
-             if(Emis_sourceFiles(n)%source(isource)%factor /= Emis_id_undefined%factor) Emis_source(ii)%factor = Emis_sourceFiles(n)%source(isource)%factor
-             if(Emis_sourceFiles(n)%source(isource)%countrycode /= Emis_id_undefined%countrycode) Emis_source(ii)%countrycode = Emis_sourceFiles(n)%source(isource)%countrycode
-             if(Emis_sourceFiles(n)%source(isource)%country_ISO /= Emis_id_undefined%country_ISO) Emis_source(ii)%country_ISO = Emis_sourceFiles(n)%source(isource)%country_ISO
-             if(.not. Emis_sourceFiles(n)%source(isource)%include_in_local_fractions) Emis_source(ii)%include_in_local_fractions = .false.
-             if(.not. Emis_sourceFiles(n)%source(isource)%apply_femis) Emis_source(ii)%apply_femis = Emis_sourceFiles(n)%source(isource)%apply_femis
 
-             if(Emis_sourceFiles(n)%source(isource)%mask_ID /= Emis_id_undefined%mask_ID) Emis_source(ii)%mask_ID = Emis_sourceFiles(n)%source(isource)%mask_ID
-             if(Emis_sourceFiles(n)%source(isource)%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse) Emis_source(ii)%mask_ID_reverse = Emis_sourceFiles(n)%source(isource)%mask_ID_reverse
+             associate ( emi => Emis_sourceFiles(n)%source(isource) )
 
-             if(Emis_sourceFiles(n)%source(isource)%is3D .neqv. Emis_id_undefined%is3D) Emis_source(ii)%is3D = Emis_sourceFiles(n)%source(isource)%is3D
-             if(Emis_sourceFiles(n)%source(isource)%istart /= Emis_id_undefined%istart) Emis_source(ii)%istart = Emis_sourceFiles(n)%source(isource)%istart
-             if(Emis_sourceFiles(n)%source(isource)%jstart /= Emis_id_undefined%jstart) Emis_source(ii)%jstart = Emis_sourceFiles(n)%source(isource)%jstart
-             if(Emis_sourceFiles(n)%source(isource)%kstart /= Emis_id_undefined%kstart) Emis_source(ii)%kstart = Emis_sourceFiles(n)%source(isource)%kstart
-             if(Emis_sourceFiles(n)%source(isource)%kend /= Emis_id_undefined%kend) Emis_source(ii)%kend = Emis_sourceFiles(n)%source(isource)%kend
-             if(Emis_sourceFiles(n)%source(isource)%reversek .neqv. Emis_id_undefined%reversek) Emis_source(ii)%reversek = Emis_sourceFiles(n)%source(isource)%reversek
-             if(Emis_sourceFiles(n)%source(isource)%injection_k /= Emis_id_undefined%injection_k) Emis_source(ii)%injection_k = Emis_sourceFiles(n)%source(isource)%injection_k
+             if(emi%species /= Emis_id_undefined%species) emsrcii%species = emi%species
+             if(emi%units /= Emis_id_undefined%units) emsrcii%units = emi%units
+             if(emi%sector /= Emis_id_undefined%sector) emsrcii%sector = emi%sector
+             if(emi%factor /= Emis_id_undefined%factor) emsrcii%factor = emi%factor
+             if(emi%countrycode /= Emis_id_undefined%countrycode) emsrcii%countrycode = emi%countrycode
+             if(emi%country_ISO /= Emis_id_undefined%country_ISO) emsrcii%country_ISO = emi%country_ISO
+             if(.not. emi%include_in_local_fractions) emsrcii%include_in_local_fractions = .false.
+             if(.not. emi%apply_femis) emsrcii%apply_femis = emi%apply_femis
+
+             if(emi%mask_ID /= Emis_id_undefined%mask_ID) emsrcii%mask_ID = emi%mask_ID
+             if(emi%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse) emsrcii%mask_ID_reverse = emi%mask_ID_reverse
+
+             if(emi%is3D .neqv. Emis_id_undefined%is3D) emsrcii%is3D   = emi%is3D
+             if(emi%istart /= Emis_id_undefined%istart) emsrcii%istart = emi%istart
+             if(emi%jstart /= Emis_id_undefined%jstart) emsrcii%jstart = emi%jstart
+             if(emi%kstart /= Emis_id_undefined%kstart) emsrcii%kstart = emi%kstart
+             if(emi%kend /= Emis_id_undefined%kend)     emsrcii%kend   = emi%kend
+             if(emi%reversek .neqv. Emis_id_undefined%reversek)   emsrcii%reversek = emi%reversek
+             if(emi%injection_k /= Emis_id_undefined%injection_k) emsrcii%injection_k = emi%injection_k
+
+             end associate ! emsrcfilsrc 
+
           endif
-          ix = find_index(trim(Emis_source(ii)%country_ISO) ,Country(:)%code, first_only=.true.)
-          if(trim(Emis_source(ii)%country_ISO)=="N/A")then
-             ix = find_index(Emis_source(ii)%countrycode ,Country(:)%icode, first_only=.true.)
+          ix = find_index(trim(emsrcii%country_ISO) ,Country(:)%code, first_only=.true.)
+          if(trim(emsrcii%country_ISO)=="N/A")then
+             ix = find_index(emsrcii%countrycode ,Country(:)%icode, first_only=.true.)
           end if
           if(ix<0)then
-             if(me==0)write(*,*)dtxt//'WARNING: country '//trim(Emis_source(ii)%country_ISO)//' not defined for '//trim(Emis_source(ii)%varname)
+             if(me==0)write(*,*)dtxt//'WARNING: country '//&
+                     trim(emsrcii%country_ISO)//' not defined for '//trim(emsrcii%varname)
              ix = find_index("N/A" ,Country(:)%code, first_only=.true.)
           else
              if(dbg)write(*,*)dtxt//'country found '//trim(Country(ix)%code), ix, NEmis_sources
           endif
-          Emis_source(ii)%country_ix = ix
-          Emis_source(ii)%country_ISO = trim(Country(ix)%code)
+          emsrcii%country_ix = ix
+          emsrcii%country_ISO = trim(Country(ix)%code)
 
           !find if it is defined as an individual species
-          ix = find_index(Emis_source(ii)%species, species(:)%name )
-          if(ix<=0 .and. find_index(Emis_source(ii)%species, EMIS_FILE(:))<=0)then
+          ix = find_index(emsrcii%species, species(:)%name )
+          if(ix<=0 .and. find_index(emsrcii%species, EMIS_FILE(:))<=0)then
              !try case insensitive too
-             ix = find_index(Emis_source(ii)%species, species(:)%name, any_case=.true.)
+             ix = find_index(emsrcii%species, species(:)%name, any_case=.true.)
              if(ix>0)then
-                if(me==0)write(*,*)'WARNING: '//trim(Emis_source(ii)%species)//' not found, replacing with '//trim(species(ix)%name)
-                Emis_source(ii)%species = trim(species(ix)%name)
+                if(me==0)write(*,*)'WARNING: '//trim(emsrcii%species)//' not found, replacing with '//trim(species(ix)%name)
+                emsrcii%species = trim(species(ix)%name)
              end if
           end if
           if(ix>0)then
-             Emis_source(ii)%species_ix = ix
+             emsrcii%species_ix = ix
              if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
-                  trim(Emis_source(ii)%country_ISO), ix, ' '//trim(species(ix)%name)
-             if(Emis_source(ii)%include_in_local_fractions .and. USES%LocalFractions )then
-                if(me==0)write(*,*)"WARNING: local fractions will not include single species "//Emis_source(ii)%species
+                  trim(emsrcii%country_ISO), ix, ' '//trim(species(ix)%name)
+             if(emsrcii%include_in_local_fractions .and. USES%LocalFractions )then
+                if(me==0)write(*,*)"WARNING: local fractions will not include single species "//emsrcii%species
              endif
           else ! ix<=0
              if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
-              trim(Emis_source(ii)%country_ISO),ix,trim(Emis_source(ii)%species)
+              trim(emsrcii%country_ISO),ix,trim(emsrcii%species)
           endif
 
-          if (Emis_source(ii)%sector>0) then
+          if (emsrcii%sector>0) then
              !Add the relevant sector in SECTORS
              !look if it is already defined
              found = 0
@@ -470,28 +483,31 @@ contains
                 if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = isec_idx
                 if (found > 0) exit; ! we want the first entry
              end do
-             if (found == 0) call StopAll(trim(Emis_sourceFiles(n)%filename)//&
+             if (found == 0) call StopAll(trim(emsrcfiln%filename)//&
               ': sectorsName not recognized! '//trim(EmisFiles(i)%sectorsName))
-             Emis_source(ii)%sector_idx = found -1 + Emis_source(ii)%sector !TODO: make more robust (use names, not indices)
+             emsrcii%sector_idx = found -1 + emsrcii%sector !TODO: make more robust (use names, not indices)
           end if
 
-          max_levels3D=max(max_levels3D, Emis_source(ii)%kend - Emis_source(ii)%kstart + 1)
-          if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",Emis_source(ii)
+          max_levels3D=max(max_levels3D, emsrcii%kend - emsrcii%kstart + 1)
+          if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ",emsrcii
           if (MasterProc .and. dbg) then
              if (EmisFiles(i)%nsectors == 1) then
-                write(*,'(a,a,a)')'include '//trim(Emis_source(ii)%varname)//' as '//&
-                     trim(Emis_source(ii)%species)//' sector ',trim(SECTORS(Emis_source(ii)%sector_idx)%longname),' country '//trim(Emis_source(ii)%country_ISO)
-             else if (Emis_source(ii)%sector == EmisFiles(i)%nsectors) then
-                write(*,'(a,I3,a,a)')'include '//trim(Emis_source(ii)%varname)//' as '//&
-                     trim(Emis_source(ii)%species),EmisFiles(i)%nsectors,' sectors ',trim(SECTORS(Emis_source(ii-EmisFiles(i)%nsectors+1)%sector_idx)%longname)//' to '// trim(SECTORS(Emis_source(ii)%sector_idx)%longname)//' country '//trim(Emis_source(ii)%country_ISO)
+                write(*,'(a,a,a)')dtxt//'emsrc include '//trim(emsrcii%varname)//' as '//&
+                     trim(emsrcii%species)//' sector ',trim(SECTORS(emsrcii%sector_idx)%longname),' country '//trim(emsrcii%country_ISO)
+             else if (emsrcii%sector == EmisFiles(i)%nsectors) then
+                write(*,'(a,I3,a,a)')dtxt//'emsrc include '//trim(emsrcii%varname)//' as '//&
+                 trim(emsrcii%species),EmisFiles(i)%nsectors,' sectors ',&
+                 trim(SECTORS(Emis_source(ii-EmisFiles(i)%nsectors+1)%sector_idx)%longname)//&
+                  ' to '// trim(SECTORS(emsrcii%sector_idx)%longname)//' country '//trim(emsrcii%country_ISO)
 
              end if
           end if
-       enddo
+          end associate  ! emsrcfiln, emsrcii
+       enddo EMFILE_IILOOP
 !       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
-!            //trim(Emis_sourceFiles(n)%filename)
+!            //trim(emsrcfiln%filename)
 
-    enddo
+    enddo EMFILE_ILOOP
 
     do n = 1, NEmis_sources
        !define  mask indices
@@ -3235,10 +3251,11 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
   integer :: msg(4), i,j, ii, jj, isec, icc, ncc, iland, iproc
   real ::locemis(LIMAX, LJMAX,NSECTORS)
   real ::lemis(LIMAX, LJMAX)
+  logical :: dbg 
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
-  associate ( dbg => DEBUG%EMISSIONS )
+  dbg = DEBUG%EMISSIONS
   if(dbg ) write(*,*)"CALLED "//trim(txt),me,&
     maxval(emis),maxval(nsources),maxval(sources)
 
@@ -3303,7 +3320,7 @@ subroutine EmisWriteOut(label, iem,nsources,sources,emis)
   end do
 
 !  deallocate(locemis,lemis)
-  end associate ! dbg
+!  end associate ! dbg
 
 end subroutine EmisWriteOut
 
