@@ -702,7 +702,7 @@ contains
              else
                 status = nf90_get_att(ncFileID,varid,"sector", sector)
                 if(status==nf90_noerr)Emis_source(NEmis_sources)%sector = sector
-                if ( debugm0 ) write(*,*) dtxt//'CAMEO sec c:', NEmis_sources, sector ! Here, K-> 11, Cf -> 26
+                !if ( debugm0 ) write(*,*) dtxt//'CAMEO sec c:', NEmis_sources, sector ! Here, K-> 11, Cf -> 26
              end if
              status = nf90_get_att(ncFileID,varid,"factor", x)
              if(status==nf90_noerr)Emis_source(NEmis_sources)%factor = x
@@ -1703,9 +1703,9 @@ end if
                 !CHANGED to AT:if ( DEBUG%GETEMIS .and. iland == 101.and.MasterProc ) then
                 if ( debugm .and. iland == 2 .and. tmp(i)> 1.0e-6 ) then
                   itot = tmp_iqrc2itot(iqrc)
-                  write(*,"(a35,4i3,i4,a15,f7.1,f10.4)") &
+                  write(*,"(a35,4i4,a15,f7.1,f10.4)") &
                     dtxt//" splitdef " //trim(Country(iland)%name), &
-                     isec, ie, i,  iqrc, itot, ' '//adjustl(species(itot)%name), &
+                     isec, iland,  iqrc, itot, ' '//adjustl(species(itot)%name), &
                      1.0/tmp_emis_masscorr(iqrc), tmp_emisfrac(iqrc,isec,iland)
                      
                 end if
