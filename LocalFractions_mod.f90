@@ -1390,18 +1390,19 @@ subroutine lf_out(iotyp)
      else !FULLCHEM
         
         is_surf = .true.
+        countryname(Nfullchem_emis*Npos_lf+1) = 'Base'
         do iout = 1, Max_lf_out
            if (lf_spec_out(iout)%name == "NOTSET") exit
            fracsum=0.0
            n = 4
            if (lf_set%EmisDer_all) n = 1
-           do ideriv = 1, n
+           tmp_out_base = 0.0
+           do ideriv = 1, Nfullchem_emis
               tmp_out_cntry = 0.0
-              tmp_out_base = 0.0
               do ig = 1, 30                 
                  found = 1
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig>1) exit
-                 if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) continue
+                 if ((lf_spec_out(iout)%species(ig) == "pm25" .or. lf_spec_out(iout)%species(ig) == "pmco") .and. ideriv>1) cycle
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig==1) then
                     isrc=find_index(trim(lf_spec_out(iout)%name) ,lf_src(:)%species, nth = ideriv)
                  else
@@ -1429,37 +1430,34 @@ subroutine lf_out(iotyp)
                           end do
                        end do
                     end do
-
                  end if
               end do
               if (found==0) cycle
               specname = trim(lf_spec_out(iout)%name)
-              if (ideriv == 1) then
-                 if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
-                    if (iter==2) then
-                       !only write integral over cities
-                       n1=Npos_lf + 1                          
-                       do j=1,ljmax
-                          do i=1,limax
-                             tmp_out_cntry(i,j,n1) = tmp_out_base(i,j) !store together with sources
-                          end do
-                       end do
-                       countryname(n1) = 'Base'
-                    end if
-                 else
-                    !first write "base" concentrations, not country contributions
-                    scale = 1.0
-                    def2%name=trim(specname)
-                    if (is_surf) def2%name='SURF_ug_'//trim(specname)            
-                    if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
-                    if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
-                    call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                    pollwritten(ipoll_cfac) = .true.
-                    overwrite=.false.
-                 end if
+              if (iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
+                if (iter==2 .and. ideriv == Nfullchem_emis) then
+                  !only write integral over cities
+                  n1= Npos_lf + 1
+                  do j=1,ljmax
+                    do i=1,limax
+                      tmp_out_cntry(i,j,n1) = tmp_out_base(i,j) !store together with sources
+                    end do
+                  end do
+                end if
+              else
+                if (ideriv == 1) then
+                  !first write "base" concentrations, not country contributions
+                  scale = 1.0
+                  def2%name=trim(specname)
+                  if (is_surf) def2%name='SURF_ug_'//trim(specname)            
+                  if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
+                  if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
+                  call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                  pollwritten(ipoll_cfac) = .true.
+                  overwrite=.false.
+                end if
               end if
-              
               !now write out sensibilities for each country and sectors
               !(uses last defined isrc, assumes that value is same for all species in group)
               n1=0
@@ -1470,28 +1468,33 @@ subroutine lf_out(iotyp)
                     secname = ''
                     if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
                     if(i<=Ncountry_mask_lf)then
-                       !mask defined region
-                       if (iic2ilf_countrymask(i) > 0) then
-                          sourcename = '_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
-                          countryname(n1)=trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))//trim(secname)
+                      !mask defined region
+                      if (iic2ilf_countrymask(i) > 0) then
+                        sourcename = '_'//trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))
+                        if(iter==1 .and. iout==1)countryname((ideriv-1)*Npos_lf+n1)=trim(EmisMaskIndex2Name(iic2ilf_countrymask(i)))//trim(secname)
                       else
-                          sourcename = '_'//trim(mask2name(country_mask_val(i)))
-                          countryname(n1)=trim(mask2name(country_mask_val(i)))//trim(secname)
+                        sourcename = '_'//trim(mask2name(country_mask_val(i)))
+                        if(iter==1 .and. iout==1)countryname((ideriv-1)*Npos_lf+n1)=trim(mask2name(country_mask_val(i)))//trim(secname)
                       end if
-                   else if(i<=Ncountry_lf)then
-                       !regular country
-                       sourcename = '_'//trim(lf_country%list(i-Ncountry_mask_lf))                       
+                    else if(i<=Ncountry_lf)then
+                      !regular country
+                      sourcename = '_'//trim(lf_country%list(i-Ncountry_mask_lf))                       
                        ix = find_index(trim(lf_country%list(i-Ncountry_mask_lf)) ,Country(:)%code, first_only=.true.)
                        if (ix < 0) then
-                          if(iter==1)countryname(n1)=trim(lf_country%list(i-Ncountry_mask_lf))
+                         if(iter==1 .and. iout==1)countryname((ideriv-1)*Npos_lf+n1)=trim(lf_country%list(i-Ncountry_mask_lf))
                        else
-                          if(iter==1)countryname(n1)=trim(Country(ix)%name)//trim(secname)
+                         if(iter==1 .and. iout==1)countryname((ideriv-1)*Npos_lf+n1)=trim(Country(ix)%name)//trim(secname)
                        end if
-                    else
+                     else
                        !country group
                        sourcename = '_'//trim(lf_country%group(i-Ncountry_lf)%name)
-                       if(iter==1)countryname(n1)=trim(lf_country%group(i-Ncountry_lf)%name)//trim(secname)
+                       if(iter==1 .and. iout==1)countryname((ideriv-1)*Npos_lf+n1)=trim(lf_country%group(i-Ncountry_lf)%name)//trim(secname)
                     endif
+                    if(iotyp==IOU_HOUR_INST .and. iter==1  .and. iout==1)then
+                       if(.not.lf_set%EmisDer_all) then
+                         countryname((ideriv-1)*Npos_lf+n1)=trim(countryname((ideriv-1)*Npos_lf+n1))//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                       end if
+                    end if
                     redname=''
                     if (lf_set%full_chem) then
                        !add emission species to name
@@ -1516,9 +1519,15 @@ subroutine lf_out(iotyp)
                     scale=1.0
                     if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
                        !"Compressed" CityMasks output
-                       if(iter==1)cycle
+                       if(iter==1 .or. n1/=1)cycle
                        fullname = 'SURF_ug_'//trim(specname)!//trim(secname)//trim(sourcename)//trim(redname)
-                       if(n1==1)call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf + 1)
+                       if(ideriv/=Nfullchem_emis) then
+                          call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf , Nfullchem_emis*Npos_lf + 1, (ideriv-1)*Npos_lf+1)
+                       else
+                         if(me==0)write(*,*)Nfullchem_emis*Npos_lf + 1,'OUT BASE ',trim(countryname(Nfullchem_emis*Npos_lf + 1))
+                          !last one also write Base
+                          call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf+1 , Nfullchem_emis*Npos_lf + 1, (ideriv-1)*Npos_lf+1)
+                       end if
                     else
                        def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname) 
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -3729,7 +3738,7 @@ subroutine lf_rcemis(i,j,k,eps)
                             found_primary = 1
                          end if
                          isrc=isrc_pm25 !treated with index "nemis_primary-1"
-                         emis2pos_primary(nemis_primary-1) = isrc
+                         emis2isrc_primary(nemis_primary-1) = isrc
                          emis2pos_primary(nemis_primary-1) = is-1 + (iic-1)*Ncountrysectors_lf
                          emish_idx = SECTORS(isec)%height
                          split_idx = SECTORS(isec)%split
@@ -3752,7 +3761,7 @@ subroutine lf_rcemis(i,j,k,eps)
                             found_primary = 1
                          end if
                       end if
-                      emis2pos_primary(nemis_primary) = isrc
+                      emis2isrc_primary(nemis_primary) = isrc
                       emis2pos_primary(nemis_primary) =  is-1 + (iic-1)*Ncountrysectors_lf
                       emish_idx = SECTORS(isec)%height
                       split_idx = SECTORS(isec)%split
@@ -4309,11 +4318,11 @@ subroutine lf_rcemis(i,j,k,eps)
   end subroutine lf_read
 
 
-subroutine CityMasksOut(var, varname, runname, Nrun)
+subroutine CityMasksOut(var, varname, runname, Nrun, Nruntot, Runstart)
   real, intent(in) :: var(LIMAX,LJMAX,Nrun)
   character(len=*) , intent(in):: varname
   character(len=TXTLEN_NAME) , intent(in):: runname(*)
-  integer, intent(in) :: Nrun
+  integer, intent(in) :: Nrun, Nruntot, Runstart
   real(kind=4), allocatable, dimension(:,:) ::  localsum,globalsum,values
   !real(kind=4) localsum(NEmisMask),globalsum(NEmisMask)
   character(len=TXTLEN_FILE) :: filename
@@ -4362,7 +4371,7 @@ subroutine CityMasksOut(var, varname, runname, Nrun)
      if (trim(oldname) /= trim(fileName) .and. current_date%hour>0) then
         oldname = fileName
      end if
-     call CityFileWrite(values, varname, current_date%hour, oldname, runname, Nrun, 1, 24)
+     call CityFileWrite(values, varname, current_date%hour, oldname, runname, Nrun, Nruntot, Runstart, 1, 24)
   end if
      
   deallocate(localsum,globalsum)
