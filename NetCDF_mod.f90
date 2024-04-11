@@ -64,7 +64,7 @@ use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
-use SmallUtils_mod,      only: wordsplit, find_index, str_replace
+use SmallUtils_mod,      only: wordsplit, find_index, str_replace, key2str
 
 implicit none
 
@@ -5561,6 +5561,7 @@ subroutine CreateCityFile(filename, runname, Nrun, Ndate, Ntime, ncFileID)
   integer, intent(out) ::   ncFileID
   integer :: cityDimID,runDimID,dateDimID,timeDimID,StringDimID,varID,cityvarID
   integer :: i
+  character(len=TXTLEN_NAME):: datename
   !fortran does not have string types. Use character arrays instead
 
   if(MasterProc)then
@@ -5579,7 +5580,10 @@ subroutine CreateCityFile(filename, runname, Nrun, Ndate, Ntime, ncFileID)
      call check(nf90_put_att(ncFileID,varID,"description","Country, region or Source contributing"))
      call check(nf90_def_dim(ncFileID,"date",1,dateDimID),"dim:date")
      call check(nf90_def_var(ncFileID,"date",nf90_double,[datedimID],varID),"def:date")
-     call check(nf90_put_att(ncFileID,varID,"units","days since 1st january"))
+     datename=trim(key2str('YYYY-MM-DD 00:00:00.000000','YYYY',current_date%year))
+     datename=trim(key2str(datename,'MM',current_date%month))
+     datename=trim(key2str(datename,'DD',current_date%day))
+     call check(nf90_put_att(ncFileID,varID,"units","days since "//trim(datename)))
      call check(nf90_put_att(ncFileID,varID,"calendar","standard"))
      call check(nf90_def_dim(ncFileID,"time",Ntime,timeDimID),"dim:time")
      call check(nf90_def_var(ncFileID,"time",nf90_double,[timedimID],varID),"def:time")
@@ -5591,27 +5595,35 @@ subroutine CreateCityFile(filename, runname, Nrun, Ndate, Ntime, ncFileID)
 
 end subroutine CreateCityFile
 
-subroutine CityFileWrite(values, varname, hour, filename, runname, Nrun, Ndate, Ntime)
+subroutine CityFileWrite(values, varname, hour, filename, runname, Nrun, Nruntot, Runstart, Ndate, Ntime)
   !sums contributions from all cities defined
   real(kind=4) :: values(Nrun,NEmisMask)
   character(len=*),  intent(in)  :: fileName, varname
   character(len=TXTLEN_NAME) , intent(in):: runname(*)
-  integer, intent(in) :: hour, Nrun, Ndate, Ntime
+  integer, intent(in) :: hour, Nrun, Ndate, Ntime, Nruntot, Runstart
   integer :: cityDimID,runDimID,dateDimID,timeDimID,StringDimID,varID,ncFileID,i,j
   integer :: status
   character(len=TXTLEN_FILE),save :: oldname='NOTSET'
-  
+  real(kind=8) ::rdays
   if(MasterProc)then
      if (trim(oldname) /= trim(fileName)) then
-        write(*,*)"Creating ",trim(filename), NEmisMask, Nrun, Ndate, Ntime
-        call CreateCityFile(filename, runname, Nrun, Ndate, Ntime,ncFileID)
+        call CreateCityFile(filename, runname, Nruntot, Ndate, Ntime,ncFileID)
         oldname = trim(fileName)
      end if
      call check(nf90_open(trim(fileName),nf90_share+nf90_write,ncFileID),"open cityfile")
+     call check(nf90_inq_varid(ncFileID,'time',VarID))
+     call date2nctime(current_date,rdays)
+     if (mod(hour,24)==0) then
+        call check(nf90_put_var(ncFileID,VarID,rdays,start=(/Ntime/)))     
+     else
+        call check(nf90_put_var(ncFileID,VarID,rdays,start=(/(hour*Ntime/24)/)))      
+     end if
+     call check(nf90_inq_varid(ncFileID,'date',VarID))
+     call check(nf90_put_var(ncFileID,VarID,0)) !To improve when actual
+
      status=nf90_inq_varid(ncFileID,varname,VarID)
      if(status/=nf90_noerr)then
         !if variable does not exist, create
-        write(*,*)"Creating ",trim(varname)
         call check(nf90_redef(ncFileID),"file redef:"//trim(varname))
         call check(nf90_inq_dimid(ncFileID,"city",citydimID),"dim:city")
         call check(nf90_inq_dimid(ncFileID,"run",rundimID),"dim:run")
@@ -5625,9 +5637,9 @@ subroutine CityFileWrite(values, varname, hour, filename, runname, Nrun, Ndate, 
      end if
      !NB: hour=0 is midnight and is set as the last record
      if (mod(hour,24)==0) then
-        call check(nf90_put_var(ncFileID,VarID,values,start=(/24,1,1,1/),count=(/1,1,Nrun,NEmisMask/)))
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/24,1,Runstart,1/),count=(/1,1,Nrun,NEmisMask/)))
      else
-        call check(nf90_put_var(ncFileID,VarID,values,start=(/mod(hour,24),1,1,1/),count=(/1,1,Nrun,NEmisMask/)))
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/mod(hour,24),1,Runstart,1/),count=(/1,1,Nrun,NEmisMask/)))
      end if
      call check(nf90_close(ncFileID))
   end if
