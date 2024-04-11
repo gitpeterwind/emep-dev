@@ -49,6 +49,14 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Apr  2024, Peter
+
+PM water  from MARS was using a discontinuous function. That caused unstabilities
+(sharp spikes in time and space) when doing differences between two similar runs.
+Now the function is forced to be continuous and the worse spikes seem to disapear
+ in a test run.  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 Apr  2024, Dave
 
 Emissions_mod - a little more associate
