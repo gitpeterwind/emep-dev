@@ -54,7 +54,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Aqueous and heterogenous changes:
 
    emep_Main: moved call to init_aqeous
-   Aqueous_mod - updated all rates and added 
+   Aqueous_mod - updated all rates and added HO2-cloud uptake
    Solver  - ICLHO2H2O2 for HO2 - cloud reaction
 
   Changes in ecosx:
