@@ -50,6 +50,9 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 Apr  2024, Joffen/Dave
+ NEW TAG: rv5.2beta - as aqueous and gas/particle chem changed
+ : Small changes in SO2 and SO4, but overall little change
+
 
 Aqueous and heterogenous changes:
 
@@ -72,7 +75,6 @@ Aqueous and heterogenous changes:
         used EmChem19c for now.
         copied original CM* files to ZCM_EmChem19rcp/Apr12_CMfiles/
 
-Small changes in SO2 and SO4, but overall little change
    
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Apr  2024, Peter
