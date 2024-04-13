@@ -216,6 +216,9 @@ program emep_Main
 
   call Init_WetDep()           ! sets up scavenging ratios
 
+  call Init_aqueous()          ! sets up aqu. phase equilibriun and reaction rates
+
+
   call set_output_defs()     ! Initialises outputs
   call sitesdef()            ! see if any output for specific sites is wanted
   ! (read input files "sites.dat" and "sondes.dat" )
@@ -293,7 +296,7 @@ program emep_Main
 
        if(USES%LIGHTNING_EMIS) call lightning()
 
-      call init_aqueous()
+!A24      call init_aqueous()
 
       ! Monthly call to BoundaryConditions.
       if(DEBUG%MAINCODE) print *, "Into BCs" , me

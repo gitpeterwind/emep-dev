@@ -33,6 +33,7 @@ use My_Derived_mod,    only: nOutputWdep ! number WDEP used
 use CheckStop_mod,     only: CheckStop, StopAll
 use ChemDims_mod             
 use ChemSpecs_mod,     only: species_adv, FIRST_SEMIVOL, LAST_SEMIVOL
+use ChemFunctions_mod,  only: IUPAC_TROE
 use ChemGroups_mod,    only: ChemGroups
 use Config_module,only: &
     CHEMTMIN, CHEMTMAX      &       ! -> range of temperature
@@ -123,19 +124,30 @@ real, private, dimension(CHEMTMIN:CHEMTMAX), save :: &
   Kco2
 ! Aqueous reaction rates for usage in gas-phase chemistry:
 integer, private, parameter :: &
-  NAQUEOUS = 4, & ! No. aqueous rates
-  NAQRC    = 3    ! No. constant rates
+  NAQUEOUS = 5, & ! No. aqueous rates
+  NAQRCT   = 3, & ! No. Temp. dependent rates
+  S_H2O2   = 1,  & ! Numbering for Temp. dependent aq. rates
+  S2_O3    = 2,  &
+  S3_O3    = 3
+
+real, private, save :: aqrcC_O3
+real, private, dimension(NAQRCT,CHEMTMIN:CHEMTMAX), save :: aqrcT
+                                                   ! Temp dependent rates 
+                                                   ! for aq. so2 oxidn.
 
 real, public, save,allocatable, dimension(:,:) :: aqrck
-real, private, dimension(NAQRC), save :: aqrc ! constant rates for
-                                              ! so2 oxidn.
+                                                 ! aq. reaction rates
+						 ! transferred to chemistry
+						 ! (CM_Reactions1(2).inc)
+
 logical, public,save :: prclouds_present      ! true if precipitating clouds
 
 integer, public, parameter :: &
-  ICLOHSO2  = 1, & ! for [oh] + [so2]
-  ICLRC1    = 2, & ! for [h2o2] + [so2]
-  ICLRC2    = 3, & ! for [o3] + [so2]
-  ICLRC3    = 4    ! for [o3] + [o2] (Fe catalytic)
+  ICLOHSO2   = 1, & ! for [oh] + [so2]
+  ICLRC1     = 2, & ! for [h2o2] + [so2]
+  ICLRC2     = 3, & ! for [o3] + [so2]
+  ICLRC3     = 4, & ! for [o3] + [o2] (Fe catalytic)
+  ICLHO2H2O2 = 5    ! for HO2g --> 0.5 * [H2O2]
 
 ! Incloud scavenging: (only dependant on precipitation (not cloud water)
 !-----------------------------------------------------------------------
@@ -192,12 +204,6 @@ subroutine Init_WetDep()
    call WetCoeffs()  ! Sets WDspec(:)% name, W_sca, W_sub
 
   allocate(incloud(KUPPER:KMAX_MID),pr_acc(KUPPER:KMAX_MID))
-  allocate(pH(KUPPER:KMAX_MID),so4_aq(KUPPER:KMAX_MID),no3_aq(KUPPER:KMAX_MID))
-  allocate(nh4_aq(KUPPER:KMAX_MID),nh3_aq(KUPPER:KMAX_MID),hso3_aq(KUPPER:KMAX_MID))
-  allocate(so2_aq(KUPPER:KMAX_MID),so32_aq(KUPPER:KMAX_MID),co2_aq(KUPPER:KMAX_MID))
-  allocate(hco3_aq(KUPPER:KMAX_MID))
-  allocate(frac_aq(NHENRY,KUPPER:KMAX_MID))
-  allocate(aqrck(NAQUEOUS,KCHEMTOP:KMAX_MID))
 
 !####################### gather indices from My_Derived
 ! WDEP_WANTED array, and determine needed indices in d_2d
@@ -256,10 +262,16 @@ subroutine Init_WetDep()
 !####################### END indices here ##########
 
 end subroutine Init_WetDep
+
+
+
+
+
 !-----------------------------------------------------------------------
 subroutine Setup_Clouds(i,j,debug_flag)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
+! Called fron runchem
 ! Define incloud and precipitating clouds.
 ! The layer must contain at least 1.e-7 kgwater/kg air to
 ! be considered a cloud.
@@ -277,6 +289,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
                     ! cloudwater = 1.e-6 same as 1.g m^-3
     pres            ! Pressure (Pa)
   integer :: k, SO4
+
 
   SO4 = SO4_ix
 
@@ -311,12 +324,17 @@ subroutine Setup_Clouds(i,j,debug_flag)
     if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT) exit
     ksubcloud = k
   end do
+
+
+
   if(ksubcloud /= KUPPER)then 
      !clouds were found under KUPPER
      
      ! Define incloud part of the column requiring that both cloud water
      ! and cloud fractions are above limit values
      kcloudtop = -1               ! k-level of cloud top
+
+
      do k = KUPPER, ksubcloud-1
         b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
@@ -338,7 +356,9 @@ subroutine Setup_Clouds(i,j,debug_flag)
            incloud(k) = .true.
            if(kcloudtop<0) kcloudtop = k
         end if
-     end do
+     end do  ! k inside cloud loop
+
+
      if(kcloudtop == -1) then
         if(prclouds_present.and.DEBUG%AQUEOUS) &
              write(*,"(a20,2i5,3es12.4)") "ERROR prclouds sum_cw", &
@@ -352,14 +372,23 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! need special treatment...
      ! ==> assume no cloud
       kcloudtop = -999 ! used as label for no cloud 
-  endif
+  endif   !  ksubcloud /= KUPPER
+
+
+
   
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
  ! fractional solubility
 
  !need to be called also if no clouds for non-cloud rates
  !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
-  call setup_aqurates(b ,cloudwater,incloud,pres)
+
+
+
+   call setup_aqurates(b ,cloudwater,incloud,pres)
+!  Calculates arrays with temperature dependent aqueous phase
+!  equilibrium rates and aqueous phase reaction rates
+
 
   if(kcloudtop>KUPPER .and.kcloudtop<KMAX_MID)then
      if(DEBUG%pH .and. debug_flag .and. incloud(kcloudtop)) then
@@ -381,9 +410,15 @@ subroutine Setup_Clouds(i,j,debug_flag)
      
 end subroutine Setup_Clouds
 !-----------------------------------------------------------------------
+
+
+
+
+
 subroutine init_aqueous()
 !-----------------------------------------------------------------------
 ! DESCRIPTION
+! Called from main before time itegration 
 ! Calls initial tabulations, sets frac_aq to zero above cloud level, and
 ! sets constant rates.
 ! MTRLIM represents mass transport limitations between the clouds
@@ -398,37 +433,26 @@ subroutine init_aqueous()
 !hf  INV_Hplus    = 1.0/Hplus             ! 1/H+
 !hf  INV_Hplus0p4 = INV_Hplus**0.4        ! (1/H+)**0.4
 
+
+  allocate(pH(KUPPER:KMAX_MID),so4_aq(KUPPER:KMAX_MID),no3_aq(KUPPER:KMAX_MID))
+  allocate(nh4_aq(KUPPER:KMAX_MID),nh3_aq(KUPPER:KMAX_MID),hso3_aq(KUPPER:KMAX_MID))
+  allocate(so2_aq(KUPPER:KMAX_MID),so32_aq(KUPPER:KMAX_MID),co2_aq(KUPPER:KMAX_MID))
+  allocate(hco3_aq(KUPPER:KMAX_MID))
+  allocate(frac_aq(NHENRY,KUPPER:KMAX_MID))
+  allocate(aqrck(NAQUEOUS,KCHEMTOP:KMAX_MID))
+
+
+
 ! tabulations
 !========================
   call tabulate_aqueous()
 !========================
 
-! Constant rates: The rates given in Berge (1993) are in mol-1 l.
-! These need to be multiplied by 1.0e3/AVOG/Vf,so we perform the
-! 1.0e3/AVOG scaling here.
-
-! so2aq + h2o2   ---> so4, ref: Möller 1980
-  aqrc(1) = 8.3e5 * 1.0e3/AVOG * MASSTRLIM
-
-! (so2aq + hso3-) + H+ + o3 ---> so4, ref: Martin & Damschen 1981
-  aqrc(2) = 1.8e4 * 1.0e3/AVOG * MASSTRLIM
-
-! (so2aq + hso3-) + o2 ( + Fe ) --> so4, see documentation below
-  aqrc(3) = 3.3e-10  * MASSTRLIM
-
-! Regarding aqrc(3):
-! catalytic oxidation with Fe. The assumption is that 2% of SIV
-! is oxidised per hour inside the droplets, corresponding to a
-! conversion rate of 5.6^-6 (units s^-1  -- Therfore no conversion
-! from mol l^-1)
-
-! 5.6e-6 * 0.5e-6 (liquid water fraction) /8.5e-3 (fso2 at 10deg C)
-
-! multiply with the assumed liquid water fraction from Seland and
-! Iversen (0.5e-6) and with an assumed fso2 since the reaction is
-! scaled by the calculated value for these parameters later.
 end subroutine init_aqueous
 !-----------------------------------------------------------------------
+
+
+
 subroutine tabulate_aqueous()
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -438,33 +462,77 @@ subroutine tabulate_aqueous()
 !   Heff = H * ( 1 + K1/H+ )
 ! where k2 is omitted as it is significant only at high pH.
 ! We tabulate also the factor 1+K1/H+ as K1fac.
+
+! Calculates temperature aqueoua equilibrium and reaction rates in
+! for temeratures between CHEMTMIN (148) and CHEMTMAX (333) as defined in
+! Config_module
+! Constant rates: The rates are in mol-1 l. See code for references.
+! These need to be multiplied by 1.0e3/AVOG/Vf,so we perform the
+! 1.0e3/AVOG scaling here.
 !-----------------------------------------------------------------------
+
+
+  real, parameter :: MASSTRLIM = 1.0   ! Mass transport limitation
   real, dimension(CHEMTMIN:CHEMTMAX) :: t, tfac ! Temperature, K, factor
   integer :: i
+  real    :: to_mol_per_l
 
   t(:)          = (/ ( real(i), i=CHEMTMIN, CHEMTMAX ) /)
   tfac(:)       = 1.0/t(:) -  1.0/298.0
+  to_mol_per_l  = 1.0e3 * MASSTRLIM /AVOG
 
-  H(IH_SO2 ,:)  = 1.23    * exp(3020.0*tfac(:))
-  H(IH_H2O2,:)  = 7.1e4   * exp(6800.0*tfac(:))
-  H(IH_O3  ,:)  = 1.13e-2 * exp(2300.0*tfac(:))
-  H(IH_NH3 ,:)  = 60.0    * exp(4400.0*tfac(:)) !http://www.ceset.unicamp.br/~mariaacm/ST405/Lei%20de%20Henry.pdf
-  H(IH_CO2,:)   = 3.5e-2  * exp(2400.0*tfac(:)) !http://www.ceset.unicamp.br/~mariaacm/ST405/Lei%20de%20Henry.pdf
+!  Henry's law constants
+  H(IH_SO2 ,:)  = 1.3    * exp(2900.0*tfac(:))  ! Sander(2023)
+  H(IH_H2O2,:)  = 8.7e4   * exp(7300.0*tfac(:)) ! Sander(2023)
+  H(IH_O3  ,:)  = 1.01e-2 * exp(2800.0*tfac(:)) ! Sander(2023)
+  H(IH_NH3 ,:)  = 60.0    * exp(4200.0*tfac(:)) ! Sander(2023)
+  H(IH_CO2,:)   = 3.4e-2  * exp(2300.0*tfac(:)) ! Sander(2023)
 
-  K1(:)   = 1.23e-2 * exp( 2010.0*tfac(:))
-  K2(:)   = 6.6e-8  * exp( 1122.0*tfac(:))!Seinfeldt&Pandis 1998
-  Knh3(:) = 1.7e-5  * exp(-4353.0*tfac(:))!Seinfeldt&Pandis 1998
-  Kw(:)   = 1.0e-14 * exp(-6718.0*tfac(:))!Seinfeldt&Pandis 1998
-  Kco2(:) = 4.3e-7  * exp( -921.0*tfac(:))!Seinfeldt&Pandis 1998
+
+! Equilibrium ractions. These are further used to calculate
+! efficient Henry's law constants. 
+  K1(:)   = 1.3e-2  * exp( 1960.0*tfac(:))  ! Seinfeldt&Pandis 2016
+  K2(:)   = 6.6e-8  * exp( 1500.0*tfac(:))  ! Seinfeldt&Pandis 2016
+  Knh3(:) = 1.7e-5  * exp(-450.0*tfac(:))   ! Seinfeldt&Pandis 2016
+  Kw(:)   = 1.0e-14 * exp(-6718.0*tfac(:))  ! Seinfeldt&Pandis 2016
+  Kco2(:) = 4.3e-7  * exp(-1000.0*tfac(:))  ! Seinfeldt&Pandis 2016
+
+
+!! Temperature dependent aqueous phase reaction rates
+  aqrcT(S_H2O2,:) = 7.5e7 * exp(-4430.0*tfac(:)) * to_mol_per_l  ! Seinfeldt&Pandis 2016
+  aqrcT(S2_O3,:)  = 3.7e5 * exp(-5530.0*tfac(:)) * to_mol_per_l  ! Seinfeldt&Pandis 2016
+  aqrcT(S3_O3,:)  = 1.5e9 * exp(-5280.0*tfac(:)) * to_mol_per_l  ! Seinfeldt&Pandis 2016
+
+! SO2aq + O3 not temp. dependent
+   aqrcC_O3 = 2.4e4 *  to_mol_per_l   ! Seinfeldt&Pandis 2016
+
+
+! Old Temperature independent aqueous phase reaction rates
+!  aqrcT(S_H2O2,:) = 8.3e5   !!!!7.5e7 * exp(-4430.0*tfac(:))  ! Seinfeldt&Pandis 2016
+!  aqrcT(S2_O3,:)  = 3.7e5 * exp(-5530.0*tfac(:))  ! Seinfeldt&Pandis 2016
+!  aqrcT(S3_O3,:)  = 1.5e9 * exp(-5280.0*tfac(:))  ! Seinfeldt&Pandis 2016
+!!!!!  aqrcT(S1_O3,:) = !!! not Temp. dependent
+
 
 end subroutine tabulate_aqueous
 !-----------------------------------------------------------------------
+
+
+
+
+
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
-! sets the rate-coefficients for the aqueous-phase reactions
+! called from setup_clouds (witch is called from runchem)
+! First pH dependence is calculated in an iterative method.
+! When pH the (ph dependent) rate-coefficients for the
+! aqueous-phase reactions can be set. 
+! 
 !-----------------------------------------------------------------------
  !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
+  real, parameter :: MASSTRLIM = 1.0   ! Mass transport limitation
+
   real, dimension(KUPPER:KMAX_MID) :: &
     b,          &  ! cloud-aread (fraction)
     cloudwater, &  ! cloud-water
@@ -479,9 +547,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, dimension(KUPPER:KMAX_MID) :: &
     fso2grid, & ! f_aq * b = {f_aq}
     fso2aq,   & ! only so2.h2o part (not hso3- and so32-)
-    caqh2o2,  & ! rate of oxidation of so2 with H2O2
-    caqo3,    & ! rate of oxidation of so2 with H2O2
-    caqsx      ! rate of oxidation of so2 with o2 ( Fe )
+    fhso3,    & ! only hso3.h2o part (not so2aq and so32-)
+    fso3        ! only so2.h2o part (not so2aq and hso3-)
 
 ! PH
   real, dimension(KUPPER:KMAX_MID) :: &
@@ -490,7 +557,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
-  real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
+  real :: invhplus, invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
   real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
@@ -498,7 +565,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
   real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
   
-  integer, parameter:: N_ITER=45 !each iteration divides the error in two
+  integer, parameter:: N_ITER=40 !each iteration divides the error in two
   real, parameter :: phThres = 1.0E-6 !just to verify result.
   
   SO2 = SO2_ix
@@ -514,11 +581,12 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   HNO3 = HNO3_ix
   call CheckStop( HNO3_ix<1, "Aqueous: HNO3 not defined" )
 
-  !pw note: some frac_aq are recalculated (overwritten) after get_frac
+
+! pw note: some frac_aq are recalculated (overwritten) after get_frac
   call get_frac(cloudwater,incloud) ! => frac_aq
 
 ! initialize:
-  aqrck(:,:)=0.
+  aqrck(:,:) = 0.
 
 ! for PH
 
@@ -535,22 +603,28 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   do k = KUPPER,KMAX_MID
      if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
-     !pwjoj (Jan 2023):
-     !we dissolve only the part which is inside the cloud,
-     !So the concentrations on the lhs are concentrations within the cloud (0 otherwise) 
+
+     !  pwjoj (Jan 2023):
+     !  we dissolve only the part which is inside the cloud,
+     !  So the concentrations on the lhs are concentrations
+     !  within the cloud (0 otherwise) 
+
 !For pH calculations:
-!Assume total uptake of so4,no3,hno3,nh4+
-!For pH below 5, all NH3 will be dissolved, at pH=6 around 50%
-!Effectively all dissolved NH3 will ionize to NH4+ (Seinfeldt)
-    so4_aq(k)= (xn_2d(SO4,k)*1000./AVOG)/cloudwater(k) !xn_2d=molec cm-3
-                                                !cloudwater volume mix. ratio
-                                                !so4_aq= mol/l 
-    no3_aq(k)= ( (xn_2d(NO3_F,k)+xn_2d(HNO3,k))*1000./AVOG)/cloudwater(k)
-    if (NH4_F>0) then
-       nh4_aq(k) =  ( xn_2d(NH4_F,k) *1000./AVOG )/cloudwater(k)!only nh4+ now
+!   Assume total uptake of so4,no3,hno3,nh4+
+!  For pH below 5, all NH3 will be dissolved, at pH=6 around 50%
+!  Effectively all dissolved NH3 will ionize to NH4+ (Seinfeldt)
+!  cloudwater volume mix. ratio
+!  SO4_aq, NO3_aq, NH4_aq converted from molec cm-3 to mol/l   
+
+   so4_aq(k)= (xn_2d(SO4,k)*1000./AVOG)/cloudwater(k) !xn_2d=molec cm-3
+   no3_aq(k)= ( (xn_2d(NO3_F,k)+xn_2d(HNO3,k))*1000./AVOG)/cloudwater(k)
+   if (NH4_F>0) then
+       nh4_aq(k) =  ( xn_2d(NH4_F,k) *1000./AVOG )/cloudwater(k)  !only nh4+ now
     else
        nh4_aq(k) =  0.0
     end if
+
+!!  old stuff
  !   hso3_aq(k)= 0.0 !initial, before dissolved
  !   so32_aq(k)= 0.0
  !   nh3_aq(k) = 0.0 !nh3 dissolved and ionized to nh4+(aq)
@@ -558,9 +632,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
     VfRT(k) = cloudwater(k) * RGAS_ATML * temp(k)
 
-    !dissolve CO2 and SO2 (pH independent)
-    !CO2conc=392 ppm
+    !  dissolve CO2 and SO2 (pH independent)
+    !  CO2conc=392 ppm
     CO2conc=CO2conc_ppm * 1e-9 * pres(k)/(RGAS_J *temp(k)) !mol/l
+
 
     frac_aq(IH_CO2,k) = 1.0 / ( 1.0+1.0/( H(IH_CO2,itemp(k))*VfRT(k) ) )
     co2_aq(k)=frac_aq(IH_CO2,k)*CO2CONC /cloudwater(k)
@@ -569,6 +644,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     so2_aq(k)= frac_aq(IH_SO2,k)*(xn_2d(SO2,k)*1000./AVOG)/cloudwater(k)
 
 
+!!!  pH iteration starts here  !!!!
+!!!! ------------------------  !!!!
+    !Iterate between min and max value. St
     !Iterate between min and max value. Start with extremes:
     pH1=1.0
     pH2=7.0
@@ -644,9 +722,16 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
              end if
           end if
         endif       
-    end do
+    end do  ! iter   Iteration completed and concentration derived pH
+            !        and H+ used below to calculate pH dependent
+	    !        effective Henry's law constants (that will also
+	    !        affect aqueous oxidation rates.
     pH(k)=pHnew
     h_plus(k)=exp(-pH(k)*log(10.))
+
+!!!!!!  pH iteration fiished   !!!!!!!!!
+
+
 
 !after pH determined, final numbers of frac_aq(IH_SO2)
 != effective fraction of S(IV):
@@ -654,26 +739,104 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !        K1_fac  =  &
 !             1.0 + K1(k)/h_plus(k) !not used
 !        H (IH_SO2 ,itemp(k))  = H(IH_SO2,itemp(k)) * K1_fac
-    invhplus04= (1.0/h_plus(k))**0.4
-    K1K2_fac=&
-          1.0 + K1(itemp(k))/h_plus(k) + K1(itemp(k))*K2(itemp(k))/(h_plus(k)**2)
+    invhplus   = 1.0/h_plus(k)
+    invhplus04 = (1.0/h_plus(k))**0.4
+
+    K1K2_fac = 1.0  &   
+             + K1(itemp(k)) * invhplus &
+	     + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
+
     Heff  = H(IH_SO2,itemp(k)) * K1K2_fac
+
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( Heff*VfRT(k) ) )
-    fso2grid(k) = b(k) * frac_aq(IH_SO2,k)!frac of S(IV) in grid in aqueous phase
-!   fso2aq  (k) = fso2grid(k) / K1_fac
-    fso2aq  (k) = fso2grid(k) / K1K2_fac  !frac of SO2 in total grid in aqueous phase
-    caqh2o2 (k) = aqrc(1) * frac_aq(IH_H2O2,k) / cloudwater(k)
-    caqo3   (k) = aqrc(2) * frac_aq(IH_O3,k) / cloudwater(k)
-    caqsx   (k) = aqrc(3) / cloudwater(k)
-    ! oh + so2 gas-phase
+    
+    fso2grid(k) = b(k) * frac_aq(IH_SO2,k)   !  frac of S(IV) in grid
+                                             !  in aqueous phas - Saq/(Saq + Sg)
+    fso2aq  (k) = fso2grid(k) / K1K2_fac     ! frac of SO2 in total grid
+                                             ! in aqueous phase
+
+    fhso3(k)    = fso2aq(k) * K1(itemp(k)) * invhplus  
+                                             ! frac of HSO3- in total grid
+                                             ! in aqueous phase
+
+    fso3  (k) = fhso3(k) * K2(itemp(k)) * invhplus 
+                                             ! frac of SO3-- in total grid
+                                             ! in aqueous phase
+
+
+
+
+
+!!!!   SET  Aquous phase reaction rates exported to chemistry 
+!!-------------------------------------------------------------
+
+
+  ! oh + so2 gas-phase
     aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) ! now correction factor!
-    aqrck(ICLRC1,k)   = caqh2o2(k) * fso2aq(k) !only SO2
-    !        aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
-    aqrck(ICLRC2,k)   = caqo3(k) * invhplus04 * fso2grid(k)
-    aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
+    Fgas(SO2,k) = 1.0-fso2grid(k)
+                                            ! as part of SO2 not in gas phase
+  !  aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) * &
+  !    IUPAC_TROE(2.8e-31*EXP(2.6*(LOG(300/temp(k)))),2.0e-12,EXP(-temp(k)/472.0),M(k),0.75-1.27*(-temp(k)/472.0)/LOG(10.0))
+
+  !  HO2g ----> 0.5 H2O2
+    aqrck(ICLHO2H2O2,k) = 0.066 * cloudwater(k)* 1.e6 * b(k)
+
+
+
+
+
+
+!  Incloud oxidation of Siv to Svi by H2O2
+!  When calculating fhso3 devided by Hpluss  ==> divide and multiply by Hpluss cancel out
+    aqrck(ICLRC1,k)   =  aqrcT(S_H2O2,itemp(k)) * frac_aq(IH_H2O2,k) * fhso3(k) &
+                       * H_plus(k) / cloudwater(k)                   !  only HSO3-
+                                                                      ! skip 1/(1+Hplus*K), see S&P 2016
+                                                                      ! as only significant pH < 2
+!!  Incloud oxidation of Siv to Svi by O3
+    aqrck(ICLRC2,k)   = ( aqrcC_O3 * fso2aq(k)    &  ! with SO2aq
+                      +   aqrcT(S2_O3,itemp(k)) * fhso3(k)     &  ! with HSO3-
+		      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
+                      *   frac_aq(IH_O3,k)/cloudwater(k) 
+
+!    aqrck(ICLRC2,k)   = 1.8e4 * 1.0e3 * frac_aq(IH_O3,k) &
+!                      * invhplus04 * fso2grid(k) / cloudwater(k)/ AVOG * MASSTRLIM
+!!!!!! (so2aq + hso3-) + H+ + o3 ---> so4, ref: Martin & Damschen 1981
+!!!!!!  aqrc(2) = 1.8e4 * 1.0e3/AVOG * MASSTRLIM
+
+
+!  Incloud oxidation of Siv to Svi by O2 
+    aqrck(ICLRC3,k)   = 3.3e-10 *  fso2grid(k)/ cloudwater(k) * MASSTRLIM
+
+!!!!!! (so2aq + hso3-) + o2 ( + Fe ) --> so4, see documentation below
+!!!!!!!  aqrc(3) = 3.3e-10  * MASSTRLIM
+
+! Regarding reaction with O2:
+! catalytic oxidation with Fe. The assumption is that 2% of SIV
+! is oxidised per hour inside the droplets, corresponding to a
+! conversion rate of 5.6^-6 (units s^-1  -- Therfore no conversion
+! from mol l^-1)
+
+
+!!!Old code
+!!!!    caqh2o2 (k) = aqrc(1) * frac_aq(IH_H2O2,k) / cloudwater(k)
+!    aqrck(ICLRC1,k)   = caqh2o2(k) * fso2aq(k) !only SO2
+!    !        aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
+
+!  Incloud oxidation of Siv to Svi by O3
+!!!    caqo3   (k) = aqrc(2) * frac_aq(IH_O3,k) / cloudwater(k)
+!    aqrck(ICLRC2,k)   = caqo3(k) * invhplus04 * fso2grid(k)
+
+!  Incloud oxidation of Siv to Svi by O2 
+!!!    caqsx   (k) = aqrc(3) / cloudwater(k)
+!    aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
+
   end do
 end subroutine setup_aqurates
 !-----------------------------------------------------------------------
+
+
+
+
 subroutine get_frac(cloudwater,incloud)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -705,6 +868,10 @@ subroutine get_frac(cloudwater,incloud)
   end do
 end subroutine get_frac
 !-----------------------------------------------------------------------
+
+
+
+
 subroutine WetDeposition(i,j,debug_flag)
 !-----------------------------------------------------------------------
 ! DESCRIPTION

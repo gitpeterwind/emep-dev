@@ -49,6 +49,32 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 Apr  2024, Joffen/Dave
+
+Aqueous and heterogenous changes:
+
+   emep_Main: moved call to init_aqeous
+   Aqueous_mod - updated all rates and added 
+   Solver  - ICLHO2H2O2 for HO2 - cloud reaction
+
+  Changes in ecosx:
+
+     UPDATED EmChem19rc to use Aqueous_EmChem19c
+     Aqueous_EmChem19c now replaces older Aqeous_EmChem16x
+       - skips CRUDE H2O2, CH3OOH losses
+       - changed OH + SO2 rate
+       /box/script/emep_setup now has Aqueous_EmChem19c in common_RNR
+
+      ISSUE with EmChem19rcp - used EmChem19cj base, not EmChem19c.
+        but EmChem19cj no longer in ecosx or public genchem
+        mainly different order of species, but EmChem19c has PAN
+        photolysis.
+        used EmChem19c for now.
+        copied original CM* files to ZCM_EmChem19rcp/Apr12_CMfiles/
+
+Small changes in SO2 and SO4, but overall little change
+   
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 Apr  2024, Peter
 
 PM water  from MARS was using a discontinuous function. That caused unstabilities

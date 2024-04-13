@@ -2491,9 +2491,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
                 !CAMEOPT
                 !debug_tfac = .false.
-                if ( iland==18 .and. SECTORS(isec_idx)%longname=='GNFR_Bb' .and. s>0.0) then
-                   write(*,'(a,3i4,es12.3)') "CAMEOPT", isec_idx, i_fdom(i), j_fdom(j), s
-                end if
+                !if ( iland==18 .and. SECTORS(isec_idx)%longname=='GNFR_Bb' .and. s>0.0) then
+                !   write(*,'(a,3i4,es12.3)') "CAMEOPT", isec_idx, i_fdom(i), j_fdom(j), s
+                !end if
 
                 SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
                 if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
