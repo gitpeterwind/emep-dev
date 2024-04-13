@@ -1602,11 +1602,15 @@ subroutine lf_out(iotyp)
 
   first_call(iotyp)=.false.
   
-  if (iotyp==IOU_HOUR) then
+  if (iotyp==IOU_HOUR_INST) then
      !reset the lf which are time tagged
      do isrc=1,Nsources
         if (lf_src(isrc)%nhour>0) then
-           if (mod(current_date%hour,24) == lf_src(isrc)%time_ix) then
+           !during lf_src(isrc)%time_ix=current_date%hour, emissions are on
+           !we reset at the very start of the hour.
+           !current_date%hour is updated after emission and chemistry, and comes here
+           !after hour is updated, and before new emis are included for this hour.
+           if (mod(current_date%hour,24) == mod(lf_src(isrc)%time_ix,24)) then
               !reset corresponding lf to zero if time is reached.
               do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
                  do j=1,ljmax
@@ -3538,6 +3542,10 @@ subroutine lf_rcemis(i,j,k,eps)
           if (lf_src(isrc)%is_NATURAL) cycle !included in lf_rcemis_nat
           if(lf_src(isrc)%type=="relative")then
               !no lf_country involved, all countries are treated together
+              if (lf_src(isrc)%nhour>0)then
+                 !we add those emissions only to the sources with correct time index
+                 if(lf_src(isrc)%time_ix /= lf_src(isrc)%nhour * (mod(current_date%hour,24)/lf_src(isrc)%nhour)) cycle
+              end if
               n0 = 0
               !do not loop over countries, only sectors
               if(lf_src(isrc)%sector>0) then
