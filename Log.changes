@@ -49,6 +49,71 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 Apr  2024, Joffen/Dave
+ NEW TAG: rv5.2beta - as aqueous and gas/particle chem changed
+ : Small changes in SO2 and SO4, but overall little change
+
+
+Aqueous and heterogenous changes:
+
+   emep_Main: moved call to init_aqeous
+   Aqueous_mod - updated all rates and added HO2-cloud uptake
+   Solver  - ICLHO2H2O2 for HO2 - cloud reaction
+
+  Changes in ecosx:
+
+     UPDATED EmChem19rc to use Aqueous_EmChem19c
+     Aqueous_EmChem19c now replaces older Aqeous_EmChem16x
+       - skips CRUDE H2O2, CH3OOH losses
+       - changed OH + SO2 rate
+       /box/script/emep_setup now has Aqueous_EmChem19c in common_RNR
+
+      ISSUE with EmChem19rcp - used EmChem19cj base, not EmChem19c.
+        but EmChem19cj no longer in ecosx or public genchem
+        mainly different order of species, but EmChem19c has PAN
+        photolysis.
+        used EmChem19c for now.
+        copied original CM* files to ZCM_EmChem19rcp/Apr12_CMfiles/
+
+   
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 Apr  2024, Peter
+
+PM water  from MARS was using a discontinuous function. That caused unstabilities
+(sharp spikes in time and space) when doing differences between two similar runs.
+Now the function is forced to be continuous and the worse spikes seem to disapear
+ in a test run.  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 Apr  2024, Dave
+
+Emissions_mod - a little more associate
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1-2 Apr  2024, Dave
+
+Emissions_mod, EmisGet_mod: adding more debug output (some tmp)
+
+  used associate ( emsrcfiln => Emis_sourceFiles(n), emsrcii => Emis_source(ii) )
+   and  associate ( emi => Emis_sourceFiles(n)%source(isource) )
+
+  to improve clarity.
+
+OwnDataTypes_mod: added print_Sector_type
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 mar 2024, Dave
+
+Emissions_mod, EmisGet_mod: adding more debug output
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28-29 mar 2024, Dave
+
+SmallUtils_mod: added basename and basedir - similar to python/perl functions
+
+Timefactors_mod: extra debug lines, and 1st use of basename, basedir to reduce
+ lengths of output strings
+
+Emissions_mod, EmisGet, Net_mod: debug additions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 mar 2024, Peter
 
 Put runlabel on "Timings.out", so that different timings are not overwritten

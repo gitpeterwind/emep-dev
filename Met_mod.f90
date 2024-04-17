@@ -547,7 +547,7 @@ subroutine MeteoRead()
       end do
     end do
   end do
-
+  
   if(WRF_MET_CORRECTIONS)then
     !WRF temperatures are shifted by  300:
     th(:,:,:,nr) = th(:,:,:,nr) + 300.0
