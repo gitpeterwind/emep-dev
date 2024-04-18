@@ -49,6 +49,21 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18 Apr  2024, Peter
+
+NB: still bugs in this version! (results for NH4 change for different number of
+procs and LF results for NO3_f are too bad)
+
+Put back the "any_cases" settings from previous versions for emission read.
+But now only define single species if they do not exist in
+EMIS_FILE (case sensitive).
+
+Also removed duplicate femis and Emis_source(1) definitions in
+config_eme.nml, as it is dangerous to have several definitions (one may
+change one of them and forget that it is overwritten later)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 Apr  2024, Joffen/Dave
  NEW TAG: rv5.2beta - as aqueous and gas/particle chem changed
  : Small changes in SO2 and SO4, but overall little change
