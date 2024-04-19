@@ -429,30 +429,33 @@ contains
           emsrcii%country_ix = ix
           emsrcii%country_ISO = trim(Country(ix)%code)
 
-          !find if it is defined as an individual species
-          !CAMEO ix = find_index(emsrcii%species, species(:)%name )
-          ix = find_index(emsrcii%species, species(:)%name, any_case=.true. )
+
+          ix = find_index(emsrcii%species, EMIS_FILE(:))
           if(dbg)write(*,*)dtxt//'spec found ?'//trim(emsrcii%species), ix, EMIS_FILE
-          if(ix<=0 .and. find_index(emsrcii%species, EMIS_FILE(:))<=0)then
-             !try case insensitive too
-             ix = find_index(emsrcii%species, species(:)%name, any_case=.true.)
-             if(dbg)write(*,*)dtxt//'spec found2?'//trim(emsrcii%species), ix
-             if(ix>0)then
-                if(me==0)write(*,*)'WARNING: '//trim(emsrcii%species)//&
+          if( ix<=0 )then
+             !find if it is defined as an individual species
+             ix = find_index(emsrcii%species, species(:)%name )
+             if(ix<=0)then
+                !try case insensitive too
+                ix = find_index(emsrcii%species, species(:)%name, any_case=.true.)
+                if(dbg)write(*,*)dtxt//'spec found2?'//trim(emsrcii%species), ix
+                if(ix>0)then
+                   if(me==0)write(*,*)'WARNING: '//trim(emsrcii%species)//&
                         ' not found, replacing with '//trim(species(ix)%name)
-                emsrcii%species = trim(species(ix)%name)
+                   emsrcii%species = trim(species(ix)%name)
+                end if
              end if
-          end if
-          if(ix>0)then
-             emsrcii%species_ix = ix
-             if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
-                  trim(emsrcii%country_ISO), ix, ' '//trim(species(ix)%name)
-             if(emsrcii%include_in_local_fractions .and. USES%LocalFractions )then
-                if(me==0)write(*,*)"WARNING: local fractions will not include single species "//emsrcii%species
+             if(ix>0)then
+                emsrcii%species_ix = ix
+                if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
+                     trim(emsrcii%country_ISO), ix, ' '//trim(species(ix)%name)
+                if(emsrcii%include_in_local_fractions .and. USES%LocalFractions )then
+                   if(me==0)write(*,*)"WARNING: local fractions will not include single species "//emsrcii%species
+                endif
+             else ! ix<=0
+                if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
+                     trim(emsrcii%country_ISO),ix,trim(emsrcii%species)
              endif
-          else ! ix<=0
-             if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
-              trim(emsrcii%country_ISO),ix,trim(emsrcii%species)
           endif
 
           if (emsrcii%sector>0) then
@@ -917,8 +920,7 @@ subroutine EmisUpdate
                iland = Emis_source(is)%country_ix
                if(iland<0)iland=IC_DUMMY
                isec = Emis_source(is)%sector
-               !CAMEO iem = find_index(Emis_source(is)%species,EMIS_FILE(:))
-               iem = find_index(Emis_source(is)%species,EMIS_FILE(:), any_case=.true.)
+               iem = find_index(Emis_source(is)%species,EMIS_FILE(:))
                if(iem >0 )then
                   if(N_femis_lonlat>0 .and. isec>0) then
                      do i_femis_lonlat=1,N_femis_lonlat
@@ -985,8 +987,7 @@ subroutine EmisUpdate
                   iem=-1
                endif
             else
-               iem=find_index(Emis_source(is)%species,EMIS_FILE(:),any_case=.true.)
-               !CAMEO iem=find_index(Emis_source(is)%species,EMIS_FILE(:))
+               iem=find_index(Emis_source(is)%species,EMIS_FILE(:))
             end if
             if(iem>0)then
                do j = 1,ljmax
