@@ -23,6 +23,7 @@ module Debug_module
     ,DRYDEP          = .false. & ! 
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,DUST            = .false. & ! Skips fast chemistry to save some CPU
+    ,ECAGE           = .false. & ! Outputs different ECC-age rates for DebugCell
     ,ECOSYSTEMS      = .false. &
     ,EMISSIONS       = .false. & ! 
     ,EMISSTACKS      = .false. & ! 

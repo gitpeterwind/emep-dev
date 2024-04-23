@@ -18,12 +18,16 @@ module ChemFunctions_mod
  use AeroFunctions_mod,     only: UptakeRate, GammaN2O5_EJSS, GammaN2O5
  use CheckStop_mod,         only: CheckStop, StopAll
  use ChemSpecs_mod,         only : species, species_adv
- use Config_module,         only : MasterProc, SO4_ix, NH4_f_ix, NO3_f_ix, NO3_c_ix
- use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
+ use Config_module,  only : MasterProc, SO4_ix, NH4_f_ix, NO3_f_ix, NO3_c_ix,&
+         OH_ix, O3_ix  ! For ECage, Huang
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES
+ use Debug_module,      only : DebugCell, DEBUG
+ use Io_Progs_mod,           only : datewrite
+ use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
  use PhysicalConstants_mod,  only : AVOG, RGAS_J, DAY_ZEN
-use SmallUtils_mod,     only : find_index
+ use SmallUtils_mod,     only : find_index
  use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, M, &
+     h2o, & ! for HuangOXD
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &
      gamN2O5, cN2O5, temp, DpgNw, S_m2m3 ! for gammas & surface area
   implicit none
@@ -196,71 +200,7 @@ use SmallUtils_mod,     only : find_index
   end function IUPAC_troe
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-
-!OLD VOLFAC SYSTEM  - WILL SOON BE DELETED FROM ALL CODE
-! N2O5 -> nitrate calculation
-!===========================================================================
-! N2O5 -> nitrate calculation. Some constants for
-! calculation of volume fraction of sulphate aerosol, and rate of uptake
-! Mass of sulfate relative to sulfate+nitrate according to  Riemer N,
-! Vogel H, Vogel B, Schell B, Ackermann I, Kessler C, Hass H
-! JGR 108 (D4): FEB 27 2003
-!
-!
-! The first order reaction coefficient K (corrected for gas phase diffusion,
-! Schwartz, 1986) is given by
-!
-! K= S* alpha* v/4                               ACP:44
-!    alpha=sticking coeff. for N2O5 =0.02
-!    v=mean molecular speed for N2O5
-!    S=aerosol surfac
-!
-! The surface area of the aerosols can be calculated as
-!
-! S = V * surface/volume of aerosols
-!     V=volume fraction of sulphate (cm3 aerosol/cm3 air)
-!     (similar for nitrate and ammonium):
-!
-!     e.g. simplest form (not used) would be:
-!     V = (so4 in moleculescm-3) x atw sulphate
-!         ---------------------------------------------------------
-!        AVOG X specific density of aerosols (assumed 2g/cm3*rh correction)
-!
-!    Or, shorter, V = C x M0/(AVOG*rho)
-!
-!    where C is conc. e.g. sulphate (molecule/cm3), M0 is molwt.
-!    We do not want to include  concentrations  or rho yet, so:
-!
-!     Let VOL =  M0/AVOG
-!
-! E12:47
-! The surface/volume ratio is calculated using Whitby particle distribution
-! with number mean radius rgn=0.068  and standard deviation (Sigma)=2.
-! Then surface/volume=3/r *  exp( -5/2 *(lnSigma)^2)=26.54
-! 3* exp( -5/2 *(lnSigma)^2)=1.2648  for  sigma=1.8
-! (monodisperse aerosols; 4*pi*r^2/(4/3 pi*r^3)= 3/r =88.2)
-!
-! Then
-!      A = VOL * C * 1.24648 /(0.068e-6*rho)
-! and
-!      K = VOL * C * 1.24648 /(0.068e-6*rho) * alpha* v/4
-! Set
-!      VOLFAC= VOL*1.24648/0.068e-6 *alpha
-! Then
-!      K = VOLFAC *C *v/(4*rho)
-!
-! rcmisc k=v/(4*rho)
-!
-!      K = VOLFAC *rcmisc() *C
-!
-! According to Riemer et al, 2003, we weight the reaction probability
-! according to the composition of the aerosol
-!
-! alpha(N2O5)=f*alpha1 +(1-f)alpha2                           ACP:45
-!   alpha1=0.02
-!   alpha2=0.002
-!   f= Mso4/(Mso4+Mno3), M=aerosol mass concentration         ACP:46
-
+!DEPRECATED
 ! N2O5 -> aerosol based upon  based on Riemer 2003 and
 ! In testing, we had also tried a simple acounting for
 ! results shown in Riemer et al., 2009.
@@ -768,17 +708,61 @@ use SmallUtils_mod,     only : find_index
 
    !.. Sets ageing rates for fresh EC [1/s] loosely based on Riemer etal. ACP(2004)
    !   See also Tsyro et al, JGR, 112, D23S19, 2007
+   !   Croft et al., ACP, 2005, Huang et al., ACP, 2013
    !   ---------------------------------
 
      real, dimension(K1:K2) :: rate
+     real, dimension(K1:K2) :: NewRate
+     real, parameter :: h=1.0/3600
+     real, parameter :: KINF=0.015, KO3=2.0e-13, KH2O=2.1e-17 ! Huang
+     real :: kACPg, kOXDg, kCCg, kOCCg  ! debug rates, ground-lev
+     real :: kACPm, kOXDm, kCCm, kOCCm  ! debug rates, k=10
+     real :: tauFix  ! fixed lifetime, hours
 
-    if ( Grid%izen <= DAY_ZEN ) then  ! daytime
+     if ( USES%ECageMethod == 'ACP2012' ) then
 
-       rate (K2-2 : K2)   = 3.5e-5  !  half-lifetime ~ 8h
-       rate (K1   : K2-3) = 1.4e-4  !                ~ 2h
-      else
-       rate (K1 : K2 )    = 9.2e-6  !                ~ 30h
+       if ( Grid%izen <= DAY_ZEN ) then  ! daytime
+
+         rate (K2-2 : K2)   = 3.5e-5  !  half-lifetime ~ 8h
+         rate (K1   : K2-3) = 1.4e-4  !                ~ 2h
+       else
+         rate (K1 : K2 )    = 9.2e-6  !                ~ 30h
+       end if
+
+     else if ( USES%ECageMethod(1:3) == 'Tau' ) then
+       read(USES%ECageMethod(4:),*) tauFix  ! e.g. 24h, dvs k=  1.0/(3600*tauFix)
+       rate = 1.0/(24*tauFix)
+     else if ( USES%ECageMethod == 'HuangOXD' ) then
+
+       rate(K1:K2) =  KINF*KO3*x(O3_ix,K1:K2) / &  !kOXD
+               (1 + KO3*x(O3_ix,K1:K2) +KH2O * h2o(K1:K2))
+       rate(K1:K2) =  rate(K1:K2) * USES%ECageFac
+     else if ( USES%ECageMethod == 'HuangCC' ) then !kCC same as Liu
+       rate(K1:K2) =  4.6e-12*x(OH_ix,K1:K2) + 5.8e-7 ! Liu et al.,
+       rate(K1:K2) =  rate(K1:K2) * USES%ECageFac
+     else if ( USES%ECageMethod == 'HuangOCC' ) then ! kCC+kOXD
+       rate(K1:K2) =  4.6e-12*x(OH_ix,K1:K2) + 5.8e-7 + &
+                      KINF*KO3*x(O3_ix,K1:K2) / &  !kOXD
+               (1 + KO3*x(O3_ix,K1:K2) +KH2O * h2o(K1:K2))
     end if
+
+    if (DEBUG%ECAGE .and. DebugCell ) then
+       kACPg=9.2e-6
+       kACPm=9.2e-6
+       if( Grid%izen <= DAY_ZEN ) kACPg = 3.5e-5
+       if( Grid%izen <= DAY_ZEN ) kACPm = 1.4e-4
+       kOXDg=KINF*KO3*x(O3_ix,K2) / (1 + KO3*x(O3_ix,K2) +KH2O * h2o(K2))
+       kOXDm=KINF*KO3*x(O3_ix,10) / (1 + KO3*x(O3_ix,10) +KH2O * h2o(10))
+       kCCg=4.6e-12*x(OH_ix,K2) + 5.8e-7
+       kCCm=4.6e-12*x(OH_ix,10) + 5.8e-7
+       kOCCg=kCCg+kOXDg
+       kOCCm=kCCm+kOXDm
+
+       call datewrite('DBGEC', [Grid%iZen], [ x(OH_ix,K2), x(OH_ix,10), & 
+         x(O3_ix,K2), h2o(K2), & 
+         h/kACPg, h/kACPm, h/kOXDg, h/kOXDm, h/kCCg, h/kCCm, h/kOCCg, h/kOCCm ],&
+         afmt="TXTDATE,a,i4,4es10.2,8f8.2)")
+    end if ! DebugCell
 
   end function ec_ageing_rate
 

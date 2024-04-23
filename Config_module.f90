@@ -247,6 +247,9 @@ type, public :: emep_useconfig
  ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
  ! methods later.
   character(len=20) ::FFireDispMethod = "PBL" ! to PBL height. Alt=P800, to 800 hPa, std. atmos.
+  character(len=20) ::ECageMethod = "ACP2012" ! or Liu2011
+  real              ::ECageFac    = 1.0
+
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
