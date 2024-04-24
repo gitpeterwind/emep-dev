@@ -1,10 +1,10 @@
 &Model_config
-  GRID      = 'EMEP0302',
-  iyr_trend = 2013,
+  GRID      = 'EMEP01',
+  iyr_trend = 2015,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2013,01,01,00,
-  enddate   = 2014,12,31,24,
+  startdate = 2015,01,01,00,
+  enddate   = 2018,12,31,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -75,7 +75,7 @@
   USES%BACTERIA          = F,
   USES%MARINE_OA         = F,
   USES%FUNGAL_METHOD    = 'HS', 
-  USES%NOCHEM            = T,
+  USES%NOCHEM            = F,
 
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
@@ -383,10 +383,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   ! fire_year=2015, ! use 2015 when finn1.5 climatology is used
   ! FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_2005-2015.nc', has records stored as 2015 values
 
-  BBMODE = MONTHLY_AVG,
-  persistence = 31,
-  fire_year=2020, ! use 2020 when finn2.5mod climatology is used
-  FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_2010-2020_monmean.nc', !has records stored as 2020 values
+  !BBMODE = MONTHLY_AVG,
+  !persistence = 31,
+  !fire_year=2020, ! use 2020 when finn2.5mod climatology is used
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_2010-2020_monmean.nc', !has records stored as 2020 values
 
 !------------------------------------------------------------
 ! Boundary condition stuff

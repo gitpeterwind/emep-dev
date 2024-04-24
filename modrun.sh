@@ -3,7 +3,7 @@
 #SBATCH --ntasks-per-node=128
 #SBATCH --account=noemep
 #SBATCH --qos=np
-#SBATCH --time=12:00:0
+#SBATCH --time=24:00:0
 #SBATCH --job-name=emepctm
 #SBATCH --output=%x.%j.out --error=%x.%j.out
 
@@ -14,7 +14,7 @@
 # user_id=GL
 # run=rv4_51
 
-DIRLOCA="EMEP_out/PBAP_2013_2014"
+DIRLOCA="EMEP_out/PBAP_year_2018_high_res"
 DIRPATH="/ec/res4/scratch/nor4796/"
 
 # git directory where to run emep model from

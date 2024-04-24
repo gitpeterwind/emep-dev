@@ -116,9 +116,9 @@ module PBAP_mod
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                          !https://doi.org/10.5194/acp-15-6127-2015, 2015
 
-  real, parameter :: FUNGAL_DIAMETER = 5.0 !Fungal diameter [um] (ibid gives 3um, but this gives
+  real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid gives 3um, but this gives
                                            !very light spores, and other literature claims they are
-                                           !3um-5um.
+                                           !3um-5um. N.B! Should also be updated in the deposition routine
 
   real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
                                                                   !This is on the lower end of that
