@@ -14,6 +14,7 @@ private
 
 public :: print_Deriv_type
 public :: print_Asc2D
+public :: print_Sector_type
 integer, public, parameter :: &
   TXTLEN_DERIV = 34, &
   TXTLEN_SHORT = 28, &
@@ -331,6 +332,7 @@ type, public :: lf_set_type
   logical :: DAY =.false.
   logical :: HOUR =.false.
   logical :: HOUR_INST =.false.
+  logical :: CityMasks =.false.
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   !for fullchem settings
   logical :: full_chem =.false.
@@ -439,5 +441,23 @@ subroutine print_Deriv_type(w)
   write(*,*)            "dt_scale:", w%dt_scale
   write(*,*)            "avg    :", w%avg
 end subroutine print_Deriv_type
+!=========================================================================
+subroutine print_Sector_type(secs,txt)
+  type(Sector_type), dimension(:), intent(in) :: secs
+  type(Sector_type) :: s
+  character(len=*), intent(in) :: txt
+  integer :: i
+  do i = 1, size(secs)
+    s = secs(i)
+    if ( s%name=='NOTSET' ) then
+      write(*,'(a,i3,a)') 'prSecs'//txt//':',i, 'End print_Sector_type'
+      return
+    else
+      write(*,'(a,i3,3a10,3i3,2x,a)') 'prSecs'//txt//':',i, trim(s%name), &
+        s%longname, s%cdfname, s%timefac, s%height, s%split,&
+         trim(s%species)//'    :'//trim(s%description)
+    end if
+  end do
+end subroutine print_Sector_type
 !=========================================================================
 endmodule OwnDataTypes_mod

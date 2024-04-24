@@ -52,7 +52,7 @@ use Io_Progs_mod,     only: datewrite !MASS
 use Landuse_mod,      only: water_fraction, ice_landcover
 use LocalVariables_mod, only: Grid
 use LocalFractions_mod, only: lf_fullchem,lf_Nvert,lf_SurfArea_pre,lf_SurfArea_pos,&
-                              spec2lfspec,rctAk_lf,rctBk_lf, lf_rcemis_nat, makeDMS
+                              spec2lfspec,rctAk_lf,rctBk_lf, lf_rcemis_nat, makeDMS, ix_DMS
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
@@ -759,7 +759,7 @@ subroutine setup_rcemis(i,j)
                            (dA(k)+dB(k)*ps(i,j,1)) *AVOG
         rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ addemis
         if (USES%LocalFractions .and. makeDMS) then
-           call lf_rcemis_nat(O_DMS%index, addemis, i, j) ! k assumed KMAX_MID
+           call lf_rcemis_nat(O_DMS%index, addemis, i, j, icountry_in=ix_DMS) ! k assumed KMAX_MID
         end if
           
      end if

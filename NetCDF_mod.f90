@@ -30,6 +30,7 @@ use Config_module,       only: KMAX_MID,KMAX_BND, runlabel1, runlabel2&
                              , startdate, step_main
 use Country_mod,        only : NLAND, Country
 use Debug_module,       only : DEBUG ! old:_NETCDF, DEBUG_NETCDF_RF
+use EmisDef_mod,        only : NEmisMask, EmisMaskValues,EmisMaskIndex2Name
 use Functions_mod,       only: StandardAtmos_km_2_kPa
 use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,debug_proc, debug_li, debug_lj &
@@ -63,7 +64,7 @@ use Par_mod,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
 use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
-use SmallUtils_mod,      only: wordsplit, find_index, str_replace
+use SmallUtils_mod,      only: wordsplit, find_index, str_replace, key2str
 
 implicit none
 
@@ -105,6 +106,8 @@ public :: check_lon_lat
 public :: make_gridresolution
 public :: create_country_emission_file
 public :: output_country_emissions
+public :: CreateCityFile
+public :: CityFileWrite
 
 
 
@@ -5550,4 +5553,96 @@ end subroutine vertical_interpolate
   end if
 
 end subroutine create_country_emission_file
+
+subroutine CreateCityFile(filename, runname, Nrun, Ndate, Ntime, ncFileID)
+  character(len=*),  intent(in)  :: fileName
+  character(len=TXTLEN_NAME) , intent(in):: runname(Nrun)
+  integer, intent(in) :: Nrun, Ndate, Ntime
+  integer, intent(out) ::   ncFileID
+  integer :: cityDimID,runDimID,dateDimID,timeDimID,StringDimID,varID,cityvarID
+  integer :: i
+  character(len=TXTLEN_NAME):: datename
+  !fortran does not have string types. Use character arrays instead
+
+  if(MasterProc)then
+     !we do not use hdf5, as we do not expect much gain by compression
+     call check(nf90_create(fileName,nf90_clobber,ncFileID),"create:"//trim(fileName))
+     call check(nf90_def_dim(ncFileID,"string_length",TXTLEN_NAME,StringDimID),"dim:slen")
+     call check(nf90_def_dim(ncFileID,"city",NEmisMask,cityDimID),"dim:city")
+     call check(nf90_def_var(ncFileID,"city",nf90_char,[StringDimID,cityDimID],cityvarID),"def:city")
+     call check(nf90_put_att(ncFileID,cityvarID,"description","Receptor city name"))
+     call check(nf90_def_dim(ncFileID,"run",Nrun,runDimID),"dim:run")
+     call check(nf90_def_var(ncFileID,"run",nf90_char,[StringDimID,runDimID],varID),"def:run")
+     call check(nf90_enddef(ncFileID))
+     call check(nf90_put_var(ncFileID,VarID,runname))
+     call check(nf90_put_var(ncFileID,cityVarID,EmisMaskIndex2Name))
+     call check(nf90_redef(ncFileID),"file redef")
+     call check(nf90_put_att(ncFileID,varID,"description","Country, region or Source contributing"))
+     call check(nf90_def_dim(ncFileID,"date",1,dateDimID),"dim:date")
+     call check(nf90_def_var(ncFileID,"date",nf90_double,[datedimID],varID),"def:date")
+     datename=trim(key2str('YYYY-MM-DD 00:00:00.000000','YYYY',current_date%year))
+     datename=trim(key2str(datename,'MM',current_date%month))
+     datename=trim(key2str(datename,'DD',current_date%day))
+     call check(nf90_put_att(ncFileID,varID,"units","days since "//trim(datename)))
+     call check(nf90_put_att(ncFileID,varID,"calendar","standard"))
+     call check(nf90_def_dim(ncFileID,"time",Ntime,timeDimID),"dim:time")
+     call check(nf90_def_var(ncFileID,"time",nf90_double,[timedimID],varID),"def:time")
+     call check(nf90_put_att(ncFileID,varID,"_FillValue",nf90_fill_double ))
+     call check(nf90_put_att(ncFileID,varID,"units","days since 1900-01-01"))
+     call check(nf90_put_att(ncFileID,varID,"calendar","standard"))
+     call check(nf90_close(ncFileID))
+ end if
+
+end subroutine CreateCityFile
+
+subroutine CityFileWrite(values, varname, hour, filename, runname, Nrun, Nruntot, Runstart, Ndate, Ntime)
+  !sums contributions from all cities defined
+  real(kind=4) :: values(Nrun,NEmisMask)
+  character(len=*),  intent(in)  :: fileName, varname
+  character(len=TXTLEN_NAME) , intent(in):: runname(*)
+  integer, intent(in) :: hour, Nrun, Ndate, Ntime, Nruntot, Runstart
+  integer :: cityDimID,runDimID,dateDimID,timeDimID,StringDimID,varID,ncFileID,i,j
+  integer :: status
+  character(len=TXTLEN_FILE),save :: oldname='NOTSET'
+  real(kind=8) ::rdays
+  if(MasterProc)then
+     if (trim(oldname) /= trim(fileName)) then
+        call CreateCityFile(filename, runname, Nruntot, Ndate, Ntime,ncFileID)
+        oldname = trim(fileName)
+     end if
+     call check(nf90_open(trim(fileName),nf90_share+nf90_write,ncFileID),"open cityfile")
+     call check(nf90_inq_varid(ncFileID,'time',VarID))
+     call date2nctime(current_date,rdays)
+     if (mod(hour,24)==0) then
+        call check(nf90_put_var(ncFileID,VarID,rdays,start=(/Ntime/)))     
+     else
+        call check(nf90_put_var(ncFileID,VarID,rdays,start=(/(hour*Ntime/24)/)))      
+     end if
+     call check(nf90_inq_varid(ncFileID,'date',VarID))
+     call check(nf90_put_var(ncFileID,VarID,0)) !To improve when actual
+
+     status=nf90_inq_varid(ncFileID,varname,VarID)
+     if(status/=nf90_noerr)then
+        !if variable does not exist, create
+        call check(nf90_redef(ncFileID),"file redef:"//trim(varname))
+        call check(nf90_inq_dimid(ncFileID,"city",citydimID),"dim:city")
+        call check(nf90_inq_dimid(ncFileID,"run",rundimID),"dim:run")
+        call check(nf90_inq_dimid(ncFileID,"date",datedimID),"dim:date")
+        call check(nf90_inq_dimid(ncFileID,"time",timedimID),"dim:time")
+        !NB: time dimension is the "fastest" changing index (Fortran order is opposite as NetCDF / C)
+        call check(nf90_def_var(ncFileID,varname,nf90_float,&
+             [timeDimID,dateDimID,runDimID,cityDimID],varID),"def3d:"//trim(varname))
+        call check(nf90_put_att(ncFileID,varID,"_FillValue",nf90_fill_float ))
+        call check(nf90_enddef(ncFileID))
+     end if
+     !NB: hour=0 is midnight and is set as the last record
+     if (mod(hour,24)==0) then
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/24,1,Runstart,1/),count=(/1,1,Nrun,NEmisMask/)))
+     else
+        call check(nf90_put_var(ncFileID,VarID,values,start=(/mod(hour,24),1,Runstart,1/),count=(/1,1,Nrun,NEmisMask/)))
+     end if
+     call check(nf90_close(ncFileID))
+  end if
+ end subroutine CityFileWrite
+
 endmodule NetCDF_mod

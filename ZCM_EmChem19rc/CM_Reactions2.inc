@@ -257,7 +257,7 @@
 !-> SO4
 
   P = rcemis(SO4,k)  &
-    + AQRCK(ICLOHSO2,K)*2.00e-12 * xnew(OH) * xnew(SO2)  &
+    + rct(96,k) * xnew(OH) * xnew(SO2)  &
     + AQRCK(ICLRC1,K) * xnew(SO2) * xnew(H2O2)  &
     + AQRCK(ICLRC2,K) * xnew(SO2) * xnew(O3)  &
     + AQRCK(ICLRC3,K) * xnew(SO2)
@@ -287,8 +287,8 @@
 
 !-> NO3_c
 
-  P = rct(98,k) * xnew(HNO3)  &
-    + rct(99,k) * xnew(HNO3)
+  P = rct(99,k) * xnew(HNO3)  &
+    + rct(100,k) * xnew(HNO3)
   
   ! L = 0.0
   
@@ -488,7 +488,7 @@
 
   P = rcemis(EC_F_RES_NEW,k)
   
-  L = rct(101,k)
+  L = rct(102,k)
   
   xnew(EC_f_Res_new) = (xold(EC_f_Res_new) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -496,7 +496,7 @@
 !-> EC_f_Res_age
 
   P = rcemis(EC_F_RES_AGE,k)  &
-    + rct(101,k) * xnew(EC_f_Res_new)
+    + rct(102,k) * xnew(EC_f_Res_new)
   
   ! L = 0.0
   
@@ -516,7 +516,7 @@
 
   P = rcemis(EC_F_NONRES_NEW,k)
   
-  L = rct(101,k)
+  L = rct(102,k)
   
   xnew(EC_f_nonRes_new) = (xold(EC_f_nonRes_new) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -524,7 +524,7 @@
 !-> EC_f_nonRes_age
 
   P = rcemis(EC_F_NONRES_AGE,k)  &
-    + rct(101,k) * xnew(EC_f_nonRes_new)
+    + rct(102,k) * xnew(EC_f_nonRes_new)
   
   ! L = 0.0
   

@@ -92,7 +92,7 @@
 ! PRELIM 2021:
 !  EmisDir='/nobackup/forsk/sm_agnny',
 ! NEW FORMAT:
-  Emis_sourceFiles(1)%filename = 'DataDir/emis_EMEPreport_2023/GNFREmis_EMEP01_2020_27062023.nc',
+!  Emis_sourceFiles(1)%filename = 'DataDir/emis_EMEPreport_2023/GNFREmis_EMEP01_2020_27062023.nc',
 
 !For 2005-2020, change year
   EmisDir                 = 'DataDir/emis_EMEPreport_2022',
@@ -251,7 +251,6 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 ! Emis_sourceFiles(1)%source(2)%species='EC_f_FFUEL_age',
 ! Emis_sourceFiles(1)%source(2)%factor=0.2, !20% as age
  
-  femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
   !SHIP femisFile               = '/home/sm_davsi/emep-mscw/rv4_39nship/femis.GNFRSHIP'
  ! femisFile               = 'NOTSET' ,!Default does not make any reduction
 

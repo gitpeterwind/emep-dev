@@ -45,7 +45,7 @@ module Biogenics_mod
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
                            MasterProc, &
-                           USES, &
+                           C5H8_ix, APINENE_ix, USES, &
                            NATBIO, EmBio, EMEP_EuroBVOCFile
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
@@ -55,6 +55,7 @@ module Biogenics_mod
   use LandDefs_mod,       only: LandType, LandDefs
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai
   use Landuse_mod,        only: LandCover
+  use LocalFractions_mod, only: lf_rcemis_nat, makeBVOC, makeBVOC, ix_BVOC
   use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
   use MetFields_mod,      only: t2_nwp
   use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
@@ -676,7 +677,13 @@ module Biogenics_mod
     else
         if(NATBIO%NH3>0)EmisNat(NATBIO%NH3,i,j) = 0.0
     end if
-     
+
+    if (USES%LocalFractions .and. makeBVOC) then
+       ! k assumed KMAX_MID
+       ! somewhat hardcoded
+       call lf_rcemis_nat(C5H8_ix, rcbio(NATBIO%C5H8,KG), i, j, icountry_in=ix_BVOC)
+       call lf_rcemis_nat(APINENE_ix, rcbio(NATBIO%TERP,KG), i, j, icountry_in=ix_BVOC)
+    end if
  
     if ( dbg .and. current_date%seconds==0 ) then 
 
