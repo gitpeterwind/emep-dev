@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Apr  2024, Dave
+
+Derived_mod: added more explicit output of fracPM25 details to olog. 
+Gives:
+  IniDeriv:fracPM25  umDpgV  3.000 sig  2.000 rho  2.200 PMc  0.203
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Apr  2024, Dave
 
 Added EC-aging options, configarable with USES based upon Croft et al
