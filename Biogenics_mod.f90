@@ -45,7 +45,7 @@ module Biogenics_mod
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
                            MasterProc, &
-                           C5H8_ix, APINENE_ix, USES, &
+                           USES, &
                            NATBIO, EmBio, EMEP_EuroBVOCFile
   use Debug_module,       only: DebugCell, DEBUG
   use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
@@ -55,7 +55,6 @@ module Biogenics_mod
   use LandDefs_mod,       only: LandType, LandDefs
   use LandPFT_mod,        only: MapPFT_LAI, pft_lai
   use Landuse_mod,        only: LandCover
-  use LocalFractions_mod, only: lf_rcemis_nat, makeBVOC, makeBVOC, ix_BVOC
   use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
   use MetFields_mod,      only: t2_nwp
   use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
@@ -96,7 +95,7 @@ module Biogenics_mod
 
   ! We hard-code these indices, but only calculate emissions if needed
   ! Must match order of NATBIO to start with 
-  integer, parameter, public ::  NEMIS_BioNat  = 27
+  integer, parameter, public ::  NEMIS_BioNat  = 26
   character(len=16), save, dimension(NEMIS_BioNat), public:: &
       EMIS_BioNat = [character(len=16):: &
              "C5H8       " &
@@ -122,10 +121,9 @@ module Biogenics_mod
            , "POLLEN_MUGWORT4"&
            , "POLLEN_MUGWORT5"&
            , "RN222      " &
-           , "FUNGAL_SPORES"&
-           , "BACTERIA"    &
-           , "MARINE_OA_NEW" &
-           , "MARINE_OA_AGE"]
+           , "FUNGAL_SPORES_3"&
+           , "FUNGAL_SPORES_5"&
+           , "BACTERIA"    ]
 
   integer, public, parameter :: &
       N_ECF=2, ECF_ISOP=1, ECF_TERP=2   &! canopy factors, BVOC
@@ -677,13 +675,7 @@ module Biogenics_mod
     else
         if(NATBIO%NH3>0)EmisNat(NATBIO%NH3,i,j) = 0.0
     end if
-
-    if (USES%LocalFractions .and. makeBVOC) then
-       ! k assumed KMAX_MID
-       ! somewhat hardcoded
-       call lf_rcemis_nat(C5H8_ix, rcbio(NATBIO%C5H8,KG), i, j, icountry_in=ix_BVOC)
-       call lf_rcemis_nat(APINENE_ix, rcbio(NATBIO%TERP,KG), i, j, icountry_in=ix_BVOC)
-    end if
+     
  
     if ( dbg .and. current_date%seconds==0 ) then 
 

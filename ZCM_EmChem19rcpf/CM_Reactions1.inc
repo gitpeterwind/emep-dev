@@ -1309,13 +1309,22 @@
   xnew(POLLEN_MUGWORT5) = xold(POLLEN_MUGWORT5) + dt2 * P
 
 
-!-> FUNGAL_SPORES
+!-> FUNGAL_SPORES_3
 
-  P = rcemis(FUNGAL_SPORES,k)
+  P = rcemis(FUNGAL_SPORES_3,k)
   
   ! L = 0.0
   
-  xnew(FUNGAL_SPORES) = xold(FUNGAL_SPORES) + dt2 * P
+  xnew(FUNGAL_SPORES_3) = xold(FUNGAL_SPORES_3) + dt2 * P
+
+
+!-> FUNGAL_SPORES_5
+
+  P = rcemis(FUNGAL_SPORES_5,k)
+  
+  ! L = 0.0
+  
+  xnew(FUNGAL_SPORES_5) = xold(FUNGAL_SPORES_5) + dt2 * P
 
 
 !-> BACTERIA

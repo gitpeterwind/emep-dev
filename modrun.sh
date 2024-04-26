@@ -14,7 +14,7 @@
 # user_id=GL
 # run=rv4_51
 
-DIRLOCA="EMEP_out/PBAP_year_2018_high_res"
+DIRLOCA="EMEP_out/PBAP_test"
 DIRPATH="/ec/res4/scratch/nor4796/"
 
 # git directory where to run emep model from

@@ -3,8 +3,8 @@
   iyr_trend = 2015,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
-  startdate = 2015,01,01,00,
-  enddate   = 2018,12,31,24,
+  startdate = 2018,01,01,00,
+  enddate   = 2018,01,02,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -74,7 +74,7 @@
   USES%FUNGAL_SPORES     = T,
   USES%BACTERIA          = F,
   USES%MARINE_OA         = F,
-  USES%FUNGAL_METHOD    = 'HS', 
+  USES%FUNGAL_METHOD    = 'HO', 
   USES%NOCHEM            = F,
 
 
@@ -547,7 +547,7 @@ OutputConcs=
  !     'BACTERIA'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-       'FUNGAL_SPORES'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+       'FUNGAL_SPORES_3'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !      'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !      'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',

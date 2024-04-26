@@ -106,80 +106,83 @@ module ChemSpecs_mod
     , POLLEN_MUGWORT5=  80
   
   integer, public, parameter :: &
-      FUNGAL_SPORES=  81  &
-    , BACTERIA    =  82  &
-    , MARINE_OA_NEW=  83  &
-    , MARINE_OA_AGE=  84  &
-    , ASOC_ug1e3  =  85  &
-    , ASOC_ug1e2  =  86  &
-    , ASOC_ug10   =  87  &
-    , ASOC_ug1    =  88  &
-    , ASOC_ng1e2  =  89  &
-    , non_C_ASOA_ug1e3=  90
+      FUNGAL_SPORES_3=  81  &
+    , FUNGAL_SPORES_5=  82  &
+    , BACTERIA    =  83  &
+    , MARINE_OA_NEW=  84  &
+    , MARINE_OA_AGE=  85  &
+    , ASOC_ug1e3  =  86  &
+    , ASOC_ug1e2  =  87  &
+    , ASOC_ug10   =  88  &
+    , ASOC_ug1    =  89  &
+    , ASOC_ng1e2  =  90
   
   integer, public, parameter :: &
-      non_C_ASOA_ug1e2=  91  &
-    , non_C_ASOA_ug10=  92  &
-    , non_C_ASOA_ug1=  93  &
-    , non_C_ASOA_ng1e2=  94  &
-    , BSOC_ug1e3  =  95  &
-    , BSOC_ug1e2  =  96  &
-    , BSOC_ug10   =  97  &
-    , BSOC_ug1    =  98  &
-    , BSOC_ng1e2  =  99  &
-    , non_C_BSOA_ug1e3= 100
+      non_C_ASOA_ug1e3=  91  &
+    , non_C_ASOA_ug1e2=  92  &
+    , non_C_ASOA_ug10=  93  &
+    , non_C_ASOA_ug1=  94  &
+    , non_C_ASOA_ng1e2=  95  &
+    , BSOC_ug1e3  =  96  &
+    , BSOC_ug1e2  =  97  &
+    , BSOC_ug10   =  98  &
+    , BSOC_ug1    =  99  &
+    , BSOC_ng1e2  = 100
   
   integer, public, parameter :: &
-      non_C_BSOA_ug1e2= 101  &
-    , non_C_BSOA_ug10= 102  &
-    , non_C_BSOA_ug1= 103  &
-    , non_C_BSOA_ng1e2= 104  &
-    , SO4         = 105  &
-    , NH3         = 106  &
-    , NO3_f       = 107  &
-    , NO3_c       = 108  &
-    , NH4_f       = 109  &
-    , OM25_bgnd   = 110
+      non_C_BSOA_ug1e3= 101  &
+    , non_C_BSOA_ug1e2= 102  &
+    , non_C_BSOA_ug10= 103  &
+    , non_C_BSOA_ug1= 104  &
+    , non_C_BSOA_ng1e2= 105  &
+    , SO4         = 106  &
+    , NH3         = 107  &
+    , NO3_f       = 108  &
+    , NO3_c       = 109  &
+    , NH4_f       = 110
   
   integer, public, parameter :: &
-      OM25_p      = 111  &
-    , ffire_OM    = 112  &
-    , ffire_BC    = 113  &
-    , ffire_remPPM25= 114  &
-    , ffire_c     = 115  &
-    , SeaSalt_f   = 116  &
-    , SeaSalt_c   = 117  &
-    , Dust_road_f = 118  &
-    , Dust_road_c = 119  &
-    , Dust_wb_f   = 120
+      OM25_bgnd   = 111  &
+    , OM25_p      = 112  &
+    , ffire_OM    = 113  &
+    , ffire_BC    = 114  &
+    , ffire_remPPM25= 115  &
+    , ffire_c     = 116  &
+    , SeaSalt_f   = 117  &
+    , SeaSalt_c   = 118  &
+    , Dust_road_f = 119  &
+    , Dust_road_c = 120
   
   integer, public, parameter :: &
-      Dust_wb_c   = 121  &
-    , Dust_sah_f  = 122  &
-    , Dust_sah_c  = 123  &
-    , Ash_f       = 124  &
-    , Ash_c       = 125  &
-    , POM_f_Res   = 126  &
-    , POM_c_Res   = 127  &
-    , POM_f_nonRes= 128  &
-    , POM_c_nonRes= 129  &
-    , EC_f_Res_new= 130
+      Dust_wb_f   = 121  &
+    , Dust_wb_c   = 122  &
+    , Dust_sah_f  = 123  &
+    , Dust_sah_c  = 124  &
+    , Ash_f       = 125  &
+    , Ash_c       = 126  &
+    , POM_f_Res   = 127  &
+    , POM_c_Res   = 128  &
+    , POM_f_nonRes= 129  &
+    , POM_c_nonRes= 130
   
   integer, public, parameter :: &
-      EC_f_Res_age= 131  &
-    , EC_c_Res    = 132  &
-    , EC_f_nonRes_new= 133  &
-    , EC_f_nonRes_age= 134  &
-    , EC_c_nonRes = 135  &
-    , remPPM25_nonRes= 136  &
-    , remPPM25_Res= 137  &
-    , remPPM_c_nonRes= 138  &
-    , remPPM_c_Res= 139  &
-    , SQT_SOA_NV  = 140
+      EC_f_Res_new= 131  &
+    , EC_f_Res_age= 132  &
+    , EC_c_Res    = 133  &
+    , EC_f_nonRes_new= 134  &
+    , EC_f_nonRes_age= 135  &
+    , EC_c_nonRes = 136  &
+    , remPPM25_nonRes= 137  &
+    , remPPM25_Res= 138  &
+    , remPPM_c_nonRes= 139  &
+    , remPPM_c_Res= 140
+  
+  integer, public, parameter :: &
+      SQT_SOA_NV  = 141
   
   !+ Defines indices for ADV : Advected species
   integer, public, parameter :: FIRST_ADV=16, &
-                                 LAST_ADV=140
+                                 LAST_ADV=141
   
   integer, public, parameter :: &
       IXADV_RO2POOL     =   1  &
@@ -259,78 +262,79 @@ module ChemSpecs_mod
     , IXADV_POLLEN_MUGWORT3=  63  &
     , IXADV_POLLEN_MUGWORT4=  64  &
     , IXADV_POLLEN_MUGWORT5=  65  &
-    , IXADV_FUNGAL_SPORES=  66  &
-    , IXADV_BACTERIA    =  67  &
-    , IXADV_MARINE_OA_NEW=  68  &
-    , IXADV_MARINE_OA_AGE=  69  &
-    , IXADV_ASOC_ug1e3  =  70
+    , IXADV_FUNGAL_SPORES_3=  66  &
+    , IXADV_FUNGAL_SPORES_5=  67  &
+    , IXADV_BACTERIA    =  68  &
+    , IXADV_MARINE_OA_NEW=  69  &
+    , IXADV_MARINE_OA_AGE=  70
   
   integer, public, parameter :: &
-      IXADV_ASOC_ug1e2  =  71  &
-    , IXADV_ASOC_ug10   =  72  &
-    , IXADV_ASOC_ug1    =  73  &
-    , IXADV_ASOC_ng1e2  =  74  &
-    , IXADV_non_C_ASOA_ug1e3=  75  &
-    , IXADV_non_C_ASOA_ug1e2=  76  &
-    , IXADV_non_C_ASOA_ug10=  77  &
-    , IXADV_non_C_ASOA_ug1=  78  &
-    , IXADV_non_C_ASOA_ng1e2=  79  &
-    , IXADV_BSOC_ug1e3  =  80
+      IXADV_ASOC_ug1e3  =  71  &
+    , IXADV_ASOC_ug1e2  =  72  &
+    , IXADV_ASOC_ug10   =  73  &
+    , IXADV_ASOC_ug1    =  74  &
+    , IXADV_ASOC_ng1e2  =  75  &
+    , IXADV_non_C_ASOA_ug1e3=  76  &
+    , IXADV_non_C_ASOA_ug1e2=  77  &
+    , IXADV_non_C_ASOA_ug10=  78  &
+    , IXADV_non_C_ASOA_ug1=  79  &
+    , IXADV_non_C_ASOA_ng1e2=  80
   
   integer, public, parameter :: &
-      IXADV_BSOC_ug1e2  =  81  &
-    , IXADV_BSOC_ug10   =  82  &
-    , IXADV_BSOC_ug1    =  83  &
-    , IXADV_BSOC_ng1e2  =  84  &
-    , IXADV_non_C_BSOA_ug1e3=  85  &
-    , IXADV_non_C_BSOA_ug1e2=  86  &
-    , IXADV_non_C_BSOA_ug10=  87  &
-    , IXADV_non_C_BSOA_ug1=  88  &
-    , IXADV_non_C_BSOA_ng1e2=  89  &
-    , IXADV_SO4         =  90
+      IXADV_BSOC_ug1e3  =  81  &
+    , IXADV_BSOC_ug1e2  =  82  &
+    , IXADV_BSOC_ug10   =  83  &
+    , IXADV_BSOC_ug1    =  84  &
+    , IXADV_BSOC_ng1e2  =  85  &
+    , IXADV_non_C_BSOA_ug1e3=  86  &
+    , IXADV_non_C_BSOA_ug1e2=  87  &
+    , IXADV_non_C_BSOA_ug10=  88  &
+    , IXADV_non_C_BSOA_ug1=  89  &
+    , IXADV_non_C_BSOA_ng1e2=  90
   
   integer, public, parameter :: &
-      IXADV_NH3         =  91  &
-    , IXADV_NO3_f       =  92  &
-    , IXADV_NO3_c       =  93  &
-    , IXADV_NH4_f       =  94  &
-    , IXADV_OM25_bgnd   =  95  &
-    , IXADV_OM25_p      =  96  &
-    , IXADV_ffire_OM    =  97  &
-    , IXADV_ffire_BC    =  98  &
-    , IXADV_ffire_remPPM25=  99  &
-    , IXADV_ffire_c     = 100
+      IXADV_SO4         =  91  &
+    , IXADV_NH3         =  92  &
+    , IXADV_NO3_f       =  93  &
+    , IXADV_NO3_c       =  94  &
+    , IXADV_NH4_f       =  95  &
+    , IXADV_OM25_bgnd   =  96  &
+    , IXADV_OM25_p      =  97  &
+    , IXADV_ffire_OM    =  98  &
+    , IXADV_ffire_BC    =  99  &
+    , IXADV_ffire_remPPM25= 100
   
   integer, public, parameter :: &
-      IXADV_SeaSalt_f   = 101  &
-    , IXADV_SeaSalt_c   = 102  &
-    , IXADV_Dust_road_f = 103  &
-    , IXADV_Dust_road_c = 104  &
-    , IXADV_Dust_wb_f   = 105  &
-    , IXADV_Dust_wb_c   = 106  &
-    , IXADV_Dust_sah_f  = 107  &
-    , IXADV_Dust_sah_c  = 108  &
-    , IXADV_Ash_f       = 109  &
-    , IXADV_Ash_c       = 110
+      IXADV_ffire_c     = 101  &
+    , IXADV_SeaSalt_f   = 102  &
+    , IXADV_SeaSalt_c   = 103  &
+    , IXADV_Dust_road_f = 104  &
+    , IXADV_Dust_road_c = 105  &
+    , IXADV_Dust_wb_f   = 106  &
+    , IXADV_Dust_wb_c   = 107  &
+    , IXADV_Dust_sah_f  = 108  &
+    , IXADV_Dust_sah_c  = 109  &
+    , IXADV_Ash_f       = 110
   
   integer, public, parameter :: &
-      IXADV_POM_f_Res   = 111  &
-    , IXADV_POM_c_Res   = 112  &
-    , IXADV_POM_f_nonRes= 113  &
-    , IXADV_POM_c_nonRes= 114  &
-    , IXADV_EC_f_Res_new= 115  &
-    , IXADV_EC_f_Res_age= 116  &
-    , IXADV_EC_c_Res    = 117  &
-    , IXADV_EC_f_nonRes_new= 118  &
-    , IXADV_EC_f_nonRes_age= 119  &
-    , IXADV_EC_c_nonRes = 120
+      IXADV_Ash_c       = 111  &
+    , IXADV_POM_f_Res   = 112  &
+    , IXADV_POM_c_Res   = 113  &
+    , IXADV_POM_f_nonRes= 114  &
+    , IXADV_POM_c_nonRes= 115  &
+    , IXADV_EC_f_Res_new= 116  &
+    , IXADV_EC_f_Res_age= 117  &
+    , IXADV_EC_c_Res    = 118  &
+    , IXADV_EC_f_nonRes_new= 119  &
+    , IXADV_EC_f_nonRes_age= 120
   
   integer, public, parameter :: &
-      IXADV_remPPM25_nonRes= 121  &
-    , IXADV_remPPM25_Res= 122  &
-    , IXADV_remPPM_c_nonRes= 123  &
-    , IXADV_remPPM_c_Res= 124  &
-    , IXADV_SQT_SOA_NV  = 125
+      IXADV_EC_c_nonRes = 121  &
+    , IXADV_remPPM25_nonRes= 122  &
+    , IXADV_remPPM25_Res= 123  &
+    , IXADV_remPPM_c_nonRes= 124  &
+    , IXADV_remPPM_c_Res= 125  &
+    , IXADV_SQT_SOA_NV  = 126
   
   !+ Defines indices for SHL : Short-lived (non-advected) species
   integer, public, parameter :: FIRST_SHL=1, &
@@ -356,8 +360,8 @@ module ChemSpecs_mod
     , IXSHL_TERPO2      =  15
   
   !+ Defines indices for SEMIVOL : Semi-volatile organic aerosols
-  integer, public, parameter :: FIRST_SEMIVOL=85, &
-                                 LAST_SEMIVOL=104
+  integer, public, parameter :: FIRST_SEMIVOL=86, &
+                                 LAST_SEMIVOL=105
   
   integer, public, parameter :: &
       IXSOA_ASOC_ug1e3  =   1  &
@@ -510,7 +514,8 @@ contains
     species(POLLEN_MUGWORT3) = Chemical("POLLEN_MUGWORT3",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_MUGWORT4) = Chemical("POLLEN_MUGWORT4",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(POLLEN_MUGWORT5) = Chemical("POLLEN_MUGWORT5",  12.0000,  0,   0.0000,   0.0000,   0.0000 )
-    species(FUNGAL_SPORES) = Chemical("FUNGAL_SPORES",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(FUNGAL_SPORES_3) = Chemical("FUNGAL_SPORES_3",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
+    species(FUNGAL_SPORES_5) = Chemical("FUNGAL_SPORES_5",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(BACTERIA    ) = Chemical("BACTERIA    ",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(MARINE_OA_NEW) = Chemical("MARINE_OA_NEW",   1.0000,  0,   0.0000,   0.0000,   0.0000 )
     species(MARINE_OA_AGE) = Chemical("MARINE_OA_AGE",   1.0000,  0,   0.0000,   0.0000,   0.0000 )

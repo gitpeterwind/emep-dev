@@ -12,36 +12,23 @@ module PBAP_mod
 
   use CheckStop_mod,      only: CheckStop, StopAll
   use ChemSpecs_mod,         only : species
-  use Config_module, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, IOU_INST, &
-                           KT => KCHEMTOP, KG => KMAX_MID, &
-                           EURO_SOILNOX_DEPSCALE, &
-                           MasterProc, &
+  use Config_module, only : NPROC, MasterProc,&
+                           KT => KCHEMTOP, KG => KMAX_MID,&
                            USES, &
                            NATBIO, EmBio,OceanChlorophyll_File
   use Debug_module,       only: DebugCell, DEBUG
-  use GridValues_mod,     only: i_fdom,j_fdom, debug_proc,debug_li,debug_lj
-  use Io_mod,             only: IO_FORES, open_file, ios, datewrite
-  use Io_RunLog_mod,      only: PrintLog
-  use KeyValueTypes,      only: KeyVal,KeyValue
+  use GridValues_mod,     only: debug_proc,debug_li,debug_lj
   use LandDefs_mod,       only: LandType, LandDefs
-  use LandPFT_mod,        only: MapPFT_LAI, pft_lai
   use Landuse_mod,        only: LandCover, likely_coastal
   use LocalVariables_mod, only: Grid  ! -> izen, DeltaZ
   use MetFields_mod,      only: t2_nwp, q,ustar_nwp
-  use MetFields_mod,      only: PARdbh, PARdif !WN17, in W/m2
-  use NetCDF_mod,         only: ReadField_CDF, printCDF
-  use OwnDataTypes_mod,   only: Deriv, TXTLEN_SHORT
   use SeaSalt_mod,        only: SeaSalt_flux
-!  use Paleo_mod, only : PALEO_modai, PALEO_miso, PALEO_mmon
   use Par_mod,            only: MSG_READ1,me, limax, ljmax
   use PhysicalConstants_mod,  only:  AVOG, GRAV, PI
-  use Radiation_mod,      only: PARfrac, Wm2_uE
   use SmallUtils_mod,     only: find_index
   use TimeDate_mod,       only: current_date, daynumber
   use ZchemData_mod,      only: rcemis, rcbio
   use Biogenics_mod,      only: NEMIS_BioNat,EMIS_BioNat,EmisNat
-  use SubMet_mod,         only: Sub
 
   implicit none
   private
@@ -62,6 +49,7 @@ module PBAP_mod
   real,public, save, allocatable, dimension(:) :: WEIGHTS ,DIAMETERS, DENSITIES !Physical parameters. Dim: NPBAP
   real,private, save, allocatable, dimension(:) :: n2m, kgm2h !Conversion factors. Dim: NPBAP
   real,private, save, allocatable, dimension(:) :: itot, inat !indices in species and EMIS_Bionat. Dim: NPBAP
+  real, public :: FUNGAL_DIAMETER, FUNGAL_WEIGHT !Diameter depends on chosen fungal parameterization scheme
 
   character(len=20),private,save,allocatable,dimension(:) ::PBAP_names !For debugging only
 
@@ -75,12 +63,13 @@ module PBAP_mod
   !Choice of fungal flux parameterization:
   !HM: Hummel(2015) DOI: 10.5194/acp-15-6127-2015
   !SD: Sesartic and Dallafior (2011) DOI: 10.5194/bg-8-1181-2011
-  !HS: Heald and Spracklen (2009) DOI:10.1029/2009GL037493, see also Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009
+  !HS: Heald and Spracklen (2009) DOI:10.1029/2009GL037493
+  !HO: Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009, based on HS
   !JS: Janssen et al. (2021) DOI: 10.5194/acp-21-4381-2021
 
   !(GFL Feb 2024): Hummel parameterization uses different settling scheme than EMEP, Sesartic and Dallfior uses
-  !no settling scheme at all, so currently seems that Heald and Spracken parameterization
-  !(parameterization choice = "HS") gives best results for fungal spores
+  !no settling scheme at all, so currently seems that Heald and Spracken parameterization modified by Hoose
+  !(parameterization choice = "HO") gives best results for fungal spores
 
   real*8, DIMENSION(6), parameter  ::  &
   BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
@@ -95,35 +84,22 @@ module PBAP_mod
 
   !real*8, DIMENSION(3), parameter  ::  &
   !FUNG_PARAMS_HS_LARGE = [500.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 5um
-                                       !As specified in Hoose et al. (2010),DOI:
-                                       !10.1088/1748-9326/5/2/024009
+                                       !fungal spores. DOI:10.1029/2009GL037493
 
   real*8, DIMENSION(3)  ::  &
   FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 3um
-                                       !according to Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
-                                       !https://doi.org/10.5194/acp-15-6127-2015, 2015
-                                       !If the fungal diameter is larger than 3um, this will be updated to the
-                                       !FUNG_PARAMS_HS_LARGE parameters above.
+                                       !modifiend in Hoose et al. (2010),DOI:
 
 
   real*8, DIMENSION(4)  ::  &
   FUNG_PARAMS_JS = [2.63*1.0e-5, 6.10*1.0e3,46.7,59.0] !From Fungal parameterization, Janssen for North America.
-                                       !https://doi.org/10.5194/acp-21-4381-2021 (2021)
+                                       !https://doi.org/10.5194/acp-21-4381-2021 (2021) [Has not been tested!]
 
 
 
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                          !https://doi.org/10.5194/acp-15-6127-2015, 2015
-
-  real, parameter :: FUNGAL_DIAMETER = 3.0 !Fungal diameter [um] (ibid gives 3um, but this gives
-                                           !very light spores, and other literature claims they are
-                                           !3um-5um. N.B! Should also be updated in the deposition routine
-
-  real, parameter :: FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
-                                                                  !This is on the lower end of that
-                                                                  !reported in literature (33pg-65pg) according to
-                                                                  !Heald and Spracklen (2009) doi:10.1029/2009GL037493,
 
 
   real, parameter :: BACTERIA_DIAMETER = 1.0 !Bacteria diameter [um]
@@ -154,13 +130,23 @@ module PBAP_mod
 
 
       if (USES%FUNGAL_SPORES) then
-          itot_FungalSpores = find_index( "FUNGAL_SPORES", species(:)%name)
+          if (USES%FUNGAL_METHOD == "HS") then
+            itot_FungalSpores = find_index( "FUNGAL_SPORES_5", species(:)%name)
+            inat_FungalSpores = find_index( "FUNGAL_SPORES_5", EMIS_BioNat(:))
+            FUNGAL_DIAMETER = 5.0 !um
+
+          else
+            itot_FungalSpores = find_index( "FUNGAL_SPORES_3", species(:)%name)
+            inat_FungalSpores = find_index( "FUNGAL_SPORES_3", EMIS_BioNat(:))
+            FUNGAL_DIAMETER = 3.0 !um
+          end if 
+
           if (itot_FungalSpores < 0 ) then
             if(MasterProc)  write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
           else
+            FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
             NPBAP = NPBAP + 1
             iint_FungalSpores = NPBAP
-            inat_FungalSpores = find_index( "FUNGAL_SPORES", EMIS_BioNat(:))
             if(MasterProc) write(*,*) "USING FUNGAL_METHOD:",USES%FUNGAL_METHOD
           end if
        end if
@@ -222,7 +208,7 @@ module PBAP_mod
               if (FUNGAL_DIAMETER > 3.5) then
                 FUNG_PARAMS_HS(1) = 500 !New parameterization (see Ref. above)
                                         !for larger particles according to
-                                        !Hoose et al. (2010),DOI:10.1088/1748-9326/5/2/024009
+                                        !Heald and Spracken
               end if
           end if
 
@@ -324,7 +310,7 @@ module PBAP_mod
           !DOI 10.5194/bg-8-1181-2011
       end do !iiL
 
-  else if (USES%FUNGAL_METHOD == "HS") then
+  else if (USES%FUNGAL_METHOD == "HS" .or. USES%FUNGAL_METHOD == "HO") then
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)
@@ -344,7 +330,7 @@ module PBAP_mod
       end if
     end do !iiL
   
-  else if (USES%FUNGAL_METHOD == "JS") then
+  else if (USES%FUNGAL_METHOD == "JS") then !N.B: Has not been tested (April 2024)
     do iiL = 1,nlu
       LC = LandCover(i,j)%codes(iiL)
       sum_LC = sum_LC + LandCover(i,j)%fraction(iiL)

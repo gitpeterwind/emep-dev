@@ -267,7 +267,7 @@ type, public :: emep_useconfig
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
 
 ! Selection of Emissions parameterization for fungal
-  character(len=2) :: FUNGAL_METHOD  = 'HS'  !HM, SD, HS, JS (see PBAP module)
+  character(len=2) :: FUNGAL_METHOD  = 'HO'  !HM, HO, SD, HS, JS (see PBAP module)
 
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
@@ -320,7 +320,7 @@ real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
   TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USES%DUST=.true.
- ,INERIS_SNAP1       = .false.       & ! Switches off decadal trend
+ ,INERIS_SNAP1       = .false.       & ! Switches off decadal trendFUNGAL_SPORES
  ,INERIS_SNAP2       = .false.       & ! Allows near-zero summer values
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
@@ -334,6 +334,8 @@ type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
+
+
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -1091,6 +1093,8 @@ subroutine Config_Constants(iolog)
      GLOBAL_settings = "YES"
      European_settings = "NO"
   end if
+
+! Fungal diameter depends on chosen scheme
 
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
