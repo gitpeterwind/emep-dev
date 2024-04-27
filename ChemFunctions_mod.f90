@@ -744,6 +744,8 @@ module ChemFunctions_mod
        rate(K1:K2) =  4.6e-12*x(OH_ix,K1:K2) + 5.8e-7 + &
                       KINF*KO3*x(O3_ix,K1:K2) / &  !kOXD
                (1 + KO3*x(O3_ix,K1:K2) +KH2O * h2o(K1:K2))
+     else
+       call StopAll('Unrecognosed ECageMethod'//USES%ECageMethod)
     end if
 
     if (DEBUG%ECAGE .and. DebugCell ) then
