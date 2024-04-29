@@ -4,8 +4,13 @@
 module PBAP_mod
 
   !/-- Module to deal with primary biological aerosol pollutants (PBAPs).
-  !    Currently implemented: Fungal spores and bacteria
-  !    TODO: Solubility of Fungal Spores
+  !    IMPLEMENTED (April 2024):
+  !    - Fungal parameterization schemes (JS parameterization has not been tested)
+  !    - Bacteria based on LandUse classes (NOT TESTED)
+  !
+  !    TODO:
+  !    - Marine OA (most of the code is there, but not yet used)
+  !    - Aging of fungal spores? Contributing to condensation of SVOC?
   !
   !    Gunnar Felix Lange 2024
   !---------------------------------------------------------------------------
@@ -33,12 +38,13 @@ module PBAP_mod
   implicit none
   private
 
-  !/-- subroutines for PBAPs
+  !/-- subroutines for all PBAPs
   public ::  init_PBAPs,set_PBAPs
-  !/-- subroutines for Fungal Spores
+  !/-- subroutines for individual PBAPs
   private :: Set_FungalSpores, Set_Bacteria, Set_MarineOA
 
-  integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores bacteria and Marine OA implemented at the moment)
+  integer, public, save ::   NPBAP !Number of PBAPs!(only fungal spores, bacteria and Marine organic aerosol (OA) implemented at the moment)
+                                   !Only fungal spores have been properly tested!
 
   real,public, save, allocatable, dimension(:,:,:) :: PBAP_flux !Dim: i,j,NPBAP
 
@@ -49,17 +55,16 @@ module PBAP_mod
   real,public, save, allocatable, dimension(:) :: WEIGHTS ,DIAMETERS, DENSITIES !Physical parameters. Dim: NPBAP
   real,private, save, allocatable, dimension(:) :: n2m, kgm2h !Conversion factors. Dim: NPBAP
   real,private, save, allocatable, dimension(:) :: itot, inat !indices in species and EMIS_Bionat. Dim: NPBAP
-  real, public :: FUNGAL_DIAMETER, FUNGAL_WEIGHT !Diameter depends on chosen fungal parameterization scheme
+  real, public :: FUNGAL_DIAMETER, FUNGAL_WEIGHT !Diameter depends on chosen fungal parameterization scheme so allocated dynamically
 
   character(len=20),private,save,allocatable,dimension(:) ::PBAP_names !For debugging only
 
 
-  integer, private, save :: iint_FungalSpores, itot_FungalSpores, inat_FungalSpores !Index of fungal spores internall, in Species and in EMIS_BioNat
-  integer, private, save :: iint_Bacteria,itot_Bacteria, inat_Bacteria !Index of bacteria spores internally, in Species and in EMIS_BioNat
-  integer, private, save :: iint_MarineOA,itot_MarineOA, inat_MarineOA !Index of Marine OA internally, in Species and in EMIS_BioNat
+  integer, private, save :: iint_FungalSpores, itot_FungalSpores, inat_FungalSpores !Index of fungal spores internally/in species/in EMIS_BioNat
+  integer, private, save :: iint_Bacteria,itot_Bacteria, inat_Bacteria !Index of bacteria internally/in species/in EMIS_BioNat
+  integer, private, save :: iint_MarineOA,itot_MarineOA, inat_MarineOA !Index of marine OA internally/in species/in EMIS_BioNat
 
-
-
+  !!!!!!!!!!!!!!!!!FUNGAL PARAMETERIZATION CHOICES!!!!!!!!!!!!!!!!
   !Choice of fungal flux parameterization:
   !HM: Hummel(2015) DOI: 10.5194/acp-15-6127-2015
   !SD: Sesartic and Dallafior (2011) DOI: 10.5194/bg-8-1181-2011
@@ -67,15 +72,12 @@ module PBAP_mod
   !HO: Hoose et al (2010) DOI: 10.1088/1748-9326/5/2/024009, based on HS
   !JS: Janssen et al. (2021) DOI: 10.5194/acp-21-4381-2021
 
+  !For similar implementation in CHIMERE,see Vida et al. DOI: 10.5194/egusphere-2024-698
+
   !(GFL Feb 2024): Hummel parameterization uses different settling scheme than EMEP, Sesartic and Dallfior uses
   !no settling scheme at all, so currently seems that Heald and Spracken parameterization modified by Hoose
   !(parameterization choice = "HO") gives best results for fungal spores
 
-  real*8, DIMENSION(6), parameter  ::  &
-  BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
-                    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
-                    !DOI 10.1007/978-3-319-35095-0_121
-                    !Note that most of these are set in the LandInput file, except for the coastal parameter (as coastal is not a LandType)
   real*8, DIMENSION(3), parameter  ::  &
   FUNG_PARAMS_HM = [20.426, 275.82, 39300.0] !From Fungal paramterization, Eq. (2) of
   !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
@@ -84,22 +86,30 @@ module PBAP_mod
 
   !real*8, DIMENSION(3), parameter  ::  &
   !FUNG_PARAMS_HS_LARGE = [500.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 5um
-                                       !fungal spores. DOI:10.1029/2009GL037493
+                                       !fungal spores. DOI:10.1029/2009GL037493 (automatically gets updated
+                                       !based on choice of parameterization))
 
   real*8, DIMENSION(3)  ::  &
   FUNG_PARAMS_HS = [2315.0, 5.0,0.015] !From Fungal parameterization, Heald and Spracken for 3um
-                                       !modifiend in Hoose et al. (2010),DOI:
+                                       !modfiied in Hoose et al. (2010),DOI: 10.1088/1748-9326/5/2/024009
 
 
   real*8, DIMENSION(4)  ::  &
-  FUNG_PARAMS_JS = [2.63*1.0e-5, 6.10*1.0e3,46.7,59.0] !From Fungal parameterization, Janssen for North America.
-                                       !https://doi.org/10.5194/acp-21-4381-2021 (2021) [Has not been tested!]
+  FUNG_PARAMS_JS = [2.63*1.0e-5, 6.10*1.0e3,46.7,59.0] !From Fungal parameterization, Janssen (2021) for North America.
+                                       !DOI: 10.5194/acp-21-4381-2021[Has not been tested!]
 
 
 
   real, parameter :: FUNGAL_DENS = 1.0e6 !Fungal density [g/m3]
                                          !From Hummel et al. Atmos. Chem. Phys., 15, 6127–6146,
                                          !https://doi.org/10.5194/acp-15-6127-2015, 2015
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!BACTERIA PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  real*8, DIMENSION(6), parameter  ::  &
+  BACTERIA_PARAMS = [900.0,704.0,648.0,7.7,502.0,196.0] !From bacteria paramterization, Eq. (1) of
+                    !S. Myriokefalitakis, G. Fanourgakis and M. Kanakidou (2017)
+                    !DOI 10.1007/978-3-319-35095-0_121
+                    !Note that most of these are set in the LandInput file, except for the coastal parameter (as coastal is not a LandType)
 
 
   real, parameter :: BACTERIA_DIAMETER = 1.0 !Bacteria diameter [um]
@@ -117,7 +127,7 @@ module PBAP_mod
     !Initializes the PBAP calculation
     !sets up number of PBAPs (NPBAP)
     !And fills array accordingly.
-    !GFL Jan 2024: Is this parallelization safe?
+    !GFL Apr 2024: Is this parallelization safe?
 
     if (my_first_call) then
       NPBAP = 0
@@ -130,7 +140,7 @@ module PBAP_mod
 
 
       if (USES%FUNGAL_SPORES) then
-          if (USES%FUNGAL_METHOD == "HS") then
+          if (USES%FUNGAL_METHOD == "HS") then !Only this method uses 5um spores
             itot_FungalSpores = find_index( "FUNGAL_SPORES_5", species(:)%name)
             inat_FungalSpores = find_index( "FUNGAL_SPORES_5", EMIS_BioNat(:))
             FUNGAL_DIAMETER = 5.0 !um
@@ -144,7 +154,7 @@ module PBAP_mod
           if (itot_FungalSpores < 0 ) then
             if(MasterProc)  write(*,*) "WARNING: No fungal spores found in species, not including fungal spores!"
           else
-            FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3!Spore weight [g]
+            FUNGAL_WEIGHT = (4/3.0)*FUNGAL_DENS*PI*(0.5*FUNGAL_DIAMETER*1e-6)**3 !Spore weight [g]
             NPBAP = NPBAP + 1
             iint_FungalSpores = NPBAP
             if(MasterProc) write(*,*) "USING FUNGAL_METHOD:",USES%FUNGAL_METHOD
@@ -170,9 +180,9 @@ module PBAP_mod
         else
           allocate(O_Chlorophyll(LIMAX,LJMAX))
           if(MasterProc) write(*,*)'Reading Ocean Chlorophyll'
-          !call ReadField_CDF(trim(OceanChlorophyll_File),'chlor_a',O_Chlorophyll,&
-          !      nstart=current_date%month+12*3,interpol='conservative',known_projection="lon lat",&
-          !      needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3
+            !call ReadField_CDF(trim(OceanChlorophyll_File),'chlor_a',O_Chlorophyll,&
+            !    nstart=current_date%month+12*3,interpol='conservative',known_projection="lon lat",&
+            !    needed=.true.,debug_flag=.false.,UnDef=0.0) !In mg/m3. Should call this and add to fraction of seasalt.
             NPBAP = NPBAP + 1
             iint_MarineOA = NPBAP
             inat_MarineOA = find_index( "MarineOA_NEW", EMIS_BioNat(:))
@@ -194,9 +204,9 @@ module PBAP_mod
           allocate(kgm2h(NPBAP))
           kgm2h = 0.0
 
-          allocate(inat(NPBAP))
-          allocate(itot(NPBAP))
-          allocate(PBAP_names(NPBAP))
+          allocate(inat(NPBAP)) !Indices in EMIS_NAT
+          allocate(itot(NPBAP)) !Indices in species
+          allocate(PBAP_names(NPBAP)) !For debugging
 
           if (iint_FungalSpores > 0) then
               WEIGHTS(iint_FungalSpores) = FUNGAL_WEIGHT
@@ -206,8 +216,8 @@ module PBAP_mod
               itot(iint_FungalSpores) = itot_FungalSpores
               PBAP_names(iint_FungalSpores) = "FUNGAL_SPORES"
               if (FUNGAL_DIAMETER > 3.5) then
-                FUNG_PARAMS_HS(1) = 500 !New parameterization (see Ref. above)
-                                        !for larger particles according to
+                FUNG_PARAMS_HS(1) = 500 !Parameterization (see Ref. above)
+                                        !for larger spores according to
                                         !Heald and Spracken
               end if
           end if
@@ -225,7 +235,7 @@ module PBAP_mod
               inat(iint_MarineOA) = inat_MarineOA
               itot(iint_MarineOA) = itot_MarineOA
               PBAP_names(iint_MarineOA) = "MARINE_OA"
-              n2m(iint_MarineOA) = 1
+              n2m(iint_MarineOA) = 1 !Not yet implemented!
               kgm2h(iint_MarineOA) = 1
           end if
       end if !NPBAP > 0
@@ -354,7 +364,7 @@ module PBAP_mod
       end if
     end do !iiL  
   else
-      call StopAll('Unknown FUNGAL_METHOD chosen! Valid options are HM, HS, SD and JS. ')
+      call StopAll('Unknown FUNGAL_METHOD chosen! Valid options are HM, HO, HS, SD and JS. ')
   end if
 
     PBAP_flux(i,j,iint_FungalSpores) = F_FNG
@@ -438,7 +448,7 @@ module PBAP_mod
   end subroutine Set_Bacteria
 
   subroutine Set_MarineOA(i,j)
-    !NOT YET TESTED
+    !NOT YET IMPLEMENTED!!
     !!!!!!!
     !Fills PBAP_Flux(i,j,iint_MarineOA)
     !Based on parameterization from
@@ -492,7 +502,6 @@ module PBAP_mod
   !
   !---- Adds PBAPs to rcemis  and EmisNat--------------------------------------
   !
-  !  So far, only adds Fungal Spores and Bacteria to rcemis and EmisNat
   !
   !  Called from setup_1d_mod, every  advection step.
   !----------------------------------------------------------------------------
