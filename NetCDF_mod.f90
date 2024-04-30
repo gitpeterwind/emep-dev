@@ -3171,7 +3171,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         lon_shift_Mask=0
         status=nf90_get_var(ncFileID_Mask, dimids_Mask(1), lon_mask)
         if(status==nf90_noerr)then
-           lon_shift_Mask=nint((Rlon(1)-lon_mask(1))*dRloni)
+           lon_shift_Mask=nint((1.e-5+Rlon(1)-lon_mask(1))*dRloni) ! 1e-5 to avoid random result for real number ending with exactly .5
            if(lon_shift_Mask/=0)then
               write(*,*)'ReadCDF mask: should shifting longitude by ',lon_shift_Mask,'=',Rlon(1)-lon_mask(1),'degrees'
               call StopAll("Longitude shift for Mask not implemented")
@@ -3627,7 +3627,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               do i=1,limax
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
-                 ig=nint((glon(i,j)-Rlon(startvec(1)))*dRloni)+1
+                 ! 1e-5 to avoid random result for real number ending with exactly .5
+                 ig=nint((1.e-5+glon(i,j)-Rlon(startvec(1)))*dRloni)+1
                  if(ig<0.5 .or. ig>dims(1))then
                     !try to come from the other side
                     !check first that it covers all latitudes
@@ -3638,7 +3639,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  endif
                  !nearest must always give something
                  ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
+                 ! 1e-5 to avoid random result for real number ending with exactly .5
+                 jg=max(1,min(dims(2),nint((1.e-5+glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
                     Rvar(ijk)=Rvalues(igjgk)

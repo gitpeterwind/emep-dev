@@ -48,6 +48,18 @@ prints that are not meaningful for an average user, before the public release.
 Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Apr  2024, Peter
+
+(Small) instability in interpolation. Affected at least Aircraft emissions.
+When two real numbers where exactly equal, it could lead to different results
+in the interpoaltion. This can happen when two grids are compared and the
+gridcell boundaries match some pattern. It happened when the Surface pressure
+read from a file is read for the aircraft emissions. The result was not wrong,
+just that it can take different values, for example if the number of procs is
+changed.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Apr  2024, Dave
 
