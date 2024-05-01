@@ -20,6 +20,7 @@ module RunChem_mod
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
   use Chemsolver_mod,    only: chemistry
   use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
+  use ChemRates_mod,    only:  setChemrates ! rct, NRCT
   use ChemSpecs_mod,     only: 
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
@@ -144,6 +145,9 @@ subroutine runchem()
         call Pollen_flux(i,j,debug_flag)
 
       call Setup_Clouds(i,j,debug_flag)
+
+      !needs to be after Setup_clouds which makes FGAS
+      call setChemRates() 
 
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 

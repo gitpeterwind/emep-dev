@@ -289,7 +289,7 @@ contains
            niter = 1
            if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
            !in the LF case, we construct S_m2m3 for 4 "scenarios", in order to get derivatives
-           do iter=1,niter !only used for LocalFractions
+           do iter=1, niter !iter loop only for LocalFractions
               call lf_SurfArea_pre(k,iter) !only used for LocalFractions
 
            S_m2m3(:,k) = 0.0  !! Allow max 6000 um2/cm3
@@ -478,12 +478,7 @@ contains
 
            call lf_SurfArea_pos(S_m2m3(AERO%PM,k),i,j,k,iter) !only used for LocalFractions
 
-!           if(i==5.and.j==5 .and. k>=KMAX_MID-lf_Nvert+1 .and. me==253)then
-!             if(rh(k)>0.4)write(*,*)iter,me,k,rctAk_lf(spec2lfspec(SO4_ix),k),rctBk_lf(spec2lfspec(SO4_ix),k),rate(k),rh(k)
-!           end if
-!            if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem)rct(100,k)=2*rct(100,k)
-
-          end do !only used for LocalFractions
+          end do 
 
           end if ! GERBER Surf Area
 
@@ -496,14 +491,10 @@ contains
    end if
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
-
-
+  ! NB: need also to be after FGAS which is computed in setup_clouds
    !====================
-   call setChemRates()
+!   call setChemRates()
    !====================
-!    do k = KCHEMTOP, KMAX_MID
-!       rct(100,k)=2*rct(100,k)
-!    end do
 
    if( DEBUG%SETUP_1DCHEM ) then ! extra checks
      call checkValidArray(rcphot(:,KMAX_MID),dtxt//'arrayCheck RCPHOT ')

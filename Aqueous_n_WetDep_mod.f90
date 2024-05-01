@@ -518,9 +518,6 @@ end subroutine tabulate_aqueous
 !-----------------------------------------------------------------------
 
 
-
-
-
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -600,6 +597,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! in cloudy air, only the part remaining in gas phase (not
 ! dissolved) is oxidized
   aqrck(ICLOHSO2,:) = 1.0
+  Fgas(SO2,:) = 1.0
 
   do k = KUPPER,KMAX_MID
      if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
@@ -751,7 +749,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( Heff*VfRT(k) ) )
     
     fso2grid(k) = b(k) * frac_aq(IH_SO2,k)   !  frac of S(IV) in grid
-                                             !  in aqueous phas - Saq/(Saq + Sg)
+    !  in aqueous phas - Saq/(Saq + Sg)
+
     fso2aq  (k) = fso2grid(k) / K1K2_fac     ! frac of SO2 in total grid
                                              ! in aqueous phase
 
@@ -774,16 +773,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   ! oh + so2 gas-phase
     aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) ! now correction factor!
     Fgas(SO2,k) = 1.0-fso2grid(k)
-                                            ! as part of SO2 not in gas phase
+
+    ! as part of SO2 not in gas phase
   !  aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) * &
   !    IUPAC_TROE(2.8e-31*EXP(2.6*(LOG(300/temp(k)))),2.0e-12,EXP(-temp(k)/472.0),M(k),0.75-1.27*(-temp(k)/472.0)/LOG(10.0))
 
   !  HO2g ----> 0.5 H2O2
     aqrck(ICLHO2H2O2,k) = 0.066 * cloudwater(k)* 1.e6 * b(k)
-
-
-
-
 
 
 !  Incloud oxidation of Siv to Svi by H2O2
@@ -831,6 +827,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !    aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
 
   end do
+
 end subroutine setup_aqurates
 !-----------------------------------------------------------------------
 
