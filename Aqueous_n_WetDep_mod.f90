@@ -342,8 +342,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
         ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
         ! (it is divided by cloud fraction b )
 
-        ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the in-cloud liquid water content is at least that of fog (0.06 g/m3)
-        if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
+        if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
            ! value of cloudwater in the cloud fraction of the grid in units
            ! vol(water)/vol(air)
            ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise
