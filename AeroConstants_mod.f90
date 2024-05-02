@@ -20,7 +20,7 @@ module AeroConstants_mod
      logical           :: DYNAMICS = .false.
      logical           :: INTERNALMIXED = .true.  ! sea salt assumption, only used by ISORROPIA and EQSAM
      logical           :: CATIONS = .true.        ! dust cat assumption, now only used by ISORROPIA
-     real              :: RH_UPLIM_AERO = 0.999   ! RH upper limit used in thermodynamic equilibrium calls
+     real              :: RH_UPLIM_AERO = 0.98    ! RH upper limit used in thermodynamic equilibrium calls
      real              :: RH_LOLIM_AERO = 0.05    ! RH lower limit used in thermodynamic equilibrium calls to avoid div. by zero
      logical           :: ORGANIC_WATER = .false.  ! add organic matter water uptake to PM25 aerosol water
      real              :: OM_KAPPA = 0.15         ! OM kappa hygroscopicity factor, 0.15 default from ISORROPIA II

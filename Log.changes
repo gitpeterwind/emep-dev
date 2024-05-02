@@ -58,6 +58,10 @@ corresponds to the in-cloud liquid water content representative of fog (0.06 g/m
 This seems to avoid problems when clouds are mostly in ice form, sometimes giving
 very low in-cloud liquid water contents. 
 
+Also set the default thermodynamics RH limit to 98%, following equilibrium time-scale
+discussions with A. Nenes. Avoids rapid 'blowing up' of aerosol liquid water at very 
+high RH values, while also making source-receptor calculations a bit more stable. 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30 Apr  2024, Peter
 
