@@ -18,6 +18,16 @@ ifneq (,$(findstring $(MACHINE),stratus nebula))
   INCL 	   += $(MKLROOT)/include/intel64/lp64
   LDFLAGS  += -L$(MKLROOT)/lib/intel64 -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_intel_lp64 \
 		      -lmkl_sequential -lmkl_core -Wl,-rpath,$(MKLROOT)/lib/intel64
+else ifneq (,$(findstring $(MACHINE),stratus2 nebula2))
+  MODULES   = makedepf90/2.8.8-hpc1-gcc-2022a-eb buildenv-intel/2023a-eb netCDF-HDF5/4.9.2-1.12.2-hpc1 FFTW/3.3.9
+  ## FFTW
+  FFTW_ROOT = $(shell pkg-config --variable=prefix fftw3)
+  INCL     += $(FFTW_ROOT)/include 
+  LDFLAGS  += -L$(FFTW_ROOT)/lib -lfftw3_mpi -lfftw3 -Wl,-rpath,$(FFTW_ROOT)/lib
+  ## LAPACK/BLAS
+  INCL 	   += $(MKLROOT)/include/intel64/lp64
+  LDFLAGS  += -L$(MKLROOT)/lib/intel64 -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_intel_lp64 \
+		      -lmkl_sequential -lmkl_core -Wl,-rpath,$(MKLROOT)/lib/intel64
 else
   $(error Unknown machine $(MACHINE))
 endif
