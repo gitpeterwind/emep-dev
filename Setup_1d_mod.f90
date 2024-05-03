@@ -514,19 +514,6 @@ contains
      end if
    end if
 
-  ! For sensitivity tests
-   do  n = 1, nSKIP_RCT ! can be zero
-     !if( SKIP_RCT(n) == 720 ) then
-     !   rct(72:75,:) = 0.0    ! HNO3 + SS, DU
-     !else if ( SKIP_RCT(n) == 770 ) then
-     !   rct(77:78,:) = 0.0    ! DU_f+DU_c, O3
-     !else
-     !   if ( first_call ) call CheckStop( SKIP_RCT(n) > 100,&
-     !                                     dtxt//"SKIP_RCT too big")
-        rct(SKIP_RCT(n),:) = 0.0
-     !end if
-   end do
-
 
    if ( first_call ) then
      call CheckStop( any(isnan(rct(:,:))), dtxt//"RCT NAN'd")
@@ -585,6 +572,20 @@ contains
          trim(f_2d(d2index(itmp))%name), me,i,j,itmp,&
          d2index(itmp),id2rct(itmp), d_2d(d2index(itmp),i,j,IOU_INST)
      end if
+   end do
+
+
+  ! For sensitivity tests
+   do  n = 1, nSKIP_RCT ! can be zero
+     !if( SKIP_RCT(n) == 720 ) then
+     !   rct(72:75,:) = 0.0    ! HNO3 + SS, DU
+     !else if ( SKIP_RCT(n) == 770 ) then
+     !   rct(77:78,:) = 0.0    ! DU_f+DU_c, O3
+     !else
+     !   if ( first_call ) call CheckStop( SKIP_RCT(n) > 100,&
+     !                                     dtxt//"SKIP_RCT too big")
+        rct(SKIP_RCT(n),:) = 0.0
+     !end if
    end do
 
    end subroutine checkChemRates
