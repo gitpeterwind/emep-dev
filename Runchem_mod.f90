@@ -20,6 +20,7 @@ module RunChem_mod
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
   use Chemsolver_mod,    only: chemistry
   use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
+  use ChemRates_mod,    only:  setChemrates ! rct, NRCT
   use ChemSpecs_mod,     only: 
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
@@ -45,7 +46,7 @@ module RunChem_mod
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use PointSource_mod,    only: pointsources, get_pointsources
   use SeaSalt_mod,       only: SeaSalt_flux
-  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis
+  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis, checkChemRates
   use ZchemData_mod,only: first_call, rcphotslice, &
                               M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
@@ -144,6 +145,10 @@ subroutine runchem()
         call Pollen_flux(i,j,debug_flag)
 
       call Setup_Clouds(i,j,debug_flag)
+
+      !needs to be after Setup_clouds which makes FGAS
+      call setChemRates() 
+      call checkChemRates(i,j,debug_flag) 
 
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 

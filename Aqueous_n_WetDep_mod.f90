@@ -601,6 +601,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! in cloudy air, only the part remaining in gas phase (not
 ! dissolved) is oxidized
   aqrck(ICLOHSO2,:) = 1.0
+  Fgas(SO2,:) = 1.0
 
   do k = KUPPER,KMAX_MID
      if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
@@ -783,10 +784,6 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     aqrck(ICLHO2H2O2,k) = 0.066 * cloudwater(k)* 1.e6 * b(k)
 
 
-
-
-
-
 !  Incloud oxidation of Siv to Svi by H2O2
 !  When calculating fhso3 devided by Hpluss  ==> divide and multiply by Hpluss cancel out
     aqrck(ICLRC1,k)   =  aqrcT(S_H2O2,itemp(k)) * frac_aq(IH_H2O2,k) * fhso3(k) &
@@ -832,6 +829,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !    aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
 
   end do
+
 end subroutine setup_aqurates
 !-----------------------------------------------------------------------
 

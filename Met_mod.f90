@@ -1371,6 +1371,9 @@ subroutine MeteoRead()
       end do
     end do
 
+!    Etadot=0.0
+!    u_xmj=0.0
+!    v_xmi=0.0
     if(MANUAL_GRID)then
       !around the north pole the interpolation of wind fields is not accurate,
       !and we cannot rely on continuity to derive the vertical winds.

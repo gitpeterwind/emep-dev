@@ -49,6 +49,20 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 May  2024, Peter /Dave
+
+** Interim commit. n2 vs n6 issues solved for gases, but remain for pmH2O
+
+Aqueous_mod: added Fgas(SO2,:) = 1
+
+Setup_1d_mod, RunChem_mod
+
+1. call to setChemRates moved to be after Setup_Clouds so that Fgas(SO2) is set
+correctly.
+2. Some code moved to checkChemRates, called after setChemRates.
+
+Met_mod: tiny clean-up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 May  2024, Willem
 
 Added a lower limit on the in-cloud liquid water content in case cloud liquid
