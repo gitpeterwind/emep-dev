@@ -17,7 +17,6 @@ use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
 use ChemFunctions_mod, only: HydrolysisN2O5
-use ChemRates_mod,    only:  setChemrates ! rct, NRCT
 use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
 use CheckStop_mod,    only:  CheckStop, StopAll,checkValidArray
 use ColumnSource_mod, only: ColumnRate
@@ -84,6 +83,7 @@ private
 
 public :: setup_1d     ! Extracts results for i,j column from 3-D fields
 public :: setup_rcemis ! Emissions in i,j column
+public :: checkChemRates ! checks rct, etc
 public :: reset_3d     ! Exports final results from i,j column to 3-D fields
 ! (and XNCOL outputs if asked for)
 public :: sum_rcemis   ! sum all emissions (also natural) for output
@@ -94,6 +94,9 @@ integer, private, parameter :: NROADDUST = 2
 integer, private, parameter :: iROADF=1,  iROADC=2
 integer, private, save :: inat_RDF,  inat_RDC
 integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
+integer, private, save :: nSKIP_RCT = 0
+! if pmH2O are wanted for d_2d output:
+logical, private, save :: pmH2O_wanted = .false.
 
 
 
@@ -122,18 +125,12 @@ contains
     ! AERO and DDspec still confusing
     real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter.
     integer :: iw, ipm ! for wet rad
-   ! if rates are wanted for d_2d output, we use these indices:
-    integer, dimension(20), save :: d2index, id2rct, id2pmH2O
-    integer, save :: nd2d, npmH2O
     integer :: itmp
-   ! if pmH2O are wanted for d_2d output:
-    logical, save :: pmH2O_wanted = .false.
     real rate(1:20)
    ! local
 
     integer           :: k, n, ispec, iter, niter,k1,k2   ! loop variables
     real              :: qsat ! saturation water content
-    integer, save :: nSKIP_RCT = 0
     integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup
     integer, save :: iBCfgroup,iBCcgroup
     logical, save, dimension(size(PM10_GROUP)) :: & ! arrays
@@ -203,12 +200,6 @@ contains
                is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm), is_sia_a(iPM)
           end if
        enddo
-
-       do n = 1, size(SKIP_RCT)
-          if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
-       end do
-       if( MasterProc ) write(*,"(a,10i4)") &
-          dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
 
     end if ! first_call
 
@@ -496,6 +487,20 @@ contains
 !   call setChemRates()
    !====================
 
+
+   end subroutine setup_1d
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   subroutine checkChemRates(i,j,debug_flag)
+     integer, intent(in) :: i, j
+     logical, intent(in) :: debug_flag
+     integer :: n, itmp, ipm
+     character(len=*), parameter :: dtxt='checkChem:'
+     logical, save :: first_call = .true.
+   ! if rates are wanted for d_2d output, we use these indices:
+    integer, dimension(20), save :: d2index, id2rct, id2pmH2O
+    integer, save :: nd2d, npmH2O
+
    if( DEBUG%SETUP_1DCHEM ) then ! extra checks
      call checkValidArray(rcphot(:,KMAX_MID),dtxt//'arrayCheck RCPHOT ')
      call checkValidArray(rct(:,KMAX_MID),dtxt//'arrayCheck RCT ')
@@ -508,19 +513,6 @@ contains
        end do
      end if
    end if
-
-  ! For sensitivity tests
-   do  n = 1, nSKIP_RCT ! can be zero
-     !if( SKIP_RCT(n) == 720 ) then
-     !   rct(72:75,:) = 0.0    ! HNO3 + SS, DU
-     !else if ( SKIP_RCT(n) == 770 ) then
-     !   rct(77:78,:) = 0.0    ! DU_f+DU_c, O3
-     !else
-     !   if ( first_call ) call CheckStop( SKIP_RCT(n) > 100,&
-     !                                     dtxt//"SKIP_RCT too big")
-        rct(SKIP_RCT(n),:) = 0.0
-     !end if
-   end do
 
 
    if ( first_call ) then
@@ -554,7 +546,14 @@ contains
           if(MasterProc) write(*,*) 'pmH2O SET', itmp, npmH2O,id2pmH2O(npmH2O)
        end if
      end do
+
+     do n = 1, size(SKIP_RCT)
+        if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
+     end do
+     if( MasterProc ) write(*,"(a,10i4)") &
+          dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
      first_call = .false.
+
    end if ! first_call
 
    do itmp = 1, nd2d
@@ -576,7 +575,20 @@ contains
    end do
 
 
-   end subroutine setup_1d
+  ! For sensitivity tests
+   do  n = 1, nSKIP_RCT ! can be zero
+     !if( SKIP_RCT(n) == 720 ) then
+     !   rct(72:75,:) = 0.0    ! HNO3 + SS, DU
+     !else if ( SKIP_RCT(n) == 770 ) then
+     !   rct(77:78,:) = 0.0    ! DU_f+DU_c, O3
+     !else
+     !   if ( first_call ) call CheckStop( SKIP_RCT(n) > 100,&
+     !                                     dtxt//"SKIP_RCT too big")
+        rct(SKIP_RCT(n),:) = 0.0
+     !end if
+   end do
+
+   end subroutine checkChemRates
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 subroutine setup_rcemis(i,j)
 !-------------------------------------------------------------------

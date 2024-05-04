@@ -61,6 +61,11 @@ else ifneq (,$(findstring $(MACHINE),stratus nebula))
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
   MAKEDEPF90=makedepf90
+else ifneq (,$(findstring $(MACHINE),stratus2 nebula2))
+  MODULES = buildenv-intel/2023a-eb netCDF-HDF5/4.9.2-1.12.2-hpc1
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS+= $(shell nf-config --fflags)
+  MAKEDEPF90=/software/sse2/tetralith_el9/easybuild/pure/software/makedepf90/2.8.8-foss-2022a/bin/makedepf90
 else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
