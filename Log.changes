@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 May  2024, Peter /Dave
+
+Bug fix: Setup_Clouds, ksubcloud was not set properly, because it used
+undefined b(k)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 May  2024, Peter /Dave
 
 ** Interim commit. n2 vs n6 issues solved for gases, but remain for pmH2O

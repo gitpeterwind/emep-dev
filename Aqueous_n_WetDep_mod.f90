@@ -321,6 +321,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
 ! Loop starting at surface finding the cloud base:
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
   do k = KMAX_MID, KUPPER, -1
+     b(k) = cc3d(i,j,k,1)
     ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the in-cloud liquid water content is at least that of fog (0.06 g/m3)
     if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
     ksubcloud = k
@@ -375,9 +376,6 @@ subroutine Setup_Clouds(i,j,debug_flag)
       kcloudtop = -999 ! used as label for no cloud 
   endif   !  ksubcloud /= KUPPER
 
-
-
-  
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
  ! fractional solubility
 
