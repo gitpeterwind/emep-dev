@@ -486,7 +486,7 @@ contains
    !====================
 !   call setChemRates()
    !====================
-
+   first_call = .false.
 
    end subroutine setup_1d
 
