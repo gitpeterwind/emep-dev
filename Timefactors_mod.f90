@@ -205,16 +205,16 @@ contains
   !-- local
   integer ::  emepICC, insec    ! EMEP country number and sector value read from femis etc
   integer ::  indexCC           ! Index of country code in Country array. Can differ from emep number
-  integer ::  i, isec,ih, n
-  integer ::  idd, idd2, ihh, iday, mm, mm2 , mm0! Loop and count variables
+  integer ::  i, isec, n
+  integer ::  idd, idd2, ihh, mm ! Loop and count variables
   integer ::  iemis             ! emission count variables
 
-  integer :: weekday            ! 1=monday, 2=tuesday etc.
+  !integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac,vmin,vmax, vmean ! used in interpolation, testing
   real    :: tmp24(24)          ! used for hourly factors
   character(len=2000) :: inputline ! NB: 24 real number can be many hundred characters long
   real :: fracchange
-  real :: Start, Endval, Average, x, buff(366)
+  real :: buff(366)
   logical :: found_HourlyFacFile, found
   character(len=*), parameter:: dtxt='tfacs:'
   character(len=TXTLEN_NAME):: secname
@@ -806,7 +806,6 @@ contains
    logical, save :: first_call = .true.
    real, allocatable, dimension(:,:), save :: tmpwork
    integer :: i,j
-   integer :: last_tz ! Why needed, problems with ReadField or my tz file?
 
     if(.not.allocated(timezones%map))then
        allocate(tmpwork(LIMAX,LJMAX))        ! for input, floats

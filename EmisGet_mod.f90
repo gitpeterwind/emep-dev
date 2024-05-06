@@ -1101,8 +1101,8 @@ end if
           else
              !old format without country code
              !         77 format(A,4F,I,20F)
-             if(me==0)write(*,*)'WARNING: USING OLD FORMAT for femis.&
-                  Please, add country code (zero for all countries)'
+             if(me==0)write(*,*)'WARNING: USING OLD FORMAT for femis. '//&
+                  'Please, add country code (zero for all countries)'
              read(txt,*)txtinwords(1),&
                   femis_lonmin(N_femis_lonlat),&
                   femis_lonmax(N_femis_lonlat),&

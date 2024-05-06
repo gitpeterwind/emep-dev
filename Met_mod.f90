@@ -1084,7 +1084,7 @@ subroutine MeteoRead()
           namefield='soil_water_second_layer'
         end if
         if(MasterProc.and.first_call) write(*,*) "Met_mod: ', &
-          'deep soil water search ", isw, trim(namefield)
+          &'deep soil water search ", isw, trim(namefield)
         call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
             SoilWater_deep(:,:,nr),needed=met(ix_SoilWater_deep)%needed,found=foundSoilWater_deep)
         if(foundSoilWater_deep) then ! found
@@ -3104,9 +3104,9 @@ subroutine Check_Meteo_Date_Type
   integer :: nyear,nmonth,nday
   integer :: status,ncFileID,timeDimID,timeVarID,VarID,xtype
   character (len = 19) ::  Times_string
-  integer ::ihh,ndate(4),n1,nseconds(1),n
-  real :: ndays(1),Xminutes(24)
-  logical :: date_in_days,MasterProc_local
+  integer :: ndate(4), nseconds(1), n
+  real :: Xminutes(24)
+  logical :: MasterProc_local
   integer :: NTime_Read,string_length
   real :: TimesInDays(1000)
   real(kind=8), parameter :: &
