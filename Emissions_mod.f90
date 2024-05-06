@@ -2523,7 +2523,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              !the species is defined as a sector emission, e.g. sox, nox
              iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
 
-             if(debug_tfac) write(*,'(a,9i5)'), dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
+             if(debug_tfac) write(*,'(a,9i5)') dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
               trim(Emis_source(n)%species)//trim(Emis_source(n)%periodicity ), &
                is, iland, iem
              call CheckStop(iem<0, dtxt//"did not recognize species "//trim(Emis_source(n)%species))
