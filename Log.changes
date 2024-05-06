@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 May  2024, Dave
+
+Aqueous_...
+Setup_Clouds: small tidy up and safety change. Don't assume order of terms in
+ if test evaluated left to right, even if they probably are. 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 May  2024, Peter /Dave
 
 Bug fix: Setup_Clouds, ksubcloud was not set properly, because it used
