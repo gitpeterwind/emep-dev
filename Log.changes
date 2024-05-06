@@ -49,11 +49,18 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-6 May  2024, Dave
+6 May  2024, Dave/Peter
 
 Aqueous_...
 Setup_Clouds: small tidy up and safety change. Don't assume order of terms in
  if test evaluated left to right, even if they probably are. 
+
+gfortran tidy-ups:
+  AeroFunctions : just removing unused variables
+  Ammonium_mod:just removing unused variables
+  EmisDef_mod: just removing unused variable
+  LocalFractions_mod:  changed if(found) to if(found==1)
+  Timefactors_mod: corrected print format.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 May  2024, Peter /Dave
 
