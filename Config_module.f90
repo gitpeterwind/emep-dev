@@ -450,8 +450,6 @@ integer, public, parameter :: &
   ,NXTRA_SITE_D2D  =   18       ! No.  params from d_2d fields
 integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
-integer, private :: isite              ! To assign arrays, if needed
-
 !**** Sonde outputs   (used in Sites_mod)
 !==============================================================
 !     Specify the species to be output to the sondes.out file
@@ -516,7 +514,7 @@ type, private :: sites_t
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
 end type sites_t
-type(sites_t),save :: site_outputs, sonde_outputs
+!NOTUSED type(sites_t),save :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
@@ -861,11 +859,10 @@ contains
 subroutine Config_Constants(iolog)
   integer, intent(in) :: iolog ! for Log file
 
-  integer :: i, j, nj, ispec, iostat
+  integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
-  character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -1220,7 +1217,6 @@ end subroutine associate_File
 
 subroutine define_chemicals_indices()
   !we set values for species indices if they are defined, -1 if they don't
-  integer :: ix
   O3_ix = find_index('O3' ,species(:)%name)
   SO2_ix = find_index('SO2' ,species(:)%name)
   NO2_ix = find_index('NO2' ,species(:)%name)
