@@ -198,25 +198,25 @@ module AeroFunctions_mod
  end function GerberWetSig 
 
  elemental function LewisSchwartz(rdry,fRH) result (rwet)
- real, intent(in) :: rdry                 !< m for radius 
- real, intent(in) :: fRH                  !< humidity, 0< fRH < 1            
- real :: mrh
- real :: rwet
+   real, intent(in) :: rdry                 !< m for radius 
+   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1            
+   real :: mrh
+   real :: rwet
 
- ! GEOS-Chem uses rdry = effective radius, defined as the average between
- ! the lower and upper edge of their coarse mode bin. i.e., it's not effective
- ! radius in the sense of aerosol optics
+   ! GEOS-Chem uses rdry = effective radius, defined as the average between
+   ! the lower and upper edge of their coarse mode bin. i.e., it's not effective
+   ! radius in the sense of aerosol optics
 
- mrh = max(0.01,fRH)
- mrh = min(mrh,0.99) ! 99% RH cap following geos-chem
+   mrh = max(0.01,fRH)
+   mrh = min(mrh,0.99) ! 99% RH cap following geos-chem
 
- ! Use equation 5 in Lewis and Schwartz (2006) for sea
- ! salt growth.     doi:10.1016/j.atmosenv.2005.08.043
- rwet = rdry * FOUR_OVER_THREEptSEVEN &
+   ! Use equation 5 in Lewis and Schwartz (2006) for sea
+   ! salt growth.     doi:10.1016/j.atmosenv.2005.08.043
+   rwet = rdry * FOUR_OVER_THREEptSEVEN &
     * ( ( 2.0 - mrh ) / ( 1.0 - mrh ) )**THIRD
 
-end function LewisSchwartz
-  !---------------------------------------------------------------------
+ end function LewisSchwartz
+ !---------------------------------------------------------------------
 
 ! elemental function WetRad(rdry,fRH,pmtype) result (rwet)
 !  real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
@@ -445,8 +445,8 @@ end function LewisSchwartz
          ,sigma_w         !< wet Sigma of mode
 
      real :: S            !< Surface area, m2 per m3 air
-     real :: dryvol, rho, rdry, rwet, sigFac, totvol
-     real :: rhod, fwetvol, N0, sigw, sigd
+     real :: dryvol, rho, rdry, rwet
+     real :: N0, sigw, sigd
 
      ! uses Eq. 3 from Binkowski & Shankar 1995 for number, area and surface calcs: 
      !
@@ -561,7 +561,7 @@ elemental function pmH2O_gerberSig(dry_ug,rho_kgm3,Dp,Dpw,sigma_d,sigma_w) resul
 
    real :: ugH2O                     !<  ug/m3 water associated with aerosol
    real :: dryvol, rho, rdry, rwet, totvol
-   real :: rhod, fwetvol, N0
+   real :: N0
 
    ! uses Eq. 3 from Binkowski & Shankar 1995 for number and surface calcs: 
    !

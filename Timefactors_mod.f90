@@ -607,7 +607,7 @@ contains
 
 !3.1)Additional country and species specific hourly time factors
 
-    if(dbgTF) write(*,'(a,i4,L2,i,a)') dtxt//'Hourly SPECIALs? '//trim(HourlyFacSpecialsFile)
+    if(dbgTF) write(*,'(a)') dtxt//'Hourly SPECIALs? '//trim(HourlyFacSpecialsFile)
     SPECEMLOOP: do iemis = 1, NEMIS_FILE
        fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
