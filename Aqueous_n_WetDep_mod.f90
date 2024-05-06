@@ -197,7 +197,7 @@ integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_mod
 contains
 
 subroutine Init_WetDep()
-  integer :: iadv, igrp, icalc, n, nc, f2d, alloc_err
+  integer :: iadv, igrp, n, f2d, alloc_err
   character(len=30) :: dname
 
 
@@ -747,7 +747,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
     K1K2_fac = 1.0  &   
              + K1(itemp(k)) * invhplus &
-	     + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
+             + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
 
     Heff  = H(IH_SO2,itemp(k)) * K1K2_fac
 
@@ -796,7 +796,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !!  Incloud oxidation of Siv to Svi by O3
     aqrck(ICLRC2,k)   = ( aqrcC_O3 * fso2aq(k)    &  ! with SO2aq
                       +   aqrcT(S2_O3,itemp(k)) * fhso3(k)     &  ! with HSO3-
-		      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
+                      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
                       *   frac_aq(IH_O3,k)/cloudwater(k) 
 
 !    aqrck(ICLRC2,k)   = 1.8e4 * 1.0e3 * frac_aq(IH_O3,k) &

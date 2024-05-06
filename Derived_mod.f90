@@ -1000,10 +1000,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem, nerr=0
-  integer :: isec_poll,isec,iisec,ii,ipoll,itemp
-  real :: default_frac,tot_frac,loc_frac_corr
+  integer :: isec,ii,itemp
   character(len=*), parameter :: dtxt='Deriv:'
-  real pp, temp, qsat
+  real pp, qsat
   real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:),D8_26Max(:,:,:)
 
   logical, save :: make_MaxD8M_nth = .false.
