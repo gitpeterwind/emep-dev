@@ -302,7 +302,7 @@ module ChemFunctions_mod
    real, dimension(K1:K2) :: rate
    real    :: rc
    real    :: f   ! Was f_Riemer
-   real    :: gam, gamSS,gamDU, S,  S_ss, S_du, Rwet  ! for newer methods
+   real    :: gam, gamSS, S,  S_ss, S_du  ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
   ! fixed-value gammas can be specified with e.g. Gamma:0.02. We derive
   ! the numerical value, gFix, from this string
@@ -493,7 +493,7 @@ module ChemFunctions_mod
    character(len=30), save :: method
    real    :: rc, rate
    real    :: f   ! Was f_Riemer
-   real    :: gam, gamSS,gamDU, S,  S_ss, S_du, Rwet  ! for newer methods
+   real    :: gam, gamSS, S,  S_ss, S_du ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
   ! fixed-value gammas can be specified with e.g. Gamma:0.02. We derive
   ! the numerical value, gFix, from this string
@@ -712,7 +712,6 @@ module ChemFunctions_mod
    !   ---------------------------------
 
      real, dimension(K1:K2) :: rate
-     real, dimension(K1:K2) :: NewRate
      real, parameter :: h=1.0/3600
      real, parameter :: KINF=0.015, KO3=2.0e-13, KH2O=2.1e-17 ! Huang
      real :: kACPg, kOXDg, kCCg, kOCCg  ! debug rates, ground-lev
