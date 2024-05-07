@@ -197,7 +197,7 @@ integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_mod
 contains
 
 subroutine Init_WetDep()
-  integer :: iadv, igrp, icalc, n, nc, f2d, alloc_err
+  integer :: iadv, igrp, n, f2d, alloc_err
   character(len=30) :: dname
 
 
@@ -321,8 +321,13 @@ subroutine Setup_Clouds(i,j,debug_flag)
 ! Loop starting at surface finding the cloud base:
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
   do k = KMAX_MID, KUPPER, -1
-    ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the in-cloud liquid water content is at least that of fog (0.06 g/m3)
-    if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
+     b(k) = cc3d(i,j,k,1)
+    ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the
+    ! in-cloud liquid water content is at least that of fog (0.06 g/m3)
+    if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
+      if ( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
+    endif
+    !if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
     ksubcloud = k
   end do
 
@@ -337,12 +342,13 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
 
      do k = KUPPER, ksubcloud-1
-        b(k) = cc3d(i,j,k,1)
+        !b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
         ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
         ! (it is divided by cloud fraction b )
 
-        if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
+        if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT) then
+          if( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
            ! value of cloudwater in the cloud fraction of the grid in units
            ! vol(water)/vol(air)
            ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise
@@ -356,6 +362,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
            end if 
            incloud(k) = .true.
            if(kcloudtop<0) kcloudtop = k
+          end if ! > 0.06 kg/kg
         end if
      end do  ! k inside cloud loop
 
@@ -375,9 +382,6 @@ subroutine Setup_Clouds(i,j,debug_flag)
       kcloudtop = -999 ! used as label for no cloud 
   endif   !  ksubcloud /= KUPPER
 
-
-
-  
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
  ! fractional solubility
 
@@ -517,9 +521,6 @@ subroutine tabulate_aqueous()
 
 end subroutine tabulate_aqueous
 !-----------------------------------------------------------------------
-
-
-
 
 
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
@@ -746,14 +747,15 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
     K1K2_fac = 1.0  &   
              + K1(itemp(k)) * invhplus &
-	     + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
+             + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
 
     Heff  = H(IH_SO2,itemp(k)) * K1K2_fac
 
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( Heff*VfRT(k) ) )
     
     fso2grid(k) = b(k) * frac_aq(IH_SO2,k)   !  frac of S(IV) in grid
-                                             !  in aqueous phas - Saq/(Saq + Sg)
+    !  in aqueous phas - Saq/(Saq + Sg)
+
     fso2aq  (k) = fso2grid(k) / K1K2_fac     ! frac of SO2 in total grid
                                              ! in aqueous phase
 
@@ -776,7 +778,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   ! oh + so2 gas-phase
     aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) ! now correction factor!
     Fgas(SO2,k) = 1.0-fso2grid(k)
-                                            ! as part of SO2 not in gas phase
+
+    ! as part of SO2 not in gas phase
   !  aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) * &
   !    IUPAC_TROE(2.8e-31*EXP(2.6*(LOG(300/temp(k)))),2.0e-12,EXP(-temp(k)/472.0),M(k),0.75-1.27*(-temp(k)/472.0)/LOG(10.0))
 
@@ -793,7 +796,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !!  Incloud oxidation of Siv to Svi by O3
     aqrck(ICLRC2,k)   = ( aqrcC_O3 * fso2aq(k)    &  ! with SO2aq
                       +   aqrcT(S2_O3,itemp(k)) * fhso3(k)     &  ! with HSO3-
-		      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
+                      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
                       *   frac_aq(IH_O3,k)/cloudwater(k) 
 
 !    aqrck(ICLRC2,k)   = 1.8e4 * 1.0e3 * frac_aq(IH_O3,k) &

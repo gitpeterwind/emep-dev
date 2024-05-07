@@ -119,17 +119,15 @@ contains
     integer, save, dimension(NSAREA_CALC) :: aeroDDspec
     real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
-    real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
+    real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC
     logical :: is_finepm, is_ssalt, is_dust, is_sia
     logical, dimension(size(PM10_GROUP)), save  :: is_BC
     ! AERO and DDspec still confusing
     real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter.
     integer :: iw, ipm ! for wet rad
-    integer :: itmp
-    real rate(1:20)
    ! local
 
-    integer           :: k, n, ispec, iter, niter,k1,k2   ! loop variables
+    integer           :: k, n, ispec, iter, niter   ! loop variables
     real              :: qsat ! saturation water content
     integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup
     integer, save :: iBCfgroup,iBCcgroup
@@ -486,7 +484,7 @@ contains
    !====================
 !   call setChemRates()
    !====================
-
+   first_call = .false.
 
    end subroutine setup_1d
 
@@ -600,13 +598,13 @@ subroutine setup_rcemis(i,j)
   integer, intent(in) ::  i,j     ! coordinates of column
 
   !  local
-  integer :: iqrc, k, itot, iem ,f, ij, is
+  integer :: iqrc, k, itot, ij, is
   real    :: Kw,fac, eland   ! for Pb210  - emissions from land
 
   integer :: i_Emis_4D,n
   logical, save     :: first_call = .true.
   character(len=13) :: dtxt="setup_rcemis:"
-  real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C,invDeltaZfac
+  real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C
   integer,save ::IC_NH3
   real :: ehlpcom0, addemis
 

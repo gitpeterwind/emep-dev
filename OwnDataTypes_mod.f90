@@ -385,6 +385,8 @@ type, public :: lf_out_type
   character(len=TXTLEN_NAME):: name = "NOTSET"
   character(len=TXTLEN_NAME):: species(30) = "NOTSET"
   real                      :: species_fac(30) = 1.0
+  integer                   :: ix(30) = 0 ! internal index in loc_frac_drydep
+  logical                   :: DryDep
 end type lf_out_type
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group
