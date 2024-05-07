@@ -649,9 +649,8 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   ! If we ask for this, we need it.
   if ( PBL%HmixMethod == 'NWP' )  then
     met(ix)%needed = .true.
-    met(ix)%needed = .false. ! DS testing
+    met(ix)%needed = .false. ! Hack to allow later search for PBLH, pblh, pbl
     met(ix)%found            => foundHmix
-    pbl_nwp=0.0
   else
     met(ix)%needed           = .false.
     met(ix)%found            = .false.
