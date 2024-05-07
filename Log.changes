@@ -49,6 +49,39 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6-7 May  2024, Dave/Peter
+
+Aqueous_...
+Setup_Clouds: small tidy up and safety change. Don't assume order of terms in
+ if test evaluated left to right, even if they probably are. 
+MetFields_mod: removed pbl=0 line which was before allocation.
+
+gfortran tidy-ups:
+  config_emep.nml - removed some side-comments that caused crash.
+   TO-DO check if AOT etc should use WH or WH_Irrig
+  AeroFunctions : just removing unused variables
+  Ammonium_mod:just removing unused variables
+  Aqueous_n_WetDep_mod
+  Biogenics_mod.f90
+  ChemFunctions_mod.f90
+  Convection_mod.f90
+  Derived_mod
+  DryDep_mod.f90
+  EmisDef_mod: just removing unused variable
+  EmisGet_mod: just removing unused variable
+  ExternalBICs_mod: added dtxt usage
+  LocalFractions_mod:  changed if(found) to if(found==1)
+  Met_mod
+  Setup_1d_mod
+  Timefactors_mod: corrected print format.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 May  2024, Peter /Dave
+
+Bug fix: Setup_Clouds, ksubcloud was not set properly, because it used
+undefined b(k)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 May  2024, Peter /Dave
 
 ** Interim commit. n2 vs n6 issues solved for gases, but remain for pmH2O

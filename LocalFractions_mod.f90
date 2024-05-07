@@ -1003,7 +1003,7 @@ contains
           if (lf_spec_out(n)%species(i) == "NOTSET") exit
        end do
     end do
-    if (found == 1)then
+    if (found == 1) then
        make_PMwater = .true.
        isrc = NSOURCES+1
        lf_src(isrc)%species="PM_WATER"

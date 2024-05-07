@@ -529,7 +529,7 @@ contains
    ! MERGE inner and outer maps (Euro and Glob usually)
 
     if ( nFiles > 1 ) then  ! we need to merge
-      if ( debug_proc ) write(*,'(a,i3,f12.4,5i6)'), dtxt//"F3  START", &
+      if ( debug_proc ) write(*,'(a,i3,f12.4,5i6)') dtxt//"F3  START", &
            NLand_codes, landuse_tot(debug_li,debug_lj), me, &
                     limax, ljmax, debug_li, debug_lj
       do j = 1, ljmax

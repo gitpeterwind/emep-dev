@@ -149,7 +149,7 @@ contains
  subroutine init_DryDep()
 
   integer, save ::  old_daynumber = -99
-  integer :: i, j, lc, ilc, nlc, is, iEco   ! for EcoSystem stuff
+  integer :: i, j, lc, ilc, nlc, iEco   ! for EcoSystem stuff
   logical :: debug_flag  ! for EcoSystem stuff
   real    :: coverage    ! for EcoSystem stuff
   character(len=*), parameter :: dtxt='iniDDep:'
@@ -236,8 +236,6 @@ contains
          dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                      ! z = height of layer)
 
-    integer :: nae
-
     real, save :: inv_gridarea  ! inverse of grid area, m2
 
     real ::  Sumcover, Sumland   ! Land-coverage
@@ -253,8 +251,6 @@ contains
 
     real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
     real :: c_hveg3m, o3_45m  ! TESTS ONLY
-    character(len=20), save :: fname
-    integer :: nglob
     logical :: first_ddep = .true.
     real :: r_dry, r_wet, rho_wet, Vs_dry, Vs_wet
 !    real :: S ! saturation ration = e/es ~ fRH

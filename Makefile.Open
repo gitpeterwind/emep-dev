@@ -20,7 +20,9 @@ LLIB = $(shell nc-config --flibs)
 F90 = mpif90
 
 # GNU gfortran compiler (version 4.4.3 or later)
-F90FLAGS = -fallow-argument-mismatch -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -O2
+F90FLAGS = -fdefault-real-8 -fdefault-double-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check -O2
+#DEBUG flag
+#F90FLAGS += -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
 
 # Intel ifort compiler (comment out if gfortran used)
 F90FLAGS = -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2

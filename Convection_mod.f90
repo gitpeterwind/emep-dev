@@ -57,7 +57,7 @@ contains
     real ::mass_exchanged, total, totalmass,x
     real :: mass_air_grid_k_temp,xn_buff(NSPEC,KMAX_MID)
     real :: dp(KMAX_MID)
-    integer ::k,k_fill,k1,kk,n
+    integer ::k,k_fill,kk,n
     logical, parameter ::masstest=.false.!normally, the mass should be conserved mathematically. Mostly to make demo.
 
     !-- mass_air=(dp/g)*gridarea

@@ -148,6 +148,7 @@ subroutine runchem()
 
       !needs to be after Setup_clouds which makes FGAS
       call setChemRates() 
+
       call checkChemRates(i,j,debug_flag) 
 
       call setup_bio(i,j)   ! Adds bio/nat to rcemis

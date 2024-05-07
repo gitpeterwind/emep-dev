@@ -186,7 +186,6 @@ subroutine checkValidArray( x, txt )
     real, intent(in), dimension(:) :: x
     character(len=*), intent(in) :: txt
     integer :: i
-    character(len=3) :: itxt
     character(len=100) :: msg
 
     do i = 1, size(x)
