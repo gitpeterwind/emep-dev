@@ -322,16 +322,16 @@ subroutine Setup_Clouds(i,j,debug_flag)
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
   do k = KMAX_MID, KUPPER, -1
      b(k) = cc3d(i,j,k,1)
+  end do
+  do k = KMAX_MID, KUPPER, -1
     ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the
     ! in-cloud liquid water content is at least that of fog (0.06 g/m3)
     if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
-      if ( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
+      if ( (roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)) * 1e3 > 0.06) exit
     endif
     !if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
     ksubcloud = k
   end do
-
-
 
   if(ksubcloud /= KUPPER)then 
      !clouds were found under KUPPER
@@ -340,9 +340,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! and cloud fractions are above limit values
      kcloudtop = -1               ! k-level of cloud top
 
-
      do k = KUPPER, ksubcloud-1
-        !b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
         ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
         ! (it is divided by cloud fraction b )
@@ -387,8 +385,6 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
  !need to be called also if no clouds for non-cloud rates
  !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
-
-
 
    call setup_aqurates(b ,cloudwater,incloud,pres)
 !  Calculates arrays with temperature dependent aqueous phase
