@@ -565,10 +565,6 @@ contains
        allocate(Emis_source_3D(LIMAX,LJMAX,max_levels3D,Nemis_3Dsources))
     endif
 
-    if(MasterProc) then
-      write(*,*)'CAMEOINITFIN', NSECTORS
-      call print_Sector_type(SECTORS,'End'//dtxt) ! CAMEO ok to here
-    end if
    end subroutine Init_Emissions
 
  subroutine Init_masks()
@@ -1626,7 +1622,6 @@ end subroutine EmisUpdate
     do iemislist = 1, size( emis_inputlist(:)%name )
        fractionformat = ( emis_inputlist(iemislist)%format=='fractions' )
        fname=emis_inputlist(iemislist)%name
-       if(MasterProc) write(*,*)'CAMEO-TMP-emislist?', iemislist, basename(fname)
        if ( fname == "NOTSET" ) cycle
        if (emis_inputlist(iemislist)%periodicity /= 'once' ) cycle
 38     FORMAT(A,I4,A)

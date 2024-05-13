@@ -124,7 +124,8 @@ contains
   
     real :: tmpno3, tmpnh3, tmpnhx, tmphno3
     logical, save :: first_isor = .true.
-  
+    integer :: lf_iter, niter
+    
   !  INPUT:
   !  1. [WI]
   !     DOUBLE PRECISION array of length [8].
@@ -195,9 +196,13 @@ contains
   
      
     do n = 1,1 ! (fine, coarse) -- optional. Only fine for now; coarse needs tinkering.
-      
+         
       do k = KCHEMTOP,KMAX_MID 
-  
+        niter = 1
+        if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
+        do lf_iter=1, niter !only used for LocalFractions, otherwise just one "iteration"
+        call lf_aero_pre(i,j,k,lf_iter) !only used for LocalFractions
+ 
         ! isorropia only for when T > 250 K and P > 200 hPa (CMAQ and GEOS-Chem; Shannon Capps discussion)
         if (pp(k) > 20000.0 .and. temp(k) > 250.0) then 
   
@@ -297,6 +302,7 @@ contains
   
             ! aerosol water (ug/m**3) -- 18.01528 MW H2O
             PM25_water_rh50(i,j) =  max( 0., aerliq(8) * MWH2O * 1e6 )
+            call lf_aero_pos(i,j,k,lf_iter,2,0)
           end if 
   
           !if ( xn_2d(NO3_f_ix,k )  < 0.0 .or.  xn_2d(NH4_f_ix,k) < 0.0 ) then
@@ -315,7 +321,11 @@ contains
           end if
           !call StopAll("ISOR")
   
-        endif ! > 200 hPa and > 250 K
+       endif ! > 200 hPa and > 250 K
+
+       call lf_aero_pos(i,j,k,lf_iter,0,0)
+       end do ! lf_iter
+    
       end do ! k = KCHEMTOP, KMAX_MID
     end do ! n = 1,2 (fine, coarse)
   end subroutine emep2isorropia
@@ -391,7 +401,7 @@ contains
       xn_2d(NH3_ix,k)   = max (FLOOR, gNH3out / (species(NH3_ix)%molwt  *coef) )
       xn_2d(NO3_f_ix,k) = max (FLOOR, aNO3out / (species(NO3_f_ix)%molwt  *coef) )
       xn_2d(NH4_f_ix,k) = max (FLOOR, aNH4out / (species(NH4_f_ix)%molwt  *coef) )
-      call lf_aero_pos(i,j,k,iter)
+      call lf_aero_pos(i,j,k,iter,0,ERRMARK)
       end do
    end do  ! K-levels
 
@@ -709,7 +719,7 @@ contains
   !--------------------------------------------------------------------------
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
-      call lf_aero_pos(i,j,k,iter,make_pmwater=.true.)
+      call lf_aero_pos(i,j,k,iter,1,ERRMARK)
       end do
 
       if (AERO%ORGANIC_WATER) then

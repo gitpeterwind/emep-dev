@@ -140,7 +140,7 @@ integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
 real, allocatable, public, dimension(:), save ::L_lf, P_lf,rctA_lf,rctB_lf
 real, allocatable, public, dimension(:,:), save ::rctAk_lf,rctBk_lf
-real, private, dimension(5,0:4),save ::xn_lf !to save concentrations
+real, private, dimension(0:5,0:4),save ::xn_lf !to save concentrations
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
@@ -213,6 +213,8 @@ logical, private, save :: make_PMwater =.false. !NB: water is not a species and 
 logical, public, save :: makeBVOC = .false.
 integer, public, save  :: ix_BVOC, ix_DMS
 integer, public, save  :: nPOD=0, nDryDep=0 !number of outputs asked for. nDryDep includes nPOD
+logical, private, save :: aero_error = .false.
+
 contains
 
   subroutine lf_init
@@ -3094,8 +3096,8 @@ end subroutine lf_chem
 
 subroutine lf_aero_pre(i,j,k,deriv_iter) !called just before AerosolEquilib
   integer, intent(in) ::i,j,k,deriv_iter
-  if(.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1)return
-
+  if (.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1) return
+  if (deriv_iter == 1) aero_error = .false. !initialize for each i,j,k and timestep
   !save concentrations, to see changes
   if(DEBUGall .and. me==0)write(*,*)'start lf_aero_pre'
   call Code_timer(tim_before)
@@ -3138,18 +3140,18 @@ call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 
 end subroutine lf_aero_pre
 
-subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after AerosolEquilib
-  integer, intent(in) ::i,j,k,deriv_iter
-  logical, optional, intent(in) :: make_pmwater
+subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after AerosolEquilib
+  integer, intent(in) ::i,j,k,deriv_iter,errmark
+  integer, intent(in) :: pmwater !0-> do not make water. 1-> make water. 2-> make water but do not reset
   real :: d_NH4, d_NH3, NH4, NH3, inv
   integer :: n_NH3, n_NH4
   real :: d_NO3, d_HNO3, NO3, HNO3
   integer :: n_NO3, n_HNO3,n,ix,iix,isrc,d
   real :: xderiv(5,4), fac
-  logical :: pmwater = .false.
-  pmwater = .false.
+
   if(.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1)return
-  if (present(make_pmwater)) pmwater = make_pmwater
+  if( errmark < 0) aero_error = .true. !if any of the scenario goes wrong we abandon 
+
   if (isrc_NH4_f<0 .and. .not.lf_fullchem) return
   if( .not.lf_fullchem .and. deriv_iter>1) return
   call Code_timer(tim_before)
@@ -3183,17 +3185,18 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after Aerosol
      endif
   else if (lf_fullchem) then
      !save results (could avoid for deriv_iter=4?)
-     if (pmwater) then
-        xn_lf(1,deriv_iter) = PM25_water_rh50(i,j)
-    else
+     if (pmwater>0) then
+        xn_lf(0,deriv_iter) = PM25_water_rh50(i,j)
+     else
         xn_lf(1,deriv_iter) = xn_2d(NH3_ix,k)
         xn_lf(2,deriv_iter) = xn_2d(NH4_f_ix,k)
         xn_lf(3,deriv_iter) = xn_2d(NO3_f_ix,k)
         xn_lf(4,deriv_iter) = xn_2d(HNO3_ix,k)
         xn_lf(5,deriv_iter) = xn_2d(SO4_ix,k)
      end if
-     if(deriv_iter<4)then
+     if(deriv_iter<4 .and. pmwater<2)then
         !put back original values
+        !if pmwater
         xn_2d(NH3_ix,k) = xn_lf(1,0)
         xn_2d(NH4_f_ix,k)=xn_lf(2,0)
         xn_2d(NO3_f_ix,k)=xn_lf(3,0)
@@ -3206,16 +3209,16 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after Aerosol
         !NH3  ->deriv 3
         !base ->deriv 4
         !original values ->deriv 0
-        if (pmwater) then
+        if (pmwater > 0) then
            if (k/=kmax_mid) then
               write(*,*)"wrong k",k,kmax_mid
               stop
            endif
-           !only make water lf
-              do n = 1, Npos_lf*Nfullchem_emis
-                 lf_PM25_water(n,i,j) = 0.0
-              end do
-            do isrc=1,Nsources
+           !make water lf
+           do n = 1, Npos_lf*Nfullchem_emis
+              lf_PM25_water(n,i,j) = 0.0
+           end do
+           do isrc=1,Nsources
               fac = 1.0
               if(lf_src(isrc)%species == 'NH3')then
                  ix=3
@@ -3232,8 +3235,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after Aerosol
               else
                  cycle
               end if
-             if(xn_lf(1,4)>0.0000001)then
-                 fac=fac*min(10.0,max(-10.0,(xn_lf(1,ix)- xn_lf(1,4))/((eps1-1.0)*xn_lf(1,4))))
+             if(xn_lf(0,4)>0.0000001)then
+                 fac=fac*min(10.0,max(-10.0,(xn_lf(0,ix)- xn_lf(0,4))/((eps1-1.0)*xn_lf(0,4))))
                  do n = 1, Npos_lf*Nfullchem_emis
                     lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac * lf(lf_src(isrc)%start+n-1,i,j,k)
                  end do
@@ -3242,104 +3245,101 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,make_pmwater) !called just after Aerosol
            end do
 
         else
-           !make the concentration derivatives and update lf
-        !save original lf values
-        do n = 0, Npos_lf*Nfullchem_emis-1
-           lf0_loc(n+1,1) = lf(lf_src(isrc_NH3)%start+n,i,j,k)
-        end do
-         do n = 0, Npos_lf*Nfullchem_emis-1
-           lf0_loc(n+1,2) = lf(lf_src(isrc_NH4_f)%start+n,i,j,k)
-        end do
-        do n = 0, Npos_lf*Nfullchem_emis-1
-           lf0_loc(n+1,3) = lf(lf_src(isrc_NO3_f)%start+n,i,j,k)
-        end do
-        do n = 0, Npos_lf*Nfullchem_emis-1
-           lf0_loc(n+1,4) = lf(lf_src(isrc_HNO3)%start+n,i,j,k)
-        end do
-        do n = 0, Npos_lf*Nfullchem_emis-1
-           lf0_loc(n+1,5) = lf(lf_src(isrc_SO4)%start+n,i,j,k)
-        end do
-
-        do ix=1,4 !NB: SO4 assumed not changed in aero
-           if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
-              if(xn_lf(ix,1)>1000)then
-                 xderiv(1,ix) = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!HNO3
-              else
-                 xderiv(1,ix) = 0.0
-              end if
-              if(xn_lf(ix,2)>1000)then
-                 xderiv(2,ix) = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!SO4
-              else
-                 xderiv(2,ix) = 0.0
-              end if
-              if(xn_lf(ix,3)>1000)then
-                 xderiv(3,ix) = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!NH3
-              else
-                 xderiv(3,ix) = 0.0
-              end if
-!NB: derivatives can be large when close to discontinuity (NH4/SO4=2)
-              xderiv(1,ix) = min(100.0,max(-100.0,xderiv(1,ix)))
-              xderiv(2,ix) = min(100.0,max(-100.0,xderiv(2,ix)))
-!              if(abs(xderiv(3,ix))>2000)write(*,*)me,i,j,k,ix,xderiv(3,ix),xn_lf(1,3), xn_lf(1,4),xn_lf(3,3), xn_lf(3,4)
-              xderiv(3,ix) = min(100.0,max(-100.0,xderiv(3,ix)))
-
-              !xderiv for NO3_f = xderiv for HNO3, no mass factor when units are in molecules/ or mixing ratio
-
-              !delta_in(HNO3)=xn_lf(4,0)*eps1-xn_lf(4,0)
-              !give same result as same difference in mol/m3 as delta_in(NO3_f)=xn_lf(4,0)*eps1-xn_lf(4,0)
-              !However has to correct because xderiv is relative to concentrations and they are different for NO3_f and HNO3
-              !lf(lf_src(isrc_HNO3)%start+n,i,j,k) = (xn_lf(4,1)- xn_lf(4,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(4,4)) *lf0_loc(n+1,4) +&
-              !                                      (xn_lf(4,1)- xn_lf(4,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(4,4)) *lf0_loc(n+1,3) +&
-              !                                      (xn_lf(4,2)- xn_lf(4,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(4,4)) *lf0_loc(n+1,SO4)
-              !lf(lf_src(isrc_NO3_f)%start+n,i,j,k)= (xn_lf(3,1)- xn_lf(3,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(3,4)) *lf0_loc(n+1,4) &
-              !                                      (xn_lf(3,1)- xn_lf(3,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(3,4)) *lf0_loc(n+1,3)
-              !                                      (xn_lf(3,2)- xn_lf(3,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(3,4)) *lf0_loc(n+1,SO4)
-              !lf(lf_src(isrc_NH3)%start+n,i,j,k)  = (xn_lf(1,1)- xn_lf(1,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(1,4)) *lf0_loc(n+1,4) &
-              !                                      (xn_lf(1,1)- xn_lf(1,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(1,4)) *lf0_loc(n+1,3)
-              !                                      (xn_lf(1,2)- xn_lf(1,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(1,4)) *lf0_loc(n+1,SO4)
-
-
-              !xderiv for NH4_f = xderiv for NH3, no mass factor when units are in molecules/ or mixing ratio
-              !TODO: set in matrix multiplication form
-           else
-              !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
-              xderiv(1:3,ix) = 0.0
-           end if
-        end do
-        do isrc=1,Nsources
-           if(lf_src(isrc)%species == 'NH3')then
-              ix=1
-           else if(lf_src(isrc)%species == 'NH4_f')then
-              ix=2
-           else if(lf_src(isrc)%species == 'NO3_f')then
-              ix=3
-           else if(lf_src(isrc)%species == 'HNO3')then
-              ix=4
-           else if(lf_src(isrc)%species == 'SO4')then
-              cycle !SO4 assumed not changed in aero
-              ix=5
-           else
-              cycle
-           end if
-           d=(lf_src(isrc)%iem_lf-1)*Npos_lf
-
-           if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
-              do n = 0, Npos_lf-1
-                 lf(lf_src(isrc)%start+n,i,j,k) = xderiv(1,ix) * lf0_loc(n+1+d,4) &
-                      + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n+1+d,3) &
-                      + xderiv(2,ix) * lf0_loc(n+1+d,5) &
-                      + xderiv(3,ix) * lf0_loc(n+1+d,1) &
-                      + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1+d,2)
-!                 if(i_fdom(i)==98.and.j_fdom(j)==92 .and.k==kmax_mid )then
-!                    write(*,*)ix,n,lf_src(isrc)%start+n,'xderiv ',lf(lf_src(isrc)%start+n,i,j,k),xderiv(1,ix),xderiv(2,ix),xderiv(3,ix)
-!                    write(*,*)ix,n,'xderivlf ',lf0_loc(n+1,4),xn_lf(3,0)/(1000+xn_lf(4,0))*lf0_loc(n+1,3),xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1,2),lf0_loc(n+1,1)
-!                 end if
+           if(.not. aero_error) then
+              !make the concentration derivatives and update lf
+              !save original lf values
+              do n = 0, Npos_lf*Nfullchem_emis-1
+                 lf0_loc(n+1,1) = lf(lf_src(isrc_NH3)%start+n,i,j,k)
               end do
+              do n = 0, Npos_lf*Nfullchem_emis-1
+                 lf0_loc(n+1,2) = lf(lf_src(isrc_NH4_f)%start+n,i,j,k)
+              end do
+              do n = 0, Npos_lf*Nfullchem_emis-1
+                 lf0_loc(n+1,3) = lf(lf_src(isrc_NO3_f)%start+n,i,j,k)
+              end do
+              do n = 0, Npos_lf*Nfullchem_emis-1
+                 lf0_loc(n+1,4) = lf(lf_src(isrc_HNO3)%start+n,i,j,k)
+              end do
+              do n = 0, Npos_lf*Nfullchem_emis-1
+                 lf0_loc(n+1,5) = lf(lf_src(isrc_SO4)%start+n,i,j,k)
+              end do
+              
+              do ix=1,4 !NB: SO4 assumed not changed in aero
+                 if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
+                    if(xn_lf(ix,1)>1000)then
+                       xderiv(1,ix) = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!HNO3
+                    else
+                       xderiv(1,ix) = 0.0
+                    end if
+                    if(xn_lf(ix,2)>1000)then
+                       xderiv(2,ix) = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!SO4
+                    else
+                       xderiv(2,ix) = 0.0
+                    end if
+                    if(xn_lf(ix,3)>1000)then
+                       xderiv(3,ix) = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!NH3
+                    else
+                       xderiv(3,ix) = 0.0
+                    end if
 
-           else
-              !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
+                    !NB: derivatives can be large when close to discontinuity (NH4/SO4=2)
+                    xderiv(1,ix) = min(10.0,max(-10.0,xderiv(1,ix)))
+                    xderiv(2,ix) = min(10.0,max(-10.0,xderiv(2,ix)))
+                    xderiv(3,ix) = min(10.0,max(-10.0,xderiv(3,ix)))
+                    
+                    !xderiv for NO3_f = xderiv for HNO3, no mass factor when units are in molecules/ or mixing ratio
+                    
+                    !delta_in(HNO3)=xn_lf(4,0)*eps1-xn_lf(4,0)
+                    !give same result as same difference in mol/m3 as delta_in(NO3_f)=xn_lf(4,0)*eps1-xn_lf(4,0)
+                    !However has to correct because xderiv is relative to concentrations and they are different for NO3_f and HNO3
+                    !lf(lf_src(isrc_HNO3)%start+n,i,j,k) = (xn_lf(4,1)- xn_lf(4,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(4,4)) *lf0_loc(n+1,4) +&
+                    !                                      (xn_lf(4,1)- xn_lf(4,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(4,4)) *lf0_loc(n+1,3) +&
+                    !                                      (xn_lf(4,2)- xn_lf(4,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(4,4)) *lf0_loc(n+1,SO4)
+                    !lf(lf_src(isrc_NO3_f)%start+n,i,j,k)= (xn_lf(3,1)- xn_lf(3,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(3,4)) *lf0_loc(n+1,4) &
+                    !                                      (xn_lf(3,1)- xn_lf(3,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(3,4)) *lf0_loc(n+1,3)
+                    !                                      (xn_lf(3,2)- xn_lf(3,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(3,4)) *lf0_loc(n+1,SO4)
+                    !lf(lf_src(isrc_NH3)%start+n,i,j,k)  = (xn_lf(1,1)- xn_lf(1,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(4,0)/xn_lf(1,4)) *lf0_loc(n+1,4) &
+                    !                                      (xn_lf(1,1)- xn_lf(1,4)) / (xn_lf(4,0)*eps1-xn_lf(4,0)) * (xn_lf(3,0)/xn_lf(1,4)) *lf0_loc(n+1,3)
+                    !                                      (xn_lf(1,2)- xn_lf(1,4)) / (xn_lf(5,0)*eps1-xn_lf(5,0)) * (xn_lf(5,0)/xn_lf(1,4)) *lf0_loc(n+1,SO4)
+                    
+                    
+                    !xderiv for NH4_f = xderiv for NH3, no mass factor when units are in molecules/ or mixing ratio
+                    !TODO: set in matrix multiplication form
+                 else
+                    !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
+                    xderiv(1:3,ix) = 0.0
+                 end if
+              end do
+              do isrc=1,Nsources
+                 if(lf_src(isrc)%species == 'NH3')then
+                    ix=1
+                 else if(lf_src(isrc)%species == 'NH4_f')then
+                    ix=2
+                 else if(lf_src(isrc)%species == 'NO3_f')then
+                    ix=3
+                 else if(lf_src(isrc)%species == 'HNO3')then
+                    ix=4
+                 else if(lf_src(isrc)%species == 'SO4')then
+                    cycle !SO4 assumed not changed in aero
+                    ix=5
+                 else
+                    cycle
+                 end if
+                 d=(lf_src(isrc)%iem_lf-1)*Npos_lf
+                 
+                 if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
+                    do n = 0, Npos_lf-1
+                       lf(lf_src(isrc)%start+n,i,j,k) = xderiv(1,ix) * lf0_loc(n+1+d,4) &
+                            + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n+1+d,3) &
+                            + xderiv(2,ix) * lf0_loc(n+1+d,5) &
+                            + xderiv(3,ix) * lf0_loc(n+1+d,1) &
+                            + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1+d,2)
+                    end do
+                 else
+                    !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
+                 end if
+              end do
            end if
-        end do
         end if
      end if
   end if
