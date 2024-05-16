@@ -51,7 +51,7 @@ use Io_Progs_mod,     only: datewrite !MASS
 use Landuse_mod,      only: water_fraction, ice_landcover
 use LocalVariables_mod, only: Grid
 use LocalFractions_mod, only: lf_fullchem,lf_Nvert,lf_SurfArea_pre,lf_SurfArea_pos,&
-                              spec2lfspec,rctAk_lf,rctBk_lf, lf_rcemis_nat, makeDMS, ix_DMS
+                         spec2lfspec,lf_rcemis_nat,makeDMS,ix_DMS!,rctAk_lf,rctBk_lf
 use MassBudget_mod,   only: totem    ! sum of emissions
 use MetFields_mod,    only: ps,sst
 use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, zen, z_bnd,ws_10m
@@ -276,10 +276,12 @@ contains
         if ( USES%SURF_AREA ) then ! GERBER
 
            niter = 1
-           if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
+           !NB: temporarily disable LF, since it is broken (?).
+           !please do not delete.
+           !           if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
            !in the LF case, we construct S_m2m3 for 4 "scenarios", in order to get derivatives
            do iter=1, niter !iter loop only for LocalFractions
-              call lf_SurfArea_pre(k,iter) !only used for LocalFractions
+!              call lf_SurfArea_pre(k,iter) !only used for LocalFractions
 
            S_m2m3(:,k) = 0.0  !! Allow max 6000 um2/cm3
 
@@ -465,7 +467,7 @@ contains
               end do
            end if
 
-           call lf_SurfArea_pos(S_m2m3(AERO%PM,k),i,j,k,iter) !only used for LocalFractions
+           !call lf_SurfArea_pos(S_m2m3(AERO%PM,k),i,j,k,iter) !only used for LocalFractions
 
           end do 
 

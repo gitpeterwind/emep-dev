@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May  2024, Peter
+
+Makefile: changed nc-config to nf_config for Atos
+NB: the debug flags does not work anymore (-ftrapuv ?).
+
+LF: repaired POD output. rctA and rctB disabled (they had little effect anyway)
+LF%Nvert default set to 14.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13 May  2024, Peter
 
 LF for Isorropia. (NB: gives relatively large differences with BF)

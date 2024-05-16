@@ -138,8 +138,8 @@ real, allocatable, public, dimension(:,:), save ::rcemis_lf_surf, emis2spec_surf
 real, allocatable, public, dimension(:), save ::rcemis_lf_primary !for emissions considered as linear 
 integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
-real, allocatable, public, dimension(:), save ::L_lf, P_lf,rctA_lf,rctB_lf
-real, allocatable, public, dimension(:,:), save ::rctAk_lf,rctBk_lf
+real, allocatable, public, dimension(:), save ::L_lf, P_lf!,rctA_lf,rctB_lf
+!real, allocatable, public, dimension(:,:), save ::rctAk_lf,rctBk_lf
 real, private, dimension(0:5,0:4),save ::xn_lf !to save concentrations
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
@@ -1071,20 +1071,20 @@ contains
      allocate(rcemis_lf_surf(10,20),emis2spec_surf(10,20)) !up to 10 different sources, 20 species each 
      allocate(P_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
      allocate(L_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
-     allocate(rctA_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
-     allocate(rctAk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
-     allocate(rctB_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
-     allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
+!     allocate(rctA_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
+!     allocate(rctAk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
+!     allocate(rctB_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
+!     allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(xn_shl_lf(NSPEC_deriv_lf+NSOA,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      allocate(lf_PM25_water(Npos_lf*Nfullchem_emis,LIMAX,LJMAX))
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
      Dchem_lf = 0.0
-     rctA_lf = 0.0
-     rctAk_lf = 0.0
-     rctB_lf = 0.0
-     rctBk_lf = 0.0
+!     rctA_lf = 0.0
+!     rctAk_lf = 0.0
+!     rctB_lf = 0.0
+!     rctBk_lf = 0.0
      xn_shl_lf = 0.0
      rcemis_lf = 0.0 !NB: important
      rcemis_lf_primary = 0.0 !NB: important
@@ -3410,28 +3410,28 @@ subroutine lf_SurfArea_pos(S_m2m3,i,j,k,deriv_iter)
      !NO3_c -> deriv_iter = 2
      !NO3_f -> deriv_iter = 3
      !base  -> deriv_iter = 4
-     if (xn_lf(1,4)>1e-10) then
-        rctAk_lf(spec2lfspec(SO4_ix),k) = (xn_lf(1,1) - xn_lf(1,4))/xn_lf(1,4)
-        rctAk_lf(spec2lfspec(NO3_c_ix),k) = (xn_lf(1,2) - xn_lf(1,4))/xn_lf(1,4)
-        rctAk_lf(spec2lfspec(NO3_f_ix),k) = (xn_lf(1,3) - xn_lf(1,4))/xn_lf(1,4)
-     else
-        !no dependency included
-        rctAk_lf(spec2lfspec(SO4_ix),k) = 0.0
-        rctAk_lf(spec2lfspec(NO3_c_ix),k) = 0.0
-        rctAk_lf(spec2lfspec(NO3_f_ix),k) = 0.0
-     end if
+!     if (xn_lf(1,4)>1e-10) then
+!        rctAk_lf(spec2lfspec(SO4_ix),k) = (xn_lf(1,1) - xn_lf(1,4))/xn_lf(1,4)
+!        rctAk_lf(spec2lfspec(NO3_c_ix),k) = (xn_lf(1,2) - xn_lf(1,4))/xn_lf(1,4)
+!        rctAk_lf(spec2lfspec(NO3_f_ix),k) = (xn_lf(1,3) - xn_lf(1,4))/xn_lf(1,4)
+!     else
+!        !no dependency included
+!        rctAk_lf(spec2lfspec(SO4_ix),k) = 0.0
+!        rctAk_lf(spec2lfspec(NO3_c_ix),k) = 0.0
+!        rctAk_lf(spec2lfspec(NO3_f_ix),k) = 0.0
+!     end if
 
-     if (xn_lf(2,4)>1e-10) then
-        rctBk_lf(spec2lfspec(SO4_ix),k) = (xn_lf(2,1) - xn_lf(2,4))/xn_lf(2,4)
-        rctBk_lf(spec2lfspec(NO3_c_ix),k) = (xn_lf(2,2) - xn_lf(2,4))/xn_lf(2,4)
-        rctBk_lf(spec2lfspec(NO3_f_ix),k) = (xn_lf(2,3) - xn_lf(2,4))/xn_lf(2,4)
-        !should add NH4_f ? (or not contributing?)
-     else
-        !no dependency included
-        rctBk_lf(spec2lfspec(SO4_ix),k) = 0.0
-        rctBk_lf(spec2lfspec(NO3_c_ix),k) = 0.0
-        rctBk_lf(spec2lfspec(NO3_f_ix),k) = 0.0
-     end if
+!     if (xn_lf(2,4)>1e-10) then
+!        rctBk_lf(spec2lfspec(SO4_ix),k) = (xn_lf(2,1) - xn_lf(2,4))/xn_lf(2,4)
+!        rctBk_lf(spec2lfspec(NO3_c_ix),k) = (xn_lf(2,2) - xn_lf(2,4))/xn_lf(2,4)
+!        rctBk_lf(spec2lfspec(NO3_f_ix),k) = (xn_lf(2,3) - xn_lf(2,4))/xn_lf(2,4)
+!        !should add NH4_f ? (or not contributing?)
+!     else
+!        !no dependency included
+!        rctBk_lf(spec2lfspec(SO4_ix),k) = 0.0
+!        rctBk_lf(spec2lfspec(NO3_c_ix),k) = 0.0
+!        rctBk_lf(spec2lfspec(NO3_f_ix),k) = 0.0
+!     end if
 !           if(i==5.and.j==5 .and. k>=KMAX_MID-lf_Nvert+1 .and. me==253)then
 !             if(xn_lf(2,4)>0.0)write(*,*)'LF ',me,k,xn_lf(2,1),xn_lf(2,4),rctBk_lf(spec2lfspec(SO4_ix),k)
 !          end if
@@ -4211,8 +4211,8 @@ subroutine lf_rcemis(i,j,k,eps)
        end do
 
        !some reaction rates depend on start concentrations. (NB: those must not be updated within chemistry!)
-       rctA_lf(:) = rctAk_lf(:,k)
-       rctB_lf(:) = rctBk_lf(:,k)
+!       rctA_lf(:) = rctAk_lf(:,k)
+!       rctB_lf(:) = rctBk_lf(:,k)
 
     end if
   end subroutine lf_chem_pre
