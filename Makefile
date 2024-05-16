@@ -25,8 +25,8 @@ ifeq ($(MACHINE), betzy)
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpif90
 else ifeq ($(MACHINE), atos)
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS += $(shell nc-config --cflags)
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS += $(shell nf-config --cflags)
   MAKEDEPF90=/home/fan/bin/makedepf90
   OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
