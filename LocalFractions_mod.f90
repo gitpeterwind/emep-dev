@@ -1480,11 +1480,12 @@ subroutine lf_out(iotyp)
                  if (iter==2) then
                     if (lf_spec_out(iout)%DryDep) then
                        n1=0
-                       idep = lf_spec_out(iout)%ix(ig)
+                       idep = lf_spec_out(iout)%ix(ig) 
                        fac = 1.0/lf_src(isrc)%mw(1) !to make output unit in S or N
                        nend = lf_src(isrc)%end
                        if(index(lf_spec_out(iout)%name,"POD")>0)then
-                          nend = lf_src(isrc)%start + Nfullchem_emis*Npos_lf
+                          idep = idep + (ideriv-1)*Npos_lf
+                          nend = lf_src(isrc)%start + Npos_lf - 1
                           fac = 1.0
                        end if
                        do n=lf_src(isrc)%start, nend
@@ -1616,7 +1617,12 @@ subroutine lf_out(iotyp)
                        if(index(lf_spec_out(iout)%name,"POD")>0)then
                           def2%unit='mmole/m2'
                           scale = dt_advec*1e-6
-                       end if
+                          !for POD we do not have a specific isrc, so we have to define redname explicitely
+                          if(ideriv==1)redname='nox'
+                          if(ideriv==2)redname='voc'
+                          if(ideriv==3)redname='sox'
+                          if(ideriv==4)redname='nh3'
+                        end if
                    end if
                     if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
                     if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
