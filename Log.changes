@@ -54,6 +54,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Makefile: changed nc-config to nf_config for Atos
 NB: the debug flags does not work anymore (-ftrapuv ?).
 
+Some more diagnostic outputs when pH does not converge.
+
 LF: repaired POD output. rctA and rctB disabled (they had little effect anyway)
 LF%Nvert default set to 14.
 

@@ -718,6 +718,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
              !check that we are close to the solution
              if(abs(pHnew-pHoutnew)>pHThres)then
                 write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
+                write(*,*)'input values: k, T, phfactor, clw ',k,itemp(k),phfactor(k),cloudwater(k)
              end if
           end if
         endif       
