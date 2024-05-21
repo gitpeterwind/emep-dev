@@ -2813,7 +2813,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   do ispec = 1, NSPEC_chem_lf!no loop over short lived
      n_sp = lfspec2spec(ispec) !CM_Spec index
      do ideriv = 1, NSPEC_deriv_lf !loop over chemical derivatives without SOA derivatives
-        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3 means almost no molecules
+        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3, 1000  means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
@@ -2830,7 +2830,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      end do
 
      do ideriv = 1, N_lf_derivemis !loop over emission derivatives
-        if (xnew(n_sp)>1000.0 .and. xnew_lf(ideriv + NSPEC_deriv_lf,n_sp)>1000.0 .and. k>=KEMISTOP.and. n_sp/=RO2POOL_ix ) then !units are molecules/cm3 means almost no molecules
+        if (xnew(n_sp)>1000.0 .and. xnew_lf(ideriv + NSPEC_deriv_lf,n_sp)>1000.0 .and. k>=KEMISTOP.and. n_sp/=RO2POOL_ix ) then !units are molecules/cm3, 1000 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
@@ -2939,7 +2939,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   do ispec = 1, NSOA !loop over SOA species only
      n_sp = lfspec2spec(NSPEC_deriv_lf + ispec) !CM_Spec index
      do ideriv = 1, NSOA !loop over SOA derivatives only
-        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix) then !units are molecules/cm3 means almost no molecules
+        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix) then !units are molecules/cm3, 1000 means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
@@ -2961,20 +2961,21 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
 
   !add contribution from SOA to lf
   do ispec = NSPEC_deriv_lf + 1, NSPEC_deriv_lf + NSOA
-     isrc = (ispec-1) * Nfullchem_emis + 1
-     ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
-     n0 = lf_src(isrc)%start
-     n = 1
-     if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
-     if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
-     if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
-     if (lf_set%EmisDer_all) n = 1
-     do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
-        lf(ics,i,j,k) = lf(ics,i,j,k) + lfSOA_loc(n, ispec-NSPEC_deriv_lf)
-        n=n+1
+     do isrc = (ispec-1) * Nfullchem_emis + 1, (ispec-1) * Nfullchem_emis + Nfullchem_emis
+        ix = lf_src(isrc)%ix(1) ! index of species in species_adv()
+        n0 = lf_src(isrc)%start
+        n = 1
+        if (lf_src(isrc)%iem_lf == iem_lf_voc) n = Npos_lf + 1 !Same countries, but different nox/voc
+        if (lf_src(isrc)%iem_lf == iem_lf_nh3) n = 2*Npos_lf + 1 !Same countries, but nh3
+        if (lf_src(isrc)%iem_lf == iem_lf_sox) n = 3*Npos_lf + 1 !Same countries, but sox
+        if (lf_set%EmisDer_all) n = 1
+        do ics = n0,  n0 + Npos_lf - 1 !loop over sector and country contributions
+           lf(ics,i,j,k) = lf(ics,i,j,k) + lfSOA_loc(n, ispec-NSPEC_deriv_lf)
+           n=n+1
+        end do
      end do
   end do
-
+     
   !add "primary" emissions that are tracked directly
   do ispec=1,3
      if (ispec==1)isrc = isrc_pm25
