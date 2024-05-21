@@ -90,10 +90,11 @@ real, private, save,allocatable, dimension(:) :: &
 integer, private, save  :: kcloudtop   ! k-level of highest-cloud
 integer, private, save  :: ksubcloud   ! k-level just below cloud
 
-real, private, parameter :: & ! Define limits for "cloud"
-  PR_LIMIT = 1.0e-7,  &      ! for accumulated precipitation
-  CW_LIMIT = 1.0e-7, &      ! for cloud water, kg(H2O)/kg(air)
-  B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+! May 2024: now in config:
+!real, private, parameter :: & ! Define limits for "cloud"
+!  CW_LIMIT = 1.0e-7, &      ! for cloud water, kg(H2O)/kg(air)
+!  B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+!  PR_LIMIT = 1.0e-7,  &      ! for accumulated precipitation
 
 !hf  real, private, save :: &      ! Set in init below
 !hf      INV_Hplus          &      ! = 1.0/Hplus       (1/H+)
@@ -137,8 +138,8 @@ real, private, dimension(NAQRCT,CHEMTMIN:CHEMTMAX), save :: aqrcT
 
 real, public, save,allocatable, dimension(:,:) :: aqrck
                                                  ! aq. reaction rates
-						 ! transferred to chemistry
-						 ! (CM_Reactions1(2).inc)
+                                                 ! transferred to chemistry
+                                                 ! (CM_Reactions1(2).inc)
 
 logical, public,save :: prclouds_present      ! true if precipitating clouds
 
@@ -285,6 +286,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
   real, dimension(KUPPER:KMAX_MID) :: &
     b,           &  ! Cloud-area (fraction)
+    cw_gm2grid,   &  ! Cloud-water per m2 grid (rho*cw_met * 1.0e3)
     cloudwater,  &  ! Cloud-water (volume mixing ratio, H2O/air)
                     ! cloudwater = 1.e-6 same as 1.g m^-3
     pres            ! Pressure (Pa)
@@ -307,7 +309,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
     pres(k)=A_mid(k)+B_mid(k)*ps(i,j,1)
   end do
 
-  prclouds_present=(pr_acc(KMAX_MID)>PR_LIMIT) ! --> precipitation at the surface
+  prclouds_present=(pr_acc(KMAX_MID)>USES%PR_LIMIT) ! --> precipitation at the surface
 
 ! initialise with .false. and 0:
   incloud(:)  = .false.
@@ -322,14 +324,15 @@ subroutine Setup_Clouds(i,j,debug_flag)
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
   do k = KMAX_MID, KUPPER, -1
      b(k) = cc3d(i,j,k,1)
+     cw_gm2grid(k) = 1.0e3*roa(i,j,k,1) * cw_met(i,j,k,1)
   end do
   do k = KMAX_MID, KUPPER, -1
     ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the
     ! in-cloud liquid water content is at least that of fog (0.06 g/m3)
-    if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
-      if ( (roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)) * 1e3 > 0.06) exit
+    if(b(k) > USES%B_LIMIT .and. cw_met(i,j,k,1) > USES%CW_LIMIT ) then
+      !if ( (roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)) * 1e3 > 0.06) exit
+      if ( cw_gm2grid(k) / b(k) > 0.06) exit
     endif
-    !if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT .and. roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) exit
     ksubcloud = k
   end do
 
@@ -345,8 +348,9 @@ subroutine Setup_Clouds(i,j,debug_flag)
         ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
         ! (it is divided by cloud fraction b )
 
-        if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT) then
-          if( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
+        if(b(k) > USES%B_LIMIT .and. cw_met(i,j,k,1) > USES%CW_LIMIT) then
+          !if( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
+          if( cw_gm2grid(k) / b(k) > 0.06 .and. cw_gm2grid(k) / b(k) < 3.00 ) then
            ! value of cloudwater in the cloud fraction of the grid in units
            ! vol(water)/vol(air)
            ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise
@@ -356,7 +360,8 @@ subroutine Setup_Clouds(i,j,debug_flag)
            if ( USES%FIXED_CLW > 0.0  ) then
              cloudwater(k) = USES%FIXED_CLW
            else ! calculate from NWP data
-             cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+             !cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+             cloudwater(k) = 1.0e-6 * min( cw_gm2grid(k) / b(k), 3.0) ! TEST upper limit
            end if 
            incloud(k) = .true.
            if(kcloudtop<0) kcloudtop = k

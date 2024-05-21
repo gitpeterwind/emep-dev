@@ -235,6 +235,11 @@ type, public :: emep_useconfig
 ! from NWP values. (In future NWP will be used by default, but we are
 ! invesigating some pH calculation issues. For safety, use FIXED_CLW
   real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
+!Define limits for "cloud"
+  real :: PR_LIMIT = 1.0e-7         ! for accumulated precipitation
+  real :: CW_LIMIT = 1.0e-7         ! for cloud water, kg(H2O)/kg(air)
+  real :: B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
 !Species where we want to include "tail" of  course mode into PM25

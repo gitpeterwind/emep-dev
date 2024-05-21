@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 May  2024, Dave, Willem
+
+Aqueous_mod, Config_mod:  moveed PR_LIMIT, B_LIMIT, CW_LIMIT to config system
+
+Aquous_mod: added cw_gm2grid usage, limit of CLW to 0.6 - 3 g/kg.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 May  2024, Peter
 
 Makefile: changed nc-config to nf_config for Atos
