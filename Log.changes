@@ -49,6 +49,10 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 May  2024, Peter, Dave
+
+  Fixed bug for ugm3_pmH2O outputs.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 May  2024, Dave, Willem
 
 Aqueous_mod, Config_mod:  moveed PR_LIMIT, B_LIMIT, CW_LIMIT to config system

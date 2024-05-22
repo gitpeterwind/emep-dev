@@ -124,7 +124,7 @@ contains
     logical, dimension(size(PM10_GROUP)), save  :: is_BC
     ! AERO and DDspec still confusing
     real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter.
-    integer :: iw, ipm ! for wet rad
+    integer :: iw, ipm, itmp ! for wet rad
    ! local
 
     integer           :: k, n, ispec, iter, niter   ! loop variables
@@ -166,6 +166,10 @@ contains
           'SIA', iSIAgroup, 'SS', iSSgroup, 'DU', iDUgroup, &
           'BCf', iBCfgroup, 'BCc', iBCcgroup, 'PMf', iPMfgroup
 
+       do itmp = 1, size(f_2d)
+         if ( f_2d(itmp)%subclass == 'pmH2O' ) pmH2O_wanted = .true.
+       end do
+           
 
        is_BC(:) = .false.
        if ( iBCfgroup > 0 ) then
@@ -539,7 +543,6 @@ contains
      npmH2O = 0
      do itmp = 1, size(f_2d)
        if ( f_2d(itmp)%subclass == 'pmH2O' ) then
-          pmH2O_wanted = .true.
           npmH2O = npmH2O + 1
           d2index(nd2d+npmH2O)= itmp
           id2pmH2O(npmH2O) = f_2d(itmp)%index  !index of aerosol type
