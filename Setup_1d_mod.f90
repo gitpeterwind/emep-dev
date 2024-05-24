@@ -7,14 +7,14 @@ module Setup_1d_mod
 
 use AeroConstants_mod,only: AERO,NSAREA_DEF   ! for aerosol surface area
 use AeroFunctions_mod,only: GerberWetRad, pmSurfArea, cMolSpeed, UptakeRate
-use AeroFunctions_mod,only: pmH2O_gerber  ! H2O from Gerber
+use AeroFunctions_mod,only: pmH2O_gerber, LewisSchwartz  ! H2O from Gerber
 use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
 use Biogenics_mod,    only: SoilNOx
 use Biogenics_mod,    only: EMIS_BioNat, EmisNat
 use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV, NCHEMRATES, NEMIS_File
 use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                              pmH2Ogb, & !pH2O TMP
-                               NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+                               NSPEC_COL, NSPEC_BGN, xn_2d_bgn, PM25_water
 use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
 use ChemFunctions_mod, only: HydrolysisN2O5
 use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
@@ -115,9 +115,11 @@ contains
     logical, save :: first_call = .true.
    ! for surface area calcs:
    ! had: SIA_F=1,PM_F=2,SS_F=3,DU_F=4,SS_C=5,DU_C=6,PM=7 ORIG=8,NSAREA=NSAREA_DEF
-    integer, parameter :: NSAREA_CALC = NSAREA_DEF-1  ! Skip PM=7
+    integer, parameter :: NSAREA_CALC = NSAREA_DEF-1  ! Skip PM=9 (sum)
+    real, parameter :: Ncm3_to_molesm3 = 1.0e6 / AVOG    ! #/cm3 to moles/m3
     integer, save, dimension(NSAREA_CALC) :: aeroDDspec
-    real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
+    real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC, ugOM25
+    real :: DryAerMass, H2OAerVol, DryAerVol, WetDiam, DryAerRho
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC
     logical :: is_finepm, is_ssalt, is_dust, is_sia
@@ -153,6 +155,9 @@ contains
        aeroDDspec(AERO%DU_F)= find_index('DUf',DDspec(:)%name)
        aeroDDspec(AERO%SS_C)= find_index('SSc',DDspec(:)%name)
        aeroDDspec(AERO%DU_C)= find_index('DUc',DDspec(:)%name)
+       aeroDDspec(AERO%SS_F_LS)= find_index('SSf',DDspec(:)%name)
+       aeroDDspec(AERO%SS_C_LS)= find_index('SSc',DDspec(:)%name)
+       aeroDDspec(AERO%PM_F_EQUI)= find_index('PMf',DDspec(:)%name)
 
       ! see which groups we have:
        iSIAgroup = find_index('SIA',chemgroups(:)%name)
@@ -306,6 +311,7 @@ contains
            ugSSaltF = 0.0
            ugDustC  = 0.0
            ugSSaltC = 0.0
+           ugOM25   = 0.0
 
            do ipm = 1, size( PM10_GROUP )
              ispec = PM10_GROUP(ipm)
@@ -340,6 +346,10 @@ contains
                if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
 
+             ! fine particle phase OM can optionally be included as delinquesced species in thermodynamic calls
+             if( species(ispec)%name == 'OM25_p' .and. AERO%ORGANIC_WATER ) ugOM25 = & 
+               xn_2d(ispec,k) * Ncm3_to_molesm3 * species(ispec)%molwt * 1e6  
+
              if (  species(ispec)%name == 'SO4' ) then
                ugSO4 = ugSO4  +  ugtmp
              else if ( index( species(ispec)%name, 'NO3_f' )>0) then
@@ -353,7 +363,7 @@ contains
              if( debug_flag .and. k==KMAX_MID ) then
                write(*, fmt) dtxt//"UGSIA:"//trim(species(ispec)%name), &
                      k, ugtmp, ugpmF, ugpmC,&
-                     ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
+                     ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc, ugOM25
                !write(*,'(a,4L2,es12.3)') dtxt//trim(species(ispec)%name), &
                !      is_finepm, is_ssalt,is_dust,is_BC(ipm), ugtmp
              end if
@@ -376,7 +386,7 @@ contains
           ! now to avoid need for Inddry index
 
            pmH2Ogb(i,j,:) = 0.0
-           do iw = 1, NSAREA_CALC ! Skips PM=6 which is sum.
+           do iw = 1, NSAREA_CALC -3 ! Skips PM=9 which is sum, and also L&S and thermo H2O
 
              ipm= aeroDDspec(iw)
 
@@ -440,11 +450,123 @@ contains
 
              S_m2m3(iw,k) = min( S_m2m3(iw,k), 6.0e-3)  !! Allow max 6000 um2/cm3
 
-           end do ! iw
+           end do ! iw = 1, NSAREA_CALC - 3
+
+
+           ! OPTION: Use Lewis & Schwartz for sea salt, thermodynamics water uptake for PM_F
+           ! if thermodynamics includes fine dust cations, exclude DU_F from Gerber and likewise for fine sea salt. 
+           ! Always Lewis & Schwartz for coarse sea-salt. 
+           ! NB: Does not currently work with local fractions. Note also that coarse dust assumes no water uptake.
+           do iw = AERO%SS_F_LS, AERO%PM_F_EQUI
+
+             if ( iw == AERO%SS_F_LS ) then
+               ugtmp = ugSSaltF             ! total ug 
+               ipm = aeroDDspec(iw)         ! aerosol properties
+               Ddry(iw) = DDspec(ipm)%DpgN  ! geometric mean diameter in meters
+
+               ! calculate modal wet radius for use in surf area calc. Neglect Kelvin effect (no sigma change).
+               DpgNw(iw,k) = LewisSchwartz( Ddry(iw) , rh(k), AERO%RH_UPLIM_AERO, AERO%RH_LOLIM_AERO )
+               S_m2m3(iw,k) = pmSurfArea(ugtmp, Dp=Ddry(iw), Dpw=DpgNw(iw,k), rho_kgm3=DDspec(ipm)%rho_p )
+
+               ! DEBUG%RUNCHEM = T
+               if ( debug_flag .and. k == KMAX_MID ) write(*,"(a,i5,1es10.3)") "L&S SS_F surface area: ", &
+                    iw, S_m2m3(iw,k)
+             end if 
+
+             if ( iw == AERO%SS_C_LS ) then 
+               ugtmp = ugSSaltC             ! total ug
+               ipm = aeroDDspec(iw)         ! aerosol properties
+               Ddry(iw) = DDspec(ipm)%DpgN  ! geometric mean diameter in meters
+
+               ! calculate modal wet radius for use in surf area calc. Neglect Kelvin effect (no sigma change).
+               DpgNw(iw,k) = LewisSchwartz( Ddry(iw) , rh(k), AERO%RH_UPLIM_AERO, AERO%RH_LOLIM_AERO )
+               S_m2m3(iw,k) = pmSurfArea(ugtmp, Dp=Ddry(iw), Dpw=DpgNw(iw,k), rho_kgm3=DDspec(ipm)%rho_p )
+
+               ! DEBUG%RUNCHEM = T
+               if ( debug_flag .and. k == KMAX_MID ) write(*,"(a,i5,1es10.3)") "L&S SS_C surface area: ", &
+                    iw, S_m2m3(iw,k)
+             end if 
+
+             if ( iw == AERO%PM_F_EQUI ) then ! calculate total PMf surface area based in part on thermodynamics water uptake
+               ! thermodynamic water uptake from either ISORROPIA, EQSAM, or MARS
+               ! NB: Water uptake is stored in the PM25_water array and is calculated AFTER
+               ! setup_1d is called (i.e., PM25_water -- correctly -- corresponds to the result of the previous time-step)
+               ipm = aeroDDspec(iw)         ! fine aerosol properties
+               Ddry(iw) = DDspec(ipm)%DpgN  ! geometric mean diameter in meters
+
+               ! calculate volume aerosol water based on equilibrium calculations
+               DryAerMass = ugSIApm ! fine SIA mass, always incuded in thermodynamic calls
+               DryAerVol  = ugSIApm / 1600. ! 1600 kg/m3 density SIA
+               DryAerRho  = ugSIApm * 1600.  ! keep track of average dry aerosol density from thermodynamics
+
+               ! if fine sea salt water-uptake is included in thermodynamics (only implemented for EQSAM and ISORROPIA)
+               if ( AERO%INTERNALMIXED ) then
+                 if ( AERO%EQUILIB == 'ISORROPIA' .or. AERO%EQUILIB == 'EQSAM' ) then
+                    DryAerMass = DryAerMass + ugSSaltF
+                    DryAerVol  = DryAerVol + ugSSaltF / 2200. 
+                    DryAerRho  = DryAerRho + ugSSaltF * 2200.
+                 end if
+               end if  
+
+               ! if fine dust cations incuded in thermodynamics (only implemented for EQSAM and ISORROPIA)
+               if ( AERO%CATIONS ) then 
+                 if ( AERO%EQUILIB == 'ISORROPIA' .or. AERO%EQUILIB == 'EQSAM' ) then
+                    DryAerMass = DryAerMass + ugDustF 
+                    DryAerVol  = DryAerVol + ugDustF / 2600. 
+                    DryAerRho  = DryAerRho + ugDustF * 2600.
+                 end if
+               end if
+
+               ! if particle phase OM water uptake included in thermodynamics 
+               if ( AERO%ORGANIC_WATER ) then 
+                 DryAerMass = DryAerMass + ugOM25
+                 DryAerVol  = DryAerVol + ugOM25 / AERO%OM_RHO 
+                 DryAerRho  = DryAerRho + ugOM25 * AERO%OM_RHO 
+               end if
+
+               ! average per ug with safety limit to avoid div. by zero, and at least that of the lowest density aerosol species
+               DryAerRho = max ( DryAerRho / max( DryAerMass, 1e-12 ), 1400. ) 
+         
+               ! density unit does not matter because of frac. in eq. below, so long as the same for both h2o and aerosol are used
+               H2OAerVol = PM25_water(i,j,k) / 1000.  ! ug/m3 aerosol water conv to vol / m3; h2o density 1000 kg/m3 
+
+               ! to first approximation WetAerVol = H2OAerVol + DryAerVol
+               ! then below Eq. derived for wet radius (or equivalently diameter) growth for single particle,
+               ! being approx. equivalent to geometric radius when Kelvin effect is ignored (Gerber, 1982).
+               ! then for a single particle DryAerVol = 4/3*pi*r_dry**3, such that r_dry = ( 3*DryAerVol / (4pi) ) ** (1/3). 
+               ! Similarly, r_wet = ( 3*WetAerVol / (4pi) ) ** (1/3). Combining with  WetAerVol = H2OAerVol + DryAerVol
+               ! gives r_wet = r_dry * (1 + H2OAervol / DryAervol) ** (1/3).
+               WetDiam = Ddry(iw) * ( 1.0 + H2OAerVol / max( DryAerVol, 1e-12 ) ) ** ( 1. / 3. )
+              
+               ! surface area of species included in thermodynaics 
+               S_m2m3(iw,k) = pmSurfArea( DryAerMass,Dp=Ddry(iw), Dpw=WetDiam, &
+                                     rho_kgm3=DryAerRho )
+
+               ! calculate surface area of remaining PMf (i.e., neither sea salt nor equilibrium species)
+               ugtmp = ugpmF - DryAerMass
+
+               ! fine sea salt calculated using Lewis & Schwartz. If no dust or OM in thermodynamics, these are assumed non-hygroscopic.
+               if ( .not. AERO%INTERNALMIXED ) ugtmp = ugtmp - ugSSaltF         
+
+               ! for the remaining species assume no hygroscopic growth (Dpw = Dp) and standard PMf density
+               S_m2m3(iw,k) = S_m2m3(iw,k) + pmSurfArea( ugtmp,Dp=Ddry(iw), Dpw=Ddry(iw), rho_kgm3=DDspec(ipm)%rho_p )
+
+               ! add fine sea salt surface area only if not already included in thermodynamics                                     
+               if  ( .not. AERO%INTERNALMIXED ) S_m2m3(iw,k) = S_m2m3(iw,k) + S_m2m3(AERO%SS_F_LS,k) 
+
+               ! DEBUG%RUNCHEM = T
+               if ( debug_flag .and. k == KMAX_MID ) write(*,"(a,i5,6es10.3)") "Total ThermoH2OSurfArea: ", &
+                    iw, H2OAerVol, DryAerVol, DryAerRho, Ddry(iw), WetDiam, S_m2m3(iw,k)
+             end if ! iw = AERO%PM_F_EQUI
+           end do ! iw = AERO%SS_F_LS, AERO%PM_F_EQUI
 
           ! Add all areas (misses some BC_c etc)
-           iw=NSAREA_DEF ! = 6 = AERO%PM
+           iw=NSAREA_DEF ! = 9 = AERO%PM
            S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k)
+           
+           if ( AERO%ThermoH2OSurfArea ) S_m2m3(iw,k) = S_m2m3(AERO%PM_F_EQUI,k) + & 
+             S_m2m3(AERO%SS_C_LS,k) + S_m2m3(AERO%DU_C,k)
+
            if ( debug_flag .and. k == KMAX_MID) write(*,"(a,i5,4es10.3)") &
              "AREACHECK: "//"SUM", iw, ugpmF,ugSSaltC,ugDustC,S_m2m3(iw,k)
 
@@ -469,6 +591,13 @@ contains
               do iw = 1, NSAREA_DEF  !J2018 bug:CALC
                 SurfArea_um2cm3(iw,i,j) = 1.0e6* S_m2m3(iw,k)
               end do
+           end if
+
+           ! after all surfareas are stored for output, overwrite existing indices for use in chemistry
+           if ( AERO%ThermoH2OSurfArea ) then 
+            S_m2m3(AERO%SS_F,k) = S_m2m3(AERO%SS_F_LS,k)   
+            S_m2m3(AERO%SS_C,k) = S_m2m3(AERO%SS_C_LS,k)
+            S_m2m3(AERO%PM_F,k) = S_m2m3(AERO%PM_F_EQUI,k) 
            end if
 
            !call lf_SurfArea_pos(S_m2m3(AERO%PM,k),i,j,k,iter) !only used for LocalFractions

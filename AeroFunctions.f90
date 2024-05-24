@@ -21,6 +21,7 @@ module AeroFunctions_mod
   public :: SurfArea_Poly
   public :: pmSurfArea
   public :: pmSurfAreaSig
+  public :: LewisSchwartz
 
   ! Gerber functions used to get wet radius
   public :: pmH2O_gerber
@@ -197,25 +198,23 @@ module AeroFunctions_mod
      atan(-(K(1,ind)*log10(rd) + k(2,ind) + log10(1 - mrh)) / 0.650 ) + 0.415
  end function GerberWetSig 
 
- elemental function LewisSchwartz(rdry,fRH) result (rwet)
-   real, intent(in) :: rdry                 !< m for radius 
-   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1            
-   real :: mrh
-   real :: rwet
+ elemental function LewisSchwartz(rdry,fRH, RHuplim, RHlowlim) result (rwet)
+ real, intent(in) :: rdry                 !< m for radius (growth fac. independent of unit)
+ real, intent(in) :: fRH                  !< humidity, 0< fRH < 1   
+ real, intent(in) :: RHuplim, RHlowlim    ! RH upper and lower boundaries        
+ real :: mrh
+ real :: rwet
 
-   ! GEOS-Chem uses rdry = effective radius, defined as the average between
-   ! the lower and upper edge of their coarse mode bin. i.e., it's not effective
-   ! radius in the sense of aerosol optics
+ ! RH cap set to limits defined in AeroConstants_mod
+ mrh = min(fRH,RHuplim)
+ mrh = max(RHlowlim,mrh)
 
-   mrh = max(0.01,fRH)
-   mrh = min(mrh,0.99) ! 99% RH cap following geos-chem
+ ! Use equation 5 in Lewis and Schwartz (2006) for mono disperse sea salt growth, 
+ ! to first approx. geometric median growth. doi:10.1016/j.atmosenv.2005.08.043
+ rwet = rdry * FOUR_OVER_THREEptSEVEN &
+    * ( ( 2.0 - mrh ) / ( 1.0 - mrh ) ) ** THIRD
 
-   ! Use equation 5 in Lewis and Schwartz (2006) for sea
-   ! salt growth.     doi:10.1016/j.atmosenv.2005.08.043
-   rwet = rdry * FOUR_OVER_THREEptSEVEN &
-    * ( ( 2.0 - mrh ) / ( 1.0 - mrh ) )**THIRD
-
- end function LewisSchwartz
+end function LewisSchwartz
  !---------------------------------------------------------------------
 
 ! elemental function WetRad(rdry,fRH,pmtype) result (rwet)

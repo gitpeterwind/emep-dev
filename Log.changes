@@ -49,6 +49,18 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 May  2024, Willem
+
+Added the option to use aerosol water from the thermodynamics modules to 
+calculate wet areasol surface area. Turned off by default, but can be turned on
+by setting AERO%ThermoH2OSurfArea = T (being defined in AeroConstants_mod).
+
+Water uptake associated with different aerosol options (e.g., inclusion of dust
+cations or organic water uptake) remains consistent with those available for the
+different modules (e.g., MARS cannot consider effects of dust cations, thus fine
+dust is assumed to be dry in the surface area calculations).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 May  2024, Peter, Dave
 
   Fixed bug for ugm3_pmH2O outputs.

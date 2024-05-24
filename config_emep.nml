@@ -498,6 +498,9 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,'YM',
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,'YM',
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,'YM',
+      'SurfAreaSSF_LS_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_LS_um2cm3'    ,'MISC' ,'YM', ! lewis & Schwartz sea salt
+      'SurfAreaSSC_LS_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_LS_um2cm3'    ,'MISC' ,'YM', 
+      'SurfAreaPMF_EQUI_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_EQUI_um2cm3'    ,'MISC' ,'YM', ! PMf surf area with thermo h2o
 !FF0      'EmFFprof'           ,'kg/m2'   ,'3d','EmFFprof'  ,'MISC' ,'YMD', 
       'SURF_PM25water'      ,'ug' ,'2d','PM25water' ,'MISC' ,'YMD',
 

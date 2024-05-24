@@ -1192,6 +1192,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
       end forall
+    case ( "SurfAreaSSF_LS_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F_LS,i,j)
+      end forall
+    case ( "SurfAreaSSC_LS_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C_LS,i,j)
+      end forall
+    case ( "SurfAreaPMF_EQUI_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F_EQUI,i,j)
+      end forall
 
     case ( "u_ref" )
       forall ( i=1:limax, j=1:ljmax )
