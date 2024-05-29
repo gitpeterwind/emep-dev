@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May  2024, Willem
+
+Changed the default lower RH limit from 5% to 15% for increased numerical stability 
+when using ISORROPIA. The ISORROPIA lower temperature limit within the lowest 
+layers (where pollutants might be emitted) is also set to a minimum of 255K, up
+from 250K. Both the RH and temperature change do not impact the simulation 
+results, while increasing numerical stability a bit when using ISORROPIA. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 May  2024, Willem
 
 Added the option to use aerosol water from the thermodynamics modules to 
