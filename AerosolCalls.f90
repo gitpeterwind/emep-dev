@@ -122,7 +122,7 @@ contains
     real, parameter :: MWCA   = 40.078,   MWK    = 39.0973 ! MW Calcium, Potassium
     real, parameter :: MWH2O  = 18.0153,  MWMG   = 24.305  ! MW Water, Magnesium
   
-    real :: tmpno3, tmpnh3, tmpnhx, tmphno3
+    real :: tmpno3, tmpnh3, tmpnhx, tmphno3, therm_temp
     logical, save :: first_isor = .true.
     integer :: lf_iter, niter
     
@@ -263,8 +263,14 @@ contains
 
           RH_thermodynamics = min( AERO%RH_UPLIM_AERO, rh(k) )
           RH_thermodynamics = max( AERO%RH_LOLIM_AERO, RH_thermodynamics )
+
+          if ( k > (KMAX_MID - 8) ) then ! boundary layer (emission) levels soft 255 K limit for stability
+            therm_temp = max ( temp(k), 255.0 )
+          else
+            therm_temp = temp(k)
+          end if
   
-          call isoropia ( wi, wo, RH_thermodynamics, temp(k), CNTRL, &       
+          call isoropia ( wi, wo, RH_thermodynamics, therm_temp, CNTRL, &       
                           wt, gas, aerliq, aersld, scase, other )  
   
           ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. mol/m3 h2o to kg/m3 as 1e-3 * MWH20.
