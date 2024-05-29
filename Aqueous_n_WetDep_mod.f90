@@ -568,8 +568,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
   real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
   
-  integer, parameter:: N_ITER=40 !each iteration divides the error in two
-  real, parameter :: phThres = 1.0E-6 !just to verify result.
+  integer, parameter:: N_ITER=45 !each iteration divides the error in two
+  real, parameter :: phThres1 = 1.0E-6 !still acceptable
+  real, parameter :: phThres2 = 1.0E-9 !converged
   
   SO2 = SO2_ix
   call CheckStop( SO2_ix<1, "Aqueous: SO2 not defined" )
@@ -699,6 +700,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
           pHout2=pHoutnew
        else
           !we replace either pH1 or pH2. They must be on each side of the diagonal
+          if(iter==N_ITER)then
+             !check that we are close to the solution
+             if(abs(pHnew-pHoutnew)>pHThres1)then
+                write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
+                write(*,*)'input values: k, T, phfactor, clw ',k,itemp(k),phfactor(k),cloudwater(k)
+             end if
+          end if
           if((pH1-pHout1)*(pH2-pHout2)<=0)then
              if((pH1-pHout1)*(pHnew-pHoutnew)<=0)then
                 !we keep pH1 and the new pH
@@ -711,7 +719,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
              end if
           else
              !something went wrong
-              if(abs(pHnew-pHoutnew)<pHThres)then
+              if(abs(pHnew-pHoutnew)<pHThres1)then
                  !we are close enough to convergence
               else
                  pH(k)=5.5
@@ -719,13 +727,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
               end if
               exit
            end if
-           if(iter==N_ITER)then
-             !check that we are close to the solution
-             if(abs(pHnew-pHoutnew)>pHThres)then
-                write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
-                write(*,*)'input values: k, T, phfactor, clw ',k,itemp(k),phfactor(k),cloudwater(k)
-             end if
-          end if
+           
+           if(abs(pHout2-pHout1)<phThres2) exit !converged
+           
         endif       
     end do  ! iter   Iteration completed and concentration derived pH
             !        and H+ used below to calculate pH dependent
@@ -734,7 +738,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     pH(k)=pHnew
     h_plus(k)=exp(-pH(k)*log(10.))
 
-!!!!!!  pH iteration fiished   !!!!!!!!!
+!!!!!!  pH iteration finished   !!!!!!!!!
 
 
 
