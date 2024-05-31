@@ -229,12 +229,12 @@ type, public :: emep_useconfig
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
-  real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
+  real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
 ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
 ! from NWP values. (In future NWP will be used by default, but we are
-! invesigating some pH calculation issues. For safety, use FIXED_CLW
-  real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
+! invesigating some pH calculation issues. For safety, can use FIXED_CLW = 0.6e-6
+  real :: FIXED_CLW   = -999      ! cloud liquid water (vol-H2O/vol-Air)
 !Define limits for "cloud"
   real :: PR_LIMIT = 1.0e-7         ! for accumulated precipitation
   real :: CW_LIMIT = 1.0e-7         ! for cloud water, kg(H2O)/kg(air)
