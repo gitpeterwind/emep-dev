@@ -252,7 +252,7 @@ type, public :: emep_useconfig
  ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
  ! methods later.
   character(len=20) ::FFireDispMethod = "PBL" ! to PBL height. Alt=P800, to 800 hPa, std. atmos.
-  character(len=20) ::ECageMethod = "ACP2012" ! or Liu2011
+  character(len=20) ::ECageMethod = "HuangOCC" ! or Liu2011
   real              ::ECageFac    = 1.0
 
 

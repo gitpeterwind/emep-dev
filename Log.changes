@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May  2024, Dave
+
+Config_module  changed  to "HuangOCC", which is a function of OH, O3, H2O.
+Not better than old ("ACP2012"), but removes unphysical use of layer number.
+(Should change name later though - Croft and others should get most of credit.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 May  2024, Willem
 
 Changed the default lower RH limit from 5% to 15% for increased numerical stability 
