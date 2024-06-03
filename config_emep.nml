@@ -461,7 +461,7 @@ OutputMisc=
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
  !2D use MET2D. Can output also lowest level values of 3D fields. 
- 'met2d_rho' ,'MET2D','air_density'      ,'-','kg/m3',-99,-99,F,1.0,T,'YMDH',
+ 'met2d_rho' ,'MET2D','air_density'      ,'-','kg/m3',-99,-99,F,1.0,T,'YMD',
  'met2d_ustar_nwp','MET2D','ustar_nwp',                 '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_uref',     'MET2D','u_ref',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_test',     'MET2D','u_xxx',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
@@ -476,7 +476,7 @@ OutputMisc=
 !'met2d_SH_Wm2',   'MET2D','surface_flux_sensible_heat','-','W/m2',-99,-99,F,1.0,T,'YMD',
  'met2d_SMI_deep', 'MET2D','SMI3',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
  'met2d_SMI_uppr', 'MET2D','SMI1',                      '-','-'   ,-99,-99,F,1.0,T,'YM',
- 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMDH',
+ 'pH_surf',       'pH_surface',       '-',     '-' ,        'pH',-99,-99,F,1.0,T,'YMD',
 ! careful with precip.
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 !'met2d_LSPrec1',  'MET2D','large_scale_precipitations','-','mm'  ,-99,-99,F,1.0,F,'YMD',
@@ -528,8 +528,8 @@ OutputConcs=
       'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !DS23 - just use ppb for Hourly gases, ug/m3 for pm 
 !aARgh Put bacl to fool aeroval
-      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+!      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+!      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! PM10group sub-components
@@ -550,9 +550,9 @@ OutputConcs=
       'OH'                  ,'molec' ,'2d','AIR_CONCS','SHL' ,'YM',
       'OH'                  ,'molec' ,'3d','AIR_CONCS','SHL' ,'YM', 
 ! ppb                                                      
-      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMDI',
+      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+      'NO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMDH',
       'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
-      'NO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'N2O5'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NH3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',

@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 June  2024, Dave
+
+Last change:
+config_emep.nml - just leave O3, NO2 as YMDH. No YMDI now (was O3)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 June  2024, Willem
 
 Added an option (turned off by default) to include a simple latitudinal gradient
