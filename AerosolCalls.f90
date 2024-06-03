@@ -20,6 +20,7 @@ module AerosolCalls
                                   SO4_ix, HNO3_ix, NO3_f_ix, NH3_ix, NH4_f_ix, OM_ix, &
                                   SSf_ix, SSc_ix, Dustwbf_ix, DustSahf_ix
  use Debug_module,          only: DEBUG   ! -> DEBUG%EQUIB
+ use EmisDef_mod,           only: KEMISTOP
  use EQSAM4clim_ml,        only :  EQSAM4clim
 ! use EQSAM_v03d_mod,        only: eqsam_v03d
  use LocalFractions_mod,    only: lf_aero_pre,lf_aero_pos,lf_Nvert,lf_fullchem
@@ -264,7 +265,7 @@ contains
           RH_thermodynamics = min( AERO%RH_UPLIM_AERO, rh(k) )
           RH_thermodynamics = max( AERO%RH_LOLIM_AERO, RH_thermodynamics )
 
-          if ( k > (KMAX_MID - 8) ) then ! boundary layer (emission) levels soft 255 K limit for stability
+          if ( k >= KEMISTOP ) then ! boundary layer (emission) levels soft 255 K limit for stability
             therm_temp = max ( temp(k), 255.0 )
           else
             therm_temp = temp(k)

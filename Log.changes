@@ -49,6 +49,22 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 June  2024, Peter
+
+LF filtering of unsafe values for SIA: when more than 4 molecules are created
+or destroyed for each additional molecule entering the equ module, the entire
+equ update for LF is canceled.
+LF filtering of very small values, lf_limit = 1e-5
+
+Replaced hardcoded if ( k > (KMAX_MID - 8) ) then in AerosolCalls by
+ if ( k >= KEMISTOP ) then
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May  2024, Peter
+
+Better convergence for pH -> No more pH "warnings".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 May  2024, Willem
 
 Changed the default lower RH limit from 5% to 15% for increased numerical stability 

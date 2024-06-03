@@ -192,6 +192,7 @@ integer, private, save :: BC_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nbc !number of sources to track for Boundary Conditions
 real   , private, save :: P_NO(100),P_NO2(100)
 real   , parameter     :: eps1 = 0.999
+real   , parameter     :: eps1_soa = 0.999
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
@@ -214,6 +215,7 @@ logical, public, save :: makeBVOC = .false.
 integer, public, save  :: ix_BVOC, ix_DMS
 integer, public, save  :: nPOD=0, nDryDep=0 !number of outputs asked for. nDryDep includes nPOD
 logical, private, save :: aero_error = .false.
+real, parameter :: lf_limit = 1e-5
 
 contains
 
@@ -1763,6 +1765,16 @@ subroutine lf_av(dt)
 
   iadv_PMf = find_index('SO4', species_adv(:)%name, any_case=.true. )
   
+  do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+     do j=1,ljmax
+        do i=1,limax
+           do n=1,LF_SRC_TOTSIZE
+              if (abs(lf(n,i,j,k))<lf_limit) lf(n,i,j,k) = 0.0
+           end do
+        end do
+     end do
+  end do
+        
   !do the averaging
   do iou_ix = 1, Niou_ix
      pollwritten = .false.
@@ -2671,7 +2683,7 @@ end subroutine lf_diff
     implicit none
     integer, intent(in) :: i,j
     real, intent(in) :: dt_conv
-    real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x
+    real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x,xd
     integer ::isec_poll1,isrc
     integer ::k,n,ix,iix,dx,dy
 
@@ -2715,7 +2727,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   real, intent(in) :: eps1,xn(NSPEC_TOT),xnew(NSPEC_TOT)
   integer, intent(in) :: i,j,k
   integer :: n, n0, ispec, nispec, isrc,isrc_emis, ic, is, ics, ideriv0, found
-  real :: efac, xtot,totemis,emiss
+  real :: efac, xtot,totemis,emiss, xd
   integer :: isec, iem, iix, ix, iiix,iemis, ideriv , iem_deriv, isrc_deriv, n_sp
 
   if(k<KMAX_MID-lf_Nvert+1)return
@@ -2813,18 +2825,24 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
   do ispec = 1, NSPEC_chem_lf!no loop over short lived
      n_sp = lfspec2spec(ispec) !CM_Spec index
      do ideriv = 1, NSPEC_deriv_lf !loop over chemical derivatives without SOA derivatives
-        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3, 1000  means almost no molecules
+        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL.and. xn(lfspec2spec(ideriv))>1000.0) then !units are molecules/cm3, 1000  means almost no molecules
+!        if (xn(n_sp)>1000.0 .and. xnew(n_sp)>1000.0 .and. n_sp/=RO2POOL_ix .and. ideriv/=RO2POOL_ix-NSPEC_SHL) then !units are molecules/cm3, 1000  means almost no molecules
            ! derivatives are normalized to concentration of each species, dx/dy *y/x
            !  y and dy must have same units
            !(xnew_lf(ideriv,ispec) - xnew(ispec))/(0.0001*xn(ideriv+NSPEC_SHL)) * xn(ideriv+NSPEC_SHL)/xnew(ispec) =
            xderiv(ideriv,ispec) = (xnew_lf(ideriv,n_sp) - xnew(n_sp))/((eps1-1.0)*(xnew(n_sp)))
            !remove numerical noise
+           xd =  (xnew_lf(ideriv,n_sp) - xnew(n_sp))/((eps1-1.0)*xn(lfspec2spec(ideriv)))
+           if(abs(xd)>3. .and. abs(xderiv(ideriv,ispec))>3.)then
+!              write(*,*)xd,'WHAT CHEM? ',ispec,ideriv,lfspec2spec(ideriv),n_sp,k,xnew_lf(ideriv,n_sp) , xnew(n_sp),xn(lfspec2spec(ideriv)),xderiv(ideriv,ispec)
+           end if
            xderiv(ideriv,ispec) = min(xderiv(ideriv,ispec),10.0)
            xderiv(ideriv,ispec) = max(xderiv(ideriv,ispec),-10.0)
+
         else
            !Not that concentrations reaching or leaving 0.0 are not treated correctly
            !remove numerical noise
-           xderiv(ideriv,ispec) = 0.0
+           xderiv(ideriv,ispec) = 0.0! should put diago to 1.0 ?
         end if
         !if(ispec>NSPEC_deriv_lf )xderiv(ideriv,ispec) = 0.0
      end do
@@ -3130,13 +3148,13 @@ subroutine lf_aero_pre(i,j,k,deriv_iter) !called just before AerosolEquilib
      xn_lf(4,0) = xn_2d(HNO3_ix,k)
      xn_lf(5,0) = xn_2d(SO4_ix,k)
     !perturb HNO3
-     xn_2d(HNO3_ix,k) = xn_2d(HNO3_ix,k) * eps1
+     xn_2d(HNO3_ix,k) = xn_2d(HNO3_ix,k) * eps1_soa
   else if(deriv_iter == 2) then
      !perturb SO4
-     xn_2d(SO4_ix,k) = xn_2d(SO4_ix,k) * eps1
+     xn_2d(SO4_ix,k) = xn_2d(SO4_ix,k) * eps1_soa
   else if(deriv_iter == 3) then
      !perturb NH3
-     xn_2d(NH3_ix,k) = xn_2d(NH3_ix,k) * eps1
+     xn_2d(NH3_ix,k) = xn_2d(NH3_ix,k) * eps1_soa
   else if(deriv_iter == 4) then
      !base case
      !NB: must be the last, so that code can continue with base case results
@@ -3154,8 +3172,10 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
   integer :: n_NH3, n_NH4
   real :: d_NO3, d_HNO3, NO3, HNO3
   integer :: n_NO3, n_HNO3,n,ix,iix,isrc,d
-  real :: xderiv(5,4), fac
-
+  real :: xderiv(5,4), fac, xd
+  real, parameter :: xd_limit = 4.0
+  logical:: derivok
+  
   if(.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1)return
   if( errmark < 0) aero_error = .true. !if any of the scenario goes wrong we abandon 
 
@@ -3243,7 +3263,7 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                  cycle
               end if
              if(xn_lf(0,4)>0.0000001)then
-                 fac=fac*min(10.0,max(-10.0,(xn_lf(0,ix)- xn_lf(0,4))/((eps1-1.0)*xn_lf(0,4))))
+                 fac=fac*min(10.0,max(-10.0,(xn_lf(0,ix)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
                  do n = 1, Npos_lf*Nfullchem_emis
                     lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac * lf(lf_src(isrc)%start+n-1,i,j,k)
                  end do
@@ -3270,29 +3290,52 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
               do n = 0, Npos_lf*Nfullchem_emis-1
                  lf0_loc(n+1,5) = lf(lf_src(isrc_SO4)%start+n,i,j,k)
               end do
-              
-              do ix=1,4 !NB: SO4 assumed not changed in aero
+              derivok = .true. !if any derivative is supiscious, we keep old lf (derivok = false)
+              xd=abs(xn_lf(1,4)+xn_lf(2,4)-xn_lf(1,0)-xn_lf(2,0))/(1000+abs(xn_lf(1,0)+xn_lf(2,0)))
+              if(xd>1e-4)then
+                 !   write(*,*)'AEROERRB ',xd,xn_lf(1,4),xn_lf(2,4),xn_lf(1,0),xn_lf(2,0)
+                 derivok = .false.
+              end if
+                      do ix=1,4 !loop over X in dX/dY  NB: SO4 assumed not changed in aero
                  if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
-                    if(xn_lf(ix,1)>1000)then
-                       xderiv(1,ix) = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!HNO3
+                    !HNO3 derivative
+                    if(xn_lf(ix,1)>1000 .and. xn_lf(4,0)>1000)then
+                       xd = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(4,0)))
+                       if(abs(xd)<xd_limit)then
+                          xderiv(1,ix) = min(10.0,max(-10.0,xd*xn_lf(4,0)/xn_lf(ix,4)))!HNO3
+                       else
+                          derivok=.false.
+                       end if
                     else
-                       xderiv(1,ix) = 0.0
+                       derivok=.false.
                     end if
-                    if(xn_lf(ix,2)>1000)then
-                       xderiv(2,ix) = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!SO4
+                    !SO4 derivative
+                    if(xn_lf(ix,2)>1000 .and. xn_lf(5,0)>1000)then
+                       xd = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(5,0)))!SO4
+                       if(abs(xd)<xd_limit)then
+                          xderiv(2,ix) = min(10.0,max(-10.0,xd*xn_lf(5,0)/xn_lf(ix,4)))
+                       else
+                          derivok=.false.
+                       end if
                     else
-                       xderiv(2,ix) = 0.0
+                       derivok=.false.
                     end if
-                    if(xn_lf(ix,3)>1000)then
-                       xderiv(3,ix) = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1-1.0)*(xn_lf(ix,4)))!NH3
+                    !NH3 derivative                    
+                    if(xn_lf(ix,3)>1000 .and. xn_lf(1,0)>1000)then
+                       xd = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(1,0)))!NH3
+                       if(abs(xd)<xd_limit)then
+                          xderiv(3,ix) = min(10.0,max(-10.0,xd*xn_lf(1,0)/xn_lf(ix,4)))
+                       else
+                          derivok=.false.
+                       end if
                     else
-                       xderiv(3,ix) = 0.0
+                       derivok=.false.
                     end if
-
+ 
                     !NB: derivatives can be large when close to discontinuity (NH4/SO4=2)
-                    xderiv(1,ix) = min(10.0,max(-10.0,xderiv(1,ix)))
-                    xderiv(2,ix) = min(10.0,max(-10.0,xderiv(2,ix)))
-                    xderiv(3,ix) = min(10.0,max(-10.0,xderiv(3,ix)))
+                    !xderiv(1,ix) = min(10.0,max(-10.0,xderiv(1,ix)))
+                    !xderiv(2,ix) = min(10.0,max(-10.0,xderiv(2,ix)))
+                    !xderiv(3,ix) = min(10.0,max(-10.0,xderiv(3,ix)))
                     
                     !xderiv for NO3_f = xderiv for HNO3, no mass factor when units are in molecules/ or mixing ratio
                     
@@ -3313,39 +3356,44 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     !xderiv for NH4_f = xderiv for NH3, no mass factor when units are in molecules/ or mixing ratio
                     !TODO: set in matrix multiplication form
                  else
-                    !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
-                    xderiv(1:3,ix) = 0.0
+                    derivok=.false.
                  end if
               end do
-              do isrc=1,Nsources
-                 if(lf_src(isrc)%species == 'NH3')then
-                    ix=1
-                 else if(lf_src(isrc)%species == 'NH4_f')then
-                    ix=2
-                 else if(lf_src(isrc)%species == 'NO3_f')then
-                    ix=3
-                 else if(lf_src(isrc)%species == 'HNO3')then
-                    ix=4
-                 else if(lf_src(isrc)%species == 'SO4')then
-                    cycle !SO4 assumed not changed in aero
-                    ix=5
-                 else
-                    cycle
-                 end if
-                 d=(lf_src(isrc)%iem_lf-1)*Npos_lf
-                 
-                 if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
-                    do n = 0, Npos_lf-1
-                       lf(lf_src(isrc)%start+n,i,j,k) = xderiv(1,ix) * lf0_loc(n+1+d,4) &
-                            + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n+1+d,3) &
-                            + xderiv(2,ix) * lf0_loc(n+1+d,5) &
-                            + xderiv(3,ix) * lf0_loc(n+1+d,1) &
-                            + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1+d,2)
-                    end do
-                 else
-                    !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
-                 end if
-              end do
+              if(derivok)then       
+        
+                do isrc=1,Nsources
+                    if(lf_src(isrc)%species == 'NH3')then
+                       ix=1
+                    else if(lf_src(isrc)%species == 'NH4_f')then
+                       ix=2
+                    else if(lf_src(isrc)%species == 'NO3_f')then
+                       ix=3
+                    else if(lf_src(isrc)%species == 'HNO3')then
+                       ix=4
+                    else if(lf_src(isrc)%species == 'SO4')then
+                       cycle !SO4 assumed not changed in aero
+                       ix=5
+                    else
+                       cycle
+                    end if
+                    d=(lf_src(isrc)%iem_lf-1)*Npos_lf
+                    
+                    if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
+                       do n = 0, Npos_lf-1
+                          lf(lf_src(isrc)%start+n,i,j,k) = xderiv(1,ix) * lf0_loc(n+1+d,4) &
+                               + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n+1+d,3) &
+                               + xderiv(2,ix) * lf0_loc(n+1+d,5) &
+                               + xderiv(3,ix) * lf0_loc(n+1+d,1) &
+                               + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1+d,2)
+                       end do
+                    else
+                       !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
+                    end if
+                 end do
+              else
+         
+                 !unchanged concentrations -> unchanged lf (happens if unstable solution, saturated, or other special cases)
+              end if
            end if
         end if
      end if
