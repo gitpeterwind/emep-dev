@@ -214,6 +214,7 @@ type, public :: emep_useconfig
     ,CLOUDICE         = .true.  & ! flag to force reading in cloud ice water content or not
     ,CLIMSTRATO3      = .true.  & ! set to true use climatological overhead stratospheric O3 (default)
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
+    ,CH4GRADIENT      = .false. & ! set to true to enable simplified lat. CH4 gradient
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)

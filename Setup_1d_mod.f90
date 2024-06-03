@@ -46,7 +46,7 @@ use GasParticleCoeffs_mod, only: DDspec
 use GridValues_mod,   only:  xmd, GridArea_m2, &
                              debug_proc, debug_li, debug_lj,&
                              A_mid,B_mid,gridwidth_m,dA,dB,&
-                             i_fdom, j_fdom
+                             i_fdom, j_fdom, glat
 use Io_Progs_mod,     only: datewrite !MASS
 use Landuse_mod,      only: water_fraction, ice_landcover
 use LocalVariables_mod, only: Grid
@@ -222,7 +222,12 @@ contains
    n2(:) = M(:) - o2(:)
 !   o2(:) = 0.2095 *M(:) ! more exact, but prefer o3+n2 to add to 100%
 !   n2(:) = 0.7808 *M(:)
-   methane(:) = METHBGN * PPB * M(:)
+   if (USES%CH4GRADIENT) then 
+     ! linear North-South gradient as described in https://doi.org/10.5194/egusphere-2024-1422 sec. 4.1
+     methane(:) = METHBGN * PPB * M(:) * ( 1.0 + 0.025 * glat(i,j) / 90.0 ) 
+   else
+     methane(:) = METHBGN * PPB * M(:)
+   end if
    hydrogen(:) = 500.0 * PPB * M(:)
    tinv(:) = 1./temp(:)
 

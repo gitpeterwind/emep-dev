@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 June  2024, Willem
+
+Added an option (turned off by default) to include a simple latitudinal gradient
+for CH4, as described in Section 4.1 of https://doi.org/10.5194/egusphere-2024-1422
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 June  2024, Peter, Willem
 
 LF filtering of unsafe values for SIA: when more than 4 molecules are created
