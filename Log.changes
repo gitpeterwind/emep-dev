@@ -49,7 +49,7 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3 June  2024, Peter
+3 June  2024, Peter, Willem
 
 LF filtering of unsafe values for SIA: when more than 4 molecules are created
 or destroyed for each additional molecule entering the equ module, the entire
@@ -58,6 +58,34 @@ LF filtering of very small values, lf_limit = 1e-5
 
 Replaced hardcoded if ( k > (KMAX_MID - 8) ) then in AerosolCalls by
  if ( k >= KEMISTOP ) then
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May  2024, Willem
+
+Some more default changes in Config_module:
+
+- FIXED_CLW from 0.6e-6 to -999 (toggles use of CLW from input meteorology)
+
+- SEASALT_fFrac from 0.5 to 0.3 (uncertainty in binsizes allows for wiggle room)
+
+- AERO%EQUILIB and AERO%EQUILIB_WATER from 'MARS' to 'ISORROPIA' (ISORROPIA-Lite 
+  for SIA and its aerosol water uptake)
+
+- AERO%ORGANIC_WATER from .false. to .true. to take into account water uptake
+  by OM in ISORROPIA
+
+- AERO%OM_KAPPA from 0.15 to 0.087 to reflect that our OM is a mixture of organic
+  compounds, with 0.087 being representative of OM/OC = 1.7
+
+- AERO%ThermoH2OSurfArea from .false. to .true. to use equilibrium PMf water 
+  and sea-salt water from Lewis & Schwartz in surface area calculations
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May  2024, Dave
+
+Config_module  changed  to "HuangOCC", which is a function of OH, O3, H2O.
+Not better than old ("ACP2012"), but removes unphysical use of layer number.
+(Should change name later though - Croft and others should get most of credit.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 May  2024, Peter
