@@ -23,7 +23,7 @@ use Country_mod,       only: MAXNLAND,NLAND,Country&
                              ,IC_UZE,IC_KZT,IC_KZ,IC_KZE,IC_RU,IC_RFE,IC_RUX,IC_RUE,IC_AST
 
 use DefPhotolysis_mod, only: IDHONO,IDNO3,IDNO2
-use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE, &
+use EmisDef_mod,       only: NSECTORS,SECTORS,EMIS_FILE,NSECTORS_GNFR_CAMS,IS_TRAF,IS_POW, &
                              nlandcode,landcode,NCMAX,&
                              secemis, roaddust_emis_pot,KEMISTOP,&
                              EmisMaskIntVal,EmisMaskValues,EmisMaskIndex2Name,gridrcemis,&
@@ -138,6 +138,8 @@ real, allocatable, public, dimension(:,:), save ::rcemis_lf_surf, emis2spec_surf
 real, allocatable, public, dimension(:), save ::rcemis_lf_primary !for emissions considered as linear 
 integer, allocatable, public, dimension(:,:), save ::nic
 integer, allocatable, public, dimension(:,:,:), save ::ic2iland
+integer, allocatable, public, dimension(:,:), save :: lf_sector_map !add some sectors together 
+integer, allocatable, dimension(:), save :: lf_nsector_map !how many sector to put together
 real, allocatable, public, dimension(:), save ::L_lf, P_lf!,rctA_lf,rctB_lf
 !real, allocatable, public, dimension(:,:), save ::rctAk_lf,rctBk_lf
 real, private, dimension(0:5,0:4),save ::xn_lf !to save concentrations
@@ -550,6 +552,9 @@ contains
         enddo
      endif
 
+     allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
+     lf_nsector_map = 1
+
      Ncountry_group_lf=0
      do i = 1, Max_lf_Country_groups
         if(lf_country%group(i)%name == 'NOTSET') exit
@@ -568,6 +573,7 @@ contains
                 trim(lf_country%group(i)%list(ic))//' as '//trim(lf_country%group(i)%name)
         enddo
      end do
+     
      Ncountrysectors_lf=0
      do i = 1, Max_lf_sectors
         if(lf_country%sector_list(i) < 0) then
@@ -588,7 +594,41 @@ contains
      end do
      if(MasterProc)write(*,*)Npos_lf,' countries x sectors for ',Nsources,' sources'
   end if
-
+  
+  !note: the loop above, is interrputed by an exit, and cannot be used
+  do i = 1, NSECTORS
+     lf_sector_map(:,i) = i
+  end do
+  lf_nsector_map(:) = 1
+  !sector zero is all sectors
+  do i=1, NSECTORS
+     lf_sector_map(i,0) = i 
+  end do
+  lf_nsector_map(0) = NSECTORS
+  !hardcoded for now:
+  if (Ncountrysectors_lf<NSECTORS .and. NSECTORS == NSECTORS_GNFR_CAMS) then
+     if(me==0)write(*,*)'LF TRAF sectors 16, 17, 18, 19 mapped into sector 6'
+     if(me==0)write(*,*)'LF POW sectors 14, 15 mapped into sector 1',lf_sector_map(1,7)
+     !we map all transport sectors (F1...F4) into F
+     if(.not. IS_TRAF(6) .or. .not. IS_TRAF(16) .or. .not. IS_TRAF(17) .or.  .not. IS_TRAF(18).or.  .not. IS_TRAF(19))then
+        call StopAll('SECTOR HACK does not work for this setup!')        
+     end if
+     lf_sector_map(1,6) = 6 
+     lf_sector_map(2,6) = 16 
+     lf_sector_map(3,6) = 17 
+     lf_sector_map(4,6) = 18
+     lf_sector_map(5,6) = 19
+     lf_nsector_map(6) = 5
+     !we map all transport sectors (A1, A2) into A
+     if(.not. IS_POW(1) .or. .not. IS_POW(14) .or. .not. IS_POW(15))then
+        call StopAll('SECTOR HACK does not work for this setup!')        
+     end if
+     lf_sector_map(1,1) = 1 
+     lf_sector_map(2,1) = 14 
+     lf_sector_map(3,1) = 15 
+     lf_nsector_map(1) = 3
+  end if
+  
   ipoll=0
   iem2ipoll = -1
   iem2Nipoll = 0
@@ -3695,9 +3735,9 @@ subroutine lf_rcemis(i,j,k,eps)
   integer,intent(in) :: i,j,k
   real, intent(in) :: eps
   integer :: n, nn, n0, iem, iqrc, itot, ic, iic, ig, is, iland, isec, split_idx
-  integer :: emish_idx, nemis, found,found_primary,iiix,isrc, nsectors_loop, iisec
+  integer :: emish_idx, nemis, found,found_primary,iiix,isrc, nsectors_loop, iisec, isec_lf
   real :: ehlpcom0 = GRAV* 0.001*AVOG !0.001 = kg_to_g / m3_to_cm3
-  real :: emiss,maskfac ! multiply emissions by
+  real :: emiss,maskfac,y,z ! multiply emissions by
   
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start lf rcemis'
@@ -3804,21 +3844,11 @@ subroutine lf_rcemis(i,j,k,eps)
                      if (found == 0) cycle
                    end if
                    do is=1,Ncountrysectors_lf
-                       isec=lf_country%sector_list(is)
-
-                       if(lf_country%sector_list(is)>0) then
-                          nsectors_loop = 1
-                       else
-                          nsectors_loop = NSECTORS
-                       end if
+                       isec_lf=lf_country%sector_list(is)
                        found = 0 !flag to show if nemis already increased
-                       do iisec=1,nsectors_loop
-                          if(lf_country%sector_list(is)>0) then
-                             isec = lf_country%sector_list(is)
-                          else
-                             isec = iisec
-                          end if
-
+                       do iisec=1, lf_nsector_map(isec_lf)
+                          isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
+                          
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
 
                              if(found == 0) then
@@ -3902,20 +3932,12 @@ subroutine lf_rcemis(i,j,k,eps)
               if (found == 0) cycle
             end if
             do is=1,Ncountrysectors_lf
-              isec=lf_country%sector_list(is)
-              if(isec>0) then
-                nsectors_loop = 1
-              else
-                nsectors_loop = NSECTORS
-              end if
+              isec_lf=lf_country%sector_list(is)              
               found = 0 !flag to show if nemis already increased
               found_primary = 0 !flag to show if nemis_primary already increased
-              do iisec=1,nsectors_loop
-                if(lf_country%sector_list(is)>0) then
-                  isec = lf_country%sector_list(is)
-                else
-                  isec = iisec
-                end if
+              do iisec=1, lf_nsector_map(isec_lf)
+                isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
+                
                 if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
 
                    if(EMIS_FILE(iem)=='pm25' .or. EMIS_FILE(iem)=='pmco')then
@@ -3981,16 +4003,16 @@ subroutine lf_rcemis(i,j,k,eps)
                       if(found == 0) then
                          N_lf_derivemis = N_lf_derivemis + 1 !should be increased at most once if sector=0
                          nemis = N_lf_derivemis
+                         if(nemis>N_lf_derivemisMAX)write(*,*)'TOOLARGE NEMIS'
                       end if
                       found = 1
                       emish_idx = SECTORS(isec)%height
                       split_idx = SECTORS(isec)%split
                       do n = 1, emis_nsplit(iem)
                          iqrc = sum(emis_nsplit(1:iem-1)) + n
-                         itot = iqrc2itot(iqrc)
-                         
+                         itot = iqrc2itot(iqrc)                         
                          if(itot<=ix_lf_max .or. .not.lf_fullchem)then
-                            rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
+                             rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
                                  maskfac * eps * emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                                  *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                  *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))

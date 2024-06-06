@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 June  2024, Peter
+
+LF: sectors 14 and 15 are put into sector 1
+    sectors 6 and 16-19 into 6.
+Could easily by steered by config settings if required.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4 June  2024, Dave
 NEW TAG: rv5.3 -  Aiming at code for 2023 report SR runs.
 
