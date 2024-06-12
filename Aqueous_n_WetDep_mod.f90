@@ -707,6 +707,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
                 write(*,*)'input values: k, T, phfactor, clw ',k,itemp(k),phfactor(k),cloudwater(k)
              end if
           end if
+          if(abs(pHout2-pHout1)<phThres2)then
+             pHnew = (pHout2+pHout1)/2
+             exit !converged
+          end if
           if((pH1-pHout1)*(pH2-pHout2)<=0)then
              if((pH1-pHout1)*(pHnew-pHoutnew)<=0)then
                 !we keep pH1 and the new pH
@@ -728,8 +732,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
               exit
            end if
            
-           if(abs(pHout2-pHout1)<phThres2) exit !converged
-           
+           if(abs(pHout2-pHout1)<phThres2)then
+              exit !converged
+           end if
         endif       
     end do  ! iter   Iteration completed and concentration derived pH
             !        and H+ used below to calculate pH dependent
