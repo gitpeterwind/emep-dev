@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 June  2024, Peter, Willem
+
+pH convergence did make lots of warnings in  global runs. The case was when
+the pH function was outputting always the same result (1 or 7), whatever start pH.
+Will slightly modify results.
+
+LF: lots of fixes for PM_Water
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6 June  2024, Peter
 
 LF: sectors 14 and 15 are put into sector 1

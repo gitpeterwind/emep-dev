@@ -1051,16 +1051,37 @@ contains
        make_PMwater = .true.
        isrc = NSOURCES+1
        lf_src(isrc)%species="PM_WATER"
-       lf_src(isrc)%Npos = Npos_lf
-       
+       lf_src(isrc)%Npos = Npos_lf       
        lf_src(isrc)%start = LF_SRC_TOTSIZE + 1
        lf_src(isrc)%end = LF_SRC_TOTSIZE + Npos_lf
-       lf_src(isrc)%iem_deriv=iem_lf_nox
+       lf_src(isrc)%iem_lf=iem_lf_nox
+       lf_src(isrc)%iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
        lf_src(isrc)%poll = Npoll + 1
        if (Nfullchem_emis==4) then
-          lf_src(isrc+1)%iem_deriv=iem_lf_voc
-          lf_src(isrc+2)%iem_deriv=iem_lf_nh3
-          lf_src(isrc+3)%iem_deriv=iem_lf_sox
+          isrc = isrc+1
+          lf_src(isrc)%species="PM_WATER"
+          lf_src(isrc)%Npos = Npos_lf
+          lf_src(isrc)%start = LF_SRC_TOTSIZE + Npos_lf + 1
+          lf_src(isrc)%end = LF_SRC_TOTSIZE + 2*Npos_lf
+          lf_src(isrc)%iem_lf=iem_lf_voc
+          lf_src(isrc)%iem_deriv = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
+          lf_src(isrc)%poll = Npoll + 1
+          isrc = isrc+1
+          lf_src(isrc)%species="PM_WATER"
+          lf_src(isrc)%Npos = Npos_lf
+          lf_src(isrc)%start = LF_SRC_TOTSIZE + 2*Npos_lf + 1
+          lf_src(isrc)%end = LF_SRC_TOTSIZE + 3*Npos_lf
+          lf_src(isrc)%iem_lf=iem_lf_nh3
+          lf_src(isrc)%iem_deriv = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
+          lf_src(isrc)%poll = Npoll + 1
+          isrc = isrc+1
+          lf_src(isrc)%species="PM_WATER"
+          lf_src(isrc)%Npos = Npos_lf
+          lf_src(isrc)%start = LF_SRC_TOTSIZE + 3*Npos_lf + 1
+          lf_src(isrc)%end = LF_SRC_TOTSIZE + 4*Npos_lf
+          lf_src(isrc)%iem_lf=iem_lf_sox
+          lf_src(isrc)%iem_deriv = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
+          lf_src(isrc)%poll = Npoll + 1
        end if
     end if
  end if
@@ -1119,6 +1140,7 @@ contains
 !     allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
      allocate(xn_shl_lf(NSPEC_deriv_lf+NSOA,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      allocate(lf_PM25_water(Npos_lf*Nfullchem_emis,LIMAX,LJMAX))
+     lf_PM25_water = 0.0
      xnew_lf = 0.0
      x_lf = 0.0
      xold_lf = 0.0
@@ -1732,7 +1754,7 @@ subroutine lf_out(iotyp)
 
 ! reset the cumulative arrays
   n1=Nsources
-  if(make_PMwater)n1=n1+Npos_lf
+  if(make_PMwater)n1=n1+Nfullchem_emis
   do isrc = 1, n1
      do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
         do j=1,ljmax
@@ -3123,7 +3145,7 @@ subroutine lf_chem(i,j)
 
   call Code_timer(tim_before)
 
-  ageing_rate = EC_AGEING_RATE()
+  ageing_rate = rct(102,:)!EC_AGEING_RATE()
   if(DEBUGall .and. me==0)write(*,*)'start chem'
 
   if (isrc_pm25 > 0) then
@@ -3269,7 +3291,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
         xn_2d(NO3_f_ix,k)=xn_lf(3,0)
         xn_2d(HNO3_ix,k)=xn_lf(4,0)
         xn_2d(SO4_ix,k)=xn_lf(5,0)
-     else
+     end if
+     if (deriv_iter >= 4) then
         !make derivative dependencies (and keep xn_2d results)
         !HNO3 ->deriv 1
         !SO4  ->deriv 2
@@ -3284,32 +3307,52 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
            !make water lf
            do n = 1, Npos_lf*Nfullchem_emis
               lf_PM25_water(n,i,j) = 0.0
-           end do
-           do isrc=1,Nsources
-              fac = 1.0
-              if(lf_src(isrc)%species == 'NH3')then
-                 ix=3
-              else if(lf_src(isrc)%species == 'NH4_f')then
-                 ix=3 !make from NH3
-                 fac =  xn_lf(2,0)/(1000+xn_lf(1,0)) 
-             else if(lf_src(isrc)%species == 'NO3_f')then
-                 ix=1 !make from HNO3
-                 fac =  xn_lf(3,0)/(1000+xn_lf(4,0))
-              else if(lf_src(isrc)%species == 'HNO3')then
-                 ix=1
-              else if(lf_src(isrc)%species == 'SO4')then
-                 ix=2
-              else
-                 cycle
-              end if
-             if(xn_lf(0,4)>0.0000001)then
-                 fac=fac*min(10.0,max(-10.0,(xn_lf(0,ix)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
-                 do n = 1, Npos_lf*Nfullchem_emis
-                    lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + PM25_water_rh50(i,j) * fac * lf(lf_src(isrc)%start+n-1,i,j,k)
+           end do           
+           if(xn_lf(0,4)>0.0001)then              
+              xderiv(1,1) = min(10.0,max(-10.0,(xn_lf(0,1)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
+              xderiv(2,1) = min(10.0,max(-10.0,(xn_lf(0,2)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
+              xderiv(3,1) = min(10.0,max(-10.0,(xn_lf(0,3)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
+              !filter out dependency when there are almost no pollutants:
+              if(xn_lf(1,0)+xn_lf(2,0)<10000)xderiv(3,1) = 0.0
+              if(xn_lf(5,0)<10000)xderiv(2,1) = 0.0
+              if(xn_lf(3,0)+xn_lf(4,0)<10000)xderiv(1,1) = 0.0
+              !loop over X in dX/dY, but also over Y for each emis!
+              do isrc=1, Nsources !NB: each species will appear Nfullchem_emis times
+                 fac = 1.0
+                 if(lf_src(isrc)%species == 'NH3')then
+                    ix=3
+                 else if(lf_src(isrc)%species == 'NH4_f')then
+                    ix=3 !make from NH3
+                    fac =  xn_lf(2,0)/(1000+xn_lf(1,0)) 
+                 else if(lf_src(isrc)%species == 'NO3_f')then
+                    ix=1 !make from HNO3
+                    fac =  xn_lf(3,0)/(1000+xn_lf(4,0))
+                 else if(lf_src(isrc)%species == 'HNO3')then
+                    ix=1
+                 else if(lf_src(isrc)%species == 'SO4')then
+                    ix=2
+                 else
+                    cycle
+                 end if
+                 ! Note: 5species*Nfullchem_emis passes through here for different isrc
+                 ! contributions from 5 species are added to same index in lf_PM25_water
+                 fac = PM25_water_rh50(i,j) * fac * xderiv(ix,1)
+                 
+                 d=(lf_src(isrc)%iem_lf-1)*Npos_lf !different emis will be put at different indices in lf_PM25_water                 
+                 do n = 1, Npos_lf
+!           if(i_fdom(i)<=61.and.j_fdom(j)>=213)then
+!!              write(*,*)isrc,lf_src(isrc)%iem_lf,n+d,n,lf_PM25_water(n+d,i,j),fac,fac * lf(lf_src(isrc)%start+n-1,i,j,k)
+!              if(abs(lf_PM25_water(n+d,i,j)+fac * lf(lf_src(isrc)%start+n-1,i,j,k))>0.3)then
+!                 write(*,*)isrc,i_fdom(i),j_fdom(j),lf_src(isrc)%iem_lf,n+d,n,lf_PM25_water(n+d,i,j),fac,fac * lf(lf_src(isrc)%start+n-1,i,j,k)
+!                 write(*,*)'LARGEE',lf(lf_src(isrc)%start+n-1,i,j,k)
+!                 write(*,*)'xn',xn_lf(1,0),xn_lf(2,0),xn_lf(3,0),xn_lf(4,0),xn_lf(5,0)
+!              end if
+!           end if
+                    lf_PM25_water(n+d,i,j) = lf_PM25_water(n+d,i,j) + fac * lf(lf_src(isrc)%start+n-1,i,j,k)
                  end do
-              end if
-              
-           end do
+
+              end do              
+           end if
 
         else
            if(.not. aero_error) then
@@ -3333,10 +3376,9 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
               derivok = .true. !if any derivative is supiscious, we keep old lf (derivok = false)
               xd=abs(xn_lf(1,4)+xn_lf(2,4)-xn_lf(1,0)-xn_lf(2,0))/(1000+abs(xn_lf(1,0)+xn_lf(2,0)))
               if(xd>1e-4)then
-                 !   write(*,*)'AEROERRB ',xd,xn_lf(1,4),xn_lf(2,4),xn_lf(1,0),xn_lf(2,0)
-                 derivok = .false.
+                derivok = .false.
               end if
-                      do ix=1,4 !loop over X in dX/dY  NB: SO4 assumed not changed in aero
+              do ix=1,4 !loop over X in dX/dY  NB: SO4 assumed not changed in aero
                  if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
                     !HNO3 derivative
                     if(xn_lf(ix,1)>1000 .and. xn_lf(4,0)>1000)then
@@ -3430,10 +3472,10 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                        !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
                     end if
                  end do
-              else
-         
+              else         
                  !unchanged concentrations -> unchanged lf (happens if unstable solution, saturated, or other special cases)
               end if
+              
            end if
         end if
      end if
