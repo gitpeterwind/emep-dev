@@ -860,7 +860,7 @@ contains
         if (.not. lf_spec_out(iout)%DryDep) cycle
         nDryDep = nDryDep + 1
         if (index(lf_spec_out(iout)%name,"POD")>0) then
-           !treat separately
+           !treat separately. isrc not marked as DryDep
            nPOD = nPOD + 1
            cycle
         end if
@@ -871,33 +871,82 @@ contains
               if(lf_src(isrc)%species == lf_spec_out(iout)%species(ig)) then
                  lf_src(isrc)%drydep = .true.
                  found = 1
-                 exit
-              end if
+                 !note several sources can be defined for same species (one for each emis for example)
+               end if
            end do
            call CheckStop(found == 0," DryDep species not found"//trim(lf_spec_out(iout)%species(ig)))           
         end do        
      end do
      !define the corresponding indices in the loc_frac_drydep array
-     idep = 0 
+     !The indices idep must be defined in the order of isrc
+     idep = 0
      do isrc=1,Nsources
-        if(.not. lf_src(isrc)%DryDep)cycle
+        if(.not. lf_src(isrc)%DryDep)cycle !activated above for fullchem
         do iout = 1, Max_lf_out
            if (lf_spec_out(iout)%name == "NOTSET") exit
+           if (.not.lf_spec_out(iout)%DryDep) cycle
            do ig = 1, 30                 
               if (lf_spec_out(iout)%species(ig) == "NOTSET" ) exit
-              if(trim(lf_src(isrc)%species) == trim(lf_spec_out(iout)%species(ig))) &
-                   lf_spec_out(iout)%ix(ig) = idep !NB: start at zero              
-           end do
+              if(trim(lf_src(isrc)%species) == trim(lf_spec_out(iout)%species(ig))) then
+                 if(lf_spec_out(iout)%ix(ig)<0)then
+                   lf_spec_out(iout)%ix(ig) = idep !NB: start at zero  
+                   idep=idep+lf_src(isrc)%Npos * lf_src(isrc)%Nsplit * Nfullchem_emis! each idep in lf_spec_out(iout)%ix(ig) is used for several sources
+                   !NB: cannot have several lf_spec_out(iout)%ix(ig) for same isrc
+                   exit !only position in drydep for first source is stored                   
+                end if
+                end if
+             end do
         end do
-        idep=idep+lf_src(isrc)%Npos * lf_src(isrc)%Nsplit
      end do
+     !indices for POD after indices for other DryDep. isrc not marked as DryDep for POD (but lf_spec_out are marked as DryDep!)
      do iout = 1, Max_lf_out
         if(lf_spec_out(iout)%name == 'NOTSET') exit
         if (index(lf_spec_out(iout)%name,"POD")>0) then
-           lf_spec_out(iout)%ix(1) = idep
+           lf_spec_out(iout)%ix(1) = idep !POD does not use groups
            idep=idep+Nfullchem_emis*Npos_lf
         end if
      end do
+     
+     !Activate wetdep
+     Nwetdep_lf = 0
+     do iout = 1, Max_lf_out
+        if (lf_spec_out(iout)%name == "NOTSET") exit
+        if (.not. lf_spec_out(iout)%WetDep) cycle
+        Nwetdep_lf = Nwetdep_lf + 1
+        do ig = 1, 30                 
+           if (lf_spec_out(iout)%species(ig) == "NOTSET" ) exit
+           found = 0
+           do isrc = 1, Nsources
+              if(lf_src(isrc)%species == lf_spec_out(iout)%species(ig)) then
+                 lf_src(isrc)%wetdep = .true.
+                 found = 1
+                 !note several sources can be defined for same species (one for each emis for example)
+               end if
+           end do
+           call CheckStop(found == 0," WetDep species not found"//trim(lf_spec_out(iout)%species(ig)))           
+        end do        
+     end do
+     idep = 0
+     do isrc=1,Nsources
+        if(.not. lf_src(isrc)%WetDep)cycle !activated above for fullchem
+        do iout = 1, Max_lf_out
+           if (lf_spec_out(iout)%name == "NOTSET") exit
+           if (.not.lf_spec_out(iout)%WetDep) cycle
+           call CheckStop(lf_spec_out(iout)%DryDep,'Cannot use same output for dry and wet dep')
+           do ig = 1, 30                 
+              if (lf_spec_out(iout)%species(ig) == "NOTSET" ) exit
+              if(trim(lf_src(isrc)%species) == trim(lf_spec_out(iout)%species(ig))) then
+                 if(lf_spec_out(iout)%ix(ig)<0)then
+                   lf_spec_out(iout)%ix(ig) = idep !NB: start at zero  
+                   idep=idep+lf_src(isrc)%Npos * lf_src(isrc)%Nsplit * Nfullchem_emis! each idep in lf_spec_out(iout)%ix(ig) is used for several sources
+                   !NB: cannot have several lf_spec_out(iout)%ix(ig) for same isrc
+                   exit !only position in drydep for first source is stored                   
+                end if
+             end if
+             end do
+        end do
+     end do
+
   end if
 
   do isrc = 1, Nsources
@@ -922,8 +971,9 @@ contains
 
   end do
 
-  if(me==0 .and. Ndrydep_lf>0)then
-     write(*,*)Ndrydep_lf,' deposited sources tracked ',nPOD,' POD' !Ndrydep_lf does not include POD
+  if(me==0 )then
+     write(*,*)Ndrydep_lf,' dry deposited sources tracked ',nPOD,' POD' !Ndrydep_lf does not include POD
+     write(*,*)Nwetdep_lf,' wet deposited sources tracked '
   end if
 
   allocate(lf(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
@@ -1105,7 +1155,7 @@ contains
   allocate(emis_lf_cntry(LIMAX,LJMAX,NCMAX,Nsectors,NEMIS_File))
   emis_lf_cntry=0.0
 
-  if(NdryDep>0)then
+  if(NdryDep>0 .or. Ndrydep_lf>0)then
      allocate(loc_frac_drydep(LIMAX,LJMAX,Ndrydep_lf + nPOD*Nfullchem_emis*Npos_lf))
      loc_frac_drydep=0.0
   else
@@ -1349,7 +1399,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(3)=dimSizes_tot(3)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
-  allocate(tmp_out_cntry(LIMAX,LJMAX,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1))
+  allocate(tmp_out_cntry(LIMAX,LJMAX,max(Nfullchem_emis*Npos_lf,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1)))
 
   allocate(tmp_out_base(LIMAX,LJMAX))
   tmp_out_base = 0.0
@@ -1544,19 +1594,29 @@ subroutine lf_out(iotyp)
                  if (iter==2) then
                     if (lf_spec_out(iout)%DryDep) then
                        n1=0
-                       idep = lf_spec_out(iout)%ix(ig) 
+                       idep = lf_spec_out(iout)%ix(ig) + Npos_lf*(ideriv-1) !where to find the dep values
                        fac = 1.0/lf_src(isrc)%mw(1) !to make output unit in S or N
-                       nend = lf_src(isrc)%end
                        if(index(lf_spec_out(iout)%name,"POD")>0)then
-                          idep = idep + (ideriv-1)*Npos_lf
-                          nend = lf_src(isrc)%start + Npos_lf - 1
                           fac = 1.0
                        end if
-                       do n=lf_src(isrc)%start, nend
+                       do n=1,Npos_lf
                           n1 = n1 + 1
                           do j=1,ljmax
                              do i=1,limax
                                 tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + loc_frac_drydep(i,j,idep+n1)*lf_spec_out(iout)%species_fac(1)*fac                   
+                             end do
+                          end do
+                       end do
+
+                    else if (lf_spec_out(iout)%WetDep) then
+                       n1=0
+                       idep = lf_spec_out(iout)%ix(ig) + Npos_lf*(ideriv-1) !where to find the dep values
+                       fac = 1.0/lf_src(isrc)%mw(1) !to make output unit in S or N
+                       do n=1,Npos_lf
+                          n1 = n1 + 1
+                          do j=1,ljmax
+                             do i=1,limax
+                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + loc_frac_wetdep(i,j,idep+n1)*lf_spec_out(iout)%species_fac(1)*fac                   
                              end do
                           end do
                        end do
@@ -1578,7 +1638,7 @@ subroutine lf_out(iotyp)
                        end do
                     end if
                  end if
-              end do
+              end do !loop over ig
               if (found==0) cycle
               specname = trim(lf_spec_out(iout)%name)
               if (iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
@@ -1592,7 +1652,7 @@ subroutine lf_out(iotyp)
                   end do
                 end if
               else
-                if (ideriv == 1 .and. .not. lf_spec_out(iout)%DryDep) then
+                if (ideriv == 1 .and. .not. lf_spec_out(iout)%DryDep .and. .not. lf_spec_out(iout)%WetDep) then
                   !first write "base" concentrations, not country contributions
                   scale = 1.0
                   def2%name=trim(specname)
@@ -1663,7 +1723,7 @@ subroutine lf_out(iotyp)
                     end if
                     scale=1.0
                     def2%unit='ug/m3'
-                    if (lf_spec_out(iout)%DryDep) then
+                    if (lf_spec_out(iout)%DryDep .or. lf_spec_out(iout)%WetDep) then
                        def2%unit='mg/m2'
                        if(index(lf_spec_out(iout)%name,"SO")>0)then
                           def2%unit='mgS/m2'
@@ -1704,7 +1764,7 @@ subroutine lf_out(iotyp)
                        def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname) 
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
-                       if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep)then ! NB: assumes O3 is asked for!
+                       if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep.and. .not. lf_spec_out(iout)%WetDep)then ! NB: assumes O3 is asked for!
                           write(def2%name,"(A)")"AvgMDA8_6month_"//trim(secname)//trim(sourcename)//trim(redname)
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                           call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -3193,6 +3253,7 @@ subroutine lf_aero_pre(i,j,k,deriv_iter) !called just before AerosolEquilib
  !    lf_NO3(k) = xn_2d(NO3_ix,k)
  !    lf_HNO3(k) = xn_2d(HNO3_ix,k)
   end if
+  if ( .not.lf_fullchem) return;
   if (isrc_NH4_f<0 .and. .not.lf_fullchem) return;
   if(.not.lf_fullchem)then
      lf_NH4(k) = xn_2d(NH4_f_ix,k)
@@ -3636,7 +3697,7 @@ subroutine  lf_drydep(i,j,DepLoss, fac)
            enddo
         endif
      enddo
-     idep0 = idep
+     idep0 = idep0 + iend - istart + 1
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
   if(DEBUGall .and. me==0)write(*,*)'end drydep'
@@ -3655,17 +3716,19 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
 
   do isrc=1,Nsources
      if(.not. lf_src(isrc)%WetDep) cycle
+     istart = lf_src(isrc)%start
+     iend = lf_src(isrc)%end
      do iix=1,lf_src(isrc)%Nsplit
         ix=lf_src(isrc)%ix(iix)
         if(ix /= iadv) cycle
         ffac = fac*1.e6*lf_src(isrc)%mw(iix)
-        istart = lf_src(isrc)%start
-        iend = lf_src(isrc)%end
-        if(isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox") ffac = ffac*32.0/64.0 !SO2->S
-        if(isrc==isrc_SO4) ffac = ffac*32.0/96.0 !SO4->S
-        if(isrc==isrc_NH3 .or. lf_src(isrc)%species=="nh3") ffac = ffac* 14.0/17.0 !NH3->N
-        if(isrc==isrc_NH4_f) ffac = ffac* 14.0/18.0 !NH4->N
-        if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox") ffac = ffac*14.0/46.0 !NO2->N
+        if(.not. lf_fullchem)then
+           if(isrc==isrc_SO2 .or. lf_src(isrc)%species=="sox") ffac = ffac*32.0/64.0 !SO2->S
+           if(isrc==isrc_SO4) ffac = ffac*32.0/96.0 !SO4->S
+           if(isrc==isrc_NH3 .or. lf_src(isrc)%species=="nh3") ffac = ffac* 14.0/17.0 !NH3->N
+           if(isrc==isrc_NH4_f) ffac = ffac* 14.0/18.0 !NH4->N
+           if(isrc==isrc_NO .or. isrc==isrc_NO2 .or. lf_src(isrc)%species=="nox") ffac = ffac*14.0/46.0 !NO2->N
+        end if
 
 !        if( ix==SO4_ix - NSPEC_SHL ) then
 !           !take directly local fractions from SO4 instead of sox
@@ -3708,7 +3771,7 @@ subroutine  lf_wetdep(iadv, i,j,k_in,loss, fac)
            enddo
         endif
      enddo
-     idep0 = idep0 + lf_src(isrc)%end-lf_src(isrc)%start+1
+     idep0 = idep0 + iend - istart + 1
   enddo
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 
@@ -3719,6 +3782,7 @@ subroutine  lf_POD(i,j, name, DepLoss)
   real, intent(in) :: DepLoss
   character(len=*), intent(in) :: name
   integer :: iPOD, iout,n,idep
+  if (.not.lf_fullchem) return
   iPOD = 0
   do iout = 1, Max_lf_out
      if (lf_spec_out(iout)%name == "NOTSET") exit
