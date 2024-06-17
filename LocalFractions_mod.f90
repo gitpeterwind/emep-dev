@@ -194,7 +194,7 @@ integer, private, save :: BC_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nbc !number of sources to track for Boundary Conditions
 real   , private, save :: P_NO(100),P_NO2(100)
 real   , parameter     :: eps1 = 0.999
-real   , parameter     :: eps1_soa = 0.999
+real   , parameter     :: eps1_sia = 0.95
 logical, public, save :: lf_fullchem=.false. ! if the full O3 chemistry is needed
 integer, public, save :: NSPEC_fullchem_lf=0 ! number of species to include in the "fullchem" derivatives
 integer, public, parameter :: N_lf_derivemisMAX = 200 ! max number of emission source to include in CM_Reactions1 derivatives
@@ -3271,13 +3271,13 @@ subroutine lf_aero_pre(i,j,k,deriv_iter) !called just before AerosolEquilib
      xn_lf(4,0) = xn_2d(HNO3_ix,k)
      xn_lf(5,0) = xn_2d(SO4_ix,k)
     !perturb HNO3
-     xn_2d(HNO3_ix,k) = xn_2d(HNO3_ix,k) * eps1_soa
+     xn_2d(HNO3_ix,k) = xn_2d(HNO3_ix,k) * eps1_sia
   else if(deriv_iter == 2) then
      !perturb SO4
-     xn_2d(SO4_ix,k) = xn_2d(SO4_ix,k) * eps1_soa
+     xn_2d(SO4_ix,k) = xn_2d(SO4_ix,k) * eps1_sia
   else if(deriv_iter == 3) then
      !perturb NH3
-     xn_2d(NH3_ix,k) = xn_2d(NH3_ix,k) * eps1_soa
+     xn_2d(NH3_ix,k) = xn_2d(NH3_ix,k) * eps1_sia
   else if(deriv_iter == 4) then
      !base case
      !NB: must be the last, so that code can continue with base case results
@@ -3370,9 +3370,9 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
               lf_PM25_water(n,i,j) = 0.0
            end do           
            if(xn_lf(0,4)>0.0001)then              
-              xderiv(1,1) = min(10.0,max(-10.0,(xn_lf(0,1)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
-              xderiv(2,1) = min(10.0,max(-10.0,(xn_lf(0,2)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
-              xderiv(3,1) = min(10.0,max(-10.0,(xn_lf(0,3)- xn_lf(0,4))/((eps1_soa-1.0)*xn_lf(0,4))))
+              xderiv(1,1) = min(10.0,max(-10.0,(xn_lf(0,1)- xn_lf(0,4))/((eps1_sia-1.0)*xn_lf(0,4))))
+              xderiv(2,1) = min(10.0,max(-10.0,(xn_lf(0,2)- xn_lf(0,4))/((eps1_sia-1.0)*xn_lf(0,4))))
+              xderiv(3,1) = min(10.0,max(-10.0,(xn_lf(0,3)- xn_lf(0,4))/((eps1_sia-1.0)*xn_lf(0,4))))
               !filter out dependency when there are almost no pollutants:
               if(xn_lf(1,0)+xn_lf(2,0)<10000)xderiv(3,1) = 0.0
               if(xn_lf(5,0)<10000)xderiv(2,1) = 0.0
@@ -3443,9 +3443,9 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                  if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
                     !HNO3 derivative
                     if(xn_lf(ix,1)>1000 .and. xn_lf(4,0)>1000)then
-                       xd = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(4,0)))
+                       xd = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(4,0)))
                        if(abs(xd)<xd_limit)then
-                          xderiv(1,ix) = min(10.0,max(-10.0,xd*xn_lf(4,0)/xn_lf(ix,4)))!HNO3
+                          xderiv(1,ix) = min(100.0,max(-100.0,xd*xn_lf(4,0)/xn_lf(ix,4)))!HNO3
                        else
                           derivok=.false.
                        end if
@@ -3454,9 +3454,9 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     end if
                     !SO4 derivative
                     if(xn_lf(ix,2)>1000 .and. xn_lf(5,0)>1000)then
-                       xd = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(5,0)))!SO4
+                       xd = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(5,0)))!SO4
                        if(abs(xd)<xd_limit)then
-                          xderiv(2,ix) = min(10.0,max(-10.0,xd*xn_lf(5,0)/xn_lf(ix,4)))
+                          xderiv(2,ix) = min(100.0,max(-100.0,xd*xn_lf(5,0)/xn_lf(ix,4)))
                        else
                           derivok=.false.
                        end if
@@ -3465,9 +3465,9 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     end if
                     !NH3 derivative                    
                     if(xn_lf(ix,3)>1000 .and. xn_lf(1,0)>1000)then
-                       xd = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1_soa-1.0)*(xn_lf(1,0)))!NH3
+                       xd = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(1,0)))!NH3
                        if(abs(xd)<xd_limit)then
-                          xderiv(3,ix) = min(10.0,max(-10.0,xd*xn_lf(1,0)/xn_lf(ix,4)))
+                          xderiv(3,ix) = min(100.0,max(-100.0,xd*xn_lf(1,0)/xn_lf(ix,4)))
                        else
                           derivok=.false.
                        end if
