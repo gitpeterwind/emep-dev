@@ -558,7 +558,7 @@ function getVent(line) result(def)
   end select
   read(words(8),*)elev            ! [m]
   igrp=find_index(words(1),chemgroups(:)%name)
-  def=loc(trim(words(1)),trim(words(2)),lat,lon,elev,trim(words(10)),igrp)
+  def=loc(trim(words(1)),trim(words(2)),lat,lon,elev,trim(words(10)),igrp,-1,-1)
 end function getVent
 !----------------------------!
 ! Extract Erup. info from CVS line

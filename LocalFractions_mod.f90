@@ -1,7 +1,7 @@
 module LocalFractions_mod
 !
 ! all subroutines for Local Fractions
-!
+  !
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac, Fgas3d, PM25_water_rh50, x, xnew
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
@@ -48,7 +48,7 @@ use TimeDate_mod,      only: date, current_date,day_of_week
 use TimeDate_ExtraUtil_mod,only: date2string
 use My_Timing_mod,     only: Add_2timing, Code_timer, NTIMING
 use VerticalDiffusion_mod, only: vertdiffn
-use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis, M, rcbio
+use ZchemData_mod,only: rct, rcphot, xn_2d, rcemis, M, rcbio, Fgas
 
 !(dx,dy,i,j) shows contribution of pollutants from (i+dx,j+dy) to (i,j)
 
@@ -80,6 +80,7 @@ public  :: lf_chem_emis_deriv
 public  :: lf_chem
 public  :: lf_chem_pre, lf_chem_mid, lf_chem_pos
 public  :: lf_aero_pre, lf_aero_pos
+public  :: lf_aqu_pre, lf_aqu_pos
 public  :: lf_SurfArea_pre, lf_SurfArea_pos
 public  :: lf_drydep, lf_wetdep, lf_POD
 public  :: lf_rcemis
@@ -142,7 +143,9 @@ integer, allocatable, public, dimension(:,:), save :: lf_sector_map !add some se
 integer, allocatable, dimension(:), save :: lf_nsector_map !how many sector to put together
 real, allocatable, public, dimension(:), save ::L_lf, P_lf!,rctA_lf,rctB_lf
 !real, allocatable, public, dimension(:,:), save ::rctAk_lf,rctBk_lf
-real, private, dimension(0:5,0:4),save ::xn_lf !to save concentrations
+real, allocatable, public, dimension(:,:), save ::fgasso2_lf
+real, allocatable, public, dimension(:,:,:), save ::AQRCK_lf
+real, private, dimension(0:5,0:5),save ::xn_lf !to save concentrations
 
 logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
@@ -218,6 +221,7 @@ integer, public, save  :: ix_BVOC, ix_DMS
 integer, public, save  :: nPOD=0, nDryDep=0 !number of outputs asked for. nDryDep includes nPOD
 logical, private, save :: aero_error = .false.
 real, parameter :: lf_limit = 1e-5
+integer, parameter :: NAQUEOUS = 5,ICLOHSO2 = 1,ICLRC1 = 2,ICLRC2 = 3,ICLRC3 = 4,ICLHO2H2O2 = 5 !NB: hardcoded!!
 
 contains
 
@@ -329,10 +333,12 @@ contains
         call addsource(species_adv(i)%name)
      end do
      
-     !not directly used in Reactions1, but have an effect on rct(100) and rct(97)
+     !not directly used in Reactions1, but have an effect on aqrck
      call addsource('SO4')
      call addsource('NO3_c')
      call addsource('NO3_f')
+     call addsource('NH3')
+     call addsource('NH4_f')
 
      
      NSPEC_deriv_lf = Nlf_species !the number of species "Y" in dX/dY for the O3 block
@@ -345,15 +351,13 @@ contains
      N_deriv_SOA_lf  = Nlf_species !the number of species "Y" in dX/dY used for SOA
      NSOA = N_deriv_SOA_lf - NSPEC_deriv_lf
 
-     call addsource('NH3')
      
      NSPEC_chem_lf = Nlf_species !the number of species "X" in dX/dY
      
      !end of sources to be included in chemistry
      Nsources_chem = Nsources ! each species can have several sources (voc, nox, nh3, sox)
      
-     ! Additional species used for equilibrium chemistry, but not used in chemistry:  NH4_f (, NO3_f)
-     call addsource('NH4_f')
+     ! Additional species used for equilibrium chemistry, but not used in chemistry:  none
 
      ! add primary PM
      call addsource('pm25')
@@ -1188,6 +1192,10 @@ contains
 !     allocate(rctAk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
 !     allocate(rctB_lf(NSPEC_deriv_lf+N_lf_derivemisMAX))
 !     allocate(rctBk_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
+     allocate(fgasso2_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,KMAX_MID-lf_Nvert+1:KMAX_MID))
+     fgasso2_lf=1.0
+     allocate(AQRCK_lf(NSPEC_deriv_lf+N_lf_derivemisMAX,NAQUEOUS,KMAX_MID-lf_Nvert+1:KMAX_MID))
+     AQRCK_lf=0.0
      allocate(xn_shl_lf(NSPEC_deriv_lf+NSOA,NSPEC_SHL,KMAX_MID-lf_Nvert+1:KMAX_MID,LIMAX,LJMAX))
      allocate(lf_PM25_water(Npos_lf*Nfullchem_emis,LIMAX,LJMAX))
      lf_PM25_water = 0.0
@@ -3378,7 +3386,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
               if(xn_lf(5,0)<10000)xderiv(2,1) = 0.0
               if(xn_lf(3,0)+xn_lf(4,0)<10000)xderiv(1,1) = 0.0
               !loop over X in dX/dY, but also over Y for each emis!
-              do isrc=1, Nsources !NB: each species will appear Nfullchem_emis times
+              do isrc=1, Nsources !NB: each species will appear Nfullchem_emis times, but we keep only the first
+                 if(lf_src(isrc)%iem_lf>1)cycle !Treat all iem_lf at once -> only one species left
                  fac = 1.0
                  if(lf_src(isrc)%species == 'NH3')then
                     ix=3
@@ -3399,17 +3408,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                  ! contributions from 5 species are added to same index in lf_PM25_water
                  fac = PM25_water_rh50(i,j) * fac * xderiv(ix,1)
                  
-                 d=(lf_src(isrc)%iem_lf-1)*Npos_lf !different emis will be put at different indices in lf_PM25_water                 
-                 do n = 1, Npos_lf
-!           if(i_fdom(i)<=61.and.j_fdom(j)>=213)then
-!!              write(*,*)isrc,lf_src(isrc)%iem_lf,n+d,n,lf_PM25_water(n+d,i,j),fac,fac * lf(lf_src(isrc)%start+n-1,i,j,k)
-!              if(abs(lf_PM25_water(n+d,i,j)+fac * lf(lf_src(isrc)%start+n-1,i,j,k))>0.3)then
-!                 write(*,*)isrc,i_fdom(i),j_fdom(j),lf_src(isrc)%iem_lf,n+d,n,lf_PM25_water(n+d,i,j),fac,fac * lf(lf_src(isrc)%start+n-1,i,j,k)
-!                 write(*,*)'LARGEE',lf(lf_src(isrc)%start+n-1,i,j,k)
-!                 write(*,*)'xn',xn_lf(1,0),xn_lf(2,0),xn_lf(3,0),xn_lf(4,0),xn_lf(5,0)
-!              end if
-!           end if
-                    lf_PM25_water(n+d,i,j) = lf_PM25_water(n+d,i,j) + fac * lf(lf_src(isrc)%start+n-1,i,j,k)
+                 do n = 1, Npos_lf*Nfullchem_emis
+                    lf_PM25_water(n,i,j) = lf_PM25_water(n,i,j) + fac * lf(lf_src(isrc)%start+n-1,i,j,k)
                  end do
 
               end do              
@@ -3435,7 +3435,11 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                  lf0_loc(n+1,5) = lf(lf_src(isrc_SO4)%start+n,i,j,k)
               end do
               derivok = .true. !if any derivative is supiscious, we keep old lf (derivok = false)
-              xd=abs(xn_lf(1,4)+xn_lf(2,4)-xn_lf(1,0)-xn_lf(2,0))/(1000+abs(xn_lf(1,0)+xn_lf(2,0)))
+              xd=abs(xn_lf(1,4)+xn_lf(2,4)-xn_lf(1,0)-xn_lf(2,0))/(1000+abs(xn_lf(1,0)+xn_lf(2,0)))!NH3+NH4 conserved
+              if(xd>1e-4)then
+                derivok = .false.
+              end if
+              xd=abs(xn_lf(3,4)+xn_lf(4,4)-xn_lf(3,0)-xn_lf(4,0))/(1000+abs(xn_lf(3,0)+xn_lf(4,0)))!HNO3+NO3 conserved
               if(xd>1e-4)then
                 derivok = .false.
               end if
@@ -3445,7 +3449,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     if(xn_lf(ix,1)>1000 .and. xn_lf(4,0)>1000)then
                        xd = (xn_lf(ix,1)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(4,0)))
                        if(abs(xd)<xd_limit)then
-                          xderiv(1,ix) = min(100.0,max(-100.0,xd*xn_lf(4,0)/xn_lf(ix,4)))!HNO3
+                          !NB: min and max values MUST be allowed large
+                          xderiv(1,ix) = min(10000.0,max(-10000.0,xd*xn_lf(4,0)/xn_lf(ix,4)))!HNO3
                        else
                           derivok=.false.
                        end if
@@ -3456,7 +3461,7 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     if(xn_lf(ix,2)>1000 .and. xn_lf(5,0)>1000)then
                        xd = (xn_lf(ix,2)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(5,0)))!SO4
                        if(abs(xd)<xd_limit)then
-                          xderiv(2,ix) = min(100.0,max(-100.0,xd*xn_lf(5,0)/xn_lf(ix,4)))
+                          xderiv(2,ix) = min(10000.0,max(-10000.0,xd*xn_lf(5,0)/xn_lf(ix,4)))
                        else
                           derivok=.false.
                        end if
@@ -3467,7 +3472,7 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     if(xn_lf(ix,3)>1000 .and. xn_lf(1,0)>1000)then
                        xd = (xn_lf(ix,3)- xn_lf(ix,4))/((eps1_sia-1.0)*(xn_lf(1,0)))!NH3
                        if(abs(xd)<xd_limit)then
-                          xderiv(3,ix) = min(100.0,max(-100.0,xd*xn_lf(1,0)/xn_lf(ix,4)))
+                          xderiv(3,ix) = min(10000.0,max(-10000.0,xd*xn_lf(1,0)/xn_lf(ix,4)))
                        else
                           derivok=.false.
                        end if
@@ -3505,7 +3510,8 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
               if(derivok)then       
         
                 do isrc=1,Nsources
-                    if(lf_src(isrc)%species == 'NH3')then
+                   if(lf_src(isrc)%iem_lf>1)cycle !Treat all iem_lf at once
+                   if(lf_src(isrc)%species == 'NH3')then
                        ix=1
                     else if(lf_src(isrc)%species == 'NH4_f')then
                        ix=2
@@ -3519,15 +3525,15 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
                     else
                        cycle
                     end if
-                    d=(lf_src(isrc)%iem_lf-1)*Npos_lf
-                    
                     if(abs(xn_lf(ix,4) - xn_lf(ix,0))>1000 .and.xn_lf(ix,4)>1000 .and. xn_lf(ix,0)>1000)then !units molec/cm3
-                       do n = 0, Npos_lf-1
-                          lf(lf_src(isrc)%start+n,i,j,k) = xderiv(1,ix) * lf0_loc(n+1+d,4) &
-                               + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n+1+d,3) &
-                               + xderiv(2,ix) * lf0_loc(n+1+d,5) &
-                               + xderiv(3,ix) * lf0_loc(n+1+d,1) &
-                               + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n+1+d,2)
+                       !d(isrc)/dn = sum_i(xderiv(i,isrc)*di/dn) , xderiv(i,isrc)=d(isrc)/di .  i for xderiv and lf0_loc are not using the same mapping
+!TODO: write as matrix multiplication
+                       do n = 1, Npos_lf*Nfullchem_emis
+                          lf(lf_src(isrc)%start+n-1,i,j,k) = xderiv(1,ix) * lf0_loc(n,4) &
+                               + xderiv(1,ix) * xn_lf(3,0)/(1000+xn_lf(4,0)) * lf0_loc(n,3) &
+                               + xderiv(2,ix) * lf0_loc(n,5) &
+                               + xderiv(3,ix) * lf0_loc(n,1) &
+                               + xderiv(3,ix) * xn_lf(2,0)/(1000+xn_lf(1,0)) * lf0_loc(n,2)
                        end do
                     else
                        !unchanged concentrations -> unchanged lf (happens if saturated, or other special cases)
@@ -3546,6 +3552,128 @@ subroutine lf_aero_pos(i,j,k,deriv_iter,pmwater,errmark) !called just after Aero
   call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
 
 end subroutine lf_aero_pos
+
+subroutine lf_aqu_pre(k,deriv_iter) !called just before aqrck rate calculations in setup_aqurates
+  integer, intent(in) ::k,deriv_iter
+  if (.not.USES%LocalFractions .or. k<KMAX_MID-lf_Nvert+1 .or. .not. lf_fullchem) return
+  if(deriv_iter < 0)then
+     !initialize only (not incloud)     
+     AQRCK_lf(:,:,k) = 0.0
+     fgasso2_lf(:,k) = 1.0
+     return
+  end if
+
+  !save concentrations, to see changes
+  if(DEBUGall .and. me==0)write(*,*)'start lf_aero_pre'
+  call Code_timer(tim_before)
+  if ( .not.lf_fullchem) return;
+
+  !include a perturbation to get sensibilities
+
+  if(deriv_iter == 1) then
+     !save original values
+     xn_lf(1,0) = xn_2d(NH3_ix,k)
+     xn_lf(2,0) = xn_2d(NH4_f_ix,k)
+     xn_lf(3,0) = xn_2d(NO3_f_ix,k)
+     xn_lf(4,0) = xn_2d(HNO3_ix,k)
+     xn_lf(5,0) = xn_2d(SO4_ix,k)
+    !perturb HNO3 (same effect as changing NO3)
+     xn_2d(HNO3_ix,k) = xn_2d(HNO3_ix,k) * eps1
+  else if(deriv_iter == 2) then
+     !perturb SO4
+     xn_2d(SO4_ix,k) = xn_2d(SO4_ix,k) * eps1
+  else if(deriv_iter == 3) then
+     !perturb NH3
+     xn_2d(NH3_ix,k) = xn_2d(NH3_ix,k) * eps1
+  else if(deriv_iter == 4) then
+     !perturb NH4
+     xn_2d(NH4_f_ix,k) = xn_2d(NH4_f_ix,k) * eps1
+  else if(deriv_iter == 5) then
+     !base case
+     !NB: must be the last, so that code can continue with base case results
+  end if
+
+  if(DEBUGall .and. me==0)write(*,*)'end lf_aero_pre'
+call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+
+end subroutine lf_aqu_pre
+
+subroutine lf_aqu_pos(k,deriv_iter,AQRCK)
+  integer, intent(in) ::k,deriv_iter
+  real,  intent(in) :: AQRCK(NAQUEOUS,KCHEMTOP:KMAX_MID)
+  integer :: iter,n,i,n_sp
+  real :: xd,xd_limit
+  xd_limit=4.0
+  if( .not.lf_fullchem) return
+  call Code_timer(tim_before)
+     !save results
+  xn_lf(1,deriv_iter) = AQRCK(ICLRC1,K)
+  xn_lf(2,deriv_iter) = aqrck(ICLRC2,k) 
+  xn_lf(3,deriv_iter) = aqrck(ICLRC3,k) 
+  xn_lf(4,deriv_iter) = aqrck(ICLHO2H2O2,k)
+  xn_lf(5,deriv_iter) = FGAS(SO2_ix, k)
+
+  if(deriv_iter<5)then
+     !put back original values
+     xn_2d(NH3_ix,k) = xn_lf(1,0)
+     xn_2d(NH4_f_ix,k)=xn_lf(2,0)
+     xn_2d(NO3_f_ix,k)=xn_lf(3,0)
+     xn_2d(HNO3_ix,k)=xn_lf(4,0)
+     xn_2d(SO4_ix,k)=xn_lf(5,0)
+  end if
+  if (deriv_iter >= 5) then
+     !make derivative dependencies (and keep xn_2d results)
+     !HNO3 ->deriv 1
+     !SO4  ->deriv 2
+     !NH3  ->deriv 3
+     !NH4  ->deriv 4
+     !base ->deriv 5
+     do i=1,NAQUEOUS
+        do n=1,NSPEC_deriv_lf+N_lf_derivemisMAX
+           AQRCK_lf(n,i,K)=AQRCK(i,K)
+        end do
+     end do
+     do n=1,NSPEC_deriv_lf+N_lf_derivemisMAX
+        fgasso2_lf(n,k) = 1.0
+     end do
+     do iter = 1,4
+        if(iter==1)n_sp = spec2lfspec(HNO3_ix)
+        if(iter==2)n_sp = spec2lfspec(SO4_ix)
+        if(iter==3)n_sp = spec2lfspec(NH3_ix)
+        if(iter==4)n_sp = spec2lfspec(NH4_f_ix)
+
+        xd=(xn_lf(1,iter)-xn_lf(1,5))/((eps1-1.0)*xn_lf(1,5))
+        if(abs(xd)>xd_limit)xn_lf(1,iter)=xn_lf(1,5)
+        aqrck_lf(n_sp,ICLRC1,K) =xn_lf(1,iter)
+        
+        xd=(xn_lf(2,iter)-xn_lf(2,5))/((eps1-1.0)*xn_lf(2,5))
+        if(abs(xd)>xd_limit)xn_lf(2,iter)=xn_lf(2,5)
+        aqrck_lf(n_sp,ICLRC2,K) =xn_lf(2,iter)
+        
+         xd=(xn_lf(3,iter)-xn_lf(3,5))/((eps1-1.0)*xn_lf(3,5))
+        if(abs(xd)>xd_limit)xn_lf(3,iter)=xn_lf(3,5)
+        aqrck_lf(n_sp,ICLRC3,K) =xn_lf(3,iter)
+        
+        xd=(xn_lf(4,iter)-xn_lf(4,5))/((eps1-1.0)*xn_lf(4,5))
+        if(abs(xd)>xd_limit)xn_lf(4,iter)=xn_lf(4,5)
+        aqrck_lf(n_sp,ICLHO2H2O2,k) = xn_lf(4,iter)
+         
+        if(xn_lf(5,5)>1e-5)then
+           xd=xn_lf(5,iter)/(xn_lf(5,5))
+        else
+           xd=1.0
+        end if
+ 
+        fgasso2_lf(n_sp, k) = xd !xn_lf(5,iter)/xn_lf(5,5)
+        
+     end do
+     
+  end if
+  call Code_timer(tim_before)
+  if(DEBUGall .and. me==0)write(*,*)'end lf_aqu_pos'
+  call Add_2timing(NTIMING-3,tim_after,tim_before,"lf: chemistry")
+
+end subroutine lf_aqu_pos
 
 subroutine lf_SurfArea_pre(k,deriv_iter)
   integer, intent(in) :: k,deriv_iter

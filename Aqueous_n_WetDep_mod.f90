@@ -50,7 +50,8 @@ use DerivedFields_mod,  only: f_2d, d_2d     ! Contains Wet deposition fields
 use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep
 use GridValues_mod,     only: gridwidth_m,xm2,dA,dB,i_fdom,j_fdom,A_mid,B_mid
 use Io_mod,             only: IO_DEBUG, datewrite
-use LocalFractions_mod, only: lf_wetdep, wetdep_lf
+use LocalFractions_mod, only: lf_wetdep, wetdep_lf,lf_Nvert,lf_fullchem,lf_aqu_pre&
+                              ,lf_aqu_pos,AQRCK_lf,fgasso2_lf
 use MassBudget_mod,     only : wdeploss,totwdep
 use MetFields_mod,       only: pr, roa, z_bnd, cc3d, cw_met
 use MetFields_mod,       only: ps
@@ -389,8 +390,8 @@ subroutine Setup_Clouds(i,j,debug_flag)
  ! fractional solubility
 
  !need to be called also if no clouds for non-cloud rates
- !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
-
+  !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
+  
    call setup_aqurates(b ,cloudwater,incloud,pres)
 !  Calculates arrays with temperature dependent aqueous phase
 !  equilibrium rates and aqueous phase reaction rates
@@ -564,7 +565,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
   real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
-  integer k, iter
+  integer k, iter, lf_niter, lf_iter
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
   real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
   
@@ -592,7 +593,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! initialize:
   aqrck(:,:) = 0.
 
-! for PH
+  
+  ! for PH
 
   pH(:)=4.3!dspw 13082012
   h_plus(:)=Hplus43!dspw 13082012
@@ -607,8 +609,15 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   Fgas(SO2,:) = 1.0
 
   do k = KUPPER,KMAX_MID
-     if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
-
+     if(.not.incloud(k)) then
+        if(USES%LocalFractions) call lf_aqu_pre(k,-1) !only initializations
+        cycle ! Vf > 1.0e-10)
+     end if
+     lf_niter = 1
+     if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) lf_niter = 5
+     do lf_iter=1, lf_niter !only used for LocalFractions, otherwise just one "iteration"
+     call lf_aqu_pre(k,lf_iter) !only used for LocalFractions
+     
      !  pwjoj (Jan 2023):
      !  we dissolve only the part which is inside the cloud,
      !  So the concentrations on the lhs are concentrations
@@ -819,6 +828,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !  Incloud oxidation of Siv to Svi by O2 
     aqrck(ICLRC3,k)   = 3.3e-10 *  fso2grid(k)/ cloudwater(k) * MASSTRLIM
 
+    call lf_aqu_pos(k,lf_iter, aqrck)
+    end do
+    
 !!!!!! (so2aq + hso3-) + o2 ( + Fe ) --> so4, see documentation below
 !!!!!!!  aqrc(3) = 3.3e-10  * MASSTRLIM
 

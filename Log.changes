@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 June  2024, Peter
+
+LF: Changed the eps1 for SIA to 0.95. Included aqueous reaction rate changes
+(new mk.LF_Chem not tested!)
+
+Also added small LUMI compatibility changes (DataDir in config, and defaults
+values for "loc" in ColumnSource).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June  2024, Peter, Willem
 
 pH convergence did make lots of warnings in  global runs. The case was when
