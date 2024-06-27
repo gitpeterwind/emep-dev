@@ -555,8 +555,6 @@ contains
            if(MasterProc)write(*,*)'include sources from ',trim(lf_country%list(i))
         enddo
      endif
-
-     allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
      lf_nsector_map = 1
 
      Ncountry_group_lf=0
@@ -599,6 +597,7 @@ contains
      if(MasterProc)write(*,*)Npos_lf,' countries x sectors for ',Nsources,' sources'
   end if
   
+  allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
   !note: the loop above, is interrputed by an exit, and cannot be used
   do i = 1, NSECTORS
      lf_sector_map(:,i) = i
