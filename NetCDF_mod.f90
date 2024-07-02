@@ -65,6 +65,7 @@ use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
 use SmallUtils_mod,      only: wordsplit, find_index, str_replace, key2str
+use SmallUtils_mod,      only: trims
 
 implicit none
 
@@ -4799,10 +4800,13 @@ if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeB:'//trim(timeunit), NTime_Read, find
              TimesInDays(i) = 30*(times(i)-1)+15
      else
         !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
-
+        ! or at least days since yyyy-mm-dd
         !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
         call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-        if(dbg0) write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
+        if(dbg0) then
+          write(*,*) 'timeCheck:'//trim(fileName)
+          write(*,*) "time@units:",(" ",trim(wordarray(i)),i=1,8)
+        end if
         period=wordarray(1)
         since=wordarray(2)
         call CheckStop(since/='since',"since error "//trim(since))
@@ -4810,7 +4814,12 @@ if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeB:'//trim(timeunit), NTime_Read, find
         read(wordarray(3),*)yyyy
         read(wordarray(4),*)mo
         read(wordarray(5),*)dd
-        read(wordarray(6),*)hh
+        if ( nwords == 5 ) then ! case "days since 1990-1-1 "
+          hh=0
+          call CheckStop(period/='days',trim(fileName)//":period error "//trim(period))
+        else
+          read(wordarray(6),*)hh
+        end if
         if( period == 'minutes' .or. period =='seconds' )then
            read(wordarray(7),*)mi
            read(wordarray(8),*)ss  !did not work for others?
