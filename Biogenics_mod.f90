@@ -662,6 +662,8 @@ module Biogenics_mod
          SoilNOx3D(i,j,gmt_3hour)/Grid%DeltaZ * 1.0e-6
 
     end if ! USES%SOILNOX_METHOD
+    ! July 2024. Emissions should be as mg(NO)/m2, not mg(N) as before
+      EmisNat(NATBIO%NO,i,j) =  EmisNat(NATBIO%NO,i,j) * 30.0/14.0
   end if ! USES%SOILNOX
 
     !EXPERIMENTAL

@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11  July  2024, Dave
+
+Biogenics_mod: EmisNat for NO scaled by 30/14, so that output Emis_mgm2_BionatNO
+is actually as NO as stated. Was as N.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10  July  2024, Dave
 
 SmallUtils_mod: increased word size in basename and basedir functions -
