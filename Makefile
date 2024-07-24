@@ -10,7 +10,7 @@ include Makefile.SRCS
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
-OPT_FLAGS = -O2 -march=core-avx2
+#OPT_FLAGS = -O2 -march=core-avx2
 F90FLAGS = -g  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
@@ -31,6 +31,15 @@ else ifeq ($(MACHINE), atos)
   OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpif90
+else ifeq ($(MACHINE), lumi)
+#  ml load LUMI/23.09  partition/C cpeGNU/23.09 gcc/12.2.0  cray-hdf5/1.12.2.7 cray-netcdf/4.9.0.7
+  F90FLAGS =  -default64  -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none -ffree-line-length-none -Wno-error=line-truncation -O2 -g
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS += $(shell nf-config --cflags)
+  MAKEDEPF90=/users/windpete/bin/makedepf90
+#  OPT_FLAGS =
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=ftn
 else ifeq ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)
@@ -111,7 +120,7 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
 ifneq ($(LD),gfortran)
 NetCDF_mod.o:NetCDF_mod.f90
-	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
+	$(F90) $(F90FLAGS) -c $< -o $@
 endif
 
 # inject git info into logs

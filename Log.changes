@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 July  2024, Peter
+
+Allow choice of different inputs for metdata: alternative names can be added,
+and special treatment for those added in a systematic way.
+
+Adaptation of code and compiler flags to more recent gnu fortran compiler.
+LUMI Makefile, and adapted Makefile.Open
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June  2024, Peter, Willem
 
 pH convergence did make lots of warnings in  global runs. The case was when

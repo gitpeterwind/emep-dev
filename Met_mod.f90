@@ -275,7 +275,7 @@ subroutine MeteoRead()
   real :: nsec                                 ! step in seconds
 
   real :: buff(LIMAX,LJMAX)!temporary metfields
-  integer :: i, j, ix, k, kk, nrix, isw, KMAX
+  integer :: i, j, ix, k, kk, nrix, isw, KMAX, n
   logical :: fexist
   logical,save :: first_call = .true.
 
@@ -306,7 +306,7 @@ subroutine MeteoRead()
   real, dimension(LJMAX,KMAX_MID) :: urcv   ! rcv in x
   real, dimension(LIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
-  real :: p1, p2, x, y
+  real :: p1, p2, x, y, fac
   real :: divk(KMAX_MID),sumdiv,dB_sum
 
   real :: Ps_extended(0:LIMAX+1,0:LJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
@@ -320,6 +320,7 @@ subroutine MeteoRead()
   logical, save:: precip_accumulated = .false.
   logical      :: precipitations_ready = .false.
   logical, save:: rh2m_in_percent  = .true.
+  logical      :: needed_now
   if(.not. first_call)then
      if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
   endif
@@ -455,9 +456,30 @@ subroutine MeteoRead()
         met(ix_fh)%validity='averaged'!should be softified
         met(ix_fl)%validity='averaged'!should be softified
      else
+        needed_now = met(ix)%needed
+        if(met(ix)%alternative_name(1)/='notset') needed_now = .false.
         call Getmeteofield(meteoname,namefield,nrec,ndim,unit,met(ix)%validity,&
-                met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,&
+                met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=needed_now,&
                 found=met(ix)%found)
+        if(.not. met(ix)%found)then
+           !try alternative names
+           do n = 1, 5 
+              if(met(ix)%alternative_name(n)=='notset')exit
+              needed_now = met(ix)%needed
+              if(n<5)then
+                 if(met(ix)%alternative_name(n+1)/='notset') needed_now = .false.
+              end if
+              call Getmeteofield(meteoname,met(ix)%alternative_name(n),nrec,ndim,unit,met(ix)%validity,&
+                met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=needed_now,&
+                found=met(ix)%found)
+              if(met(ix)%found)then
+                 met(ix)%alternative_namefound = met(ix)%alternative_name(n)
+                 if(me==0)write(*,*)'using '//trim(met(ix)%alternative_namefound)//' instead of '//trim(namefield)
+                 met(ix)%name = met(ix)%alternative_namefound
+                 exit
+              end if
+           end do
+        end if
       end if
       if(write_now)then
         if(met(ix)%found)then
@@ -496,6 +518,57 @@ subroutine MeteoRead()
 
   !==============  now correct and complete the metfields as needed!  ==========================
 
+  !treat the cases with alternative names
+  do ix=1,Nmetfields
+     if(met(ix)%read_meteo .and. met(ix)%alternative_namefound/='notset')then
+        ndim=met(ix)%dim
+        nrix=min(met(ix)%msize,nr)
+        select case(trim(met(ix)%alternative_namefound))
+        case('air_temperature_ml')
+           !we transform from absolute to potential
+           !note that we could also keep absolute and compute potential on the fly when needed, as both are used
+           if(maxval(ps)<2000.0)then
+              ps_in_hPa = .true.
+           else
+              ps_in_hPa = .false.
+           endif
+           fac=1.0
+           if(ps_in_hPa)fac = PASCAL
+           do k=1,kmax_mid
+              do j=1,ljmax
+                 do i=1,limax
+                    th(i,j,k,nr) = th(i,j,k,nr) * exp(-KAPPA*log((A_mid(k)+B_mid(k)*fac*ps(i,j,nr))*1.e-5))
+                 end do
+              end do
+           end do           
+        case('integral_of_surface_downward_sensible_heat_flux_wrt_time')
+           !add all heat fluxes and change sign.
+           call Getmeteofield(meteoname,'integral_of_surface_downward_latent_heat_evaporation_flux_wrt_time',nrec,ndim,unit,met(ix)%validity,&
+                buff,needed=.true.,found=met(ix)%found)
+           do j=1,ljmax
+              do i=1,limax
+                 met(ix)%field(i,j,1,nrix) = -met(ix)%field(i,j,1,nrix) - buff(i,j)
+              end do
+           end do
+           if(nrix > 1)then
+               ! change from accumulated to instantaneous
+              met(ix)%field(i,j,1,1) = met(ix)%field(i,j,1,2) - met(ix)%field(i,j,1,1)/(3600*METSTEP)
+           end if
+           met(ix)%time_interpolate = .false.
+        case('surface_stress_northward')
+            call Getmeteofield(meteoname,'surface_stress_eastward',nrec,ndim,unit,met(ix)%validity,&
+                buff,needed=.true.,found=met(ix)%found)
+           do j=1,ljmax
+              do i=1,limax
+                 met(ix)%field(i,j,1,nrix) = sqrt(met(ix)%field(i,j,1,nrix)*met(ix)%field(i,j,1,nrix)+&
+                      buff(i,j)*buff(i,j))
+              end do
+           end do          
+        end select
+     end if
+  end do
+
+  
   !extend the i or j index to 0
   if (neighbor(EAST) .ne. NOPROC) then
     usnd(:,:) = u_xmj(limax,:,:,nr)
