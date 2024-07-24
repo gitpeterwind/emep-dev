@@ -58,6 +58,36 @@ Adaptation of code and compiler flags to more recent gnu fortran compiler.
 LUMI Makefile, and adapted Makefile.Open
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11  July  2024, Dave
+
+Biogenics_mod: EmisNat for NO scaled by 30/14, so that output Emis_mgm2_BionatNO
+is actually as NO as stated. Was as N.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10  July  2024, Dave
+
+SmallUtils_mod: increased word size in basename and basedir functions -
+ wasn't coping with some long CAMS emission names. 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2  July  2024, Dave
+
+NetCDF_mod: Allow timestamps as e.g. "days since 1990-1-1", ie without 00:00:00
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 June  2024, Peter
+
+Changed reading format for ModsCloudJ, as one compiler on LUMI did not like it.
+
+Bug in LF for "relative" type: lf_sector_map was not allocated
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 June  2024, Peter
+
+LF: Changed the eps1 for SIA to 0.95. Included aqueous reaction rate changes
+(new mk.LF_Chem not tested!)
+
+Also added small LUMI compatibility changes (DataDir in config, and defaults
+values for "loc" in ColumnSource).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 June  2024, Peter, Willem
 
 pH convergence did make lots of warnings in  global runs. The case was when

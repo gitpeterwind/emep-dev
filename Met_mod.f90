@@ -1112,7 +1112,7 @@ subroutine MeteoRead()
       if(first_call.and.MasterProc) &
             write(*,*) "Met_mod: HMIX search ",isw,trim(namefield)," found=",foundHmix
       if(foundHmix) then ! found
-         if(MasterProc)write(*,*)"using "//trim(namefield)//" for Hmix in meteo"
+         if(first_call .and. MasterProc)write(*,*)"using "//trim(namefield)//" for Hmix in meteo"
          met(ix_pblnwp)%name=trim(namefield)
          exit
       end if

@@ -249,6 +249,7 @@ contains
 
    !SPECIAL CASE: for IAM_SNL_MED
    !  min(g_sto, 550) needed as veg community has 550, but sens veg has 782
+   ! checked in Sep2023 data. 
    L%g_sto = min( do3se(iLC)%g_max, 550.0)  * L%f_env * mmol2sm 
 
    L%g_sun = do3se(iLC)%g_max * mmol2sm * L%f_phen * L%f_sun * &

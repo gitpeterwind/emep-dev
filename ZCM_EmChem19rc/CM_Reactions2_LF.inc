@@ -308,10 +308,10 @@ if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
 !-> SO4
 
   P_lf(1:Nd) = rcemis(SO4,k)  &
-    + rct(96,k) * xnew_lf(1:Nd,OH) * xnew_lf(1:Nd,SO2)  &
-    + AQRCK(ICLRC1,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,H2O2)  &
-    + AQRCK(ICLRC2,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,O3)  &
-    + AQRCK(ICLRC3,K) * xnew_lf(1:Nd,SO2)
+    + rct(96,k)*fgasso2_lf(1:Nd,k) * xnew_lf(1:Nd,OH) * xnew_lf(1:Nd,SO2)  &
+    + AQRCK_LF(1:ND,ICLRC1,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,H2O2)  &
+    + AQRCK_LF(1:ND,ICLRC2,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,O3)  &
+    + AQRCK_LF(1:ND,ICLRC3,K) * xnew_lf(1:Nd,SO2)
   
   ! L_lf(1:Nd) = 0.0
   

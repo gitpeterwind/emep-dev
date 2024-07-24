@@ -9,7 +9,7 @@
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
   DataPath(2) = '/cluster/shared/EMEP/Data', !Betzy
-  DataPath(3) = '/cluster/projects/nn2890k/Data', !Fram
+  DataPath(3) = '/projappl/project_465000527/emep/Data', !LUMI
   DataPath(4) = '/ec/res4/hpcperm/fan/Data', !Atos
 !-------- Experiment Description
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc

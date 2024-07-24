@@ -813,7 +813,8 @@ contains
     end if
     old_daynumber = daynumber
 
-    if(MasterProc) write(*,*) dtxt//" day, pfts? ", daynumber, USES%PFT_MAPS, GlobRun
+    if(MasterProc .and. (DEBUG%LANDUSE>0.or.my_first_call)) &
+         write(*,*)dtxt//" day, pfts? ", daynumber, USES%PFT_MAPS, GlobRun
     if(dbgProc ) write(*,"(a,5i5,2L2)") dtxt//" debug me i j pft? ", me, &
          debug_li, debug_lj, limax, ljmax, USES%PFT_MAPS
 
