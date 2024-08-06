@@ -331,7 +331,7 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,projection)
   integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
   real :: wrf_POLE_LAT=0.0
   character (len = 30) ::MAP_PROJ_CHAR
-  integer :: NTime_Read
+  integer :: NTime_Read, varid
   real :: TimesInDays(1000)
 
 
@@ -346,6 +346,10 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,projection)
 
      projection=''
      status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+     if(status/=nf90_noerr) then
+        status = nf90_inq_varid(ncid=ncFileID, name="projection_lambert", varID=varID)
+        if(status==nf90_noerr) projection = 'lambert'
+     end if
      if(status/=nf90_noerr) then
         ! WRF projection format
         call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ",wrf_proj_code))
@@ -537,7 +541,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
   real :: x1,x2,x3,x4,P0,x,y,mpi_out,r,t
   logical::found_hybrid=.false.,found_metlevels=.false.
   real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
-  real :: P,rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lat
+  real :: P,rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lat,lat2(2)
   integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
   real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
@@ -586,9 +590,11 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
   case('lambert')
     status = nf90_inq_dimid(ncid=ncFileID, name="x", dimID=idimID)
+  if(MasterProc)print *,'x',status
     if(status/=nf90_noerr)& ! WRF format
       call check(nf90_inq_dimid(ncid=ncFileID, name="west_east", dimID=idimID))
     status = nf90_inq_dimid(ncid=ncFileID, name="y", dimID=jdimID)
+  if(MasterProc)print *,'y',status
     if(status/=nf90_noerr)& ! WRF format
       call check(nf90_inq_dimid(ncid=ncFileID, name="south_north", dimID=jdimID))
   case('lon lat')
@@ -610,6 +616,13 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
   
   !get global attributes
   status = nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M)
+  if(status/=nf90_noerr)then
+     if(projection=='lambert')then
+        call check(nf90_inq_varid(ncid=ncFileID, name="y", varID=varID))
+        status = nf90_get_var(ncFileID, varID,lat2 , count=(/2/)   )
+        if(status==nf90_noerr)GRIDWIDTH_M=lat2(2)-lat2(1)
+     end if
+  end if
   if(status/=nf90_noerr)then
     !WRF  format
     call check(nf90_get_att(ncFileID,nf90_global,"DX",GRIDWIDTH_M))
@@ -696,7 +709,7 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       endif
       if(MasterProc)then
         if(abs(earth_radius - earth_radius_lambert)>1.0)&
-            write(*,*)'WARING: Using a new Earth Radius ',earth_radius_lambert
+            write(*,*)'WARNING: Using a new Earth Radius ',earth_radius_lambert
       end if
       earth_radius = earth_radius_lambert
       !status = nf90_get_att(ncFileID,nf90_global,"standard_parallel",(/lat_stand1_lambert,lat_stand2_lambert/))!standard latitude at which mapping factor=1

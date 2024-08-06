@@ -199,7 +199,6 @@ module Ammonium_mod
      !   in order to have same structure as with EQSAM and MARS 
      !-------------------------------------------------------------------------
 
- use ChemSpecs_mod,         only : species_adv,species
  use ZchemData_mod, only :  xn => xn_2d
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
    real, dimension(KCHEMTOP:KMAX_MID) :: eqnh3, delteq

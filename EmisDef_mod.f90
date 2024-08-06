@@ -48,7 +48,7 @@ private
     !  of emission files and sector splits.                                 !
     !-----------------------------------------------------------------------!
 
-integer i, j
+integer :: i
 
 ! Sector specific information
 integer, parameter, public :: NSECTORS_MAX =  50  ! Max. total number of sector included

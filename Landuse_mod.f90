@@ -529,7 +529,7 @@ contains
    ! MERGE inner and outer maps (Euro and Glob usually)
 
     if ( nFiles > 1 ) then  ! we need to merge
-      if ( debug_proc ) write(*,'(a,i3,f12.4,5i6)'), dtxt//"F3  START", &
+      if ( debug_proc ) write(*,'(a,i3,f12.4,5i6)') dtxt//"F3  START", &
            NLand_codes, landuse_tot(debug_li,debug_lj), me, &
                     limax, ljmax, debug_li, debug_lj
       do j = 1, ljmax
@@ -813,7 +813,8 @@ contains
     end if
     old_daynumber = daynumber
 
-    if(MasterProc) write(*,*) dtxt//" day, pfts? ", daynumber, USES%PFT_MAPS, GlobRun
+    if(MasterProc .and. (DEBUG%LANDUSE>0.or.my_first_call)) &
+         write(*,*)dtxt//" day, pfts? ", daynumber, USES%PFT_MAPS, GlobRun
     if(dbgProc ) write(*,"(a,5i5,2L2)") dtxt//" debug me i j pft? ", me, &
          debug_li, debug_lj, limax, ljmax, USES%PFT_MAPS
 

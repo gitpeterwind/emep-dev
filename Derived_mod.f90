@@ -244,8 +244,11 @@ subroutine Init_Derived()
   !associate ( D=> DDdefs(iddefPMc) ) !does not work with gfortran
   fracPM25 = LogNormFracBelow(DDdefs(iddefPMc)%umDpgV, &
        DDdefs(iddefPMc)%sigma, 2.5, 0.001*DDdefs(iddefPMc)%rho_p)
-  if(MasterProc) write(*,*) dtxt//"fracPM25 ", DDdefs(iddefPMc)%umDpgV, &
-       trim(DDdefs(iddefPMc)%name), fracPM25
+  if(MasterProc) write(*,"(a,4(1x,a,f7.3))") dtxt//"fracPM25 ",&
+     "umDpgV", DDdefs(iddefPMc)%umDpgV, &
+     "sig", DDdefs(iddefPMc)%sigma, &
+     "rho", 0.001*DDdefs(iddefPMc)%rho_p, &
+     trim(DDdefs(iddefPMc)%name), fracPM25
   !end associate ! D=> DDdefs(iddefPMc) )
 
 !  select case(nint(DDdefs(iddefPMc)%umDpgV*10))
@@ -997,10 +1000,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax,iem, nerr=0
-  integer :: isec_poll,isec,iisec,ii,ipoll,itemp
-  real :: default_frac,tot_frac,loc_frac_corr
+  integer :: isec,ii,itemp
   character(len=*), parameter :: dtxt='Deriv:'
-  real pp, temp, qsat
+  real pp, qsat
   real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:),D8_26Max(:,:,:)
 
   logical, save :: make_MaxD8M_nth = .false.
@@ -1189,6 +1191,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "SurfAreaDUC_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
+      end forall
+    case ( "SurfAreaSSF_LS_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F_LS,i,j)
+      end forall
+    case ( "SurfAreaSSC_LS_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C_LS,i,j)
+      end forall
+    case ( "SurfAreaPMF_EQUI_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F_EQUI,i,j)
       end forall
 
     case ( "u_ref" )

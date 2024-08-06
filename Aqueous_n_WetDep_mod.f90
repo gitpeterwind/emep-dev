@@ -50,7 +50,8 @@ use DerivedFields_mod,  only: f_2d, d_2d     ! Contains Wet deposition fields
 use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping, nwdep
 use GridValues_mod,     only: gridwidth_m,xm2,dA,dB,i_fdom,j_fdom,A_mid,B_mid
 use Io_mod,             only: IO_DEBUG, datewrite
-use LocalFractions_mod, only: lf_wetdep, wetdep_lf
+use LocalFractions_mod, only: lf_wetdep, wetdep_lf,lf_Nvert,lf_fullchem,lf_aqu_pre&
+                              ,lf_aqu_pos,AQRCK_lf,fgasso2_lf
 use MassBudget_mod,     only : wdeploss,totwdep
 use MetFields_mod,       only: pr, roa, z_bnd, cc3d, cw_met
 use MetFields_mod,       only: ps
@@ -90,10 +91,11 @@ real, private, save,allocatable, dimension(:) :: &
 integer, private, save  :: kcloudtop   ! k-level of highest-cloud
 integer, private, save  :: ksubcloud   ! k-level just below cloud
 
-real, private, parameter :: & ! Define limits for "cloud"
-  PR_LIMIT = 1.0e-7,  &      ! for accumulated precipitation
-  CW_LIMIT = 1.0e-7, &      ! for cloud water, kg(H2O)/kg(air)
-  B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+! May 2024: now in config:
+!real, private, parameter :: & ! Define limits for "cloud"
+!  CW_LIMIT = 1.0e-7, &      ! for cloud water, kg(H2O)/kg(air)
+!  B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+!  PR_LIMIT = 1.0e-7,  &      ! for accumulated precipitation
 
 !hf  real, private, save :: &      ! Set in init below
 !hf      INV_Hplus          &      ! = 1.0/Hplus       (1/H+)
@@ -137,8 +139,8 @@ real, private, dimension(NAQRCT,CHEMTMIN:CHEMTMAX), save :: aqrcT
 
 real, public, save,allocatable, dimension(:,:) :: aqrck
                                                  ! aq. reaction rates
-						 ! transferred to chemistry
-						 ! (CM_Reactions1(2).inc)
+                                                 ! transferred to chemistry
+                                                 ! (CM_Reactions1(2).inc)
 
 logical, public,save :: prclouds_present      ! true if precipitating clouds
 
@@ -197,7 +199,7 @@ integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_mod
 contains
 
 subroutine Init_WetDep()
-  integer :: iadv, igrp, icalc, n, nc, f2d, alloc_err
+  integer :: iadv, igrp, n, f2d, alloc_err
   character(len=30) :: dname
 
 
@@ -285,6 +287,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
   real, dimension(KUPPER:KMAX_MID) :: &
     b,           &  ! Cloud-area (fraction)
+    cw_gm2grid,   &  ! Cloud-water per m2 grid (rho*cw_met * 1.0e3)
     cloudwater,  &  ! Cloud-water (volume mixing ratio, H2O/air)
                     ! cloudwater = 1.e-6 same as 1.g m^-3
     pres            ! Pressure (Pa)
@@ -307,7 +310,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
     pres(k)=A_mid(k)+B_mid(k)*ps(i,j,1)
   end do
 
-  prclouds_present=(pr_acc(KMAX_MID)>PR_LIMIT) ! --> precipitation at the surface
+  prclouds_present=(pr_acc(KMAX_MID)>USES%PR_LIMIT) ! --> precipitation at the surface
 
 ! initialise with .false. and 0:
   incloud(:)  = .false.
@@ -321,11 +324,18 @@ subroutine Setup_Clouds(i,j,debug_flag)
 ! Loop starting at surface finding the cloud base:
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
   do k = KMAX_MID, KUPPER, -1
-    if(cc3d(i,j,k,1) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT) exit
+     b(k) = cc3d(i,j,k,1)
+     cw_gm2grid(k) = 1.0e3*roa(i,j,k,1) * cw_met(i,j,k,1)
+  end do
+  do k = KMAX_MID, KUPPER, -1
+    ! roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06 checks that the
+    ! in-cloud liquid water content is at least that of fog (0.06 g/m3)
+    if(b(k) > USES%B_LIMIT .and. cw_met(i,j,k,1) > USES%CW_LIMIT ) then
+      !if ( (roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)) * 1e3 > 0.06) exit
+      if ( cw_gm2grid(k) / b(k) > 0.06) exit
+    endif
     ksubcloud = k
   end do
-
-
 
   if(ksubcloud /= KUPPER)then 
      !clouds were found under KUPPER
@@ -334,14 +344,14 @@ subroutine Setup_Clouds(i,j,debug_flag)
      ! and cloud fractions are above limit values
      kcloudtop = -1               ! k-level of cloud top
 
-
      do k = KUPPER, ksubcloud-1
-        b(k) = cc3d(i,j,k,1)
         ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
         ! ==> cloudwater (volume mixing ratio of water to air *in cloud*)
         ! (it is divided by cloud fraction b )
 
-        if(b(k) > B_LIMIT .and. cw_met(i,j,k,1) > CW_LIMIT ) then
+        if(b(k) > USES%B_LIMIT .and. cw_met(i,j,k,1) > USES%CW_LIMIT) then
+          !if( roa(i,j,k,1) * cw_met(i,j,k,1) / b(k) * 1e3 > 0.06) then
+          if( cw_gm2grid(k) / b(k) > 0.06 .and. cw_gm2grid(k) / b(k) < 3.00 ) then
            ! value of cloudwater in the cloud fraction of the grid in units
            ! vol(water)/vol(air)
            ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise
@@ -351,10 +361,12 @@ subroutine Setup_Clouds(i,j,debug_flag)
            if ( USES%FIXED_CLW > 0.0  ) then
              cloudwater(k) = USES%FIXED_CLW
            else ! calculate from NWP data
-             cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+             !cloudwater(k) = 1.0e-3 * roa(i,j,k,1) * cw_met(i,j,k,1) / b(k)
+             cloudwater(k) = 1.0e-6 * min( cw_gm2grid(k) / b(k), 3.0) ! TEST upper limit
            end if 
            incloud(k) = .true.
            if(kcloudtop<0) kcloudtop = k
+          end if ! > 0.06 kg/kg
         end if
      end do  ! k inside cloud loop
 
@@ -374,17 +386,12 @@ subroutine Setup_Clouds(i,j,debug_flag)
       kcloudtop = -999 ! used as label for no cloud 
   endif   !  ksubcloud /= KUPPER
 
-
-
-  
  ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
  ! fractional solubility
 
  !need to be called also if no clouds for non-cloud rates
- !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
-
-
-
+  !DSJ18 Query. Couldn't we just set AQRCK etc tozero if kcloudtop < 1
+  
    call setup_aqurates(b ,cloudwater,incloud,pres)
 !  Calculates arrays with temperature dependent aqueous phase
 !  equilibrium rates and aqueous phase reaction rates
@@ -518,9 +525,6 @@ end subroutine tabulate_aqueous
 !-----------------------------------------------------------------------
 
 
-
-
-
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -561,12 +565,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
   real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
-  integer k, iter
+  integer k, iter, lf_niter, lf_iter
   integer :: SO2, SO4, NO3_f, NH4_f, NH3, HNO3
   real :: pH1,pH2,pHnew,pHout1,pHout2,pHoutnew,h_plusnew
   
-  integer, parameter:: N_ITER=40 !each iteration divides the error in two
-  real, parameter :: phThres = 1.0E-6 !just to verify result.
+  integer, parameter:: N_ITER=45 !each iteration divides the error in two
+  real, parameter :: phThres1 = 1.0E-6 !still acceptable
+  real, parameter :: phThres2 = 1.0E-9 !converged
   
   SO2 = SO2_ix
   call CheckStop( SO2_ix<1, "Aqueous: SO2 not defined" )
@@ -588,7 +593,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! initialize:
   aqrck(:,:) = 0.
 
-! for PH
+  
+  ! for PH
 
   pH(:)=4.3!dspw 13082012
   h_plus(:)=Hplus43!dspw 13082012
@@ -600,10 +606,18 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! in cloudy air, only the part remaining in gas phase (not
 ! dissolved) is oxidized
   aqrck(ICLOHSO2,:) = 1.0
+  Fgas(SO2,:) = 1.0
 
   do k = KUPPER,KMAX_MID
-     if(.not.incloud(k)) cycle ! Vf > 1.0e-10)
-
+     if(.not.incloud(k)) then
+        if(USES%LocalFractions) call lf_aqu_pre(k,-1) !only initializations
+        cycle ! Vf > 1.0e-10)
+     end if
+     lf_niter = 1
+     if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) lf_niter = 5
+     do lf_iter=1, lf_niter !only used for LocalFractions, otherwise just one "iteration"
+     call lf_aqu_pre(k,lf_iter) !only used for LocalFractions
+     
      !  pwjoj (Jan 2023):
      !  we dissolve only the part which is inside the cloud,
      !  So the concentrations on the lhs are concentrations
@@ -695,6 +709,17 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
           pHout2=pHoutnew
        else
           !we replace either pH1 or pH2. They must be on each side of the diagonal
+          if(iter==N_ITER)then
+             !check that we are close to the solution
+             if(abs(pHnew-pHoutnew)>pHThres1)then
+                write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
+                write(*,*)'input values: k, T, phfactor, clw ',k,itemp(k),phfactor(k),cloudwater(k)
+             end if
+          end if
+          if(abs(pHout2-pHout1)<phThres2)then
+             pHnew = (pHout2+pHout1)/2
+             exit !converged
+          end if
           if((pH1-pHout1)*(pH2-pHout2)<=0)then
              if((pH1-pHout1)*(pHnew-pHoutnew)<=0)then
                 !we keep pH1 and the new pH
@@ -707,7 +732,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
              end if
           else
              !something went wrong
-              if(abs(pHnew-pHoutnew)<pHThres)then
+              if(abs(pHnew-pHoutnew)<pHThres1)then
                  !we are close enough to convergence
               else
                  pH(k)=5.5
@@ -715,12 +740,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
               end if
               exit
            end if
-           if(iter==N_ITER)then
-             !check that we are close to the solution
-             if(abs(pHnew-pHoutnew)>pHThres)then
-                write(*,*)'Warning: pH did not converge properly ',pH1,pHout1,pH2,pHout2,pHnew,pHoutnew
-             end if
-          end if
+           
+           if(abs(pHout2-pHout1)<phThres2)then
+              exit !converged
+           end if
         endif       
     end do  ! iter   Iteration completed and concentration derived pH
             !        and H+ used below to calculate pH dependent
@@ -729,7 +752,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     pH(k)=pHnew
     h_plus(k)=exp(-pH(k)*log(10.))
 
-!!!!!!  pH iteration fiished   !!!!!!!!!
+!!!!!!  pH iteration finished   !!!!!!!!!
 
 
 
@@ -744,14 +767,15 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
     K1K2_fac = 1.0  &   
              + K1(itemp(k)) * invhplus &
-	     + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
+             + K1(itemp(k))*K2(itemp(k)) * (invhplus**2)
 
     Heff  = H(IH_SO2,itemp(k)) * K1K2_fac
 
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( Heff*VfRT(k) ) )
     
     fso2grid(k) = b(k) * frac_aq(IH_SO2,k)   !  frac of S(IV) in grid
-                                             !  in aqueous phas - Saq/(Saq + Sg)
+    !  in aqueous phas - Saq/(Saq + Sg)
+
     fso2aq  (k) = fso2grid(k) / K1K2_fac     ! frac of SO2 in total grid
                                              ! in aqueous phase
 
@@ -774,16 +798,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   ! oh + so2 gas-phase
     aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) ! now correction factor!
     Fgas(SO2,k) = 1.0-fso2grid(k)
-                                            ! as part of SO2 not in gas phase
+
+    ! as part of SO2 not in gas phase
   !  aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) * &
   !    IUPAC_TROE(2.8e-31*EXP(2.6*(LOG(300/temp(k)))),2.0e-12,EXP(-temp(k)/472.0),M(k),0.75-1.27*(-temp(k)/472.0)/LOG(10.0))
 
   !  HO2g ----> 0.5 H2O2
     aqrck(ICLHO2H2O2,k) = 0.066 * cloudwater(k)* 1.e6 * b(k)
-
-
-
-
 
 
 !  Incloud oxidation of Siv to Svi by H2O2
@@ -795,7 +816,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !!  Incloud oxidation of Siv to Svi by O3
     aqrck(ICLRC2,k)   = ( aqrcC_O3 * fso2aq(k)    &  ! with SO2aq
                       +   aqrcT(S2_O3,itemp(k)) * fhso3(k)     &  ! with HSO3-
-		      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
+                      +   aqrcT(S3_O3,itemp(k)) * fso3(k) )    &  ! with SO3--
                       *   frac_aq(IH_O3,k)/cloudwater(k) 
 
 !    aqrck(ICLRC2,k)   = 1.8e4 * 1.0e3 * frac_aq(IH_O3,k) &
@@ -807,6 +828,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !  Incloud oxidation of Siv to Svi by O2 
     aqrck(ICLRC3,k)   = 3.3e-10 *  fso2grid(k)/ cloudwater(k) * MASSTRLIM
 
+    call lf_aqu_pos(k,lf_iter, aqrck)
+    end do
+    
 !!!!!! (so2aq + hso3-) + o2 ( + Fe ) --> so4, see documentation below
 !!!!!!!  aqrc(3) = 3.3e-10  * MASSTRLIM
 
@@ -831,6 +855,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !    aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
 
   end do
+
 end subroutine setup_aqurates
 !-----------------------------------------------------------------------
 

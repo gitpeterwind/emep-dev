@@ -82,7 +82,8 @@ module Biogenics_mod
   !/-- subroutines for soil NO
   public :: Set_SoilNOx
   integer :: h
-  real, dimension(24), parameter :: hourlySoilFac = [ (1.0 + 0.4 * cos(2*PI*(h-13)/24.0), h=0,23) ]
+  !OLD real, dimension(24), parameter :: hourlySoilFac = 
+  ! [ (1.0 + 0.4 * cos(2*PI*(h-13)/24.0), h=0,23) ]
 
   integer, public, parameter ::   NBVOC = 3
   character(len=4),public, save, dimension(NBVOC) :: &
@@ -168,7 +169,7 @@ module Biogenics_mod
   real, public, save, dimension(N_ECF,40) :: canopy_ecf  ! Canopy env. factors
 
  ! Indices for the species defined in this routine. Only set if found
-  integer, private, save :: itot_C5H8,  itot_TERP,  itot_NO , itot_NH3
+  integer, private, save :: itot_NO , itot_NH3
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -663,6 +664,8 @@ module Biogenics_mod
          SoilNOx3D(i,j,gmt_3hour)/Grid%DeltaZ * 1.0e-6
 
     end if ! USES%SOILNOX_METHOD
+    ! July 2024. Emissions should be as mg(NO)/m2, not mg(N) as before
+      EmisNat(NATBIO%NO,i,j) =  EmisNat(NATBIO%NO,i,j) * 30.0/14.0
   end if ! USES%SOILNOX
 
     !EXPERIMENTAL

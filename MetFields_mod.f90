@@ -283,7 +283,9 @@ module MetFields_mod
      real, pointer, dimension(:,:,:)::field_shared
      logical, pointer :: ready ! The field must be present in the external meteo file
      logical, pointer :: copied ! The field must be present in the external meteo file
-  end type metfield
+     character(len = 100) :: alternative_name(5) = 'notset' !other name that can be used
+     character(len = 100) :: alternative_namefound ='notset' !other name that will be used
+ end type metfield
   logical, public,save, target::ready=.false.,copied=.false.
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields
@@ -330,6 +332,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
+  met(ix)%alternative_name(1) = 'x_wind'
   allocate(u_xmj(0:LIMAX,1:LJMAX,KMAX_MID,NMET))
   u_xmj=0.0
   met(ix)%field(0:LIMAX,1:LJMAX,1:KMAX_MID,1:NMET)  => u_xmj
@@ -345,6 +348,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
+  met(ix)%alternative_name(1) = 'y_wind'
   allocate(v_xmi(1:LIMAX,0:LJMAX,KMAX_MID,NMET))
   v_xmi=0.0
   met(ix)%field(1:LIMAX,0:LJMAX,1:KMAX_MID,1:NMET)  => v_xmi
@@ -375,6 +379,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
+  met(ix)%alternative_name(1) = 'air_temperature_ml'
   allocate(th(LIMAX,LJMAX,KMAX_MID,NMET))
   th=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:NMET)  => th
@@ -649,9 +654,8 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   ! If we ask for this, we need it.
   if ( PBL%HmixMethod == 'NWP' )  then
     met(ix)%needed = .true.
-    met(ix)%needed = .false. ! DS testing
+    met(ix)%needed = .false. ! Hack to allow later search for PBLH, pblh, pbl
     met(ix)%found            => foundHmix
-    pbl_nwp=0.0
   else
     met(ix)%needed           = .false.
     met(ix)%found            = .false.
@@ -730,6 +734,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
+  met(ix)%alternative_name(1) = 'integral_of_surface_downward_sensible_heat_flux_wrt_time'
   allocate(fh(LIMAX,LJMAX,NMET))
   fh=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => fh
@@ -745,6 +750,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
+  met(ix)%alternative_name(1) = 'integral_of_surface_downward_latent_heat_evaporation_flux_wrt_time'
   allocate(fl(LIMAX,LJMAX,NMET))
   fl=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => fl
@@ -760,6 +766,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%read_meteo       = .true.
   met(ix)%needed           = .false.
   met(ix)%found            => foundtau
+  met(ix)%alternative_name(1) = 'surface_stress_northward'
   allocate(tau(LIMAX,LJMAX,NMET))
   tau=0.0
   met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:NMET)  => tau

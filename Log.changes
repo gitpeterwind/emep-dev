@@ -49,6 +49,254 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 July  2024, Peter
+
+Allow choice of different inputs for metdata: alternative names can be added,
+and special treatment for those added in a systematic way.
+
+Adaptation of code and compiler flags to more recent gnu fortran compiler.
+LUMI Makefile, and adapted Makefile.Open
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11  July  2024, Dave
+
+Biogenics_mod: EmisNat for NO scaled by 30/14, so that output Emis_mgm2_BionatNO
+is actually as NO as stated. Was as N.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10  July  2024, Dave
+
+SmallUtils_mod: increased word size in basename and basedir functions -
+ wasn't coping with some long CAMS emission names. 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2  July  2024, Dave
+
+NetCDF_mod: Allow timestamps as e.g. "days since 1990-1-1", ie without 00:00:00
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 June  2024, Peter
+
+Changed reading format for ModsCloudJ, as one compiler on LUMI did not like it.
+
+Bug in LF for "relative" type: lf_sector_map was not allocated
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 June  2024, Peter
+
+LF: Changed the eps1 for SIA to 0.95. Included aqueous reaction rate changes
+(new mk.LF_Chem not tested!)
+
+Also added small LUMI compatibility changes (DataDir in config, and defaults
+values for "loc" in ColumnSource).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 June  2024, Peter, Willem
+
+pH convergence did make lots of warnings in  global runs. The case was when
+the pH function was outputting always the same result (1 or 7), whatever start pH.
+Will slightly modify results.
+
+LF: lots of fixes for PM_Water
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 June  2024, Peter
+
+LF: sectors 14 and 15 are put into sector 1
+    sectors 6 and 16-19 into 6.
+Could easily by steered by config settings if required.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 June  2024, Dave
+NEW TAG: rv5.3 -  Aiming at code for 2023 report SR runs.
+
+Last change:
+config_emep.nml - just leave O3, NO2 as YMDH. No YMDI now (was O3)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 June  2024, Willem
+
+Added an option (turned off by default) to include a simple latitudinal gradient
+for CH4, as described in Section 4.1 of https://doi.org/10.5194/egusphere-2024-1422
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 June  2024, Peter, Willem
+
+LF filtering of unsafe values for SIA: when more than 4 molecules are created
+or destroyed for each additional molecule entering the equ module, the entire
+equ update for LF is canceled.
+LF filtering of very small values, lf_limit = 1e-5
+
+Replaced hardcoded if ( k > (KMAX_MID - 8) ) then in AerosolCalls by
+ if ( k >= KEMISTOP ) then
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May  2024, Willem
+
+Some more default changes in Config_module:
+
+- FIXED_CLW from 0.6e-6 to -999 (toggles use of CLW from input meteorology)
+
+- SEASALT_fFrac from 0.5 to 0.3 (uncertainty in binsizes allows for wiggle room)
+
+- AERO%EQUILIB and AERO%EQUILIB_WATER from 'MARS' to 'ISORROPIA' (ISORROPIA-Lite 
+  for SIA and its aerosol water uptake)
+
+- AERO%ORGANIC_WATER from .false. to .true. to take into account water uptake
+  by OM in ISORROPIA
+
+- AERO%OM_KAPPA from 0.15 to 0.087 to reflect that our OM is a mixture of organic
+  compounds, with 0.087 being representative of OM/OC = 1.7
+
+- AERO%ThermoH2OSurfArea from .false. to .true. to use equilibrium PMf water 
+  and sea-salt water from Lewis & Schwartz in surface area calculations
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May  2024, Dave
+
+Config_module  changed  to "HuangOCC", which is a function of OH, O3, H2O.
+Not better than old ("ACP2012"), but removes unphysical use of layer number.
+(Should change name later though - Croft and others should get most of credit.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May  2024, Peter
+
+Better convergence for pH -> No more pH "warnings".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 May  2024, Willem
+
+Changed the default lower RH limit from 5% to 15% for increased numerical stability 
+when using ISORROPIA. The ISORROPIA lower temperature limit within the lowest 
+layers (where pollutants might be emitted) is also set to a minimum of 255K, up
+from 250K. Both the RH and temperature change do not impact the simulation 
+results, while increasing numerical stability a bit when using ISORROPIA. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 May  2024, Willem
+
+Added the option to use aerosol water from the thermodynamics modules to 
+calculate wet areasol surface area. Turned off by default, but can be turned on
+by setting AERO%ThermoH2OSurfArea = T (being defined in AeroConstants_mod).
+
+Water uptake associated with different aerosol options (e.g., inclusion of dust
+cations or organic water uptake) remains consistent with those available for the
+different modules (e.g., MARS cannot consider effects of dust cations, thus fine
+dust is assumed to be dry in the surface area calculations).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 May  2024, Peter, Dave
+
+  Fixed bug for ugm3_pmH2O outputs.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 May  2024, Dave, Willem
+
+Aqueous_mod, Config_mod:  moveed PR_LIMIT, B_LIMIT, CW_LIMIT to config system
+
+Aquous_mod: added cw_gm2grid usage, limit of CLW to 0.6 - 3 g/kg.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 May  2024, Peter
+
+Makefile: changed nc-config to nf_config for Atos
+NB: the debug flags does not work anymore (-ftrapuv ?).
+
+Some more diagnostic outputs when pH does not converge.
+
+LF: repaired POD output. rctA and rctB disabled (they had little effect anyway)
+LF%Nvert default set to 14.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13 May  2024, Peter
+
+LF for Isorropia. (NB: gives relatively large differences with BF)
+Reduced max value for lf derivatives in equilibrium chemistry to 10.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 May  2024, Peter
+
+Setup_Clouds: b(k) was not defined in second loop. (the first loop is below 
+clouds, the second within clouds)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6-7 May  2024, Dave/Peter
+
+Aqueous_...
+Setup_Clouds: small tidy up and safety change. Don't assume order of terms in
+ if test evaluated left to right, even if they probably are. 
+MetFields_mod: removed pbl=0 line which was before allocation.
+
+gfortran tidy-ups:
+  config_emep.nml - removed some side-comments that caused crash.
+   TO-DO check if AOT etc should use WH or WH_Irrig
+  AeroFunctions : just removing unused variables
+  Ammonium_mod:just removing unused variables
+  Aqueous_n_WetDep_mod
+  Biogenics_mod.f90
+  ChemFunctions_mod.f90
+  Convection_mod.f90
+  Derived_mod
+  DryDep_mod.f90
+  EmisDef_mod: just removing unused variable
+  EmisGet_mod: just removing unused variable
+  ExternalBICs_mod: added dtxt usage
+  LocalFractions_mod:  changed if(found) to if(found==1)
+  Met_mod
+  Setup_1d_mod
+  Timefactors_mod: corrected print format.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5 May  2024, Peter /Dave
+
+Bug fix: Setup_Clouds, ksubcloud was not set properly, because it used
+undefined b(k)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 May  2024, Peter /Dave
+
+** Interim commit. n2 vs n6 issues solved for gases, but remain for pmH2O
+
+Aqueous_mod: added Fgas(SO2,:) = 1
+
+Setup_1d_mod, RunChem_mod
+
+1. call to setChemRates moved to be after Setup_Clouds so that Fgas(SO2) is set
+correctly.
+2. Some code moved to checkChemRates, called after setChemRates.
+
+Met_mod: tiny clean-up
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2 May  2024, Willem
+
+Added a lower limit on the in-cloud liquid water content in case cloud liquid
+water from the input meteorology is used (USES%FIXED_CLW < 0). The lower limit
+corresponds to the in-cloud liquid water content representative of fog (0.06 g/m3).
+
+This seems to avoid problems when clouds are mostly in ice form, sometimes giving
+very low in-cloud liquid water contents. 
+
+Also set the default thermodynamics RH limit to 98%, following equilibrium time-scale
+discussions with A. Nenes. Avoids rapid 'blowing up' of aerosol liquid water at very 
+high RH values, while also making source-receptor calculations a bit more stable. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 Apr  2024, Peter
+
+(Small) instability in interpolation. Affected at least Aircraft emissions.
+When two real numbers where exactly equal, it could lead to different results
+in the interpoaltion. This can happen when two grids are compared and the
+gridcell boundaries match some pattern. It happened when the Surface pressure
+read from a file is read for the aircraft emissions. The result was not wrong,
+just that it can take different values, for example if the number of procs is
+changed.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Apr  2024, Dave
+
+  ChemRates_mod: safety check added for ECageMethod
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 Apr  2024, Dave
+
+Derived_mod: added more explicit output of fracPM25 details to olog. 
+Gives:
+  IniDeriv:fracPM25  umDpgV  3.000 sig  2.000 rho  2.200 PMc  0.203
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Apr  2024, Dave
 
 Added EC-aging options, configarable with USES based upon Croft et al

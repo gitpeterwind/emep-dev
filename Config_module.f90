@@ -214,6 +214,7 @@ type, public :: emep_useconfig
     ,CLOUDICE         = .true.  & ! flag to force reading in cloud ice water content or not
     ,CLIMSTRATO3      = .true.  & ! set to true use climatological overhead stratospheric O3 (default)
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
+    ,CH4GRADIENT      = .false. & ! set to true to enable simplified lat. CH4 gradient
     ,AMINEAQ          = .false. & ! MKPS
 !    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)
@@ -233,12 +234,17 @@ type, public :: emep_useconfig
     ,BACTERIA         = .true. &!Only gets activated if PBAP = .true.
     ,MARINE_OA        = .true. !Only gets activated if PBAP = .true.
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
-  real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
+  real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
 ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
 ! from NWP values. (In future NWP will be used by default, but we are
-! invesigating some pH calculation issues. For safety, use FIXED_CLW
-  real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
+! invesigating some pH calculation issues. For safety, can use FIXED_CLW = 0.6e-6
+  real :: FIXED_CLW   = -999      ! cloud liquid water (vol-H2O/vol-Air)
+!Define limits for "cloud"
+  real :: PR_LIMIT = 1.0e-7         ! for accumulated precipitation
+  real :: CW_LIMIT = 1.0e-7         ! for cloud water, kg(H2O)/kg(air)
+  real :: B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
 !Species where we want to include "tail" of  course mode into PM25
@@ -251,7 +257,7 @@ type, public :: emep_useconfig
  ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
  ! methods later.
   character(len=20) ::FFireDispMethod = "PBL" ! to PBL height. Alt=P800, to 800 hPa, std. atmos.
-  character(len=20) ::ECageMethod = "ACP2012" ! or Liu2011
+  character(len=20) ::ECageMethod = "HuangOCC" ! or Liu2011
   real              ::ECageFac    = 1.0
 
 
@@ -460,8 +466,6 @@ integer, public, parameter :: &
   ,NXTRA_SITE_D2D  =   18       ! No.  params from d_2d fields
 integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
-integer, private :: isite              ! To assign arrays, if needed
-
 !**** Sonde outputs   (used in Sites_mod)
 !==============================================================
 !     Specify the species to be output to the sondes.out file
@@ -526,7 +530,7 @@ type, private :: sites_t
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
 end type sites_t
-type(sites_t),save :: site_outputs, sonde_outputs
+!NOTUSED type(sites_t),save :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
@@ -872,11 +876,10 @@ contains
 subroutine Config_Constants(iolog)
   integer, intent(in) :: iolog ! for Log file
 
-  integer :: i, j, nj, ispec, iostat
+  integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
-  character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -1233,7 +1236,6 @@ end subroutine associate_File
 
 subroutine define_chemicals_indices()
   !we set values for species indices if they are defined, -1 if they don't
-  integer :: ix
   O3_ix = find_index('O3' ,species(:)%name)
   SO2_ix = find_index('SO2' ,species(:)%name)
   NO2_ix = find_index('NO2' ,species(:)%name)

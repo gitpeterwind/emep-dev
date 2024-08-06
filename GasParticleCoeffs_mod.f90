@@ -494,10 +494,13 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
 !!  This T-dep fits changes in nu_air and kt from Garratt A3 very
 !!  well also.
 
-  subroutine InitGasCoeffs()
+  subroutine InitGasCoeffs(debug_flag)
+    logical, intent(in), optional :: debug_flag
+    logical, save :: debug = .false.
     integer :: iO3, icmp, idef
     real :: DxO3
-
+    if( present(debug_flag) ) debug = debug_flag
+    
      iO3 = find_index('O3',DDdefs(:)%name)
      DxO3 = DDdefs(iO3)%Dx
 
@@ -522,7 +525,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
        DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
 
 !       if(MasterProc) write(*,'(a,3i4,es10.3)') 'DD_ind', icmp, idef, io3, DxO3
-       if(MasterProc) write(*,fmt) "DD_Ini: "//trim(DDspec(icmp)%name) &
+       if(MasterProc .and. debug) write(*,fmt) "DD_Ini: "//trim(DDspec(icmp)%name) &
 !NOT RELEVANT: always same here      //' as:'//trim(DDdefs(idef)%name), &
        !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
          ,"Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3 &
@@ -609,7 +612,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
       !... mass median diameter -> geometric diameter 
             !CHECK Dp DDspec(icmp)%Dg = exp(log(DDspec(icmp)%Dp)-3* DDspec(icmp)%lnsig2)
       !DONE?  DDspec(icmp)%Dg = exp(log(DDspec(icmp)%DpgV)-3* DDspec(icmp)%lnsig2)
-      if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
+      if(MasterProc .and. debug) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
               "Dp=", DDspec(icmp)%DpgV, "DpgN=",DDspec(icmp)%DpgN
 
       !QUERY knut = 2*FREEPATH/DDspec(icmp)%Dg   ! Knut's number
@@ -617,7 +620,7 @@ if(MasterProc) print *, "DDDEF ", DDdefs(2)%name, DDdefs(2)%Dx
 
       DDspec(icmp)%sigterm = exp(-2.5*lnSig2)+1.246*knut*exp(-4*lnSig2) !A29,dpk,k=3 
 
-      if(MasterProc) write(*,"(a,2i4,2a8,10es10.2)") &
+      if(MasterProc .and. debug) write(*,"(a,2i4,2a8,10es10.2)") &
         "PMi,sig,Dp,Dg,Kn,sigterm: ",icmp, idef,  trim(DDspec(icmp)%name), &
          trim(DDdefs(idef)%name), DDspec(icmp)%sigma, DDspec(icmp)%DpgV,&
          DDspec(icmp)%DpgN, knut, DDspec(icmp)%sigterm

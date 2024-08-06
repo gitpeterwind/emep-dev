@@ -10,7 +10,7 @@
 
 echo "Before starting, you must copy (not cut) the ASO from CM_Reactions2 to CM_Reactions1"
 echo "and move (cut and past) SO4, NO3_c and NH3 from CM_Reactions2 to CM_Reactions1"
-echo "and check that 101 and 98 and 97 are the indices to use for SurfArea dependents rct"
+#echo "and check that 101 and 98 and 97 are the indices to use for SurfArea dependents rct"
 
 
 #test if the CM_Reactions1.inc has already been transformed
@@ -43,9 +43,12 @@ do
   sed -i "/ xnew_lf(1:Nd,$species) =.*/i  P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivemis,$species) \n" CM_Reactions1_tmp.inc
 done
 
-sed -i 's/rct(101,k)/(rct(101,k) * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
-sed -i 's/rct(98,k)/(rct(98,k)  * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
-sed -i 's/rct(97,k)/(rct(97,k)  * (1.0 + rctB_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
+sed -i 's/AQRCK(/AQRCK_LF(1:Nd,/g' CM_Reactions1_tmp.inc
+sed -i 's/rct(96,k)/rct(96,k)*fgasso2_lf(1:Nd,k)/g' CM_Reactions1_tmp.inc
+
+#sed -i 's/rct(101,k)/(rct(101,k) * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
+#sed -i 's/rct(98,k)/(rct(98,k)  * (1.0 + rctA_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
+#sed -i 's/rct(97,k)/(rct(97,k)  * (1.0 + rctB_lf(1:Nd)))/g' CM_Reactions1_tmp.inc
 
 cat CM_Reactions1_tmp.inc >> CM_Reactions1.inc
 echo "CM_Reactions1.inc successfully adapted to LF calculations"
@@ -61,6 +64,9 @@ do
 sed -i "/ASOC_ug1e3/,/BSOC_ug1e3/ s/xold($species)/xold_lf(Nd+1:Nd+NSOA,$species)/g" CM_Reactions2.inc
 sed -i "/ASOC_ug1e3/,/BSOC_ug1e3/ s/xnew($species)/xnew_lf(Nd+1:Nd+NSOA,$species)/g" CM_Reactions2.inc
 done
+
+sed -i '/lf_fullchem/,/BSOC_ug1e3/ s/AQRCK(/AQRCK_LF(1:Nd,/g' CM_Reactions2.inc
+sed -i '/lf_fullchem/,/BSOC_ug1e3/ s/rct(96,k)/rct(96,k)*fgasso2_lf(1:Nd,k)/g' CM_Reactions2.inc
 
 #add endif before BSOC_ug1e3
 sed -i '/!-> BSOC_ug1e3/i endif' CM_Reactions2.inc
