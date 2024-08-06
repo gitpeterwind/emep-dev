@@ -54,7 +54,7 @@ module Debug_module
     ,ROADDUST        = .false. &
     ,RSUR            = .false. & ! Surface resistance
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL, need for some other debugs
-       ,MY_WETDEP    = .false. &
+    ,MY_WETDEP       = .false. &
     ,SEASALT         = .false. &
     ,SETUP_1DCHEM    = .false. &
     ,SETUP_1DBIO     = .false. &
@@ -64,7 +64,11 @@ module Debug_module
     ,SOLVER          = .false. &
     ,STOFLUX         = .false. &
     ,VERT_DIFF       = .false. &
-    ,VDS             = .false.
+    ,VDS             = .false. &
+    ,PBAP            = .false. &
+    ,FUNGAL_SPORES   = .false. &
+    ,BACTERIA        = .false. &
+    ,MARINE_OA       = .false. 
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option

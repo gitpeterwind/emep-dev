@@ -105,6 +105,8 @@ else # default ubuntu etc.
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
 endif
+
+
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 

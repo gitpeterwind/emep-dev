@@ -1,10 +1,10 @@
 &Model_config
-  GRID      = 'EMEP0302',
-  iyr_trend = 2018,
+  GRID      = 'EMEP01',
+  iyr_trend = 2015,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
-  enddate   = 2018,01,01,24,
+  enddate   = 2018,01,02,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -31,7 +31,7 @@
 ! Common to all:
 
   USES%SOILNOX = T, !default
-  USES%OCEAN_DMS = T, !default
+  USES%OCEAN_DMS = F, !default
 
 !TESTING:
   SitesFile = 'DataDir/sitesLLZ.txt',
@@ -69,7 +69,14 @@
   USES%DEGREEDAY_FACTORS = T, 
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
-  USES%ROADDUST          = T,            ! Only EECCA?
+  USES%ROADDUST          = F,            ! Only EECCA?
+  USES%PBAP              = T,
+  USES%FUNGAL_SPORES     = T,
+  USES%BACTERIA          = F,
+  USES%MARINE_OA         = F,
+  USES%FUNGAL_METHOD    = 'HO', 
+  USES%NOCHEM            = F,
+
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
   USES%SOILNOX_METHOD = 'Total', 
@@ -198,10 +205,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023/Inputs_DO3SE.csv',
- LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023/medMap_0.5deg.nc',
- LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023/Olson_2001_DEforEmep.nc',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_DO3SE.csv',
+ LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023_with_PBAP/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023_with_PBAP/Olson_2001_DEforEmep.nc',
 
 ! 1km PS also available    ! Can also use 1km
  LandCoverInputs%MapFile =
@@ -322,10 +329,12 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%AOT             = F,
   DEBUG%BCS             = F,   ! Boundary conditions
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
+  DEBUG%BACTERIA        = F,
   DEBUG%DERIVED         = F,   ! Derived field processing
   DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
+  DEBUG%FUNGAL_SPORES   = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
@@ -342,7 +351,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%SITES           = F,
 !  DEBUG%SITE           = 'Keldsnor',
   DEBUG%SOA             = 0,
-!  DEBUG%SOILNOX         = T,
+!  DEBUG%SOILNOX         = F,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
@@ -372,6 +381,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   ! fire_year=2015, ! use 2015 when finn1.5 climatology is used
   ! FINN_PATTERN='DataDir/ForestFire/FINN/v15/ForestFire_Emis_v15_2005-2015.nc', has records stored as 2015 values
 
+  !BBMODE = MONTHLY_AVG,
+  !persistence = 31,
+  !fire_year=2020, ! use 2020 when finn2.5mod climatology is used
+  !FINN_PATTERN='DataDir/ForestFire/FINN/v25mod/ForestFire_Emis_mod_v25_2010-2020_monmean.nc', !has records stored as 2020 values
+
 !------------------------------------------------------------
 ! Boundary condition stuff
 
@@ -379,7 +393,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   fileName_CH4_ibcs = 'DataDir/BoundaryConditions/bgnd_ch4/ch4_hist_CLE.txt' ! from CMIP6+
 
 !-------- Read/Write MODEs
-  NEST_MODE_READ = 'MONTH',        ! NONE=do nothing
+  NEST_MODE_READ = 'NONE',        ! NONE=do nothing
 ! NEST_MODE_READ = 'NHOUR',        ! every NHOURREAD
 ! NEST_MODE_READ = 'START',        ! at the start of run
 ! NEST_MODE_READ = 'RESTART',      ! at the start of run, without overwriting BC
@@ -532,6 +546,12 @@ OutputConcs=
 !      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+       'FUNGAL_SPORES_3'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !     'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !      'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !      'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+
+
 ! PM10group sub-components
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
@@ -545,6 +565,8 @@ OutputConcs=
       'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
       'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+
+
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
 ! DO NOT USE ppb!!!
       'OH'                  ,'molec' ,'2d','AIR_CONCS','SHL' ,'YM',
@@ -587,7 +609,9 @@ OutputConcs=
       'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-!      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+!     'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PBAP'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)

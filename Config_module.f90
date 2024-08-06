@@ -228,7 +228,11 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
-    ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
+    ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
+    ,PBAP            = .false. &
+    ,FUNGAL_SPORES    = .true. & !Only gets activated if PBAP = .true.
+    ,BACTERIA         = .true. &!Only gets activated if PBAP = .true.
+    ,MARINE_OA        = .true. !Only gets activated if PBAP = .true.
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
@@ -267,6 +271,10 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
+
+! Selection of Emissions parameterization for fungal
+  character(len=2) :: FUNGAL_METHOD  = 'HO'  !HM, HO, SD, HS, JS (see PBAP module)
+
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
@@ -318,7 +326,7 @@ real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
   TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USES%DUST=.true.
- ,INERIS_SNAP1       = .false.       & ! Switches off decadal trend
+ ,INERIS_SNAP1       = .false.       & ! Switches off decadal trendFUNGAL_SPORES
  ,INERIS_SNAP2       = .false.       & ! Allows near-zero summer values
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
@@ -332,6 +340,8 @@ type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
+
+
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -849,7 +859,8 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
-character(len=TXTLEN_FILE), target, save, public :: Chlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+character(len=TXTLEN_FILE), target, save, public :: OceanChlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+
 
 ! Species indices that may or may not be defined in Species
 integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
@@ -931,7 +942,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
-   ,Chlorophyll_File&
+   ,OceanChlorophyll_File&
    ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
@@ -1086,6 +1097,8 @@ subroutine Config_Constants(iolog)
      European_settings = "NO"
   end if
 
+! Fungal diameter depends on chosen scheme
+
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
@@ -1106,7 +1119,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
-  call associate_File(Chlorophyll_File)
+  call associate_File(OceanChlorophyll_File)
   call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
