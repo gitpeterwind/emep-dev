@@ -98,7 +98,7 @@ module BoundaryConditions_mod
    
    
    type :: defBIC_t     ! Simple tabulate boundary & initial conditions, in case no global BICs
-     character(len=30)  :: name       ! BIC species namej
+     character(len=30)  :: name       ! BIC species name
      real :: surf       ! Mean surface conc. (ppb)
      integer :: dmax    ! Day when concentrations peak
      real :: amp        ! amplitude of surface conc. (ppb)
