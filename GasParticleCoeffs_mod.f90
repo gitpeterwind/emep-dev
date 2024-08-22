@@ -20,7 +20,7 @@ module GasParticleCoeffs_mod
   use CheckStop_mod,         only: CheckStop, checkValid, StopAll
   use ChemDims_mod
   use ChemSpecs_mod           ! speces and define_chemicals for self_test
-  use Config_module,         only: MasterProc
+  use Config_module,         only: MasterProc  ! emep's master
   use NumberConstants,       only: UNDEF_R
   use OwnDataTypes_mod,      only: TXTLEN_SHORT
   use PhysicalConstants_mod, only: PRANDTL, BOLTZMANN, FREEPATH, PI

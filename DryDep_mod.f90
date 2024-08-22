@@ -433,7 +433,7 @@ contains
 
       if ( dbghh ) then
         call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
-           [ Grid%t2, Grid%rho_ref, 1.0e6*r_dry, 1.0e6*r_wet, DDspec(icmp)%rho_p, rho_wet, &
+           [ rh2m(i,j,1), 1.0e6*r_dry, 1.0e6*r_wet, DDspec(icmp)%rho_p, rho_wet, &
               Vs_dry, Vs_wet ] )
       end if
     end do ! icmp
