@@ -1,6 +1,6 @@
 &Model_config
-  GRID      = 'EMEP01',
-  iyr_trend = 2015,
+  GRID      = 'EMEP0302',
+  iyr_trend = 2018,
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
@@ -70,11 +70,10 @@
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
   USES%ROADDUST          = F,            ! Only EECCA?
-  USES%PBAP              = T,
   USES%FUNGAL_SPORES     = T,
   USES%BACTERIA          = F,
   USES%MARINE_OA         = F,
-  USES%FUNGAL_METHOD    = 'HO', 
+  USES%FUNGAL_METHOD    = 'HS_5', !Allowed options: HS_3, HS_5, HM, SD, JS
   USES%NOCHEM            = F,
 
 
@@ -334,14 +333,14 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%DRYDEP          = F,   ! Dry deposition
   DEBUG%DUST            = F,
   DEBUG%FORESTFIRE      = F,
-  DEBUG%FUNGAL_SPORES   = F,
+  DEBUG%FUNGAL_SPORES   = T,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0, !CAREFUL! 1 is enough usually, other LOTS of output
    DEBUG%MOSAICS         = F,
-  DEBUG%PFT_MAPS        = 0,   ! in testing
+  DEBUG%PFT_MAPS        = 0,  ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,   ! LOTS of output
   DEBUG%RUNCHEM         = F,
@@ -546,7 +545,8 @@ OutputConcs=
 !      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-       'FUNGAL_SPORES_3'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'FUNGAL_SPORES_3'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+       'FUNGAL_SPORES_5'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !      'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !      'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',

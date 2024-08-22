@@ -154,7 +154,7 @@ subroutine runchem()
 
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
-      if (USES%PBAP) &
+      if (USES%FUNGAL_SPORES .or. USES%BACTERIA .or. USES%MARINE_OA) &
           call set_PBAPs(i,j) !Adds PBAPs to rcemis
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis

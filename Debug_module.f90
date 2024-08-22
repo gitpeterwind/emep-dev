@@ -13,6 +13,7 @@ module Debug_module
     ,ADV             = .false. & ! 
     ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
     ,AQUEOUS         = .false. &
+    ,BACTERIA        = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & ! Biogenic emissions
     ,BIDIR           = .false. & ! FUTURE Bi-directional exchange
@@ -30,6 +31,7 @@ module Debug_module
     ,EMISTIMEFACS    = .false. &
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
     ,FORESTFIRE      = .false. &
+    ,FUNGAL_SPORES   = .false. &
     ,GETEMIS         = .false. &
     ,GLOBBC          = .false. &
     ,GRIDVALUES      = .false. &
@@ -39,6 +41,7 @@ module Debug_module
     ,LANDDEFS        = .false. &
     ,LANDIFY         = .false. &
     ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
+    ,MARINE_OA       = .false. &
     ,MASS            = .false. &
     ,MET             = .false. &
     ,MOSAICS         = .false. &
@@ -64,11 +67,7 @@ module Debug_module
     ,SOLVER          = .false. &
     ,STOFLUX         = .false. &
     ,VERT_DIFF       = .false. &
-    ,VDS             = .false. &
-    ,PBAP            = .false. &
-    ,FUNGAL_SPORES   = .false. &
-    ,BACTERIA        = .false. &
-    ,MARINE_OA       = .false. 
+    ,VDS             = .false. 
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option

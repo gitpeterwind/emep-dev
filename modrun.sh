@@ -1,12 +1,10 @@
 #!/bin/bash
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=128
-#SBATCH --account=noemep
-#SBATCH --qos=np
-#SBATCH --time=24:00:0
+
+### job options for Slurm/sbatch
+#SBATCH -A emep
 #SBATCH --job-name=emepctm
 #SBATCH --output=%x.%j.out --error=%x.%j.out
-
+#SBATCH --nodes=12 --ntasks-per-node=32 --time=24:00:00
 
 ### Minimalistic script for run the Unified EMEP model
 
@@ -14,11 +12,11 @@
 # user_id=GL
 # run=rv4_51
 
-DIRLOCA="EMEP_out/PBAP_test"
-DIRPATH="/ec/res4/scratch/nor4796/"
+DIRLOCA="/PBAP_merge_test_3"
+DIRPATH="/nobackup/forsk/sm_gunla/EMEP_out/"
 
 # git directory where to run emep model from
-RUNDIR="/home/nor4796/emep-mscw"
+RUNDIR="/home/sm_gunla/emep_Fungal_merge/emep-mscw"
 
 #if [ ! -d "$DIRPATH$DIRLOCA" ]; then
 mkdir -p $DIRPATH$DIRLOCA
@@ -43,5 +41,5 @@ cp $RUNDIR/emepctm .
 cp $RUNDIR/config_emep.nml config_emep.nml
 
 # run the model
-mpirun emepctm
+mpprun emepctm
 

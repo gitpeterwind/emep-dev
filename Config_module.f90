@@ -229,10 +229,9 @@ type, public :: emep_useconfig
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
-    ,PBAP            = .false. &
-    ,FUNGAL_SPORES    = .true. & !Only gets activated if PBAP = .true.
-    ,BACTERIA         = .true. &!Only gets activated if PBAP = .true.
-    ,MARINE_OA        = .true. !Only gets activated if PBAP = .true.
+    ,FUNGAL_SPORES    = .true. & !For including fungal spores (part of PBAP)
+    ,BACTERIA         = .true. & !For including bacteria (part of PBAP, not tested)
+    ,MARINE_OA        = .true. !For including MarineOA (part of PBAP, not implemented)
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
@@ -273,7 +272,7 @@ type, public :: emep_useconfig
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
 
 ! Selection of Emissions parameterization for fungal
-  character(len=2) :: FUNGAL_METHOD  = 'HO'  !HM, HO, SD, HS, JS (see PBAP module)
+  character(len=4) :: FUNGAL_METHOD  = 'HS_5'  !HS_3, HS_5, SD, HS, JS (see PBAP module)
 
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
@@ -326,7 +325,7 @@ real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
   TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USES%DUST=.true.
- ,INERIS_SNAP1       = .false.       & ! Switches off decadal trendFUNGAL_SPORES
+ ,INERIS_SNAP1       = .false.       & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & ! Allows near-zero summer values
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,ZERO_ORDER_ADVEC   = .false.       & ! force zero order horizontal and vertical advection
@@ -1096,9 +1095,7 @@ subroutine Config_Constants(iolog)
      GLOBAL_settings = "YES"
      European_settings = "NO"
   end if
-
-! Fungal diameter depends on chosen scheme
-
+  
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
