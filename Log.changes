@@ -49,6 +49,17 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 August 2024, Gunnar
+
+Added Primary Biogenic Aerosol Particles (PBAP) in PBAP_mod.f90. Currently only
+supports fungal spores, but there is skeleton code for both bacteria and MarineOA,
+to be implemented at a later stage. This also adds two new tracers: FUNGAL_SPORE3
+and FUNGAL_SPORE5, corresponding respectively to spores with a diameter of 3um
+and spores with a diameter of 5um. For more info on this, as well as the various
+fungal emission parameterizations, see the EMEP status report 2024 chapter 7.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 July  2024, Peter
 
 Allow choice of different inputs for metdata: alternative names can be added,
