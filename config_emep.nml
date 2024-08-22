@@ -4,7 +4,7 @@
   runlabel1 = 'Base',
   runlabel2 = 'rv4_47',
   startdate = 2018,01,01,00,
-  enddate   = 2018,01,02,24,
+  enddate   = 2018,01,01,24,
 
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/nobackup/forsk/sm_petwi/Data',  !Nebula
@@ -31,7 +31,7 @@
 ! Common to all:
 
   USES%SOILNOX = T, !default
-  USES%OCEAN_DMS = F, !default
+  USES%OCEAN_DMS = T, !default
 
 !TESTING:
   SitesFile = 'DataDir/sitesLLZ.txt',
@@ -69,7 +69,7 @@
   USES%DEGREEDAY_FACTORS = T, 
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
-  USES%ROADDUST          = F,            ! Only EECCA?
+  USES%ROADDUST          = T,            ! Only EECCA?
   USES%FUNGAL_SPORES     = T,
   USES%BACTERIA          = F,
   USES%MARINE_OA         = F,
@@ -350,7 +350,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   DEBUG%SITES           = F,
 !  DEBUG%SITE           = 'Keldsnor',
   DEBUG%SOA             = 0,
-!  DEBUG%SOILNOX         = F,
+!  DEBUG%SOILNOX         = T,
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
@@ -545,11 +545,8 @@ OutputConcs=
 !      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
  !     'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
  !     'CO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
-       'FUNGAL_SPORES_3'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
-       'FUNGAL_SPORES_5'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
- !     'MARINE_OA'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
- !      'MARINE_OA_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
- !      'MARINE_OA_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !     'FUNGAL_SPORES_3'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
+ !     'FUNGAL_SPORES_5'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMDH',
 
 
 ! PM10group sub-components
@@ -610,7 +607,6 @@ OutputConcs=
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !     'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
-      'PBAP'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
