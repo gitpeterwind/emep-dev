@@ -70,7 +70,7 @@
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
   USES%ROADDUST          = T,            ! Only EECCA?
-  USES%FUNGAL_SPORES     = T,
+  USES%FUNGAL_SPORES     = F,
   USES%BACTERIA          = F,
   USES%MARINE_OA         = F,
   USES%FUNGAL_METHOD    = 'HS_5', !Allowed options: HS_3, HS_5, HM, SD, JS
