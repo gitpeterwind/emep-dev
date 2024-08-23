@@ -265,7 +265,6 @@ contains
        end if
 
        !**  Saves tendencies Dchem and returns the new concentrations:
-
        Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
        xn_2d(:,k) = xnew(:)
 

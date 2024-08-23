@@ -17,6 +17,7 @@ program emep_Main
   use Aqueous_mod,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_mod,       only: lightning
   use Biogenics_mod,     only: Init_BVOC, SetDailyBVOC
+  use PBAP_mod,          only: Init_PBAPs
   use BoundaryConditions_mod, only: BoundaryConditions
   use CheckStop_mod,     only: CheckStop
   use Chemfields_mod,    only: alloc_ChemFields
@@ -211,6 +212,8 @@ program emep_Main
   call Init_Derived()        ! Derived field defs.
 
   call Init_BVOC()
+
+  call Init_PBAPs()
 
   call tabulate()             ! sets up tab_esat, etc.
 

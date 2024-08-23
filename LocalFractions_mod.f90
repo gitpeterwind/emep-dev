@@ -216,6 +216,7 @@ integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly o
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
+logical, public, save :: makeFungal = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
 logical, private, save :: make_PMwater =.false. !NB: water is not a species and will be treated separately. Index isrc=NSOURCES+1, or %start=LF_SRC_TOTSIZE+1
 logical, public, save :: makeBVOC = .false.
 integer, public, save  :: ix_BVOC, ix_DMS
@@ -279,6 +280,11 @@ contains
            lf_src(i)%species = 'SO2'
            lf_src(i)%is_NATURAL = .true.
            makeDMS= .true.
+        end if
+        if(lf_src(i)%name == 'FUNGAL_SPORES') then
+         lf_src(i)%species = 'FUNGAL_SPORES'
+         lf_src(i)%is_NATURAL = .true.
+         makeFungal= .true.
         end if
         if (lf_src(i)%species == 'NOTSET') exit
         Nsources = Nsources + 1
