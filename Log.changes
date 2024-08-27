@@ -49,6 +49,15 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th August 2024, Peter
+
+19th highest Max8D.
+
+OutputMisc=
+ 'MaxD8M_O3_19th','MaxD8M_19th', '',  'O3', 'ug/m3',  -1 , -1,   F,    1.0,   F, 'YM',
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 August 2024, Gunnar
 
 Added Primary Biogenic Aerosol Particles (PBAP) in PBAP_mod.f90. Currently only
