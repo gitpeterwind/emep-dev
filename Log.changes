@@ -49,6 +49,17 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Sept. 2024, Dave
+
+Many debug lines and DEBUG%EMISSIONS2, dbgX added for extra output. Needed to
+ help Dave track what is happening with config-defined emissions. Changes in:
+
+   Debug_module.f90
+   EmisGet_mod.f90
+   Emissions_mod.f90
+   Timefactors_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th August 2024, Dave
 NEW TAG: rv5.4 - since we now have PBAP prelim, plus changed output for Emis_mgm2_NO
  and  MaxD8M_O3_19th

@@ -266,6 +266,7 @@ contains
           do
              read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, &
                   (buff(i),i=1,nydays)         
+             if ( ios <  0 ) print *, "IOS eof IEMLOOP"//trim(basename(fname2)), ios
              if ( ios <  0 ) exit   ! End of file
              indexCC=find_index(code,Country(:)%code)
              if(indexCC<1.or.indexCC>NLAND)then
@@ -372,6 +373,7 @@ contains
          case("CAMS_TEMPO","CAMS_TEMPO_CLIM")
             !print *, dtxt//'MFACD', iemis
             read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname,(buff(mm),mm=1,12)
+             if ( ios <  0 ) print *, "IOS eof CAMS"//trim(basename(fname2)), ios
             !print *, dtxt//'MFACE:'//trim(code)//trim(secname)
             if( ios <  0 ) exit     ! End of file
             call CheckStop( ios, dtxt//": Read error in Monthlyfac")
@@ -474,6 +476,7 @@ contains
               (buff(i),i=1,7)         
            indexCC=find_index(emepICC,Country(:)%icode)
          end if
+         if ( ios <  0 ) print *, "IOS eof DoW2"//trim(basename(fname2)), ios
          if ( ios <  0 ) exit   ! End of file
 
          maxidx = max(insec,maxidx)
@@ -542,6 +545,7 @@ contains
          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
          n = n + 1
          !if(dbgTF)write(*,*) "HourlyFacs ", n, trim(inputline)
+         if ( ios <  0 ) print *, "IOS eof HRLLOOP"//trim(basename(fname2)), ios
          if ( ios <  0 ) exit     ! End of file
          if( index(inputline,"#")>0 ) then ! Headers
             if(n==1) call PrintLog(trim(inputline))

@@ -27,6 +27,7 @@ module Debug_module
     ,ECAGE           = .false. & ! Outputs different ECC-age rates for DebugCell
     ,ECOSYSTEMS      = .false. &
     ,EMISSIONS       = .false. & ! 
+    ,EMISSIONS2      = .false. & !  Extra info. Helpful with testing new-formats
     ,EMISSTACKS      = .false. & ! 
     ,EMISTIMEFACS    = .false. &
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
