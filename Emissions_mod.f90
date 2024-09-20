@@ -215,12 +215,10 @@ contains
        first_call = .false.
     end if
 
-    !DSMOVED HERE:
+    !S24: EmisSplit MOVED HERE:
     call EmisSplit()    ! In EmisGet_mod, => emisfrac
     if(MasterProc) write(*,*) dtxt//'TRACK from EmisSplit:', (emis_nsplit(i),i=1,NEMIS_FILE)
-    !DSQUERY WHY HERE?
     call CheckStop(ios, "ioserror: EmisSplit")
-    !DSMOVED
 
     if(USES%OCEAN_NH3)then
        if(MasterProc)write(*,*)' using  OceanNH3'
@@ -1600,8 +1598,7 @@ end subroutine EmisUpdate
        !=========================
     end if
     !=========================
-    !DSMOVED call EmisSplit()    ! In EmisGet_mod, => emisfrac
-    !DSMOVED if(MasterProc) write(*,*) dtxt//'TRACK from EmisSplit:', (emis_nsplit(i),i=1,NEMIS_FILE)
+    !S24: MOVED to top call EmisSplit()    ! In EmisGet_mod, => emisfrac
    !if defined own sectors, assumes that we know what we are doing:
     call CheckStop(N_SPLIT == 19 .and. largestsplit<=11 .and. &
          (SECTORS(1)%name=='GNFR_CAMS'.or.SECTORS(1)%name=='SNAP'),&

@@ -88,7 +88,6 @@ contains
       case ( 'EQSAM' )
         call emep2EQSAM(i, j, debug_flag)
       case ( 'ISORROPIA' )
-        !NOV22 call StopAll('Isorropia problems found. Removed for now')
         call emep2Isorropia(i,j,debug_flag)
       case default
         if( my_first_call .and. MasterProc ) then

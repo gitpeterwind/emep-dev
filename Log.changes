@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Sept. 2024, Dave
+ Emissions_mod: Added  S24 MOVED comments to highlight emissplit change
+ AerosolCalls: tiny clean-up
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Sept. 2024, Dave
 
 Many debug lines and DEBUG%EMISSIONS2, dbgX added for extra output. Needed to
@@ -58,6 +63,9 @@ Many debug lines and DEBUG%EMISSIONS2, dbgX added for extra output. Needed to
    EmisGet_mod.f90
    Emissions_mod.f90
    Timefactors_mod.f90
+
+ALSO: call to EMisSplit moved earlier in code. Was failing with own-defined
+ emissions (oddly. Good if Peter double-checks)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th August 2024, Dave
