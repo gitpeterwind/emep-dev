@@ -49,6 +49,27 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9 October  2024, Willem
+
+Country_mod.f90 brexit 
+
+ - Updated EU27 definition in Countries_mod.f90 to exclude "GB" (brexit) and include
+   Croatia ("HR"). EU28 definition now extends EU27 by including GB. 
+
+EmisGet_mod.f90 bug fix
+
+ - Countries defined in Emis_sourceFiles(1)%country_ISO_excl(1:) and 
+   Emis_sourceFiles(1)%country_ISO_incl(1:) in config_emep.nml were searched over
+   from index 1 to NSOURCESMAX=50 (used to define max nr. of input files). 
+   Fixed to search over the max nr. of defined countries MAXNLAND=601, as the excl/incl 
+   arrays are also defined. (NB: excl/incl EMEP region + NA from global emission files 
+   involves more than 50 countries...!)
+
+General word of warning: In global MFR v4 emission files "TJ", "UZT", "TMT" are combined 
+into a single country called "FSUA", but in global CLE v3 files they are not. The code
+does not crash/warn if excl/incl country is not found.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Sept. 2024, Dave
  Emissions_mod: Added  S24 MOVED comments to highlight emissplit change
  AerosolCalls: tiny clean-up

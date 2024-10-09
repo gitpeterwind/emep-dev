@@ -11,7 +11,7 @@ use Config_module,     only: NPROC, MasterProc,USES,step_main,&
                              startdate
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
-                             IC_NMR,IC_DUMMY
+                             IC_NMR,IC_DUMMY, MAXNLAND
 use Debug_module,      only: DEBUG
 use EmisDef_mod,       only: NSECTORS, NCMAX, &
                             N_HFAC,N_SPLIT, N_SPLITMAX, EMIS_FILE, &
@@ -45,7 +45,7 @@ use NetCDF_mod,      only  : ReadField_CDF, check_lon_lat, ReadTimeCDF, &
                              GetCDF_modelgrid, make_gridresolution
 
 use OwnDataTypes_mod,  only: TXTLEN_NAME, TXTLEN_FILE, Emis_id_type, &
-                             EmisFile_id_type, Emis_sourceFile_id_type, NSOURCESMAX
+                             EmisFile_id_type, Emis_sourceFile_id_type
 use Par_mod,           only: LIMAX, LJMAX, limax, ljmax, me
 use SmallUtils_mod,    only: wordsplit, find_index, key2str, basedir, basename, to_upper
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
@@ -759,7 +759,7 @@ contains
              if(EmisFile_in%country_ISO_excl(1)/='NOTSET' .or. EmisFile_in%country_ISO_incl(1)/='NOTSET')then
                 !check that this country is allowed
                 if(EmisFile_in%country_ISO_excl(1)/='NOTSET')then
-                   do ic = 1,NSOURCESMAX
+                   do ic = 1,MAXNLAND
                       if(EmisFile_in%country_ISO_excl(ic)/='NOTSET')then
                          if(EmisFile_in%country_ISO_excl(ic)==trim(Emis_source(NEmis_sources)%country_ISO))then
                             !reset this source
@@ -776,7 +776,7 @@ contains
                    end do
                 else if(EmisFile_in%country_ISO_incl(1)/='NOTSET')then
                    found = 0
-                   do ic = 1,NSOURCESMAX
+                   do ic = 1,MAXNLAND
                       if(EmisFile_in%country_ISO_incl(ic)/='NOTSET')then
                          if(EmisFile_in%country_ISO_incl(ic)==trim(Emis_source(NEmis_sources)%country_ISO))then
                             found = 1
