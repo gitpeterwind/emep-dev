@@ -229,9 +229,9 @@ type, public :: emep_useconfig
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
-    ,FUNGAL_SPORES    = .true. & !For including fungal spores (part of PBAP)
-    ,BACTERIA         = .true. & !For including bacteria (part of PBAP, not tested)
-    ,MARINE_OA        = .true. !For including MarineOA (part of PBAP, not implemented)
+    ,FUNGAL_SPORES    = .false. & !For including fungal spores (part of PBAP) NOT IMPLEMENTED
+    ,BACTERIA         = .false. & !For including bacteria (part of PBAP)  NOT IMPLEMENTED
+    ,MARINE_OA        = .false. !For including MarineOA (part of PBAP)  NOT IMPLEMENTED
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
