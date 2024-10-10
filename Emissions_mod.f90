@@ -1594,7 +1594,7 @@ end subroutine EmisUpdate
        end if
        !=========================
        call timefactors(year)               ! => fac_emm, fac_edd, changes ios
-       !DSQUERY call CheckStop(ios, "ioserror: after timefacs")
+       !QUERY call CheckStop(ios, "ioserror: after timefacs")
        !=========================
     end if
     !=========================
@@ -1611,7 +1611,7 @@ end subroutine EmisUpdate
        SplitEmisOut=0.0
     end if
     !=========================
-    !DSQUERY WHY HERE? call CheckStop(ios, "ioserror: EmisSplit")
+    !QUERY WHY HERE? call CheckStop(ios, "ioserror: EmisSplit")
 
     ! ####################################
     ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
