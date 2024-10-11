@@ -49,6 +49,21 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 October  2024, Dave
+
+ecosx/box/scripts/emep_setup.py modified to use Aero2024 instead of Aero2017nx
+
+ - this skips the old and crude losses of H2O2 and CH3OOH
+
+emep-dev changed:
+- used to modify emep-dev ZCM_ dirs for EmChem19rc, EmChem19rcp, and EmChem19rcpf
+- for CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90
+   CM_ChemSpecs_mod.f90 CM_Reactions1.inc CM_Reactions2.inc CM_Reactions.log
+
+- no change in the results for EmChem19rc (the CM_Reactions1 file had this
+   change hard-coded anyway), but will give small changes for EmChem19rcp and
+   EmChem19rcpf
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 October  2024, OS Prep, DS
 
 Emissions_mod: trivial tweaks to comments
