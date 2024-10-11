@@ -160,7 +160,7 @@ type(timeFacs_t), public, save :: timeFacs = timeFacs_t()
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=*), parameter,private :: TFACSDIR='DataDir/Timefactors/CAMS_TEMPO/'
 character(len=TXTLEN_FILE), target, save, public :: &
-  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc' &
+  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep_v2024-1.nc' &
  ,MonthlyFacFile = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
  ,DailyFacFile   = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
  ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &

@@ -51,6 +51,8 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 October  2024, Dave
 
+A) Chem changes:
+
 ecosx/box/scripts/emep_setup.py modified to use Aero2024 instead of Aero2017nx
 
  - this skips the old and crude losses of H2O2 and CH3OOH
@@ -63,6 +65,12 @@ emep-dev changed:
 - no change in the results for EmChem19rc (the CM_Reactions1 file had this
    change hard-coded anyway), but will give small changes for EmChem19rcp and
    EmChem19rcpf
+
+B) GLobal gridded monthly fac files has now been renamed from
+  CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc to CAMS_TEMPO_GLOB4emep_v2024-1.nc.
+
+- Config_module.f90 - uses the new name
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10 October  2024, OS Prep, DS
 
