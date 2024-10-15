@@ -49,6 +49,22 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 October  2024, Dave
+
+SAFE START to rv5.5
+
+ SNOx changes:
+  Biogenic_mod  - removed Set_SoilNOx subroutine
+  Config_module - removed OLD_EURO bits (EURO_SOILNOX_DEPSCALE)
+  Emissions_mod - removed OLD_EURO processing
+
+ Euro vs Global settings
+  GridValues_mod.90
+
+ - removed unused EUROPEAN_settings, GLOBAL_settings
+ - removed all !REM lines (old set_EuropeanAndGlobal_Config, commented out May 2021)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 October  2024, Dave
 
 A) Chem changes:

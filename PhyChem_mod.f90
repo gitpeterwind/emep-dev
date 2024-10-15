@@ -7,7 +7,6 @@ module PhyChem_mod
 !
 !-----------------------------------------------------------------------------
 use Advection_mod,     only: advecdiff_Eta
-use Biogenics_mod,     only: Set_SoilNOx
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv,cfac,xn_shl
 use ChemDims_mod,      only: NSPEC_SHL
@@ -237,7 +236,6 @@ subroutine phyche()
 
   !===================================
   call Set_SoilWater()
-  call Set_SoilNOx()!hourly
 
   !===================================
   call init_drydep()

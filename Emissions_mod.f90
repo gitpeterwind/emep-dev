@@ -24,7 +24,6 @@ use Config_module,only: &
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
-    EURO_SOILNOX_DEPSCALE,&! one or the other
     DMS,DMS_S_FAC,&
     NPROC, EmisSplit_OUT,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
@@ -2853,18 +2852,8 @@ subroutine newmonth
   end if ! USES%AIRCRAFT_EMIS
 
   if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????", me
-  if(USES%SOILNOx .and. USES%SOILNOX_METHOD=='OLD_EURO')then  ! European Soil NOx emissions
 
-      ! read in map of annual N-deposition produced from pre-runs of EMEP model
-      ! with script mkcdo.annualNdep
-      call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
-          interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
-
-      if(DEBUG%SOILNOX.and.debug_proc)&
-        write(*,"(a,4es12.3)") dtxt//" SOILNOX AnnualDEBUG ", &
-        AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
-
-  elseif(USES%SOILNOX) then ! Global soil NOx, default from 2021
+  if(USES%SOILNOX) then ! Global soil NOx, default from 2021
 
      !cf MonthlyDiurnalEmisFactor(months, tsteps, lat, lon)
     SoilNOx(:,:)=0.0
@@ -3008,7 +2997,7 @@ subroutine newmonth
         SoilNOx=SoilNOx/Nyears
       end if ! nstart test
 
-    else !  SOILNOX_METHOD Needs to be OLD_EURO, Fert, NoFert, or Zaehle2011
+    else !  SOILNOX_METHOD Needs to be Fert, NoFert, or Zaehle2011
       call StopAll(dtxt//'WRONG SNOX METHOD:'//USES%SOILNOX_METHOD )
     end if ! CAMS81
 
@@ -3022,7 +3011,7 @@ subroutine newmonth
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
-  if(USES%SOILNOX .and. USES%SOILNOX_METHOD /= 'OLD_EURO') then
+  if(USES%SOILNOX ) then
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
     ! CAMS uses kg(NO)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle

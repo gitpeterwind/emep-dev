@@ -166,21 +166,12 @@ character(len=TXTLEN_FILE), target, save, public :: &
  ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
  ,HourlyFacSpecialsFile = 'NOTSET'
 
-!OLD 2021: added ECLIPSE6b-based factors for non-European areas
-!OLD NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
-!OLD 2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
-!OLD  HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
-!OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-!OLD DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
-!OLD HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
-
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   !
    ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
     ,EMIS             = .false. &! Uses ESX
-!FEB2024    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
@@ -216,7 +207,6 @@ type, public :: emep_useconfig
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,CH4GRADIENT      = .false. & ! set to true to enable simplified lat. CH4 gradient
     ,AMINEAQ          = .false. & ! MKPS
-!    ,ESX              = .false. &! Uses ESX
     ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
@@ -279,9 +269,6 @@ end type emep_useconfig
 
 type(emep_useconfig), public, save :: USES
 
-logical,  public, save :: &
-      FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
-
 integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read froms config
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
 type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
@@ -339,22 +326,6 @@ type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
-
-
-
-! Soil NOx. Choose EURO for better spatial and temp res, but for
-! global runs need global monthly. Variable USE_SOILNOX set from
-! these below.
-!
-! Also, is scaling needed for "OLD_EURO" SOILNOX?
-! The Euro soil NO emissions are based upon average Nr-deposition calculated
-!  for the 2000s, as given in the AnnualNdep.nc files. For future years a
-!  new AnnualNdep.nc could be pre-calculated. A simpler but approximate
-!  way is to scale with some other factor, e.g. the ratio of emissions over
-!  some area (EMEP, or EU) in year YYYY divided by year 2005 values.
-! Remember, soil-NO emissions are *very* uncertain.
-
-  real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
 !See DMS_t  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
@@ -893,7 +864,6 @@ subroutine Config_Constants(iolog)
    ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
-   ,EURO_SOILNOX_DEPSCALE &
    ,lf_src & !Local Fractions
    ,lf_set & !Local Fractions
    ,lf_species &
@@ -968,7 +938,6 @@ subroutine Config_Constants(iolog)
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
    ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
@@ -1152,7 +1121,6 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
 
-!DS
   OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)
 
   do i = 1, size(Emis_sourceFiles)
