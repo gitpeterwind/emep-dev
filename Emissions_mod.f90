@@ -6,7 +6,7 @@ module Emissions_mod
 !_____________________________________________________________________________
 
 use AirEmis_mod, only : airn, TotAircraftEmis
-use Biogenics_mod,     only: SoilNOx, SoilNOx3D, AnnualNdep
+use Biogenics_mod,     only: SoilNOx, SoilNOx3D  !OLD:, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
                              NEMIS_File  ! No. emission files
@@ -29,7 +29,7 @@ use Config_module,only: &
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     DMSFile,OceanNH3File,&
-    AVG_SMI_2005_2010File,NdepFile,&
+    AVG_SMI_2005_2010File, &   !OLD:NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, NEmisMaskMAX,&
     hourly_emisfac
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU, IC_AT

@@ -54,15 +54,37 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 SAFE START to rv5.5
 
  SNOx changes:
-  Biogenic_mod  - removed Set_SoilNOx subroutine
+ .............
+
+  Biogenic_mod  - removed Set_SoilNOx subroutine (was old ACP2012 system)
   Config_module - removed OLD_EURO bits (EURO_SOILNOX_DEPSCALE)
+                - incl. Ndep file
   Emissions_mod - removed OLD_EURO processing
+  PhyChe        - removed call to Set_SoilNOx
 
  Euro vs Global settings
+ .......................
+
+  Config_module:
+
+    New variable introduced, USES%DOMAIN_SETUP_TYPE. Set to GLOB or
+    EURO. This then sets CONVECTION, PFT_MAPS, timeFacs%timefacs%Monthly,
+    and DEGREEDAY_FACTORS. See Config_module for GLOB_DOMAIN_SETUP
+    and EURO_DOMAIN_SETUP defaults. 
+
+    The defaults can be overridded for testing, but in general the
+    user should just set  USES%DOMAIN_SETUP_TYPE = 'GLOB' or 'EURO'.
+
+
   GridValues_mod.90
 
  - removed unused EUROPEAN_settings, GLOBAL_settings
- - removed all !REM lines (old set_EuropeanAndGlobal_Config, commented out May 2021)
+ - removed all !REM lines (old set_EuropeanAndGlobal_Config, commented out
+     May 2021)
+
+  config_emep.nml
+
+ - added USES%DOMAIN_SETUP_TYPE = 'EURO'
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 October  2024, Dave

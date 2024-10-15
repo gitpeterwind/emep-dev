@@ -6,7 +6,6 @@ module Landuse_mod
 use CheckStop_mod,   only: CheckStop,StopAll
 use Config_module,   only: NLANDUSEMAX, SEA_LIMIT, USES,  &
                             FLUX_IGNORE, &
-                            GLOBAL_settings, & ! tmp Sep 2023
                             OutputVegO3, nOutputVegO3, &
                             VEG_2dGS, VEG_2dGS_Params, &
                             NPROC, IIFULLDOM, JJFULLDOM, &
@@ -119,7 +118,7 @@ contains
     character(len=*), parameter :: dtxt='InitLanduse:'
     !=====================================
 
-    GlobRun = GLOBAL_settings == "YES" ! for IAM choices
+    GlobRun = USES%DOMAIN_SETUP_TYPE == "GLOB" ! for IAM choices
     dbg0    = MasterProc .and. DEBUG%LANDUSE>0
     dbgProc = debug_proc .and. DEBUG%LANDUSE>0
 

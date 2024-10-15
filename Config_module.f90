@@ -72,7 +72,6 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     real :: ZiMIN = 50.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                   ! maximum mixing height
     character(len=10) :: HmixMethod = "NWP"  ! Method used for Hmix
-     !rv4.52 character(len=10) :: HmixMethod = "JcRb_t2m"
       ! JcRb = Jericevic/Richardson number method
       ! JcRb_surfT is the new JcRb using pop T at skin
       ! JcRb_t2m is new JcRb using pop T at 2m
@@ -80,7 +79,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
     logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler?
     !
-    ! Moved Feb 2021 from BLPhysics:
+    ! BLPhysics:
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
@@ -143,7 +142,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
 
-logical, private, parameter :: F = .false.
+logical, private, parameter :: F = .false., T = .true.
 
 type, public :: timeFacs_t
   integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
@@ -166,8 +165,25 @@ character(len=TXTLEN_FILE), target, save, public :: &
  ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
  ,HourlyFacSpecialsFile = 'NOTSET'
 
+type, public :: domain_settings_t
+   character(len=20) :: name
+   logical :: USES_CONVECTION
+   logical :: USES_PFTMAPS
+   logical :: USES_GLOB_TFACS
+   logical :: USES_DEGREEDAYS
+end type domain_settings_t
+
+! The domain_setup MUST be set via USES%DOMAIN_SETUP = GLOB or EURO in
+!  config_emep.nml. ***** DO NOT set here **** !
+type(domain_settings_t), private, save :: &
+      GLOB_DOMAIN_SETUP  = domain_settings_t( 'GLOB',  T, T, T, F )   &
+     ,EURO_DOMAIN_SETUP  = domain_settings_t( 'EURO',  F, F, F, T )   &
+     ,domain_setup !       = domain_settings_t( 'NOTSET',  F, F, F, F )
+
+
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
+  character(len=10) :: DOMAIN_SETUP_TYPE = 'NOTSET' ! SET to GLOB or EURO in config_emep.nml
   logical :: &                   !
    ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
@@ -178,7 +194,9 @@ type, public :: emep_useconfig
 !    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
 !EXP    ,GRAVSET          = .false. &! gravitational settling (EXPERIMENTAL! DO NOT USE YET)
     ,SEASALT          = .true.  &! See also SEASALT_fFrac
-    ,CONVECTION       = .false. &! false works best for Euro runs
+   ! CONVECTION, PFT_MAPS and is set via DOMAIN_SETUP_TYPE
+      ,CONVECTION       = .false. &! false works best for Euro runs
+      ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European.
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
     ,zero_below3000ft = .true.  &! set aircraft emissions to zero below ca 3000ft
     ,LIGHTNING_EMIS   = .true.  &!
@@ -207,7 +225,6 @@ type, public :: emep_useconfig
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
     ,CH4GRADIENT      = .false. & ! set to true to enable simplified lat. CH4 gradient
     ,AMINEAQ          = .false. & ! MKPS
-    ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
@@ -288,9 +305,6 @@ logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD req
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 logical, public, save  :: DailyEmisOut = .false. !to output sector emissions daily
 
-!Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
-character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
-character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domain cover other regions
 
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
@@ -821,7 +835,6 @@ character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataD
 character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
-character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
@@ -897,8 +910,7 @@ subroutine Config_Constants(iolog)
    ,dt_advec              & ! can be set to override dt_advec
    ,METSTEP &
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection
-   ,EUROPEAN_settings & ! The domain covers Europe ->
-   ,GLOBAL_settings & ! The domain cover other regions too -> Convection
+   ,GLOB_DOMAIN_SETUP, EURO_DOMAIN_SETUP & ! ONLY used if overrides of defaults are wanted
    ,fileName_O3_Top&
    ,fileName_CH4_ibcs&
    ,femisFile&
@@ -933,7 +945,6 @@ subroutine Config_Constants(iolog)
    ,EMEP_EuroBVOCFile&
    ,cloudjx_initf&
    ,cloudjx_strat&
-   ,NdepFile&
    ,lightningFile&
    ,LoganO3File&
    ,DustFile&
@@ -1058,13 +1069,26 @@ subroutine Config_Constants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we
-  ! assume: (will reverse logic one day)
-  if ( USES%PFT_MAPS ) then
-     GLOBAL_settings = "YES"
-     European_settings = "NO"
-  end if
-  
+! OCT2014: The domain_setup MUST now be set via USES%domain_setup = GLOBo
+!  or EURO in config_emep.nml. DO NOT set here!
+ select case (USES%DOMAIN_SETUP_TYPE)
+   case('EURO')
+     domain_setup = EURO_DOMAIN_SETUP
+   case('GLOB')
+     domain_setup = GLOB_DOMAIN_SETUP
+   case default
+     call StopAll('DOMAIN_SETUP ERROR!'//USES%DOMAIN_SETUP_TYPE)
+  end select
+
+  USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+  USES%CONVECTION         = domain_setup%USES_CONVECTION
+  USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+  if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
+
+!  Note that if some test is wanted, we can hack the GLOB_ and EURO_ settings in config_emep.nml too, e.g.
+!  EURO_DOMAIN_SETUP%USES_CONVECTION = T
+! END OF OCT 2014 domain settings
+
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
@@ -1106,12 +1130,10 @@ subroutine Config_Constants(iolog)
   call associate_File(EMEP_EuroBVOCFile)
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
-  call associate_File(NdepFile)
   call associate_File(lightningFile)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
-  !OLD call associate_File(Monthly_patternsFile)
   call associate_File(Monthly_timezoneFile)
   call associate_File(fileName_O3_Top)
   call associate_File(fileName_CH4_ibcs)

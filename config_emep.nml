@@ -28,6 +28,11 @@
 ! USER Needs to choose right combination of settings for different domain/
 ! emission combinations. 
 
+! SET as GLOB or EURO (default)
+  USES%DOMAIN_SETUP_TYPE = 'EURO'
+
+
+
 ! Common to all:
 
   USES%SOILNOX = T, !default

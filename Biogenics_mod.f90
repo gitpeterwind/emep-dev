@@ -129,8 +129,8 @@ module Biogenics_mod
                                                         
   ! Soil NOx
    real,public, save, allocatable, dimension(:,:) :: &
-      AnnualNdep, &  ! N-dep in mgN/m2/
       SoilNOx, SoilNH3
+      !OLD AnnualNdep, &  ! N-dep in mgN/m2/
    real,public, save, allocatable, dimension(:,:,:) :: SoilNOx3d 
 
  ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
@@ -182,10 +182,10 @@ module Biogenics_mod
 
     integer :: alloc_err
     
-    allocate(AnnualNdep(LIMAX,LJMAX), &
-                SoilNOx(LIMAX,LJMAX), &
-                SoilNOx3D(LIMAX,LJMAX,8), &
-                SoilNH3(LIMAX,LJMAX))
+    !OLD:allocate(AnnualNdep(LIMAX,LJMAX), &
+    allocate( SoilNOx(LIMAX,LJMAX), &
+              SoilNOx3D(LIMAX,LJMAX,8), &
+              SoilNH3(LIMAX,LJMAX))
     SoilNOx=0.0  !BIDIR safety
     SoilNOx3D=0.0  !BIDIR safety
     SoilNH3=0.0  !BIDIR safety
