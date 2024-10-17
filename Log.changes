@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 October  2024, Willem 
+
+Added USES%PHOTOLYSIS flag in Config_module.f90. Can be set to .false. to exclude
+any kind of photolysis rate calculations, speeding up the code when these are
+not necessary.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 October  2024, Dave
 
 

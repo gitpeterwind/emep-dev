@@ -159,15 +159,17 @@ subroutine runchem()
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USES%HRLYCLOUDJ) then
-        if(nhour>photstep) then
+      if(USES%PHOTOLYSIS) then
+        if(USES%HRLYCLOUDJ) then
+          if(nhour>photstep) then
+            call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+          endif
+        else
           call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
         endif
-      else
-        call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
-      endif
-      rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
-
+        rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
+      end if
+      
       call write_jvals(i,j)
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
