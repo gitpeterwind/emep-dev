@@ -49,6 +49,17 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 October 2024, Peter
+
+Modified gfortran flag in Makefile.Open
+Tested (only compilation) on Nebula with the modules:
+ml load buildtool-easybuild/4.9.0-hpc434151c3d  GCC/11.3.0  OpenMPI/4.1.4
+ml load netCDF-Fortran/4.6.0
+
+and on LUMI with
+ml load LUMI/23.09  partition/C cpeGNU/23.09 gcc/12.2.0  cray-hdf5/1.12.2.7 cray-netcdf/4.9.0.7
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 October  2024, Willem 
 
 Added USES%PHOTOLYSIS flag in Config_module.f90. Can be set to .false. to exclude

@@ -33,7 +33,7 @@ else ifeq ($(MACHINE), atos)
   F90=mpif90
 else ifeq ($(MACHINE), lumi)
 #  ml load LUMI/23.09  partition/C cpeGNU/23.09 gcc/12.2.0  cray-hdf5/1.12.2.7 cray-netcdf/4.9.0.7
-  F90FLAGS =  -default64  -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none -ffree-line-length-none -Wno-error=line-truncation -O2 -g
+  F90FLAGS = -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none -ffree-line-length-none -Wno-error=line-truncation -O2 -g
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS += $(shell nf-config --cflags)
   MAKEDEPF90=/users/windpete/bin/makedepf90
