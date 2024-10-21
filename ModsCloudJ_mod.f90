@@ -2623,8 +2623,13 @@
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N
-      read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
-          T_XP,T_FL, (WL(IW),IW=1,NWWW)
+!not liked by LUMI compiler      read (NUN,'(a1,f3.0,1x,6e10.3/5x,6e10.3/5x,6e10.3)',err=4)    &
+!          T_XP,T_FL, (WL(IW),IW=1,NWWW)
+         read (NUN,*) (WL(IW),IW=1,6)
+         read (NUN,*) (WL(IW),IW=7,12)
+         read (NUN,*) (WL(IW),IW=13,NWWW)
+
+         
       read (NUN,'(a6,1x,a16,1x,a120)',err=4) TIT_J1S,TIT_J1L,TIT_J1N
 !print
          if (USES%CLOUDJVERBOSE .and. MasterProc) write(6,'(1x,a6,1x,a16,a8,a120)') TIT_J1S,TIT_J1L,' notes:',TIT_J1N

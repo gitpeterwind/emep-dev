@@ -65,6 +65,7 @@ use PhysicalConstants_mod,  only : PI, EARTH_RADIUS
 use TimeDate_mod,       only: nmdays,leapyear ,current_date, date,julian_date
 use TimeDate_ExtraUtil_mod,only: date2nctime
 use SmallUtils_mod,      only: wordsplit, find_index, str_replace, key2str
+use SmallUtils_mod,      only: trims
 
 implicit none
 
@@ -3171,7 +3172,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         lon_shift_Mask=0
         status=nf90_get_var(ncFileID_Mask, dimids_Mask(1), lon_mask)
         if(status==nf90_noerr)then
-           lon_shift_Mask=nint((Rlon(1)-lon_mask(1))*dRloni)
+           lon_shift_Mask=nint((1.e-5+Rlon(1)-lon_mask(1))*dRloni) ! 1e-5 to avoid random result for real number ending with exactly .5
            if(lon_shift_Mask/=0)then
               write(*,*)'ReadCDF mask: should shifting longitude by ',lon_shift_Mask,'=',Rlon(1)-lon_mask(1),'degrees'
               call StopAll("Longitude shift for Mask not implemented")
@@ -3627,7 +3628,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               do i=1,limax
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
-                 ig=nint((glon(i,j)-Rlon(startvec(1)))*dRloni)+1
+                 ! 1e-5 to avoid random result for real number ending with exactly .5
+                 ig=nint((1.e-5+glon(i,j)-Rlon(startvec(1)))*dRloni)+1
                  if(ig<0.5 .or. ig>dims(1))then
                     !try to come from the other side
                     !check first that it covers all latitudes
@@ -3638,7 +3640,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  endif
                  !nearest must always give something
                  ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
+                 ! 1e-5 to avoid random result for real number ending with exactly .5
+                 jg=max(1,min(dims(2),nint((1.e-5+glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
                     Rvar(ijk)=Rvalues(igjgk)
@@ -4797,10 +4800,13 @@ if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeB:'//trim(timeunit), NTime_Read, find
              TimesInDays(i) = 30*(times(i)-1)+15
      else
         !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
-
+        ! or at least days since yyyy-mm-dd
         !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
         call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-        if(dbg0) write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
+        if(dbg0) then
+          write(*,*) 'timeCheck:'//trim(fileName)
+          write(*,*) "time@units:",(" ",trim(wordarray(i)),i=1,8)
+        end if
         period=wordarray(1)
         since=wordarray(2)
         call CheckStop(since/='since',"since error "//trim(since))
@@ -4808,7 +4814,12 @@ if(DEBUG%NETCDF) write(*,*) dtxt//'HEREtimeB:'//trim(timeunit), NTime_Read, find
         read(wordarray(3),*)yyyy
         read(wordarray(4),*)mo
         read(wordarray(5),*)dd
-        read(wordarray(6),*)hh
+        if ( nwords == 5 ) then ! case "days since 1990-1-1 "
+          hh=0
+          call CheckStop(period/='days',trim(fileName)//":period error "//trim(period))
+        else
+          read(wordarray(6),*)hh
+        end if
         if( period == 'minutes' .or. period =='seconds' )then
            read(wordarray(7),*)mi
            read(wordarray(8),*)ss  !did not work for others?

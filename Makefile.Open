@@ -14,13 +14,15 @@ INCL = -I/global/hds/software/cpu/eb3/netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.1
 LLIB = -L/global/hds/software/cpu/eb3/netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.18/lib
 
 # options by nc-config/nf-config utility
-INCL = $(shell nc-config --fflags)
-LLIB = $(shell nc-config --flibs)
+INCL = $(shell nf-config --flags)
+LLIB = $(shell nf-config --flibs)
 
 F90 = mpif90
 
-# GNU gfortran compiler (version 4.4.3 or later)
-F90FLAGS = -fallow-argument-mismatch -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -O2
+# GNU gfortran compiler (tested for version 12.2.0)
+F90FLAGS = -default64  -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none -ffree-line-length-none -Wno-error=line-truncation -O2 -g
+#DEBUG flag
+#F90FLAGS += -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
 
 # Intel ifort compiler (comment out if gfortran used)
 F90FLAGS = -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2

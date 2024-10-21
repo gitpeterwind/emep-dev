@@ -6,7 +6,7 @@ module Emissions_mod
 !_____________________________________________________________________________
 
 use AirEmis_mod, only : airn, TotAircraftEmis
-use Biogenics_mod,     only: SoilNOx, SoilNOx3D, AnnualNdep
+use Biogenics_mod,     only: SoilNOx, SoilNOx3D  !OLD:, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
                              NEMIS_File  ! No. emission files
@@ -24,13 +24,12 @@ use Config_module,only: &
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     MasterProc, USES,  &  !
     SEAFIX_GEA_NEEDED, &  !  see below
-    EURO_SOILNOX_DEPSCALE,&! one or the other
     DMS,DMS_S_FAC,&
     NPROC, EmisSplit_OUT,&
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     DMSFile,OceanNH3File,&
-    AVG_SMI_2005_2010File,NdepFile,&
+    AVG_SMI_2005_2010File, &   !OLD:NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, NEmisMaskMAX,&
     hourly_emisfac
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU, IC_AT
@@ -207,12 +206,18 @@ contains
     integer :: EmisFilesMap(0:size(Emis_sourceFiles)) !index of EmisFile given index of Emis_sourceFiles
     integer :: max_levels3D
     character(len=*),parameter :: dtxt='Init_Emissions: '
-    logical, save  :: first_call=.true., dbg
+    logical, save  :: first_call=.true., dbg, dbgX
 
     if ( first_call ) then
        dbg = DEBUG%EMISSIONS .and. MasterProc
+       dbgX = DEBUG%EMISSIONS2 .and. MasterProc
        first_call = .false.
     end if
+
+    !S24: EmisSplit MOVED HERE:
+    call EmisSplit()    ! In EmisGet_mod, => emisfrac
+    if(MasterProc) write(*,*) dtxt//'TRACK from EmisSplit:', (emis_nsplit(i),i=1,NEMIS_FILE)
+    call CheckStop(ios, "ioserror: EmisSplit")
 
     if(USES%OCEAN_NH3)then
        if(MasterProc)write(*,*)' using  OceanNH3'
@@ -284,20 +289,24 @@ contains
     NEmisFile_sources = 0 !number of valid emission files
     EmisFilesMap = 0 !index of EmisFile given index of EmisFile_sources
     do n = 1, size(Emis_sourceFiles)
+       if(dbgX) write(*,"(a,3i6,a)") dtxt//'XNEmisHuntP', n, NEmis_sources, size(Emis_sourceFiles), trim(Emis_sourceFiles(n)%filename) 
        nemis_old = NEmis_sources
        if(Emis_sourceFiles(n)%filename/='NOTSET')then
           !Read all variables and set parameters as needed
           !find which variables names are defined in config
           names_in='NOTSET'
           i=0
+          if(dbgX) write(*,"(a,3i6,a)") dtxt//'XNEmisHuntQ', size(Emis_sourceFiles(n)%source)
           do nn = 1, size(Emis_sourceFiles(n)%source)
+             !if(dbgX) write(*,"(a,i6,a)") dtxt//'XNEmisHuntQQ',nn, trim(Emis_sourceFiles(n)%source(nn)%varname)
              if(Emis_sourceFiles(n)%source(nn)%varname/='NOTSET')then
                 i= i + 1
                 names_in(i)=trim(Emis_sourceFiles(n)%source(nn)%varname)
+                if(dbgX) write(*,"(a,2i6,a)") dtxt//'XNEmisHuntQQi',nn,i, trim(Emis_sourceFiles(n)%source(nn)%varname)
              endif
           enddo
 
-          if(MasterProc)write(*,*)dtxt//"Initializing Emissions from ",&
+          if(MasterProc)write(*,*)dtxt//"Initializing Emissions from "//&
              trim(Emis_sourceFiles(n)%filename)
           call Emis_init_GetCdf(Emis_sourceFiles(n), EmisFiles(NEmisFile_sources+1), names_in, i)
        else
@@ -306,13 +315,16 @@ contains
        endif
        startsource(n) = nemis_old + 1
        endsource(n) = NEmis_sources
+       if(dbgX) write(*,"(a,3i6,a)") dtxt//'XNEmisHuntR', NEmis_sources, nemis_old
        if(NEmis_sources>nemis_old)then
           EmisFilesMap(NEmisFile_sources) = n
           EmisFiles(NEmisFile_sources)%Nsources =  NEmis_sources - nemis_old
           EmisFiles(NEmisFile_sources)%source_start =  nemis_old + 1
           EmisFiles(NEmisFile_sources)%source_end =  NEmis_sources
+          if(dbgX) write(*,*) dtxt//'XNEmisHuntS', n, NEmis_sources
        else
-          if(me==0)write(*,*)'WARNING: did not find any valid source in '//trim(Emis_sourceFiles(n)%filename)
+          if(me==0)write(*,*)dtxt//'WARNING: did not find any valid source in '&
+                      //trim(Emis_sourceFiles(n)%filename)
        endif
     enddo
     allocate(Emis_source_ij(LIMAX*LJMAX,NEmis_source_ijMAX))
@@ -327,31 +339,31 @@ contains
        n = EmisFilesMap(i)
        if(n>0)then
 
-         associate ( emsrcfiln => Emis_sourceFiles(n),  emUNDEF => Emisfile_undefined, emfi => EmisFiles(i) )
+         associate ( emn => Emis_sourceFiles(n),  emUNDEF => Emisfile_undefined, emfi => EmisFiles(i) )
 
-          if(emsrcfiln%periodicity /= emUNDEF%periodicity)   emfi%periodicity  = emsrcfiln%periodicity
-          if(emsrcfiln%timevalidity /= emUNDEF%timevalidity) emfi%timevalidity = emsrcfiln%timevalidity
-          if(emsrcfiln%projection /= emUNDEF%projection)     emfi%projection   = emsrcfiln%projection
-          if(emsrcfiln%grid_resolution /= emUNDEF%grid_resolution) emfi%grid_resolution = emsrcfiln%grid_resolution
-          if(emsrcfiln%projection /= 'native')then
+          if(emn%periodicity /= emUNDEF%periodicity)   emfi%periodicity  = emn%periodicity
+          if(emn%timevalidity /= emUNDEF%timevalidity) emfi%timevalidity = emn%timevalidity
+          if(emn%projection /= emUNDEF%projection)     emfi%projection   = emn%projection
+          if(emn%grid_resolution /= emUNDEF%grid_resolution) emfi%grid_resolution = emn%grid_resolution
+          if(emn%projection /= 'native')then
             call CheckStop(emfi%grid_resolution <=1.0E-5,&
-             'Grid_resolution must be defined for '//trim(emsrcfiln%filename))
+             'Grid_resolution must be defined for '//trim(emn%filename))
           endif
-          if(emsrcfiln%mask_ID         /= emUNDEF%mask_ID)         emfi%mask_ID = emsrcfiln%mask_ID
-          if(emsrcfiln%mask_ID_reverse /= emUNDEF%mask_ID_reverse) emfi%mask_ID_reverse = emsrcfiln%mask_ID_reverse
-          if(emsrcfiln%species         /= emUNDEF%species)         emfi%species = emsrcfiln%species
-          if(emsrcfiln%units           /= emUNDEF%units)           emfi%units = emsrcfiln%units
-          if(emsrcfiln%countrycode     /= emUNDEF%countrycode)     emfi%countrycode = emsrcfiln%countrycode
-          if(emsrcfiln%country_ISO     /= emUNDEF%country_ISO)     emfi%country_ISO = emsrcfiln%country_ISO
-          if(emsrcfiln%sector          /= emUNDEF%sector)          emfi%sector = emsrcfiln%sector
-          if(emsrcfiln%sectorsName     /= emUNDEF%sectorsName)     emfi%sectorsName = emsrcfiln%sectorsName
-          if(emsrcfiln%factor          /= emUNDEF%factor)          emfi%factor = emsrcfiln%factor
+          if(emn%mask_ID         /= emUNDEF%mask_ID)         emfi%mask_ID = emn%mask_ID
+          if(emn%mask_ID_reverse /= emUNDEF%mask_ID_reverse) emfi%mask_ID_reverse = emn%mask_ID_reverse
+          if(emn%species         /= emUNDEF%species)         emfi%species = emn%species
+          if(emn%units           /= emUNDEF%units)           emfi%units = emn%units
+          if(emn%countrycode     /= emUNDEF%countrycode)     emfi%countrycode = emn%countrycode
+          if(emn%country_ISO     /= emUNDEF%country_ISO)     emfi%country_ISO = emn%country_ISO
+          if(emn%sector          /= emUNDEF%sector)          emfi%sector = emn%sector
+          if(emn%sectorsName     /= emUNDEF%sectorsName)     emfi%sectorsName = emn%sectorsName
+          if(emn%factor          /= emUNDEF%factor)          emfi%factor = emn%factor
           ! correct for old notations
           if(emfi%sectorsName == 'SNAPsectors') emfi%sectorsName = 'SNAP'
           if(emfi%sectorsName == 'GNFRsectors') emfi%sectorsName = 'GNFR_CAMS'
           if(emfi%sectorsName == 'GNFR') emfi%sectorsName = 'GNFR_CAMS'
 
-        end associate ! emsrcfiln => Emis_sourceFiles(n), emUNDEF => Emisfile_undefined, emfi => EmisFiles(i)
+        end associate ! emn => Emis_sourceFiles(n), emUNDEF => Emisfile_undefined, emfi => EmisFiles(i)
 
        endif
     enddo
@@ -361,104 +373,108 @@ contains
        n = EmisFilesMap(i)
        found = 0
        EMFILE_IILOOP: do ii = EmisFiles(i)%source_start, EmisFiles(i)%source_end !loop over sources found in the netcdf file
-          !set source default = file parameter if they are set. Defines default for sources in this file, can be also be redefined for individual sources
+          ! set source default = file parameter if they are set. Defines default
+          ! for sources in this file, can be also be redefined for individual sources
 
-          !DS CAMEO - use associate to make this bit more readable ;-)
-          associate ( emsrcfiln => Emis_sourceFiles(n), emsrcii => Emis_source(ii) )
+          ! - use associate to make this bit more readable ;-)
+          associate ( emn => Emis_sourceFiles(n), emundef=>Emisfile_undefined, emsii => Emis_source(ii) )
 
-          if(emsrcfiln%species     /= Emisfile_undefined%species)     emsrcii%species = emsrcfiln%species
-          if(emsrcfiln%units       /= Emisfile_undefined%units)       emsrcii%units = emsrcfiln%units
-          if(emsrcfiln%countrycode /= Emisfile_undefined%countrycode) emsrcii%countrycode = emsrcfiln%countrycode
-          if(emsrcfiln%country_ISO /= Emisfile_undefined%country_ISO) emsrcii%country_ISO = emsrcfiln%country_ISO
-          if(emsrcfiln%sector      /= Emisfile_undefined%sector)      emsrcii%sector = emsrcfiln%sector
+          if(emn%species     /= emundef%species)     emsii%species = emn%species
+          if(emn%units       /= emundef%units)       emsii%units = emn%units
+          if(emn%countrycode /= emundef%countrycode) emsii%countrycode = emn%countrycode
+          if(emn%country_ISO /= emundef%country_ISO) emsii%country_ISO = emn%country_ISO
+          if(emn%sector      /= emundef%sector)      emsii%sector = emn%sector
          !NB: periodicity and timevalidity cannot be set individually for variables
-          emsrcii%periodicity       = EmisFiles(i)%periodicity
-          emsrcii%timevalidity      = EmisFiles(i)%timevalidity
+          emsii%periodicity       = EmisFiles(i)%periodicity
+          emsii%timevalidity      = EmisFiles(i)%timevalidity
          ! Following cannot be set in netcdf file:
-          emsrcii%apply_femis       = emsrcfiln%apply_femis
-          emsrcii%include_in_local_fractions = emsrcfiln%include_in_local_fractions
-          emsrcii%mask_ID           = emsrcfiln%mask_ID
-          emsrcii%mask_ID_reverse   = emsrcfiln%mask_ID_reverse
+          emsii%apply_femis       = emn%apply_femis
+          emsii%include_in_local_fractions = emn%include_in_local_fractions
+          emsii%mask_ID           = emn%mask_ID
+          emsii%mask_ID_reverse   = emn%mask_ID_reverse
 
-          isource = emsrcii%ix_in
-          if(dbg) write(*,'(a,4i4,1x,a20)') dtxt//'writing config attribute on '//trim(emsrcii%varname),n, ii, isource, NEmis_sources
+          isource = emsii%ix_in
+          if(dbg) write(*,'(a,5i6)') dtxt//'writing config attribute on '//trim(emsii%varname),i, n, ii, isource, NEmis_sources
+          if(dbg.and.ii==NEmis_sources) write(*,*)dtxt//'Last ii', emsii
           if(isource>0)then
              !source defined in config file
-             if(trim(emsrcfiln%source(isource)%varname)/=trim(emsrcii%varname))&
-              write(*,*)isource,'ERROR', &
-                trim(emsrcfiln%source(isource)%varname),' ',trim(emsrcii%varname),ii
+             if(trim(emn%source(isource)%varname)/=trim(emsii%varname))&
+              write(*,*)isource,dtxt//'ERROR', &
+                trim(emn%source(isource)%varname),' ',trim(emsii%varname),ii
 
              found = 1
 
              associate ( emi => Emis_sourceFiles(n)%source(isource) )
 
-             if(emi%species /= Emis_id_undefined%species) emsrcii%species = emi%species
-             if(emi%units /= Emis_id_undefined%units) emsrcii%units = emi%units
-             if(emi%sector /= Emis_id_undefined%sector) emsrcii%sector = emi%sector
-             if(emi%factor /= Emis_id_undefined%factor) emsrcii%factor = emi%factor
-             if(emi%countrycode /= Emis_id_undefined%countrycode) emsrcii%countrycode = emi%countrycode
-             if(emi%country_ISO /= Emis_id_undefined%country_ISO) emsrcii%country_ISO = emi%country_ISO
-             if(.not. emi%include_in_local_fractions) emsrcii%include_in_local_fractions = .false.
-             if(.not. emi%apply_femis) emsrcii%apply_femis = emi%apply_femis
+             if(emi%species /= Emis_id_undefined%species) emsii%species = emi%species
+             if(emi%units /= Emis_id_undefined%units) emsii%units = emi%units
+             if(emi%sector /= Emis_id_undefined%sector) emsii%sector = emi%sector
+             if(emi%factor /= Emis_id_undefined%factor) emsii%factor = emi%factor
+             if(emi%countrycode /= Emis_id_undefined%countrycode) emsii%countrycode = emi%countrycode
+             if(emi%country_ISO /= Emis_id_undefined%country_ISO) emsii%country_ISO = emi%country_ISO
+             if(.not. emi%include_in_local_fractions) emsii%include_in_local_fractions = .false.
+             if(.not. emi%apply_femis) emsii%apply_femis = emi%apply_femis
 
-             if(emi%mask_ID /= Emis_id_undefined%mask_ID) emsrcii%mask_ID = emi%mask_ID
-             if(emi%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse) emsrcii%mask_ID_reverse = emi%mask_ID_reverse
+             if(emi%mask_ID /= Emis_id_undefined%mask_ID) emsii%mask_ID = emi%mask_ID
+             if(emi%mask_ID_reverse /= Emis_id_undefined%mask_ID_reverse) emsii%mask_ID_reverse = emi%mask_ID_reverse
 
-             if(emi%is3D .neqv. Emis_id_undefined%is3D) emsrcii%is3D   = emi%is3D
-             if(emi%istart /= Emis_id_undefined%istart) emsrcii%istart = emi%istart
-             if(emi%jstart /= Emis_id_undefined%jstart) emsrcii%jstart = emi%jstart
-             if(emi%kstart /= Emis_id_undefined%kstart) emsrcii%kstart = emi%kstart
-             if(emi%kend /= Emis_id_undefined%kend)     emsrcii%kend   = emi%kend
-             if(emi%reversek .neqv. Emis_id_undefined%reversek)   emsrcii%reversek = emi%reversek
-             if(emi%injection_k /= Emis_id_undefined%injection_k) emsrcii%injection_k = emi%injection_k
+             if(emi%is3D .neqv. Emis_id_undefined%is3D) emsii%is3D   = emi%is3D
+             if(emi%istart /= Emis_id_undefined%istart) emsii%istart = emi%istart
+             if(emi%jstart /= Emis_id_undefined%jstart) emsii%jstart = emi%jstart
+             if(emi%kstart /= Emis_id_undefined%kstart) emsii%kstart = emi%kstart
+             if(emi%kend /= Emis_id_undefined%kend)     emsii%kend   = emi%kend
+             if(emi%reversek .neqv. Emis_id_undefined%reversek)   emsii%reversek = emi%reversek
+             if(emi%injection_k /= Emis_id_undefined%injection_k) emsii%injection_k = emi%injection_k
 
-             end associate ! emsrcfilsrc 
+             end associate ! emn 
 
           endif
-          ix = find_index(trim(emsrcii%country_ISO) ,Country(:)%code, first_only=.true.)
-          if(trim(emsrcii%country_ISO)=="N/A")then
-             ix = find_index(emsrcii%countrycode ,Country(:)%icode, first_only=.true.)
+
+          ix = find_index(trim(emsii%country_ISO) ,Country(:)%code, first_only=.true.)
+          if(trim(emsii%country_ISO)=="N/A")then
+             ix = find_index(emsii%countrycode ,Country(:)%icode, first_only=.true.)
           end if
           if(ix<0)then
              if(me==0)write(*,*)dtxt//'WARNING: country '//&
-                     trim(emsrcii%country_ISO)//' not defined for '//trim(emsrcii%varname)
+                     trim(emsii%country_ISO)//' not defined for '//trim(emsii%varname)
              ix = find_index("N/A" ,Country(:)%code, first_only=.true.)
           else
              if(dbg)write(*,*)dtxt//'country found '//trim(Country(ix)%code), ix, NEmis_sources
           endif
-          emsrcii%country_ix = ix
-          emsrcii%country_ISO = trim(Country(ix)%code)
+          emsii%country_ix = ix
+          emsii%country_ISO = trim(Country(ix)%code)
 
 
-          ix = find_index(emsrcii%species, EMIS_FILE(:))
-          if(dbg)write(*,*)dtxt//'spec found ?'//trim(emsrcii%species), ix, EMIS_FILE
-          if( ix<=0 )then
-             !find if it is defined as an individual species
-             ix = find_index(emsrcii%species, species(:)%name )
+          ix = find_index(emsii%species, EMIS_FILE(:))
+          if ( ix> 0) then
+            if(dbg)write(*,*)dtxt//'spec found in EMIS_FILE'//trim(emsii%species), EMIS_FILE(ix)
+          else    ! if( ix<=0 )then !find if it is defined as an individual species
+             ix = find_index(emsii%species, species(:)%name )
              if(ix<=0)then
                 !try case insensitive too
-                ix = find_index(emsrcii%species, species(:)%name, any_case=.true.)
-                if(dbg)write(*,*)dtxt//'spec found2?'//trim(emsrcii%species), ix
+                ix = find_index(emsii%species, species(:)%name, any_case=.true.)
+                if(dbg)write(*,*)dtxt//'spec found in species?'//trim(emsii%species), ix
                 if(ix>0)then
-                   if(me==0)write(*,*)'WARNING: '//trim(emsrcii%species)//&
+                   if(me==0)write(*,*)'WARNING: '//trim(emsii%species)//&
                         ' not found, replacing with '//trim(species(ix)%name)
-                   emsrcii%species = trim(species(ix)%name)
+                   emsii%species = trim(species(ix)%name)
                 end if
              end if
              if(ix>0)then
-                emsrcii%species_ix = ix
+                emsii%species_ix = ix
                 if(dbg)write(*,'(a,i4,a)')dtxt//' species found '// &
-                     trim(emsrcii%country_ISO), ix, ' '//trim(species(ix)%name)
-                if(emsrcii%include_in_local_fractions .and. USES%LocalFractions )then
-                   if(me==0)write(*,*)"WARNING: local fractions will not include single species "//emsrcii%species
+                     trim(emsii%country_ISO), ix, ' '//trim(species(ix)%name)
+                if(emsii%include_in_local_fractions .and. USES%LocalFractions )then
+                   if(me==0)write(*,*)"WARNING: local fractions will not include single species "//emsii%species
                 endif
              else ! ix<=0
                 if(dbg)write(*,'(a,i4,a)')dtxt//' species not found'// &
-                     trim(emsrcii%country_ISO),ix,trim(emsrcii%species)
+                     trim(emsii%country_ISO),ix,trim(emsii%species)
              endif
           endif
 
-          if (emsrcii%sector>0) then
+
+          if (emsii%sector>0) then
              !Add the relevant sector in SECTORS
              !look if it is already defined
              found = 0
@@ -498,37 +514,36 @@ contains
              found = 0
              do isec_idx = 1, NSECTORS
                 if (SECTORS(isec_idx)%name ==  trim(EmisFiles(i)%sectorsName)) found = isec_idx
-                if(dbg)write(*,*)dtxt//'sec srch:',trims(SECTORS(isec_idx)%name//':'// EmisFiles(i)%sectorsName), found
+                if(dbg)write(*,'(a,i4)')dtxt//'sec srch:'//trim(SECTORS(isec_idx)%name)//':'//trim(EmisFiles(i)%sectorsName), found
                 if (found > 0) exit; ! we want the first entry
              end do
-             if (found == 0) call StopAll(trim(emsrcfiln%filename)//&
+             if (found == 0) call StopAll(trim(emn%filename)//&
               ': sectorsName not recognized! '//trim(EmisFiles(i)%sectorsName))
-             emsrcii%sector_idx = found -1 + emsrcii%sector !TODO: make more robust (use names, not indices)
-             if(dbg)write(*,*)dtxt//'sec found2', emsrcii%sector, emsrcii%sector_idx
+             emsii%sector_idx = found -1 + emsii%sector !TODO: make more robust (use names, not indices)
+             if(dbg)write(*,"(a,2i4,a)")dtxt//'sec found2', emsii%sector,&
+                emsii%sector_idx, trim(emsii%varname)//';'//trim(EmisFiles(i)%sectorsName)
           end if
 
-          max_levels3D=max(max_levels3D, emsrcii%kend - emsrcii%kstart + 1)
-          if(MasterProc .and. dbg)write(*,*)dtxt//"Final emission source parameters ", EmisFiles(i)%nsectors!,emsrcii
+          max_levels3D=max(max_levels3D, emsii%kend - emsii%kstart + 1)
           if (MasterProc .and. dbg) then
+             write(*,*)dtxt//"File(i) emission source parameters ", i, EmisFiles(i)%nsectors!,emsii
              if (EmisFiles(i)%nsectors == 1) then
-                write(*,'(a,a,a)')dtxt//'emsrc include1 '//trim(emsrcii%varname)//' as '//&
-                     trim(emsrcii%species)//' sector ',&
-                     trim(SECTORS(emsrcii%sector_idx)%longname),&
-                     ' country '//trim(emsrcii%country_ISO)
-             else if (emsrcii%sector == EmisFiles(i)%nsectors) then
-                write(*,'(a,I3,a,a)')dtxt//'emsrc include2 '//trim(emsrcii%varname)//' as '//&
-                 trim(emsrcii%species),EmisFiles(i)%nsectors,&
+                print *, "FILEI", i, trim(emsii%varname), emsii%sector_idx
+                write(*,'(a,a,a)')dtxt//'emsrc include1 '//trim(emsii%varname)//' as '//&
+                     trim(emsii%species)//' sector ',&
+                     trim(SECTORS(emsii%sector_idx)%longname),&
+                     ' country '//trim(emsii%country_ISO)
+             else if (emsii%sector == EmisFiles(i)%nsectors) then
+                write(*,'(a,I3,a,a)')dtxt//'emsrc include2 '//trim(emsii%varname)//' as '//&
+                 trim(emsii%species),EmisFiles(i)%nsectors,&
                  ' sectors ',trim(SECTORS(Emis_source(ii-EmisFiles(i)%nsectors+1)%sector_idx)%longname)//&
-                  ' to '// trim(SECTORS(emsrcii%sector_idx)%longname)//&
-                  ' country '//trim(emsrcii%country_ISO)
+                  ' to '// trim(SECTORS(emsii%sector_idx)%longname)//&
+                  ' country '//trim(emsii%country_ISO)
 
              end if
           end if
-          end associate  ! emsrcfiln, emsrcii
+          end associate ! emn, emsii
        enddo EMFILE_IILOOP
-!       if(.not. found .and. me==0)write(*,*)dtxt//'WARNING: did not find some of the emission sources defined in config in '&
-!            //trim(emsrcfiln%filename)
-
     enddo EMFILE_ILOOP
 
     do n = 1, NEmis_sources
@@ -565,10 +580,6 @@ contains
        allocate(Emis_source_3D(LIMAX,LJMAX,max_levels3D,Nemis_3Dsources))
     endif
 
-    if(MasterProc) then
-      write(*,*)'CAMEOINITFIN', NSECTORS
-      call print_Sector_type(SECTORS,'End'//dtxt) ! CAMEO ok to here
-    end if
    end subroutine Init_Emissions
 
  subroutine Init_masks()
@@ -717,13 +728,15 @@ subroutine EmisUpdate
    logical :: writeoutsums
    logical :: writeout !if something to show and writeoutsums=T
    logical :: read_new_emissions
-   logical :: dbgij
+   logical :: dbgij, dbg, dbgProc, dbgX
    integer, save :: ncalls = 0
    character(len=*), parameter :: dtxt='EmUpdate:'
+   character(len=5) :: emtag  ! EMSUM (and future: EMTBL, EMTAB)
 
    writeoutsums = first_call .or. step_main<10 .or. DEBUG%EMISSIONS
    writeout = .false. !init
    ncalls = ncalls + 1
+   dbgX = DEBUG%EMISSIONS2 .and. MasterProc
 
    ts1=make_timestamp(current_date)
    coming_date = current_date
@@ -779,23 +792,36 @@ subroutine EmisUpdate
    do n = 1, NEmisFile_sources
       allocate(cdfemis(EmisFiles(n)%nsectors,LIMAX,LJMAX))  !NB: sector is first coordinate
       sumemis = 0.0 !sum for each file
+      if(dbgX) write(*,'(a,2i6,L2)') 'XNEmisLoopA', n, EmisFiles(n)%nsectors, SecEmisTotalsWanted
       if(SecEmisTotalsWanted)sumemis_sec = 0.0
       do is = EmisFiles(n)%source_start,EmisFiles(n)%source_end
+      !if(debug_proc)write(*,'(a,6i6,a,L2)') 'XNEmisBUGloopC', n, is,is0,&
+      !      EmisFiles(n)%source_start,EmisFiles(n)%source_end, EmisFiles(n)%nsectors, &
+      !      ' '//basename(EmisFiles(n)%filename)//':'//trim(Emis_source(is)%varname), Emis_source(is)%is3D
          if(Emis_source(is)%is3D)then
             ix = ix3Dmap(is)
             Emis_source_3D(1:,1:,1:,ix)=0.0
+           !=========================================
             call Emis_GetCdf(EmisFiles(n),Emis_source(is),Emis_source_3D(1,1,1,ix),coming_date)
+           !=========================================
          else
+            !if(debug_proc)write(*,'(a,6i6)') 'XNEmisBUGloopD', n, is0, is,&
+            !        is-EmisFiles(n)%source_start, EmisFiles(n)%nsectors, &
+            !          mod(is-EmisFiles(n)%source_start, EmisFiles(n)%nsectors)
             if (mod(is-EmisFiles(n)%source_start, EmisFiles(n)%nsectors) == 0) then
                is0=is-1 !shift to get at start of cdfemis array
                !we read EmisFiles(n)%nsectors at once
                !if only one sector per variable, EmisFiles(n)%nsectors=1 and, we only rewrite one 2D field
                cdfemis=0.0
+               !=========================================
                call Emis_GetCdf(EmisFiles(n),Emis_source(is),cdfemis,coming_date)
+               !=========================================
+            !   if(debug_proc.and.maxval(cdfemis)>1.0e-10) write(*,'(a,3i6,es12.3,a)') 'XNEmisBUGloopGet', n, is0, is, maxval(cdfemis), &
+            !           trims(Emis_source(is)%varname//':' //Emis_source(is)%species)
 
-               if(me==0 .and. DEBUG%EMISSIONS)write(*,*)is,&
-                  ' getemis '//trim(Emis_source(is)%units)//' '//&
-                     trim(Emis_source(is)%varname)//' read as '//trim(Emis_source(is)%species)
+               if(me==0 .and. DEBUG%EMISSIONS)write(*,'(i6,a,es12.3)') is,&
+                  dtxt//' getemis '//trim(Emis_source(is)%units)//' '//&
+                     trim(Emis_source(is)%varname)//' read as '//trim(Emis_source(is)%species), maxval(cdfemis)
 
             end if
          end if
@@ -853,7 +879,8 @@ subroutine EmisUpdate
                case ('g/m2', 'g/m2/h','g m-2', 'g m-2 h-1')
                   fac = fac /(1000.0*3600.0)
                   if(EmisFiles(n)%periodicity /= 'hourly' .and. Emis_source(is)%units == 'g/m2')then
-                     call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//trim(EmisFiles(n)%periodicity))
+                     call StopAll("Emis_source unit g/m2 only implemented for hourly, monthly or yearly. Found "//&
+                             trim(EmisFiles(n)%periodicity))
                   endif
                case ('g/s','g s-1')
                   fac = fac /(1000.0)
@@ -862,7 +889,8 @@ subroutine EmisUpdate
                case ('tonnes/s', 'tonnes s-1')
                   fac = fac * 1000.0
                case default
-                  call StopAll("Emis_source unit not implemented. Found "//trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))
+                  call StopAll("Emis_source unit not implemented. Found "//&
+                          trim(Emis_source(is)%units)//' '//trim(EmisFiles(n)%periodicity))
                end select
                !Note: easy to implement more unit choices. Just add appropriate cases here
             endif
@@ -974,11 +1002,14 @@ subroutine EmisUpdate
             end if
          end if
 
+         !DSTMP writeout=.false.
+         if(dbgX)write(*,*) 'XNEmisloopW', is, is0
          if(writeout)then
             ! sum emissions per countries (in ktonnes?)
             itot = Emis_source(is)%species_ix
             isec = Emis_source(is)%sector
             iland = Emis_source(is)%country_ix
+            !FOUND BUGif(is>19) print *, 'XNEmisBUGwrite', is, is0, isec, itot, iland
             if(itot>0)then
                iqrc = itot2iqrc(itot)
                if(isec>0 .and. iqrc>0)then
@@ -995,8 +1026,9 @@ subroutine EmisUpdate
                      sumemis(iland,iem) = sumemis(iland,iem) + cdfemis(is-is0,i,j) * gridyear * xmd(i,j) !now in kt/year
                      xsumemis(iland,iem) = xsumemis(iland,iem) + cdfemis(is-is0,i,j) * gridyear * xmd(i,j) !now in kt/year
                      if(SecEmisTotalsWanted)&
-                        sumemis_sec(iland,is,iem) = sumemis_sec(iland,is,iem)&
+                        sumemis_sec(iland,isec,iem) = sumemis_sec(iland,isec,iem)&
                         + cdfemis(is-is0,i,j) * gridyear * xmd(i,j)
+                        !DSBUG was: ??! sumemis_sec(iland,is,iem) = sumemis_sec(iland,is,iem)&
                   end do
                end do
             end if
@@ -1012,18 +1044,21 @@ subroutine EmisUpdate
                   dbgij= (debug_proc .and. i==debug_li .and. j==debug_lj)
                   do isec=1,EmisFiles(n)%nsectors
                      if (cdfemis(isec,i,j)>1e-20) then
-                        if (dbgij) write(*,*) dtxt//'dbgIJ', isec, NEmis_source_ij(ij), is0, isec
-                        if(NEmis_source_ij(ij)>NEmis_source_ijMAX)write(*,*)dtxt//'>ijmax', me,i,j,NEmis_source_ij(ij)
-                        call CheckStop(NEmis_source_ij(ij)>NEmis_source_ijMAX,'NEmis_source_ijMAX too small. Please increase it')
+                        if(NEmis_source_ij(ij)>NEmis_source_ijMAX) &
+                                write(*,*)dtxt//'>ijmax', me,i,j,NEmis_source_ij(ij)
+                        call CheckStop(NEmis_source_ij(ij)>NEmis_source_ijMAX, &
+                                dtxt//'NEmis_source_ijMAX too small. Please increase it')
                         NEmis_source_ij(ij)=NEmis_source_ij(ij)+1
                         maxfound= max(maxfound,NEmis_source_ij(ij))
                         Emis_source_ij_ix(ij,NEmis_source_ij(ij))=is0+isec
                         Emis_source_ij(ij,NEmis_source_ij(ij)) =cdfemis(isec,i,j)
+                        if (dbgij) write(*,'(a,4i6,es12.3)') dtxt//'BUGdbgIJ',&
+                                isec, NEmis_source_ij(ij), is0, isec, cdfemis(isec,i,j) 
                      end if
-                  end do
-               end do
-            end do
-         end if
+                  end do ! isec
+               end do !i
+            end do !j
+         end if !is-is0
       end do
       deallocate(cdfemis)
 
@@ -1075,7 +1110,8 @@ subroutine EmisUpdate
                end do
             end if
             if(SecEmisTotalsWanted)then
-               write(*     ,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
+               write(*,"(a)") " SECTOR EMISSIONS SUMMARY ==================== "
+               write(*,"(a19,2x,30(a12,:))")"  CC Land    Sector",EMIS_FILE(:)
                fmt="(i4,1x,a9,i4,3x,30(f12.2,:))"
                do ic = 1, NLAND
                   do is = 1, NSECTORS
@@ -1106,9 +1142,12 @@ subroutine EmisUpdate
             NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,MPI_COMM_CALC,IERROR)
       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
       if(me==0 .and. NEmisFile_sources>0) then
-         call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
-         write(*     ,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land","    ",EMIS_FILE(:)
-         write(IO_LOG,"(a23,a5,3x,30(a12,:))")"EMTBL    NCalls CC Land ","    ",EMIS_FILE(:)
+         !call PrintLog('#EMTBL Total emissions by countries, all Emis_source files (Gg/year) ')
+         ! Use EMSUM for  final table. Much easier to find in olog and RunLog!
+         emtag = 'EMSUM'
+         call PrintLog('#'//emtag//' Total emissions by countries, all Emis_source files (Gg/year) ')
+         write(*     ,"(a23,a5,3x,30(a12,:))") emtag//"    NCalls CC Land","    ",EMIS_FILE(:)
+         write(IO_LOG,"(a23,a5,3x,30(a12,:))") emtag//"    NCalls CC Land ","    ",EMIS_FILE(:)
          fmtg="(a5,i9,i4,1x,a9,3x,30(g12.2,:))"
          fmt="(a5,i9,i4,1x,a9,3x,30(f12.2,:))" !nicer but limited max emissions
          do ic = 1, NLAND
@@ -1116,21 +1155,21 @@ subroutine EmisUpdate
             icc=Country(ic)%icode
             if ( ccsum > 0.0 )then
                if (ccsum > 1e8 )then
-                  write(*,     fmtg) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
-                  write(IO_LOG,fmtg) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(*,     fmtg) emtag , ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(IO_LOG,fmtg) emtag , ncalls, icc, Country(ic)%code, xsumemis(ic,:)
                else
-                  write(*,     fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
-                  write(IO_LOG,fmt) 'EMTBL', ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(*,     fmt) emtag, ncalls, icc, Country(ic)%code, xsumemis(ic,:)
+                  write(IO_LOG,fmt) emtag, ncalls, icc, Country(ic)%code, xsumemis(ic,:)
                end if
             end if
          end do
          ccsum = sum( emsum(:))
          if (ccsum > 1e8 )then
-            write(*     ,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
-            write(IO_LOG,fmtg)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(*     ,fmtg)emtag,  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmtg)emtag,  ncalls,999,'TOTAL    ',emsum(:)
          else
-            write(*     ,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
-            write(IO_LOG,fmt)'EMTBL',  ncalls,999,'TOTAL    ',emsum(:)
+            write(*     ,fmt)emtag,  ncalls,999,'TOTAL    ',emsum(:)
+            write(IO_LOG,fmt)emtag,  ncalls,999,'TOTAL    ',emsum(:)
          end if
       end if
       fmt="(a5,i4,1x,a9,3x,30(f12.2,:))" ! reset
@@ -1192,7 +1231,7 @@ end subroutine EmisUpdate
     logical country_owner_map(NLAND,NPROC)
     integer largestsplit !used only here to check value
     integer :: f, itot, iqrc
-    character(len=*), parameter :: dtxt='Emis:'
+    character(len=*), parameter :: dtxt='YEmis:'
 
     if (MasterProc) write(6,*) "Initializing emissions for year",  year
 
@@ -1200,6 +1239,7 @@ end subroutine EmisUpdate
 
     ios = 0
     country_owner_map = .false.
+
 
     ! initialize emis_inputlist
     !>=========================================================
@@ -1552,13 +1592,15 @@ end subroutine EmisUpdate
           write(IO_LOG,*)"Emissions using gridded monhtly timefactors "
        end if
        !=========================
-       call timefactors(year)               ! => fac_emm, fac_edd
+       call timefactors(year)               ! => fac_emm, fac_edd, changes ios
+       !QUERY call CheckStop(ios, "ioserror: after timefacs")
        !=========================
     end if
     !=========================
-    call EmisSplit()    ! In EmisGet_mod, => emisfrac
+    !S24: MOVED to top call EmisSplit()    ! In EmisGet_mod, => emisfrac
+   !if defined own sectors, assumes that we know what we are doing:
     call CheckStop(N_SPLIT == 19 .and. largestsplit<=11 .and. &
-         (SECTORS(1)%name=='GNFR_CAMS'.or.SECTORS(1)%name=='SNAP'),& !if defined own sectors, assumes that we know what we are doing
+         (SECTORS(1)%name=='GNFR_CAMS'.or.SECTORS(1)%name=='SNAP'),&
     " Cannot use GNFR_CAMS splits together with SNAP sector split settings")
     call CheckStop(largestsplit>N_SPLIT," split index not defined ")
     !=========================
@@ -1568,7 +1610,7 @@ end subroutine EmisUpdate
        SplitEmisOut=0.0
     end if
     !=========================
-    call CheckStop(ios, "ioserror: EmisSplit")
+    !QUERY WHY HERE? call CheckStop(ios, "ioserror: EmisSplit")
 
     ! ####################################
     ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
@@ -1626,7 +1668,6 @@ end subroutine EmisUpdate
     do iemislist = 1, size( emis_inputlist(:)%name )
        fractionformat = ( emis_inputlist(iemislist)%format=='fractions' )
        fname=emis_inputlist(iemislist)%name
-       if(MasterProc) write(*,*)'CAMEO-TMP-emislist?', iemislist, basename(fname)
        if ( fname == "NOTSET" ) cycle
        if (emis_inputlist(iemislist)%periodicity /= 'once' ) cycle
 38     FORMAT(A,I4,A)
@@ -1642,21 +1683,25 @@ end subroutine EmisUpdate
        if((emis_inputlist(iemislist)%type == "sectors".or.&
             emis_inputlist(iemislist)%type == "GNFRsectors".or.&
             emis_inputlist(iemislist)%type == "GNFR_CAMSsectors".or.&
-            emis_inputlist(iemislist)%type == "SNAPsectors") .and. index(emis_inputlist(iemislist)%name,".nc")>1)then
+            emis_inputlist(iemislist)%type == "SNAPsectors") .and. &
+            index(emis_inputlist(iemislist)%name,".nc")>1)then
 
           foundYearlySectorEmissions = .true.
           emis_inputlist_NEMIS_FILE = 1!all pollutants are in same file
-          if(index(emis_inputlist(iemislist)%name,"POLL")>0)emis_inputlist_NEMIS_FILE = NEMIS_FILE !one file per pollutant
+          if(index(emis_inputlist(iemislist)%name,"POLL")>0) &
+                  emis_inputlist_NEMIS_FILE = NEMIS_FILE !one file per pollutant
           do iem = 1, emis_inputlist_NEMIS_FILE
              if(index(emis_inputlist(iemislist)%name,"POLL")>0)then
-                !in this case we apply PollName restrictions here, otherwise it is applied in EmisGetCdf
+                !in this case we apply PollName restrictions here, otherwise
+                ! it is applied in EmisGetCdf
                 if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
                    if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle
-                   if(Masterproc)write(*,"(A)")'using PollNames restrictions '
+                   if(Masterproc)write(*,"(A)")dtxt//'using PollNames restrictions '
                 end if
              end if
              fname = key2str(trim(emis_inputlist(iemislist)%name),'POLL',EMIS_FILE(iem))
 
+             if(MasterProc) write(*,*) dtxt//'TRACK call EmisGetCdf:'//trim(fname)
              call EmisGetCdf(iem, fname, sumemis_local, &
                   GridEmis, GridEmisCodes, nGridEmisCodes, 1,&
                   emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
@@ -1664,6 +1709,8 @@ end subroutine EmisUpdate
                   emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask,&
                   emis_inputlist(iemislist)%pollName,&
                   fractionformat,emis_inputlist(iemislist)%sector)
+             if ( debug_proc) write(*,*) dtxt//'XNEmisA:'//basename(fname)!//':'&
+                     !//trim(emis_inputlist(iemislist)%pollName),maxval(GridEmis)
 
           end do!NEMIS_FILE
 
@@ -1720,7 +1767,8 @@ end subroutine EmisUpdate
        end if
 
 
-       if(MasterProc) write(*,*) dtxt//'CAMEO check emislist)', iemislist, trim(emis_inputlist(iemislist)%periodicity)
+       if(MasterProc) write(*,*) dtxt//'XNEmis check emislist)', iemislist, &
+               trim(emis_inputlist(iemislist)%periodicity)
        if(MasterProc.and. emis_inputlist(iemislist)%periodicity == "once") then
           ! Added EMTAB to make parsing easy. These data are important!
           call PrintLog("#EMTAB Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
@@ -1967,10 +2015,12 @@ end subroutine EmisUpdate
                       iqrc = iqrc + 1
                       itot = iqrc2itot(iqrc)
                       if(trim(species(itot)%name)==trim(Emis_source(n)%species))then
-                         if(DEBUG%EMISSIONS .and. MasterProc) write(*,'(a,5i4,a,f12.3)')&
-                              trim(Emis_source(n)%species)//' included in '//trim(EMIS_FILE(iem)), n, &
-                              isec, iland, Emis_source(n)%country_ix, iem, &
+                         if(DEBUG%EMISSIONS .and. MasterProc) then
+                            write(*,'(a,i6,4i4,a,f12.3)')&
+                              trim(Emis_source(n)%species)//' included in '//trim(EMIS_FILE(iem)),&
+                              n, isec, iland, Emis_source(n)%country_ix, iem, &
                               trim( species(itot)%name ),  e_fact(isec,iland,iem)
+                         end if
                          Emis_source(n)%factor = Emis_source(n)%factor * e_fact(isec,iland,iem)
                           go to 888
                       endif
@@ -2523,7 +2573,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
              !the species is defined as a sector emission, e.g. sox, nox
              iem=find_index(Emis_source(n)%species,EMIS_FILE(:))
 
-             if(debug_tfac) write(*,'(a,9i5)'), dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
+             if(debug_tfac) write(*,'(a,9i5)') dtxt//'SecEmis'//trim(EMIS_FILE(iem))//':'//&
               trim(Emis_source(n)%species)//trim(Emis_source(n)%periodicity ), &
                is, iland, iem
              call CheckStop(iem<0, dtxt//"did not recognize species "//trim(Emis_source(n)%species))
@@ -2802,18 +2852,8 @@ subroutine newmonth
   end if ! USES%AIRCRAFT_EMIS
 
   if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????", me
-  if(USES%SOILNOx .and. USES%SOILNOX_METHOD=='OLD_EURO')then  ! European Soil NOx emissions
 
-      ! read in map of annual N-deposition produced from pre-runs of EMEP model
-      ! with script mkcdo.annualNdep
-      call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
-          interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
-
-      if(DEBUG%SOILNOX.and.debug_proc)&
-        write(*,"(a,4es12.3)") dtxt//" SOILNOX AnnualDEBUG ", &
-        AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
-
-  elseif(USES%SOILNOX) then ! Global soil NOx, default from 2021
+  if(USES%SOILNOX) then ! Global soil NOx, default from 2021
 
      !cf MonthlyDiurnalEmisFactor(months, tsteps, lat, lon)
     SoilNOx(:,:)=0.0
@@ -2957,7 +2997,7 @@ subroutine newmonth
         SoilNOx=SoilNOx/Nyears
       end if ! nstart test
 
-    else !  SOILNOX_METHOD Needs to be OLD_EURO, Fert, NoFert, or Zaehle2011
+    else !  SOILNOX_METHOD Needs to be Fert, NoFert, or Zaehle2011
       call StopAll(dtxt//'WRONG SNOX METHOD:'//USES%SOILNOX_METHOD )
     end if ! CAMS81
 
@@ -2971,7 +3011,7 @@ subroutine newmonth
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
-  if(USES%SOILNOX .and. USES%SOILNOX_METHOD /= 'OLD_EURO') then
+  if(USES%SOILNOX ) then
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
     ! CAMS uses kg(NO)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle
@@ -3119,13 +3159,15 @@ end if
                emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask,&
                emis_inputlist(iemislist)%pollName,&
                fractionformat,emis_inputlist(iemislist)%type)
+          if ( debug_proc) write(*,*) dtxt//'XEmisB:'//basename(fname),maxval(secemis)!//':'&
 
        end do! iem = 1,NEMIS_FILE
        sumemis=0.0
        CALL MPI_REDUCE(sumemis_local,sumemis,&
             NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)
        if(MasterProc)then
-          call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
+          call PrintLog("Total emissions by countries for "//&
+                  trim(emis_inputlist(iemislist)%name)//" (Gg)")
           write(*     ,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)
           write(IO_LOG,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)
           sumEU(:) = 0.0

@@ -205,16 +205,16 @@ contains
   !-- local
   integer ::  emepICC, insec    ! EMEP country number and sector value read from femis etc
   integer ::  indexCC           ! Index of country code in Country array. Can differ from emep number
-  integer ::  i, isec,ih, n
-  integer ::  idd, idd2, ihh, iday, mm, mm2 , mm0! Loop and count variables
+  integer ::  i, isec, n
+  integer ::  idd, idd2, ihh, mm ! Loop and count variables
   integer ::  iemis             ! emission count variables
 
-  integer :: weekday            ! 1=monday, 2=tuesday etc.
+  !integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac,vmin,vmax, vmean ! used in interpolation, testing
   real    :: tmp24(24)          ! used for hourly factors
   character(len=2000) :: inputline ! NB: 24 real number can be many hundred characters long
   real :: fracchange
-  real :: Start, Endval, Average, x, buff(366)
+  real :: buff(366)
   logical :: found_HourlyFacFile, found
   character(len=*), parameter:: dtxt='tfacs:'
   character(len=TXTLEN_NAME):: secname
@@ -266,6 +266,7 @@ contains
           do
              read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname, &
                   (buff(i),i=1,nydays)         
+             if ( ios <  0 ) print *, "IOS eof IEMLOOP"//trim(basename(fname2)), ios
              if ( ios <  0 ) exit   ! End of file
              indexCC=find_index(code,Country(:)%code)
              if(indexCC<1.or.indexCC>NLAND)then
@@ -372,6 +373,7 @@ contains
          case("CAMS_TEMPO","CAMS_TEMPO_CLIM")
             !print *, dtxt//'MFACD', iemis
             read(IO_TIMEFACS,fmt=*,iostat=ios) code,secname,(buff(mm),mm=1,12)
+             if ( ios <  0 ) print *, "IOS eof CAMS"//trim(basename(fname2)), ios
             !print *, dtxt//'MFACE:'//trim(code)//trim(secname)
             if( ios <  0 ) exit     ! End of file
             call CheckStop( ios, dtxt//": Read error in Monthlyfac")
@@ -474,6 +476,7 @@ contains
               (buff(i),i=1,7)         
            indexCC=find_index(emepICC,Country(:)%icode)
          end if
+         if ( ios <  0 ) print *, "IOS eof DoW2"//trim(basename(fname2)), ios
          if ( ios <  0 ) exit   ! End of file
 
          maxidx = max(insec,maxidx)
@@ -542,6 +545,7 @@ contains
          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
          n = n + 1
          !if(dbgTF)write(*,*) "HourlyFacs ", n, trim(inputline)
+         if ( ios <  0 ) print *, "IOS eof HRLLOOP"//trim(basename(fname2)), ios
          if ( ios <  0 ) exit     ! End of file
          if( index(inputline,"#")>0 ) then ! Headers
             if(n==1) call PrintLog(trim(inputline))
@@ -607,7 +611,7 @@ contains
 
 !3.1)Additional country and species specific hourly time factors
 
-    if(dbgTF) write(*,'(a,i4,L2,i,a)') dtxt//'Hourly SPECIALs? '//trim(HourlyFacSpecialsFile)
+    if(dbgTF) write(*,'(a)') dtxt//'Hourly SPECIALs? '//trim(HourlyFacSpecialsFile)
     SPECEMLOOP: do iemis = 1, NEMIS_FILE
        fname2 = key2str(HourlyFacSpecialsFile,'POLL',trim (EMIS_FILE(iemis)))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.not.found_HourlyFacFile,iostat=ios)
@@ -806,7 +810,6 @@ contains
    logical, save :: first_call = .true.
    real, allocatable, dimension(:,:), save :: tmpwork
    integer :: i,j
-   integer :: last_tz ! Why needed, problems with ReadField or my tz file?
 
     if(.not.allocated(timezones%map))then
        allocate(tmpwork(LIMAX,LJMAX))        ! for input, floats

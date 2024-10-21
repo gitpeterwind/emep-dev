@@ -10,7 +10,7 @@ include Makefile.SRCS
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
-OPT_FLAGS = -O2 -march=core-avx2
+#OPT_FLAGS = -O2 -march=core-avx2
 F90FLAGS = -g  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
@@ -25,12 +25,21 @@ ifeq ($(MACHINE), betzy)
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpif90
 else ifeq ($(MACHINE), atos)
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS += $(shell nc-config --cflags)
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS += $(shell nf-config --cflags)
   MAKEDEPF90=/home/fan/bin/makedepf90
   OPT_FLAGS = -O2 -march=core-avx2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=mpif90
+else ifeq ($(MACHINE), lumi)
+#  ml load LUMI/23.09  partition/C cpeGNU/23.09 gcc/12.2.0  cray-hdf5/1.12.2.7 cray-netcdf/4.9.0.7
+  F90FLAGS =  -default64  -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none -ffree-line-length-none -Wno-error=line-truncation -O2 -g
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS += $(shell nf-config --cflags)
+  MAKEDEPF90=/users/windpete/bin/makedepf90
+#  OPT_FLAGS =
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=ftn
 else ifeq ($(MACHINE),fram)
   MODULES = netCDF-Fortran/4.4.5-iimpi-2019a
   LDFLAGS +=  $(shell nc-config --flibs)
@@ -61,6 +70,11 @@ else ifneq (,$(findstring $(MACHINE),stratus nebula))
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
   MAKEDEPF90=makedepf90
+else ifneq (,$(findstring $(MACHINE),stratus2 nebula2))
+  MODULES = buildenv-intel/2023a-eb netCDF-HDF5/4.9.2-1.12.2-hpc1
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS+= $(shell nf-config --fflags)
+  MAKEDEPF90=/software/sse2/tetralith_el9/easybuild/pure/software/makedepf90/2.8.8-foss-2022a/bin/makedepf90
 else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
@@ -91,6 +105,8 @@ else # default ubuntu etc.
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
 endif
+
+
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
@@ -106,7 +122,7 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
 ifneq ($(LD),gfortran)
 NetCDF_mod.o:NetCDF_mod.f90
-	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
+	$(F90) $(F90FLAGS) -c $< -o $@
 endif
 
 # inject git info into logs

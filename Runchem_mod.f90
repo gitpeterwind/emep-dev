@@ -15,11 +15,13 @@ module RunChem_mod
   use AOD_PM_mod,        only: AOD_Ext
   use Aqueous_mod,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_mod,     only: setup_bio
+  use PBAP_mod,          only: set_PBAPs
   use CellMet_mod,       only: Get_CellMet, z0_out_ix, invL_out_ix
   use CheckStop_mod,     only: CheckStop, StopAll
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
   use Chemsolver_mod,    only: chemistry
   use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
+  use ChemRates_mod,    only:  setChemrates ! rct, NRCT
   use ChemSpecs_mod,     only: 
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: MasterProc, & 
@@ -45,7 +47,7 @@ module RunChem_mod
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use PointSource_mod,    only: pointsources, get_pointsources
   use SeaSalt_mod,       only: SeaSalt_flux
-  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis
+  use Setup_1d_mod,      only: setup_1d, setup_rcemis, reset_3d, sum_rcemis, checkChemRates
   use ZchemData_mod,only: first_call, rcphotslice, &
                               M, rct, rcemis, rcbio, rcphot, xn_2d  ! DEBUG for testing
   use SmallUtils_mod,    only: find_index
@@ -145,19 +147,29 @@ subroutine runchem()
 
       call Setup_Clouds(i,j,debug_flag)
 
+      !needs to be after Setup_clouds which makes FGAS
+      call setChemRates() 
+
+      call checkChemRates(i,j,debug_flag) 
+
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
+
+      if (USES%FUNGAL_SPORES .or. USES%BACTERIA .or. USES%MARINE_OA) &
+          call set_PBAPs(i,j) !Adds PBAPs to rcemis
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
-      if(USES%HRLYCLOUDJ) then
-        if(nhour>photstep) then
+      if(USES%PHOTOLYSIS) then
+        if(USES%HRLYCLOUDJ) then
+          if(nhour>photstep) then
+            call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
+          endif
+        else
           call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
         endif
-      else
-        call setup_phot_cloudj(i,j,errcode,0) ! fills up rcphotslice
-      endif
-      rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
-
+        rcphot(:,:) = rcphotslice(:,:,i,j) ! populate from (hrly) slice array
+      end if
+      
       call write_jvals(i,j)
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
@@ -240,7 +252,7 @@ subroutine runchem()
       !_________________________________________________
 
       call Add_2timing(29,tim_after,tim_before,"Runchem:chemistry")
-                
+
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(step_main,2)/=0) then

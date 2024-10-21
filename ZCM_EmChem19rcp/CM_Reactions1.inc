@@ -609,8 +609,7 @@
   
   L = rct(6,k) * xnew(OH)  &
     + rcphot(IDH2O2,k)  &
-    + AQRCK(ICLRC1,K) * xnew(SO2)  &
-    + 1.0e-5
+    + AQRCK(ICLRC1,K) * xnew(SO2)
   
   xnew(H2O2) = (xold(H2O2) + dt2 * P) / (1.0 + dt2 * L)
 
@@ -1002,8 +1001,7 @@
   P = 0.9* rct(32,k) * xnew(CH3O2) * xnew(HO2)
   
   L = rct(34,k) * xnew(OH)  &
-    + rcphot(IDCH3O2H,k)  &
-    + 1.0e-5
+    + rcphot(IDCH3O2H,k)
   
   xnew(CH3OOH) = (xold(CH3OOH) + dt2 * P) / (1.0 + dt2 * L)
 

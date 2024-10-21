@@ -1,3 +1,4 @@
+
 !-> ASOC_ug1e3
 
   P = YCOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
@@ -129,6 +130,7 @@
   
   xnew(non_C_ASOA_ng1e2) = xold(non_C_ASOA_ng1e2) + dt2 * P
 
+
 !-> SO4
 
   P = rcemis(SO4,k)  &
@@ -151,6 +153,14 @@
   xnew(NH3) = xold(NH3) + dt2 * P
 
 
+!-> NO3_f
+
+  ! P = 0.0
+  
+  ! L = 0.0
+  
+  ! Nothing to do for NO3_f! xnew(NO3_f) = max(0.0, xold(NO3_f))
+
 
 !-> NO3_c
 
@@ -161,138 +171,7 @@
   
   xnew(NO3_c) = xold(NO3_c) + dt2 * P
 
-
 if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
-!-> ASOC_ug1e3
-
-  P_lf(Nd+1:Nd+NSOA) = YCOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(83,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1e3) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> ASOC_ug1e2
-
-  P_lf(Nd+1:Nd+NSOA) = YCOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + rct(83,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(82,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> ASOC_ug10
-
-  P_lf(Nd+1:Nd+NSOA) = YCOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + rct(82,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(81,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug10) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> ASOC_ug1
-
-  P_lf(Nd+1:Nd+NSOA) = YCOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YCBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YCTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YCALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YCOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + rct(81,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(80,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> ASOC_ng1e2
-
-  P_lf(Nd+1:Nd+NSOA) = rct(80,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1)
-  
-  ! L_lf(Nd+1:Nd+NSOA) = 0.0
-  
-  xnew_lf(Nd+1:Nd+NSOA,ASOC_ng1e2) = xold_lf(Nd+1:Nd+NSOA,ASOC_ng1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)
-
-
-!-> non_C_ASOA_ug1e3
-
-  P_lf(Nd+1:Nd+NSOA) = YNOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(87,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> non_C_ASOA_ug1e2
-
-  P_lf(Nd+1:Nd+NSOA) = YNOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + 0.9* rct(83,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3)  &
-    + 1.075* rct(87,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(86,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> non_C_ASOA_ug10
-
-  P_lf(Nd+1:Nd+NSOA) = YNOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + 0.9* rct(82,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2)  &
-    + 1.075* rct(86,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(85,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> non_C_ASOA_ug1
-
-  P_lf(Nd+1:Nd+NSOA) = YNOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
-    + YNBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
-    + YNTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
-    + YNALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
-    + YNOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
-    + 0.9* rct(81,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10)  &
-    + 1.075* rct(85,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10)
-  
-  L_lf(Nd+1:Nd+NSOA) = rct(84,k) * xnew(OH)
-  
-  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
-
-
-!-> non_C_ASOA_ng1e2
-
-  P_lf(Nd+1:Nd+NSOA) = 0.9* rct(80,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1)  &
-    + 1.075* rct(84,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1)
-  
-  ! L_lf(Nd+1:Nd+NSOA) = 0.0
-  
-  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ng1e2) = xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ng1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)
 
 !-> ASOC_ug1e3
 
@@ -425,13 +304,14 @@ if (lf_fullchem .and. k > KMAX_MID-lf_Nvert) then
   
   xnew_lf(1:Nd,non_C_ASOA_ng1e2) = xold_lf(1:Nd,non_C_ASOA_ng1e2) +  dt2 * P_lf(1:Nd)
 
+
 !-> SO4
 
   P_lf(1:Nd) = rcemis(SO4,k)  &
-    + rct(96,k) * xnew_lf(1:Nd,OH) * xnew_lf(1:Nd,SO2)  &
-    + AQRCK(ICLRC1,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,H2O2)  &
-    + AQRCK(ICLRC2,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,O3)  &
-    + AQRCK(ICLRC3,K) * xnew_lf(1:Nd,SO2)
+    + rct(96,k)*fgasso2_lf(1:Nd,k) * xnew_lf(1:Nd,OH) * xnew_lf(1:Nd,SO2)  &
+    + AQRCK_LF(1:ND,ICLRC1,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,H2O2)  &
+    + AQRCK_LF(1:ND,ICLRC2,K) * xnew_lf(1:Nd,SO2) * xnew_lf(1:Nd,O3)  &
+    + AQRCK_LF(1:ND,ICLRC3,K) * xnew_lf(1:Nd,SO2)
   
   ! L_lf(1:Nd) = 0.0
   
@@ -451,6 +331,14 @@ P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivem
   xnew_lf(1:Nd,NH3) = xold_lf(1:Nd,NH3) +  dt2 * P_lf(1:Nd)
 
 
+!-> NO3_f
+
+  ! P_lf(1:Nd) = 0.0
+  
+  ! L_lf(1:Nd) = 0.0
+  
+  ! Nothing to do for NO3_f! xnew_lf(1:Nd,NO3_f) = max(0.0, xold_lf(1:Nd,NO3_f))
+
 
 !-> NO3_c
 
@@ -460,6 +348,137 @@ P_lf(NSPEC_deriv_lf+1:Nd) = P_lf(NSPEC_deriv_lf+1:Nd) + rcemis_lf(1:N_lf_derivem
   ! L_lf(1:Nd) = 0.0
   
   xnew_lf(1:Nd,NO3_c) = xold_lf(1:Nd,NO3_c) +  dt2 * P_lf(1:Nd)
+
+!-> ASOC_ug1e3
+
+  P_lf(Nd+1:Nd+NSOA) = YCOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YCBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(83,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1e3) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> ASOC_ug1e2
+
+  P_lf(Nd+1:Nd+NSOA) = YCOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YCBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + rct(83,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(82,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> ASOC_ug10
+
+  P_lf(Nd+1:Nd+NSOA) = YCOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YCBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + rct(82,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(81,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug10) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> ASOC_ug1
+
+  P_lf(Nd+1:Nd+NSOA) = YCOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YCBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YCTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YCALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YCOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + rct(81,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(80,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1) = (xold_lf(Nd+1:Nd+NSOA,ASOC_ug1) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> ASOC_ng1e2
+
+  P_lf(Nd+1:Nd+NSOA) = rct(80,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1)
+  
+  ! L_lf(Nd+1:Nd+NSOA) = 0.0
+  
+  xnew_lf(Nd+1:Nd+NSOA,ASOC_ng1e2) = xold_lf(Nd+1:Nd+NSOA,ASOC_ng1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)
+
+
+!-> non_C_ASOA_ug1e3
+
+  P_lf(Nd+1:Nd+NSOA) = YNOXY(3)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YNBENZ(3)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(3)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(3)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(3)* rct(52,k) * xnew(OH) * xnew(C3H6)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(87,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> non_C_ASOA_ug1e2
+
+  P_lf(Nd+1:Nd+NSOA) = YNOXY(2)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YNBENZ(2)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(2)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(2)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(2)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + 0.9* rct(83,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e3)  &
+    + 1.075* rct(87,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e3)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(86,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> non_C_ASOA_ug10
+
+  P_lf(Nd+1:Nd+NSOA) = YNOXY(1)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YNBENZ(1)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(1)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(1)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(1)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + 0.9* rct(82,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1e2)  &
+    + 1.075* rct(86,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1e2)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(85,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> non_C_ASOA_ug1
+
+  P_lf(Nd+1:Nd+NSOA) = YNOXY(0)* 1.36e-11 * xnew(OXYL) * xnew(OH)  &
+    + YNBENZ(0)* rct(56,k) * xnew(BENZENE) * xnew(OH)  &
+    + YNTOL(0)* rct(57,k) * xnew(TOLUENE) * xnew(OH)  &
+    + YNALK(0)* rct(46,k) * xnew(OH) * xnew(NC4H10)  &
+    + YNOLE(0)* rct(52,k) * xnew(OH) * xnew(C3H6)  &
+    + 0.9* rct(81,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug10)  &
+    + 1.075* rct(85,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug10)
+  
+  L_lf(Nd+1:Nd+NSOA) = rct(84,k) * xnew(OH)
+  
+  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1) = (xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1) + dt2 * P_lf(Nd+1:Nd+NSOA)) / (1.0 + dt2 * L_lf(Nd+1:Nd+NSOA))
+
+
+!-> non_C_ASOA_ng1e2
+
+  P_lf(Nd+1:Nd+NSOA) = 0.9* rct(80,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,ASOC_ug1)  &
+    + 1.075* rct(84,k) * xnew(OH) * xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ug1)
+  
+  ! L_lf(Nd+1:Nd+NSOA) = 0.0
+  
+  xnew_lf(Nd+1:Nd+NSOA,non_C_ASOA_ng1e2) = xold_lf(Nd+1:Nd+NSOA,non_C_ASOA_ng1e2) + dt2 * P_lf(Nd+1:Nd+NSOA)
 
 
 endif
@@ -586,14 +605,6 @@ endif
   
   xnew(non_C_BSOA_ng1e2) = xold(non_C_BSOA_ng1e2) + dt2 * P
 
-
-!-> NO3_f
-
-  ! P = 0.0
-  
-  ! L = 0.0
-  
-  ! Nothing to do for NO3_f! xnew(NO3_f) = max(0.0, xold(NO3_f))
 
 !-> NH4_f
 

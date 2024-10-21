@@ -72,7 +72,6 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     real :: ZiMIN = 50.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                   ! maximum mixing height
     character(len=10) :: HmixMethod = "NWP"  ! Method used for Hmix
-     !rv4.52 character(len=10) :: HmixMethod = "JcRb_t2m"
       ! JcRb = Jericevic/Richardson number method
       ! JcRb_surfT is the new JcRb using pop T at skin
       ! JcRb_t2m is new JcRb using pop T at 2m
@@ -80,7 +79,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
     real :: MIN_USTAR_LAND = 0.1 ! m/s - Defines stable BL height
     logical :: NEUTRAL_USTAR_START = .false.  !! Method to start ustar/invL calcs.Simpler?
     !
-    ! Moved Feb 2021 from BLPhysics:
+    ! BLPhysics:
     logical :: NWP_Kz=.false.  ! hb 23.02.2010 Kz from meteo. NOT WORKING!
     logical :: USE_MIN_KZ =.false. ! "fix"
     character(len=9):: &
@@ -143,7 +142,7 @@ CHARACTER(LEN=TXTLEN_NAME), private, save :: LAST_CONFIG_LINE_DEFAULT
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
 
-logical, private, parameter :: F = .false.
+logical, private, parameter :: F = .false., T = .true.
 
 type, public :: timeFacs_t
   integer :: MonthlySmoothFac = 100   ! <100 smooths MonthlyFacs across months
@@ -160,34 +159,44 @@ type(timeFacs_t), public, save :: timeFacs = timeFacs_t()
 character(len=TXTLEN_FILE), target, save, public :: DayofYearFacFile = './DayofYearFac.POLL'
 character(len=*), parameter,private :: TFACSDIR='DataDir/Timefactors/CAMS_TEMPO/'
 character(len=TXTLEN_FILE), target, save, public :: &
-  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep1degSig2p0mmSig60.nc' &
+  GriddedMonthlyFacFile = TFACSDIR//'CAMS_TEMPO_GLOB4emep_v2024-1.nc' &
  ,MonthlyFacFile = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_month.POLL' &
  ,DailyFacFile   = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_week.POLL' &
  ,HourlyFacFile  = TFACSDIR//'cams_tempo_v3_2/GapFilled/cams_tempo_v3_2_hour.POLL' &
  ,HourlyFacSpecialsFile = 'NOTSET'
 
-!OLD 2021: added ECLIPSE6b-based factors for non-European areas
-!OLD NEEDS THOUGHT BY USER!!! CAMS_TEMPO best, or ECLIPSE w may or GENEMIS with xJune 
-!OLD 2023 rv4.50 update - revert defaults to xJune2012 and GENEMIS. Need to re-check this!
-!OLD  HourlyFacSpecialsFile = '/ec/res4/hpcperm/fa1k/cams_tempo_v3_2/cams_tempo_v3_2_hour.POLL',
-!OLD MonthlyFacFile = 'DataDir/Timefactors/MonthlyFacs_eclipse_V6b_snap_xJun2012/MonthlyFacs.POLL'
-!OLD DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
-!OLD HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
+type, public :: domain_settings_t
+   character(len=20) :: name
+   logical :: USES_CONVECTION
+   logical :: USES_PFTMAPS
+   logical :: USES_GLOB_TFACS
+   logical :: USES_DEGREEDAYS
+end type domain_settings_t
+
+! The domain_setup MUST be set via USES%DOMAIN_SETUP = GLOB or EURO in
+!  config_emep.nml. ***** DO NOT set here **** !
+type(domain_settings_t), private, save :: &
+      GLOB_DOMAIN_SETUP  = domain_settings_t( 'GLOB',  T, T, T, F )   &
+     ,EURO_DOMAIN_SETUP  = domain_settings_t( 'EURO',  F, F, F, T )   &
+     ,domain_setup !       = domain_settings_t( 'NOTSET',  F, F, F, F )
+
 
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
+  character(len=10) :: DOMAIN_SETUP_TYPE = 'NOTSET' ! SET to GLOB or EURO in config_emep.nml
   logical :: &                   !
    ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
     ,EMIS             = .false. &! Uses ESX
-!FEB2024    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
     ,DEGREEDAY_FACTORS = .true. &! will not be used if not found or global grid
     ,EMISSTACKS       = .false. &!
     ,BVOC             = .true.  &!triggers isoprene and terpene emissions
 !    ,RH_RHO_CORR      = .false. &! EXPERIMENTAL, for settling velocity
 !EXP    ,GRAVSET          = .false. &! gravitational settling (EXPERIMENTAL! DO NOT USE YET)
     ,SEASALT          = .true.  &! See also SEASALT_fFrac
-    ,CONVECTION       = .false. &! false works best for Euro runs
+   ! CONVECTION, PFT_MAPS and is set via DOMAIN_SETUP_TYPE
+      ,CONVECTION       = .false. &! false works best for Euro runs
+      ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European.
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual
     ,zero_below3000ft = .true.  &! set aircraft emissions to zero below ca 3000ft
     ,LIGHTNING_EMIS   = .true.  &!
@@ -209,14 +218,14 @@ type, public :: emep_useconfig
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
+    ,PHOTOLYSIS       = .true.  & ! include/exclude photolysis (sometimes not needed for e.g. Ash runs)
     ,CLOUDJAEROSOL    = .true.  & ! include aerosol in CloudJ photolysis rate calculations
     ,HRLYCLOUDJ       = .true.  & ! CloudJ hourly updates rather than modeltstep. Needs CLOUDJ = .true.
     ,CLOUDICE         = .true.  & ! flag to force reading in cloud ice water content or not
     ,CLIMSTRATO3      = .true.  & ! set to true use climatological overhead stratospheric O3 (default)
     ,CLOUDJVERBOSE    = .false. & ! set to true to get initialization print output from CloudJ
+    ,CH4GRADIENT      = .false. & ! set to true to enable simplified lat. CH4 gradient
     ,AMINEAQ          = .false. & ! MKPS
-!    ,ESX              = .false. &! Uses ESX
-    ,PFT_MAPS         = .false. &! Set true for GLOBAL runs, false for EMEP/European. Also sets GLOBAL_Settings (tmp)
     ,uEMEP            = .false. &! make local fraction of pollutants
     ,LocalFractions   = .false. &! make local fraction of pollutants
     ! meteo related
@@ -227,14 +236,22 @@ type, public :: emep_useconfig
     ,RH_FROM_NWP      = .true.  &! Use rh2m, not LE in Submet
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
-    ,EFFECTIVE_RESISTANCE = .true. ! Drydep method designed for shallow layer
+    ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
+    ,FUNGAL_SPORES    = .false. & !For including fungal spores (part of PBAP) NOT IMPLEMENTED
+    ,BACTERIA         = .false. & !For including bacteria (part of PBAP)  NOT IMPLEMENTED
+    ,MARINE_OA        = .false. !For including MarineOA (part of PBAP)  NOT IMPLEMENTED
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
-  real :: SEASALT_fFrac = 0.5       ! 0 = "< rv4_39", 0.3 = new suggestion
+  real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
 ! if  FIXED_CLW > 0, this value is used for clouds. Otherwise calculated
 ! from NWP values. (In future NWP will be used by default, but we are
-! invesigating some pH calculation issues. For safety, use FIXED_CLW
-  real :: FIXED_CLW   = 0.6e-6      ! cloud liquid water (vol-H2O/vol-Air)
+! invesigating some pH calculation issues. For safety, can use FIXED_CLW = 0.6e-6
+  real :: FIXED_CLW   = -999      ! cloud liquid water (vol-H2O/vol-Air)
+!Define limits for "cloud"
+  real :: PR_LIMIT = 1.0e-7         ! for accumulated precipitation
+  real :: CW_LIMIT = 1.0e-7         ! for cloud water, kg(H2O)/kg(air)
+  real :: B_LIMIT  = 1.0e-3         ! for cloud cover (fraction)
+
 
 !DUMMY FOR TESTING NOW!!! Set to 'NO3' to put all NO3 into _c
 !Species where we want to include "tail" of  course mode into PM25
@@ -247,6 +264,9 @@ type, public :: emep_useconfig
  ! Forest Fires. Curently coded for "P800" and "PBL". WIll extend to other
  ! methods later.
   character(len=20) ::FFireDispMethod = "PBL" ! to PBL height. Alt=P800, to 800 hPa, std. atmos.
+  character(len=20) ::ECageMethod = "HuangOCC" ! or Liu2011
+  real              ::ECageFac    = 1.0
+
 
  ! N2O5 hydrolysis
  ! During 2015 the aersol surface area calculation was much improved, and this
@@ -258,13 +278,14 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
+
+! Selection of Emissions parameterization for fungal
+  character(len=4) :: FUNGAL_METHOD  = 'HS_5'  !HS_3, HS_5, SD, HS, JS (see PBAP module)
+
   logical :: BIDIR           = .false. ! FUTURE
 end type emep_useconfig
 
 type(emep_useconfig), public, save :: USES
-
-logical,  public, save :: &
-      FORCE_PFT_MAPS_FALSE = .false. !forces PFT_MAPS  = F, even if global grid
 
 integer, parameter, public :: NSECTORS_ADD_MAX=  250  ! Max. total number of additional sector that can be read froms config
 type(Sector_type), public :: SECTORS_ADD(NSECTORS_ADD_MAX)
@@ -285,9 +306,6 @@ logical, public, save :: AOD_WANTED = .false.!set automatically to T, if AOD req
 logical, public, save  :: HourlyEmisOut = .false. !to output sector emissions hourly
 logical, public, save  :: DailyEmisOut = .false. !to output sector emissions daily
 
-!Note that we cannot define the settings as logical (T/F), because we need the state "NOTSET" also
-character(len=TXTLEN_NAME), public, save :: EUROPEAN_settings = 'NOTSET'! The domain covers Europe
-character(len=TXTLEN_NAME), public, save :: GLOBAL_settings = 'NOTSET'!The domain cover other regions
 
 character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
@@ -323,20 +341,6 @@ type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
-
-! Soil NOx. Choose EURO for better spatial and temp res, but for
-! global runs need global monthly. Variable USE_SOILNOX set from
-! these below.
-!
-! Also, is scaling needed for "OLD_EURO" SOILNOX?
-! The Euro soil NO emissions are based upon average Nr-deposition calculated
-!  for the 2000s, as given in the AnnualNdep.nc files. For future years a
-!  new AnnualNdep.nc could be pre-calculated. A simpler but approximate
-!  way is to scale with some other factor, e.g. the ratio of emissions over
-!  some area (EMEP, or EU) in year YYYY divided by year 2005 values.
-! Remember, soil-NO emissions are *very* uncertain.
-
-  real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
 !See DMS_t  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
@@ -447,8 +451,6 @@ integer, public, parameter :: &
   ,NXTRA_SITE_D2D  =   18       ! No.  params from d_2d fields
 integer, public, parameter :: NSONDES_MAX = 99 ! Max. no sondes allowed
 
-integer, private :: isite              ! To assign arrays, if needed
-
 !**** Sonde outputs   (used in Sites_mod)
 !==============================================================
 !     Specify the species to be output to the sondes.out file
@@ -513,7 +515,7 @@ type, private :: sites_t
   integer, allocatable, dimension(:) :: d2d
   integer, allocatable, dimension(:) :: misc
 end type sites_t
-type(sites_t),save :: site_outputs, sonde_outputs
+!NOTUSED type(sites_t),save :: site_outputs, sonde_outputs
 !character(len=24), public, save, dimension(MAX_NEXTRA_SITED2D) :: &
 !   site_outputs_extraD2D = '-', sonde_outputs_extraD2D = '-'
 
@@ -834,7 +836,6 @@ character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataD
 character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
-character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
@@ -842,7 +843,8 @@ character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust2014
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 !OLD character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 character(len=TXTLEN_FILE), target, save, public :: Monthly_timezoneFile = 'DataDir/Timefactors/monthly_timezones_GLOBAL05.nc'
-character(len=TXTLEN_FILE), target, save, public :: Chlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+character(len=TXTLEN_FILE), target, save, public :: OceanChlorophyll_File = 'DataDir/Chlorophyll_ocean_Lana_1849_2006.nc'
+
 
 ! Species indices that may or may not be defined in Species
 integer, public, save :: SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix,&
@@ -858,11 +860,10 @@ contains
 subroutine Config_Constants(iolog)
   integer, intent(in) :: iolog ! for Log file
 
-  integer :: i, j, nj, ispec, iostat
+  integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   character(len=*), parameter ::  dtxt='Config_MC:'
-  character(len=100 ) :: logtxt
 
   NAMELIST /Model_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -877,7 +878,6 @@ subroutine Config_Constants(iolog)
    ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
-   ,EURO_SOILNOX_DEPSCALE &
    ,lf_src & !Local Fractions
    ,lf_set & !Local Fractions
    ,lf_species &
@@ -911,8 +911,7 @@ subroutine Config_Constants(iolog)
    ,dt_advec              & ! can be set to override dt_advec
    ,METSTEP &
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection
-   ,EUROPEAN_settings & ! The domain covers Europe ->
-   ,GLOBAL_settings & ! The domain cover other regions too -> Convection
+   ,GLOB_DOMAIN_SETUP, EURO_DOMAIN_SETUP & ! ONLY used if overrides of defaults are wanted
    ,fileName_O3_Top&
    ,fileName_CH4_ibcs&
    ,femisFile&
@@ -925,7 +924,7 @@ subroutine Config_Constants(iolog)
    ,DMSFile&
    ,OceanNH3File&
    ,soilnox_emission_File&
-   ,Chlorophyll_File&
+   ,OceanChlorophyll_File&
    ,GriddedMonthlyFacFile&
    ,MonthlyFacFile&
    ,DailyFacFile&
@@ -947,12 +946,10 @@ subroutine Config_Constants(iolog)
    ,EMEP_EuroBVOCFile&
    ,cloudjx_initf&
    ,cloudjx_strat&
-   ,NdepFile&
    ,lightningFile&
    ,LoganO3File&
    ,DustFile&
    ,TopoFile&
-   !OLD ,Monthly_patternsFile&
    ,Monthly_timezoneFile&
    ,GRID,iyr_trend,runlabel1,runlabel2,startdate,enddate&
    ,NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo&
@@ -1073,12 +1070,25 @@ subroutine Config_Constants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
-  ! Sep 2023 temporary solution. We set PFT_MAPS in most configs, but here we
-  ! assume: (will reverse logic one day)
-  if ( USES%PFT_MAPS ) then
-     GLOBAL_settings = "YES"
-     European_settings = "NO"
-  end if
+! OCT2014: The domain_setup MUST now be set via USES%domain_setup = GLOBo
+!  or EURO in config_emep.nml. DO NOT set here!
+ select case (USES%DOMAIN_SETUP_TYPE)
+   case('EURO')
+     domain_setup = EURO_DOMAIN_SETUP
+   case('GLOB')
+     domain_setup = GLOB_DOMAIN_SETUP
+   case default
+     call StopAll('DOMAIN_SETUP ERROR!'//USES%DOMAIN_SETUP_TYPE)
+  end select
+
+  USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+  USES%CONVECTION         = domain_setup%USES_CONVECTION
+  USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+  if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
+
+!  Note that if some test is wanted, we can hack the GLOB_ and EURO_ settings in config_emep.nml too, e.g.
+!  EURO_DOMAIN_SETUP%USES_CONVECTION = T
+! END OF OCT 2014 domain settings
 
  ! LandCoverInputs
   do i = 1, size(LandCoverInputs%MapFile(:))
@@ -1100,7 +1110,7 @@ subroutine Config_Constants(iolog)
   call associate_File(DMSFile)
   call associate_File(OceanNH3File)
   call associate_File(soilnox_emission_File)
-  call associate_File(Chlorophyll_File)
+  call associate_File(OceanChlorophyll_File)
   call associate_File(GriddedMonthlyFacFile)
   call associate_File(MonthlyFacFile)
   call associate_File(DailyFacFile)
@@ -1121,12 +1131,10 @@ subroutine Config_Constants(iolog)
   call associate_File(EMEP_EuroBVOCFile)
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
-  call associate_File(NdepFile)
   call associate_File(lightningFile)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
-  !OLD call associate_File(Monthly_patternsFile)
   call associate_File(Monthly_timezoneFile)
   call associate_File(fileName_O3_Top)
   call associate_File(fileName_CH4_ibcs)
@@ -1136,7 +1144,6 @@ subroutine Config_Constants(iolog)
   call associate_File(NEST_MET_inner)
   call associate_File(filename_eta)
 
-!DS
   OwnInputDir= key2str(OwnInputDir,'DataDir',DataDir)
 
   do i = 1, size(Emis_sourceFiles)
@@ -1217,7 +1224,6 @@ end subroutine associate_File
 
 subroutine define_chemicals_indices()
   !we set values for species indices if they are defined, -1 if they don't
-  integer :: ix
   O3_ix = find_index('O3' ,species(:)%name)
   SO2_ix = find_index('SO2' ,species(:)%name)
   NO2_ix = find_index('NO2' ,species(:)%name)

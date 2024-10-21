@@ -83,14 +83,14 @@ subroutine Init_EcoSystems()
   Is_EcoSystem(NONFOREST,:) =  .not. Is_EcoSystem(FOREST,:)
   do iEco = 1, NDEF_ECOSYSTEMS-LAST_ECO
     Is_EcoSystem(LAST_ECO+iEco,:) = LandDefs(:)%code == DEF_ECOSYSTEMS(LAST_ECO+iEco)
-    if(MasterProc) then
+    if(MasterProc .and. DEBUG%ECOSYSTEMS) then
       do iLC = 1, 4
         write(*,"(a,2i3,2a4,L2)") 'ADD LC-ECO', iEco, iLC, LandDefs(iLC)%code,&
            DEF_ECOSYSTEMS(LAST_ECO+iEco), Is_EcoSystem(LAST_ECO+iEco,iLC)
        end do
     end if
   end do
-  if ( MasterProc ) then
+  if ( MasterProc .and. DEBUG%ECOSYSTEMS) then
     do iEco = 1, NDEF_ECOSYSTEMS
       write(*,*) 'ECOSYS', iEco, Is_EcoSystem(FOREST,iEco), Is_EcoSystem(DECID,iEco), Is_EcoSystem(NONFOREST,iEco), Is_EcoSystem(9,iEco)
     end do

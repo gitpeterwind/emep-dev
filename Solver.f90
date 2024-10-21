@@ -38,10 +38,10 @@
     use Io_mod,             only : IO_LOG, datewrite
     use LocalFractions_mod, only: lf_chem_emis_deriv, lf_Nvert, &
                                   L_lf,P_lf,x_lf, xold_lf ,xnew_lf, lf_fullchem, &
-                                  spec2lfspec,rctA_lf, rctB_lf,&
+                                  spec2lfspec,lf_chem_pre, lf_chem_mid, &
                                   rcemis_lf, lf_rcemis,&
                                   NSPEC_deriv_lf, N_lf_derivemis, NSOA,&
-                                  lf_chem_pre, lf_chem_mid, lf_chem_pos
+                                  lf_chem_pos,AQRCK_lf,fgasso2_lf!rctA_lf, rctB_lf
     use Par_mod,            only: me, LIMAX, LJMAX
     use PhysicalConstants_mod, only:  RGAS_J
     use Precision_mod, only:  dp
@@ -265,7 +265,6 @@ contains
        end if
 
        !**  Saves tendencies Dchem and returns the new concentrations:
-
        Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
        xn_2d(:,k) = xnew(:)
 

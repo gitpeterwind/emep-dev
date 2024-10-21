@@ -20,6 +20,7 @@ module AerosolCalls
                                   SO4_ix, HNO3_ix, NO3_f_ix, NH3_ix, NH4_f_ix, OM_ix, &
                                   SSf_ix, SSc_ix, Dustwbf_ix, DustSahf_ix
  use Debug_module,          only: DEBUG   ! -> DEBUG%EQUIB
+ use EmisDef_mod,           only: KEMISTOP
  use EQSAM4clim_ml,        only :  EQSAM4clim
 ! use EQSAM_v03d_mod,        only: eqsam_v03d
  use LocalFractions_mod,    only: lf_aero_pre,lf_aero_pos,lf_Nvert,lf_fullchem
@@ -87,7 +88,6 @@ contains
       case ( 'EQSAM' )
         call emep2EQSAM(i, j, debug_flag)
       case ( 'ISORROPIA' )
-        !NOV22 call StopAll('Isorropia problems found. Removed for now')
         call emep2Isorropia(i,j,debug_flag)
       case default
         if( my_first_call .and. MasterProc ) then
@@ -122,9 +122,10 @@ contains
     real, parameter :: MWCA   = 40.078,   MWK    = 39.0973 ! MW Calcium, Potassium
     real, parameter :: MWH2O  = 18.0153,  MWMG   = 24.305  ! MW Water, Magnesium
   
-    real :: tmpno3, tmpnh3, tmpnhx, tmphno3
+    real :: tmpno3, tmpnh3, tmpnhx, tmphno3, therm_temp
     logical, save :: first_isor = .true.
-  
+    integer :: lf_iter, niter
+    
   !  INPUT:
   !  1. [WI]
   !     DOUBLE PRECISION array of length [8].
@@ -195,9 +196,13 @@ contains
   
      
     do n = 1,1 ! (fine, coarse) -- optional. Only fine for now; coarse needs tinkering.
-      
+         
       do k = KCHEMTOP,KMAX_MID 
-  
+        niter = 1
+        if(USES%LocalFractions .and. k>=KMAX_MID-lf_Nvert+1 .and. lf_fullchem) niter = 4
+        do lf_iter=1, niter !only used for LocalFractions, otherwise just one "iteration"
+        call lf_aero_pre(i,j,k,lf_iter) !only used for LocalFractions
+ 
         ! isorropia only for when T > 250 K and P > 200 hPa (CMAQ and GEOS-Chem; Shannon Capps discussion)
         if (pp(k) > 20000.0 .and. temp(k) > 250.0) then 
   
@@ -258,8 +263,14 @@ contains
 
           RH_thermodynamics = min( AERO%RH_UPLIM_AERO, rh(k) )
           RH_thermodynamics = max( AERO%RH_LOLIM_AERO, RH_thermodynamics )
+
+          if ( k >= KEMISTOP ) then ! boundary layer (emission) levels soft 255 K limit for stability
+            therm_temp = max ( temp(k), 255.0 )
+          else
+            therm_temp = temp(k)
+          end if
   
-          call isoropia ( wi, wo, RH_thermodynamics, temp(k), CNTRL, &       
+          call isoropia ( wi, wo, RH_thermodynamics, therm_temp, CNTRL, &       
                           wt, gas, aerliq, aersld, scase, other )  
   
           ! pH = -log10([H+]/M) where M = mol dm-3 in the solution. mol/m3 h2o to kg/m3 as 1e-3 * MWH20.
@@ -297,6 +308,7 @@ contains
   
             ! aerosol water (ug/m**3) -- 18.01528 MW H2O
             PM25_water_rh50(i,j) =  max( 0., aerliq(8) * MWH2O * 1e6 )
+            call lf_aero_pos(i,j,k,lf_iter,2,0)
           end if 
   
           !if ( xn_2d(NO3_f_ix,k )  < 0.0 .or.  xn_2d(NH4_f_ix,k) < 0.0 ) then
@@ -315,7 +327,11 @@ contains
           end if
           !call StopAll("ISOR")
   
-        endif ! > 200 hPa and > 250 K
+       endif ! > 200 hPa and > 250 K
+
+       call lf_aero_pos(i,j,k,lf_iter,0,0)
+       end do ! lf_iter
+    
       end do ! k = KCHEMTOP, KMAX_MID
     end do ! n = 1,2 (fine, coarse)
   end subroutine emep2isorropia
@@ -391,7 +407,7 @@ contains
       xn_2d(NH3_ix,k)   = max (FLOOR, gNH3out / (species(NH3_ix)%molwt  *coef) )
       xn_2d(NO3_f_ix,k) = max (FLOOR, aNO3out / (species(NO3_f_ix)%molwt  *coef) )
       xn_2d(NH4_f_ix,k) = max (FLOOR, aNH4out / (species(NH4_f_ix)%molwt  *coef) )
-      call lf_aero_pos(i,j,k,iter)
+      call lf_aero_pos(i,j,k,iter,0,ERRMARK)
       end do
    end do  ! K-levels
 
@@ -709,7 +725,7 @@ contains
   !--------------------------------------------------------------------------
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
-      call lf_aero_pos(i,j,k,iter,make_pmwater=.true.)
+      call lf_aero_pos(i,j,k,iter,1,ERRMARK)
       end do
 
       if (AERO%ORGANIC_WATER) then

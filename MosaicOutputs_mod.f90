@@ -6,16 +6,18 @@ use CheckStop_mod,     only: CheckStop
 use ChemDims_mod,      only: NSPEC_ADV,NSPEC_SHL
 use ChemGroups_mod,    only: chemgroups
 use ChemSpecs_mod,     only: species_adv
-use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY,OutputVegO3,nOutputVegO3
+use Config_module,     only: MasterProc, NLANDUSEMAX, IOU_INST,IOU_KEY, OutputVegO3,&
+                             USES, nOutputVegO3
 use Debug_module,      only: DEBUG   ! -> DEBUG%MOSAICS
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
 use GasParticleCoeffs_mod,  only:  DDspec
-use GridValues_mod,    only: debug_proc
+use GridValues_mod,    only: debug_proc, i_fdom, j_fdom
 use Io_Progs_mod,      only: datewrite
 use LandDefs_mod,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_mod,       only: LandCover ! for POD
+use LocalFractions_mod,only: lf_POD
 use LocalVariables_mod,only: Grid,SubDat, L
 use MetFields_mod
 use OwnDataTypes_mod,  only: Deriv, print_deriv_type, typ_s5ind, typ_s1ind, typ_s3,&
@@ -457,6 +459,9 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
     case("POD")         ! Fluxes, PODY (was AFstY)
       n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
       call Calc_POD( n, iLC, output, debug_flag)
+      
+      if(USES%LocalFractions) call lf_POD(i,j,VEGO3_OUTPUTS(n)%name,output)
+
       if(dbg) &
         write(*,"(2a,2g12.4)") dtxt//"MYPOD ", trim(txtdate), output, Sub(iLC)%FstO3
 

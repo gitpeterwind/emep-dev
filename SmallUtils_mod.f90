@@ -414,8 +414,8 @@ end function str_replace
   function basename(str) result(bname)
     character(len=*), intent(in) :: str
     integer, parameter :: NWMAX=20
-    character(len=50), dimension(NWMAX):: words
-    character(len=50) bname
+    character(len=80), dimension(NWMAX):: words
+    character(len=96) bname
     integer :: nwords, errcode
 
     call wordsplit(str,NWMAX,words,nwords,errcode,separator='/')
@@ -426,7 +426,7 @@ end function str_replace
   function basedir(str) result(bdir)
     character(len=*), intent(in) :: str
     integer, parameter :: NWMAX=20
-    character(len=50), dimension(NWMAX):: words
+    character(len=80), dimension(NWMAX):: words
     character(len=300) ::  bdir
     integer :: nwords, errcode
 
