@@ -28,8 +28,8 @@
 ! USER Needs to choose right combination of settings for different domain/
 ! emission combinations. 
 
-! SET as GLOB or EURO (default)
-  USES%DOMAIN_SETUP_TYPE = 'EURO'
+! SET as GenericDOMAIN or EMEPDOMAIN (default for European runs)
+  USES%DOMAIN_SETUP_TYPE = 'EMEPDOMAIN'
 
 
 
@@ -75,11 +75,6 @@
   USES%PFT_MAPS  = F,
   Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
   USES%ROADDUST          = T,            ! Only EECCA?
-  USES%FUNGAL_SPORES     = F,
-  USES%BACTERIA          = F,
-  USES%MARINE_OA         = F,
-  USES%FUNGAL_METHOD    = 'HS_5', !Allowed options: HS_3, HS_5, HM, SD, JS
-  USES%NOCHEM            = F,
 
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):

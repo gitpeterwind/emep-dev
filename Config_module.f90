@@ -171,19 +171,20 @@ type, public :: domain_settings_t
    logical :: USES_PFTMAPS
    logical :: USES_GLOB_TFACS
    logical :: USES_DEGREEDAYS
+   logical :: USES_ROADDUST
 end type domain_settings_t
 
-! The domain_setup MUST be set via USES%DOMAIN_SETUP = GLOB or EURO in
+! The domain_setup MUST be set via USES%DOMAIN_SETUP = GenericDOMAIN or EMEPDOMAIN in
 !  config_emep.nml. ***** DO NOT set here **** !
 type(domain_settings_t), private, save :: &
-      GLOB_DOMAIN_SETUP  = domain_settings_t( 'GLOB',  T, T, T, F )   &
-     ,EURO_DOMAIN_SETUP  = domain_settings_t( 'EURO',  F, F, F, T )   &
-     ,domain_setup !       = domain_settings_t( 'NOTSET',  F, F, F, F )
+      GENERIC_DOMAIN_SETUP = domain_settings_t( 'Generic',  T, T, T, F, F )   &
+     ,EMEP_DOMAIN_SETUP    = domain_settings_t( 'EMEP',     F, F, F, T, T )   &
+     ,domain_setup !       = domain_settings_t( 'NOTSET',   F, F, F, F, F )
 
 
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
-  character(len=10) :: DOMAIN_SETUP_TYPE = 'NOTSET' ! SET to GLOB or EURO in config_emep.nml
+  character(len=20) :: DOMAIN_SETUP_TYPE = 'NOTSET' ! SET to GenericDOMAIN or EMEPDOMAIN in config_emep.nml
   logical :: &                   !
    ! emissions
      FOREST_FIRES     = .true.  &!  Forest fire options
@@ -237,9 +238,9 @@ type, public :: emep_useconfig
     ,TLEAF_FROM_HD    = .false.  &! TESTING Tleaf. Cannot use both _HD and _Rn
     ,TLEAF_FROM_RN    = .false.  &! TESTING Tleaf
     ,EFFECTIVE_RESISTANCE = .true. &! Drydep method designed for shallow layer
-    ,FUNGAL_SPORES    = .false. & !For including fungal spores (part of PBAP) NOT IMPLEMENTED
-    ,BACTERIA         = .false. & !For including bacteria (part of PBAP)  NOT IMPLEMENTED
-    ,MARINE_OA        = .false. !For including MarineOA (part of PBAP)  NOT IMPLEMENTED
+    ,FUNGAL_SPORES    = .false. & !For including fungal spores (part of PBAP) Prelim. See Ch.7 2024 EMEP report
+    ,BACTERIA         = .false. & !For including bacteria (part of PBAP) 
+    ,MARINE_OA        = .false. !For including MarineOA (part of PBAP)  
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?
@@ -911,7 +912,7 @@ subroutine Config_Constants(iolog)
    ,dt_advec              & ! can be set to override dt_advec
    ,METSTEP &
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection
-   ,GLOB_DOMAIN_SETUP, EURO_DOMAIN_SETUP & ! ONLY used if overrides of defaults are wanted
+   ,GENERIC_DOMAIN_SETUP, EMEP_DOMAIN_SETUP & ! ONLY used if overrides of defaults are wanted
    ,fileName_O3_Top&
    ,fileName_CH4_ibcs&
    ,femisFile&
@@ -1073,10 +1074,12 @@ subroutine Config_Constants(iolog)
 ! OCT2014: The domain_setup MUST now be set via USES%domain_setup = GLOBo
 !  or EURO in config_emep.nml. DO NOT set here!
  select case (USES%DOMAIN_SETUP_TYPE)
-   case('EURO')
-     domain_setup = EURO_DOMAIN_SETUP
-   case('GLOB')
-     domain_setup = GLOB_DOMAIN_SETUP
+   case('EMEPDOMAIN')
+     domain_setup = EMEP_DOMAIN_SETUP
+     Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
+   case('GenericDOMAIN')
+     domain_setup = GENERIC_DOMAIN_SETUP
+     Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt'
    case default
      call StopAll('DOMAIN_SETUP ERROR!'//USES%DOMAIN_SETUP_TYPE)
   end select
@@ -1084,6 +1087,7 @@ subroutine Config_Constants(iolog)
   USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
   USES%CONVECTION         = domain_setup%USES_CONVECTION
   USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+  USES%ROADDUST           = domain_setup%USES_ROADDUST
   if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
 
 !  Note that if some test is wanted, we can hack the GLOB_ and EURO_ settings in config_emep.nml too, e.g.

@@ -49,6 +49,21 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 October 2024, Willem
+
+Name change of EMEP/Glob domain to reflect more the generic EMEPDOMAIN and 
+GenericDOMAIN domain choices. GenericDOMAIN now automatically applies the 19
+vertical lvls file, while EMEPDOMAIN applies 20 vertical lvls. Additionally,
+GenericDOMAIN excludes ROADDUST, while EMEPDOMAIN includes this. 
+
+Also added an optional config file for global 'out of the box' HTAPv3 emissions
+(0.1 or 0.5 degree resolution). Can be included by setting
+
+ExtraConfigFile = '~/emep-mscw/configExtra_GlobHTAP3Emis.nml' 
+
+in the main config namelist.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 October 2024, Peter
 
 Modified gfortran flag in Makefile.Open

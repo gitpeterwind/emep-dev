@@ -1,0 +1,512 @@
+&Model_Config
+
+  ! ExtraConfigFile for HTAPv3 opensource global emissions as downloaded directly from
+  ! https://edgar.jrc.ec.europa.eu/dataset_htap_v3 -- URL includes files for all emission species
+  ! for both 0.1 and 0.5 degree resolutions. Emissions can be downloaded for a custom simulation year (2000-2018), 
+  ! with the below '2015' emissions replaced by YYYY to match the simulation year specified in the main config file.
+  !
+  ! Each input file contains the full list of sectors (sector names being identical for each pollutant emission file), with
+  ! the %sector source attributes below referring to the GNFR sector definitions specified in the main config file.
+  !
+  ! HTAPv3 PM emissions are downloaded as PM10 and PM2.5 totals. To create the corresponding PMco file, use
+  ! >> ncdiff edgar_HTAPv3_2015_PM10.nc edgar_HTAPv3_2015_PM2.5.nc edgar_HTAPv3_2015_PMco.nc
+
+  EmisDir = 'CUSTOMFOLDER/HTAPv3/0.5degree/',
+
+  ! HTAPv3 Agriculture_crops includes emissions from fertilisers 
+  USES%SOILNOX_METHOD = 'NoFert',
+
+  ! ------------------------------------------------------------------------------------------------ NOx emissions 
+  Emis_sourceFiles(1)%filename = 'EmisDir/edgar_HTAPv3_2015_NOx.nc', ! expressed as NO2 mass units
+  emis_sourceFiles(1)%projection = 'lon lat',
+  emis_sourceFiles(1)%periodicity = 'yearly',
+  emis_sourceFiles(1)%units = 'tonnes/year',
+
+  emis_sourceFiles(1)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(1)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(1)%source(1)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(1)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(1)%source(2)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(1)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(1)%source(3)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(1)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(1)%source(4)%species = 'nox', 
+  
+  emis_sourceFiles(1)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(1)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(1)%source(5)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(1)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(1)%source(6)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(1)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(1)%source(7)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(1)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(1)%source(8)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(1)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(1)%source(9)%species = 'nox', 
+
+  emis_sourceFiles(1)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(1)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(1)%source(10)%species = 'nox',
+
+  emis_sourceFiles(1)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(1)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(1)%source(11)%species = 'nox',
+
+  emis_sourceFiles(1)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(1)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(1)%source(12)%species = 'nox',
+
+  emis_sourceFiles(1)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(1)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(1)%source(13)%species = 'nox',
+
+  emis_sourceFiles(1)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(1)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(1)%source(14)%species = 'nox',
+
+  emis_sourceFiles(1)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(1)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(1)%source(15)%species = 'nox',
+
+  emis_sourceFiles(1)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(1)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(1)%source(16)%species = 'nox',
+
+! ------------------------------------------------------------------------------------------------ NMVOC emissions
+  Emis_sourceFiles(2)%filename = 'EmisDir/edgar_HTAPv3_2015_NMVOC.nc',
+  emis_sourceFiles(2)%projection = 'lon lat',
+  emis_sourceFiles(2)%periodicity = 'yearly',
+  emis_sourceFiles(2)%units = 'tonnes/year',
+
+  emis_sourceFiles(2)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(2)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(2)%source(1)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(2)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(2)%source(2)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(2)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(2)%source(3)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(2)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(2)%source(4)%species = 'voc', 
+  
+  emis_sourceFiles(2)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(2)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(2)%source(5)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(2)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(2)%source(6)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(2)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(2)%source(7)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(2)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(2)%source(8)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(2)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(2)%source(9)%species = 'voc', 
+
+  emis_sourceFiles(2)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(2)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(2)%source(10)%species = 'voc',
+
+  emis_sourceFiles(2)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(2)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(2)%source(11)%species = 'voc',
+
+  emis_sourceFiles(2)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(2)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(2)%source(12)%species = 'voc',
+
+  emis_sourceFiles(2)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(2)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(2)%source(13)%species = 'voc',
+
+  emis_sourceFiles(2)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(2)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(2)%source(14)%species = 'voc',
+
+  emis_sourceFiles(2)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(2)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(2)%source(15)%species = 'voc',
+
+  emis_sourceFiles(2)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(2)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(2)%source(16)%species = 'voc',
+
+! ------------------------------------------------------------------------------------------------ CO emissions
+  Emis_sourceFiles(3)%filename = 'EmisDir/edgar_HTAPv3_2015_CO.nc',
+  emis_sourceFiles(3)%projection = 'lon lat',
+  emis_sourceFiles(3)%periodicity = 'yearly',
+  emis_sourceFiles(3)%units = 'tonnes/year',
+
+  emis_sourceFiles(3)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(3)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(3)%source(1)%species = 'co', 
+
+  emis_sourceFiles(3)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(3)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(3)%source(2)%species = 'co', 
+
+  emis_sourceFiles(3)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(3)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(3)%source(3)%species = 'co', 
+
+  emis_sourceFiles(3)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(3)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(3)%source(4)%species = 'co', 
+  
+  emis_sourceFiles(3)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(3)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(3)%source(5)%species = 'co', 
+
+  emis_sourceFiles(3)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(3)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(3)%source(6)%species = 'co', 
+
+  emis_sourceFiles(3)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(3)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(3)%source(7)%species = 'co', 
+
+  emis_sourceFiles(3)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(3)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(3)%source(8)%species = 'co', 
+
+  emis_sourceFiles(3)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(3)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(3)%source(9)%species = 'co', 
+
+  emis_sourceFiles(3)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(3)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(3)%source(10)%species = 'co',
+
+  emis_sourceFiles(3)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(3)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(3)%source(11)%species = 'co',
+
+  emis_sourceFiles(3)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(3)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(3)%source(12)%species = 'co',
+
+  emis_sourceFiles(3)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(3)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(3)%source(13)%species = 'co',
+
+  emis_sourceFiles(3)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(3)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(3)%source(14)%species = 'co',
+
+  emis_sourceFiles(3)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(3)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(3)%source(15)%species = 'co',
+
+  emis_sourceFiles(3)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(3)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(3)%source(16)%species = 'co',
+
+! ------------------------------------------------------------------------------------------------ NH3 emissions
+  Emis_sourceFiles(4)%filename = 'EmisDir/edgar_HTAPv3_2015_NH3.nc',
+  emis_sourceFiles(4)%projection = 'lon lat',
+  emis_sourceFiles(4)%periodicity = 'yearly',
+  emis_sourceFiles(4)%units = 'tonnes/year',
+
+  emis_sourceFiles(4)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(4)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(4)%source(1)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(4)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(4)%source(2)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(4)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(4)%source(3)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(4)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(4)%source(4)%species = 'nh3', 
+  
+  emis_sourceFiles(4)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(4)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(4)%source(5)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(4)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(4)%source(6)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(4)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(4)%source(7)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(4)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(4)%source(8)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(4)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(4)%source(9)%species = 'nh3', 
+
+  emis_sourceFiles(4)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(4)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(4)%source(10)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(4)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(4)%source(11)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(4)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(4)%source(12)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(4)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(4)%source(13)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(4)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(4)%source(14)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(4)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(4)%source(15)%species = 'nh3',
+
+  emis_sourceFiles(4)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(4)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(4)%source(16)%species = 'nh3',
+
+! ------------------------------------------------------------------------------------------------ SOx emissions
+  Emis_sourceFiles(5)%filename = 'EmisDir/edgar_HTAPv3_2015_SO2.nc',
+  emis_sourceFiles(5)%projection = 'lon lat',
+  emis_sourceFiles(5)%periodicity = 'yearly',
+  emis_sourceFiles(5)%units = 'tonnes/year',
+
+  emis_sourceFiles(5)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(5)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(5)%source(1)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(5)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(5)%source(2)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(5)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(5)%source(3)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(5)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(5)%source(4)%species = 'sox', 
+  
+  emis_sourceFiles(5)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(5)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(5)%source(5)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(5)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(5)%source(6)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(5)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(5)%source(7)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(5)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(5)%source(8)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(5)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(5)%source(9)%species = 'sox', 
+
+  emis_sourceFiles(5)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(5)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(5)%source(10)%species = 'sox',
+
+  emis_sourceFiles(5)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(5)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(5)%source(11)%species = 'sox',
+
+  emis_sourceFiles(5)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(5)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(5)%source(12)%species = 'sox',
+
+  emis_sourceFiles(5)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(5)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(5)%source(13)%species = 'sox',
+
+  emis_sourceFiles(5)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(5)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(5)%source(14)%species = 'sox',
+
+  emis_sourceFiles(5)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(5)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(5)%source(15)%species = 'sox',
+
+  emis_sourceFiles(5)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(5)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(5)%source(16)%species = 'sox',
+
+! ------------------------------------------------------------------------------------------------ PM2.5 emissions
+  Emis_sourceFiles(6)%filename = 'EmisDir/edgar_HTAPv3_2015_PM2.5.nc',
+  emis_sourceFiles(6)%projection = 'lon lat',
+  emis_sourceFiles(6)%periodicity = 'yearly',
+  emis_sourceFiles(6)%units = 'tonnes/year',
+
+  emis_sourceFiles(6)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(6)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(6)%source(1)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(6)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(6)%source(2)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(6)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(6)%source(3)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(6)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(6)%source(4)%species = 'pm25', 
+  
+  emis_sourceFiles(6)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(6)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(6)%source(5)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(6)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(6)%source(6)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(6)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(6)%source(7)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(6)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(6)%source(8)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(6)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(6)%source(9)%species = 'pm25', 
+
+  emis_sourceFiles(6)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(6)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(6)%source(10)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(6)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(6)%source(11)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(6)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(6)%source(12)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(6)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(6)%source(13)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(6)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(6)%source(14)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(6)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(6)%source(15)%species = 'pm25',
+
+  emis_sourceFiles(6)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(6)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(6)%source(16)%species = 'pm25',
+
+! ------------------------------------------------------------------------------------------------ PMco emissions
+  Emis_sourceFiles(7)%filename = 'EmisDir/edgar_HTAPv3_2015_PMco.nc',
+  emis_sourceFiles(7)%projection = 'lon lat',
+  emis_sourceFiles(7)%periodicity = 'yearly',
+  emis_sourceFiles(7)%units = 'tonnes/year',
+
+  emis_sourceFiles(7)%source(1)%varname='HTAPv3_1_International_Shipping', 
+  emis_sourceFiles(7)%source(1)%sector=7, ! Shipping GNFR_G 
+  emis_sourceFiles(7)%source(1)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(2)%varname='HTAPv3_2_1_Domestic_Aviation', 
+  emis_sourceFiles(7)%source(2)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(7)%source(2)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(3)%varname='HTAPv3_2_2_International_Aviation', 
+  emis_sourceFiles(7)%source(3)%sector=8, ! Aviation GNFR_H 
+  emis_sourceFiles(7)%source(3)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(4)%varname='HTAPv3_3_Energy', 
+  emis_sourceFiles(7)%source(4)%sector=1, ! Public Power GNFR_A
+  emis_sourceFiles(7)%source(4)%species = 'pmco', 
+  
+  emis_sourceFiles(7)%source(5)%varname='HTAPv3_4_1_Industry', 
+  emis_sourceFiles(7)%source(5)%sector=2, ! Industry GNFR_B
+  emis_sourceFiles(7)%source(5)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(6)%varname='HTAPv3_4_2_Fugitive', 
+  emis_sourceFiles(7)%source(6)%sector=4, ! Fugitive GNFR_D
+  emis_sourceFiles(7)%source(6)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(7)%varname='HTAPv3_4_3_Solvents', 
+  emis_sourceFiles(7)%source(7)%sector=5, ! Solvents GNFR_E
+  emis_sourceFiles(7)%source(7)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(8)%varname='HTAPv3_5_1_Road_Transport', 
+  emis_sourceFiles(7)%source(8)%sector=6, ! RoadTransport GNFR_F
+  emis_sourceFiles(7)%source(8)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(9)%varname='HTAPv3_5_2_Brake_and_Tyre_wear', 
+  emis_sourceFiles(7)%source(9)%sector=19, ! extended RoadTransport GNFR_F
+  emis_sourceFiles(7)%source(9)%species = 'pmco', 
+
+  emis_sourceFiles(7)%source(10)%varname='HTAPv3_5_3_Domestic_shipping', 
+  emis_sourceFiles(7)%source(10)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(7)%source(10)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(11)%varname='HTAPv3_5_4_Other_ground_transport', 
+  emis_sourceFiles(7)%source(11)%sector=9, ! OffRoad GNFR_I
+  emis_sourceFiles(7)%source(11)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(12)%varname='HTAPv3_6_Residential', 
+  emis_sourceFiles(7)%source(12)%sector=3, ! OtherStationaryComb GNFR_C
+  emis_sourceFiles(7)%source(12)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(13)%varname='HTAPv3_7_Waste', 
+  emis_sourceFiles(7)%source(13)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(7)%source(13)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(14)%varname='HTAPv3_8_1_Agricultural_waste_burning', 
+  emis_sourceFiles(7)%source(14)%sector=10, ! Waste GNFR_J
+  emis_sourceFiles(7)%source(14)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(15)%varname='HTAPv3_8_2_Agriculture_livestock', 
+  emis_sourceFiles(7)%source(15)%sector=11, ! AgriLivestock GNFR_K
+  emis_sourceFiles(7)%source(15)%species = 'pmco',
+
+  emis_sourceFiles(7)%source(16)%varname='HTAPv3_8_3_Agriculture_crops', 
+  emis_sourceFiles(7)%source(16)%sector=12, ! AgriOther GNFR_L
+  emis_sourceFiles(7)%source(16)%species = 'pmco',
+
+! END EXTRA 
+LAST_CONFIG_LINE = "END_OF_SPECIAL_GlobHTAPv3Emis"
+&end
+
