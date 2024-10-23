@@ -253,15 +253,22 @@ contains
   lf_set%HOUR_INST=lf_src(1)%HOUR_INST .or. lf_set%HOUR_INST
 
   lf_Nvert = lf_set%Nvert !Temporary
-  if (lf_set%Nvert /= 7) lf_Nvert = lf_set%Nvert
   if (lf_Nvert>KMAX_MID-1) then
      lf_Nvert = KMAX_MID-1
      if(me==0)then
         write(*,*)'WARNING: cannot track through level 1 (top). Reducing Nvert to ',lf_Nvert
      end if
   end if
-  Nsources = 0
+
   if (lf_set%full_chem) lf_fullchem = .true.
+  if (lf_set%Nvertout > lf_Nvert .and. me==0 .and. lf_fullchem ) write(*,*)'lf fullchem multi vertical level not implemented '
+  if (lf_fullchem ) lf_set%Nvertout = 1
+  if (lf_set%Nvertout > lf_Nvert .and. me==0) write(*,*)'WARNING: will only output ',lf_Nvert,' vertical levels'
+  lf_set%Nvertout = min(lf_Nvert, lf_set%Nvertout)
+  lf_Nvertout = lf_set%Nvertout
+  if (me==0) write(*,*)'output ',lf_Nvertout,' vertical levels'
+
+  Nsources = 0
   if (lf_fullchem) then
      !We ASSUME that shipNOx is the last species (highest index) involved in O3 chemistry
      ix=find_index("shipNOx" ,species_adv(:)%name)
@@ -979,6 +986,14 @@ contains
      if (lf_src(isrc)%type=='relative') is_relative = .true.
 
   end do
+  if (.not. is_country .and. Ncountry_lf>0) then
+     if(me==0)write(*,*)'LF: no country output required'
+     Ncountry_lf=0
+     Ncountry_group_lf=0
+     Ncountrysectors_lf=0
+     Ncountry_mask_lf=0
+     Ncountry_mask_lf_val=0
+  endif
 
   if(me==0 )then
      write(*,*)Ndrydep_lf,' dry deposited sources tracked ',nPOD,' POD' !Ndrydep_lf does not include POD
@@ -1282,7 +1297,7 @@ subroutine lf_out(iotyp)
   integer, intent(in) :: iotyp
   character(len=200) ::filename, varname
   real :: xtot,scale,invtot,t1,t2
-  integer ::i,j,k,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll, ideriv
+  integer ::i,j,k,kk,n,n1,n1der,dx,dy,ix,iix,isec,iisec,isec_poll, ideriv
   integer ::ipoll,ipoll_cfac,isec_poll1,isrc,iou_ix,iter,iddep,iwdep
   integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10)
   integer ::ndim_tot,dimSizes_tot(10),chunksizes_tot(10)
@@ -1292,7 +1307,7 @@ subroutine lf_out(iotyp)
   type(Deriv) :: def3 ! definition of dry and wet dep fields
   logical ::overwrite, create_var_only
   logical,save :: first_call(10)=.true.
-  real,allocatable ::tmp_out(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
+  real,allocatable ::tmp_out(:,:,:,:)!allocate since it may be heavy for the stack TEMPORARY
   real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
   real,allocatable ::tmp_out_base(:,:)! base concentrations
   type(date) :: onesecond = date(0,0,0,0,1)
@@ -1411,7 +1426,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(2)=MAXLJMAX
   chunksizes_tot(3)=dimSizes_tot(3)
 
-  allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX)) !NB; assumes KMAX=1 TEMPORARY
+  allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX,KMAX))
   allocate(tmp_out_cntry(LIMAX,LJMAX,max(Nfullchem_emis*Npos_lf,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1)))
 
   allocate(tmp_out_base(LIMAX,LJMAX))
@@ -1461,6 +1476,7 @@ subroutine lf_out(iotyp)
               tmp_out=0.0
               if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
               do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+                 kk = k-KMAX_MID+lf_Nvertout !index which is lf_Nvertout for lowest level anbd 1 at highest level outputted
                  do j=1,ljmax
                     do i=1,limax
                        invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
@@ -1475,7 +1491,7 @@ subroutine lf_out(iotyp)
                        else
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
                              n1=n1+1
-                             tmp_out(n1,i,j) = tmp_out(n1,i,j) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
+                             tmp_out(n1,i,j,kk) = tmp_out(n1,i,j,kk) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
                              fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
                           enddo
                        endif

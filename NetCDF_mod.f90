@@ -1411,7 +1411,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   if(ndim-2>0)countvec(ndim-2)=i2-i1+1
   if(ndim-1>0)countvec(ndim-1)=j2-j1+1
   countvec(ndim)=kmax
-  
   !buffer the wanted part of data
   ijk=0
   allocate(buff(MAXLIMAX*MAXLJMAX*kmax*extradim))
@@ -1515,7 +1514,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
         t1=MPI_WTIME()
         if(d>0) CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax*extradim, MPI_BYTE, d, &
              outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
-        
+     
         tmpi = tmpi + MPI_WTIME()-t1
         if(ndim==5 .and. size5D<=0)then
            ! write one buffer at a time to save memory              
@@ -1628,7 +1627,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
      case(Real4)           ! type Real4
         if(ndim==5)then
            if(size5D>0) call check(nf90_put_var(ncFileID,VarID,R4data5D(1:dimSizes(1),&
-                1:dimSizes(2),i1:i2,j1:j2,1),start=(/1,1,1,1,1,nrecords/)),&
+                1:dimSizes(2),i1:i2,j1:j2,1:kmax),start=(/1,1,1,1,1,nrecords/)),&
                 "5D put failed "//trim(varname))
         else if(ndim==3)then
            if(present(ik))then
