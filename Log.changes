@@ -49,10 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23 October 2024, Peter
+23-24 October 2024, Peter
 
 LF: can output more vertical levels in the not fullchem case.
-lf_set%Nvertout = 5
+for example, in config_emep.nml: lf_set%Nvertout = 5
+LF: Always Outputs PS (to define the vertical levels)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 October 2024, Willem
 

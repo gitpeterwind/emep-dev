@@ -102,6 +102,8 @@ real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_acc ! accumulated local fraction over time periods
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
      lf_src_tot ! concentrations of pollutants used for Local Fractions
+real, public, allocatable, dimension(:,:,:), save :: &
+     lf_src_ps ! surface pressure output for Local Fractions
 
 real, public, allocatable, dimension(:,:,:,:,:), save :: emis_lf_cntry
 real, public, allocatable, dimension(:,:,:,:), save :: &
@@ -1166,14 +1168,16 @@ contains
   endif
   if(make_PMwater)then
      !one extra for water
-     allocate(lf_src_acc(LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
+     allocate(lf_src_acc(LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis,LIMAX,LJMAX,lf_Nvertout,Niou_ix))
   else
-     allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,Niou_ix))
+     allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,lf_Nvertout,Niou_ix))
   endif
   lf_src_acc = 0.0
-  allocate(lf_src_tot(LIMAX,LJMAX,KMAX_MID-lf_Nvertout+1:KMAX_MID,2*Npoll+1,Niou_ix))
+  allocate(lf_src_tot(LIMAX,LJMAX,lf_Nvertout,2*Npoll+1,Niou_ix))
   lf_src_tot = 0.0
-   allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
+  allocate(lf_src_ps(LIMAX,LJMAX,Niou_ix))
+  lf_src_ps = 0.0
+  allocate(loc_frac_src_1d(LF_SRC_TOTSIZE,0:max(LIMAX,LJMAX)+1))
   loc_frac_src_1d=0.0
 
   allocate(emis_lf_cntry(LIMAX,LJMAX,NCMAX,Nsectors,NEMIS_File))
@@ -1305,6 +1309,7 @@ subroutine lf_out(iotyp)
   type(Deriv) :: def1 ! definition of fields for local fraction
   type(Deriv) :: def2 ! definition of fields for totals
   type(Deriv) :: def3 ! definition of dry and wet dep fields
+  type(Deriv) :: defps ! definition of surface pressure fields
   logical ::overwrite, create_var_only
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_out(:,:,:,:)!allocate since it may be heavy for the stack TEMPORARY
@@ -1402,9 +1407,9 @@ subroutine lf_out(iotyp)
   end select
 
   dimSizes(5)=kmax
-  dimNames(5)='klevel'
+  dimNames(5)='lev'
   dimSizes_tot(3)=kmax
-  dimNames_tot(3)='klevel'
+  dimNames_tot(3)='lev'
   def1%class='LF' !written
   def1%avg=.false.      !not used
   def1%index=0          !not used
@@ -1415,6 +1420,12 @@ subroutine lf_out(iotyp)
   def2%unit='ug/m3'
   def3=def1
   def3%unit='mg/m2'
+  defps%class='PSURF' !written
+  defps%avg=.false.      !not used
+  defps%index=0          !not used
+  defps%scale=0.01
+  defps%name='PS'
+  defps%unit='hPa'
   chunksizes=1
   chunksizes(1)=dimSizes(1)
   chunksizes(2)=dimSizes(2)
@@ -1438,15 +1449,22 @@ subroutine lf_out(iotyp)
   !first loop only create all variables before writing into them (faster for NetCDF)
   do iter=1,2
      if(iter==1 .and. .not. first_call(iotyp))cycle
-
-     overwrite=.false. !only used once per file
-     if(iter==1)overwrite=.true.!only create all variables before writing into them
+     
+     overwrite=.false. !overwrite if file already exists only used once per file
+     if(iter==1)overwrite=.true.! overwrite if file already exists
      create_var_only=.false.
      if(iter==1)create_var_only=.true.!only create all variables before writing into them
 
      pollwritten = .false.
      iddep = 0
      iwdep = 0
+     if(me==0)write(*,*)'ps out ',iter,overwrite,create_var_only
+     !we always output surface pressure
+     scale = defps%scale/av_fac(iotyp) 
+     call Out_netCDF(iotyp,defps,2,kmax,lf_src_ps(1,1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+          fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+     overwrite=.false.
+
 
      if (.not. lf_fullchem) then
         do isrc = 1, Nsources
@@ -1465,10 +1483,10 @@ subroutine lf_out(iotyp)
               if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
               scale=1.0/av_fac(iotyp)
               if(is_surf)def2%name='SURF_'//trim(def2%name)
-              call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,KMAX_MID-lf_Nvertout+1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+              if(me==0)write(*,*)'poll out ',iter,overwrite,create_var_only
+              call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
               pollwritten(ipoll_cfac) = .true.
-              overwrite=.false.
            endif
 
            if(iter==2)then
@@ -1476,23 +1494,24 @@ subroutine lf_out(iotyp)
               tmp_out=0.0
               if(lf_src(isrc)%type == 'country')tmp_out_cntry=0.0
               do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
-                 kk = k-KMAX_MID+lf_Nvertout !index which is lf_Nvertout for lowest level anbd 1 at highest level outputted
+                 kk = k
+                 if (lf_Nvertout < KMAX_MID) kk = KMAX_MID-k+1 !index which is 1 for lowest level and lf_Nvertout at highest level outputted
                  do j=1,ljmax
                     do i=1,limax
-                       invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
+                       invtot=1.0/(lf_src_tot(i,j,kk,ipoll_cfac,iou_ix)+1.E-20)
                        n1=0
                        if(lf_src(isrc)%type == 'country')then
                           invfac=1.0/av_fac(iotyp) !could also output fractions?
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
                              n1=n1+1
-                             tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac ! sum over all k
+                             tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac ! sum over all k
                              fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
                           enddo
                        else
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
                              n1=n1+1
-                             tmp_out(n1,i,j,kk) = tmp_out(n1,i,j,kk) + lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all k
-                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k
+                             tmp_out(n1,i,j,kk) = tmp_out(n1,i,j,kk) + lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all k
+                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k
                           enddo
                        endif
                     enddo
@@ -1528,7 +1547,7 @@ subroutine lf_out(iotyp)
                     def2%unit='ug/m3'
                     scale=1.0
                     call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                         fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                         fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                     if(lf_src(isrc)%drydep)then
                        write(def3%name,"(A)")'DDEP_'//trim(def2%name)
                        def3%unit='mg/m2'
@@ -1537,7 +1556,7 @@ subroutine lf_out(iotyp)
 
                        iddep=iddep+1
                        call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_drydep(1,1,iddep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                            fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                     endif
                     if(lf_src(isrc)%wetdep)then
@@ -1548,7 +1567,7 @@ subroutine lf_out(iotyp)
 
                        iwdep=iwdep+1
                        call Out_netCDF(iotyp,def3,ndim_tot,1,loc_frac_wetdep(1,1,iwdep),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                            fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                     endif
                  enddo
@@ -1566,10 +1585,10 @@ subroutine lf_out(iotyp)
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
               if(lf_src(isrc)%nhour>0)write(def1%name,fmt='(A,I0)')trim(def1%name)//'_t',lf_src(isrc)%time_ix
+              if(me==0)write(*,*)'rel out ',iter,overwrite,create_var_only,dimSizes
               scale=1.0
               call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
-                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
-              overwrite=.false.
+                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
            endif
 
 
@@ -1585,7 +1604,7 @@ subroutine lf_out(iotyp)
               end if
 
               call Out_netCDF(iotyp,def1,ndim_tot,1,fracsum,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                   fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
            endif
         enddo
@@ -1655,13 +1674,14 @@ subroutine lf_out(iotyp)
                        do j=1,ljmax
                           do i=1,limax
                              k = KMAX_MID
-                             invtot=1.0/(lf_src_tot(i,j,k,ipoll_cfac,iou_ix)+1.E-20)
-                             if(ideriv == 1)tmp_out_base(i,j) = tmp_out_base(i,j) + lf_src_tot(i,j,k,ipoll_cfac,iou_ix) * invfac
+                             kk = 1
+                             invtot=1.0/(lf_src_tot(i,j,kk,ipoll_cfac,iou_ix)+1.E-20)
+                             if(ideriv == 1)tmp_out_base(i,j) = tmp_out_base(i,j) + lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) * invfac
                              n1=0
                              do n=lf_src(isrc)%start, lf_src(isrc)%end
                                 n1 = n1 + 1
-                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,k,iou_ix)*invfac
-                                fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
+                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
+                                fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k and divided by tot
                              end do
                           end do
                        end do
@@ -1689,9 +1709,8 @@ subroutine lf_out(iotyp)
                   if (index(lf_spec_out(iout)%name,"ASO")>0) def2%name='SURF_ug_PM_'//trim(specname)
                   if(iter==2 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(def2%name)
                   call Out_netCDF(iotyp,def2,ndim_tot,kmax,tmp_out_base,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                      fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                   pollwritten(ipoll_cfac) = .true.
-                  overwrite=.false.
                 end if
               end if
               !now write out sensibilities for each country and sectors
@@ -1792,31 +1811,31 @@ subroutine lf_out(iotyp)
                     else
                        def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                            fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                            fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep.and. .not. lf_spec_out(iout)%WetDep)then ! NB: assumes O3 is asked for!
                           write(def2%name,"(A)")"AvgMDA8_6month_"//trim(secname)//trim(sourcename)//trim(redname)
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                           call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                               fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                           def2%unit='ppbdays'
                           write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
                           def2%name = "SOMO35_"//trim(secname)//trim(sourcename)//trim(redname)
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                           call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                               fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                               fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                           if(n1der==1 .and. ideriv == 1)then
                              !also save Base MDA8
                              def2%name="AvgMDA8_6month"
                              def2%unit='ug/m3'
                              call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                                  fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                                  fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                              def2%name="SOMO35"
                              def2%unit='ppbdays'
                              call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                                  fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                                  fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                           end if
                        end if
                     end if
@@ -1831,12 +1850,17 @@ subroutine lf_out(iotyp)
   deallocate(tmp_out_base)
 
   do ipoll=1,2*Npoll
-     do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+     do k = 1, lf_Nvertout
         do j=1,ljmax
            do i=1,limax
               lf_src_tot(i,j,k,ipoll,iou_ix) = 0.0
            enddo
         enddo
+     enddo
+  enddo
+  do j=1,ljmax
+     do i=1,limax
+        lf_src_ps(i,j,iou_ix) = 0.0
      enddo
   enddo
 
@@ -1845,7 +1869,7 @@ subroutine lf_out(iotyp)
   n1=Nsources
   if(make_PMwater)n1=n1+Nfullchem_emis
   do isrc = 1, n1
-     do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
+     do k = 1, lf_Nvertout
         do j=1,ljmax
            do i=1,limax
               do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -1898,7 +1922,7 @@ end subroutine lf_out
 subroutine lf_av(dt)
   real, intent(in)    :: dt                   ! time-step used in integrations
   real :: xtot, x, O3_c
-  integer ::i,j,k,ii,l,n,nn,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
+  integer ::i,j,k,kk,ii,l,n,nn,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
   integer ::isec_poll
   logical :: pollwritten(2*Max_lf_spec),is_surf
   integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
@@ -1939,8 +1963,15 @@ subroutine lf_av(dt)
            ipoll_cfac = ipoll
         end if
 
+        do j=1,ljmax
+           do i=1,limax
+              lf_src_ps(i,j,iou_ix) = lf_src_ps(i,j,iou_ix) + ps(i,j,1)
+           end do
+        end do
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
-           do j=1,ljmax
+          kk = k
+          if (lf_Nvertout<KMAX_MID) kk = KMAX_MID - k + 1 !1 for surface and increasing upwards
+          do j=1,ljmax
               do i=1,limax
                  xtot=0.0
                  do iix=1,lf_src(isrc)%Nsplit
@@ -1968,19 +1999,19 @@ subroutine lf_av(dt)
                  if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
                     if (iou_ix == iou_ix_inst) then
                        !not accumulated
-                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = xtot
+                       lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) = xtot
                     else
-                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = lf_src_tot(i,j,k,ipoll_cfac,iou_ix) + xtot
+                       lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) = lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) + xtot
                     endif
                  endif
                  do n=lf_src(isrc)%start, lf_src(isrc)%end
                     if (iou_ix == iou_ix_inst) then
                        !not accumulated
-                       lf_src_acc(n,i,j,k,iou_ix) = xtot*lf(n,i,j,k)
+                       lf_src_acc(n,i,j,kk,iou_ix) = xtot*lf(n,i,j,k)
                     else
-                       lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix)+xtot*lf(n,i,j,k)
+                       lf_src_acc(n,i,j,kk,iou_ix)=lf_src_acc(n,i,j,kk,iou_ix)+xtot*lf(n,i,j,k)
                     end if
-                    if(DEBUG .and. isnan(lf_src_acc(n,i,j,k,iou_ix)))then
+                    if(DEBUG .and. isnan(lf_src_acc(n,i,j,kk,iou_ix)))then
                        write(*,*)'lf is NaN ',me,isrc,lf(n,i,j,k),xtot,n,i,j,k,trim(lf_src(isrc)%species)
                        stop
                     end if
@@ -1992,7 +2023,9 @@ subroutine lf_av(dt)
            !add pm25_new to pm25
            isrc_pm25_new = isrc_new(isrc)
            do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
-              do j=1,ljmax
+             kk = k
+             if (lf_Nvertout<KMAX_MID) kk = KMAX_MID - k + 1 !1 for surface and increasing upwards
+             do j=1,ljmax
                  do i=1,limax
                     xtot=0.0
                     do iix=1,lf_src(isrc_pm25_new)%Nsplit
@@ -2010,11 +2043,11 @@ subroutine lf_av(dt)
                     end do
                     if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
                        !It is added to the _old (= not new) component, also in the inst case
-                       lf_src_tot(i,j,k,ipoll_cfac,iou_ix) = lf_src_tot(i,j,k,ipoll_cfac,iou_ix) + xtot
+                       lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) = lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) + xtot
                     end if
                     n_new = lf_src(isrc_pm25_new)%start
                     do n=lf_src(isrc)%start, lf_src(isrc)%end !NB: loop over isrc for pm25, not new
-                       lf_src_acc(n,i,j,k,iou_ix)=lf_src_acc(n,i,j,k,iou_ix) + xtot*lf(n_new,i,j,k)
+                       lf_src_acc(n,i,j,kk,iou_ix)=lf_src_acc(n,i,j,kk,iou_ix) + xtot*lf(n_new,i,j,k)
                        n_new = n_new + 1
                     end do
                  end do
@@ -2030,21 +2063,21 @@ subroutine lf_av(dt)
            do i=1,limax
               if (iou_ix == iou_ix_inst) then
                  !not accumulated
-                 lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = PM25_water_rh50(i,j)
+                 lf_src_tot(i,j,1,ipoll_cfac,iou_ix) = PM25_water_rh50(i,j)
               else
-                 lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) = lf_src_tot(i,j,kmax_mid,ipoll_cfac,iou_ix) + PM25_water_rh50(i,j)
+                 lf_src_tot(i,j,1,ipoll_cfac,iou_ix) = lf_src_tot(i,j,1,ipoll_cfac,iou_ix) + PM25_water_rh50(i,j)
               endif
               nn=0
               if (iou_ix == iou_ix_inst) then
                  !not accumulated
                  do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
                     nn=nn+1
-                    lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_PM25_water(nn,i,j)
+                    lf_src_acc(n,i,j,1,iou_ix)=lf_PM25_water(nn,i,j)
                  end do
               else
                  do n=LF_SRC_TOTSIZE+1, LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis
                     nn=nn+1
-                    lf_src_acc(n,i,j,kmax_mid,iou_ix)=lf_src_acc(n,i,j,kmax_mid,iou_ix)+lf_PM25_water(nn,i,j)
+                    lf_src_acc(n,i,j,1,iou_ix)=lf_src_acc(n,i,j,1,iou_ix)+lf_PM25_water(nn,i,j)
                  end do
               end if
            end do
@@ -4656,7 +4689,7 @@ subroutine lf_rcemis(i,j,k,eps)
     CDFtype=Real4
     dimSizes=1
     dimSizes_tot(3)=lf_Nvert
-    dimNames_tot(3)='klevel'
+    dimNames_tot(3)='lev'
     chunksizes_tot=1
     chunksizes_tot(1)=MAXLIMAX
     chunksizes_tot(2)=MAXLJMAX
