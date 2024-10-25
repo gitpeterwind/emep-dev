@@ -49,6 +49,26 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 October 2024, Willem
+
+Added another 'Custom_Config' domain setting option. This doman setting uses the default
+domain-relevant USES flags from Config_module.f90, or as overwritten in the config
+namelist (i.e., old behavior). With other domain settings (e.g., 'EMEPDOMAIN'),
+domain-relevant USES flags in the config namelist are inactive/overwritten. 
+
+There are now to ways of setting custom domain settings.
+
+1. Use the 'Custom_Config' domain setup and specify e.g. USES%PFT_MAPS = T in the
+   config namelist.
+
+2. Use another domain setting (e.g. 'EMEPDOMAIN') and specify
+   EMEP_DOMAIN_SETUP%PFT_MAPS = T in the config namelist. But beware, in this case
+   USES%PFT_MAPS is inactive/overwritten by EMEP_DOMAIN_SETUP%PFT_MAPS.
+
+domain-relevant USES flags (as well as nr. of vertical level choice) which are now
+controlled by the choice of domain setting, have been removed from config_emep.nml.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23-24 October 2024, Peter
 
 LF: can output more vertical levels in the not fullchem case.

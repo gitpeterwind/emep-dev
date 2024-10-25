@@ -1077,18 +1077,25 @@ subroutine Config_Constants(iolog)
    case('EMEPDOMAIN')
      domain_setup = EMEP_DOMAIN_SETUP
      Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
+     USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+     USES%CONVECTION         = domain_setup%USES_CONVECTION
+     USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+     USES%ROADDUST           = domain_setup%USES_ROADDUST
+     if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
    case('GenericDOMAIN')
      domain_setup = GENERIC_DOMAIN_SETUP
      Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt'
+     USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+     USES%CONVECTION         = domain_setup%USES_CONVECTION
+     USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+     USES%ROADDUST           = domain_setup%USES_ROADDUST
+     if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
+   case('Custom_Config')
+     ! domain-relevant USES flags from Config_module.f90 or from the config namelist are kept/not overwritten
+     if(MasterProc) write(*,*) dtxt//"WARNING: USES domain settings from Config_mod/Config namelist."
    case default
      call StopAll('DOMAIN_SETUP ERROR!'//USES%DOMAIN_SETUP_TYPE)
   end select
-
-  USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
-  USES%CONVECTION         = domain_setup%USES_CONVECTION
-  USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
-  USES%ROADDUST           = domain_setup%USES_ROADDUST
-  if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
 
 !  Note that if some test is wanted, we can hack the GLOB_ and EURO_ settings in config_emep.nml too, e.g.
 !  EURO_DOMAIN_SETUP%USES_CONVECTION = T
