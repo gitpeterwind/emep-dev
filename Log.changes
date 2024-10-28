@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 October 2024, Dabe
+
+Re-implement old soil-nox, but now as SOILNOX_METHOD="ACP2012". Mainly to
+allow testing of CAMS-GLOB-SOIL for internal purposes. 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 October 2024, Willem
 
 Added another 'Custom_Config' domain setting option. This doman setting uses the default
