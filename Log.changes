@@ -49,10 +49,17 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28 October 2024, Dabe
+28 October 2024, Dave
 
 Re-implement old soil-nox, but now as SOILNOX_METHOD="ACP2012". Mainly to
 allow testing of CAMS-GLOB-SOIL for internal purposes. 
+
+Triggered if USES%SOILNOX_METHOD == 'ACP2012EURO'
+
+ Biogenics_mod: added back as Set_ACP2012EuroSoilNOx
+ Config_module: added back as ACP2012_SOILNOX_DEPSCALE
+ Emissions_mod: use of ACP2012EURO
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 October 2024, Willem
 

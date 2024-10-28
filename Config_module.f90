@@ -278,7 +278,7 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
-  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert or ACP2012 (deprecated)
+  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert or ACP2012EURO (deprecated)
 
 ! Selection of Emissions parameterization for fungal
   character(len=4) :: FUNGAL_METHOD  = 'HS_5'  !HS_3, HS_5, SD, HS, JS (see PBAP module)
@@ -891,7 +891,7 @@ subroutine Config_Constants(iolog)
    ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
-   ,EURO_SOILNOX_DEPSCALE &
+   ,ACP2012_SOILNOX_DEPSCALE &
    ,lf_src & !Local Fractions
    ,lf_set & !Local Fractions
    ,lf_species &
