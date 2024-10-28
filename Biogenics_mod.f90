@@ -720,7 +720,7 @@ module Biogenics_mod
 
 
       if ( .not. USES%SOILNOX  ) return ! and fSW has been set to 1. at start
-      if ( USES%SOILNOX_METHOD /= 'OLD_EURO' ) return
+      if ( USES%SOILNOX_METHOD /= 'ACP2012EURO' ) return
 
       if( DEBUG%SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_mod DEBUG_SOILNOX EURO: ",&
