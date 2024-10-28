@@ -20,7 +20,6 @@
   TopoFile              = 'DataDir/topoGRID.nc'
   SitesFile             = 'DataDir/sites.dat',
   SondesFile            = 'DataDir/sondes.dat',
-  Vertical_levelsFile   = 'DataDir/Vertical_levels20_EC.txt'
   AircraftEmis_FLFile   = 'DataDir/AircraftEmis_FL.nc',
  !from ECCAD:
   soilnox_emission_File = 'DataDir/CAMS-GLOB-SOIL_Glb_0.5x0.5_soil_nox_v2.4clim_monthly.nc',
@@ -44,11 +43,11 @@
   PBL%ZiMIN             =  50.0,
   PBL%HmixMethod        = "JcRb_t2m",! rv4.52 default
 !------------------------------
+  USES%DOMAIN_SETUP_TYPE = 'EMEPDOMAIN', ! 'EMEPDOMAIN'/'GenericDOMAIN' for Euro/Glob model default
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = F,
   USES%FFireDispMethod  = "P800",    ! old dispersion method
   USES%EMISSTACKS       = F,         ! Reads PointSources file
-  USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%n2o5HydrolysisMethod = 'Smix' ! 'Smix', 'SmixTen', 'Gamma:0.002', NOT:'OrigRiemer'
   USES%WHITECAPS        = 'Callaghan'! 'Callaghan', 'Norris', 'Monahan'
@@ -60,7 +59,6 @@
   USES%SOILNOX_METHOD = 'NoFert',   ! for EMEP/CEIP, ECLIPSE v6
 !------------------------------
   USES%SOILWATER        = T,         ! Uses SMI from meteo data
-  USES%CONVECTION       = F,
   USES%SEASALT          = T,
   USES%AIRCRAFT_EMIS    = T,         ! Needs global file, see manual
   USES%LIGHTNING_EMIS   = T,
@@ -68,7 +66,6 @@
   USES%PROGRESS_FILES   = F,         ! write to file.msg for each output in file.nc
   USES%SKIP_INCOMPLETE_OUTPUT = F,   ! skip daily/montly/fullrun output for runs under 1/28/181 days
   USES%POLLEN           = F,
-  USES%ROADDUST         = T,
   USES%DUST             = T,
   NETCDF_DEFLATE_LEVEL  = 4,         ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
   INERIS_SNAP1          = F,
