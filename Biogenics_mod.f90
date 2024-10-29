@@ -771,10 +771,10 @@ module Biogenics_mod
                  f  = LandCover(i,j)%fraction(ilc) 
                  beta = 0.0
 
-                 if ( LandType(LC)%is_conif ) then
+                 if ( LandType(LC)%is_NDLF ) then
                     enox = enox + f*ftn*150.0
                     !enh3 = enh3 + f*ftn*1500.0 ! Huge?! W+E ca. 600 ngNH3/m2/s -> 1800 ugN/m2/h
-                 else if ( LandType(LC)%is_decid ) then
+                 else if ( LandType(LC)%is_BDLF ) then
                     enox = enox + f*ftn* 50.0
                     !enh3 = enh3 + f*ftn*500.0 !  Just guessing
                  else if ( LandType(LC)%is_seminat ) then

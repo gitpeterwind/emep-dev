@@ -49,6 +49,27 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 October 2024, Dave
+
+We now use NeedleLeaf and BroadLeaf, and ENF and EBF instead of the
+previous Conif (ECF) and Decid (EDF), as these categories more accurately
+describe the EMEP model outputs, which are now e.g. DDEP_OXN_m2NeedleLeaf,
+etc.
+
+NOTE: New input dir: LandInputs_Oct2024 ****
+
+The ECF ecosystem type was renamed to be ENF - for NeedleLeaf forest
+The EDF ecosystem type was renamed to be EBF - for BroadLeaf forest
+
+Changed notation in:
+ Biogenics_mod.f90
+ EcoSystem_mod.f90
+ LandDefs_mod.f90
+ MosaicOutputs_mod.f90
+ My_Derived_mod.f90
+ config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 October 2024, Dave
 
 Re-implement old soil-nox, but now as SOILNOX_METHOD="ACP2012". Mainly to
