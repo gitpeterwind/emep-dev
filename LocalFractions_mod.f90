@@ -1458,7 +1458,6 @@ subroutine lf_out(iotyp)
      pollwritten = .false.
      iddep = 0
      iwdep = 0
-     if(me==0)write(*,*)'ps out ',iter,overwrite,create_var_only
      !we always output surface pressure
      scale = defps%scale/av_fac(iotyp) 
      call Out_netCDF(iotyp,defps,2,kmax,lf_src_ps(1,1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
@@ -1585,7 +1584,6 @@ subroutine lf_out(iotyp)
               if(lf_src(isrc)%type == 'relative')write(def1%unit,fmt='(A)')'fraction'
               if(lf_src(isrc)%type == 'relative')write(def1%class,fmt='(A,I0,A,I0)')'source_size_',lf_src(isrc)%res,'x',lf_src(isrc)%res
               if(lf_src(isrc)%nhour>0)write(def1%name,fmt='(A,I0)')trim(def1%name)//'_t',lf_src(isrc)%time_ix
-              if(me==0)write(*,*)'rel out ',iter,overwrite,create_var_only,dimSizes
               scale=1.0
               call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
@@ -1795,7 +1793,7 @@ subroutine lf_out(iotyp)
                           if(ideriv==3)redname='sox'
                           if(ideriv==4)redname='nh3'
                         end if
-                   end if
+                     end if
                     if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
                     if(iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
                        !"Compressed" CityMasks output

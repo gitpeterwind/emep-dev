@@ -102,7 +102,7 @@ domain-relevant USES flags (as well as nr. of vertical level choice) which are n
 controlled by the choice of domain setting, have been removed from config_emep.nml.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23-24 October 2024, Peter
+23-24+29 October 2024, Peter
 
 LF: can output more vertical levels in the not fullchem case.
 for example, in config_emep.nml: lf_set%Nvertout = 5
