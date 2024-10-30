@@ -10,7 +10,7 @@ include Makefile.SRCS
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
-#OPT_FLAGS = -O2 -march=core-avx2
+OPT_FLAGS = -O2 -march=core-avx2
 F90FLAGS = -g  -r8  -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
@@ -37,7 +37,7 @@ else ifeq ($(MACHINE), lumi)
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS += $(shell nf-config --cflags)
   MAKEDEPF90=/users/windpete/bin/makedepf90
-#  OPT_FLAGS =
+  OPT_FLAGS = -O2
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   F90=ftn
 else ifeq ($(MACHINE),fram)
@@ -69,11 +69,13 @@ else ifneq (,$(findstring $(MACHINE),stratus nebula))
   MODULES = buildenv-intel/2018.u1-bare netCDF-HDF5/4.3.2-1.8.12-nsc1-intel-2018.u1-bare
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
+  OPT_FLAGS = -O2 -march=core-avx2
   MAKEDEPF90=makedepf90
 else ifneq (,$(findstring $(MACHINE),stratus2 nebula2))
   MODULES = buildenv-intel/2023a-eb netCDF-HDF5/4.9.2-1.12.2-hpc1
   LDFLAGS += $(shell nf-config --flibs)
   F90FLAGS+= $(shell nf-config --fflags)
+  OPT_FLAGS = -O2 -march=core-avx2
   MAKEDEPF90=/software/sse2/tetralith_el9/easybuild/pure/software/makedepf90/2.8.8-foss-2022a/bin/makedepf90
 else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
@@ -105,8 +107,7 @@ else # default ubuntu etc.
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
   OPT_FLAGS = -O3
 endif
-
-
+ 
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
