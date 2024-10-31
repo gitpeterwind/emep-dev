@@ -119,6 +119,7 @@ real, public, allocatable, dimension(:,:,:), save :: lf_PM25_water
 real, public, allocatable, dimension(:,:,:,:), save :: D8M !
 real, public, allocatable, dimension(:,:,:), save :: D8Max !
 real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av !
+real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av_ppb !
 real, public, allocatable, dimension(:,:,:), save :: hourM !
 real, public, allocatable, dimension(:,:,:,:), save :: SOMO35 !
 real, public, allocatable, dimension(:,:,:,:), save :: D8M_ppb !
@@ -1256,6 +1257,7 @@ contains
     allocate(D8M(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX,8)) ! running last 8 hour values
     allocate(D8Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
     allocate(D8Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(D8Max_av_ppb(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
     allocate(hourM(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
 
     allocate(SOMO35(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
@@ -1267,6 +1269,7 @@ contains
     D8Max = 0.0 !init with low value
     D8M = 0.0 !init with low value
     D8Max_av = 0.0 !init necessary
+    D8Max_av_ppb = 0.0 !init necessary
     SOMO35 = 0.0 !init necessary
     hourM_ppb = 0.0
     D8Max_ppb = 0.0 !init with low value
@@ -1811,14 +1814,20 @@ subroutine lf_out(iotyp)
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep.and. .not. lf_spec_out(iout)%WetDep)then ! NB: assumes O3 is asked for!
-                          write(def2%name,"(A)")"AvgMDA8_6month_"//trim(secname)//trim(sourcename)//trim(redname)
+                          write(def2%name,"(A)")"AvgMDA8_6month"//trim(secname)//trim(sourcename)//trim(redname)
+                          def2%unit='ug/m3'
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                           call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
+                          write(def2%name,"(A)")"AvgMDA8_6month_ppb"//trim(secname)//trim(sourcename)//trim(redname)
+                          def2%unit='ppb'
+                          n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av_ppb(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                               fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
                           def2%unit='ppbdays'
-                          write(def2%name,"(A)")"SOMO35_"//trim(def1%name)
-                          def2%name = "SOMO35_"//trim(secname)//trim(sourcename)//trim(redname)
+                          def2%name = "SOMO35"//trim(secname)//trim(sourcename)//trim(redname)
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
                           call Out_netCDF(iotyp,def2,ndim_tot,1,SOMO35(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
@@ -1828,6 +1837,11 @@ subroutine lf_out(iotyp)
                              def2%name="AvgMDA8_6month"
                              def2%unit='ug/m3'
                              call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                                  fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
+                             def2%name="AvgMDA8_6month_ppb"
+                             def2%unit='ppb'
+                             call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av_ppb(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                              def2%name="SOMO35"
@@ -2161,6 +2175,7 @@ subroutine lf_av(dt)
            !end of day, save the values
            if (iotyp2ix(iou_ix)==IOU_DAY) then
               D8Max_av(:,:,:,iou_ix)=0.0
+              D8Max_av_ppb(:,:,:,iou_ix)=0.0
               SOMO35(:,:,:,iou_ix)=0.0
            end if
            !NB: at the end of the first day (day 2 hour 00:00), we actually start to write in the next month
@@ -2168,6 +2183,7 @@ subroutine lf_av(dt)
               !new month
               count_AvgMDA8_m = 0
               D8Max_av(:,:,:,iou_ix)=0.0
+              D8Max_av_ppb(:,:,:,iou_ix)=0.0
               SOMO35(:,:,:,iou_ix)=0.0
            end if
 
@@ -2175,6 +2191,7 @@ subroutine lf_av(dt)
               !new yearly max
               count_AvgMDA8_y = 0
               D8Max_av(:,:,:,iou_ix)=0.0
+              D8Max_av_ppb(:,:,:,iou_ix)=0.0
               !SOMO35(:,:,:,iou_ix)=0.0 !for SOMO35 the integral goes over the entire year
            end if
 
@@ -2188,6 +2205,7 @@ subroutine lf_av(dt)
                  if (iotyp2ix(iou_ix)==IOU_DAY)then
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  D8Max(n,i,j)
+                       D8Max_av_ppb(i,j,n,iou_ix) =  D8Max_ppb(n,i,j)
                     end do
                     !NB: if and only if D8Max_ppb>35 , all the SOMO35 fractions must be updated
                     if (D8Max_ppb(0,i,j)>35.0) then
@@ -2200,6 +2218,7 @@ subroutine lf_av(dt)
                  else if(iotyp2ix(iou_ix)==IOU_MON)then
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av(i,j,n,iou_ix) + w_m * D8Max(n,i,j)
+                       D8Max_av_ppb(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av_ppb(i,j,n,iou_ix) + w_m * D8Max_ppb(n,i,j)
                     end do
                     if (D8Max_ppb(0,i,j)>35.0) then
                        SOMO35(i,j,0,iou_ix) =  SOMO35(i,j,0,iou_ix) + D8Max_ppb(0,i,j)-35.0 !integral over days
@@ -2213,6 +2232,7 @@ subroutine lf_av(dt)
                     if(current_date%month>=4 .and. current_date%month<=9)then
                        do n=0, Npos_lf*Nfullchem_emis
                           D8Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av(i,j,n,iou_ix) + w_y * D8Max(n,i,j)
+                          D8Max_av_ppb(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av_ppb(i,j,n,iou_ix) + w_y * D8Max_ppb(n,i,j)
                        end do
                     end if
                     !NB: if and only if D8Max_ppb>35 , all the SOMO35 fractions must be updated
