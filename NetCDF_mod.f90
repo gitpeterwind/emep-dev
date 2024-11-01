@@ -3952,7 +3952,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      deallocate(ivalues)
   else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
-     if(debug1) write(*,*)'interpolatingL from ', &
+     if(debug1) write(*,*)'interpolating from ', &
         trim(data_projection), ' to ',trim(projection)
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then

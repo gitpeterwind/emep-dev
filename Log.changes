@@ -49,6 +49,14 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Nov 2024, Peter
+
+Avoid computation of emission grid resolution, when it is given in
+config_emep.nml.
+(It was overwritten, but in some special cases (3 dimensional lat variable)
+the code computation of the (unused) grid resolution could crash).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 October 2024, Peter
 
 LF: MDA8 also in ppb
