@@ -49,6 +49,18 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th Nov 2024, Willem 
+
+Updated config_Open.nml in preparation of the new opensource release. 
+
+Paths specified in config_Open now point to file locations on Nebula/Atos
+for easier testing for consistency with config_emep.nml. 
+
+Removed some USES% flags that overwrote what the (new) defaults should be. Opensource 
+now also includes CAMS_TEMPO timefactors, Cloud-J, CH4 from file, Country Variable
+format emissions, and DOMAIN_SETUP_TYPE.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Nov 2024, Peter
 
 Avoid computation of emission grid resolution, when it is given in
