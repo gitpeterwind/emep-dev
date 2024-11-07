@@ -574,7 +574,7 @@ contains
     end if
 
 
-   !-------------
+   !-------------/nobackup/forsk/sm_petwi/work/testemis 
     associate ( debugm0 => ( DEBUG%GETEMIS .and. MasterProc ) )
    !-------------
     if ( debugm0 ) write(*,*) dtxt//'Start File:'//trim(fname)
@@ -588,12 +588,16 @@ contains
        endif
 
        default_resolution = 0.0
-       status = nf90_get_att(ncFileID, nf90_global,"Grid_resolution", resolution)
-       if(status==nf90_noerr)then
-          default_resolution = resolution
+       if (EmisFile_in%grid_resolution > 0.1 ) then
+          ! it will be overwritten anyway in Init_Emissions
        else
-          call make_gridresolution(ncFileID, default_resolution)
-       endif
+          status = nf90_get_att(ncFileID, nf90_global,"Grid_resolution", resolution)
+          if(status==nf90_noerr)then
+             default_resolution = resolution
+          else
+             call make_gridresolution(ncFileID, default_resolution)
+          endif
+       end if
     endif
 
     default_factor = 1.0

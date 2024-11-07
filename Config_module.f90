@@ -278,7 +278,7 @@ type, public :: emep_useconfig
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
-  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert
+  character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert or ACP2012EURO (deprecated)
 
 ! Selection of Emissions parameterization for fungal
   character(len=4) :: FUNGAL_METHOD  = 'HS_5'  !HS_3, HS_5, SD, HS, JS (see PBAP module)
@@ -342,6 +342,17 @@ type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
+
+
+! If using SOILNOX_METHOD=ACP2012 Soil NOx method (Europe only, deprecated)
+! The Euro soil NO emissions are based upon average Nr-deposition calculated
+!  for the 2000s, as given in the AnnualNdep.nc files. For future years a
+!  new AnnualNdep.nc could be pre-calculated. A simpler but approximate
+!  way is to scale with some other factor, e.g. the ratio of emissions over
+!  some area (EMEP, or EU) in year YYYY divided by year 2005 values.
+! Remember, soil-NO emissions are *very* uncertain.
+
+  real, public, save :: ACP2012_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
 !See DMS_t  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
@@ -837,6 +848,7 @@ character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataD
 character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_initf = 'DataDir/input_cjx/unified_cjx/'
 character(len=TXTLEN_FILE), target, save, public :: cloudjx_strat = 'DataDir/input_cjx/OzoneObs_v3/'
+character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
 !MM replace by month in lightning()
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
@@ -879,6 +891,7 @@ subroutine Config_Constants(iolog)
    ,LandCoverInputs    &  ! for CLM, etc
    ,DEBUG  & !
    ,CONVECTION_FACTOR &
+   ,ACP2012_SOILNOX_DEPSCALE &
    ,lf_src & !Local Fractions
    ,lf_set & !Local Fractions
    ,lf_species &
@@ -947,6 +960,7 @@ subroutine Config_Constants(iolog)
    ,EMEP_EuroBVOCFile&
    ,cloudjx_initf&
    ,cloudjx_strat&
+   ,NdepFile&
    ,lightningFile&
    ,LoganO3File&
    ,DustFile&
@@ -1077,18 +1091,25 @@ subroutine Config_Constants(iolog)
    case('EMEPDOMAIN')
      domain_setup = EMEP_DOMAIN_SETUP
      Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
+     USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+     USES%CONVECTION         = domain_setup%USES_CONVECTION
+     USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+     USES%ROADDUST           = domain_setup%USES_ROADDUST
+     if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
    case('GenericDOMAIN')
      domain_setup = GENERIC_DOMAIN_SETUP
      Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt'
+     USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
+     USES%CONVECTION         = domain_setup%USES_CONVECTION
+     USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
+     USES%ROADDUST           = domain_setup%USES_ROADDUST
+     if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
+   case('Custom_Config')
+     ! domain-relevant USES flags from Config_module.f90 or from the config namelist are kept/not overwritten
+     if(MasterProc) write(*,*) dtxt//"WARNING: USES domain settings from Config_mod/Config namelist."
    case default
      call StopAll('DOMAIN_SETUP ERROR!'//USES%DOMAIN_SETUP_TYPE)
   end select
-
-  USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
-  USES%CONVECTION         = domain_setup%USES_CONVECTION
-  USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
-  USES%ROADDUST           = domain_setup%USES_ROADDUST
-  if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
 
 !  Note that if some test is wanted, we can hack the GLOB_ and EURO_ settings in config_emep.nml too, e.g.
 !  EURO_DOMAIN_SETUP%USES_CONVECTION = T
@@ -1135,6 +1156,7 @@ subroutine Config_Constants(iolog)
   call associate_File(EMEP_EuroBVOCFile)
   call associate_File(cloudjx_initf)
   call associate_File(cloudjx_strat)
+  call associate_File(NdepFile)
   call associate_File(lightningFile)
   call associate_File(LoganO3File)
   call associate_File(DustFile)

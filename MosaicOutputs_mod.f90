@@ -345,10 +345,10 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
   dbghh = dbg .and. current_date%seconds == 0
   if(dbg) txtdate = print_date()
 
-  ! Must match areas given above, e.g. DDEP_CONIF -> Conif
+  ! Must match areas given above, e.g. DDEP_NDLF -> NeedleLeaf
 
   ! Ecosystem areas, which were assigned in Init_DryDep:
-  !  EcoFrac(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
+  !  EcoFrac(NDLF)   = sum( coverage(:), LandType(:)%is_NDLF )
   !  EcoFrac(FULL_GRID)    = 1.0
 
   EcoFrac(:)    = EcoSystemFrac(:,i,j)
@@ -407,6 +407,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
     case("DDEP")
       ! Eco landcovers can include several land-cover classes, see EcoSystem_mod
       iEco = find_index(MosaicOutput(imc)%txt,DEF_ECOSYSTEMS)
+      call CheckStop(iEco<0,dtxt//"iECO NEG! "//trim(MosaicOutput(imc)%txt))
       select case(nadv)
       case(1:NSPEC_ADV)                 ! normal advected species
         Fflux = Deploss(nadv)*sum(fluxfrac(nadv,:),Is_EcoSystem(iEco,:))

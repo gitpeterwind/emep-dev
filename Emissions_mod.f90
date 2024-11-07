@@ -6,7 +6,7 @@ module Emissions_mod
 !_____________________________________________________________________________
 
 use AirEmis_mod, only : airn, TotAircraftEmis
-use Biogenics_mod,     only: SoilNOx, SoilNOx3D  !OLD:, AnnualNdep
+use Biogenics_mod,     only: SoilNOx, SoilNOx3D, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
 use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
                              NEMIS_File  ! No. emission files
@@ -29,7 +29,7 @@ use Config_module,only: &
     SecEmisTotalsWanted,SecEmisOutWanted,MaxNSECTORS,&
     AircraftEmis_FLFile,soilnox_emission_File, RoadMapFile,&
     DMSFile,OceanNH3File,&
-    AVG_SMI_2005_2010File, &   !OLD:NdepFile,&
+    AVG_SMI_2005_2010File,NdepFile,&
     startdate, Emis_sourceFiles, EmisMask, NEmisMaskMAX,&
     hourly_emisfac
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE, IC_HU, IC_AT
@@ -2852,8 +2852,18 @@ subroutine newmonth
   end if ! USES%AIRCRAFT_EMIS
 
   if(DEBUG%SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX ????", me
+  if(USES%SOILNOx .and. USES%SOILNOX_METHOD=='ACP2012EURO')then  ! European Soil NOx emissions
 
-  if(USES%SOILNOX) then ! Global soil NOx, default from 2021
+      ! read in map of annual N-deposition produced from pre-runs of EMEP model
+      ! with script mkcdo.annualNdep
+      call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
+          interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
+
+      if(DEBUG%SOILNOX.and.debug_proc)&
+        write(*,"(a,4es12.3)") dtxt//" SOILNOX AnnualDEBUG ", &
+        AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
+
+  elseif(USES%SOILNOX) then ! Global soil NOx, default from 2021
 
      !cf MonthlyDiurnalEmisFactor(months, tsteps, lat, lon)
     SoilNOx(:,:)=0.0
@@ -2997,7 +3007,7 @@ subroutine newmonth
         SoilNOx=SoilNOx/Nyears
       end if ! nstart test
 
-    else !  SOILNOX_METHOD Needs to be Fert, NoFert, or Zaehle2011
+    else !  SOILNOX_METHOD Needs to be Fert, NoFert, Zaehle2011, or ACP2012EURO
       call StopAll(dtxt//'WRONG SNOX METHOD:'//USES%SOILNOX_METHOD )
     end if ! CAMS81
 
@@ -3011,7 +3021,7 @@ subroutine newmonth
   end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
-  if(USES%SOILNOX ) then
+  if(USES%SOILNOX .and. USES%SOILNOX_METHOD /= 'ACP2012EURO') then
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
     ! CAMS uses kg(NO)/m2/s, so we convert to g(N)/m2/day to match earlier Zaehle

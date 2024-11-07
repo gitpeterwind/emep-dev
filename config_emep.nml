@@ -28,7 +28,8 @@
 ! USER Needs to choose right combination of settings for different domain/
 ! emission combinations. 
 
-! SET as GenericDOMAIN or EMEPDOMAIN (default for European runs)
+! SET as GenericDOMAIN or EMEPDOMAIN (default for European runs), or as Custom_Config (sets domain-relevant 
+! USES flags through Config_module.f90 defaults or as overwritten in this config namelist)
   USES%DOMAIN_SETUP_TYPE = 'EMEPDOMAIN'
 
 
@@ -48,11 +49,6 @@
 !    also uses 90m layers, to avoid problems with v.thin layers at
 !    high altitude (e.g. Himalayas)
 
-  USES%CONVECTION        = T,
-  USES%DEGREEDAY_FACTORS = F, 
-  USES%PFT_MAPS  = T,
-  Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt', ! Lowest layers 94m
-  USES%ROADDUST          = F,
   !EmisDir='DataDir/Emis_ECLIPSEv6b/'
 
 
@@ -70,11 +66,6 @@
 ! - convection doesn't work so well. Can use thinner layers, and degree-day
 !   factors. Use of soil-NOx depends on whether included in anthropogenic 
 !
-  USES%CONVECTION        = F,
-  USES%DEGREEDAY_FACTORS = T, 
-  USES%PFT_MAPS  = F,
-  Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt',
-  USES%ROADDUST          = T,            ! Only EECCA?
 
 
 ! 2a) Europe, using CAMS-REG emissions (no SNOx):
@@ -204,10 +195,10 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
 !additional config (will overwrite config from config_emep.nml)
 !ExtraConfigFile(1)='OwnInputDir/MySpecialConfig.nml',
 
- LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_LandDefs.csv',
- LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Sep2023_with_PBAP/Inputs_DO3SE.csv',
- LandCoverInputs%mapMed     = 'DataDir/LandInputs_Sep2023_with_PBAP/medMap_0.5deg.nc',
- LandCoverInputs%desert     = 'DataDir/LandInputs_Sep2023_with_PBAP/Olson_2001_DEforEmep.nc',
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Oct2024/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Oct2024/Inputs_DO3SE.csv',
+ LandCoverInputs%mapMed     = 'DataDir/LandInputs_Oct2024/medMap_0.5deg.nc',
+ LandCoverInputs%desert     = 'DataDir/LandInputs_Oct2024/Olson_2001_DEforEmep.nc',
 
 ! 1km PS also available    ! Can also use 1km
  LandCoverInputs%MapFile =
@@ -757,8 +748,8 @@ OutputVegO3=
    'Grid     ','YM',
    'Forest    ','YM',
    'nonForest ','YM',
-   'Conif    ','YM',
-   'Decid    ','YM',
+   'NeedleLeaf','YM',
+   'BroadLeaf','YM',
    'Seminat  ','YM',
    'Water_D  ','YM',
    'Crops    ','YM',

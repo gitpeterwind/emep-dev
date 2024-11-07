@@ -326,6 +326,7 @@ end type poll_type
 type, public :: lf_set_type
   !general
   integer :: Nvert = 14 ! vertical extend of the tracking/local window
+  integer :: Nvertout = 1 ! number of vertical level to output (non fullchem only)
   logical :: YEAR =.true.! Output frequency
   logical :: MONTH =.false.
   character(len=40)::  MONTH_ENDING = "NOTSET"

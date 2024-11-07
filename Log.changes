@@ -49,6 +49,96 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th Nov 2024, Willem 
+
+Updated config_Open.nml in preparation of the new opensource release. 
+
+Paths specified in config_Open now point to file locations on Nebula/Atos
+for easier testing for consistency with config_emep.nml. 
+
+Removed some USES% flags that overwrote what the (new) defaults should be. Opensource 
+now also includes CAMS_TEMPO timefactors, Cloud-J, CH4 from file, Country Variable
+format emissions, and DOMAIN_SETUP_TYPE.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Nov 2024, Peter
+
+Avoid computation of emission grid resolution, when it is given in
+config_emep.nml.
+(It was overwritten, but in some special cases (3 dimensional lat variable)
+the code computation of the (unused) grid resolution could crash).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 October 2024, Peter
+
+LF: MDA8 also in ppb
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 October 2024, Peter
+
+Optimization flag for Nebula had fallen out from Makefile
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 October 2024, Dave
+
+We now use NeedleLeaf and BroadLeaf, and ENF and EBF instead of the
+previous Conif (ECF) and Decid (EDF), as these categories more accurately
+describe the EMEP model outputs, which are now e.g. DDEP_OXN_m2NeedleLeaf,
+etc.
+
+NOTE: New input dir: LandInputs_Oct2024 ****
+
+The ECF ecosystem type was renamed to be ENF - for NeedleLeaf forest
+The EDF ecosystem type was renamed to be EBF - for BroadLeaf forest
+
+Changed notation in:
+ Biogenics_mod.f90
+ EcoSystem_mod.f90
+ LandDefs_mod.f90
+ MosaicOutputs_mod.f90
+ My_Derived_mod.f90
+ config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 October 2024, Dave
+
+Re-implement old soil-nox, but now as SOILNOX_METHOD="ACP2012". Mainly to
+allow testing of CAMS-GLOB-SOIL for internal purposes. 
+
+Triggered if USES%SOILNOX_METHOD == 'ACP2012EURO'
+
+ Biogenics_mod: added back as Set_ACP2012EuroSoilNOx
+ Config_module: added back as ACP2012_SOILNOX_DEPSCALE
+ Emissions_mod: use of ACP2012EURO
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 October 2024, Willem
+
+Added another 'Custom_Config' domain setting option. This doman setting uses the default
+domain-relevant USES flags from Config_module.f90, or as overwritten in the config
+namelist (i.e., old behavior). With other domain settings (e.g., 'EMEPDOMAIN'),
+domain-relevant USES flags in the config namelist are inactive/overwritten. 
+
+There are now to ways of setting custom domain settings.
+
+1. Use the 'Custom_Config' domain setup and specify e.g. USES%PFT_MAPS = T in the
+   config namelist.
+
+2. Use another domain setting (e.g. 'EMEPDOMAIN') and specify
+   EMEP_DOMAIN_SETUP%PFT_MAPS = T in the config namelist. But beware, in this case
+   USES%PFT_MAPS is inactive/overwritten by EMEP_DOMAIN_SETUP%PFT_MAPS.
+
+domain-relevant USES flags (as well as nr. of vertical level choice) which are now
+controlled by the choice of domain setting, have been removed from config_emep.nml.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23-24+29 October 2024, Peter
+
+LF: can output more vertical levels in the not fullchem case.
+for example, in config_emep.nml: lf_set%Nvertout = 5
+LF: Always Outputs PS (to define the vertical levels)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 October 2024, Willem
 
 Name change of EMEP/Glob domain to reflect more the generic EMEPDOMAIN and 

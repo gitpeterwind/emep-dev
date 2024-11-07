@@ -83,8 +83,8 @@ end interface Check_LandCoverPresent
      logical :: has_lpj ! if LPJ LAI/BVOC data to be used
      integer :: pft    ! for assignment to equivalent PFT
      logical :: is_forest
-     logical :: is_conif
-     logical :: is_decid
+     logical :: is_NDLF
+     logical :: is_BDLF
      logical :: is_crop 
      logical :: is_desert 
      logical :: is_seminat 
@@ -245,10 +245,10 @@ contains
             if ( dbg ) write(unit=*,fmt='(a,i3,a,i5)') dtxt//"PFT? ", n,&
                   trim(  wanted_codes(n) ), LandType(n)%pft
 
-           !is_decid, is_conif used mainly for BVOC and soil-NO. Not essential
+           !is_BDLF, is_NDLF used mainly for BVOC and soil-NO. Not essential
            ! for IAM-type landcover
-            LandType(n)%is_conif = ( LandInput%type == "ECF"  )
-            LandType(n)%is_decid = ( LandInput%type == "EDF"  )
+            LandType(n)%is_NDLF = ( LandInput%type == "ECF"  )
+            LandType(n)%is_BDLF = ( LandInput%type == "EDF"  )
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
             LandType(n)%is_bulk   =  LandInput%type == "BLK"
