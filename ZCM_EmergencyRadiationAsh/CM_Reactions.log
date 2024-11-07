@@ -1,0 +1,17 @@
+k,       0.994e-06:       NPP_I131  =
+k,       0.152e-05:       NPP_XE133 =
+k, RCEMIS(NPP_CS137,K):  = NPP_CS137
+k, RCEMIS(NPP_I131,K):  = NPP_I131
+k, RCEMIS(NPP_XE133,K):  = NPP_XE133
+k, RCEMIS(NPP_SR90,K):  = NPP_SR90
+k, RCEMIS(NPP_KR85,K):  = NPP_KR85
+k, RCEMIS(ASH_1,K):  = ASH_1
+k, RCEMIS(ASH_2,K):  = ASH_2
+k, RCEMIS(ASH_3,K):  = ASH_3
+k, RCEMIS(ASH_4,K):  = ASH_4
+k, RCEMIS(ASH_5,K):  = ASH_5
+k, RCEMIS(ASH_6,K):  = ASH_6
+k, RCEMIS(ASH_7,K):  = ASH_7
+k,   RCEMIS(SO2,k):  = SO2
+k,   RCEMIS(SO4,k):  = SO4
+k,          3.5e-5:  SO2 = SO4
