@@ -49,6 +49,25 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 Nov 2024, Peter
+
+Setup for Open source changed:
+Makefile.SRCS is no more modified nor used in
+the Makefile.
+dependencies only copied from dev without modifications.
+make $chem ->  mk.ChemFiles $chem
+version set to v5.5. (not tagged yet)
+
+Added ZCM_EmChem19rcp/CM_Reactions1_LF.inc and ZCM_EmChem19rcp/CM_Reactions2_LF.inc
+Note that we could use those to replace the ZCM_EmChem19rcp/CM_Reactions?.inc,
+but I prefer still to leave a small obstacle to the use of LF with chemistry.
+(I simply copied the ZCM_EmChem19rc/CM_Reactions?_LF.inc and added the Pollen
+in ZCM_EmChem19rcp/CM_Reactions2_LF.inc (they were in CM_Reactions1.inc!)
+
+Also changed settings for LF, non-chemistry; now does use zero order LF advec
+in the vertical direction.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Nov 2024, Heiko
 
 remove the outdated ZCM_Emergency, add the new ZCM_EmergencyRadiationAsh
@@ -135,25 +154,6 @@ There are now to ways of setting custom domain settings.
 
 domain-relevant USES flags (as well as nr. of vertical level choice) which are now
 controlled by the choice of domain setting, have been removed from config_emep.nml.
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12 Nov 2024, Peter
-
-Setup for Open source changed:
-Makefile.SRCS is no more modified nor used in
-the Makefile.
-dependencies only copied from dev without modifications.
-make $chem ->  mk.ChemFiles $chem
-version set to v5.5. (not tagged yet)
-
-Added ZCM_EmChem19rcp/CM_Reactions1_LF.inc and ZCM_EmChem19rcp/CM_Reactions2_LF.inc
-Note that we could use those to replace the ZCM_EmChem19rcp/CM_Reactions?.inc,
-but I prefer still to leave a small obstacle to the use of LF with chemistry.
-(I simply copied the ZCM_EmChem19rc/CM_Reactions?_LF.inc and added the Pollen
-in ZCM_EmChem19rcp/CM_Reactions2_LF.inc (they were in CM_Reactions1.inc!)
-
-Also changed settings for LF, non-chemistry; now does use zero order LF advec
-in the vertical direction.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23-24+29 October 2024, Peter
