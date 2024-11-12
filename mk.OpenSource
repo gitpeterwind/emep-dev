@@ -15,7 +15,7 @@ echo "Making $cdir"
 #-- 0)  start from a "working" model code
 
 cd $idir
-make $chem
+mk.ChemFiles $chem
 make -j6
 
 #-- 1)  Code ------------------------------------------------------------------
