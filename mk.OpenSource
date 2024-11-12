@@ -1,4 +1,4 @@
-vers=v5.0;year=2023;chem=EmChem19rcp     # Input version/year/chem flags
+vers=v5.5;year=2024;chem=EmChem19rcp     # Input version/year/chem flags
 idir=`dirname ${BASH_SOURCE[0]}`        # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                    # top directory
@@ -45,12 +45,11 @@ cp -f $idir/README_Open.md  $cdir/README.md         # OpenSource README
 
 #-- 2)  dependencies ----------------------------------------------------------
 
-awk '{if(NR>4) print $0 }' $idir/.depend > $cdir/dependencies
+cp -f $idir/.depend  $cdir/dependencies
 
 #-- 3)  Makefile stuff ----------------------------------------------------------
 
 cp -f $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
 cp -f $idir/Makefile.SRCS $cdir/
-sed -i "s/SRCS/FOBJ/;s/.f90/.o/g;s/.inc$/.o/;" $cdir/Makefile.SRCS
 
 echo "OpenSource $TAG at $cdir"

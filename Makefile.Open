@@ -3,15 +3,15 @@
 PROG =	emepctm
 ###################################################
 
-include Makefile.SRCS
+#include Makefile.SRCS
 
 ###################################################
 
 # prefered netCDF 4.2.1.1 or later
 LIBS = -lnetcdf -lnetcdff
 #explicit pathes needed only if nf-config does not work
-INCL = -I/global/hds/software/cpu/eb3/netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.18/include
-LLIB = -L/global/hds/software/cpu/eb3/netCDF-Fortran/4.4.4-foss-2017a-HDF5-1.8.18/lib
+INCL = -I/my/path/to/include
+LLIB = -L/my/path/to/lib
 
 # options using nf-config utility (older versions used nc-config)
 INCL = -I$(shell nf-config --includedir)
@@ -25,7 +25,7 @@ F90FLAGS = -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none 
 #F90FLAGS += -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
 
 # Intel ifort compiler (comment out if gfortran used)
-F90FLAGS = -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2
+F90FLAGS = -g -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2
 
 ###################################################
 

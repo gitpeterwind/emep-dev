@@ -132,6 +132,16 @@ domain-relevant USES flags (as well as nr. of vertical level choice) which are n
 controlled by the choice of domain setting, have been removed from config_emep.nml.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 Nov 2024, Peter
+
+Setup for Open source changed: Makefile.SRCS is no more modified nor used in
+the Makefile. dependencies only copied from dev without modifications.
+version set to v5.5. (not tagged yet)
+
+Also changed settings for LF, non-chemistry; now does use zero order LF advec
+in the vertical direction.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23-24+29 October 2024, Peter
 
 LF: can output more vertical levels in the not fullchem case.
