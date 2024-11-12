@@ -2628,6 +2628,13 @@ subroutine lf_adv_k(fluxk,i,j)
 
     if(DEBUGall .and. me==0)write(*,*)'start adv_k_2nd'
 
+    if (.not. lf_fullchem) then
+       ! we do not want second order vertical lf advection if there is no O3 anyway:
+       ! it creates negative values and use more cpu
+       call lf_adv_k(fluxk,i,j)
+       return
+    end if
+    
     call Code_timer(tim_before)
 
     lfmax=10.0 !limitation for extreme values
