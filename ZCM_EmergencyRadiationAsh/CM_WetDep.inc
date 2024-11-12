@@ -9,13 +9,14 @@ type(dep_t), public, dimension(NWETDEP_ADV), save :: CM_WDepMap = (/ &
 , dep_t("NH4_f     ", "PMf       ", -999.0 ) &
 , dep_t("HCHO      ", "HCHO      ", -999.0 ) &
 , dep_t("PPM25_FIRE", "PMf       ", -999.0 ) &
-, dep_t("V1702A02B_1", "PMf       ", -999.0 ) &
-, dep_t("V1702A02B_2", "PMf       ", -999.0 ) &
-, dep_t("V1702A02B_3", "PMf       ", -999.0 ) &
-, dep_t("V1702A02B_4", "PMf       ", -999.0 ) &
-, dep_t("V1702A02B_5", "PMc       ", -999.0 ) &
-, dep_t("V1702A02B_6", "PMc       ", -999.0 ) &
-, dep_t("V1702A02B_7", "PMc       ", -999.0 ) &
-, dep_t("SeaSalt_f ", "SSf       ", -999.0 ) &
-, dep_t("SeaSalt_c ", "SSc       ", -999.0 ) &
+, dep_t("NPP_Cs137 ", "PMf       ", -999.0 ) &
+, dep_t("NPP_I131  ", "PMf       ", -999.0 ) &
+, dep_t("NPP_Sr90  ", "PMf       ", -999.0 ) &
+, dep_t("ASH_1     ", "PMf       ", -999.0 ) &
+, dep_t("ASH_2     ", "PMf       ", -999.0 ) &
+, dep_t("ASH_3     ", "PMf       ", -999.0 ) &
+, dep_t("ASH_4     ", "PMf       ", -999.0 ) &
+, dep_t("ASH_5     ", "PMc       ", -999.0 ) &
+, dep_t("ASH_6     ", "PMc       ", -999.0 ) &
+, dep_t("ASH_7     ", "PMc       ", -999.0 ) &
 /)
