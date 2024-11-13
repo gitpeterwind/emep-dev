@@ -571,7 +571,6 @@ contains
            if(MasterProc)write(*,*)'include sources from ',trim(lf_country%list(i))
         enddo
      endif
-     lf_nsector_map = 1
 
      Ncountry_group_lf=0
      do i = 1, Max_lf_Country_groups

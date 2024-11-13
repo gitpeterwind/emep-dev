@@ -49,7 +49,7 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12 Nov 2024, Peter
+12-13 Nov 2024, Peter
 
 Setup for Open source changed:
 Makefile.SRCS is no more modified nor used in
@@ -66,6 +66,8 @@ in ZCM_EmChem19rcp/CM_Reactions2_LF.inc (they were in CM_Reactions1.inc!)
 
 Also changed settings for LF, non-chemistry; now does use zero order LF advec
 in the vertical direction.
+
+bug in LF:   lf_nsector_map = 1 before allocated (run with gfortran crashed)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Nov 2024, Heiko
