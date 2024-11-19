@@ -1484,7 +1484,6 @@ subroutine lf_out(iotyp)
               if(iter==1 .and. me==0.and.  first_call(iotyp))write(*,*)' poll '//trim(lf_src(isrc)%species),ipoll_cfac
               scale=1.0/av_fac(iotyp)
               if(is_surf)def2%name='SURF_'//trim(def2%name)
-              if(me==0)write(*,*)'poll out ',iter,overwrite,create_var_only
               call Out_netCDF(iotyp,def2,ndim_tot,kmax,lf_src_tot(1,1,1,ipoll_cfac,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                    fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
               pollwritten(ipoll_cfac) = .true.
@@ -4747,7 +4746,13 @@ subroutine lf_rcemis(i,j,k,eps)
                    write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                    if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                 endif
-                if (lf_set%full_chem .and. .not.lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                if (lf_set%full_chem .and. .not.lf_set%EmisDer_all)then
+                   if(trim(lf_src(isrc)%species) /= 'pm25' .and. trim(lf_src(isrc)%species) /= 'pm25_new' .and. trim(lf_src(isrc)%species) /= 'pmco')then 
+                      write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                   else
+                      write(def1%name,"(A)")trim(def1%name)//"_P"
+                   endif
+                end if
                 if (lf_set%full_chem .and. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)
                 if(iter==2)then
                    !must transpose array
@@ -4763,7 +4768,7 @@ subroutine lf_rcemis(i,j,k,eps)
                 end if
                 n1 = n1 + 1
                 if(me==0 .and. create_var_only.and.DEBUG)write(*,*)'creating ',trim(def1%name)
-                if(me==0 .and. .not. create_var_only .and.DEBUG)write(*,*)'saving ',trim(def1%name)
+                if(me==0 .and. .not. create_var_only.and.DEBUG)write(*,*)'saving ',trim(def1%name)
                 call Out_netCDF(IOU_YEAR,def1,ndim_tot,kmax,tmp_out_cntry,scale,CDFtype,dimSizes_tot,dimNames_tot,&
                      fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                 overwrite=.false.
@@ -4815,11 +4820,17 @@ subroutine lf_rcemis(i,j,k,eps)
                 write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_sec',isec,'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
                 if(isec==0) write(def1%name,"(A,I2.2,A)")trim(lf_src(isrc)%species)//'_'//trim(lf_country%group(ic-Ncountry_lf)%name)
              endif
-             if (lf_set%full_chem .and. .not. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+             if (lf_set%full_chem .and. .not.lf_set%EmisDer_all)then
+                   if(trim(lf_src(isrc)%species) /= 'pm25' .and. trim(lf_src(isrc)%species) /= 'pm25_new' .and. trim(lf_src(isrc)%species) /= 'pmco')then 
+                   write(def1%name,"(A)")trim(def1%name)//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
+                else
+                   write(def1%name,"(A)")trim(def1%name)//"_P"
+                endif
+             end if
              if (lf_set%full_chem .and. lf_set%EmisDer_all)write(def1%name,"(A)")trim(def1%name)
 
              if(me==0 .and. DEBUG)write(*,*)'Reading ',trim(def1%name),ncFileID
-             call GetCDF_modelgrid(def1%name,fileName,tmp_out_cntry,1,lf_Nvert,1,1,needed=needed,ncFileID_in=ncFileID)
+             call GetCDF_modelgrid(def1%name,fileName,tmp_out_cntry,1,lf_Nvert,1,1,i_start=2-RUNDOMAIN(1), j_start=2-RUNDOMAIN(3), needed=needed,ncFileID_in=ncFileID)
              !must transpose array
              kk=0
              do k = KMAX_MID-lf_Nvert+1,KMAX_MID

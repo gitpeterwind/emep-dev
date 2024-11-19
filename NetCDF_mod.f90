@@ -2065,6 +2065,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 ! for instance k_start=1,k_end=KMAX_MID gives all levels
 ! if reverse_k=.true. , the k dimension in the file is reversed
 ! i_start,j_start can give a new origin instead of (1,1); i_start=2, menas that only i>=2 is read.
+! if file is created and read with limited RUNDOMAIN, define _start=2-RUNDOMAIN(1), j_start=2-RUNDOMAIN(3)
 ! the dimensions of Rvar are assumed:
 ! Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
 
@@ -2156,7 +2157,9 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
       write(*,*)'variable does not exist: ',trim(varname)
     call CheckStop(fileneeded, "NetCDF_mod : variable needed but not found "&
          //trim(varname)//' '//trim(fileName))
-    call check(nf90_close(ncFileID))
+    if(.not. present(ncFileID_in))then
+      call check(nf90_close(ncFileID))
+    end if
     return
   end if
 
@@ -2225,8 +2228,10 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 
   if(dims(1)<1 .or. dims(2)<1)then
 !     Rvar(1:LIMAX*LJMAX*(k_end-k_start+1)) = 0.0
-     call check(nf90_close(ncFileID))
-     return
+       if(.not. present(ncFileID_in))then
+         call check(nf90_close(ncFileID))
+       end if
+       return
   endif
   totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
 
