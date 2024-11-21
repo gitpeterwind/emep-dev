@@ -178,7 +178,7 @@ end type domain_settings_t
 !  config_emep.nml. ***** DO NOT set here **** !
 type(domain_settings_t), private, save :: &
       GENERIC_DOMAIN_SETUP = domain_settings_t( 'Generic',  T, T, T, F, F )   &
-     ,EMEP_DOMAIN_SETUP    = domain_settings_t( 'EMEP',     F, F, F, T, T )   &
+     ,EMEP_DOMAIN_SETUP    = domain_settings_t( 'EMEP',     F, F, F, T, F )   &
      ,domain_setup !       = domain_settings_t( 'NOTSET',   F, F, F, F, F )
 
 

@@ -49,6 +49,16 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 Nov 2024, Willem
+
+Turned off road dust by default also for the EMEP domain. Countries for which 
+road dust matters sometimes already include it the regular emission input files.  
+
+Kept the option for now, because maybe in the future it might be helpful with 
+for (testing) the new NORTRIP implementation? Or maybe once that system is 
+in place, the old system can be removed altogether. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 Nov 2024, Peter
 
 Restart functionality for LF, when RUNDOMAIN is limited. (needed for CAMS71)
