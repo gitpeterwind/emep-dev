@@ -49,6 +49,11 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+04 Dec 2024, Dave
+
+Changed Conif to NeedleLead and Decid to BroadLeaf in config_Open.nml
+(See 29/10/2024 changes.)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 Nov 2024, Willem
 
 Turned off road dust by default also for the EMEP domain. Countries for which 

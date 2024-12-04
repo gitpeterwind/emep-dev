@@ -214,12 +214,14 @@ OutputVegO3=
   'EUAOT40_Forests','AOT',40.0,'EU','IAM_DF',F,0,999,'YM',
 
 DDEP_ECOS =
-  'Grid'     ,'YMD',
-  'Conif'    ,'YM',
-  'Seminat'  ,'YM',
-  'Water_D'  ,'Y',
-  'Decid'    ,'Y',
-  'Crops'    ,'Y',
+  'Grid     ','YM',
+   'Forest    ','YM',
+   'nonForest ','YM',
+   'NeedleLeaf','YM',
+   'BroadLeaf','YM',
+   'Seminat  ','YM', 
+   'Water_D  ','YM',
+   'Crops    ','YM',
 
 DDEP_WANTED =
   'SOX'      ,'GROUP','mgS',
