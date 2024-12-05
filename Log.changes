@@ -49,6 +49,10 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05 Dec 2024, Alvaro
+
+minor changes to config_Open.nml, modrun.sh and mk.OpenSource
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 04 Dec 2024, Dave
 
 Changed Conif to NeedleLead and Decid to BroadLeaf in config_Open.nml

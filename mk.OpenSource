@@ -1,4 +1,4 @@
-vers=v5.5;year=2024;chem=EmChem19rcp     # Input version/year/chem flags
+vers=v5.5;year=2024;chem=EmChem19rcp    # Input version/year/chem flags
 idir=`dirname ${BASH_SOURCE[0]}`        # Input dir
 idir=`cd $idir >/dev/null 2>&1 && pwd`  # full path
 tdir=`dirname $idir`                    # top directory
@@ -15,7 +15,7 @@ echo "Making $cdir"
 #-- 0)  start from a "working" model code
 
 cd $idir
-mk.ChemFiles $chem
+make $chem
 make -j6
 
 #-- 1)  Code ------------------------------------------------------------------
@@ -50,6 +50,5 @@ cp -f $idir/.depend  $cdir/dependencies
 #-- 3)  Makefile stuff ----------------------------------------------------------
 
 cp -f $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
-cp -f $idir/Makefile.SRCS $cdir/
 
 echo "OpenSource $TAG at $cdir"
