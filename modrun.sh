@@ -3,7 +3,7 @@
 ### job options for Slurm/sbatch
 #SBATCH --job-name=emepctm
 #SBATCH --output=%x.out --error=%x.out
-#SBATCH --nodes=2 --ntasks-per-node=32 --time=6:00:00
+#SBATCH --nodes=4 --ntasks-per-node=32 --time=18:00:00
 
 ### Minimalistic script for run the Unified EMEP model
 
