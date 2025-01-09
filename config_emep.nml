@@ -248,13 +248,11 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
 !------------------------------
-! volcanic emissions from passive degassing and historical eruptions
+! volcanic emissions from passive degassing and historical eruptions 
 !------------------------------
- !flocdef="DataDir/volcano_location.csv_20210525",
- !HK 2023: update in code and dataformat:
- !femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27042023",
-  flocdef="DataDir/volcano_location.csv_01062023",
-  femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_01062023"
+! Updated in 2024 with eruption/passive degassing data until 2022
+  flocdef="DataDir/volcano_location.csv_27052024",
+  femsdef="DataDir/volcano_emission.csv_Grimsvotn_fix_27052024",
 
 
   need_topo=T, ! Do not use column emissions if topography.nc not found
