@@ -1,7 +1,15 @@
+! Emissions for primary source tracking can be summed up over splits (but not necessarily all,
+! can be new/age or single species) for each source;
+! otherwise emissions are first splitted before including into single species.
+! Natural emissions have no sector/countries; can be primary or not. Only predefined names (BVOC, SoilNOx, Pollen, )
+
+! Primary sources can be groups of species, otherwise single species.
+
+
 module LocalFractions_mod
 !
 ! all subroutines for Local Fractions
-  !
+!
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv, cfac, Fgas3d, PM25_water_rh50, x, xnew
 use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NSPEC_TOT,NEMIS_File
@@ -64,6 +72,17 @@ integer ::IC_BC = 324564 !contribution from Boundary Conditions
 integer ::IC_NAT = 324563 !contribution from BVOC and DMS (separately)
 integer ::IC_BVOC = 324562 !contribution from BVOC(C5H8 and TERP)
 integer ::IC_DMS = 324561 !contribution from DMS
+!contributions from Pollen
+integer ::IC_BIRCH = 324560
+integer ::IC_OLIVE = 324559
+integer ::IC_ALDER = 324558 
+integer ::IC_RWEED = 324557 
+integer ::IC_GRASS = 324556 
+integer ::IC_MUGWORT1 = 324555 
+integer ::IC_MUGWORT2 = 324554 
+integer ::IC_MUGWORT3 = 324553 
+integer ::IC_MUGWORT4 = 324552 
+integer ::IC_MUGWORT5 = 324551 
 logical, parameter :: DEBUG = .false.
 logical, parameter :: DEBUGall = .false.
 
@@ -83,9 +102,9 @@ public  :: lf_aero_pre, lf_aero_pos
 public  :: lf_aqu_pre, lf_aqu_pos
 public  :: lf_SurfArea_pre, lf_SurfArea_pos
 public  :: lf_drydep, lf_wetdep, lf_POD
+public  :: save_lf_emis ! save all emis for use by lf
 public  :: lf_rcemis
 public  :: lf_rcemis_nat
-public  :: save_lf_emis
 public  :: lf_saveall
 public  :: lf_read
 private  :: addsource
@@ -210,21 +229,24 @@ integer, public, save :: nemis_primary = 0! number of primary emissions to inclu
 integer, public, save :: Nemis_surf = 0! number of non sector surface emissions in this gridcell
 integer, private, save :: iem_nox, iem_voc , iem_nh3, iem_sox !index in EMIS_FILE
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
-integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2pos_primary(N_lf_derivemisMAX),&
-     emis2isrc(N_lf_derivemisMAX),emis2isrc_primary(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
+integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2pos_primary(N_lf_derivemisMAX)
+integer, public, save :: emis2isrc_primary(N_lf_derivemisMAX) ! connect the index in rcemis_lf with the isrc (source). Only make sense for primary
+integer, public, save :: emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: emis2iic_surf(N_lf_derivemisMAX), emis2nspec_surf(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
-integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separatly or 1 if all together
+integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separately or 1 if all together
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
 logical, public, save :: makeFungal = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
+logical, public, save :: makePollen = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
 logical, private, save :: make_PMwater =.false. !NB: water is not a species and will be treated separately. Index isrc=NSOURCES+1, or %start=LF_SRC_TOTSIZE+1
 logical, public, save :: makeBVOC = .false.
-integer, public, save  :: ix_BVOC, ix_DMS
-integer, public, save  :: nPOD=0, nDryDep=0 !number of outputs asked for. nDryDep includes nPOD
-logical, private, save :: aero_error = .false.
+integer, public, save :: ix_BVOC, ix_DMS
+integer, public, save :: ix_BIRCH, ix_OLIVE, ix_ALDER, ix_RWEED, ix_GRASS, ix_MUGWORT1, ix_MUGWORT2, ix_MUGWORT3, ix_MUGWORT4, ix_MUGWORT5
+integer, public, save :: nPOD=0, nDryDep=0 !number of outputs asked for. nDryDep includes nPOD
+logical, private, save:: aero_error = .false.
 real, parameter :: lf_limit = 1e-5
 integer, parameter :: NAQUEOUS = 5,ICLOHSO2 = 1,ICLRC1 = 2,ICLRC2 = 3,ICLRC3 = 4,ICLHO2H2O2 = 5 !NB: hardcoded!!
 
@@ -295,6 +317,47 @@ contains
          lf_src(i)%species = 'FUNGAL_SPORES'
          lf_src(i)%is_NATURAL = .true.
          makeFungal= .true.
+        end if
+        if(lf_src(i)%name == 'POLLEN_BIRCH') then
+           lf_src(i)%species = 'POLLEN_BIRCH'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_OLIVE') then
+           lf_src(i)%species = 'POLLEN_OLIVE'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_ALDER') then
+           lf_src(i)%species = 'POLLEN_ALDER'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_RWEED') then
+           lf_src(i)%species = 'POLLEN_RWEED'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_GRASS') then
+           lf_src(i)%species = 'POLLEN_GRASS'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_MUGWORT1') then
+           lf_src(i)%species = 'POLLEN_MUGWORT1'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_MUGWORT2') then
+           lf_src(i)%species = 'POLLEN_MUGWORT2'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_MUGWORT3') then
+           lf_src(i)%species = 'POLLEN_MUGWORT3'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_MUGWORT4') then
+           lf_src(i)%species = 'POLLEN_MUGWORT4'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
+        else if(lf_src(i)%name == 'POLLEN_MUGWORT5') then
+           lf_src(i)%species = 'POLLEN_MUGWORT5'
+           lf_src(i)%is_NATURAL = .true.
+           makePollen= .true.
         end if
         if (lf_src(i)%species == 'NOTSET') exit
         Nsources = Nsources + 1
@@ -565,6 +628,46 @@ contains
                    'country BVOC cannot be computed, because C5H8 or APINENE not found ')
               makeBVOC = .true.
               ix_BVOC = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='BIRCH')then
+              ix = IC_BIRCH
+              makePollen = .true.
+              ix_BIRCH = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='OLIVE')then
+              ix = IC_OLIVE
+              makePollen = .true.
+              ix_OLIVE = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='ALDER')then
+              ix = IC_ALDER
+              makePollen = .true.
+              ix_ALDER = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='RWEED')then
+              ix = IC_RWEED
+              makePollen = .true.
+              ix_RWEED = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='GRASS')then
+              ix = IC_GRASS
+              makePollen = .true.
+              ix_GRASS = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='MUGWORT1')then
+              ix = IC_MUGWORT1
+              makePollen = .true.
+              ix_MUGWORT1 = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='MUGWORT2')then
+              ix = IC_MUGWORT2
+              makePollen = .true.
+              ix_MUGWORT2 = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='MUGWORT3')then
+              ix = IC_MUGWORT3
+              makePollen = .true.
+              ix_MUGWORT3 = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='MUGWORT4')then
+              ix = IC_MUGWORT4
+              makePollen = .true.
+              ix_MUGWORT4 = i + Ncountry_mask_lf
+           else if(ix<0 .and. lf_country%list(i) =='MUGWORT5')then
+              ix = IC_MUGWORT5
+              makePollen = .true.
+              ix_MUGWORT5 = i + Ncountry_mask_lf           
            endif
            call CheckStop(ix<0,'country '//trim(lf_country%list(i))//' not defined. ')
            country_ix_list(i + Ncountry_mask_lf) = ix
@@ -4207,7 +4310,7 @@ subroutine lf_rcemis(i,j,k,eps)
         !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n) and split summation and emis2 iem/isrc?
          do ic=1,nic(i,j)
 
-          !iland is the country index f the emission treated
+          !iland is the country index of the emission treated
           iland = ic2iland(i,j,ic)
           !iic is the lf country index of the source
           do iic=1,Ncountry_lf + Ncountry_group_lf !this loop could be avoided if necessary, by defining iland2iic?
