@@ -13,7 +13,8 @@ use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemDims_mod,          only: NSPEC_SHL
 use ChemSpecs_mod,         only: species_adv
 use Chemfields_mod,        only: xn_adv    ! emep model concs.
-use Debug_module,             only: DEBUG
+use Config_module,         only: USES
+use Debug_module,          only: DEBUG
 use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
 use GasParticleCoeffs_mod, only: DDdefs
 use Functions_mod,         only: heaviside
@@ -21,6 +22,7 @@ use GridValues_mod ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Io_mod,                only: IO_NML
 use Io_RunLog_mod,         only: PrintLog
 use Landuse_mod,           only: LandCover
+use LocalFractions_mod,    only: lf_rcemis_nat
 use LocalVariables_mod,    only: Grid
 use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
@@ -639,6 +641,8 @@ subroutine pollen_flux(i,j,debug_flag)
     rcemis (itot(g),KMAX_MID) = rcpoll*n2m(g) ! [mol/cm3/s]
     AreaPOLL(i,j,g)           = rcpoll*3600   ! [grains/m2/h]
 
+    if (USES%LocalFractions) call lf_rcemis_nat(itot(g), rcemis(itot(g),KMAX_MID), i, j)
+    
     if(debug_ij) write(*,'(a,3(1x,I3),3(1x,es10.3))')&
       POLLEN_GROUP(g),me,i,j,rcemis(itot(g),KMAX_MID),R(i,j,g),AreaPOLL(i,j,g)
   end do
