@@ -258,6 +258,7 @@ contains
     integer :: iout, ig, idep
     integer, allocatable :: MaskVal(:)
     logical is_relative,is_country
+    character(len=200) :: filename
 ! pm25_new and pm25 are considered as two different emitted pollutants
     if(DEBUGall .and. me==0)write(*,*)'start init'
 
@@ -1394,7 +1395,8 @@ contains
 
   if (lf_set%restart) then
      !initialize lf with values save on disk
-     call lf_read
+     write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
+     call lf_read(filename)
   end if
 
 !  call Add_2timing(NTIMING-10,tim_after,tim_before,"lf: init") negligible
@@ -1457,9 +1459,10 @@ subroutine lf_out(iotyp)
         fileName=trim(runlabel1)//'_LF_month.nc'
      endif
   else if(iotyp==IOU_YEAR .and. lf_set%YEAR)then
-     fileName=trim(runlabel1)//'_LF_full.nc'
      if(me==0 .and. lf_set%save)write(*,*)'saving ALL'
-     if (lf_set%save) call lf_saveall
+     write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
+     if (lf_set%save) call lf_saveall(filename)
+     fileName=trim(runlabel1)//'_LF_full.nc'
   else
      return
   endif
@@ -4521,9 +4524,6 @@ subroutine lf_rcemis(i,j,k,eps)
        rcemis_lf_surf(Nemis_surf, emis2nspec_surf(Nemis_surf)) = rcemis
     else
        if (rcemis < 1e-20) return
-       if(nemis_primary>0)then
-          write(*,*)species_ix,me,i,j,k,'nemis_primary is already set',nemis_primary
-       end if
        do isrc=1,Nsources
           if (lf_src(isrc)%species_ix /= species_ix) cycle
           if (.not. lf_src(isrc)%is_NATURAL) then
@@ -4774,9 +4774,10 @@ subroutine lf_rcemis(i,j,k,eps)
 
   end subroutine lf_chem_pos
 
-  subroutine lf_saveall
+  subroutine lf_saveall(filename)
     !save all values of lf on disk, for future restart
-    character(len=200) ::filename, varname
+    character(len=*), intent(in) ::filename
+    character(len=200) :: varname
     real :: scale
     integer ::i,j,k,kk,n,iter,isrc,n1,jsec,isec,ic
     integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10),ncFileID
@@ -4786,7 +4787,6 @@ subroutine lf_rcemis(i,j,k,eps)
     logical ::overwrite, create_var_only
     real,allocatable ::tmp_out_cntry(:,:,:)!allocate since it may be heavy for the stack TEMPORARY
 
-    write(filename,"(A,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%day,current_date%month,current_date%year,'.nc'
     ncFileID=closedID
     call Code_timer(tim_before)
 
@@ -4884,9 +4884,10 @@ subroutine lf_rcemis(i,j,k,eps)
     call Add_2timing(NTIMING-2,tim_after,tim_before,"lf: output")
   end subroutine lf_saveall
 
-  subroutine lf_read
-    !read all values of lf ofrom disk
-    character(len=200) ::filename, varname
+  subroutine lf_read(filename)
+    !read all values of lf from disk
+    character(len=*), intent(in) ::filename
+    character(len=200) :: varname
     real :: scale
     integer ::i,j,k,kk,n,iter,isrc,n1,jsec,isec,ic
     integer ::ndim,kmax,CDFtype,dimSizes(10),chunksizes(10),ncFileID
@@ -4896,8 +4897,6 @@ subroutine lf_rcemis(i,j,k,eps)
 
     ncFileID=closedID
     call Code_timer(tim_before)
-    filename= 'LF_OUT.nc'
-    write(filename,"(A,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%day,current_date%month,current_date%year,'.nc'
     if(me==0)write(*,*)'Initializing LF from '//trim(filename)
 
     allocate(tmp_out_cntry(LIMAX,LJMAX,lf_Nvert))

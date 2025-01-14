@@ -45,13 +45,8 @@ use ExternalBICs_mod,     only: set_extbic, icbc, ICBC_FMT,&
 use CheckStop_mod,           only: CheckStop,check=>CheckNC
 use Chemfields_mod,          only: xn_adv    ! emep model concs.
 use ChemDims_mod,            only: NSPEC_ADV, NSPEC_SHL
+use ChemGroups_mod,          only: chemgroups
 use ChemSpecs_mod,           only: species_adv
-use GridValues_mod,          only: A_mid,B_mid, glon, glat, i_fdom, j_fdom, &
-     RestrictDomain, Read_KMAX
-use Io_mod,                  only: open_file,IO_TMP
-use Io_RunLog_mod,           only: PrintLog
-use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff
-use MetFields_mod,           only: roa
 use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
      OwnInputDir, GRID,&
      IOU_INST,RUNDOMAIN,USES,&
@@ -62,9 +57,16 @@ use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
      NEST_MET_inner,NEST_RUNDOMAIN_inner,&
      NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate,OUTDATE_NDUMP_MAX,&
      EXTERNAL_BIC_NAME, TOP_BC, filename_eta
-use Debug_module,           only: DEBUG ! %NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
+use Debug_module,            only: DEBUG ! %NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
+use GridValues_mod,          only: A_mid,B_mid, glon, glat, i_fdom, j_fdom, &
+     RestrictDomain, Read_KMAX
+use Io_mod,                  only: open_file,IO_TMP
+use Io_RunLog_mod,           only: PrintLog
+use InterpolationRoutines_mod, only : grid2grid_coeff,point2grid_coeff
+use LocalFractions_mod,      only: lf_saveall, lf_read
+use MetFields_mod,           only: roa
 use MPI_Groups_mod  
-use netcdf,                 only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
+use netcdf,                  only: nf90_open,nf90_write,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire,nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
                                   nf90_put_att,nf90_noerr,nf90_nowrite,nf90_global
@@ -73,12 +75,11 @@ use netcdf_mod,              only: Out_netCDF,&
 use OwnDataTypes_mod,        only: Deriv, TXTLEN_SHORT, TXTLEN_FILE
 use Par_mod,                 only: me,li0,li1,lj0,lj1,limax,ljmax,GIMAX,GJMAX,gi0,gj0,gi1,gj1
 use Pollen_const_mod,        only: pollen_check
+use SmallUtils_mod,          only: find_index,key2str,to_upper
 use TimeDate_mod,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_mod,  only: date2nctime,nctime2date,nctime2string,&
                                   date2string,date2file,compare_date
 use Units_mod,               only: Units_Scale
-use SmallUtils_mod,          only: find_index,key2str,to_upper
-use ChemGroups_mod,          only: chemgroups
 implicit none
 
 
@@ -609,6 +610,8 @@ subroutine Dump(indate)
 
   if(MasterProc)call check(nf90_close(ncFileID))
 
+  if (USES%LocalFractions) call lf_saveall("LF_"//trim(filename_write))
+  
 end subroutine Dump
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -1803,6 +1806,9 @@ subroutine reset_3D(ndays_indate)
 
      deallocate(data)
      if(MasterProc) call check(nf90_close(ncFileID))
+
+     if (USES%LocalFractions) call lf_read("LF_"//trim(filename_read_3D))
+
   else
      if(me==0)write(*,*)'WARNING: did not reset 3D, because only BC data in '//trim(filename_read_3D)
   endif
