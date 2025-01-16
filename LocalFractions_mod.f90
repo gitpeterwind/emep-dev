@@ -138,8 +138,11 @@ real, public, allocatable, dimension(:,:,:), save :: lf_PM25_water
 real, public, allocatable, dimension(:,:,:,:), save :: D8M !
 real, public, allocatable, dimension(:,:,:), save :: D8Max !
 real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av !
+real, public, allocatable, dimension(:,:,:), save :: D1Max !
+real, public, allocatable, dimension(:,:,:,:), save :: D1Max_av !
 real, public, allocatable, dimension(:,:,:,:), save :: D8Max_av_ppb !
 real, public, allocatable, dimension(:,:,:), save :: hourM !
+real, public, allocatable, dimension(:,:,:,:), save :: AOT40 !
 real, public, allocatable, dimension(:,:,:,:), save :: SOMO35 !
 real, public, allocatable, dimension(:,:,:,:), save :: D8M_ppb !
 real, public, allocatable, dimension(:,:,:), save :: D8Max_ppb !
@@ -235,7 +238,7 @@ integer, public, save :: emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX
 integer, public, save :: emis2iic_surf(N_lf_derivemisMAX), emis2nspec_surf(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
-integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separately or 1 if all together
+integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separately or 1 if all together, or 2 if onli nox and voc
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
@@ -393,10 +396,17 @@ contains
      spec2lfspec(n)=0!meaning: defined, but not a tracked species
   end do
   if (lf_fullchem) then
-     if (lf_set%EmisDer_all) then
-        Nfullchem_emis = 1
+     if (lf_set%Nfullchem_emis > 0) then
+        Nfullchem_emis = lf_set%Nfullchem_emis
+        if (Nfullchem_emis == 1) lf_set%EmisDer_all = .true. ! to improve? could be only nox for example
+        if (Nfullchem_emis == 3 .or. Nfullchem_emis >4  ) call StopAll("Nfullchem_emis must be 1, 2 or 4")
      else
-        Nfullchem_emis = 4
+        !for backward compatibility
+        if (lf_set%EmisDer_all) then
+           Nfullchem_emis = 1
+        else
+           Nfullchem_emis = 4
+        end if
      end if
      iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
      call CheckStop(iem<=0, "LF: did not find nox emissions")
@@ -828,7 +838,8 @@ contains
            if (lf_set%full_chem .and. iem>0) then
               !Do not include emissions which are not NOx, VOC, NH3 or SOx emissions
               if (lf_set%EmisDer_all .or. &
-              (EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox'))&
+              (EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc' .and. EMIS_FILE(iem)/='nh3' .and. EMIS_FILE(iem)/='sox') .or. &
+              (Nfullchem_emis == 2 .and. EMIS_FILE(iem)/='nox' .and. EMIS_FILE(iem)/='voc'))&
               lf_src(isrc)%iem = -1
            end if
 
@@ -1237,7 +1248,7 @@ contains
        lf_src(isrc)%iem_lf=iem_lf_nox
        lf_src(isrc)%iem_deriv = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
        lf_src(isrc)%poll = Npoll + 1
-       if (Nfullchem_emis==4) then
+       if (Nfullchem_emis>1) then
           isrc = isrc+1
           lf_src(isrc)%species="PM_WATER"
           lf_src(isrc)%Npos = Npos_lf
@@ -1245,7 +1256,9 @@ contains
           lf_src(isrc)%end = LF_SRC_TOTSIZE + 2*Npos_lf
           lf_src(isrc)%iem_lf=iem_lf_voc
           lf_src(isrc)%iem_deriv = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
-          lf_src(isrc)%poll = Npoll + 1
+          lf_src(isrc)%poll = Npoll + 1          
+       end if
+       if (Nfullchem_emis==4) then
           isrc = isrc+1
           lf_src(isrc)%species="PM_WATER"
           lf_src(isrc)%Npos = Npos_lf
@@ -1359,19 +1372,26 @@ contains
     !index 0 is for the pure O3, and the other indices are for the sensibilities
     allocate(D8M(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX,8)) ! running last 8 hour values
     allocate(D8Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
-    allocate(D8Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
-    allocate(D8Max_av_ppb(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(D8Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D8Max
+    allocate(D1Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 1 hour mean since 00:00
+    allocate(D1Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D1Max
+    allocate(D8Max_av_ppb(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D8Max in ppb units
     allocate(hourM(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
+    allocate(D1Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! Daily max hourM
+    allocate(D1Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of Daily max hourM
 
-    allocate(SOMO35(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! max value of the 8 hour mean since 00:00
+    allocate(AOT40(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! 
+    allocate(SOMO35(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! accumulated daily max value of the 8 hour mean since 00:00 over 35 ppb
     allocate(D8M_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX,8)) ! running last 8 hour values
     allocate(D8Max_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
     allocate(hourM_ppb(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
 
     hourM = 0.0
     D8Max = 0.0 !init with low value
+    D1Max = 0.0 !init with low value
     D8M = 0.0 !init with low value
     D8Max_av = 0.0 !init necessary
+    D1Max_av = 0.0 !init necessary
     D8Max_av_ppb = 0.0 !init necessary
     SOMO35 = 0.0 !init necessary
     hourM_ppb = 0.0
@@ -1722,8 +1742,6 @@ subroutine lf_out(iotyp)
         do iout = 1, Max_lf_out
            if (lf_spec_out(iout)%name == "NOTSET") exit
            fracsum=0.0
-           n = 4
-           if (lf_set%EmisDer_all) n = 1
            tmp_out_base = 0.0
            do ideriv = 1, Nfullchem_emis
               tmp_out_cntry = 0.0
@@ -1918,6 +1936,12 @@ subroutine lf_out(iotyp)
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep.and. .not. lf_spec_out(iout)%WetDep)then ! NB: assumes O3 is asked for!
+                          write(def2%name,"(A)")"AvgMDA1"//trim(secname)//trim(sourcename)//trim(redname)
+                          def2%unit='ug/m3'
+                          n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
+                          call Out_netCDF(iotyp,def2,ndim_tot,1,D1Max_av(1,1,n1der,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                               fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
                           write(def2%name,"(A)")"AvgMDA8_6month"//trim(secname)//trim(sourcename)//trim(redname)
                           def2%unit='ug/m3'
                           n1der = (lf_src(isrc)%iem_lf-1)*Npos_lf+n1
@@ -2237,6 +2261,14 @@ subroutine lf_av(dt)
               ! update max value since 01:00
               do j = 1,ljmax
                  do i = 1,limax
+                    
+                    if (D8M(0,i,j,ii) > D1Max(0,i,j)) then
+                       !a new max is found. Update for all fractions too
+                       do n=0, lf_src(isrc_O3)%Npos*Nfullchem_emis
+                          D1Max(n,i,j) = D8M(n,i,j,ii)
+                       end do
+                    end if
+                    
                     x = 0.0
                     do l = 1, 8
                        x = x + D8M(0,i,j,l) * 0.125 ! 8 hour average
@@ -2280,6 +2312,7 @@ subroutine lf_av(dt)
            if (iotyp2ix(iou_ix)==IOU_DAY) then
               D8Max_av(:,:,:,iou_ix)=0.0
               D8Max_av_ppb(:,:,:,iou_ix)=0.0
+              D1Max_av(:,:,:,iou_ix)=0.0
               SOMO35(:,:,:,iou_ix)=0.0
            end if
            !NB: at the end of the first day (day 2 hour 00:00), we actually start to write in the next month
@@ -2288,6 +2321,7 @@ subroutine lf_av(dt)
               count_AvgMDA8_m = 0
               D8Max_av(:,:,:,iou_ix)=0.0
               D8Max_av_ppb(:,:,:,iou_ix)=0.0
+              D1Max_av(:,:,:,iou_ix)=0.0
               SOMO35(:,:,:,iou_ix)=0.0
            end if
 
@@ -2309,6 +2343,7 @@ subroutine lf_av(dt)
                  if (iotyp2ix(iou_ix)==IOU_DAY)then
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  D8Max(n,i,j)
+                       D1Max_av(i,j,n,iou_ix) =  D1Max(n,i,j)
                        D8Max_av_ppb(i,j,n,iou_ix) =  D8Max_ppb(n,i,j)
                     end do
                     !NB: if and only if D8Max_ppb>35 , all the SOMO35 fractions must be updated
@@ -2322,6 +2357,7 @@ subroutine lf_av(dt)
                  else if(iotyp2ix(iou_ix)==IOU_MON)then
                     do n=0, Npos_lf*Nfullchem_emis
                        D8Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av(i,j,n,iou_ix) + w_m * D8Max(n,i,j)
+                       D1Max_av(i,j,n,iou_ix) =  (1.0-w_m) * D1Max(n,i,j) + w_m * D1Max(n,i,j)
                        D8Max_av_ppb(i,j,n,iou_ix) =  (1.0-w_m) * D8Max_av_ppb(i,j,n,iou_ix) + w_m * D8Max_ppb(n,i,j)
                     end do
                     if (D8Max_ppb(0,i,j)>35.0) then
@@ -2336,6 +2372,7 @@ subroutine lf_av(dt)
                     if(current_date%month>=4 .and. current_date%month<=9)then
                        do n=0, Npos_lf*Nfullchem_emis
                           D8Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av(i,j,n,iou_ix) + w_y * D8Max(n,i,j)
+                          D1Max_av(i,j,n,iou_ix) =  (1.0-w_y) * D1Max_av(i,j,n,iou_ix) + w_y * D1Max(n,i,j)
                           D8Max_av_ppb(i,j,n,iou_ix) =  (1.0-w_y) * D8Max_av_ppb(i,j,n,iou_ix) + w_y * D8Max_ppb(n,i,j)
                        end do
                     end if
@@ -2350,6 +2387,7 @@ subroutine lf_av(dt)
                  end if
               end do
            end do
+           if(iou_ix == Niou_ix) D1Max = 0.0 !we are ready to start a new day
            if(iou_ix == Niou_ix) D8Max = 0.0 !we are ready to start a new day
            if(iou_ix == Niou_ix) D8Max_ppb = 0.0 !we are ready to start a new day
         end if
@@ -4543,12 +4581,10 @@ subroutine lf_rcemis(i,j,k,eps)
 
   subroutine addsource(species_name)
     character(len=*) :: species_name
-    integer :: i, ix, n, iem, isrc
+    integer :: i, ix, iem, isrc
 
     Nlf_species = Nlf_species + 1 !internal index for LF
-    n = 4
-    if (lf_set%EmisDer_all) n = 1
-    do i = 1, n
+    do i = 1, Nfullchem_emis
        Nsources = Nsources + 1
        lf_src(Nsources)%type = 'country' !only type implemented so far for fullchem
        ix = find_index(trim(species_name), species_adv(:)%name, any_case=.true.)

@@ -337,7 +337,8 @@ type, public :: lf_set_type
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   !for fullchem settings
   logical :: full_chem =.false.
-  logical :: EmisDer_all =.false. ! reduce voc, sox, nox, nh3 together
+  integer :: Nfullchem_emis = -1 ! number of emission types to track: 1 {nox+voc+nh3+sox}, 2 {nox,voc}, 4 {nox,voc,nh3,sox} 
+  logical :: EmisDer_all =.false. ! reduce voc, sox, nox, nh3 together. Overwritten if Nfullchem_emis is set
   logical :: MDA8 = .false. ! if MDA8 and SOMO35 are to be outputed (if full_chem)
   logical :: restart =.false.
   logical :: save =.false.

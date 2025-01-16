@@ -27,7 +27,7 @@ F90FLAGS = -fdefault-real-8 -fallow-argument-mismatch  -ffixed-line-length-none 
 #F90FLAGS += -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
 
 # Intel ifort compiler (comment out if gfortran used)
-F90FLAGS = -g -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2
+#F90FLAGS = -g -r8 -IPF_fp_relaxed -assume noold_maxminloc -O2 -march=core-avx2
 
 ###################################################
 
