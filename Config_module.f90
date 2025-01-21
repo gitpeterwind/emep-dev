@@ -241,6 +241,7 @@ type, public :: emep_useconfig
     ,FUNGAL_SPORES    = .false. & !For including fungal spores (part of PBAP) Prelim. See Ch.7 2024 EMEP report
     ,BACTERIA         = .false. & !For including bacteria (part of PBAP) 
     ,MARINE_OA        = .false. !For including MarineOA (part of PBAP)  
+  real :: biofac_BVOC = 0.0 !  !JAN2025 TESTING
 !  real :: SURF_AREA_RHLIMITS  = -1  ! Max RH (%) in Gerber eqns. -1 => 100%
   real :: SEASALT_fFrac = 0.3       ! 0 = "< rv4_39", 0.3 = new suggestion
 ! cloud liquid water (vol-H2O/vol-Air) ?

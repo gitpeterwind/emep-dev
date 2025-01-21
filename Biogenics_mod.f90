@@ -604,6 +604,12 @@ module Biogenics_mod
   it2m = min(it2m,40)
 
   !ASSUME C5H8 FOR NOW if ( ibn_C5H8 > 0 ) then
+  if ( USES%biofac_BVOC < 1.0e-6) then
+     rcbio(NATBIO%C5H8,KG)    = 0.0
+     EmisNat(NATBIO%C5H8,i,j) = 0.0
+     rcbio(NATBIO%TERP,KG)    = 0.0
+     EmisNat(NATBIO%TERP,i,j) = 0.0
+  else ! JAN2025 USING BVOC
     if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
      ! Light effects from Guenther G93. Need uE:
@@ -643,6 +649,7 @@ module Biogenics_mod
   E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m) * EmBio%TerpFac
   rcbio(NATBIO%TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
   EmisNat(NATBIO%TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
+  end if ! JAN2025 USING BVOC
 
   if ( USES%SOILNOX ) then
     if ( USES%SOILNOX_METHOD == 'ACP2012EURO' ) then

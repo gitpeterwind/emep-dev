@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 Jan 2025 Dave
+
+Config_module,
+Biogenic_mod    - added biofac_BVOC to scale BVOC emissions
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14 Jan 2025 Peter
 
 Save the 3D local fractions also when using Nest_save or Nest_Dump while
