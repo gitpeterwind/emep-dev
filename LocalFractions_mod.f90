@@ -19,7 +19,8 @@ use Config_module,     only: NPROC,KMAX_MID, KMAX_BND,KCHEMTOP,USES, lf_src, IOU
                              , IOU_HOUR_INST,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY&
                              ,IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX &
                              ,MasterProc,dt_advec,dt_advec_inv, RUNDOMAIN, runlabel1 &
-                             ,HOURLYFILE_ending, lf_species, lf_country,&
+                             ,HOURLYFILE_ending, &
+                             lf_species, lf_country, lf_sector_groups,&
                              SO2_ix, O3_ix, NO2_ix, SO4_ix, NH4_f_ix, NO3_ix, NO3_f_ix, &
                              NO3_c_ix, NH3_ix, HNO3_ix, C5H8_ix, APINENE_ix, NO_ix, HO2_ix, OH_ix,&
                              HONO_ix,OP_ix,CH3O2_ix,C2H5O2_ix,CH3CO3_ix,C4H9O2_ix,MEKO2_ix,ETRO2_ix,&
@@ -46,7 +47,7 @@ use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,&
                              GetCDF_modelgrid,CityFileWrite
 use OwnDataTypes_mod,  only: Deriv, Max_lf_sources, Max_lf_sectors, MAX_lf_country_group_size, &
-                             Max_lf_spec, TXTLEN_NAME, TXTLEN_FILE, &
+                             MAX_lf_sector_group_size, Max_lf_spec, TXTLEN_NAME, TXTLEN_FILE, &
                              Max_lf_res, Max_lf_Country_list, Max_lf_sectors, Max_lf_Country_groups, &
                              Max_lf_out
 use Par_mod,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
@@ -208,9 +209,10 @@ integer, private, save :: RO2POOL_ix=-1
 real, allocatable, private, save :: lf_NH4(:), lf_NH3(:)
 real, allocatable, private, save :: lf_NO3(:), lf_HNO3(:)
 integer, private, save :: country_ix_list(Max_lf_Country_list)
-integer, private, save :: Ncountry_lf=0
-integer, private, save :: Ncountry_group_lf=0
-integer, private, save :: Ncountrysectors_lf=0
+integer, private, save :: Ncountry_lf = 0
+integer, private, save :: Ncountry_group_lf = 0
+integer, private, save :: Nsector_groups_lf = 0
+integer, private, save :: Ncountrysectors_lf = 0
 integer, private, save :: Ncountry_mask_lf=0 !total number of masks defined
 integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using lf_country%mask_val
 integer, private, save :: country_mask_val(Max_lf_Country_list) = -999999 ! values of all defined masks
@@ -233,12 +235,13 @@ integer, public, save :: Nemis_surf = 0! number of non sector surface emissions 
 integer, private, save :: iem_nox, iem_voc , iem_nh3, iem_sox !index in EMIS_FILE
 integer, public, parameter :: iem_lf_nox = 1, iem_lf_voc = 2, iem_lf_nh3 = 3, iem_lf_sox = 4
 integer, public, save :: emis2icis(N_lf_derivemisMAX),emis2pos_primary(N_lf_derivemisMAX)
+integer, public, save :: emis2is(N_lf_derivemisMAX)
 integer, public, save :: emis2isrc_primary(N_lf_derivemisMAX) ! connect the index in rcemis_lf with the isrc (source). Only make sense for primary
 integer, public, save :: emis2isrc(N_lf_derivemisMAX),emis2iem(N_lf_derivemisMAX)
 integer, public, save :: emis2iic_surf(N_lf_derivemisMAX), emis2nspec_surf(N_lf_derivemisMAX)
 integer, public, save :: lfspec2spec(NSPEC_TOT),spec2lfspec(NSPEC_TOT) !mapping between LF species index and the index from CM_Spec (tot)
 integer, public, save :: Nlf_species = 0, NSPEC_chem_lf = 0, NSPEC_deriv_lf, N_deriv_SOA_lf = 0, NSOA
-integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separately or 1 if all together, or 2 if onli nox and voc
+integer, public, save :: Nfullchem_emis = 1 !4 if nox, voc, nh3, sox separately or 1 if all together, or 2 if only nox and voc
 integer, public, save :: ix_lf_max
 integer, public, save :: Npos_lf
 logical, public, save :: makeDMS = .false. ! Each natural emission to track has an ad hoc variable , makeXXX
@@ -256,9 +259,9 @@ integer, parameter :: NAQUEOUS = 5,ICLOHSO2 = 1,ICLRC1 = 2,ICLRC2 = 3,ICLRC3 = 4
 contains
 
   subroutine lf_init
-    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, isec, n_mask, mask_val_min, mask_val_max
+    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, n_mask, mask_val_min, mask_val_max
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix, iem_deriv
-    integer :: iout, ig, idep
+    integer :: iout, ig, idep, isec, isec_lf
     integer, allocatable :: MaskVal(:)
     logical is_relative,is_country
     character(len=200) :: filename
@@ -449,6 +452,19 @@ contains
      
      ! Additional species used for equilibrium chemistry, but not used in chemistry:  none
 
+     ! add relative species. Each "neighbor" count as one country to track
+     ! must account for emissions and chemistry
+     ! emissions should (directly) only change middle cell lf
+     ! chemistry: lf will change in the same way as a country, just increase Npos_lf with number of surrounding cells + self.
+     ! no new species to track, but new "countries"!
+     !NB: for non-chem situation, a new isrc is defined for each sector, while in the fullchem case, sectors are part of isrc
+     
+     !for each relative (2*lf_set%dist+1)*Ncountrysectors_lf new sources are defined
+     if (lf_set%relative) then
+        Ndiv_rel = 2*lf_set%dist+1
+     else
+        Ndiv_rel = 0
+     end if
      ! add primary PM
      call addsource('pm25')
      call addsource('pmco')
@@ -465,6 +481,8 @@ contains
      if(me==0)write(*,*)'LF chemistry, species included: ',NSPEC_chem_lf
      if(me==0)write(*,*)'LF total species included: ',Nlf_species + NSPEC_SHL
      if(me==0)write(*,*)'LF chemistry, last index included: ',ix_lf_max
+
+
   end if
 
 
@@ -708,17 +726,81 @@ contains
      Ncountrysectors_lf=0
      do i = 1, Max_lf_sectors
         if(lf_country%sector_list(i) < 0) then
-           if(i==1)then
+           if(i==1 .and. trim(lf_sector_groups(i)%name) == 'NOTSET')then
               !default to only sector 0
               lf_country%sector_list(i) = 0
            else
             exit
           end if
         end if
-        Ncountrysectors_lf=Ncountrysectors_lf+1
+        Ncountrysectors_lf = Ncountrysectors_lf + 1
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
      end do
-     Npos_lf = (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf
+
+     allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
+     !note: the loop above, is interrputed by an exit, and cannot be used
+     do i = 1, NSECTORS
+        lf_sector_map(:,i) = i
+     end do
+     lf_nsector_map(:) = 1
+     !sector zero is all sectors
+     do i=1, NSECTORS
+        lf_sector_map(i,0) = i
+     end do
+     lf_nsector_map(0) = NSECTORS
+     !hardcoded for now:
+     if (Ncountrysectors_lf<NSECTORS .and. NSECTORS == NSECTORS_GNFR_CAMS) then
+        if(me==0)write(*,*)'LF TRAF sectors 16, 17, 18, 19 mapped into sector 6'
+        if(me==0)write(*,*)'LF POW sectors 14, 15 mapped into sector 1',lf_sector_map(1,7)
+        !we map all transport sectors (F1...F4) into F
+        if(.not. IS_TRAF(6) .or. .not. IS_TRAF(16) .or. .not. IS_TRAF(17) .or.  .not. IS_TRAF(18).or.  .not. IS_TRAF(19))then
+           call StopAll('SECTOR HACK does not work for this setup!')
+        end if
+        lf_sector_map(1,6) = 6
+        lf_sector_map(2,6) = 16
+        lf_sector_map(3,6) = 17
+        lf_sector_map(4,6) = 18
+        lf_sector_map(5,6) = 19
+        lf_nsector_map(6) = 5
+        !we map all transport sectors (A1, A2) into A
+        if(.not. IS_POW(1) .or. .not. IS_POW(14) .or. .not. IS_POW(15))then
+           call StopAll('SECTOR HACK does not work for this setup!')
+        end if
+        lf_sector_map(1,1) = 1
+        lf_sector_map(2,1) = 14
+        lf_sector_map(3,1) = 15
+        lf_nsector_map(1) = 3
+     end if
+     
+     !sectors. Define all as groups
+     !first predefined groups from config
+     Nsector_groups_lf = 0
+     do i = 1, Max_lf_sectors
+        if (trim(lf_sector_groups(i)%name) == 'NOTSET') exit
+        if (lf_sector_groups(i)%list(1) < 0 .or. lf_sector_groups(i)%list(1) > NSECTORS) then
+           if (me==0) write(*,*)'WARNING: did not find any valid sector in '//trim(lf_sector_groups(i)%name),lf_sector_groups(i)%list(1)
+           exit
+        end if
+        Nsector_groups_lf = Nsector_groups_lf + 1
+        Ncountrysectors_lf = Ncountrysectors_lf + 1
+        !redefine groups as pseudo sectors, with index larger than NSECTORS
+        isec_lf = NSECTORS + Nsector_groups_lf ! pseudo sector defined as a group of sectors
+        lf_country%sector_list(Ncountrysectors_lf) = isec_lf
+        lf_sector_groups(i)%nsec = 0
+        lf_nsector_map(isec_lf) = 0
+        do n = 1, MAX_lf_sector_group_size
+           if (lf_sector_groups(i)%list(n) > 0 .and. lf_sector_groups(i)%list(1) > NSECTORS) then
+              lf_sector_groups(i)%nsec = lf_sector_groups(i)%nsec + 1
+              lf_nsector_map(isec_lf) = lf_nsector_map(isec_lf) + 1 !number of sectors included this group
+              lf_sector_map(n,isec_lf) = lf_sector_groups(i)%list(n)! sector included this group
+           else
+              exit
+           end if
+        end do
+     end do
+
+     Npos_lf = (Ncountry_lf + Ncountry_group_lf + Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf
+     
      !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
      do isrc = 1, Nsources
         lf_src(isrc)%Npos = Npos_lf
@@ -726,46 +808,12 @@ contains
      if(MasterProc)write(*,*)Npos_lf,' countries x sectors for ',Nsources,' sources'
   end if
   
-  allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
-  !note: the loop above, is interrputed by an exit, and cannot be used
-  do i = 1, NSECTORS
-     lf_sector_map(:,i) = i
-  end do
-  lf_nsector_map(:) = 1
-  !sector zero is all sectors
-  do i=1, NSECTORS
-     lf_sector_map(i,0) = i
-  end do
-  lf_nsector_map(0) = NSECTORS
-  !hardcoded for now:
-  if (Ncountrysectors_lf<NSECTORS .and. NSECTORS == NSECTORS_GNFR_CAMS) then
-     if(me==0)write(*,*)'LF TRAF sectors 16, 17, 18, 19 mapped into sector 6'
-     if(me==0)write(*,*)'LF POW sectors 14, 15 mapped into sector 1',lf_sector_map(1,7)
-     !we map all transport sectors (F1...F4) into F
-     if(.not. IS_TRAF(6) .or. .not. IS_TRAF(16) .or. .not. IS_TRAF(17) .or.  .not. IS_TRAF(18).or.  .not. IS_TRAF(19))then
-        call StopAll('SECTOR HACK does not work for this setup!')
-     end if
-     lf_sector_map(1,6) = 6
-     lf_sector_map(2,6) = 16
-     lf_sector_map(3,6) = 17
-     lf_sector_map(4,6) = 18
-     lf_sector_map(5,6) = 19
-     lf_nsector_map(6) = 5
-     !we map all transport sectors (A1, A2) into A
-     if(.not. IS_POW(1) .or. .not. IS_POW(14) .or. .not. IS_POW(15))then
-        call StopAll('SECTOR HACK does not work for this setup!')
-     end if
-     lf_sector_map(1,1) = 1
-     lf_sector_map(2,1) = 14
-     lf_sector_map(3,1) = 15
-     lf_nsector_map(1) = 3
-  end if
 
   ipoll=0
   iem2ipoll = -1
   iem2Nipoll = 0
   do isrc = 1, Nsources
-     if(lf_src(isrc)%type == 'relative')then
+     if(lf_src(isrc)%type == 'relative' .and. .not. lf_fullchem)then
         !for now only one Ndiv possible for all sources
         lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
@@ -1323,7 +1371,7 @@ contains
      allocate(lf0_loc(Npos_lf*Nfullchem_emis,NSPEC_deriv_lf))
      allocate(lf0SOA_loc(Npos_lf*Nfullchem_emis,NSOA))
      allocate(lf_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
-     allocate(lfSOA_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
+     allocate(lfSOA_loc(Npos_lf*Nfullchem_emis,NSOA))
      allocate(rcemis_lf(N_lf_derivemisMAX,ix_lf_max))
      allocate(rcemis_lf_primary(NCMAX*NSECTORS*2))
      allocate(rcemis_lf_surf(10,20),emis2spec_surf(10,20)) !up to 10 different sources, 20 species each
@@ -2062,8 +2110,7 @@ end subroutine lf_out
 subroutine lf_av(dt)
   real, intent(in)    :: dt                   ! time-step used in integrations
   real :: xtot, x, O3_c
-  integer ::i,j,k,kk,ii,l,n,nn,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac,isec_poll1, iou_ix, isrc
-  integer ::isec_poll
+  integer ::i,j,k,kk,ii,l,n,nn,n_new,dx,dy,ix,iix,ipoll,ipoll_cfac, iou_ix, isrc
   logical :: pollwritten(2*Max_lf_spec),is_surf
   integer,save :: count_AvgMDA8_m=0,count_AvgMDA8_y=0
   real :: w_m, w_y, timefrac, Fgas
@@ -2406,7 +2453,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
   real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm
+  integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm,nstart
   if(DEBUGall .and. me==0)write(*,*)'start advx'
 
   if(i==li0)then
@@ -2468,60 +2515,64 @@ subroutine lf_adv_x(fluxx,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
            enddo
         endif
-     else if(lf_src(isrc)%type=='relative')then
+     end if
+     if(lf_src(isrc)%type=='relative' .or. (lf_set%relative .and. lf_fullchem))then
         !The relative position of the source is either the same for i and incoming lf, or differs by 1
         dp = 0 ! for left boundary
         dm = 0 ! for right boundary
         if(mod(i_fdom(i)-1,lf_src(isrc)%res)==0)dp=1
         if(mod(i_fdom(i),lf_src(isrc)%res)==0)dm=1
-        if(x>1.E-20)then
-           n = lf_src(isrc)%start
-           if (dm==0) then
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
-                    n=n+1
+        nstart = lf_src(isrc)%start
+        !the relative for fullchem are placed after the regular countries
+        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
+        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1))
+           if(x>1.E-20)then
+              n = nstart
+              if (dm==0) then
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
+                       n=n+1
+                    enddo
                  enddo
-              enddo
-           else
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist and dm=1, there are no local fractions to transport
-                 n=n+1
-                 do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,i+1)*x
+              else
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn ! when dx=-lf_src(isrc)%dist and dm=1, there are no local fractions to transport
                     n=n+1
+                    do dx=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,i+1)*x
+                       n=n+1
+                    enddo
                  enddo
-              enddo
-           endif
-
-           if(xx>1.E-20)then
-              n = lf_src(isrc)%start
+              endif
+              
+              if(xx>1.E-20)then
+                 n = nstart
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx
+                       n=n+1
+                    enddo
+                    if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx
+                    n=n+1! when dx=lf_src(isrc)%dist and dp=1 there are no local fractions to transport
+                 enddo
+              endif
+           else if (xx>1.E-20)then
+              n = nstart
               do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
                  do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                    lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,i-1)*xx
                     n=n+1
                  enddo
+                 lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist  and dp=1 there are no local fractions to transport
                  if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx
-                 n=n+1! when dx=lf_src(isrc)%dist and dp=1 there are no local fractions to transport
-              enddo
-           endif
-        else if (xx>1.E-20)then
-           n = lf_src(isrc)%start
-           do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,i-1)*xx
                  n=n+1
               enddo
-              lf(n,i,j,k) = lf(n,i,j,k)*xn! when dx=lf_src(isrc)%dist  and dp=1 there are no local fractions to transport
-              if (dp==0) lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,i-1)*xx
-              n=n+1
-           enddo
-        else
-          !nothing to do if no incoming fluxes
-        endif
-      else
-        if(me==0)write(*,*)'LF type not recognized)'
-        stop
+           else
+              !nothing to do if no incoming fluxes
+           endif
+           nstart = nstart + Ncountrysectors_lf
+        end do
      endif
   enddo
 
@@ -2534,7 +2585,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
   real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm
+  integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm,nstart
   if(DEBUGall .and. me==0)write(*,*)'start advy'
 
   if(j==lj0)then
@@ -2596,80 +2647,84 @@ subroutine lf_adv_y(fluxy,i,j,k)
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
            enddo
         endif
-     else if(lf_src(isrc)%type=='relative')then
-        !The relative position of the source is either the same for j and incoming lf, or differs by 1 (n differs by Ndiv_rel)
+     end if
+     if(lf_src(isrc)%type=='relative' .or. (lf_set%relative .and. lf_fullchem))then
+        !The relative position of the source is either the same for j and incoming lf, or differs by 1
         dp = 0 ! for lower boundary
         dm = 0 ! for upper boundary
         if(mod(j_fdom(j)-1,lf_src(isrc)%res)==0)dp=Ndiv_rel
         if(mod(j_fdom(j),lf_src(isrc)%res)==0)dm=Ndiv_rel
-        if(x>1.E-20)then
-           n = lf_src(isrc)%start
-           if(dm==0)then
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+        nstart = lf_src(isrc)%start
+        !the relative for fullchem are placed after the regular countries
+        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
+        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1))
+           if(x>1.E-20)then
+              n = nstart
+              if(dm==0)then
+                 do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
+                       n=n+1
+                    enddo
+                 enddo
+              else
+                 dy = -lf_src(isrc)%dist
                  do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn
                     n=n+1
                  enddo
-              enddo
-           else
-              dy = -lf_src(isrc)%dist
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn
-                 n=n+1
-              enddo
-              do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,j+1)*x
-                    n=n+1
+                 do dy=-lf_src(isrc)%dist+1,lf_src(isrc)%dist
+                    do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n-dm,j+1)*x
+                       n=n+1
+                    enddo
                  enddo
-              enddo
-           endif
-           if(xx>1.E-20)then
-              n = lf_src(isrc)%start
+              endif
+              if(xx>1.E-20)then
+                 n = nstart
+                 if(dp==0)then
+                    do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                       do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                          lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
+                          n=n+1
+                       enddo
+                    enddo
+                 else
+                    do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
+                       do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                          lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,j-1)*xx
+                          n=n+1
+                       enddo
+                    enddo
+                 endif
+              endif
+           else if (xx>1.E-20)then
+              n = nstart
               if(dp==0)then
                  do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
                     do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
                        n=n+1
                     enddo
                  enddo
               else
                  do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
                     do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                       lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n+dp,j-1)*xx
+                       lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,j-1)*xx
                        n=n+1
                     enddo
                  enddo
+                 dy=lf_src(isrc)%dist
+                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
+                    lf(n,i,j,k) = lf(n,i,j,k)*xn
+                    n=n+1
+                 enddo
               endif
-           endif
-        else if (xx>1.E-20)then
-           n = lf_src(isrc)%start
-           if(dp==0)then
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
-                    n=n+1
-                 enddo
-              enddo
            else
-              do dy=-lf_src(isrc)%dist,lf_src(isrc)%dist-1
-                 do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                    lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n+dp,j-1)*xx
-                    n=n+1
-                 enddo
-              enddo
-              dy=lf_src(isrc)%dist
-              do dx=-lf_src(isrc)%dist,lf_src(isrc)%dist
-                 lf(n,i,j,k) = lf(n,i,j,k)*xn
-                 n=n+1
-              enddo
-           endif
-        else
            !nothing to do if no incoming fluxes
-        endif
-     else
-        if(me==0)write(*,*)'LF type not recognized)'
-        stop
+           endif
+           nstart = nstart + Ncountrysectors_lf
+        end do
      endif
 
   enddo
@@ -2986,7 +3041,7 @@ subroutine lf_adv_k(fluxk,i,j)
     integer, intent(in) :: i,j,ndiff
     real, intent(in) :: dt_diff
     real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x
-    integer ::isec_poll1,isrc
+    integer ::isrc
     integer ::k,n,ix,iix,dx,dy
     !how far diffusion should take place above lf_Nvert.
     ! KUP = 2 gives less than 0.001 differences in locfrac, except sometimes over sea, because
@@ -3035,7 +3090,7 @@ end subroutine lf_diff
     integer, intent(in) :: i,j
     real, intent(in) :: dt_conv
     real :: xn_k(LF_SRC_TOTSIZE + Npoll,KMAX_MID),x,xd
-    integer ::isec_poll1,isrc
+    integer ::isrc
     integer ::k,n,ix,iix,dx,dy
 
     if(DEBUGall .and. me==0)write(*,*)'start conv'
@@ -3101,7 +3156,6 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
      do isrc=1,Nsources
         if (lf_set%full_chem) cycle !included below
         iem = lf_src(isrc)%iem     !pick out only this emissions
-        isec = lf_src(isrc)%sector !pick out only this sector
 
         xtot=0.0
         totemis = 0.0 ! all emis to isrc species
@@ -3274,8 +3328,15 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            !contribution from emissions during this timestep.
            !NB: only one iemis per n0 can be included
            lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec)
+           if (lf_set%relative) then
+              !relative: for each sector add all countries to the middle gridcell
+              !order of indices is (position, sector) 
+              n0 = lf_src(isrc)%start + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf + (emis2is(iemis) * (Ndiv_rel*Ndiv_rel - 1))/2 !is=1 corresponds to middle of gridcell for first sector
+              lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec)
+           end if
         end if
      end do
+     !for all countries emitting, and each species and sector add to middle of "relative"
   end do
 
   ! concentrations have changed in the chemical reactions.
@@ -4183,9 +4244,9 @@ subroutine lf_rcemis(i,j,k,eps)
   !We need to make rcemis_lf for each source (emitted species, country, sector) with emissions at this i,j
 
   ! The number of emitting countries at i,j is nic(i,j) (small)
-  ! The emission without splits and k is emis_lf_cntry(i,j,ic,isec,iem) (ic runs over nic(i,j), i.e. corresponds to different countries in different gridcells)
-  ! for "fullchem": same lf_rcemis for all advected_species (but different for nox and voc sources), but lf countries dependent
-  ! for "fullchem" lf_rcemis is splitted, otherwise summed with mw weights (and single species, _new_ old_ pm have not all splits)
+  ! The emission without splits and k is emis_lf_cntry(i,j,ic,isec,iem) (ic runs over nic(i,j), i.e. corresponds to different countries for different gridcells)
+  ! for "fullchem": same rcemis_lf for all advected_species (but different for source species), but lf countries dependent
+  ! for "fullchem" rcemis_lf is splitted, otherwise summed with mw weights (and single species, _new_ old_ pm have not all splits)
   ! for "relative": country independent
   integer,intent(in) :: i,j,k
   real, intent(in) :: eps
@@ -4299,9 +4360,10 @@ subroutine lf_rcemis(i,j,k,eps)
                      if (found == 0) cycle
                    end if
                    do is=1,Ncountrysectors_lf
-                       isec_lf=lf_country%sector_list(is)
+                       isec_lf=lf_country%sector_list(is) !isec_lf are the sectors included in lf. Can have "holes".Can be pseudosector larger than NSECTOR for groups
                        found = 0 !flag to show if nemis already increased
                        do iisec=1, lf_nsector_map(isec_lf)
+                          !isec is emep sector
                           isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
 
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
@@ -4347,7 +4409,10 @@ subroutine lf_rcemis(i,j,k,eps)
 
            end if
         end do
-      else
+
+     else
+
+        !fullchem case
         !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n) and split summation and emis2 iem/isrc?
          do ic=1,nic(i,j)
 
@@ -4387,7 +4452,7 @@ subroutine lf_rcemis(i,j,k,eps)
               if (found == 0) cycle
             end if
             do is=1,Ncountrysectors_lf
-              isec_lf=lf_country%sector_list(is)
+              isec_lf=lf_country%sector_list(is) !isec_lf are the sectors included in lf. Can have "holes". Can be pseudosector larger than NSECTOR for groups
               found = 0 !flag to show if nemis already increased
               found_primary = 0 !flag to show if nemis_primary already increased
               do iisec=1, lf_nsector_map(isec_lf)
@@ -4483,6 +4548,7 @@ subroutine lf_rcemis(i,j,k,eps)
                     call StopAll('error')
                  end if
                 emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+                emis2is(nemis) = is !is=1 corresponds to first sector
                 emis2iem(nemis) = iem
               endif
            end do
@@ -4580,13 +4646,13 @@ subroutine lf_rcemis(i,j,k,eps)
   end subroutine lf_rcemis_nat
 
   subroutine addsource(species_name)
-    character(len=*) :: species_name
+    character(len=*), intent(in) :: species_name
     integer :: i, ix, iem, isrc
 
     Nlf_species = Nlf_species + 1 !internal index for LF
     do i = 1, Nfullchem_emis
        Nsources = Nsources + 1
-       lf_src(Nsources)%type = 'country' !only type implemented so far for fullchem
+       lf_src(Nsources)%type = 'country'
        ix = find_index(trim(species_name), species_adv(:)%name, any_case=.true.)
        if (ix<=0) then
           iem=find_index(trim(species_name) ,EMIS_FILE(1:NEMIS_FILE))

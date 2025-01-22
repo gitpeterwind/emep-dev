@@ -20,6 +20,7 @@ use OwnDataTypes_mod,      only: typ_ss, lf_sources, Emis_id_type, &
                                  Sector_type, hourly_emis_factor_type,&
                                  TXTLEN_NAME, TXTLEN_FILE, TXTLEN_SHORT,&
                                  TXTLEN_DERIV, Emis_mask_type, lf_country_type,&
+                                 lf_sector_group_type,&
                                  Deriv, typ_s1ind,typ_s5ind,O3cl_t,typ_s3,typ_s4,&
                                  Max_lf_Country_list, Max_lf_Country_groups, Max_lf_sectors, &
                                  poll_type, lf_out_type, Max_lf_spec, Max_lf_sources, &
@@ -339,6 +340,7 @@ type(lf_set_type), public, save :: lf_set
 type(lf_sources), public, save :: lf_src(Max_lf_sources)
 type(poll_type), public, save :: lf_species(Max_lf_spec)
 type(lf_country_type), public, save :: lf_country
+type(lf_sector_group_type), public, save :: lf_sector_groups(Max_lf_sectors)
 type(lf_out_type), public, save :: lf_spec_out(Max_lf_out)
 
 integer, public, save :: &
@@ -897,6 +899,7 @@ subroutine Config_Constants(iolog)
    ,lf_set & !Local Fractions
    ,lf_species &
    ,lf_country & !Local Fractions countries, and groups
+   ,lf_sector_groups & !Local Fractions sector groups
    ,lf_spec_out & !what to put in output (fullchem only)
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,FREQ_HOURLY           &

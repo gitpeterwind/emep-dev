@@ -336,14 +336,15 @@ type, public :: lf_set_type
   logical :: CityMasks =.false.
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   !for fullchem settings
+  integer :: dist = -1
   logical :: full_chem =.false.
+  logical :: relative =.false. ! compute also grid to grid values 
   integer :: Nfullchem_emis = -1 ! number of emission types to track: 1 {nox+voc+nh3+sox}, 2 {nox,voc}, 4 {nox,voc,nh3,sox} 
   logical :: EmisDer_all =.false. ! reduce voc, sox, nox, nh3 together. Overwritten if Nfullchem_emis is set
   logical :: MDA8 = .false. ! if MDA8 and SOMO35 are to be outputed (if full_chem)
   logical :: restart =.false.
   logical :: save =.false.
 end type lf_set_type
-
 
 
 type, public :: lf_sources
@@ -398,6 +399,13 @@ type, public :: lf_country_group_type
    character(len=10), dimension(MAX_lf_country_group_size):: list = 'NOTSET' ! list of countries inside the group
    integer, dimension(MAX_lf_country_group_size):: ix = -1 ! index of the country as defined in Country_ml (set by model)
 end type lf_country_group_type
+
+integer, parameter, public :: MAX_lf_sector_group_size = 30 !max 30 sectors in each group
+type, public :: lf_sector_group_type
+   character(len=TXTLEN_NAME) :: name = 'NOTSET' !the overall name of the sector group (for example 'Low')
+   integer :: nsec = 0 ! number of valid sectors defined in this group (set by model)
+   integer :: list(MAX_lf_sector_group_size) = -1! list of sectors inside the group
+end type lf_sector_group_type
 
 type, public :: lf_country_type
    integer :: mask_val_min = 1
