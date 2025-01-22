@@ -295,7 +295,7 @@ SplitSpecialsFile='ZCMDIR/emissplits_gnfr/CAMS-REG-v5_1_with_Ref2_0_1_year2018_D
   lf_country%group(1)%list(1:)='NO','DK','SE','FI', ! countries included in the group
 
 
-!example uEMEP style output: (NB: you cannot mix country and relative types in the same run!)
+!example uEMEP style output:
 !  lf_src(1)%type='relative',
 !  lf_src(1)%dist = 5,  !how far the neighbors can be in each direction (NB: high cost for large dist)
 

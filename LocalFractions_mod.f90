@@ -730,14 +730,14 @@ contains
               !default to only sector 0
               lf_country%sector_list(i) = 0
            else
-            exit
-          end if
+              exit
+           end if
         end if
         Ncountrysectors_lf = Ncountrysectors_lf + 1
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
      end do
 
-     allocate(lf_sector_map(NSECTORS,0:NSECTORS),lf_nsector_map(0:NSECTORS))
+     allocate(lf_sector_map(MAX_lf_sector_group_size,0:NSECTORS+Max_lf_sectors),lf_nsector_map(0:NSECTORS+Max_lf_sectors))
      !note: the loop above, is interrputed by an exit, and cannot be used
      do i = 1, NSECTORS
         lf_sector_map(:,i) = i
@@ -776,7 +776,7 @@ contains
      !first predefined groups from config
      Nsector_groups_lf = 0
      do i = 1, Max_lf_sectors
-        if (trim(lf_sector_groups(i)%name) == 'NOTSET') exit
+       if (trim(lf_sector_groups(i)%name) == 'NOTSET') exit
         if (lf_sector_groups(i)%list(1) < 0 .or. lf_sector_groups(i)%list(1) > NSECTORS) then
            if (me==0) write(*,*)'WARNING: did not find any valid sector in '//trim(lf_sector_groups(i)%name),lf_sector_groups(i)%list(1)
            exit
@@ -789,10 +789,11 @@ contains
         lf_sector_groups(i)%nsec = 0
         lf_nsector_map(isec_lf) = 0
         do n = 1, MAX_lf_sector_group_size
-           if (lf_sector_groups(i)%list(n) > 0 .and. lf_sector_groups(i)%list(1) > NSECTORS) then
+           if (lf_sector_groups(i)%list(n) > 0 .and. lf_sector_groups(i)%list(n) <= NSECTORS) then
               lf_sector_groups(i)%nsec = lf_sector_groups(i)%nsec + 1
               lf_nsector_map(isec_lf) = lf_nsector_map(isec_lf) + 1 !number of sectors included this group
               lf_sector_map(n,isec_lf) = lf_sector_groups(i)%list(n)! sector included this group
+              if(me==0)write(*,*)n,' LF defined group ',isec_lf,' includes sector ',lf_sector_groups(i)%list(n)
            else
               exit
            end if
@@ -1003,11 +1004,13 @@ contains
          end if
       end if
 
-     if (MasterProc) then
-        if (lf_src(isrc)%iem>0) then
-           write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
-        else
-           write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
+      if (MasterProc) then
+        if(.not. lf_fullchem .or. lf_src(isrc)%iem_lf == iem_lf_nox) then
+           if (lf_src(isrc)%iem>0) then
+              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
+           else
+              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
+           end if
         end if
         if (.not. lf_fullchem) then
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
@@ -1144,7 +1147,7 @@ contains
      lf_src(isrc)%end = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      LF_SRC_TOTSIZE = LF_SRC_TOTSIZE + lf_src(isrc)%Npos
      if(me==0)then
-        write(*,*)isrc,' ',trim(lf_src(isrc)%species)," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end
+        write(*,*)isrc,' ',trim(lf_src(isrc)%species),lf_src(isrc)%iem_lf," start ",lf_src(isrc)%start," end ",lf_src(isrc)%end
      end if
 
      if (lf_src(isrc)%type=='country') is_country = .true.
@@ -1892,7 +1895,11 @@ subroutine lf_out(iotyp)
                     n1=n1+1
                     isec=lf_country%sector_list(j)
                     secname = ''
-                    if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
+                    if (isec<=NSECTORS) then
+                       if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
+                    else
+                       secname='_'//trim(lf_sector_groups(isec-NSECTORS)%name)
+                    end if
                     if(i<=Ncountry_mask_lf)then
                       !mask defined region
                       if (iic2ilf_countrymask(i) > 0) then
@@ -4532,11 +4539,12 @@ subroutine lf_rcemis(i,j,k,eps)
                          iqrc = sum(emis_nsplit(1:iem-1)) + n
                          itot = iqrc2itot(iqrc)
                          if(itot<=ix_lf_max .or. .not.lf_fullchem)then
-                             rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
+                            !note: eps < 0
+                            rcemis_lf(nemis,itot) = rcemis_lf(nemis,itot) +&
                                  maskfac * eps * emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)*ehlpcom0&
                                  *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                  *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-                         end if
+                        end if
                       end do
                    end if
                 end if
