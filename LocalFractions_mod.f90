@@ -1424,8 +1424,6 @@ contains
     allocate(D8M(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX,8)) ! running last 8 hour values
     allocate(D8Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 8 hour mean since 00:00
     allocate(D8Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D8Max
-    allocate(D1Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! max value of the 1 hour mean since 00:00
-    allocate(D1Max_av(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D1Max
     allocate(D8Max_av_ppb(LIMAX,LJMAX,0:Npos_lf*Nfullchem_emis,Niou_ix)) ! average over time of D8Max in ppb units
     allocate(hourM(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! hour Mean
     allocate(D1Max(0:Npos_lf*Nfullchem_emis,LIMAX,LJMAX)) ! Daily max hourM
@@ -2022,9 +2020,15 @@ subroutine lf_out(iotyp)
                              call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
+
                              def2%name="AvgMDA8_6month_ppb"
                              def2%unit='ppb'
                              call Out_netCDF(iotyp,def2,ndim_tot,1,D8Max_av_ppb(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
+                                  fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+
+                             def2%name="MDA1"
+                             def2%unit='ug/m3'
+                             call Out_netCDF(iotyp,def2,ndim_tot,1,D1Max_av(1,1,0,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                                   fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
 
                              def2%name="SOMO35"
@@ -2146,6 +2150,12 @@ subroutine lf_av(dt)
 
   !do the averaging
   do iou_ix = 1, Niou_ix
+
+     do j=1,ljmax
+        do i=1,limax
+           lf_src_ps(i,j,iou_ix) = lf_src_ps(i,j,iou_ix) + ps(i,j,1)
+        end do
+     end do
      pollwritten = .false.
      do isrc=1,Nsources_nonew
         ipoll = lf_src(isrc)%poll
@@ -2157,11 +2167,6 @@ subroutine lf_av(dt)
            ipoll_cfac = ipoll
         end if
 
-        do j=1,ljmax
-           do i=1,limax
-              lf_src_ps(i,j,iou_ix) = lf_src_ps(i,j,iou_ix) + ps(i,j,1)
-           end do
-        end do
         do k = KMAX_MID-lf_Nvertout+1,KMAX_MID
           kk = k
           if (lf_Nvertout<KMAX_MID) kk = KMAX_MID - k + 1 !1 for surface and increasing upwards

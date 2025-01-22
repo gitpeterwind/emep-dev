@@ -16,7 +16,7 @@ public :: print_Deriv_type
 public :: print_Asc2D
 public :: print_Sector_type
 integer, public, parameter :: &
-  TXTLEN_DERIV = 34, &
+  TXTLEN_DERIV = 44, &
   TXTLEN_SHORT = 28, &
   TXTLEN_IND   =  6, &
   TXTLEN_NAME =  64, & !for performance, should be a multiple of 8
