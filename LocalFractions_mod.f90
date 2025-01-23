@@ -2307,8 +2307,9 @@ subroutine lf_av(dt)
                  end do
               end do
            end do
+
            if (current_date%seconds == 0 .and. .not. first_call) then
-              !one hour has past since last time here
+             !one hour has past since last time here
               !save last hour average
               ii = mod(current_date%hour,8) + 1 !note: this works only because 24 is a multiple of 8!
               timefrac = dt_advec/3600.0 ! inverse of number of timesteps in an hour
@@ -2390,6 +2391,7 @@ subroutine lf_av(dt)
               D8Max_av(:,:,:,iou_ix)=0.0
               D8Max_av_ppb(:,:,:,iou_ix)=0.0
               !SOMO35(:,:,:,iou_ix)=0.0 !for SOMO35 the integral goes over the entire year
+              !for MDA1 the integral goes over the entire year
            end if
 
            if(iotyp2ix(iou_ix)==IOU_MON)count_AvgMDA8_m = count_AvgMDA8_m + 1

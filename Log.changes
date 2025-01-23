@@ -49,6 +49,24 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 Jan 2025 Peter
+
+MDA1 (also for non-LF).
+Can be made with typically:
+OutputMisc=
+'MDA1_O3', 'MDA1_O3',  '', '', 'ug/m3',        -1, -1, F, 1.0,   F,   'YMD',
+
+Differences with MAXADV are:
+1) max over hourly averages, instead of max over all timesteps.
+2) Day end and start at midnight instead of "end of emep day" (6:00)
+3) Yearly is over all months, instead of only peak season
+
+for now only implemented for O3. Could be generalized for any species if
+required
+
+only ug/m3 (not ppb) implemented
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 Jan 2025 Dave
 
 Config_module,

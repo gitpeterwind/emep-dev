@@ -1004,7 +1004,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   character(len=*), parameter :: dtxt='Deriv:'
   real pp, qsat
   real, save, allocatable :: D8M(:,:,:,:), D8Max(:,:,:), hourM(:,:,:),D8_26Max(:,:,:)
-
+  real, save, allocatable :: MDA1_hour(:,:,:)
   logical, save :: make_MaxD8M_nth = .false.
   integer , save :: i_MaxD8M_26th = 0 !index in f_2d
   integer , save :: i_MaxD8M_1st = 0 !index in f_2d
@@ -1133,7 +1133,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                  d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
               end forall
            end if
-        end select
+        end select !subclass
      end if
       
     ! The following can be deleted once testing of MET2D is finished...
@@ -1751,6 +1751,39 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         !NB overwritten anyway D2_O3_DAY = 0.
       end if
 
+    case( "MDA1_O3" )
+       if(first_call)then
+          allocate(MDA1_hour(LIMAX,LJMAX,2)) ! hour Mean, last index 1 is last hour, 2 is max over day since midnight
+          MDA1_hour = 0.0
+          f_2d(n)%index = O3_ix - NSPEC_SHL
+       end if
+       ii = f_2d(n)%index
+       do j = 1,ljmax
+          do i = 1,limax
+             MDA1_hour(i,j,1) = MDA1_hour(i,j,1) + xn_adv(ii,i,j,KMAX_MID) * cfac(ii,i,j) * density(i,j) * 1.0e9 * species_adv(ii)%molwt/ATWAIR
+          end do
+       end do
+       if (current_date%seconds == 0 .and. .not. first_call) then
+          timefrac = dt_advec/3600.0 ! inverse of number of timesteps in an hour
+          do j = 1,ljmax
+             do i = 1,limax
+                ! note that we can not max directly into  d_2d(n,:,:,IOU_DAY)
+                ! because d_2d(n,:,:,IOU_DAY) is reset at end-of-emep-day and not midnight
+                MDA1_hour(i,j,2) = max(MDA1_hour(i,j,2),MDA1_hour(i,j,1)*timefrac)
+                MDA1_hour(i,j,1) = 0.0
+             end do
+          end do          
+          !Monthly and yearly ARE averaged over days at midnight
+          if(current_date%hour == 0)then
+             d_2d(n,:,:,IOU_DAY) = MDA1_hour(:,:,2)
+             d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
+             nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
+             d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
+             nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+             MDA1_hour(:,:,2) = 0.0
+          end if
+       end if
+
     case( "MaxD8M_26th", "MaxD8M_19th", "MaxD8M_1st", "MaxD8M_2nd", "MaxD8M_3rd", "MaxD8M_4th")
       ! do nothing, it is taken care of by "MaxD8M" case
     case( "MaxD8M" , "AvgMDA8", "AvgMDA8AprSep") ! maximum daily eight-hour mean concentration
@@ -2308,7 +2341,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       d_2d(n,:,:,IOU_HOUR) = d_2d(n,:,:,IOU_YEAR)
       if(mod(current_date%hour,6)==0)&  ! reset buffer
         d_2d(n,:,:,IOU_YEAR)=0.0
-    case("MAXADV","MAXSHL","SOMO")
+    case("MAXADV","MAXSHL","SOMO","MDA1_O3")
     !  MAXADV and MAXSHL and SOMO needn't be summed here.
     !  These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
     case default
