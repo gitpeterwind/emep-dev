@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 Jan 2025 Peter
+
+The path for Vertical_levelsFile was overwritten by "domain_setup". 
+Now it is not overwritten if the user has explicitly defined
+Vertical_levelsFile in config_emep.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 Jan 2025 Peter
 
 MDA1 (also for non-LF).

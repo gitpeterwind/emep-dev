@@ -816,7 +816,7 @@ type(names), public, save :: InputFiles(Size_InputFiles)
 !4) In the routine using the file, add the XXFile under  "use Config_module"
 !5) replace the name you used in the routine with XXFile
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
-character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
+character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'NOTSET' !NB: set in domain_setup
 character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/EmisHeights.txt'
 character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
 character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
@@ -1094,7 +1094,7 @@ subroutine Config_Constants(iolog)
  select case (USES%DOMAIN_SETUP_TYPE)
    case('EMEPDOMAIN')
      domain_setup = EMEP_DOMAIN_SETUP
-     Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
+     if (Vertical_levelsFile == 'NOTSET') Vertical_levelsFile = 'DataDir/Vertical_levels20_EC.txt'
      USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
      USES%CONVECTION         = domain_setup%USES_CONVECTION
      USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS
@@ -1102,7 +1102,7 @@ subroutine Config_Constants(iolog)
      if ( domain_setup%USES_GLOB_TFACS ) timefacs%Monthly = 'GRIDDED'
    case('GenericDOMAIN')
      domain_setup = GENERIC_DOMAIN_SETUP
-     Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt'
+     if (Vertical_levelsFile == 'NOTSET') Vertical_levelsFile = 'DataDir/Vertical_levels19_EC.txt'
      USES%PFT_MAPS           = domain_setup%USES_PFTMAPS 
      USES%CONVECTION         = domain_setup%USES_CONVECTION
      USES%DEGREEDAY_FACTORS  = domain_setup%USES_DEGREEDAYS

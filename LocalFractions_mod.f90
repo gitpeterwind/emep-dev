@@ -804,7 +804,7 @@ contains
      
      !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
      do isrc = 1, Nsources
-        lf_src(isrc)%Npos = Npos_lf
+        if(lf_fullchem .or. lf_src(isrc)%type=='country')lf_src(isrc)%Npos = Npos_lf
      end do
      if(MasterProc)write(*,*)Npos_lf,' countries x sectors for ',Nsources,' sources'
   end if
@@ -818,6 +818,7 @@ contains
         !for now only one Ndiv possible for all sources
         lf_src(isrc)%Npos =  (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)
         Ndiv_rel = max(Ndiv_rel,2*lf_src(isrc)%dist+1)
+        if(me==0)write(*,*)isrc,'relative: ',trim(lf_src(isrc)%species),lf_src(isrc)%Npos
      endif
 
      if(lf_src(isrc)%country_ISO /= 'NOTSET')then
@@ -1610,8 +1611,8 @@ subroutine lf_out(iotyp)
   chunksizes(4)=42 ! optimal for read and write?
   chunksizes(5)=1
   chunksizes_tot=1
-  chunksizes_tot(1)=MAXLIMAX
-  chunksizes_tot(2)=MAXLJMAX
+  chunksizes_tot(1)=min(MAXLIMAX, dimSizes_tot(1))
+  chunksizes_tot(2)=min(MAXLJMAX, dimSizes_tot(2))
   chunksizes_tot(3)=dimSizes_tot(3)
 
   allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX,KMAX))
@@ -1640,7 +1641,6 @@ subroutine lf_out(iotyp)
      call Out_netCDF(iotyp,defps,2,kmax,lf_src_ps(1,1,iou_ix),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
           fileName_given=trim(fileName),overwrite=overwrite,create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
      overwrite=.false.
-
 
      if (.not. lf_fullchem) then
         do isrc = 1, Nsources
@@ -1680,7 +1680,7 @@ subroutine lf_out(iotyp)
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
                              n1=n1+1
                              tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac ! sum over all k
-                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,k,iou_ix)*invtot ! sum over all n and k and divided by tot
+                             fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k and divided by tot
                           enddo
                        else
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
@@ -2539,7 +2539,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
         nstart = lf_src(isrc)%start
         !the relative for fullchem are placed after the regular countries
         if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
-        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1))
+        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)+1)
            if(x>1.E-20)then
               n = nstart
               if (dm==0) then
@@ -2585,7 +2585,11 @@ subroutine lf_adv_x(fluxx,i,j,k)
            else
               !nothing to do if no incoming fluxes
            endif
-           nstart = nstart + Ncountrysectors_lf
+           if (lf_fullchem) then
+              nstart = nstart + Ncountrysectors_lf
+           else
+              nstart = lf_src(isrc)%end + 1 !just do once
+           end if
         end do
      endif
   enddo
@@ -2671,7 +2675,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
         nstart = lf_src(isrc)%start
         !the relative for fullchem are placed after the regular countries
         if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
-        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1))
+        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)+1)
            if(x>1.E-20)then
               n = nstart
               if(dm==0)then
@@ -2737,7 +2741,11 @@ subroutine lf_adv_y(fluxy,i,j,k)
            else
            !nothing to do if no incoming fluxes
            endif
-           nstart = nstart + Ncountrysectors_lf
+           if (lf_fullchem) then
+              nstart = nstart + Ncountrysectors_lf
+           else
+              nstart = lf_src(isrc)%end + 1 !just do once
+           end if
         end do
      endif
 
@@ -4298,19 +4306,11 @@ subroutine lf_rcemis(i,j,k,eps)
               end if
               n0 = 0
               !do not loop over countries, only sectors
-              if(lf_src(isrc)%sector>0) then
-                 nsectors_loop = 1
-              else
-                nsectors_loop = NSECTORS
-              end if
-              found = 0 !flag to show if nemis_rel already increased
-              do iisec=1,nsectors_loop
-                 if(lf_src(isrc)%sector>0) then
-                    isec = lf_src(isrc)%sector
-                 else
-                    isec = iisec
-                 end if
-
+              isec_lf = lf_src(isrc)%sector              
+              found = 0
+              do iisec=1,lf_nsector_map(isec_lf)                 
+                 !isec is emep sector
+                 isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
                  do ic = 1,nic(i,j)
                     iland = ic2iland(i,j,ic)
                     if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
@@ -4379,7 +4379,6 @@ subroutine lf_rcemis(i,j,k,eps)
                        do iisec=1, lf_nsector_map(isec_lf)
                           !isec is emep sector
                           isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
-
                           if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
 
                              if(found == 0) then
