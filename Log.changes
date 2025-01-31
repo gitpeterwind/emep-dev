@@ -49,6 +49,13 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Jan 2025 Dave/Willem   BUGFIX
+
+USES%biofac_BVOC default set to 1.0, as it should have been!
+This factor was introduced on 25th Jan, so runs in between would have
+had zero BVOC emissions :-(
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 Jan 2025 Peter
 
 The path for Vertical_levelsFile was overwritten by "domain_setup". 
