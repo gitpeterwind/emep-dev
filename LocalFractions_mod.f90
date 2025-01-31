@@ -41,7 +41,7 @@ use EmisGet_mod,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emi
                              emis_masscorr,  &  ! 1/molwt for most species
                              make_iland_for_time,itot2iqrc,iqrc2iem, emisfrac
 use GridValues_mod,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N,i_fdom,j_fdom,&
-                             RestrictDomain
+                             RestrictDomain, GRIDWIDTH_M, xmd
 use MetFields_mod,     only: ps,roa,EtaKz
 use MPI_Groups_mod
 use NetCDF_mod,        only: Real4,Real8,Out_netCDF,LF_ncFileID_iou,closedID,CloseNetCDF,&
@@ -160,6 +160,7 @@ real, allocatable, public, dimension(:,:), save :: lf0_loc, lf0SOA_loc, lf_loc, 
 real, allocatable, public, dimension(:,:), save ::x_lf, xold_lf ,xnew_lf
 real, allocatable, public, dimension(:,:,:,:,:), save ::Dchem_lf !may not be worth the cost?
 real, allocatable, public, dimension(:,:,:,:,:), save ::xn_shl_lf!may not be worth the cost?
+real, allocatable, public, dimension(:,:,:), save ::totrcemis_lf
 real, allocatable, public, dimension(:,:), save ::rcemis_lf
 real, allocatable, public, dimension(:,:), save ::rcemis_lf_surf
 integer, allocatable, public, dimension(:,:), save ::emis2spec_surf
@@ -1377,6 +1378,8 @@ contains
      allocate(lf_loc(Npos_lf*Nfullchem_emis,NSPEC_chem_lf))
      allocate(lfSOA_loc(Npos_lf*Nfullchem_emis,NSOA))
      allocate(rcemis_lf(N_lf_derivemisMAX,ix_lf_max))
+     allocate(totrcemis_lf(Ncountrysectors_lf,Ncountry_lf + Ncountry_group_lf,NEMIS_File))
+     totrcemis_lf = 0.0
      allocate(rcemis_lf_primary(NCMAX*NSECTORS*2))
      allocate(rcemis_lf_surf(10,20),emis2spec_surf(10,20)) !up to 10 different sources, 20 species each
      allocate(P_lf(NSPEC_deriv_lf+NSOA+N_lf_derivemisMAX))
@@ -1499,7 +1502,7 @@ subroutine lf_out(iotyp)
   character(len=TXTLEN_NAME) :: suffix, specname, sourcename, secname, redname, fullname
   real :: fracsum(LIMAX,LJMAX),fac,invfac
   logical :: pollwritten(2*Max_lf_spec+1),is_surf
-  integer :: ncFileID, iout, ig, found, iem_lf, idep, nend
+  integer :: ncFileID, iout, ig, found, iem_lf, iem, idep, nend
   character (len=TXTLEN_NAME) ::countryname(Max_lf_Country_list)
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start out'
@@ -1968,8 +1971,8 @@ subroutine lf_out(iotyp)
                           !for POD we do not have a specific isrc, so we have to define redname explicitely
                           if(ideriv==1)redname='nox'
                           if(ideriv==2)redname='voc'
-                          if(ideriv==3)redname='sox'
-                          if(ideriv==4)redname='nh3'
+                          if(ideriv==3)redname='nh3'
+                          if(ideriv==4)redname='sox'
                         end if
                      end if
                     if(me==0 .and. iter==1 .and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
@@ -2038,6 +2041,25 @@ subroutine lf_out(iotyp)
                           end if
                        end if
                     end if
+                    if(iter == 1 .and. iotyp==IOU_YEAR .and. iout == 1)then
+                       if (i==1.and.j==1.and.ideriv==1) then
+                          !sum partial results from each MPI process
+                          CALL MPI_ALLREDUCE(MPI_IN_PLACE,totrcemis_lf,&
+                               Ncountrysectors_lf*(Ncountry_lf + Ncountry_group_lf)*NEMIS_File,&
+                               MPI_REAL8, MPI_SUM,MPI_COMM_CALC,IERROR)
+                      end if
+                      !add one variable per emission source and put total value
+                      def2%name="Total_kg"//trim(secname)//trim(sourcename)//trim(redname)
+                      if(ideriv==1)iem = find_index('nox' ,EMIS_FILE(1:NEMIS_FILE))
+                      if(ideriv==2)iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
+                      if(ideriv==3)iem = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
+                      if(ideriv==4)iem = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
+                      if(me==0)write(*,*)iem,trim(def2%name),totrcemis_lf(j,i,iem)
+                      def2%scale = totrcemis_lf(j,i,iem)
+                      call Out_netCDF(iotyp,def2,0,1,lf_src_tot,scale,CDFtype,dimSizes_tot,dimNames_tot,&
+                           fileName_given=trim(fileName),create_var_only=create_var_only,ncFileID_given=ncFileID)
+                    end if
+
                  enddo
               enddo
            end do
@@ -4237,6 +4259,8 @@ subroutine save_lf_emis(s,i,j,iem,isec,iland)
   ! save without splits and k
   ! save all (anthropogenic) emissions, even if not used by LF
 
+  ! NB: This routine is called every hour
+
   real, intent(in) :: s
   integer, intent(in) :: i,j,iem,isec,iland
   integer :: n, ii, iqrc, isrc, k, ipoll,ic,iic,is,ig,emish_idx,split_idx
@@ -4254,8 +4278,8 @@ subroutine save_lf_emis(s,i,j,iem,isec,iland)
     nic(i,j) = nic(i,j) + 1
     ic2iland(i,j,ic) = iland
   end if
-  emis_lf_cntry(i,j,ic,isec,iem)=emis_lf_cntry(i,j,ic,isec,iem) + s
-
+  emis_lf_cntry(i,j,ic,isec,iem) = emis_lf_cntry(i,j,ic,isec,iem) + s  !kg/m2/s
+  
   call Add_2timing(NTIMING-4,tim_after,tim_before,"lf: emissions")
 
   if(DEBUGall .and. me==0)write(*,*)'end lf emis'
@@ -4276,7 +4300,9 @@ subroutine lf_rcemis(i,j,k,eps)
   integer :: emish_idx, nemis, found,found_primary,iiix,isrc, nsectors_loop, iisec, isec_lf
   real :: ehlpcom0 = GRAV* 0.001*AVOG !0.001 = kg_to_g / m3_to_cm3
   real :: emiss,maskfac,y,z ! multiply emissions by
+  real :: dtgrid !s*m2
 
+  dtgrid = dt_advec * GRIDWIDTH_M * GRIDWIDTH_M !s*m2 . This routine is called every dt_advec
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start lf rcemis'
   if(k<max(KEMISTOP,KMAX_MID-lf_Nvert+1))return
@@ -4473,6 +4499,10 @@ subroutine lf_rcemis(i,j,k,eps)
 
                 if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
 
+                   !sum all emissions per sector, country, emis_species. Only for one k value!
+                   if (k == KMAX_MID)then
+                      totrcemis_lf(is,iic,iem) = totrcemis_lf(is,iic,iem) + emis_lf_cntry(i,j,ic,isec,iem) * dtgrid * xmd(i,j)
+                   end if
                    if(EMIS_FILE(iem)=='pm25' .or. EMIS_FILE(iem)=='pmco')then
                       !special treated as primary, do not compute derivatives
                       if(EMIS_FILE(iem)=='pm25')then

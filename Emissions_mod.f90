@@ -135,7 +135,7 @@ public :: Init_Emissions    ! defines emission setup and formats
 public :: EmisUpdate        ! update emission
 public :: Emissions         ! Main emissions module
 public :: newmonth
-public :: EmisSet           ! Sets emission rates every hour/time-step
+public :: EmisSet           ! Sets emission rates every hour
 public :: EmisWriteOut           ! Outputs emissions in ascii
 
 ! The main code does not need to know about the following
@@ -2087,7 +2087,7 @@ subroutine consistency_check()
   call CheckStop(errormsg,"Failed consistency check")
 end subroutine consistency_check
 !***********************************************************************
-subroutine EmisSet(indate)   !  emission re-set every time-step/hour
+subroutine EmisSet(indate)   !  emission re-set every hour
 !----------------------------------------------------------------------!
 ! DESCRIPTION:
 !   Calculates the emission time variations.
@@ -2156,7 +2156,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
 
   ! Scaling for totemadd:
-  dtgrid = dt_advec * GRIDWIDTH_M * GRIDWIDTH_M
+  dtgrid = 3600 * GRIDWIDTH_M * GRIDWIDTH_M !NB: once every hour, not dt_advec
 
   ! The emis array only needs to be updated every full hour. The
   ! time-factor calculation needs to know if a local-time causes a shift
@@ -2345,7 +2345,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 itot = iemsplit2itot(f, iem)
                 iqrc = itot2iqrc(itot)
                 tmpemis(iqrc) = s * emisfrac(iqrc,split_idx,iland)
-                ! Add up emissions in ktonne
+                ! Add up emissions in kg
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
                 if (debug_tfac ) then
@@ -2549,7 +2549,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
                 if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
                      SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
-                ! Add up emissions in ktonne
+                ! Add up emissions in kg
                 totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
 
                 if(USES%LocalFractions .and. me==0.and.i==1.and.j==1.and.n==1) write(*,*)dtxt//&
@@ -2679,7 +2679,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 SecEmisOut(i,j,iem,0) = SecEmisOut(i,j,iem,0) + s !sum of all sectors
                 if(SecEmisOutWanted(isec))SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) = &
                      SecEmisOut(i,j,iem,isec2SecOutWanted(isec)) + s
-                ! Add up emissions in ktonne
+                ! Add up emissions in kg
                 totemadd(itot) = totemadd(itot) + s * dtgrid * xmd(i,j)
 
                 if(USES%LocalFractions) call save_lf_emis(s,i,j,iem,isec_idx,iland)

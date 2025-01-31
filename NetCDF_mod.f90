@@ -1791,7 +1791,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   call check(nf90_inq_dimid(ncFileID,"time",timeDimID),"dim:time")
 
   !define new variable: nf90_def_var(ncid,name,xtype,dimids,varid)
-  if(.not.present(dimSizes))then
+  if(ndim==0 .or. .not.present(dimSizes))then
      select case(ndim)
      case(3)
         call check(nf90_def_var(ncFileID,varname,OUTtypeCDF,&
@@ -1799,6 +1799,11 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
      case(2)
         call check(nf90_def_var(ncFileID,varname,OUTtypeCDF,&
              [iDimID,jDimID,timeDimID]       ,varID),"def2d:"//trim(varname))
+     case(0)        
+        call check(nf90_def_var(ncFileID,varname,OUTtypeCDF,varID),"def2d:"//trim(varname))        
+        call check(nf90_enddef(ncFileID))
+        call check(nf90_put_var(ncFileID,varID,def1%scale))
+        return
      case default
         print *, 'createnewvariable: unexpected ndim ',ndim
         call CheckStop(MasterProc,"NetCDF_mod: unexpected ndim")
