@@ -717,6 +717,7 @@ module Biogenics_mod
   ! ACP2012EuroSoilNOx uses methods from the 2012
   ! EMEP documentation paper, Simpson et al, doi:10.5194/acp-12-7825-2012
   ! Is only used when USES%SOILNOX_METHOD == 'ACP2012EURO'
+
    subroutine Set_ACP2012EuroSoilNOx()
       integer :: i, j, nLC, iLC, LC
       logical :: my_first_call = .true.
@@ -788,7 +789,8 @@ module Biogenics_mod
                     enox = enox + f*ftn* 50.0
                     !enh3 = enh3 + f * ftn  *20.0 !mg/m2/h approx from US report 1 ng/m2/s
 
-                 else if ( LandType(LC)%is_crop    ) then ! emissions in 1st 70 days
+                 else if ( LandType(LC)%is_crop .and. &  ! emissions in 1st 70 days
+                            USES%ACPSOILNOX_METHOD == "Total" ) then
 
                     bmin = Landcover(i,j)%SGS(iLC) -30 ! !st March LandCover(i,j)%SGS(iLC) - 30 
                     bmax = Landcover(i,j)%SGS(iLC) +30 ! End April  LandCover(i,j)%SGS(iLC) + 40 
