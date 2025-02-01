@@ -310,7 +310,7 @@ end type emis_in
 
 !==================
 ! Local Fractions parameters
-integer, public, parameter :: Max_lf_sources = 1000 !max number of sources to track. (Countries are grouped as one source per sector and pollutant)
+integer, public, parameter :: Max_lf_sources = 1000 !max number of sources to track.
 integer, public, parameter :: Max_lf_Country_list = 1000 ! max number of countries for each lf pollutant
 integer, public, parameter :: Max_lf_Country_groups = 30
 integer, public, parameter :: Max_lf_sectors = 50
@@ -336,7 +336,7 @@ type, public :: lf_set_type
   logical :: CityMasks =.false.
   integer, dimension(4) :: DOMAIN = -1 ! DOMAIN which will be outputted
   !for fullchem settings
-  integer :: dist = -1
+  integer :: dist = 0
   logical :: full_chem =.false.
   logical :: relative =.false. ! compute also grid to grid values 
   integer :: Nfullchem_emis = -1 ! number of emission types to track: 1 {nox+voc+nh3+sox}, 2 {nox,voc}, 4 {nox,voc,nh3,sox} 
@@ -349,7 +349,7 @@ end type lf_set_type
 
 type, public :: lf_sources
   character(len=TXTLEN_NAME) :: species = 'NOTSET' !pollutants to include
-  character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "coarse", "relative", "country"
+  character(len=TXTLEN_NAME) :: type = 'relative' !Qualitatively different type of sources: "relative", "country"
   character(len=TXTLEN_NAME) :: name = 'NOTSET' ! name as it appears in output. Only for "relative" type
   integer :: dist = -1 ! window dimension, if defined (window size is 2*dist+1 x 2*dist+1 )
   integer :: res = 1  ! half size of the single source square (square size is 2*res x 2*res )
@@ -391,6 +391,7 @@ type, public :: lf_out_type
   integer                   :: ix(30) = -1 ! internal index in loc_frac_drydep
   logical                   :: DryDep
   logical                   :: WetDep
+  logical                   :: relative = .false.
 end type lf_out_type
 
 integer, parameter, public :: MAX_lf_country_group_size = 50 !max 50 countries in each group

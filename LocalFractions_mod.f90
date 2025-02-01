@@ -1,9 +1,11 @@
 ! Emissions for primary source tracking can be summed up over splits (but not necessarily all,
 ! can be new/age or single species) for each source;
 ! otherwise emissions are first splitted before including into single species.
+! Primary sources can be groups of species, otherwise single species.
+! All fullchem species must have the same "sources" (Npos)
+! Fullchem output must be specified
 ! Natural emissions have no sector/countries; can be primary or not. Only predefined names (BVOC, SoilNOx, Pollen, )
 
-! Primary sources can be groups of species, otherwise single species.
 
 
 module LocalFractions_mod
@@ -179,7 +181,7 @@ logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 integer , public, save :: lf_Nvertout = 1!number of vertical levels to save in output
 integer, public, save :: NTIMING_lf=9
 real, private :: tim_after,tim_before
-integer, public, save :: Ndiv_coarse=1, Ndiv_rel=1, Ndiv2_coarse=1
+integer, public, save :: Ndiv_rel=1
 integer, public, save :: Nsources=0, Nsources_chem=0, Nsources_nonew=0
 integer, public, save :: lf_Nvert=0
 
@@ -219,6 +221,7 @@ integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using 
 integer, private, save :: country_mask_val(Max_lf_Country_list) = -999999 ! values of all defined masks
 integer, private, save :: iic2ilf_countrymask(Max_lf_Country_list) = -1
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,Max_lf_spec) !name of that pollutant
+integer, private, save :: n2ic(Max_lf_sources),n2ir(Max_lf_sources) !index for country or relative, given index in the range [1, Npos_lf]
 integer, private, save :: isrc_new(Max_lf_sources)
 integer, private, save :: Stratos_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nstratos !number of sources to track for Stratos
@@ -260,7 +263,7 @@ integer, parameter :: NAQUEOUS = 5,ICLOHSO2 = 1,ICLRC1 = 2,ICLRC2 = 3,ICLRC3 = 4
 contains
 
   subroutine lf_init
-    integer :: n, n0, is, i, j, ii, iii, ic, ix, iix, isrc, n_mask, mask_val_min, mask_val_max
+    integer :: n, n0, is, i, j, ii, iii, ic, ir, ix, iix, isrc, n_mask, mask_val_min, mask_val_max
     integer :: found, itot, iqrc, iem, iemis, ipoll, ixnh3, ixnh4, size, IOU_ix, iem_deriv
     integer :: iout, ig, idep, isec, isec_lf
     integer, allocatable :: MaskVal(:)
@@ -461,7 +464,7 @@ contains
      !NB: for non-chem situation, a new isrc is defined for each sector, while in the fullchem case, sectors are part of isrc
      
      !for each relative (2*lf_set%dist+1)*Ncountrysectors_lf new sources are defined
-     if (lf_set%relative) then
+     if (lf_set%relative .and. lf_set%dist>-1) then
         Ndiv_rel = 2*lf_set%dist+1
      else
         Ndiv_rel = 0
@@ -802,12 +805,31 @@ contains
      end do
 
      Npos_lf = (Ncountry_lf + Ncountry_group_lf + Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf
-     
+
+     if (lf_fullchem) then
+        lf_src(:)%dist = lf_set%dist
+        n = 0
+        n2ir = -1 !init
+        n2ic = -1 !init
+        !order of the two "indices" is: (country_ix+relpos_ix, sector_ix)
+        do is = 1, Ncountrysectors_lf
+           do ic = 1, Ncountry_lf + Ncountry_group_lf
+              n = n+1
+              n2ic(n) = ic
+           end do
+           do ir = 1, Ndiv_rel*Ndiv_rel
+              n = n+1
+              n2ir(n) = ir
+           end do
+        end do
+     end if
+        
      !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
      do isrc = 1, Nsources
         if(lf_fullchem .or. lf_src(isrc)%type=='country')lf_src(isrc)%Npos = Npos_lf
      end do
-     if(MasterProc)write(*,*)Npos_lf,' countries x sectors for ',Nsources,' sources'
+     if(MasterProc)write(*,*)(Ncountry_lf + Ncountry_group_lf )*Ncountrysectors_lf,' countries x sectors for ',Nsources,' sources '
+     if(MasterProc .and. Ndiv_rel > 0)write(*,*)(Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf,' local (relative) source gridcells'
   end if
   
 
@@ -1548,11 +1570,11 @@ subroutine lf_out(iotyp)
   CDFtype=Real4
   dimSizes=1
 
-  dimSizes(1)=2*lf_src(1)%dist+1
+  dimSizes(1)=Ndiv_rel
   dimNames(1)='x_dist'
-  dimSizes(2)=2*lf_src(1)%dist+1
+  dimSizes(2)=Ndiv_rel
   dimNames(2)='y_dist'
-
+  
   dimSizes(3)=min(GIMAX,lf_set%DOMAIN(2)-lf_set%DOMAIN(1)+1)
   dimSizes(4)=min(GJMAX,lf_set%DOMAIN(4)-lf_set%DOMAIN(3)+1)
 
@@ -1618,7 +1640,7 @@ subroutine lf_out(iotyp)
   chunksizes_tot(2)=min(MAXLJMAX, dimSizes_tot(2))
   chunksizes_tot(3)=dimSizes_tot(3)
 
-  allocate(tmp_out(max(Ndiv2_coarse,Ndiv_rel*Ndiv_rel),LIMAX,LJMAX,KMAX))
+  allocate(tmp_out(Ndiv_rel*Ndiv_rel,LIMAX,LJMAX,KMAX))
   allocate(tmp_out_cntry(LIMAX,LJMAX,max(Nfullchem_emis*Npos_lf,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1)))
 
   allocate(tmp_out_base(LIMAX,LJMAX))
@@ -1688,7 +1710,7 @@ subroutine lf_out(iotyp)
                        else
                           do n=lf_src(isrc)%start, lf_src(isrc)%end
                              n1=n1+1
-                             tmp_out(n1,i,j,kk) = tmp_out(n1,i,j,kk) + lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all k
+                             tmp_out(n1,i,j,kk) = tmp_out(n1,i,j,kk) + lf_src_acc(n,i,j,kk,iou_ix)*invtot 
                              fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k
                           enddo
                        endif
@@ -1751,6 +1773,7 @@ subroutine lf_out(iotyp)
                  enddo
               enddo
            else
+              !relative
               def1%unit = ''!default
               def1%class = ''!default
               if(lf_src(isrc)%name=='NOTSET')then
@@ -1797,6 +1820,7 @@ subroutine lf_out(iotyp)
            tmp_out_base = 0.0
            do ideriv = 1, Nfullchem_emis
               tmp_out_cntry = 0.0
+              tmp_out = 0.0
               do ig = 1, 30
                  found = 1
                  if (lf_spec_out(iout)%species(ig) == "NOTSET" .and. ig>1) exit
@@ -1855,8 +1879,14 @@ subroutine lf_out(iotyp)
                              n1=0
                              do n=lf_src(isrc)%start, lf_src(isrc)%end
                                 n1 = n1 + 1
-                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
-                                fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k and divided by tot
+                                !we must put the "country" and "relative" into different buffers
+                                if (n2ic(n1)>0) then
+                                   tmp_out_cntry(i,j,n2ic(n1)) = tmp_out_cntry(i,j,n2ic(n1)) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
+                                else if (n2ir(n1)>0 .and. lf_spec_out(iout)%relative) then
+                                   tmp_out(n2ir(n1),i,j,kk) = tmp_out(n2ir(n1),i,j,kk) + lf_src_acc(n,i,j,kk,iou_ix)*invfac 
+                                   if(tmp_out(n2ir(n1),i,j,kk)>5)write(*,*)me,i,j,n,n1,n2ir(n1),'tmp ',tmp_out(n2ir(n1),i,j,kk)
+                                   fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k
+                               end if
                              end do
                           end do
                        end do
@@ -1887,6 +1917,14 @@ subroutine lf_out(iotyp)
                       fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                   pollwritten(ipoll_cfac) = .true.
                 end if
+              end if
+              redname='' !add emission species to put in netcdf variable name
+              if(lf_set%EmisDer_all) then
+                 redname='_PSAVN'
+              else if (lf_spec_out(iout)%name == "pm25" .or. lf_spec_out(iout)%name == "pmco")then
+                 redname ='_P'
+              else
+                 redname='_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
               end if
               !now write out sensibilities for each country and sectors
               !(uses last defined isrc, assumes that value is same for all species in group)
@@ -1929,24 +1967,15 @@ subroutine lf_out(iotyp)
                          countryname((ideriv-1)*Npos_lf+n1)=trim(countryname((ideriv-1)*Npos_lf+n1))//'_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
                        end if
                     end if
-                    redname=''
-                    if (lf_set%full_chem) then
-                       !add emission species to name
-                       if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. &
-                            country_ix_list(i)==IC_BVOC .or. &
-                            country_ix_list(i)==IC_DMS.or. &
-                            country_ix_list(i)==IC_NAT )then
-                          !do not add "_nox" suffix and do not output voc,nh3,sox "derivatives"
-                          if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
-                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
-                               EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
-                       else if(lf_set%EmisDer_all) then
-                          redname='_PSAVN'
-                       else if (lf_spec_out(iout)%name == "pm25" .or. lf_spec_out(iout)%name == "pmco")then
-                          redname ='_P'
-                       else
-                          redname='_'//trim(EMIS_FILE(lf_src(isrc)%iem_deriv))
-                       end if
+                    if( country_ix_list(i)==IC_STRATOS .or. country_ix_list(i)==IC_INIT .or. &
+                         country_ix_list(i)==IC_BVOC .or. &
+                         country_ix_list(i)==IC_DMS.or. &
+                         country_ix_list(i)==IC_NAT )then
+                       !do not add "_nox" suffix and do not output voc,nh3,sox "derivatives"
+                       if(EMIS_FILE(lf_src(isrc)%iem_deriv) == 'voc' .or.&
+                            EMIS_FILE(lf_src(isrc)%iem_deriv) == 'nh3'.or.&
+                            EMIS_FILE(lf_src(isrc)%iem_deriv) == 'sox') cycle
+                       redname = ''
                     end if
                     scale=1.0
                     def2%unit='ug/m3'
@@ -2062,6 +2091,26 @@ subroutine lf_out(iotyp)
 
                  enddo
               enddo
+              !output relative
+              if (lf_spec_out(iout)%relative .and. Ndiv_rel>0) then
+                 do j=1,Ncountrysectors_lf
+                    n1=n1+1
+                    isec=lf_country%sector_list(j)
+                    secname = ''
+                    if (isec<=NSECTORS) then
+                       if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
+                    else
+                       secname='_'//trim(lf_sector_groups(isec-NSECTORS)%name)
+                    end if
+                    write(def1%unit,fmt='(A)')'ug/m3'
+                    write(def1%class,fmt='(A,I0,A,I0)')'source_size_1x1'
+                    def1%name =  trim(specname)//'_fraction'//trim(secname)//trim(redname)
+                    scale=1.0
+                    if(me==0 .and. iter==1.and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR)write(*,*)'writing '//trim(def1%name)
+                    call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
+                         fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
+                 end do
+              end if
            end do
         end do
      end if
@@ -2536,7 +2585,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
      xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
      xn = xn * inv_tot
      !often either x or xx is zero
-     if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='country')then
+     if(lf_src(isrc)%type=='country')then
         if(x>1.E-20)then
            do n = lf_src(isrc)%start, lf_src(isrc)%end
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
@@ -2561,7 +2610,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
         nstart = lf_src(isrc)%start
         !the relative for fullchem are placed after the regular countries
         if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
-        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)+1)
+        do while (nstart <= lf_src(isrc)%end - Ndiv_rel*Ndiv_rel + 1)
            if(x>1.E-20)then
               n = nstart
               if (dm==0) then
@@ -2671,7 +2720,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
      x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
      xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
      xn = xn * inv_tot
-     if(lf_src(isrc)%type=='coarse' .or. lf_src(isrc)%type=='country')then
+     if(lf_src(isrc)%type=='country')then
         !often either x or xx is zero
         if(x>1.E-20)then
            do n = lf_src(isrc)%start, lf_src(isrc)%end
