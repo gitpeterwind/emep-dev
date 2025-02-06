@@ -131,9 +131,14 @@ def ifunc(v):
     return v**5
     
 def toColor(v):
-    return QColor.fromHsv(270-func(v)*270, 255, 255)#from [0 1] to rainbow
+    x=1
+    if(isnan(270-func(v)*270)):
+        x=0
+    else:
+        x=int(270-func(v)*270)
+    return QColor.fromHsv(x, 255, 255)#from [0 1] to rainbow
 def toColor_nofunc(v): #don't scale v first
-    return QColor.fromHsv(270-v*270, 255, 255)
+    return QColor.fromHsv(int(270-v*270), 255, 255)
 
 def myfloat2str(v):#nicer format
     if v < 1e-2:
@@ -164,7 +169,7 @@ class ColorScale(QWidget): #scale bar
         for i in range(10): #put numbers
             v = (i+.5)/10
             if i==9: v=1.0
-            x = w*v
+            x = int(w*v)
             p.drawLine(x, 20, x, 30)#tick
             p.drawText(QRectF(x-50, 30, 100, 20), Qt.AlignCenter, myfloat2str(self.scale*ifunc(v)))
         p.drawText(QRectF(0.85*w, 5, 100, 20), Qt.AlignCenter, self.unit)
@@ -346,19 +351,19 @@ class MapView(QWidget):
             last = 0
             for j in i:
                 if last:
-                    p.drawLine(last[0]*sw, h-last[1]*sh, j[0]*sw, h-j[1]*sh)
+                    p.drawLine(int(last[0]*sw), int(h-last[1]*sh), int(j[0]*sw),int( h-j[1]*sh))
                 last = j
 
         if self.overlay or self.par.AreaActivated:            
             rect = QRectF(self.par.overx*sw-(self.overw-1)/2*sw*self.res, self.par.overy*sh-(self.overh-1)/2*sh*self.res, self.overw*sw*self.res, self.overh*sh*self.res)
-            rect2 = QRect(rect.left()-3, rect.top()-3, rect.width()+7, rect.height()+7)
+            rect2 = QRect(int(rect.left()-3), int(rect.top()-3), int(rect.width()+7), int(rect.height()+7))
 
             p.fillRect(rect2, QColor(0,0,0))
             p.drawImage(rect, self.overimg)
             for y in range(self.overh):
                 for x in range(self.overw):
                     if(self.ActivatedM[y][x]):
-                        p.drawText((self.par.overx+x-self.overw/2+1)*sw-w/2, (self.par.overy+y-self.overh/2+1)*sh-h/2, int(w),int(h), Qt.AlignCenter, 'x')
+                        p.drawText(int((self.par.overx+x-self.overw/2+1)*sw-w/2), int((self.par.overy+y-self.overh/2+1)*sh-h/2), int(w),int(h), Qt.AlignCenter, 'x')
 
         p.end()
 

@@ -221,7 +221,6 @@ integer, private, save :: Ncountry_mask_lf_val=0 !number of masks defined using 
 integer, private, save :: country_mask_val(Max_lf_Country_list) = -999999 ! values of all defined masks
 integer, private, save :: iic2ilf_countrymask(Max_lf_Country_list) = -1
 character(len=TXTLEN_NAME), private, save :: iem2names(NEMIS_File,Max_lf_spec) !name of that pollutant
-integer, private, save :: n2ic(Max_lf_sources),n2ir(Max_lf_sources) !index for country or relative, given index in the range [1, Npos_lf]
 integer, private, save :: isrc_new(Max_lf_sources)
 integer, private, save :: Stratos_ix(1000) !1000 must be larger than Nsources
 integer, private, save :: nstratos !number of sources to track for Stratos
@@ -466,6 +465,7 @@ contains
      !for each relative (2*lf_set%dist+1)*Ncountrysectors_lf new sources are defined
      if (lf_set%relative .and. lf_set%dist>-1) then
         Ndiv_rel = 2*lf_set%dist+1
+        if(me==0)write(*,*)"WARNING: all outputs (also SURF) are NOT surface corrected, i.e. they are NOT for 3 m height)"
      else
         Ndiv_rel = 0
      end if
@@ -740,99 +740,81 @@ contains
         Ncountrysectors_lf = Ncountrysectors_lf + 1
         if(MasterProc)write(*,*)'country sector ',lf_country%sector_list(i)
      end do
-
-     allocate(lf_sector_map(MAX_lf_sector_group_size,0:NSECTORS+Max_lf_sectors),lf_nsector_map(0:NSECTORS+Max_lf_sectors))
-     !note: the loop above, is interrputed by an exit, and cannot be used
-     do i = 1, NSECTORS
-        lf_sector_map(:,i) = i
-     end do
-     lf_nsector_map(:) = 1
-     !sector zero is all sectors
-     do i=1, NSECTORS
-        lf_sector_map(i,0) = i
-     end do
-     lf_nsector_map(0) = NSECTORS
-     !hardcoded for now:
-     if (Ncountrysectors_lf<NSECTORS .and. NSECTORS == NSECTORS_GNFR_CAMS) then
-        if(me==0)write(*,*)'LF TRAF sectors 16, 17, 18, 19 mapped into sector 6'
-        if(me==0)write(*,*)'LF POW sectors 14, 15 mapped into sector 1',lf_sector_map(1,7)
-        !we map all transport sectors (F1...F4) into F
-        if(.not. IS_TRAF(6) .or. .not. IS_TRAF(16) .or. .not. IS_TRAF(17) .or.  .not. IS_TRAF(18).or.  .not. IS_TRAF(19))then
-           call StopAll('SECTOR HACK does not work for this setup!')
-        end if
-        lf_sector_map(1,6) = 6
-        lf_sector_map(2,6) = 16
-        lf_sector_map(3,6) = 17
-        lf_sector_map(4,6) = 18
-        lf_sector_map(5,6) = 19
-        lf_nsector_map(6) = 5
-        !we map all transport sectors (A1, A2) into A
-        if(.not. IS_POW(1) .or. .not. IS_POW(14) .or. .not. IS_POW(15))then
-           call StopAll('SECTOR HACK does not work for this setup!')
-        end if
-        lf_sector_map(1,1) = 1
-        lf_sector_map(2,1) = 14
-        lf_sector_map(3,1) = 15
-        lf_nsector_map(1) = 3
-     end if
-     
-     !sectors. Define all as groups
-     !first predefined groups from config
-     Nsector_groups_lf = 0
-     do i = 1, Max_lf_sectors
-       if (trim(lf_sector_groups(i)%name) == 'NOTSET') exit
-        if (lf_sector_groups(i)%list(1) < 0 .or. lf_sector_groups(i)%list(1) > NSECTORS) then
-           if (me==0) write(*,*)'WARNING: did not find any valid sector in '//trim(lf_sector_groups(i)%name),lf_sector_groups(i)%list(1)
-           exit
-        end if
-        Nsector_groups_lf = Nsector_groups_lf + 1
-        Ncountrysectors_lf = Ncountrysectors_lf + 1
-        !redefine groups as pseudo sectors, with index larger than NSECTORS
-        isec_lf = NSECTORS + Nsector_groups_lf ! pseudo sector defined as a group of sectors
-        lf_country%sector_list(Ncountrysectors_lf) = isec_lf
-        lf_sector_groups(i)%nsec = 0
-        lf_nsector_map(isec_lf) = 0
-        do n = 1, MAX_lf_sector_group_size
-           if (lf_sector_groups(i)%list(n) > 0 .and. lf_sector_groups(i)%list(n) <= NSECTORS) then
-              lf_sector_groups(i)%nsec = lf_sector_groups(i)%nsec + 1
-              lf_nsector_map(isec_lf) = lf_nsector_map(isec_lf) + 1 !number of sectors included this group
-              lf_sector_map(n,isec_lf) = lf_sector_groups(i)%list(n)! sector included this group
-              if(me==0)write(*,*)n,' LF defined group ',isec_lf,' includes sector ',lf_sector_groups(i)%list(n)
-           else
-              exit
-           end if
-        end do
-     end do
-
-     Npos_lf = (Ncountry_lf + Ncountry_group_lf + Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf
-
-     if (lf_fullchem) then
-        lf_src(:)%dist = lf_set%dist
-        n = 0
-        n2ir = -1 !init
-        n2ic = -1 !init
-        !order of the two "indices" is: (country_ix+relpos_ix, sector_ix)
-        do is = 1, Ncountrysectors_lf
-           do ic = 1, Ncountry_lf + Ncountry_group_lf
-              n = n+1
-              n2ic(n) = ic
-           end do
-           do ir = 1, Ndiv_rel*Ndiv_rel
-              n = n+1
-              n2ir(n) = ir
-           end do
-        end do
-     end if
-        
-     !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
-     do isrc = 1, Nsources
-        if(lf_fullchem .or. lf_src(isrc)%type=='country')lf_src(isrc)%Npos = Npos_lf
-     end do
-     if(MasterProc)write(*,*)(Ncountry_lf + Ncountry_group_lf )*Ncountrysectors_lf,' countries x sectors for ',Nsources,' sources '
-     if(MasterProc .and. Ndiv_rel > 0)write(*,*)(Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf,' local (relative) source gridcells'
   end if
   
-
+  allocate(lf_sector_map(MAX_lf_sector_group_size,0:NSECTORS+Max_lf_sectors),lf_nsector_map(0:NSECTORS+Max_lf_sectors))
+  !note: the loop above, is interrputed by an exit, and cannot be used
+  do i = 1, NSECTORS
+     lf_sector_map(:,i) = i
+  end do
+  lf_nsector_map(:) = 1
+  !sector zero is all sectors
+  do i=1, NSECTORS
+     lf_sector_map(i,0) = i
+  end do
+  lf_nsector_map(0) = NSECTORS
+  !hardcoded for now:
+  if (Ncountrysectors_lf<NSECTORS .and. NSECTORS == NSECTORS_GNFR_CAMS) then
+     if(me==0)write(*,*)'LF TRAF sectors 16, 17, 18, 19 mapped into sector 6'
+     if(me==0)write(*,*)'LF POW sectors 14, 15 mapped into sector 1',lf_sector_map(1,7)
+     !we map all transport sectors (F1...F4) into F
+     if(.not. IS_TRAF(6) .or. .not. IS_TRAF(16) .or. .not. IS_TRAF(17) .or.  .not. IS_TRAF(18).or.  .not. IS_TRAF(19))then
+        call StopAll('SECTOR HACK does not work for this setup!')
+     end if
+     lf_sector_map(1,6) = 6
+     lf_sector_map(2,6) = 16
+     lf_sector_map(3,6) = 17
+     lf_sector_map(4,6) = 18
+     lf_sector_map(5,6) = 19
+     lf_nsector_map(6) = 5
+     !we map all transport sectors (A1, A2) into A
+     if(.not. IS_POW(1) .or. .not. IS_POW(14) .or. .not. IS_POW(15))then
+        call StopAll('SECTOR HACK does not work for this setup!')
+     end if
+     lf_sector_map(1,1) = 1
+     lf_sector_map(2,1) = 14
+     lf_sector_map(3,1) = 15
+     lf_nsector_map(1) = 3
+  end if
+  
+  !sectors. Define all as groups
+  !first predefined groups from config
+  Nsector_groups_lf = 0
+  do i = 1, Max_lf_sectors
+     if (trim(lf_sector_groups(i)%name) == 'NOTSET') exit
+     if (lf_sector_groups(i)%list(1) < 0 .or. lf_sector_groups(i)%list(1) > NSECTORS) then
+        if (me==0) write(*,*)'WARNING: did not find any valid sector in '//trim(lf_sector_groups(i)%name),lf_sector_groups(i)%list(1)
+        exit
+     end if
+     Nsector_groups_lf = Nsector_groups_lf + 1
+     Ncountrysectors_lf = Ncountrysectors_lf + 1
+     !redefine groups as pseudo sectors, with index larger than NSECTORS
+     isec_lf = NSECTORS + Nsector_groups_lf ! pseudo sector defined as a group of sectors
+     lf_country%sector_list(Ncountrysectors_lf) = isec_lf
+     lf_sector_groups(i)%nsec = 0
+     lf_nsector_map(isec_lf) = 0
+     do n = 1, MAX_lf_sector_group_size
+        if (lf_sector_groups(i)%list(n) > 0 .and. lf_sector_groups(i)%list(n) <= NSECTORS) then
+           lf_sector_groups(i)%nsec = lf_sector_groups(i)%nsec + 1
+           lf_nsector_map(isec_lf) = lf_nsector_map(isec_lf) + 1 !number of sectors included this group
+           lf_sector_map(n,isec_lf) = lf_sector_groups(i)%list(n)! sector included this group
+           if(me==0)write(*,*)n,' LF defined group ',isec_lf,' includes sector ',lf_sector_groups(i)%list(n)
+        else
+           exit
+        end if
+     end do
+  end do
+  
+  Npos_lf = (Ncountry_lf + Ncountry_group_lf + Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf
+  
+  !TODO: add only one sector and deriv for STRATOS, INIT and BVOC
+  do isrc = 1, Nsources
+     if(lf_fullchem .or. lf_src(isrc)%type=='country')lf_src(isrc)%Npos = Npos_lf
+  end do
+  if(MasterProc)write(*,*)(Ncountry_lf + Ncountry_group_lf )*Ncountrysectors_lf,' countries x sectors for ',Nsources,' sources '
+  if(MasterProc .and. Ndiv_rel > 0)write(*,*)(Ndiv_rel*Ndiv_rel)*Ncountrysectors_lf,' local (relative) source gridcells'
+  
+  
   ipoll=0
   iem2ipoll = -1
   iem2Nipoll = 0
@@ -1203,8 +1185,8 @@ contains
      !IC_INIT is special. init lf to 1.
      if(lf_src(isrc)%type=='country' .and. Ncountry_lf+Ncountry_group_lf>0)then
         n0=lf_src(isrc)%start
-        do ic=1,Ncountry_lf+Ncountry_group_lf
-           do is=1,Ncountrysectors_lf
+        do is=1,Ncountrysectors_lf
+           do ic=1,Ncountry_lf+Ncountry_group_lf
               if (country_ix_list(ic)==IC_STRATOS .and. lf_src(isrc)%species == 'O3') then
                  nstratos = nstratos + 1
                  if (nstratos > size(Stratos_ix) )then
@@ -1524,7 +1506,7 @@ subroutine lf_out(iotyp)
   character(len=TXTLEN_NAME) :: suffix, specname, sourcename, secname, redname, fullname
   real :: fracsum(LIMAX,LJMAX),fac,invfac
   logical :: pollwritten(2*Max_lf_spec+1),is_surf
-  integer :: ncFileID, iout, ig, found, iem_lf, iem, idep, nend
+  integer :: ncFileID, iout, ig, found, iem_lf, iem, idep, nend, is
   character (len=TXTLEN_NAME) ::countryname(Max_lf_Country_list)
   call Code_timer(tim_before)
   if(DEBUGall .and. me==0)write(*,*)'start out'
@@ -1640,7 +1622,11 @@ subroutine lf_out(iotyp)
   chunksizes_tot(2)=min(MAXLJMAX, dimSizes_tot(2))
   chunksizes_tot(3)=dimSizes_tot(3)
 
-  allocate(tmp_out(Ndiv_rel*Ndiv_rel,LIMAX,LJMAX,KMAX))
+  if(lf_fullchem) then
+     allocate(tmp_out(Ndiv_rel*Ndiv_rel,LIMAX,LJMAX,Ncountrysectors_lf))
+  else
+     allocate(tmp_out(Ndiv_rel*Ndiv_rel,LIMAX,LJMAX,KMAX))
+  end if
   allocate(tmp_out_cntry(LIMAX,LJMAX,max(Nfullchem_emis*Npos_lf,(Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf+1)))
 
   allocate(tmp_out_base(LIMAX,LJMAX))
@@ -1721,8 +1707,8 @@ subroutine lf_out(iotyp)
 
            if(lf_src(isrc)%type == 'country')then
               n1=0
-              do i=1,Ncountry_lf+Ncountry_group_lf
-                 do j=1,Ncountrysectors_lf
+              do j=1,Ncountrysectors_lf
+                 do i=1,Ncountry_lf+Ncountry_group_lf
                     n1=n1+1
                     !single cell source
                     isec=lf_country%sector_list(j)
@@ -1877,18 +1863,22 @@ subroutine lf_out(iotyp)
                              invtot=1.0/(lf_src_tot(i,j,kk,ipoll_cfac,iou_ix)+1.E-20)
                              if(ideriv == 1)tmp_out_base(i,j) = tmp_out_base(i,j) + lf_src_tot(i,j,kk,ipoll_cfac,iou_ix) * invfac
                              n1=0
-                             do n=lf_src(isrc)%start, lf_src(isrc)%end
+                             !we must put the "country" and "relative" into different buffers
+                             do n=lf_src(isrc)%start, lf_src(isrc)%start + (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf-1
                                 n1 = n1 + 1
-                                !we must put the "country" and "relative" into different buffers
-                                if (n2ic(n1)>0) then
-                                   tmp_out_cntry(i,j,n2ic(n1)) = tmp_out_cntry(i,j,n2ic(n1)) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
-                                else if (n2ir(n1)>0 .and. lf_spec_out(iout)%relative) then
-                                   tmp_out(n2ir(n1),i,j,kk) = tmp_out(n2ir(n1),i,j,kk) + lf_src_acc(n,i,j,kk,iou_ix)*invfac 
-                                   if(tmp_out(n2ir(n1),i,j,kk)>5)write(*,*)me,i,j,n,n1,n2ir(n1),'tmp ',tmp_out(n2ir(n1),i,j,kk)
-                                   fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k
-                               end if
+                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
                              end do
-                          end do
+                             if (lf_spec_out(iout)%relative) then
+                                !continue with n for relatives
+                                do is=1,Ncountrysectors_lf !each sector makes a new output
+                                    do n1=1,Ndiv_rel*Ndiv_rel
+                                       tmp_out(n1,i,j,is) = tmp_out(n1,i,j,is) + lf_src_acc(n,i,j,kk,iou_ix)*invfac 
+                                       n=n+1
+!                                    fracsum(i,j)=fracsum(i,j)+lf_src_acc(n,i,j,kk,iou_ix)*invtot ! sum over all n and k
+                                    end do
+                                 end do
+                              end if
+                           end do
                        end do
                     end if
                  end if
@@ -1929,8 +1919,8 @@ subroutine lf_out(iotyp)
               !now write out sensibilities for each country and sectors
               !(uses last defined isrc, assumes that value is same for all species in group)
               n1=0
-              do i=1,Ncountry_lf+Ncountry_group_lf
-                 do j=1,Ncountrysectors_lf
+              do j=1,Ncountrysectors_lf
+                 do i=1,Ncountry_lf+Ncountry_group_lf
                     n1=n1+1
                     isec=lf_country%sector_list(j)
                     secname = ''
@@ -2093,9 +2083,8 @@ subroutine lf_out(iotyp)
               enddo
               !output relative
               if (lf_spec_out(iout)%relative .and. Ndiv_rel>0) then
-                 do j=1,Ncountrysectors_lf
-                    n1=n1+1
-                    isec=lf_country%sector_list(j)
+                 do is=1,Ncountrysectors_lf
+                    isec=lf_country%sector_list(is)
                     secname = ''
                     if (isec<=NSECTORS) then
                        if(isec/=0)write(secname,"(A,I2.2)")'_sec',isec
@@ -2103,11 +2092,13 @@ subroutine lf_out(iotyp)
                        secname='_'//trim(lf_sector_groups(isec-NSECTORS)%name)
                     end if
                     write(def1%unit,fmt='(A)')'ug/m3'
+                    if (index(lf_spec_out(iout)%name,"ASO")>0) def1%unit='ug_PM/m3'
                     write(def1%class,fmt='(A,I0,A,I0)')'source_size_1x1'
                     def1%name =  trim(specname)//'_fraction'//trim(secname)//trim(redname)
+                    if (index(lf_spec_out(iout)%name,"ASO")>0)def1%name = trim(specname)//'_PM_fraction'//trim(secname)//trim(redname)
                     scale=1.0
-                    if(me==0 .and. iter==1.and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR)write(*,*)'writing '//trim(def1%name)
-                    call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
+                    if(me==0 .and. iter==1.and. (iotyp==IOU_MON .or. iotyp==IOU_YEAR))write(*,*)'writing '//trim(def1%name)
+                    call Out_netCDF(iotyp,def1,ndim,kmax,tmp_out(1,1,1,is),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=lf_set%DOMAIN,&
                          fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes,ncFileID_given=ncFileID)
                  end do
               end if
@@ -2230,7 +2221,7 @@ subroutine lf_av(dt)
      pollwritten = .false.
      do isrc=1,Nsources_nonew
         ipoll = lf_src(isrc)%poll
-        if(lf_src(isrc)%type=='country')then
+        if(lf_src(isrc)%type=='country' .and. (.not.lf_fullchem .or. .not.lf_set%relative))then
            is_surf = .true.
            ipoll_cfac = ipoll + Npoll
         else
@@ -2259,12 +2250,19 @@ subroutine lf_av(dt)
                                *roa(i,j,k,1)*1.E9* cfac(ix,i,j) !for ug/m3
                           !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
                        end if
-                    else
-                       if(lf_src(isrc)%is_ASOA)stop !not implemented
-                         xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
-                              *roa(i,j,k,1)*1.E9 !for ug/m3
+                    else                       
+                       if(lf_src(isrc)%is_ASOA)then
+                          !output the particle phase
+                          Fgas = Fgas3d(ix+NSPEC_SHL,i,j, KMAX_MID)
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9*(1-Fgas) !for ug/m3
+                          !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+                       else
+                          xtot=xtot+(xn_adv(ix,i,j,k)*lf_src(isrc)%mw(iix))/ATWAIR&
+                               *roa(i,j,k,1)*1.E9 !for ug/m3
                         !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
-                     endif
+                       end if
+                    end if
                  end do
                  if(.not. pollwritten(ipoll_cfac))then !one pollutant may be used for several sources
                     if (iou_ix == iou_ix_inst) then
@@ -2538,7 +2536,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
   real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm,nstart
+  integer ::n,ii,iix,ix,dx,dy,isrc,dp,dm,nstart,nend
   if(DEBUGall .and. me==0)write(*,*)'start advx'
 
   if(i==li0)then
@@ -2586,17 +2584,19 @@ subroutine lf_adv_x(fluxx,i,j,k)
      xn = xn * inv_tot
      !often either x or xx is zero
      if(lf_src(isrc)%type=='country')then
+        nstart = lf_src(isrc)%start
+        nend = lf_src(isrc)%start + (Ncountry_lf + Ncountry_group_lf)*Ncountrysectors_lf - 1
         if(x>1.E-20)then
-           do n = lf_src(isrc)%start, lf_src(isrc)%end
+           do n = nstart, nend
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i+1)*x
            enddo
            if(xx>1.E-20)then
-              do n = lf_src(isrc)%start, lf_src(isrc)%end
+              do n = nstart, nend
                  lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,i-1)*xx
               enddo
            endif
         else if (xx>1.E-20)then
-           do n = lf_src(isrc)%start, lf_src(isrc)%end
+           do n = nstart, nend
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,i-1)*xx
            enddo
         endif
@@ -2608,9 +2608,9 @@ subroutine lf_adv_x(fluxx,i,j,k)
         if(mod(i_fdom(i)-1,lf_src(isrc)%res)==0)dp=1
         if(mod(i_fdom(i),lf_src(isrc)%res)==0)dm=1
         nstart = lf_src(isrc)%start
-        !the relative for fullchem are placed after the regular countries
-        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
-        do while (nstart <= lf_src(isrc)%end - Ndiv_rel*Ndiv_rel + 1)
+        !the relative for fullchem are placed after the regular countries, as a set of "countries"
+        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf)*Ncountrysectors_lf !start for relative
+        do while (nstart <= lf_src(isrc)%end - Ndiv_rel*Ndiv_rel + 1) !loop over sectors, since they are under the same isrc
            if(x>1.E-20)then
               n = nstart
               if (dm==0) then
@@ -2657,7 +2657,7 @@ subroutine lf_adv_x(fluxx,i,j,k)
               !nothing to do if no incoming fluxes
            endif
            if (lf_fullchem) then
-              nstart = nstart + Ncountrysectors_lf
+              nstart = nstart + Ndiv_rel*Ndiv_rel !start for next sector
            else
               nstart = lf_src(isrc)%end + 1 !just do once
            end if
@@ -2674,7 +2674,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
   real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
   integer, intent(in)::i,j,k
   real ::x,xn,xx,f_in,inv_tot
-  integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm,nstart
+  integer ::n,jj,iix,ix,dx,dy,isrc,dp,dm,nstart,nend
   if(DEBUGall .and. me==0)write(*,*)'start advy'
 
   if(j==lj0)then
@@ -2721,18 +2721,20 @@ subroutine lf_adv_y(fluxy,i,j,k)
      xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
      xn = xn * inv_tot
      if(lf_src(isrc)%type=='country')then
+        nstart = lf_src(isrc)%start
+        nend = lf_src(isrc)%start + (Ncountry_lf + Ncountry_group_lf)*Ncountrysectors_lf - 1
         !often either x or xx is zero
         if(x>1.E-20)then
-           do n = lf_src(isrc)%start, lf_src(isrc)%end
+           do n = nstart, nend
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j+1)*x
            enddo
            if(xx>1.E-20)then
-              do n = lf_src(isrc)%start, lf_src(isrc)%end
+              do n = nstart, nend
                  lf(n,i,j,k) = lf(n,i,j,k) + loc_frac_src_1d(n,j-1)*xx
               enddo
            endif
         else if (xx>1.E-20)then
-           do n = lf_src(isrc)%start, lf_src(isrc)%end
+           do n = nstart, nend
               lf(n,i,j,k) = lf(n,i,j,k)*xn + loc_frac_src_1d(n,j-1)*xx
            enddo
         endif
@@ -2745,8 +2747,8 @@ subroutine lf_adv_y(fluxy,i,j,k)
         if(mod(j_fdom(j),lf_src(isrc)%res)==0)dm=Ndiv_rel
         nstart = lf_src(isrc)%start
         !the relative for fullchem are placed after the regular countries
-        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf
-        do while (nstart <= lf_src(isrc)%end - (2*lf_src(isrc)%dist+1)*(2*lf_src(isrc)%dist+1)+1)
+        if (lf_fullchem) nstart = nstart + (Ncountry_lf + Ncountry_group_lf) *Ncountrysectors_lf !start for relative
+        do while (nstart <= lf_src(isrc)%end - Ndiv_rel*Ndiv_rel + 1)
            if(x>1.E-20)then
               n = nstart
               if(dm==0)then
@@ -2813,7 +2815,7 @@ subroutine lf_adv_y(fluxy,i,j,k)
            !nothing to do if no incoming fluxes
            endif
            if (lf_fullchem) then
-              nstart = nstart + Ncountrysectors_lf
+              nstart = nstart + Ndiv_rel*Ndiv_rel !jump to next sector
            else
               nstart = lf_src(isrc)%end + 1 !just do once
            end if
@@ -3264,8 +3266,8 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
         if(lf_src(isrc)%type=='country' .and. (Ncountry_lf+Ncountry_group_lf>0))then
            !first dilute lf because of emissions
            n0=lf_src(isrc)%start
-           do ic=1,Ncountry_lf+Ncountry_group_lf
-              do is=1,Ncountrysectors_lf
+           do is=1,Ncountrysectors_lf
+              do ic=1,Ncountry_lf+Ncountry_group_lf
                  lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
                  n0=n0+1
               end do
@@ -3283,7 +3285,7 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            do n0=lf_src(isrc)%start,lf_src(isrc)%end
               lf(n0,i,j,k)=(lf(n0,i,j,k)*xtot)/(xtot+totemis+1.e-20)
            end do
-           !add emissions only at centre of window
+           !add emissions only at centre of window for each sector
            n0 = lf_src(isrc)%start + (lf_src(isrc)%Npos - 1)/2 !"middle" point is dx=0 dy=0
            do iemis = 1, N_lf_derivemis
               if(emis2icis(iemis) >= 0 ) cycle !country type
@@ -3422,9 +3424,10 @@ subroutine lf_chem_emis_deriv(i,j,k,xn,xnew,eps1)
            !NB: only one iemis per n0 can be included
            lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec)
            if (lf_set%relative) then
-              !relative: for each sector add all countries to the middle gridcell
-              !order of indices is (position, sector) 
-              n0 = lf_src(isrc)%start + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf + (emis2is(iemis) * (Ndiv_rel*Ndiv_rel - 1))/2 !is=1 corresponds to middle of gridcell for first sector
+              is =  emis2is(iemis)
+              n0 = lf_src(isrc)%start + (Ncountry_lf + Ncountry_group_lf) * Ncountrysectors_lf !start of relative
+              !relative: for sector is add all countries to the middle gridcell
+              n0 = n0 + (is-1)*Ndiv_rel*Ndiv_rel + (Ndiv_rel*Ndiv_rel - 1)/2
               lf(n0,i,j,k) = lf(n0,i,j,k) + ederiv(iemis,ispec)
            end if
         end if
@@ -4090,9 +4093,6 @@ subroutine lf_SurfArea_pos(S_m2m3,i,j,k,deriv_iter)
   xn_lf(1,deriv_iter) = S_m2m3 !NB: xn_lf(1,) is just used as an array, it is not a concentration!
 
   xn_lf(2,deriv_iter) = HYDROLYSISN2O5k(k) !NB: xn_lf(2,) is just used as an array, it is not a concentration!
-!           if(i==5.and.j==5 .and. k>=KMAX_MID-lf_Nvert+1 .and. me==253)then
-!             if(xn_lf(2,4)>0.0)write(*,*)deriv_iter,'LLF ',me,k,xn_lf(2,deriv_iter),xn_lf(2,4)
-!          end if
 
   if(deriv_iter<4)then
      !put back original values
@@ -4459,7 +4459,7 @@ subroutine lf_rcemis(i,j,k,eps)
                              if(found == 0) then
                                 !first see if this emis2icis and emis2isrc already exists (for groups and masks type "countries"):
                                 do n=1,N_lf_derivemis
-                                   if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2isrc(n) == isrc)then
+                                   if(emis2icis(n)==(is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1) .and. emis2isrc(n) == isrc)then
                                       ! add to this instead
                                       nemis = n
                                       found = 1
@@ -4488,7 +4488,7 @@ subroutine lf_rcemis(i,j,k,eps)
                        end do
                        if (found == 1) then
                          !emissions found here
-                         emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+                         emis2icis(nemis) = (is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1)
                          emis2isrc(nemis) = isrc
                        endif
                     end do
@@ -4503,7 +4503,7 @@ subroutine lf_rcemis(i,j,k,eps)
         !fullchem case
         !TODO : merge with case not fullchem? difference only lf_src(isrc)%mw(n) and split summation and emis2 iem/isrc?
          do ic=1,nic(i,j)
-
+ 
           !iland is the country index of the emission treated
           iland = ic2iland(i,j,ic)
           !iic is the lf country index of the source
@@ -4603,7 +4603,7 @@ subroutine lf_rcemis(i,j,k,eps)
                          !because only one derivative for each source is included ("lf(n0,i,j,k) = ederiv(iemis,ix)" without +=)
                          do n=1,N_lf_derivemis
                             !check that emis2isrc(n) is not required for pm25 here
-                            if(emis2icis(n)==is-1 + (iic-1)*Ncountrysectors_lf .and. emis2iem(n) == iem)then
+                            if(emis2icis(n)==(is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1).and. emis2iem(n) == iem)then
                                ! add to this instead
                                nemis = n
                                found = 1
@@ -4630,7 +4630,7 @@ subroutine lf_rcemis(i,j,k,eps)
                                  *emisfrac(iqrc,split_idx,iland)*emis_masscorr(iqrc)&
                                  *roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
                         end if
-                      end do
+                     end do
                    end if
                 end if
               end do
@@ -4640,9 +4640,9 @@ subroutine lf_rcemis(i,j,k,eps)
                     write(*,*)nemis,me,i,j,k,found,nemis_primary,iic,is
                     call StopAll('error')
                  end if
-                emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
-                emis2is(nemis) = is !is=1 corresponds to first sector
-                emis2iem(nemis) = iem
+                 emis2icis(nemis) = (is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1)
+                 emis2is(nemis) = is !is=1 corresponds to first sector
+                 emis2iem(nemis) = iem
               endif
            end do
         end do
@@ -4661,7 +4661,7 @@ subroutine lf_rcemis(i,j,k,eps)
            emis2nspec_surf(n) = 0 !reset after use
            iic = emis2iic_surf(n)
            is = 1
-           emis2icis(nemis) = is-1 + (iic-1)*Ncountrysectors_lf
+           emis2icis(nemis) = (is-1) * (Ncountry_lf + Ncountry_group_lf) + (iic-1)
            emis2iem(nemis) = iem
         end do
         Nemis_surf = 0 !reset after use

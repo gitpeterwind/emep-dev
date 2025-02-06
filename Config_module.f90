@@ -281,6 +281,7 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'  ! Norris , Monahan
   character(len=20) :: SOILNOX_METHOD = "NOTSET" ! Needs choice: Total or NoFert or ACP2012EURO (deprecated)
+  character(len=20) :: ACPSOILNOX_METHOD = "NoFert" ! Needs choice: Total or NoFert. Use NoFert for EMEP emis, Total for CAMS-REG
 
 ! Selection of Emissions parameterization for fungal
   character(len=4) :: FUNGAL_METHOD  = 'HS_5'  !HS_3, HS_5, SD, HS, JS (see PBAP module)

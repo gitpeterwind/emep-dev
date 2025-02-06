@@ -49,6 +49,12 @@ Ideally compile code on PC with gfortran's pedantic debug switches
 (eg make MACHINE=precise EMEP) - gives loads of info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 Jan 2025 Dave
+
+USES%ACPSOILNOX_METHOD added, with default 'NoFert'. Will switch off
+ crop emissions if NoFert, as needed for EMEP emissions.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 Jan 2025 Dave/Willem   BUGFIX
 
 USES%biofac_BVOC default set to 1.0, as it should have been!
