@@ -273,12 +273,7 @@ contains
 
   call Code_timer(tim_before)
   ix=0
-  if(USES%uEMEP)then
-     call StopAll("USES%uEMEP no longer in use. Use lf_ syntaks")
-  else
-     !separate values do not work properly yet
-     lf_src(:)%dist = lf_src(1)%dist !Temporary
-  endif
+
   !temporary backward compatibility
   lf_set%YEAR=lf_src(1)%YEAR .or. lf_set%YEAR
   lf_set%MONTH=lf_src(1)%MONTH .or. lf_set%MONTH
@@ -294,7 +289,10 @@ contains
         write(*,*)'WARNING: cannot track through level 1 (top). Reducing Nvert to ',lf_Nvert
      end if
   end if
-
+  if (lf_set%dist>-1) then
+     lf_src(:)%dist = lf_set%dist
+  end if
+ 
   if (lf_set%full_chem) lf_fullchem = .true.
   if (lf_set%Nvertout > lf_Nvert .and. me==0 .and. lf_fullchem ) write(*,*)'lf fullchem multi vertical level not implemented '
   if (lf_fullchem ) lf_set%Nvertout = 1
@@ -461,7 +459,7 @@ contains
      ! chemistry: lf will change in the same way as a country, just increase Npos_lf with number of surrounding cells + self.
      ! no new species to track, but new "countries"!
      !NB: for non-chem situation, a new isrc is defined for each sector, while in the fullchem case, sectors are part of isrc
-     
+    
      !for each relative (2*lf_set%dist+1)*Ncountrysectors_lf new sources are defined
      if (lf_set%relative .and. lf_set%dist>-1) then
         Ndiv_rel = 2*lf_set%dist+1
