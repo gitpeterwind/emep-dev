@@ -1614,8 +1614,8 @@ subroutine lf_out(iotyp)
   chunksizes=1
   chunksizes(1)=dimSizes(1)
   chunksizes(2)=dimSizes(2)
-  chunksizes(3)=34 ! optimal for read and write?
-  chunksizes(4)=42 ! optimal for read and write?
+  chunksizes(3)=min(34, dimSizes(3))! optimal for read and write?
+  chunksizes(4)=min(42, dimSizes(4)) ! optimal for read and write?
   chunksizes(5)=1
   chunksizes_tot=1
   chunksizes_tot(1)=min(MAXLIMAX, dimSizes_tot(1))
