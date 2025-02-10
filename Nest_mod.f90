@@ -56,7 +56,7 @@ use Config_module, only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,&
      NEST_native_grid_3D,NEST_native_grid_BC,NEST_omit_zero_write,NEST_out_DOMAIN,&
      NEST_MET_inner,NEST_RUNDOMAIN_inner,&
      NEST_WRITE_SPC,NEST_WRITE_GRP,NEST_OUTDATE_NDUMP,NEST_outdate,OUTDATE_NDUMP_MAX,&
-     EXTERNAL_BIC_NAME, TOP_BC, filename_eta
+     EXTERNAL_BIC_NAME, TOP_BC, filename_eta, lf_set
 use Debug_module,            only: DEBUG ! %NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use GridValues_mod,          only: A_mid,B_mid, glon, glat, i_fdom, j_fdom, &
      RestrictDomain, Read_KMAX
@@ -610,7 +610,7 @@ subroutine Dump(indate)
 
   if(MasterProc)call check(nf90_close(ncFileID))
 
-  if (USES%LocalFractions) call lf_saveall("LF_"//trim(filename_write))
+  if (USES%LocalFractions .and. lf_set%save) call lf_saveall("LF_"//trim(filename_write))
   
 end subroutine Dump
 
@@ -1807,7 +1807,7 @@ subroutine reset_3D(ndays_indate)
      deallocate(data)
      if(MasterProc) call check(nf90_close(ncFileID))
 
-     if (USES%LocalFractions) call lf_read("LF_"//trim(filename_read_3D))
+     if (USES%LocalFractions .and. lf_set%restart) call lf_read("LF_"//trim(filename_read_3D))
 
   else
      if(me==0)write(*,*)'WARNING: did not reset 3D, because only BC data in '//trim(filename_read_3D)
