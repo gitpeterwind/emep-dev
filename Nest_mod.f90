@@ -102,6 +102,7 @@ character(len=TXTLEN_FILE),private, save ::  &
   filename_dump   = 'template_dump'     ! 
 
 
+character(len=TXTLEN_FILE),private ::  filename
 
 real(kind=8), parameter :: &
   halfsecond=0.5/(24.0*3600.0)! used to avoid rounding errors
@@ -610,8 +611,10 @@ subroutine Dump(indate)
 
   if(MasterProc)call check(nf90_close(ncFileID))
 
-  if (USES%LocalFractions .and. lf_set%save) call lf_saveall("LF_"//trim(filename_write))
-  
+  if (USES%LocalFractions .and. lf_set%save) then
+    filename=date2string(lf_set%filename_write,current_date,mode='YMDH')      
+    call lf_saveall(trim(filename))
+  end if
 end subroutine Dump
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -1807,8 +1810,10 @@ subroutine reset_3D(ndays_indate)
      deallocate(data)
      if(MasterProc) call check(nf90_close(ncFileID))
 
-     if (USES%LocalFractions .and. lf_set%restart) call lf_read("LF_"//trim(filename_read_3D))
-
+     if (USES%LocalFractions .and. lf_set%restart) then
+       filename=date2string(lf_set%filename_read,current_date,mode='YMDH')
+       call lf_read(trim(filename))
+     end if
   else
      if(me==0)write(*,*)'WARNING: did not reset 3D, because only BC data in '//trim(filename_read_3D)
   endif

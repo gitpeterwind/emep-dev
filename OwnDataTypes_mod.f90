@@ -325,6 +325,8 @@ end type poll_type
 
 type, public :: lf_set_type
   !general
+  character(len=TXTLEN_NAME) :: filename_write = 'LF_saveDDMMYYYY.nc'
+  character(len=TXTLEN_NAME) :: filename_read = 'LF_saveDDMMYYYY.nc'
   integer :: Nvert = 14 ! vertical extend of the tracking/local window
   integer :: Nvertout = 1 ! number of vertical level to output (non fullchem only)
   logical :: YEAR =.true.! Output frequency

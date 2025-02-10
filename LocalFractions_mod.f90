@@ -1470,7 +1470,8 @@ contains
 
   if (lf_set%restart) then
      !initialize lf with values save on disk
-     write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
+    filename=date2string(lf_set%filename_read,current_date,mode='YMDH')
+    !write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
      call lf_read(filename)
   end if
 
@@ -1533,9 +1534,10 @@ subroutine lf_out(iotyp)
      else
         fileName=trim(runlabel1)//'_LF_month.nc'
      endif
-  else if(iotyp==IOU_YEAR .and. lf_set%YEAR)then
+   else if(iotyp==IOU_YEAR .and. lf_set%YEAR)then
+     filename=date2string(lf_set%filename_write,current_date,mode='YMDH')
      if(me==0 .and. lf_set%save)write(*,*)'saving ALL'
-     write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
+!     write(filename,"(A,I2.2,I2.2,I2.2,I4.4,A)")'LF_SAVE',current_date%hour,current_date%day,current_date%month,current_date%year,'.nc'
      if (lf_set%save) call lf_saveall(filename)
      fileName=trim(runlabel1)//'_LF_full.nc'
   else
