@@ -1302,7 +1302,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
       call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
       call check(nf90_inquire_dimension(ncFileID,kdimID,len=KMAX_old) ,"len:k")
 
-      if(any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
+      if(ndim>=3 .and. any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
         write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
         write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
         write(6,*)'WARNING! OLD ', trim(fileName_given),' MUST BE DELETED'

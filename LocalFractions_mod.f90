@@ -1341,7 +1341,7 @@ contains
   if(make_PMwater)then
      !one extra for water
      allocate(lf_src_acc(LF_SRC_TOTSIZE+Npos_lf*Nfullchem_emis,LIMAX,LJMAX,lf_Nvertout,Niou_ix))
-  else
+   else
      allocate(lf_src_acc(LF_SRC_TOTSIZE,LIMAX,LJMAX,lf_Nvertout,Niou_ix))
   endif
   lf_src_acc = 0.0
@@ -1733,7 +1733,8 @@ subroutine lf_out(iotyp)
                     def2%unit='ug/m3'
                     scale=1.0
                     call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
-                         fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                        fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
+                    
                     if(lf_src(isrc)%drydep)then
                        write(def3%name,"(A)")'DDEP_'//trim(def2%name)
                        def3%unit='mg/m2'
@@ -1865,9 +1866,10 @@ subroutine lf_out(iotyp)
                              n1=0
                              !we must put the "country" and "relative" into different buffers
                              do n=lf_src(isrc)%start, lf_src(isrc)%start + (Ncountry_lf+Ncountry_group_lf)*Ncountrysectors_lf-1
-                                n1 = n1 + 1
-                                tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
+                               n1 = n1 + 1
+                               tmp_out_cntry(i,j,n1) = tmp_out_cntry(i,j,n1) + lf_src_acc(n,i,j,kk,iou_ix)*invfac
                              end do
+
                              if (lf_spec_out(iout)%relative) then
                                 !continue with n for relatives
                                 do is=1,Ncountrysectors_lf !each sector makes a new output
@@ -1882,7 +1884,7 @@ subroutine lf_out(iotyp)
                        end do
                     end if
                  end if
-              end do !loop over ig
+               end do !loop over ig
               if (found==0) cycle
               specname = trim(lf_spec_out(iout)%name)
               if (iotyp==IOU_HOUR_INST .and. lf_set%CityMasks)then
@@ -2007,7 +2009,8 @@ subroutine lf_out(iotyp)
                           call CityMasksOut(tmp_out_cntry, fullname, countryname, Npos_lf+1 , Nfullchem_emis*Npos_lf + 1, (ideriv-1)*Npos_lf+1)
                        end if
                     else
-                       def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
+                      def2%name =  trim(specname)//trim(secname)//trim(sourcename)//trim(redname)
+
                        call Out_netCDF(iotyp,def2,ndim_tot,1,tmp_out_cntry(1,1,n1),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=lf_set%DOMAIN,&
                             fileName_given=trim(fileName),create_var_only=create_var_only,chunksizes=chunksizes_tot,ncFileID_given=ncFileID)
                        if(lf_set%MDA8 .and. lf_spec_out(iout)%name == 'O3'.and. .not. lf_spec_out(iout)%DryDep.and. .not. lf_spec_out(iout)%WetDep)then ! NB: assumes O3 is asked for!
@@ -2073,7 +2076,6 @@ subroutine lf_out(iotyp)
                       if(ideriv==2)iem = find_index('voc' ,EMIS_FILE(1:NEMIS_FILE))
                       if(ideriv==3)iem = find_index('nh3' ,EMIS_FILE(1:NEMIS_FILE))
                       if(ideriv==4)iem = find_index('sox' ,EMIS_FILE(1:NEMIS_FILE))
-                      if(me==0)write(*,*)iem,trim(def2%name),totrcemis_lf(j,i,iem)
                       def2%scale = totrcemis_lf(j,i,iem)
                       call Out_netCDF(iotyp,def2,0,1,lf_src_tot,scale,CDFtype,dimSizes_tot,dimNames_tot,&
                            fileName_given=trim(fileName),create_var_only=create_var_only,ncFileID_given=ncFileID)
@@ -2110,7 +2112,9 @@ subroutine lf_out(iotyp)
   deallocate(tmp_out_cntry)
   deallocate(tmp_out_base)
 
-  do ipoll=1,2*Npoll
+  n1 = 2*Npoll
+  if(make_PMwater)n1=n1+1
+  do ipoll = 1, n1
      do k = 1, lf_Nvertout
         do j=1,ljmax
            do i=1,limax
@@ -2135,7 +2139,7 @@ subroutine lf_out(iotyp)
            do i=1,limax
               do n=lf_src(isrc)%start, lf_src(isrc)%end
                  lf_src_acc(n,i,j,k,iou_ix)=0
-              enddo
+               enddo
            enddo
         enddo
      enddo
