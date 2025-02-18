@@ -1010,11 +1010,11 @@ contains
 
       if (MasterProc) then
         if(.not. lf_fullchem .or. lf_src(isrc)%iem_lf == iem_lf_nox) then
-           if (lf_src(isrc)%iem>0) then
-              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
-           else
-              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
-           end if
+!           if (lf_src(isrc)%iem>0) then
+!              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' emitted as ',EMIS_FILE(lf_src(isrc)%iem)
+!           else
+!              write(*,*)'lf pollutant : ',lf_src(isrc)%species,' ref index ',lf_src(isrc)%poll,' not treated as emitted species'
+!           end if
         end if
         if (.not. lf_fullchem) then
         write(*,*)'lf number of species in '//trim(lf_src(isrc)%species)//' group: ',lf_src(isrc)%Nsplit
@@ -4549,8 +4549,9 @@ subroutine lf_rcemis(i,j,k,eps)
               found_primary = 0 !flag to show if nemis_primary already increased
               do iisec=1, lf_nsector_map(isec_lf)
                 isec = lf_sector_map(iisec,isec_lf) !isec will be counted as an isec_lf sector
+                emish_idx = SECTORS(isec)%height
 
-                if(emis_lf_cntry(i,j,ic,isec,iem)>1.E-20)then
+                if(emis_lf_cntry(i,j,ic,isec,iem)*emis_kprofile(KMAX_BND-k,emish_idx)>1.E-20)then
 
                    !sum all emissions per sector, country, emis_species. Only for one k value!
                    if (k == KMAX_MID)then
@@ -4565,8 +4566,7 @@ subroutine lf_rcemis(i,j,k,eps)
                          end if
                          isrc=isrc_pm25 !treated with index "nemis_primary-1"
                          emis2isrc_primary(nemis_primary-1) = isrc
-                         emis2pos_primary(nemis_primary-1) = is-1 + (iic-1)*Ncountrysectors_lf
-                         emish_idx = SECTORS(isec)%height
+                         emis2pos_primary(nemis_primary-1) = (is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1)
                          split_idx = SECTORS(isec)%split
                          do n = 1, lf_src(isrc)%Nsplit
                             itot=lf_src(isrc)%ix(n)
@@ -4588,7 +4588,7 @@ subroutine lf_rcemis(i,j,k,eps)
                          end if
                       end if
                       emis2isrc_primary(nemis_primary) = isrc
-                      emis2pos_primary(nemis_primary) =  is-1 + (iic-1)*Ncountrysectors_lf
+                      emis2pos_primary(nemis_primary) =  (is-1)*(Ncountry_lf + Ncountry_group_lf) + (iic-1)
                       emish_idx = SECTORS(isec)%height
                       split_idx = SECTORS(isec)%split
                       do n = 1, lf_src(isrc)%Nsplit
